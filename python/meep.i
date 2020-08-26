@@ -89,6 +89,7 @@ typedef struct {
 #include "typemap_utils.cpp"
 
 static PyObject *py_source_time_object() {
+    // Return value: Borrowed reference
     static PyObject *source_time_object = NULL;
     if (source_time_object == NULL) {
         PyObject *source_mod = PyImport_ImportModule("meep.source");
@@ -99,6 +100,7 @@ static PyObject *py_source_time_object() {
 }
 
 static PyObject *py_meep_src_time_object() {
+    // Return value: Borrowed reference
     static PyObject *src_time = NULL;
     if (src_time == NULL) {
         PyObject *meep_mod = PyImport_ImportModule("meep");
@@ -112,6 +114,7 @@ static double py_callback_wrap(const meep::vec &v) {
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
     double ret = PyFloat_AsDouble(pyret);
+    Py_DECREF(pyv);
     Py_XDECREF(pyret);
     return ret;
 }
@@ -122,6 +125,7 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
+    Py_DECREF(pyv);
     Py_DECREF(pyret);
     return ret;
 }
@@ -151,6 +155,7 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
+    Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);
     return ret;
@@ -200,7 +205,7 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
 }
 
 static void _do_master_printf(const char* stream_name, const char* text) {
-    PyObject* py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
+    PyObject *py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
 
     Py_XDECREF(PyObject_CallMethod(py_stream, "write", "(s)", text));
     Py_XDECREF(PyObject_CallMethod(py_stream, "flush", NULL));
@@ -270,6 +275,7 @@ double py_pml_profile(double u, void *f) {
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
                      double spectral_density, double Q_thresh, double rel_err_thresh,
                      double err_thresh, double rel_amp_thresh, double amp_thresh) {
+    // Return value: New reference
 
     std::complex<double> *amp = new std::complex<double>[maxbands];
     double *freq_re = new double[maxbands];
@@ -311,6 +317,7 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 
 // Wrapper around meep::dft_near2far::farfield
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
@@ -328,6 +335,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 // Wrapper around meep::dft_near2far::get_farfields_array
  PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
                                 double resolution) {
+    // Return value: New reference
     size_t dims[4] = {1, 1, 1, 1};
     int rank = 0;
     size_t N = 1;
@@ -361,6 +369,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 
 // Wrapper around meep::dft_ldos::ldos
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
@@ -377,6 +386,7 @@ PyObject *_dft_ldos_ldos(meep::dft_ldos *f) {
 
 // Wrapper around meep::dft_ldos_F
 PyObject *_dft_ldos_F(meep::dft_ldos *f) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
@@ -393,6 +403,7 @@ PyObject *_dft_ldos_F(meep::dft_ldos *f) {
 
 // Wrapper arond meep::dft_ldos_J
 PyObject *_dft_ldos_J(meep::dft_ldos *f) {
+    // Return value: New reference
     Py_ssize_t len = f->freq.size();
     PyObject *res = PyList_New(len);
 
@@ -422,6 +433,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
+    // Return value: New reference
     int rank;
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
@@ -515,6 +527,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL) {
+    // Return value: New reference
     meep::direction dirs[3] = {meep::X, meep::X, meep::X};
 
     meep::vec min_max_loc_vec[2];
@@ -533,10 +546,13 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         PyObject * py_max = vec2py(min_max_loc_vec[1],true);
         PyList_Append(min_max_loc, py_min);
         PyList_Append(min_max_loc, py_max);
-        Py_DECREF(py_min); Py_DECREF(py_max);
+        Py_DECREF(py_min);
+        Py_DECREF(py_max);
     }
 
-    return Py_BuildValue("(iO)", rank, py_dirs);
+    PyObject *rval = Py_BuildValue("(iO)", rank, py_dirs);
+    Py_DECREF(py_dirs);
+    return rval;
 }
 
 #ifdef HAVE_MPB
@@ -551,6 +567,7 @@ meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::di
 }
 
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
+    // Return value: New reference
     PyObject *v3_class = py_vector3_object();
     PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
     PyObject *result = PyObject_Call(v3_class, args, NULL);
@@ -626,6 +643,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
     $result = Py_BuildValue("(O,O)", py_kpoints, py_kdom);
 
+    Py_DECREF(py_kpoints);
+    Py_DECREF(py_kdom);
     delete[] $1.kpoints;
     delete[] $1.kdom;
 }
@@ -808,7 +827,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     // clean the volume object
     void* where;
 
-    PyObject* swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
+    PyObject *swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
     SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
     const meep::volume* where_vol = (const meep::volume*)where;
 
@@ -837,7 +856,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
     destroy_geom_box_tree(geometry_tree);
     delete[] l;
-
+    Py_DECREF(swigobj);
 }
 %}
 //--------------------------------------------------
@@ -1795,3 +1814,5 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     return s;
 }
 %}
+
+
