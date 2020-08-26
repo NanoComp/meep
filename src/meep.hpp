@@ -1199,8 +1199,8 @@ struct near_data{
 struct sourcedata{
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
-  dft_chunk *F;
-  std::vector<std::vector<std::vector<std::complex<double> > > > matrix_elt_arr;
+  fields_chunk *fc;
+  std::vector<std::vector<std::complex<double> > > amp_arr;
 
 };
 
@@ -1266,7 +1266,7 @@ public:
 
   std::vector<near_data> near_fds(const vec &x);
 
-  std::vector<sourcedata> near_sourcedata(const vec &x)
+  std::vector<sourcedata> near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1724,6 +1724,9 @@ public:
                          std::complex<double> amp = 1.0);
   void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
+
+
+  void add_srcdata(fields_chunk *fc, component c, src_time *src, size_t n, std::vector<ptrdiff_t> idx_arr_vec, std::vector<std::complex<double> > amps_arr_vec);
 
   // mpb.cpp
 

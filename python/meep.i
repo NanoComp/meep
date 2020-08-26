@@ -75,6 +75,8 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 %include "numpy.i"
 %include "std_vector.i"
 
+
+
 %init %{
   import_array();
 %}
@@ -1400,9 +1402,13 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %template(near_fds_data) std::vector<meep::near_data>;
 %template(near_src_data) std::vector<meep::sourcedata>;
 
-%template(inner_matrix_elts) std::vector<std::complex<double> >;
+
+%include "std_complex.i"
+
+%template(ComplexVector) std::vector<std::complex<double> >;
 %template(matrix_elts) std::vector<std::vector<std::complex<double> > >;
 
+std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x, std::vector<std::complex<double> > dJ);
 
 
 struct vector3 {

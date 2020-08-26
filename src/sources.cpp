@@ -304,6 +304,14 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
 }
 
+void fields::add_srcdata(fields_chunk *fc, component c, src_time *src, size_t n, std::vector<ptrdiff_t> idx_arr_vec, std::vector<std::complex<double> > amps_arr_vec){
+  ptrdiff_t* idx_arr = &idx_arr_vec[0];
+  std::complex<double> *amps_arr = &amps_arr_vec[0];
+  src_vol *tmp = new src_vol(c, src, n, idx_arr, amps_arr);
+  field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
+  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+}
+
 static realnum *amp_func_data_re = NULL;
 static realnum *amp_func_data_im = NULL;
 static const volume *amp_func_vol = NULL;
@@ -435,6 +443,8 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   loop_in_chunks(src_vol_chunkloop, (void *)&data, where, c, false);
   require_component(c);
 }
+
+
 
 /***************************************************************/
 /* helper routine for add_eigenmode_source that calls          */

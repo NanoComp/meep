@@ -4,8 +4,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
-
-from collections import namedtuple
+from .optimization_problem import atleast_3d, Grid
 
 class ObjectiveQuantitiy(ABC):
     @abstractmethod
@@ -207,53 +206,6 @@ class Fourier_Coefficients(ObjectiveQuantitiy):
             raise RuntimeError("You must first run a forward simulation.")
 
 
-Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
-
-def atleast_3d(*arys):
-    from numpy import array, asanyarray, newaxis
-    '''
-    Modified version of numpy's `atleast_3d`
-
-    Keeps one dimensional array data in first dimension, as
-    opposed to moving it to the second dimension as numpy's
-    version does. Keeps the meep dimensionality convention.
-
-    View inputs as arrays with at least three dimensions.
-    Parameters
-    ----------
-    arys1, arys2, ... : array_like
-        One or more array-like sequences.  Non-array inputs are converted to
-        arrays.  Arrays that already have three or more dimensions are
-        preserved.
-    Returns
-    -------
-    res1, res2, ... : ndarray
-        An array, or list of arrays, each with ``a.ndim >= 3``.  Copies are
-        avoided where possible, and views with three or more dimensions are
-        returned.  For example, a 1-D array of shape ``(N,)`` becomes a view
-        of shape ``(N, 1, 1)``, and a 2-D array of shape ``(M, N)`` becomes a
-        view of shape ``(M, N, 1)``.
-    '''
-    res = []
-    for ary in arys:
-        ary = asanyarray(ary)
-        if ary.ndim == 0:
-            result = ary.reshape(1, 1, 1)
-        elif ary.ndim == 1:
-            result = ary[:, newaxis, newaxis]
-        elif ary.ndim == 2:
-            result = ary[:, :, newaxis]
-        else:
-            result = ary
-        res.append(result)
-    if len(res) == 1:
-        return res[0]
-    else:
-        return res
-
-
-
-
 
 class Far_Coefficients(ObjectiveQuantitiy):
     def __init__(self,sim,Near2FarRegions, far_pt):
@@ -346,33 +298,40 @@ class Far_Coefficients_src(ObjectiveQuantitiy):
         else:
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
 
-        self.sources = []
+        self.sources = ['src_vol']
 
 
         freq_scale = dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
 
+        dJ = list(dJ.flatten())
+        dJ_c = mp.ComplexVector(len(dJ))
+        for i in range(len(dJ)):
+            dJ_c[i] = dJ[i]
+
         #TODO far_pts in 3d or cylindrical, perhaps py_v3_to_vec from simulation.py
-        self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(mp.vec(self.far_pt.x, self.far_pt.y))
+        self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(mp.vec(self.far_pt.x, self.far_pt.y), dJ_c)
 
 
         for near_data in self.all_nearsrcdata:
-            dft_chunk = near_data.F
+            dft_chunk = near_data.fc
             cur_comp = near_data.near_fd_comp
-            cur_green_matrix = np.array(near_data.matrix_elt_arr)
+            amp_arr = near_data.amp_arr
+
 
             if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
-                scale = -freq_scale * np.sum(dJ*cur_green_matrix, axis=2) #pts * nfreq
+                scale = -freq_scale * amp_arr
             else:
-                scale = freq_scale * np.sum(dJ*cur_green_matrix, axis=2)
+                scale = freq_scale * amp_arr
 
             if self.num_freq == 1:
                 ##TODO
                 self.sources += [mp.Source(self.time_src, component=cur_comp, amplitude=scale[0], center=near_pt)]
             else:
                 src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
-                lincoeff = src.nodes
-                basis_func = src.vec
-                self.sources += [mp.Source(src, component=cur_comp, amplitude=1, center=near_pt)]
+                self.sources+=[(src.nodes, src.time_src_bf, near_data)]
+
+
+
 
         return self.sources
 

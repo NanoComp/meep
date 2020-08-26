@@ -19,6 +19,8 @@ class FilteredSource(CustomSource):
         self.t = np.arange(0,dt*(self.N),dt)
         self.n = np.arange(self.N)
         f = self.func()
+        self.bf = [lambda t, i=i: 0 if t>self.T else (self.nuttall(t,self.center_frequencies)/(self.dt/np.sqrt(2*np.pi)))[i] for i in range(len(self.center_frequencies))]
+        self.time_src_bf = [CustomSource(src_func=bfi,center_frequency=center_frequency,is_integrated=False,end_time=self.T) for bfi in self.bf]
 
         if time_src:
             # get the cutoff of the input signal
@@ -71,20 +73,21 @@ class FilteredSource(CustomSource):
     def __call__(self,t):
         if t > self.T:
             return 0
-        self.vec = self.nuttall(t,self.center_frequencies) / (self.dt/np.sqrt(2*np.pi)) # compensate for meep dtft
-        return np.inner(self.vec,self.nodes)
+        vec = self.nuttall(t,self.center_frequencies) / (self.dt/np.sqrt(2*np.pi)) # compensate for meep dtft
+        return np.inner(vec,self.nodes)
 
     def func(self):
         def _f(t):
             return self(t)
         return _f
 
+
     def estimate_impulse_response(self,H):
         # Use vandermonde matrix to calculate weights of each gaussian. Each window is centered at each frequency point.
         # TODO: come up with a more sophisticated way to choose temporal window size and basis locations
         # that will minimize l2 estimation error and the node weights (since matrix is ill-conditioned)
         vandermonde = self.nuttall_dtft(self.frequencies[:,np.newaxis],self.center_frequencies[np.newaxis,:])
-        nodes = np.matmul(linalg.pinv(vandermonde), H)
+        nodes = np.matmul(linalg.pinv(vandermonde), H.T)
         H_hat = np.matmul(vandermonde, nodes)
-        l2_err = np.sum(np.abs(H-H_hat)**2/np.abs(H)**2)
+        l2_err = np.sum(np.abs(H-H_hat.T)**2/np.abs(H)**2)
         return nodes, l2_err
