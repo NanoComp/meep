@@ -179,12 +179,12 @@ Python. `Vector3` is a `meep` class.
   as the default material, use the `material_function` keyword argument (below).
 
 + **`material_function` [ function ]** — A Python function that takes a `Vector3`
-  and returns a `Medium`. See also [Material Function](#material-function).
+  and returns a `Medium`. See also [Material Function](#medium).
   Defaults to `None`.
 
 + **`epsilon_func` [ function ]** — A Python function that takes a `Vector3` and
   returns the dielectric constant at that point. See also [Material
-  Function](#material-function). Defaults to `None`.
+  Function](#medium). Defaults to `None`.
 
 + **`epsilon_input_file` [`string`]** — If this string is not empty (the default),
   then it should be the name of an HDF5 file whose first/only dataset defines a
@@ -254,7 +254,7 @@ Python. `Vector3` is a `meep` class.
 
 + **`eps_averaging` [`boolean`]** — If `True` (the default), then [subpixel
   averaging](Subpixel_Smoothing.md) is used when initializing the dielectric
-  function. For simulations involving a [material function](#material-function),
+  function. For simulations involving a [material function](#medium),
   `eps_averaging` is `False` (the default) and must be
   [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in
   which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and
@@ -1256,7 +1256,7 @@ The `Simulation` class also provides some aliases for the corresponding "flux" m
 
 ### Mode Decomposition
 
-Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
+Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Features/Mode Decomposition](Mode_Decomposition.md).
 
 
 <a id="Simulation.get_eigenmode_coefficients"></a>
@@ -3513,8 +3513,7 @@ The following step function collects field data from a given point and runs [Har
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior.
-See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 
 #### Miscellaneous Step-Function Modifiers
