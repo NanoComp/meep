@@ -1277,7 +1277,7 @@ def get_eigenmode_coefficients(self,
 
 <div class="method_docstring" markdown="1">
 
-Given a flux object and list of band indices, return a `namedtuple` with the
+Given a flux object and list of band indices `bands` or `DiffractedPlanewave`, return a `namedtuple` with the
 following fields:
 
 + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
@@ -1348,7 +1348,7 @@ The parameters of this routine are the same as that of
 object that can be used to inspect the computed mode.  In particular, it returns
 an `EigenmodeData` instance with the following fields:
 
-+ `band_num`: same as the `band_num` parameter
++ `band_num`: same as a single element of the `bands` parameter
 + `freq`: the computed frequency, same as the `frequency` input parameter if
   `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
