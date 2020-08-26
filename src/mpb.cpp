@@ -300,7 +300,7 @@ static int nextpow2357(int n) {
 /* routine to allow it to be followed either by                 */
 /*  (a) add_eigenmode_src()                                     */
 /* or                                                           */
-/*  (b) get_eigenmode_coefficient()                             */
+/*  (b) get_eigenmode_coefficients()                            */
 /*                                                              */
 /* the return value is an opaque pointer to an eigenmode_data   */
 /* structure (needs to be opaque to allow compilation without   */
@@ -313,7 +313,7 @@ static int nextpow2357(int n) {
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata) {
+                            void **user_mdata, diffractedplanewave *dp) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -538,7 +538,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   /*- part 2: newton iteration loop with call to MPB on each step */
   /*-         until eigenmode converged to requested tolerance    */
   /*--------------------------------------------------------------*/
-  if (am_master()) do {
+  if (am_master() && !dp) do {
       eigensolver(H, eigvals, maxwell_operator, (void *)mdata,
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 6)
                   NULL, NULL, /* eventually, we can support mu here */
@@ -590,6 +590,60 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       }
     } while (match_frequency &&
              fabs(sqrt(eigvals[band_num - 1]) - frequency) > frequency * match_tol);
+
+  if (dp) {
+    scalar_complex s = {real(dp->get_s()),imag(dp->get_s())};
+    scalar_complex p = {real(dp->get_p()),imag(dp->get_p())};
+
+    // compute sum of (kparallel+G)^2 in all the periodic directions
+    double k2sum = 0;
+    LOOP_OVER_DIRECTIONS(v.dim, dd) {
+      double ktmp = 0;
+      int m = 0;
+      if ((float(eig_vol.in_direction(dd)) == float(v.in_direction(dd))) &&
+          (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)) {
+        m = dp->get_g()[dd - X];
+        ktmp = kpoint.in_direction(dd) + m/v.in_direction(dd);
+        k2sum += ktmp*ktmp;
+      }
+    }
+
+    // compute kperp (if it is non evanescent) OR
+    // frequency from kperp^2 and sum of (kparallel+G)^2
+    LOOP_OVER_DIRECTIONS(v.dim, dd) {
+      if ((float(eig_vol.in_direction(dd)) != float(v.in_direction(dd))) &&
+          (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)) {
+        if (match_frequency) {
+          vec cen = eig_vol.center();
+          double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
+          double k2 = frequency*frequency*nn*nn - k2sum;
+          if (k2 < 0) {
+            master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent!\n",
+                          dp->get_g()[0],dp->get_g()[1],dp->get_g()[2]);
+            return NULL;
+          }
+          else if (k2 > 0)
+            k[dd - X] = sqrt(k2);
+        }
+        else
+          frequency = sqrt(kpoint.in_direction(dd)*kpoint.in_direction(dd) + k2sum);
+      }
+    }
+
+    if (am_master()) {
+      update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
+      maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
+      eigvals[band_num - 1] = frequency*frequency;
+      evectmatrix_resize(&W[0], 1, 0);
+      evectmatrix_resize(&W[1], 1, 0);
+      for (int i = 0; i < H.n; ++i)
+        W[0].data[i] = H.data[H.p - 1 + i * H.p];
+      maxwell_ucross_op(W[0], W[1], mdata, kdir); // W[1] = (dTheta/dk) W[0]
+      mpb_real vscratch;
+      evectmatrix_XtY_diag_real(W[0], W[1], &vgrp, &vscratch);
+      vgrp /= sqrt(eigvals[band_num - 1]);
+    }
+  }
 
   double eigval = eigvals[band_num - 1];
 
@@ -828,10 +882,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        double *cscale, direction d) {
+                                        double *cscale, direction d, diffractedplanewave *dp) {
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
-
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
     abort("flux regions for eigenmode projection with symmetry should be created by "
           "add_mode_monitor()");
@@ -847,13 +900,13 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       /*--------------------------------------------------------------*/
       /*- call mpb to compute the eigenmode --------------------------*/
       /*--------------------------------------------------------------*/
-      int band_num = bands[nb];
+      int band_num = bands ? bands[nb] : 1;
       double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
       am_now_working_on(MPBTime);
       void *mode_data =
           get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
-                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata);
+                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
@@ -908,7 +961,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata) {
+                            void **user_mdata, diffractedplanewave *dp) {
 
   (void)frequency;
   (void)d;
@@ -922,6 +975,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   (void)eigensolver_tol;
   (void)kdom;
   (void)user_mdata;
+  (void)dp;
   abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
@@ -951,7 +1005,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        double *cscale, direction d) {
+                                        double *cscale, direction d, diffractedplanewave *dp) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -967,7 +1021,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)kdom;
   (void)cscale;
   (void)d;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficient");
+  (void)dp;
+  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
 
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
@@ -1001,10 +1056,10 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        double *cscale) {
+                                        double *cscale, diffractedplanewave *dp) {
   get_eigenmode_coefficients(flux, eig_vol, bands, num_bands, parity, eig_resolution,
                              eigensolver_tol, coeffs, vgrp, user_kpoint_func, user_kpoint_data,
-                             kpoints, kdom, cscale, flux.normal_direction);
+                             kpoints, kdom, cscale, flux.normal_direction, dp);
 }
 
 } // namespace meep

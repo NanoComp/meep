@@ -99,6 +99,32 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
     else:
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
+class DiffractedPlanewave(object):
+    def __init__(self,
+                 g=None,
+                 axis=None,
+                 s=None,
+                 p=None):
+        self._g = g
+        self._axis = Vector3(*axis)
+        self._s = complex(s)
+        self._p = complex(p)
+
+    @property
+    def g(self):
+        return self._g
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @property
+    def s(self):
+        return self._s
+
+    @property
+    def p(self):
+        return self._p
 
 class PML(object):
     """
@@ -3257,25 +3283,60 @@ class Simulation(object):
         if direction is None or direction == mp.AUTOMATIC:
             direction = flux.normal_direction
 
-        num_bands = len(bands)
-        coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
-        vgrp = np.zeros(num_bands * flux.freq.size())
-        cscale = np.zeros(num_bands * flux.freq.size())
+        try:
+            bands_list_range = isinstance(bands, (list,range))
+        except TypeError:
+            bands_list_range = isinstance(bands, list)
 
-        kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
-            self.fields,
-            flux.swigobj,
-            eig_vol,
-            np.array(bands, dtype=np.intc),
-            eig_parity,
-            eig_resolution,
-            eig_tolerance,
-            coeffs,
-            vgrp,
-            kpoint_func,
-            cscale,
-            direction
-        )
+        if bands_list_range:
+            num_bands = len(bands)
+            coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
+            vgrp = np.zeros(num_bands * flux.freq.size())
+            cscale = np.zeros(num_bands * flux.freq.size())
+
+            kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
+                self.fields,
+                flux.swigobj,
+                eig_vol,
+                np.array(bands, dtype=np.intc),
+                eig_parity,
+                eig_resolution,
+                eig_tolerance,
+                coeffs,
+                vgrp,
+                kpoint_func,
+                cscale,
+                direction
+            )
+        elif isinstance(bands, DiffractedPlanewave):
+            num_bands = 1
+            coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
+            vgrp = np.zeros(num_bands * flux.freq.size())
+            cscale = np.zeros(num_bands * flux.freq.size())
+            diffractedplanewave_args = [
+                np.array(bands.g, dtype=np.intc),
+                np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64),
+                bands.s * 1.0,
+                bands.p * 1.0
+                ]
+            diffractedplanewave = mp.diffractedplanewave(*diffractedplanewave_args)
+
+            kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
+                self.fields,
+                flux.swigobj,
+                eig_vol,
+                diffractedplanewave,
+                eig_parity,
+                eig_resolution,
+                eig_tolerance,
+                coeffs,
+                vgrp,
+                kpoint_func,
+                cscale,
+                direction
+            )
+        else:
+            raise TypeError("get_eigenmode_coefficients: bands must be either a list or DiffractedPlanewave object")
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.freq.size(), 2)), vgrp, kpoints, kdom, cscale)
 
