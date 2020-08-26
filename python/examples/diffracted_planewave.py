@@ -128,9 +128,9 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
 
     if theta_in == 0:
       err = abs(tran_eig-tran_dp)/tran_eig
-      print("tran:, {}, {}, {}, {}, {}".format(band,tran_eig,order,tran_dp,err))
+      print("tran:, {:2d}, {:.8f}, {:2d}, {:.8f}, {:.8f}".format(band,tran_eig,order,tran_dp,err))
     else:
-      print("tran:, {}, {}, {}, {}".format(band,tran_eig,order,tran_dp))
+      print("tran:, {:2d}, {:.8f}, {:2d}, {:.8f}".format(band,tran_eig,order,tran_dp))
 
   flux = mp.get_fluxes(tran_mon)
   t_flux = flux[0]/input_flux[0]
@@ -138,10 +138,10 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
     t_flux = 0.5*t_flux
 
   err = abs(dp_sum-t_flux)/t_flux
-  print("flux:, {:.8f} (eig), {:.8f} (dp), {:.8f} (flux), {:.8f} (error)".format(eig_sum,
-                                                                                 dp_sum,
-                                                                                 t_flux,
-                                                                                 err))
+  print("flux:, {:.8f}, {:.8f}, {:.8f}, {:.8f}".format(eig_sum,
+                                                       dp_sum,
+                                                       t_flux,
+                                                       err))
 
 if __name__ == '__main__':
   binary_grating_diffraction(2.6,0.4,0.3,0)
