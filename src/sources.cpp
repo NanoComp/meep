@@ -310,6 +310,7 @@ void fields::add_srcdata(fields_chunk *fc, component c, src_time *src, size_t n,
   src_vol *tmp = new src_vol(c, src, n, idx_arr, amps_arr);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+  require_component(c);
 }
 
 static realnum *amp_func_data_re = NULL;
