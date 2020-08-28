@@ -100,13 +100,27 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
 class DiffractedPlanewave(object):
+    """
+    For mode decomposition, specify a diffracted planewave in homogeneous media. Passed as the argument `bands` of `get_eigenmode_coefficients` or `band_num` of `get_eigenmode`.
+    """
     def __init__(self,
                  g=None,
                  axis=None,
                  s=None,
                  p=None):
+        """
+        Construct a `DiffractedPlanewave`.
+
+        + **`g` [ list/tuple of `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. Elements should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor extends the entire length of the cell.
+
+        + **`axis` [ `Vector3` ]** — The reference axis used in combination with the mode's wavevector (via the cross product) to define the plane of incidence. If `None`, defaults to the first direction that lies in the plane of the monitor/source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
+
+        + **`s` [ `complex` ]** — The complex amplitude of the $\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
+
+        + **`p` [ `complex` ]** — The complex amplitude of the $\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
+        """
         self._g = g
-        self._axis = Vector3(*axis)
+        self._axis = axis
         self._s = complex(s)
         self._p = complex(p)
 
@@ -3313,9 +3327,22 @@ class Simulation(object):
             coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
             vgrp = np.zeros(num_bands * flux.freq.size())
             cscale = np.zeros(num_bands * flux.freq.size())
+            if bands.axis is None:
+                if flux.where.in_direction(mp.X) != 0:
+                    axis = np.array([1, 0, 0], dtype=np.float64)
+                elif flux.where.in_direction(mp.Y) != 0:
+                    axis = np.array([0, 1, 0], dtype=np.float64)
+                elif flux.where.in_direction(mp.Z) != 0:
+                    axis = np.array([0, 0, 1], dtype=np.float64)
+                else:
+                    raise ValueError("axis parameter of DiffractedPlanewave must be a non-zero Vector3")
+            elif isinstance(bands.axis,mp.Vector3):
+                axis = np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64)
+            else:
+                raise TypeError("axis parameter of DiffractedPlanewave must be a Vector3")
             diffractedplanewave_args = [
                 np.array(bands.g, dtype=np.intc),
-                np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64),
+                axis,
                 bands.s * 1.0,
                 bands.p * 1.0
                 ]
