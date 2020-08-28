@@ -10,7 +10,7 @@ VERSION=$1
 TAG=$2
 
 # Include the Git revision when the release tag is "alpha"
-if [ "$TAG" == "alpha" -a -e .git ]; then
+if [ "$TAG" = "alpha" -a -e .git ]; then
     REV=$(git rev-parse --short=6 HEAD)
 fi
 
