@@ -608,24 +608,21 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
     // compute kperp (if it is non evanescent) OR
     // frequency from kperp^2 and sum of (kparallel+G)^2
-    LOOP_OVER_DIRECTIONS(v.dim, dd) {
-      if (eig_vol.normal_direction() == dd) {
-        if (match_frequency) {
-          vec cen = eig_vol.center();
-          double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
-          double k2 = frequency*frequency*nn*nn - k2sum;
-          if (k2 < 0) {
-            master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent!\n",
-                          dp->get_g()[0],dp->get_g()[1],dp->get_g()[2]);
-            return NULL;
-          }
-          else if (k2 > 0)
-            k[dd - X] = sqrt(k2);
-        }
-        else
-          frequency = sqrt(kpoint.in_direction(dd)*kpoint.in_direction(dd) + k2sum);
+    const direction dd = eig_vol.normal_direction();
+    if (match_frequency) {
+      vec cen = eig_vol.center();
+      double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
+      double k2 = frequency*frequency*nn*nn - k2sum;
+      if (k2 < 0) {
+        master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent!\n",
+                      dp->get_g()[0],dp->get_g()[1],dp->get_g()[2]);
+        return NULL;
       }
+      else if (k2 > 0)
+        k[dd - X] = sqrt(k2);
     }
+    else
+      frequency = sqrt(kpoint.in_direction(dd)*kpoint.in_direction(dd) + k2sum);
 
     if (am_master()) {
       update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
