@@ -601,8 +601,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     LOOP_OVER_DIRECTIONS(v.dim, dd) {
       m = dp->get_g()[dd - X];
       ktmp = kpoint.in_direction(dd);
-      if ((m != 0) &&
-          (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic))
+      if (eig_vol.in_direction(dd) != 0)
         ktmp += m/eig_vol.in_direction(dd);
       k2sum += ktmp*ktmp;
     }
@@ -610,8 +609,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // compute kperp (if it is non evanescent) OR
     // frequency from kperp^2 and sum of (kparallel+G)^2
     LOOP_OVER_DIRECTIONS(v.dim, dd) {
-      if ((float(eig_vol.in_direction(dd)) == 0) &&
-          (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)) {
+      if (eig_vol.normal_direction() == dd) {
         if (match_frequency) {
           vec cen = eig_vol.center();
           double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
