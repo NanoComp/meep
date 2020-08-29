@@ -609,7 +609,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // compute kperp (if it is non evanescent) OR
     // frequency from kperp^2 and sum of (kparallel+G)^2
     {
-      const direction dd = eig_vol.normal_direction();
+      direction dd = eig_vol.normal_direction();
       if (match_frequency) {
         vec cen = eig_vol.center();
         double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
