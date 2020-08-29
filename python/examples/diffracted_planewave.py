@@ -39,9 +39,11 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
   # k (in source medium) with correct length (plane of incidence: XY)
   k = mp.Vector3(fcen*ng).rotate(mp.Vector3(z=1), theta_in)
 
+  symmetries = []
   if theta_in == 0:
     k = mp.Vector3()
     eig_parity += mp.ODD_Y
+    symmetries = [mp.Mirror(direction=mp.Y,phase=-1)]
 
   def pw_amp(k,x0):
     def _pw_amp(x):
@@ -60,7 +62,8 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
                       boundary_layers=pml_layers,
                       k_point=k,
                       default_material=glass,
-                      sources=sources)
+                      sources=sources,
+                      symmetries=symmetries)
 
   tran_pt = mp.Vector3(0.5*sx-dpml,0,0)
   tran_mon = sim.add_flux(fcen, 0, 1,
@@ -84,7 +87,8 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
                       boundary_layers=pml_layers,
                       geometry=geometry,
                       k_point=k,
-                      sources=sources)
+                      sources=sources,
+                      symmetries=symmetries)
 
   tran_mon = sim.add_mode_monitor(fcen, 0, 1,
                                   mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
