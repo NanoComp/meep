@@ -190,7 +190,7 @@ The following top-level function is also available:
 
 @@ get_eigenmode_freqs @@
 
-
+@@ DiffractedPlanewave[methods-with-docstrings] @@
 
 ### Energy Density Spectra
 
