@@ -162,7 +162,7 @@ Results for Method 1 for three different numbers of trials/iterations (10, 50, a
 ![](../images/stochastic_emitter_trials.png)
 </center>
 
-The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 results required almost *four days* whereas the Method 2 results were obtained in less than forty minutes.    In general, deterministic approaches tend to be more efficient than brute-force Monte-Carlo.
+The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 (labeled "Non Deterministic") results required almost *four days* whereas the Method 2 (labeled "Deterministic") results were obtained in 24 minutes. In general, deterministic approaches tend to be more efficient than brute-force Monte-Carlo.
 
 <center>
 ![](../images/stochastic_emitter_normalized_flux_comparison.png)
