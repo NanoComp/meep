@@ -3509,7 +3509,7 @@ plt.show()
 
   # x-directed Poynting flux through monitor from frequency-domain fields
   monitor        = mp.FluxRegion(center=mon_center, size=mon_size)
-  dft_cell       = sim.add_flux(freq, freq, 1, monitor)
+  dft_cell       = sim.add_flux(freq, 0, 1, monitor)
   sim.run(...)    # timestep until DFTs converged
   (Ey,Ez,Hy,Hz)  = [sim.get_dft_array(dft_cell,c,0) for c in [mp.Ey, mp.Ez, mp.Hy, mp.Hz]]
   (x,y,z,w)      = sim.get_array_metadata(dft=dft_cell)

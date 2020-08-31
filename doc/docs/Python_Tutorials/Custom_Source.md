@@ -174,7 +174,7 @@ Results for Method 1 for three different numbers of trials/iterations (10, 50, a
 ![](../images/stochastic_emitter_trials.png)
 </center>
 
-The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 results required almost *four days* of compute time using an Intel Xeon processor with two single-threaded cores at 3.8 GHz whereas the Method 2 results were obtained in 24 minutes.    In general, deterministic approaches tend to be more efficient than brute-force Monte-Carlo.
+The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 results (labeled "Non Deterministic") required almost *four days* of compute time using an Intel Xeon processor with two single-threaded cores at 3.8 GHz whereas the Method 2 results (labeled "Deterministic") were obtained in 24 minutes. In general, deterministic approaches tend to be more efficient than brute-force Monte-Carlo.
 
 <center>
 ![](../images/stochastic_emitter_normalized_flux_comparison.png)
@@ -350,7 +350,7 @@ plt.legend()
 plt.show()
 ```
 
-Results for Method 2 and 3 are shown in the following figure. The agreement is good but there is a significant difference in the runtime. Method 2 involves $N=75$ simulations each for the flat and textured surface for a total of 150 runs which required 10.6 hours. Method 3 involves $M=15$ simulations for the flat/textured surface for a total of 30 runs which required just 2.0 hours.
+Results for Method 2 and 3 are shown in the following figure. The agreement is good but there is a significant difference in the runtime. Method 2 (labeled "Point Source") involves $N=75$ simulations each for the flat and textured surface for a total of 150 runs which required 10.6 hours. Method 3 (labeled "Line Source") involves $M=15$ simulations for the flat/textured surface for a total of 30 runs which required just 2.0 hours.
 
 <center>
 ![](../images/stochastic_emitter_line_normalized_flux_comparison.png)
