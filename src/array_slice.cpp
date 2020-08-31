@@ -652,7 +652,7 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   if (full_rank == 0) return array;
 
   int reduced_rank = 0;
-  size_t reduced_dims[3] = {0,0,0}, reduced_stride[3] = {1, 1, 1};
+  size_t reduced_dims[3] = {0}, reduced_stride[3] = {1, 1, 1};
   direction reduced_dirs[3];
   for (int r = 0; r < full_rank; r++) {
     if (where.in_direction(dirs[r]) == 0.0)
@@ -661,6 +661,10 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
       reduced_dirs[reduced_rank] = dirs[r];
       reduced_dims[reduced_rank++] = dims[r];
     }
+  }
+  if (reduced_rank==0) {
+    *rank = 0;
+    return array; // return array as is for singleton use case
   }
   if (reduced_rank == full_rank) return array; // nothing to collapse
 
@@ -685,11 +689,6 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   /*--------------------------------------------------------------*/
   size_t reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
   size_t reduced_array_size = data_size * reduced_grid_size;
-  if (reduced_array_size==0) {
-    *rank = 0;
-    dims[0] = 0; dims[1] = 0; dims[2] = 0;
-    return array; // return array as is for singleton use case
-  }
   double *reduced_array = new double[reduced_array_size];
   if (!reduced_array) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
   memset(reduced_array, 0, reduced_array_size * sizeof(double));

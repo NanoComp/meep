@@ -443,7 +443,7 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
      return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, d);
     }
 
-    if ((rank == 0) && (dims[0] == 0)) // singleton results
+    if (rank == 0) // singleton results
      return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, dft_arr);
 
     size_t length = 1;
