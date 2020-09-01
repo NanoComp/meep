@@ -116,7 +116,8 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py coverage==4.5.4 coveralls matplotlib mkdocs==0.17.5 python-markdown-math mkdocs-material
+      - pip install numpy mpi4py scipy h5py coverage==4.5.4 coveralls matplotlib
+      - pip install -r doc/requirements.txt
   - python: "3.7"
     env:
       - MPICONF="--with-mpi"
@@ -131,7 +132,8 @@ matrix:
           - *common_deps
           - libhdf5-serial-dev
     install:
-      - pip install numpy mpi4py scipy h5py matplotlib mkdocs==0.17.5 python-markdown-math mkdocs-material
+      - pip install numpy mpi4py scipy h5py matplotlib
+      - pip install -r doc/requirements.txt
   - python: "3.5"
     env:
       - MPICONF="--with-mpi"
@@ -150,7 +152,8 @@ matrix:
           - libhdf5-openmpi-dev
           - python3-h5py
     install:
-      - pip install numpy mpi4py scipy matplotlib ipython mkdocs==0.17.5 python-markdown-math mkdocs-material
+      - pip install numpy mpi4py scipy matplotlib ipython
+      - pip install -r doc/requirements.txt
 
 
 ##################################################
