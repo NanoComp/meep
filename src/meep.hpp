@@ -1732,7 +1732,8 @@ public:
                             const volume &eig_vol, int band_num, const vec &kpoint,
                             bool match_frequency, int parity, double eig_resolution,
                             double eigensolver_tol, std::complex<double> amp,
-                            std::complex<double> A(const vec &) = 0);
+                            std::complex<double> A(const vec &) = 0,
+                            diffractedplanewave *dp = 0);
 
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,

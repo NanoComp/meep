@@ -99,9 +99,31 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
     else:
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
+def bands_to_diffractedplanewave(where,bands):
+    if bands.axis is None:
+        if where.in_direction(mp.X) != 0:
+            axis = np.array([1, 0, 0], dtype=np.float64)
+        elif where.in_direction(mp.Y) != 0:
+            axis = np.array([0, 1, 0], dtype=np.float64)
+        elif where.in_direction(mp.Z) != 0:
+            axis = np.array([0, 0, 1], dtype=np.float64)
+        else:
+            raise ValueError("axis parameter of DiffractedPlanewave must be a non-zero Vector3")
+    elif isinstance(bands.axis,mp.Vector3):
+        axis = np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64)
+    else:
+        raise TypeError("axis parameter of DiffractedPlanewave must be a Vector3")
+    diffractedplanewave_args = [
+        np.array(bands.g, dtype=np.intc),
+        axis,
+        bands.s * 1.0,
+        bands.p * 1.0
+    ]
+    return mp.diffractedplanewave(*diffractedplanewave_args)
+
 class DiffractedPlanewave(object):
     """
-    For mode decomposition, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients` or `band_num` of `get_eigenmode`.
+    For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
     """
     def __init__(self,
                  g=None,
@@ -2268,13 +2290,19 @@ class Simulation(object):
             eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions,
                              is_cylindrical=self.is_cylindrical).swigobj
 
+            if isinstance(src.eig_band, DiffractedPlanewave):
+                eig_band = 1
+                diffractedplanewave = bands_to_diffractedplanewave(where, src.eig_band)
+            elif isinstance(src.eig_band, int):
+                eig_band = src.eig_band
+
             add_eig_src_args = [
                 src.component,
                 src.src.swigobj,
                 direction,
                 where,
                 eig_vol,
-                src.eig_band,
+                eig_band,
                 py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
                 src.eig_match_freq,
                 src.eig_parity,
@@ -2284,10 +2312,16 @@ class Simulation(object):
             ]
             add_eig_src = functools.partial(self.fields.add_eigenmode_source, *add_eig_src_args)
 
-            if src.amp_func is None:
-                add_eig_src()
+            if isinstance(src.eig_band, DiffractedPlanewave):
+                if src.amp_func is None:
+                    add_eig_src(lambda v: 1.0, diffractedplanewave)
+                else:
+                    add_eig_src(src.amp_func, diffractedplanewave)
             else:
-                add_eig_src(src.amp_func)
+                if src.amp_func is None:
+                    add_eig_src()
+                else:
+                    add_eig_src(src.amp_func)
         elif isinstance (src, GaussianBeamSource):
             gaussianbeam_args = [
                 py_v3_to_vec(self.dimensions, src.beam_x0, is_cylindrical=self.is_cylindrical),
@@ -3327,26 +3361,7 @@ class Simulation(object):
             coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
             vgrp = np.zeros(num_bands * flux.freq.size())
             cscale = np.zeros(num_bands * flux.freq.size())
-            if bands.axis is None:
-                if flux.where.in_direction(mp.X) != 0:
-                    axis = np.array([1, 0, 0], dtype=np.float64)
-                elif flux.where.in_direction(mp.Y) != 0:
-                    axis = np.array([0, 1, 0], dtype=np.float64)
-                elif flux.where.in_direction(mp.Z) != 0:
-                    axis = np.array([0, 0, 1], dtype=np.float64)
-                else:
-                    raise ValueError("axis parameter of DiffractedPlanewave must be a non-zero Vector3")
-            elif isinstance(bands.axis,mp.Vector3):
-                axis = np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64)
-            else:
-                raise TypeError("axis parameter of DiffractedPlanewave must be a Vector3")
-            diffractedplanewave_args = [
-                np.array(bands.g, dtype=np.intc),
-                axis,
-                bands.s * 1.0,
-                bands.p * 1.0
-                ]
-            diffractedplanewave = mp.diffractedplanewave(*diffractedplanewave_args)
+            diffractedplanewave = bands_to_diffractedplanewave(flux.where, bands)
 
             kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
                 self.fields,
