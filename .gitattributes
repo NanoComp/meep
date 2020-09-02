@@ -1,0 +1,4 @@
+python/examples/* linguist-documentation
+python/tests/* linguist-documentation
+tests/* linguist-documentation
+scheme/examples/* linguist-documentation
