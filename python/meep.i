@@ -696,13 +696,17 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for amplitude function
 
 %typecheck(SWIG_TYPECHECK_POINTER) std::complex<double> (*)(const meep::vec &) {
-  $1 = PyCallable_Check($input);
+  $1 = $input == Py_None || PyCallable_Check($input);
 }
 
 %typemap(in) std::complex<double> (*)(const meep::vec &) {
-    $1 = py_amp_func_wrap;
-    py_amp_func = $input;
-    Py_INCREF(py_amp_func);
+     if ($input != Py_None) {
+          $1 = py_amp_func_wrap;
+          py_amp_func = $input;
+          Py_INCREF(py_amp_func);
+     }
+     else
+          $1 = NULL;
 }
 
 %typemap(freearg) std::complex<double> (*)(const meep::vec &) {

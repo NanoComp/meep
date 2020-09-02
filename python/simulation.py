@@ -2313,15 +2313,9 @@ class Simulation(object):
             add_eig_src = functools.partial(self.fields.add_eigenmode_source, *add_eig_src_args)
 
             if isinstance(src.eig_band, DiffractedPlanewave):
-                if src.amp_func is None:
-                    add_eig_src(lambda v: 1.0, diffractedplanewave)
-                else:
-                    add_eig_src(src.amp_func, diffractedplanewave)
+                add_eig_src(src.amp_func, diffractedplanewave)
             else:
-                if src.amp_func is None:
-                    add_eig_src()
-                else:
-                    add_eig_src(src.amp_func)
+                add_eig_src(src.amp_func)
         elif isinstance (src, GaussianBeamSource):
             gaussianbeam_args = [
                 py_v3_to_vec(self.dimensions, src.beam_x0, is_cylindrical=self.is_cylindrical),
