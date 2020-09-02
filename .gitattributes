@@ -1,4 +1,5 @@
 python/examples/* linguist-documentation
+python/examples/adjoint_optimization/* linguist-documentation
 python/tests/* linguist-documentation
 tests/* linguist-documentation
 scheme/examples/* linguist-documentation
