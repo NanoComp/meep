@@ -313,7 +313,6 @@ class Far_Coefficients_src(ObjectiveQuantitiy):
 
 
         for near_data in self.all_nearsrcdata:
-            dft_chunk = near_data.fc
             cur_comp = near_data.near_fd_comp
             amp_arr = near_data.amp_arr
 

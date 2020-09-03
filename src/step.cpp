@@ -23,7 +23,7 @@
 #include "meep_internals.hpp"
 
 #include "config.h"
-
+#include <iostream>
 #define RESTRICT
 
 using namespace std;

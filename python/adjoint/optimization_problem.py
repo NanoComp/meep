@@ -247,7 +247,7 @@ class OptimizationProblem(object):
                     amps_arr_vec = mp.ComplexVector(num_pts)
                     for i in range(num_pts):
                         amps_arr_vec[i] = lincoeff[basis_i, i]
-                    self.sim.fields.add_srcdata(srcdata.fc, srcdata.near_fd_comp, basisfunc[basis_i].swigobj, num_pts, srcdata.idx_arr, amps_arr_vec)
+                    self.sim.fields.add_srcdata(srcdata, basisfunc[basis_i].swigobj, num_pts, amps_arr_vec)
 
         else:
             # Update the sources
@@ -472,13 +472,20 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
                     #relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
 
                     if previous_fields[mi][ic] is not None:
-                        relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])
-                        relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
+                        if np.sum(np.abs(previous_fields[mi][ic] - current_fields[mi][ic])) == 0:
+                            relative_change.append(0)
+                        elif np.all(np.abs(previous_fields[mi][ic])):
+                            relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])
+                            relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
+                        else:
+                            relative_change.append(1)
+
                     else:
                         relative_change.append(1)
 
 
             relative_change = np.mean(relative_change) # average across monitors
+            print(relative_change)
             closure['previous_fields'] = current_fields
             closure['t0'] = sim.round_time()
 

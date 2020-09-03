@@ -22,7 +22,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
-
+#include <iostream>
 using namespace std;
 
 namespace meep {
@@ -304,11 +304,19 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
 }
 
-void fields::add_srcdata(fields_chunk *fc, component c, src_time *src, size_t n, std::vector<ptrdiff_t> idx_arr_vec, std::vector<std::complex<double> > amps_arr_vec){
-  ptrdiff_t* idx_arr = &idx_arr_vec[0];
-  std::complex<double> *amps_arr = &amps_arr_vec[0];
-  src_vol *tmp = new src_vol(c, src, n, idx_arr, amps_arr);
+void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec){
+  ptrdiff_t* index_arr = new ptrdiff_t[n];
+  for (size_t i = 0; i < n; i++)
+    index_arr[i] = cur_data.idx_arr[i];
+  cur_data.idx_arr.data();
+  component c = cur_data.near_fd_comp;
+  complex<double> *amps_arr = new complex<double>[n];
+  for (size_t i = 0; i < n; i++){
+    amps_arr[i] = amps_arr_vec[i];
+  }
+  src_vol *tmp = new src_vol(c, src, n, index_arr, amps_arr);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
+  fields_chunk *fc = chunks[cur_data.fc_idx];
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
   require_component(c);
 }

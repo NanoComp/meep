@@ -727,7 +727,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
       std::complex<double> EH6[6];
       size_t idx_dft = 0;
 
-      sourcedata temp_struct = {component(f->c), idx_arr, f->fc, amp_arr};
+      sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
       //temp.push_back(temp_struct);
 
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {

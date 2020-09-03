@@ -54,7 +54,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i);
   FOR_FIELD_TYPES(ft) {
     for (int ip = 0; ip < 3; ip++) {
       comm_sizes[ft][ip] = new size_t[num_chunks * num_chunks];
@@ -111,7 +111,7 @@ fields::fields(const fields &thef)
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new fields_chunk(*thef.chunks[i]);
+    chunks[i] = new fields_chunk(*thef.chunks[i], i);
   FOR_FIELD_TYPES(ft) {
     for (int ip = 0; ip < 3; ip++) {
       comm_sizes[ft][ip] = new size_t[num_chunks * num_chunks];
@@ -208,10 +208,11 @@ fields_chunk::~fields_chunk() {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
-                           bool zero_fields_near_cylorigin)
+                           bool zero_fields_near_cylorigin, int chunkidx)
     : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
       beta(beta) {
   s = the_s;
+  chunk_idx = chunkidx;
   s->refcount++;
   outdir = od;
   new_s = NULL;
@@ -267,7 +268,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   figure_out_step_plan();
 }
 
-fields_chunk::fields_chunk(const fields_chunk &thef) : gv(thef.gv), v(thef.v) {
+fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv), v(thef.v) {
+  chunk_idx = chunkidx;
   s = thef.s;
   s->refcount++;
   outdir = thef.outdir;

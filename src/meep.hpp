@@ -26,6 +26,7 @@
 
 #include <vector>
 
+#include <iostream>
 namespace meep {
 
 /* We use the type realnum for large arrays, e.g. the fields.
@@ -941,6 +942,7 @@ public:
   }
   virtual std::complex<double> dipole(double time) const {
     float rtime = float(time);
+    std::cout<<rtime<<" "<<start_time<<" "<<end_time<<"\n";
     if (rtime >= start_time && rtime <= end_time)
       return func(time, data);
     else
@@ -1199,7 +1201,7 @@ struct near_data{
 struct sourcedata{
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
-  fields_chunk *fc;
+  int fc_idx;
   std::vector<std::vector<std::complex<double> > > amp_arr;
 
 };
@@ -1370,11 +1372,12 @@ public:
   structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
+  int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin);
+               bool zero_fields_near_cylorigin, int chunkidx);
 
-  fields_chunk(const fields_chunk &);
+  fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
 
   void use_real_fields();
@@ -1726,7 +1729,7 @@ public:
   void require_component(component c);
 
 
-  void add_srcdata(fields_chunk *fc, component c, src_time *src, size_t n, std::vector<ptrdiff_t> idx_arr_vec, std::vector<std::complex<double> > amps_arr_vec);
+  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec);
 
   // mpb.cpp
 
