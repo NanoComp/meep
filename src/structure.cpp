@@ -619,7 +619,7 @@ structure_chunk::~structure_chunk() {
     delete[] chi2[c];
     delete[] chi3[c];
   }
-  FOR_DIRECTIONS(d) {
+  for (int d = 0; d < 6; ++d) {
     delete[] sig[d];
     delete[] kap[d];
     delete[] siginv[d];
@@ -977,7 +977,7 @@ structure_chunk::structure_chunk(const grid_volume &thegv, const volume &vol_lim
     condinv[c][d] = NULL;
   }
   condinv_stale = false;
-  FOR_DIRECTIONS(d) {
+  for (int d = 0; d < 6; ++d) {
     sig[d] = NULL;
     kap[d] = NULL;
     siginv[d] = NULL;

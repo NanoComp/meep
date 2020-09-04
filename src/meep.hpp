@@ -573,8 +573,8 @@ public:
   realnum *conductivity[NUM_FIELD_COMPONENTS][5];
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale;                        // true if condinv needs to be recomputed
-  double *sig[5], *kap[5], *siginv[5];       // conductivity array for uPML
-  int sigsize[5];                            // conductivity array size
+  double *sig[6], *kap[6], *siginv[6];       // conductivity array for uPML
+  int sigsize[6];                            // conductivity array size
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
   susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
