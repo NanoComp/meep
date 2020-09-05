@@ -619,7 +619,7 @@ structure_chunk::~structure_chunk() {
     delete[] chi2[c];
     delete[] chi3[c];
   }
-  for (int d = 0; d < 6; ++d) {
+  FOR_DIRECTIONS(d) {
     delete[] sig[d];
     delete[] kap[d];
     delete[] siginv[d];
@@ -820,7 +820,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   }
   condinv_stale = o->condinv_stale;
   // Allocate the PML conductivity arrays:
-  FOR_DIRECTIONS(d) {
+  for (int d = 0; d < 6; ++d) {
     sig[d] = NULL;
     kap[d] = NULL;
     siginv[d] = NULL;
