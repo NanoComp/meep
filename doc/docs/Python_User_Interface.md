@@ -7001,6 +7001,133 @@ search for. Defaults to 100.
 
 </div>
 
+---
+<a id="Verbosity"></a>
+
+### Verbosity
+
+```python
+class Verbosity(object):
+```
+
+<div class="class_docstring" markdown="1">
+
+A class to help make accessing and setting the global verbosity level a bit
+more pythonic. It manages one or more verbosity flags that are located in
+the C/C++ libraries used by Meep.
+
+The verbosity levels are:
+
+* 0: minimal output
+* 1: a little
+* 2: a lot (default)
+* 3: debugging
+
+An instace of `Verbosity` is created when meep is imported, and is accessible
+as `mp.verbosity`.
+
+Note that this class is a Singleton, meaning that each call to
+`Verbosity(cvar)` gives you the same instance. The new `cvar` will be added to a
+list of verbosity flags managed by this class.
+
+</div>
+
+
+
+<a id="Verbosity.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+<<<<<<< HEAD
+def quiet(quietval=True):
+=======
+def __init__(self, cvar=None, initial_level=None): 
+>>>>>>> Regenerate Python_User_Interface.md
+```
+
+<div class="method_docstring" markdown="1">
+
+See add_verbosity_var()
+
+</div>
+
+</div>
+
+<<<<<<< HEAD
+@@ verbosity @@
+=======
+<a id="Verbosity.__call__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __call__(self, level): 
+```
+
+<div class="method_docstring" markdown="1">
+
+Convenience for setting the verbosity level. This lets you set the level
+by calling the instance like a function. For example, if `verbosity` is
+an instance of this class, then it's value can be changed like this:
+
+```
+verbosity(0)
+```
+
+</div>
+
+</div>
+
+<a id="Verbosity.add_verbosity_var"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def add_verbosity_var(self, cvar=None, initial_level=None): 
+```
+
+<div class="method_docstring" markdown="1">
+
+Add a new verbosity flag to be managed. `cvar` should be some object
+that has a `verbosity` attribute, such as `meep.cvar` or `mpb.cvar`.
+
+</div>
+
+</div>
+
+<a id="Verbosity.get"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get(self): 
+```
+
+<div class="method_docstring" markdown="1">
+
+Returns the current verbosity level.
+
+</div>
+
+</div>
+
+<a id="Verbosity.set"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def set(self, level): 
+```
+
+<div class="method_docstring" markdown="1">
+
+Validates the range, and sets the global verbosity level. Returns the
+former value.
+
+</div>
+
+</div>
 
 
 Miscellaneous Functions Reference
@@ -7010,7 +7137,7 @@ Miscellaneous Functions Reference
 <a id="quiet"></a>
 
 ```python
-def quiet(quietval=True):
+def quiet(quietval=True): 
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7020,9 +7147,10 @@ This output can be suppressed by calling this function with `True` (the default)
 output can be enabled again by passing `False`. This sets a global variable, so the
 value will persist across runs within the same script.
 
-</div>
+This function is deprecated, please use the [Verbosity](#verbosity) class instead.
 
-@@ verbosity @@
+</div>
+>>>>>>> Regenerate Python_User_Interface.md
 
 
 <a id="interpolate"></a>
