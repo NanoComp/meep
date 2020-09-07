@@ -140,6 +140,8 @@ class DiffractedPlanewave(object):
     def p(self):
         return self._p
 
+DefaultPMLProfile = lambda u: u * u
+
 class PML(object):
     """
     This class is used for specifying the PML absorbing boundary layers around the cell,
@@ -155,7 +157,7 @@ class PML(object):
                  side=mp.ALL,
                  R_asymptotic=1e-15,
                  mean_stretch=1.0,
-                 pml_profile=lambda u: u * u):
+                 pml_profile=DefaultPMLProfile):
         """
         + **`thickness` [`number`]** — The spatial thickness of the PML layer which
           extends from the boundary towards the *inside* of the cell. The thinner it is,
