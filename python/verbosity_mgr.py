@@ -8,14 +8,18 @@ class Verbosity(object):
     more pythonic. It manages one or more verbosity flags that are located in
     the C/C++ libraries used by Meep.
 
-    Verbosity levels are:
-        0: minimal output
-        1: a little
-        2: a lot (default)
-        3: debugging
+    The verbosity levels are:
+
+    * 0: minimal output
+    * 1: a little
+    * 2: a lot
+    * 3: debugging
+
+    An instace of `Verbosity` is created when meep is imported, and is accessible
+    as `mp.verbosity`.
 
     Note that this class is a Singleton, meaning that each call to
-    Verbosity(cvar) gives you the same instance. The new cvar will be added to a
+    `Verbosity(cvar)` gives you the same instance. The new `cvar` will be added to a
     list of verbosity flags managed by this class.
     """
     _instance = None
@@ -37,13 +41,13 @@ class Verbosity(object):
         self._cvars = list()
 
     def __init__(self, cvar=None, initial_level=None):
-        """See add_verbosity_var()"""
+        """See `add_verbosity_var()`"""
         self.add_verbosity_var(cvar, initial_level)
 
     def add_verbosity_var(self, cvar=None, initial_level=None):
         """
         Add a new verbosity flag to be managed. `cvar` should be some object
-        that has a `verbosity` attribute, such as meep.cvar or mpb.cvar.
+        that has a `verbosity` attribute, such as `meep.cvar` or `mpb.cvar`.
         """
         if cvar is None or not hasattr(cvar, 'verbosity'):
             # If we're not given a module.cvar (e.g., while testing) or if the
@@ -64,6 +68,11 @@ class Verbosity(object):
         return self._master_verbosity
 
     def get_all(self):
+        """
+        Return a list of the values of all verbosity flags being managed. This
+        is mostly indended for debugging this class and won't likely be useful
+        otherwise.
+        """
         return [cvar.verbosity for cvar in self._cvars ]
 
     def set(self, level):
