@@ -7020,11 +7020,11 @@ The verbosity levels are:
 
 * 0: minimal output
 * 1: a little
-* 2: a lot (default)
+* 2: a lot
 * 3: debugging
 
 An instace of `Verbosity` is created when meep is imported, and is accessible
-as `mp.verbosity`.
+as `meep.verbosity`.
 
 Note that this class is a Singleton, meaning that each call to
 `Verbosity(cvar)` gives you the same instance. The new `cvar` will be added to a
@@ -7048,7 +7048,7 @@ def __init__(self, cvar=None, initial_level=None):
 
 <div class="method_docstring" markdown="1">
 
-See add_verbosity_var()
+See `add_verbosity_var()`
 
 </div>
 

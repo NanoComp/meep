@@ -16,7 +16,7 @@ class Verbosity(object):
     * 3: debugging
 
     An instace of `Verbosity` is created when meep is imported, and is accessible
-    as `mp.verbosity`.
+    as `meep.verbosity`.
 
     Note that this class is a Singleton, meaning that each call to
     `Verbosity(cvar)` gives you the same instance. The new `cvar` will be added to a
