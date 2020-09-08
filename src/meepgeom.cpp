@@ -2402,7 +2402,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
     return; /* no material grids at this point */
 
   // Calculate the number of material grids if we are averaging values
-  if ((kind = mg->material_grid_kinds) == material_data::U_SUM) {
+  if ((tp) && ((kind = mg->material_grid_kinds) == material_data::U_SUM)) {
     int matgrid_val_count = 0;
     geom_box_tree tp_sum;
     tp_sum = geom_tree_search(p, geometry_tree, &ois);
