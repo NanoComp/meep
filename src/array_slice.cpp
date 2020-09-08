@@ -652,7 +652,7 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   if (full_rank == 0) return array;
 
   int reduced_rank = 0;
-  size_t reduced_dims[3] = {0}, reduced_stride[3] = {1, 1, 1};
+  size_t reduced_dims[3], reduced_stride[3] = {1, 1, 1};
   direction reduced_dirs[3];
   for (int r = 0; r < full_rank; r++) {
     if (where.in_direction(dirs[r]) == 0.0)
@@ -677,11 +677,8 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   else if (full_rank == 3) {
     stride[0] = dims[1] * dims[2];
     stride[1] = dims[2];
-    if (reduced_stride[0] != 0)
-      reduced_stride[0] = reduced_dims[1];
-    else if (reduced_stride[1] != 0)
-      reduced_stride[1] = reduced_dims[1];
-    // else: two degenerate dimensions->reduced array is 1-diml, no strides needed
+    if (reduced_rank == 2)
+      reduced_stride[reduced_stride[0] != 0 ? 0 : 1] = reduced_dims[1];
   }
 
   /*--------------------------------------------------------------*/
