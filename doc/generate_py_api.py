@@ -170,6 +170,13 @@ class FunctionItem(Item):
             else:
                 default = self.transform_node(name, node)
                 transformed.append("{}={}".format(name, default))
+
+        # Check for vararg (like *foo) and kwarg (like **bar) parameters
+        if func.args.vararg is not None:
+            transformed.append('*{}'.format(func.args.vararg.arg))
+        if func.args.kwarg is not None:
+            transformed.append('**{}'.format(func.args.kwarg.arg))
+
         return transformed
 
     def transform_node(self, name, node):
