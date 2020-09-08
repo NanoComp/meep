@@ -368,7 +368,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 <div class="class_members" markdown="1">
 
 ```python
-def run(self):
+def run(self, *step_funcs, **kwargs):
 def run(step_functions..., until=condition/time):
 def run(step_functions..., until_after_sources=condition/time):
 ```
@@ -675,7 +675,7 @@ of the field at that point.
 <div class="class_members" markdown="1">
 
 ```python
-def add_dft_fields(self):
+def add_dft_fields(self, *args, **kwargs):
 def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False):
 ```
 
@@ -1047,7 +1047,7 @@ Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accum
 <div class="class_members" markdown="1">
 
 ```python
-def add_flux(self):
+def add_flux(self, *args):
 def add_flux(fcen, df, nfreq, freq, FluxRegions...):
 ```
 
@@ -1081,7 +1081,7 @@ Once you have called `add_flux`, the Fourier transforms of the fields are accumu
 <div class="class_members" markdown="1">
 
 ```python
-def display_fluxes(self):
+def display_fluxes(self, *fluxes):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1307,7 +1307,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 <div class="class_members" markdown="1">
 
 ```python
-def add_mode_monitor(self):
+def add_mode_monitor(self, *args, **kwargs):
 def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...):
 ```
 
@@ -1437,7 +1437,7 @@ The usage is similar to the flux spectra: you define a set of [`EnergyRegion`](#
 <div class="class_members" markdown="1">
 
 ```python
-def add_energy(self):
+def add_energy(self, *args):
 def add_energy(fcen, df, nfreq, freq, EnergyRegions...):
 ```
 
@@ -1471,7 +1471,7 @@ Once you have called `add_energy`, the Fourier transforms of the fields are accu
 <div class="class_members" markdown="1">
 
 ```python
-def display_electric_energy(self):
+def display_electric_energy(self, *energys):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1491,7 +1491,7 @@ column are the frequencies, and subsequent columns are the energy density spectr
 <div class="class_members" markdown="1">
 
 ```python
-def display_magnetic_energy(self):
+def display_magnetic_energy(self, *energys):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1511,7 +1511,7 @@ column are the frequencies, and subsequent columns are the energy density spectr
 <div class="class_members" markdown="1">
 
 ```python
-def display_total_energy(self):
+def display_total_energy(self, *energys):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1663,7 +1663,7 @@ The usage is similar to the [flux spectra](Python_Tutorials/Basics.md#transmitta
 <div class="class_members" markdown="1">
 
 ```python
-def add_force(self):
+def add_force(self, *args):
 def add_force(fcen, df, nfreq, freq, ForceRegions...):
 ```
 
@@ -1697,7 +1697,7 @@ Once you have called `add_force`, the Fourier transforms of the fields are accum
 <div class="class_members" markdown="1">
 
 ```python
-def display_forces(self):
+def display_forces(self, *forces):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1870,7 +1870,7 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 <a id="Ldos"></a>
 
 ```python
-def Ldos():
+def Ldos(*args):
 def Ldos(fcen, df, nfreq, freq):
 ```
 
@@ -1900,7 +1900,7 @@ spectrum for.
 <a id="dft_ldos"></a>
 
 ```python
-def dft_ldos():
+def dft_ldos(*args, **kwargs):
 def dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None):
 ```
 
@@ -1942,7 +1942,7 @@ There are three steps to using the near-to-far-field feature: first, define the 
 <div class="class_members" markdown="1">
 
 ```python
-def add_near2far(self):
+def add_near2far(self, *args, **kwargs):
 def add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1):
 ```
 
@@ -2423,7 +2423,8 @@ def plot2D(self,
            plot_eps_flag=True,
            plot_sources_flag=True,
            plot_monitors_flag=True,
-           plot_boundaries_flag=True):
+           plot_boundaries_flag=True,
+           **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2561,7 +2562,7 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 <div class="class_members" markdown="1">
 
 ```python
-def run(self):
+def run(self, *step_funcs, **kwargs):
 def run(step_functions..., until=condition/time):
 def run(step_functions..., until_after_sources=condition/time):
 ```
@@ -2730,7 +2731,7 @@ suffix).
 <a id="output_epsilon"></a>
 
 ```python
-def output_epsilon(sim):
+def output_epsilon(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2746,7 +2747,7 @@ frequency-independent part of ε (the $\omega\to\infty$ limit).
 <a id="output_mu"></a>
 
 ```python
-def output_mu(sim):
+def output_mu(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3560,7 +3561,7 @@ Rather than writing a brand-new step function every time something a bit differe
 <a id="combine_step_funcs"></a>
 
 ```python
-def combine_step_funcs():
+def combine_step_funcs(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3573,7 +3574,7 @@ all of the passed step functions.
 <a id="synchronized_magnetic"></a>
 
 ```python
-def synchronized_magnetic():
+def synchronized_magnetic(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3592,7 +3593,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="when_true"></a>
 
 ```python
-def when_true(cond):
+def when_true(cond, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3605,7 +3606,7 @@ no arguments), evaluate the step functions whenever `condition` returns `True`.
 <a id="when_false"></a>
 
 ```python
-def when_false(cond):
+def when_false(cond, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3618,7 +3619,7 @@ no arguments), evaluate the step functions whenever `condition` returns `False`.
 <a id="at_every"></a>
 
 ```python
-def at_every(dt):
+def at_every(dt, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3631,7 +3632,7 @@ Given zero or more step functions, evaluates them at every time interval of $dT$
 <a id="after_time"></a>
 
 ```python
-def after_time(t):
+def after_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3644,7 +3645,7 @@ units have elapsed from the start of the run.
 <a id="before_time"></a>
 
 ```python
-def before_time(t):
+def before_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3657,7 +3658,7 @@ units have elapsed from the start of the run.
 <a id="at_time"></a>
 
 ```python
-def at_time(t):
+def at_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3670,7 +3671,7 @@ have elapsed from the start of the run.
 <a id="after_sources"></a>
 
 ```python
-def after_sources():
+def after_sources(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3683,7 +3684,7 @@ sources have turned off.
 <a id="after_sources_and_time"></a>
 
 ```python
-def after_sources_and_time(t):
+def after_sources_and_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3696,7 +3697,7 @@ sources have turned off, plus an additional $T$ time units have elapsed.
 <a id="during_sources"></a>
 
 ```python
-def during_sources():
+def during_sources(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3709,7 +3710,7 @@ sources have turned off.
 <a id="at_beginning"></a>
 
 ```python
-def at_beginning():
+def at_beginning(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3722,7 +3723,7 @@ run.
 <a id="at_end"></a>
 
 ```python
-def at_end():
+def at_end(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3738,7 +3739,7 @@ Given zero or more step functions, evaluates them only once, at the end of the r
 <a id="in_volume"></a>
 
 ```python
-def in_volume(v):
+def in_volume(v, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3752,7 +3753,7 @@ output a subset (or a superset) of the cell, corresponding to the `meep::volume*
 <a id="in_point"></a>
 
 ```python
-def in_point(pt):
+def in_point(pt, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3765,7 +3766,7 @@ output a single *point* of data, at `pt` (a `Vector3`).
 <a id="to_appended"></a>
 
 ```python
-def to_appended(fname):
+def to_appended(fname, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3780,7 +3781,7 @@ dimension* to their datasets, corresponding to time.
 <a id="with_prefix"></a>
 
 ```python
-def with_prefix(pre):
+def with_prefix(pre, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -4171,7 +4172,7 @@ the parameters (in addition to σ):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, frequency=0.0, gamma=0.0):
+def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4211,7 +4212,7 @@ Dispersion](Materials.md#material-dispersion), with the parameters (in addition 
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, frequency=0.0, gamma=0.0):
+def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4252,7 +4253,10 @@ Absorption](Materials.md#saturable-gain-and-absorption).
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, initial_populations=[], transitions=[]):
+def __init__(self,
+             initial_populations=[],
+             transitions=[],
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4352,7 +4356,7 @@ space and time, zero mean) added to the **P** damped-oscillator equation.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, noise_amp=0.0):
+def __init__(self, noise_amp=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4403,7 +4407,7 @@ space and time, zero mean) added to the **P** damped-oscillator equation.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, noise_amp=0.0):
+def __init__(self, noise_amp=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4454,7 +4458,7 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, bias=Vector3<0.0, 0.0, 0.0>):
+def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4493,7 +4497,7 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, bias=Vector3<0.0, 0.0, 0.0>):
+def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4538,7 +4542,8 @@ def __init__(self,
              bias=Vector3<0.0, 0.0, 0.0>,
              frequency=0.0,
              gamma=0.0,
-             alpha=0.0):
+             alpha=0.0,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5056,7 +5061,7 @@ Represents a sphere.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, radius):
+def __init__(self, radius, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5101,7 +5106,8 @@ A cylinder, with circular cross-section and finite height.
 def __init__(self,
              radius,
              axis=Vector3<0.0, 0.0, 1.0>,
-             height=1e+20):
+             height=1e+20,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5137,7 +5143,8 @@ Represents a cylindrical wedge.
 def __init__(self,
              radius,
              wedge_angle=6.283185307179586,
-             wedge_start=Vector3<1.0, 0.0, 0.0>):
+             wedge_start=Vector3<1.0, 0.0, 0.0>,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5174,7 +5181,7 @@ is halfway between the two circular ends.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, radius, radius2=0):
+def __init__(self, radius, radius2=0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5215,7 +5222,8 @@ def __init__(self,
              size,
              e1=Vector3<1.0, 0.0, 0.0>,
              e2=Vector3<0.0, 1.0, 0.0>,
-             e3=Vector3<0.0, 0.0, 1.0>):
+             e3=Vector3<0.0, 0.0, 1.0>,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5257,7 +5265,7 @@ properties, but defines an ellipsoid inscribed inside the block.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self):
+def __init__(self, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5295,7 +5303,8 @@ def __init__(self,
              height,
              axis=Vector3<0.0, 0.0, 1.0>,
              center=None,
-             sidewall_angle=0):
+             sidewall_angle=0,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5905,7 +5914,8 @@ def __init__(self,
              eig_match_freq=True,
              eig_parity=mp.NO_PARITY,
              eig_resolution=0,
-             eig_tolerance=1e-12):
+             eig_tolerance=1e-12,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6042,7 +6052,8 @@ def __init__(self,
              beam_x0=Vector3<0.0, 0.0, 0.0>,
              beam_kdir=Vector3<0.0, 0.0, 0.0>,
              beam_w0=None,
-             beam_E0=Vector3<0.0, 0.0, 0.0>):
+             beam_E0=Vector3<0.0, 0.0, 0.0>,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6093,7 +6104,8 @@ def __init__(self,
              width=0,
              fwidth=inf,
              cutoff=3.0,
-             wavelength=None):
+             wavelength=None,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6167,7 +6179,8 @@ def __init__(self,
              fwidth=inf,
              start_time=0,
              cutoff=5.0,
-             wavelength=None):
+             wavelength=None,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6252,7 +6265,8 @@ def __init__(self,
              src_func,
              start_time=-1e+20,
              end_time=1e+20,
-             center_frequency=0):
+             center_frequency=0,
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6787,7 +6801,8 @@ def __init__(self,
              f=None,
              realtime=False,
              normalize=False,
-             plot_modifiers=None):
+             plot_modifiers=None,
+             **customization_args):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7176,7 +7191,7 @@ accumulated.
 <a id="Ldos"></a>
 
 ```python
-def Ldos():
+def Ldos(*args):
 def Ldos(fcen, df, nfreq, freq):
 ```
 
@@ -7206,7 +7221,7 @@ spectrum for.
 <a id="dft_ldos"></a>
 
 ```python
-def dft_ldos():
+def dft_ldos(*args, **kwargs):
 def dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None):
 ```
 
@@ -7372,7 +7387,7 @@ follows the `run` function (e.g., outputting fields).
 <a id="output_epsilon"></a>
 
 ```python
-def output_epsilon(sim):
+def output_epsilon(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7388,7 +7403,7 @@ frequency-independent part of ε (the $\omega\to\infty$ limit).
 <a id="output_mu"></a>
 
 ```python
-def output_mu(sim):
+def output_mu(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
