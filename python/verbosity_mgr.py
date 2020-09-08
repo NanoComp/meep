@@ -70,7 +70,7 @@ class Verbosity(object):
     def get_all(self):
         """
         Return a list of the values of all verbosity flags being managed. This
-        is mostly indended for debugging this class and won't likely be useful
+        is mostly intended for debugging this class and won't likely be useful
         otherwise.
         """
         return [cvar.verbosity for cvar in self._cvars ]
