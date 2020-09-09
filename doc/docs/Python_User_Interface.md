@@ -5924,7 +5924,7 @@ Construct an `EigenModeSource`.
 
 + **`eig_band` [`integer` or `DiffractedPlanewave`]** — Either the index *n* (1,2,3,...) of the desired band
   ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
-  band at a given **k** point, and so on, or alternatively a diffracted planewaeve in homogeneous media.
+  band at a given **k** point, and so on, or alternatively a diffracted planewave in homogeneous media.
 
 + **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`],
   `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]** — By
@@ -7039,11 +7039,7 @@ list of verbosity flags managed by this class.
 <div class="class_members" markdown="1">
 
 ```python
-<<<<<<< HEAD
-def quiet(quietval=True):
-=======
-def __init__(self, cvar=None, initial_level=None): 
->>>>>>> Regenerate Python_User_Interface.md
+def __init__(self, cvar=None, initial_level=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7054,15 +7050,12 @@ See `add_verbosity_var()`
 
 </div>
 
-<<<<<<< HEAD
-@@ verbosity @@
-=======
 <a id="Verbosity.__call__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def __call__(self, level): 
+def __call__(self, level):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7084,7 +7077,7 @@ verbosity(0)
 <div class="class_members" markdown="1">
 
 ```python
-def add_verbosity_var(self, cvar=None, initial_level=None): 
+def add_verbosity_var(self, cvar=None, initial_level=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7101,7 +7094,7 @@ that has a `verbosity` attribute, such as `meep.cvar` or `mpb.cvar`.
 <div class="class_members" markdown="1">
 
 ```python
-def get(self): 
+def get(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7117,7 +7110,7 @@ Returns the current verbosity level.
 <div class="class_members" markdown="1">
 
 ```python
-def set(self, level): 
+def set(self, level):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7137,7 +7130,7 @@ Miscellaneous Functions Reference
 <a id="quiet"></a>
 
 ```python
-def quiet(quietval=True): 
+def quiet(quietval=True):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7150,7 +7143,6 @@ value will persist across runs within the same script.
 This function is deprecated, please use the [Verbosity](#verbosity) class instead.
 
 </div>
->>>>>>> Regenerate Python_User_Interface.md
 
 
 <a id="interpolate"></a>
