@@ -438,10 +438,13 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
-    if (rank==0 || dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
+    if (dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
      std::complex<double> d[1] = {std::complex<double>(0,0)};
      return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, d);
     }
+
+    if (rank == 0) // singleton results
+     return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, dft_arr);
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
