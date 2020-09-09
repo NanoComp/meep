@@ -140,6 +140,8 @@ class DiffractedPlanewave(object):
     def p(self):
         return self._p
 
+DefaultPMLProfile = lambda u: u * u
+
 class PML(object):
     """
     This class is used for specifying the PML absorbing boundary layers around the cell,
@@ -155,7 +157,7 @@ class PML(object):
                  side=mp.ALL,
                  R_asymptotic=1e-15,
                  mean_stretch=1.0,
-                 pml_profile=lambda u: u * u):
+                 pml_profile=DefaultPMLProfile):
         """
         + **`thickness` [`number`]** — The spatial thickness of the PML layer which
           extends from the boundary towards the *inside* of the cell. The thinner it is,
@@ -540,6 +542,7 @@ class DftObj(object):
     swigobj_attr and return the property they requested.
     """
     def __init__(self, func, args):
+        """Construct a `DftObj`."""
         self.func = func
         self.args = args
         self.swigobj = None
@@ -579,6 +582,7 @@ class DftFlux(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftFlux`."""
         super(DftFlux, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
@@ -617,6 +621,7 @@ class DftForce(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftForce`."""
         super(DftForce, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
@@ -647,6 +652,7 @@ class DftNear2Far(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftNear2Far`."""
         super(DftNear2Far, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.nperiods = args[1]
@@ -692,6 +698,7 @@ class DftEnergy(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftEnergy`."""
         super(DftEnergy, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
@@ -718,6 +725,7 @@ class DftFields(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftFields`."""
         super(DftFields, self).__init__(func, args)
         self.nfreqs = len(args[4])
         self.regions = [FieldsRegion(where=args[1], center=args[2], size=args[3])]
@@ -734,6 +742,7 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 class EigenmodeData(object):
 
     def __init__(self, band_num, freq, group_velocity, k, swigobj, kdom):
+        """Construct an `EigenmodeData`."""
         self.band_num = band_num
         self.freq = freq
         self.group_velocity = group_velocity

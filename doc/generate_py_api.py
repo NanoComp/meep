@@ -40,6 +40,9 @@ import sys
 import os
 import inspect
 import io
+import ast
+import itertools
+import textwrap
 
 import meep
 
@@ -100,18 +103,110 @@ class FunctionItem(Item):
         self.signature = inspect.signature(obj)
 
     def get_parameters(self, indent):
-        sig = inspect.signature(self.obj)
-        param_str = str(sig)
+        self.sig = inspect.signature(self.obj)
+        try:
+            # Try using the AST to get the actual text for default values
+            parameters = self.get_parameters_from_ast()
+            param_str = '({})'.format(', '.join(parameters))
+
+            # Wrap and indent the parameters if the line is too long
+            if len(param_str) > 50:
+                params = []
+                for idx, param in enumerate(parameters):
+                    params.append('('+str(param) if idx==0 else ' '*indent+param)
+                param_str = ',\n'.join(params)
+                param_str += ')'
+            return param_str
+
+        except ValueError as ex:
+            print("Warning: falling back to old parameter extraction method for {}\n{}".format(self.name, ex))
+        except OSError:
+            # This happens when there is no source for some function/class (like NamedTuples)
+            pass
+
+        # Fall back to using just the inspect module's info
+        param_str = str(self.sig)
 
         # Wrap and indent the parameters if the line is too long
         if len(param_str) > 50:
-            parameters = list(sig.parameters.values())
+            parameters = list(self.sig.parameters.values())
             params = []
             for idx, param in enumerate(parameters):
                 params.append('('+str(param) if idx==0 else ' '*indent+str(param))
             param_str = ',\n'.join(params)
             param_str += ')'
         return param_str
+
+
+    def get_parameters_from_ast(self):
+        # Use Python's ast module to parse the function's code and pull out parameter names and
+        # the text for default values.
+        def parse_name(node):
+            assert isinstance(node, ast.arg)
+            if node.annotation != None:
+                raise ValueError("Annotations are not currently supported")
+            return node.arg
+
+        source = inspect.getsource(self.obj)
+        source = textwrap.dedent(source)
+        module = ast.parse(source)
+        func = module.body[0]
+
+        if not isinstance(func, ast.FunctionDef):
+            raise ValueError('Unsupported node type: {}'.format(type(func)))
+
+        # Get the param name and defaults together into a list of tuples
+        args = reversed(func.args.args)
+        defaults = reversed(func.args.defaults)
+        iter = itertools.zip_longest(args, defaults, fillvalue=None)
+        parameters = [(parse_name(name), default) for name, default in reversed(list(iter))]
+
+        # Convert each of the parameters (name, ast.node) to valid Python parameter
+        # code, like what would have been in the actual source code.
+        transformed = []
+        for name, node in parameters:
+            if node is None:
+                transformed.append(name)
+            else:
+                default = self.transform_node(name, node)
+                transformed.append("{}={}".format(name, default))
+
+        # Check for vararg (like *foo) and kwarg (like **bar) parameters
+        if func.args.vararg is not None:
+            transformed.append('*{}'.format(func.args.vararg.arg))
+        if func.args.kwarg is not None:
+            transformed.append('**{}'.format(func.args.kwarg.arg))
+
+        return transformed
+
+    def transform_node(self, name, node):
+        if isinstance(node, (ast.Str, ast.Bytes)):
+            default = repr(node.s)
+        elif isinstance(node, ast.Num):
+            default = repr(node.n)
+        elif isinstance(node, (ast.Constant, ast.NameConstant)):
+            default = node.value
+        elif isinstance(node, ast.Name):
+            default = node.id
+        elif isinstance(node, ast.Attribute):
+            a = []
+            n = node
+            while isinstance(n, ast.Attribute):
+                a.append(n.attr)
+                n = n.value
+            assert isinstance(n, ast.Name), "I'm confused..."
+            a.append(n.id)
+            default = ".".join(reversed(a))
+        # elif isinstance(node, ast.Lambda):
+        #     default = 'FIXME_Lambda'
+        # elif isinstance(node, ast.Call):
+        #     default = 'FIXME_Call'
+        else:
+            param = self.sig.parameters[name]
+            default = param.default
+            # print('Using inspect module for {}={} in {}'.format(name, default, self.name))
+        return default
+
 
     def check_other_signatures(self, docstring):
         """ Search for alternate function signatures in the docstring """
