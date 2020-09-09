@@ -373,9 +373,9 @@ class EigenModeSource(Source):
         """
         Construct an `EigenModeSource`.
 
-        + **`eig_band` [`integer`]** — The index *n* (1,2,3,...) of the desired band
+        + **`eig_band` [`integer` or `DiffractedPlanewave`]** — Either the index *n* (1,2,3,...) of the desired band
           ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
-          band at a given **k** point, and so on.
+          band at a given **k** point, and so on, or alternatively a diffracted planewave in homogeneous media.
 
         + **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`],
           `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]** — By
@@ -500,7 +500,10 @@ class EigenModeSource(Source):
 
     @eig_band.setter
     def eig_band(self, val):
-        self._eig_band = check_positive('EigenModeSource.eig_band', val)
+        if isinstance(val, int):
+            self._eig_band = check_positive('EigenModeSource.eig_band', val)
+        else:
+            self._eig_band = val
 
     @property
     def eig_resolution(self):

@@ -789,7 +789,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                   const volume &where, const volume &eig_vol, int band_num,
                                   const vec &kpoint, bool match_frequency, int parity,
                                   double resolution, double eigensolver_tol, complex<double> amp,
-                                  complex<double> A(const vec &)) {
+                                  complex<double> A(const vec &),
+                                  diffractedplanewave *dp) {
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
   /*--------------------------------------------------------------*/
@@ -798,7 +799,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   am_now_working_on(MPBTime);
   global_eigenmode_data =
       (eigenmode_data *)get_eigenmode(frequency, d, where, eig_vol, band_num, kpoint,
-                                      match_frequency, parity, resolution, eigensolver_tol);
+                                      match_frequency, parity, resolution, eigensolver_tol,
+                                      NULL, NULL, dp);
   finished_working();
 
   /* add_volume_source amp_fun coordinates are relative to where.center();
@@ -979,7 +981,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                   const volume &where, const volume &eig_vol, int band_num,
                                   const vec &kpoint, bool match_frequency, int parity,
                                   double resolution, double eigensolver_tol, complex<double> amp,
-                                  complex<double> A(const vec &)) {
+                                  complex<double> A(const vec &), diffractedplanewave *dp) {
   (void)c0;
   (void)src;
   (void)d;
@@ -993,6 +995,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   (void)eigensolver_tol;
   (void)amp;
   (void)A;
+  (void)dp;
   abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
