@@ -6,7 +6,7 @@ The material structure in Maxwell's equations is determined by the relative perm
 
 However, $\varepsilon$ is not only a function of position. In general, it also depends on frequency (material dispersion) and on the electric field $\mathbf{E}$ itself (nonlinearity) or an applied magnetic field $\mathbf{H}$ (gyrotropy). It may also depend on the orientation of the field (anisotropy). Material dispersion, in turn, is generally associated with absorption loss in the material, or possibly gain. All of these effects can be simulated in Meep, with certain restrictions. Similarly for the relative permeability $\mu(\mathbf{r})$, for which dispersion, nonlinearity, and anisotropy are all supported as well.
 
-In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified in the simulation is described in [Python User Interface](Python_User_Interface.md). 
+In this section, we describe the form of the equations and material properties that Meep can simulate. The actual user interface where these properties are specified in the simulation is described in [Python Interface](Python_User_Interface.md).
 
 [TOC]
 
@@ -73,7 +73,7 @@ Finally, overlapping dispersive materials with perfectly matched layer (PML) abs
 Loss and Gain
 -------------
 
-If γ above is nonzero, then the dielectric function ε(ω) becomes *complex*, where the imaginary part is associated with absorption loss in the material if it is positive, or gain if it is negative. Alternatively, a dissipation loss or gain may be added by a positive or negative conductivity, respectively &mdash; this is often convenient if you only care about the imaginary part of ε in a narrow bandwidth, and is described in detail below.
+If $\gamma$ above is nonzero, then the dielectric function $\varepsilon(\omega)$ becomes *complex*, where the imaginary part is associated with absorption loss in the material if it is positive, or gain if it is negative. Alternatively, a dissipation loss or gain may be added by a positive or negative conductivity, respectively — this is often convenient if you only care about the imaginary part of $\varepsilon$ in a narrow bandwidth, and is described in detail in the next section.
 
 If you look at Maxwell's equations, then $d\mathbf{P}/dt$ plays exactly the same role as a current $\mathbf{J}$. Just as $\mathbf{J} \cdot \mathbf{E}$ is the rate of change of mechanical energy (the power expended by the electric field on moving the currents), therefore, the rate at which energy is lost to absorption is given by:
 
