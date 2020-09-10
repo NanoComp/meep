@@ -941,7 +941,6 @@ public:
   }
   virtual std::complex<double> dipole(double time) const {
     float rtime = float(time);
-    std::cout<<rtime<<" "<<start_time<<" "<<end_time<<"\n";
     if (rtime >= start_time && rtime <= end_time)
       return func(time, data);
     else
@@ -1196,7 +1195,7 @@ struct sourcedata{
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
   int fc_idx;
-  std::vector<std::vector<std::complex<double> > > amp_arr;
+  std::vector<std::complex<double> > amp_arr;
 
 };
 
@@ -1724,7 +1723,7 @@ public:
   void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec);
 
 
-  
+
 
   // mpb.cpp
 

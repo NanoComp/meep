@@ -22,7 +22,7 @@
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
-#include <iostream>
+
 using namespace std;
 
 namespace meep {
