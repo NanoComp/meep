@@ -70,4 +70,22 @@
 %rename(vec_dim_val) meep::vec::vec(ndim, double);
 %rename(vec_dim) meep::vec::vec(ndim);
 
+
+// Include the C++ class declarations
 %include "meep/vec.hpp"
+
+%extend meep::vec {
+    const char *__repr__() { return $self->str(); }
+}
+
+%extend meep::ivec {
+    const char *__repr__() { return $self->str(); }
+}
+
+%extend meep::volume {
+    const char *__repr__() { return $self->str(); }
+}
+
+%extend meep::grid_volume {
+    const char *__repr__() { return $self->str(); }
+}

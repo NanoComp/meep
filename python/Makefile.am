@@ -18,6 +18,7 @@ endif # WITH_MPI
 
 if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/binary_grating.py
+  DIFFRACTED_PLANEWAVE_TEST = $(TEST_DIR)/diffracted_planewave.py
   DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/dispersive_eigenmode.py
   KDOM_TEST = $(TEST_DIR)/kdom.py
   MODE_COEFFS_TEST = $(TEST_DIR)/mode_coeffs.py
@@ -25,6 +26,7 @@ if WITH_MPB
   WVG_SRC_TEST = $(TEST_DIR)/wvg_src.py
 else
   BINARY_GRATING_TEST =
+  DIFFRACTED_PLANEWAVE_TEST =
   DISPERSIVE_EIGENMODE_TEST =
   KDOM_TEST =
   MODE_COEFFS_TEST =
@@ -43,15 +45,17 @@ TESTS =                                   \
     $(TEST_DIR)/cavity_farfield.py        \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
-    ${DISPERSIVE_EIGENMODE_TEST}          \
     $(TEST_DIR)/dft_energy.py             \
     $(TEST_DIR)/dft_fields.py             \
+    ${DIFFRACTED_PLANEWAVE_TEST}          \
+    ${DISPERSIVE_EIGENMODE_TEST}          \
     $(TEST_DIR)/divide_mpi_processes.py   \
     $(TEST_DIR)/eigfreq.py                \
     $(TEST_DIR)/faraday_rotation.py       \
     $(TEST_DIR)/field_functions.py        \
     $(TEST_DIR)/force.py                  \
     $(TEST_DIR)/fragment_stats.py         \
+    $(TEST_DIR)/gaussianbeam.py           \
     $(TEST_DIR)/geom.py                   \
     $(TEST_DIR)/get_point.py              \
     $(TEST_DIR)/holey_wvg_bands.py        \

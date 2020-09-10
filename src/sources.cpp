@@ -702,4 +702,13 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
   EH[5] = H[2] / (Eorig*ZR);
 }
 
+diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::complex<double> s_, std::complex<double> p_) {
+  for (int j = 0; j < 3; ++j) {
+    g[j] = g_[j];
+    axis[j] = axis_[j];
+  }
+  s = s_;
+  p = p_;
+};
+
 } // namespace meep

@@ -233,7 +233,7 @@ Increasing the size of the cell improves results at the expense of a larger simu
 Planewaves in Homogeneous Media
 -------------------------------
 
-The eigenmode source can also be used to launch [planewaves](https://en.wikipedia.org/wiki/Plane_wave) in homogeneous media. The dispersion relation for a planewave is ω=|$\vec{k}$|/$n$ where ω is the angular frequency of the planewave and $\vec{k}$ its wavevector; $n$ is the refractive index of the homogeneous medium. This example demonstrates launching planewaves in a uniform medium with $n$ of 1.5 at three rotation angles: 0°, 20°, and 40°. Bloch-periodic boundaries via the `k-point` are used and specified by the wavevector $\vec{k}$. PML boundaries are used only along the $x$-direction.
+The eigenmode source can also be used to launch [planewaves](https://en.wikipedia.org/wiki/Plane_wave) in homogeneous media. The dispersion relation for a planewave is ω=|$\vec{k}$|/$n$ where ω is the angular frequency of the planewave and $\vec{k}$ its wavevector; $n$ is the refractive index of the homogeneous medium ($c=1$ in Meep units). This example demonstrates launching planewaves in a uniform medium with $n=1.5$ at three rotation angles: 0°, 20°, and 40°. Bloch-periodic boundaries via the `k-point` are used and specified by the wavevector $\vec{k}$. PML boundaries are used only along the $x$-direction.
 
 The simulation script is in [examples/oblique-planewave.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/oblique-planewave.ctl).
 

@@ -127,7 +127,7 @@ def __init__(self,
              force_all_components=False,
              split_chunks_evenly=True,
              chunk_layout=None,
-             collect_stats=False): 
+             collect_stats=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -368,7 +368,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 <div class="class_members" markdown="1">
 
 ```python
-def run(self, *step_funcs, **kwargs): 
+def run(self, *step_funcs, **kwargs):
 def run(step_functions..., until=condition/time):
 def run(step_functions..., until_after_sources=condition/time):
 ```
@@ -413,7 +413,7 @@ or set the output folder, with these methods of the `Simulation` class:
 <div class="class_members" markdown="1">
 
 ```python
-def get_filename_prefix(self): 
+def get_filename_prefix(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -436,7 +436,7 @@ by calling `Simulation.use_output_directory([dirname])`
 <div class="class_members" markdown="1">
 
 ```python
-def use_output_directory(self, dname=''): 
+def use_output_directory(self, dname=''):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -461,7 +461,7 @@ The `Simulation` class provides the following time-related methods:
 <div class="class_members" markdown="1">
 
 ```python
-def meep_time(self): 
+def meep_time(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -485,7 +485,7 @@ rounded to single precision.
 <div class="class_members" markdown="1">
 
 ```python
-def print_times(self): 
+def print_times(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -512,7 +512,7 @@ Field time usage:
 <div class="class_members" markdown="1">
 
 ```python
-def time_spent_on(self, time_sink): 
+def time_spent_on(self, time_sink):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -532,7 +532,7 @@ other.
 <div class="class_members" markdown="1">
 
 ```python
-def mean_time_spent_on(self, time_sink): 
+def mean_time_spent_on(self, time_sink):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -558,7 +558,7 @@ Meep supports a large number of functions to perform computations on the fields.
 <div class="class_members" markdown="1">
 
 ```python
-def set_boundary(self, side, direction, condition): 
+def set_boundary(self, side, direction, condition):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -576,7 +576,7 @@ section for valid `side`, `direction`, and `boundary_condition` values.
 <div class="class_members" markdown="1">
 
 ```python
-def phase_in_material(self, structure, time): 
+def phase_in_material(self, structure, time):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -602,7 +602,7 @@ simulation script is in
 <div class="class_members" markdown="1">
 
 ```python
-def get_field_point(self, c, pt): 
+def get_field_point(self, c, pt):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -619,7 +619,7 @@ returns the value of that component at that point.
 <div class="class_members" markdown="1">
 
 ```python
-def get_epsilon_point(self, pt, frequency=0, omega=0): 
+def get_epsilon_point(self, pt, frequency=0, omega=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -627,7 +627,26 @@ def get_epsilon_point(self, pt, frequency=0, omega=0):
 Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
 of the permittivity tensor at that location and frequency. If `frequency` is
 non-zero, the result is complex valued; otherwise it is the real,
-frequency-independent part of ε (the $\omega\to\infty$ limit).
+frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
+
+</div>
+
+</div>
+
+<a id="Simulation.get_mu_point"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_mu_point(self, pt, frequency=0, omega=0):
+```
+
+<div class="method_docstring" markdown="1">
+
+Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
+of the permeability tensor at that location and frequency. If `frequency` is
+non-zero, the result is complex valued; otherwise it is the real,
+frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
 </div>
 
@@ -638,7 +657,7 @@ frequency-independent part of ε (the $\omega\to\infty$ limit).
 <div class="class_members" markdown="1">
 
 ```python
-def initialize_field(self, cmpnt, amp_func): 
+def initialize_field(self, cmpnt, amp_func):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -656,7 +675,7 @@ of the field at that point.
 <div class="class_members" markdown="1">
 
 ```python
-def add_dft_fields(self, *args, **kwargs): 
+def add_dft_fields(self, *args, **kwargs):
 def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False):
 ```
 
@@ -682,7 +701,7 @@ fields evaluated at each corresponding Yee grid point is available by setting
 <div class="class_members" markdown="1">
 
 ```python
-def flux_in_box(self, d, box=None, center=None, size=None): 
+def flux_in_box(self, d, box=None, center=None, size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -705,7 +724,7 @@ construct the appropriate volume for you.
 <div class="class_members" markdown="1">
 
 ```python
-def electric_energy_in_box(self, box=None, center=None, size=None): 
+def electric_energy_in_box(self, box=None, center=None, size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -729,7 +748,7 @@ volume.
 <div class="class_members" markdown="1">
 
 ```python
-def magnetic_energy_in_box(self, box=None, center=None, size=None): 
+def magnetic_energy_in_box(self, box=None, center=None, size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -753,7 +772,7 @@ volume.
 <div class="class_members" markdown="1">
 
 ```python
-def field_energy_in_box(self, box=None, center=None, size=None): 
+def field_energy_in_box(self, box=None, center=None, size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -777,7 +796,7 @@ volume.
 <div class="class_members" markdown="1">
 
 ```python
-def modal_volume_in_box(self, box=None, center=None, size=None): 
+def modal_volume_in_box(self, box=None, center=None, size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -817,7 +836,7 @@ def integrate_field_function(self,
                              func,
                              where=None,
                              center=None,
-                             size=None): 
+                             size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -851,7 +870,7 @@ def max_abs_field_function(self,
                            func,
                            where=None,
                            center=None,
-                           size=None): 
+                           size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -889,7 +908,7 @@ def integrate2_field_function(self,
                               func,
                               where=None,
                               center=None,
-                              size=None): 
+                              size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -937,7 +956,7 @@ Once the fields/simulation have been initialized, you can change the values of v
 <div class="class_members" markdown="1">
 
 ```python
-def reset_meep(self): 
+def reset_meep(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -954,7 +973,7 @@ memory as if you had not run any computations.
 <div class="class_members" markdown="1">
 
 ```python
-def restart_fields(self): 
+def restart_fields(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -971,7 +990,7 @@ transforms of the flux planes, which continue to be accumulated.
 <div class="class_members" markdown="1">
 
 ```python
-def change_k_point(self, k): 
+def change_k_point(self, k):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -987,7 +1006,7 @@ Change the `k_point` (the Bloch periodicity).
 <div class="class_members" markdown="1">
 
 ```python
-def change_sources(self, new_sources): 
+def change_sources(self, new_sources):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1005,7 +1024,7 @@ the sources used for the current simulation. `new_sources` must be a list of
 <div class="class_members" markdown="1">
 
 ```python
-def set_materials(self, geometry=None, default_material=None): 
+def set_materials(self, geometry=None, default_material=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1028,7 +1047,7 @@ Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accum
 <div class="class_members" markdown="1">
 
 ```python
-def add_flux(self, *args): 
+def add_flux(self, *args):
 def add_flux(fcen, df, nfreq, freq, FluxRegions...):
 ```
 
@@ -1062,7 +1081,7 @@ Once you have called `add_flux`, the Fourier transforms of the fields are accumu
 <div class="class_members" markdown="1">
 
 ```python
-def display_fluxes(self, *fluxes): 
+def display_fluxes(self, *fluxes):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1083,7 +1102,7 @@ You might have to do something lower-level if you have multiple flux regions cor
 <a id="get_flux_freqs"></a>
 
 ```python
-def get_flux_freqs(f): 
+def get_flux_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1096,7 +1115,7 @@ spectrum for.
 <a id="get_fluxes"></a>
 
 ```python
-def get_fluxes(f): 
+def get_fluxes(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1114,7 +1133,7 @@ As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md
 <div class="class_members" markdown="1">
 
 ```python
-def save_flux(self, fname, flux): 
+def save_flux(self, fname, flux):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1132,7 +1151,7 @@ filename-prefix is prepended automatically).
 <div class="class_members" markdown="1">
 
 ```python
-def load_flux(self, fname, flux): 
+def load_flux(self, fname, flux):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1153,7 +1172,7 @@ processors.
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_flux(self, fname, flux): 
+def load_minus_flux(self, fname, flux):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1174,7 +1193,7 @@ Sometimes it is more convenient to keep the Fourier-transformed fields in memory
 <div class="class_members" markdown="1">
 
 ```python
-def get_flux_data(self, flux): 
+def get_flux_data(self, flux):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1192,7 +1211,7 @@ only useful for passing to `load_flux_data` below and should be considered opaqu
 <div class="class_members" markdown="1">
 
 ```python
-def load_flux_data(self, flux, fdata): 
+def load_flux_data(self, flux, fdata):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1211,7 +1230,7 @@ object that was created by `get_flux_data` in a simulation of the same dimension
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_flux_data(self, flux, fdata): 
+def load_minus_flux_data(self, flux, fdata):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1237,7 +1256,7 @@ The `Simulation` class also provides some aliases for the corresponding "flux" m
 
 ### Mode Decomposition
 
-Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
+Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Features/Mode Decomposition](Mode_Decomposition.md).
 
 
 <a id="Simulation.get_eigenmode_coefficients"></a>
@@ -1248,17 +1267,17 @@ Given a structure, Meep can decompose the Fourier-transformed fields into a supe
 def get_eigenmode_coefficients(self,
                                flux,
                                bands,
-                               eig_parity=0,
+                               eig_parity=mp.NO_PARITY,
                                eig_vol=None,
                                eig_resolution=0,
                                eig_tolerance=1e-12,
                                kpoint_func=None,
-                               direction=-1): 
+                               direction=mp.AUTOMATIC):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Given a flux object and list of band indices, return a `namedtuple` with the
+Given a flux object and list of band indices `bands` or `DiffractedPlanewave`, return a `namedtuple` with the
 following fields:
 
 + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
@@ -1288,7 +1307,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 <div class="class_members" markdown="1">
 
 ```python
-def add_mode_monitor(self, *args): 
+def add_mode_monitor(self, *args, **kwargs):
 def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...):
 ```
 
@@ -1317,9 +1336,9 @@ def get_eigenmode(self,
                   kpoint,
                   eig_vol=None,
                   match_frequency=True,
-                  parity=0,
+                  parity=mp.NO_PARITY,
                   resolution=0,
-                  eigensolver_tol=1e-12): 
+                  eigensolver_tol=1e-12):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1329,7 +1348,7 @@ The parameters of this routine are the same as that of
 object that can be used to inspect the computed mode.  In particular, it returns
 an `EigenmodeData` instance with the following fields:
 
-+ `band_num`: same as the `band_num` parameter
++ `band_num`: same as a single element of the `bands` parameter
 + `freq`: the computed frequency, same as the `frequency` input parameter if
   `match_frequency=True`
 + `group_velocity`: the group velocity of the mode in `direction`
@@ -1353,7 +1372,7 @@ The following top-level function is also available:
 <a id="get_eigenmode_freqs"></a>
 
 ```python
-def get_eigenmode_freqs(f): 
+def get_eigenmode_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1363,7 +1382,46 @@ spectrum for.
 
 </div>
 
+---
+<a id="DiffractedPlanewave"></a>
 
+### DiffractedPlanewave
+
+```python
+class DiffractedPlanewave(object):
+```
+
+<div class="class_docstring" markdown="1">
+
+For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
+
+</div>
+
+
+
+<a id="DiffractedPlanewave.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(self, g=None, axis=None, s=None, p=None):
+```
+
+<div class="method_docstring" markdown="1">
+
+Construct a `DiffractedPlanewave`.
+
++ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+
++ **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
+
++ **`s` [ `complex` ]** — The complex amplitude of the $\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
+
++ **`p` [ `complex` ]** — The complex amplitude of the $\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
+
+</div>
+
+</div>
 
 ### Energy Density Spectra
 
@@ -1379,7 +1437,7 @@ The usage is similar to the flux spectra: you define a set of [`EnergyRegion`](#
 <div class="class_members" markdown="1">
 
 ```python
-def add_energy(self, *args): 
+def add_energy(self, *args):
 def add_energy(fcen, df, nfreq, freq, EnergyRegions...):
 ```
 
@@ -1413,7 +1471,7 @@ Once you have called `add_energy`, the Fourier transforms of the fields are accu
 <div class="class_members" markdown="1">
 
 ```python
-def display_electric_energy(self, *energys): 
+def display_electric_energy(self, *energys):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1433,7 +1491,7 @@ column are the frequencies, and subsequent columns are the energy density spectr
 <div class="class_members" markdown="1">
 
 ```python
-def display_magnetic_energy(self, *energys): 
+def display_magnetic_energy(self, *energys):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1453,7 +1511,7 @@ column are the frequencies, and subsequent columns are the energy density spectr
 <div class="class_members" markdown="1">
 
 ```python
-def display_total_energy(self, *energys): 
+def display_total_energy(self, *energys):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1475,7 +1533,7 @@ You might have to do something lower-level if you have multiple energy regions c
 <a id="get_energy_freqs"></a>
 
 ```python
-def get_energy_freqs(f): 
+def get_energy_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1488,7 +1546,7 @@ spectrum for.
 <a id="get_electric_energy"></a>
 
 ```python
-def get_electric_energy(f): 
+def get_electric_energy(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1501,7 +1559,7 @@ electric fields that it has accumulated.
 <a id="get_magnetic_energy"></a>
 
 ```python
-def get_magnetic_energy(f): 
+def get_magnetic_energy(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1514,7 +1572,7 @@ magnetic fields that it has accumulated.
 <a id="get_total_energy"></a>
 
 ```python
-def get_total_energy(f): 
+def get_total_energy(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1532,7 +1590,7 @@ As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md
 <div class="class_members" markdown="1">
 
 ```python
-def save_energy(self, fname, energy): 
+def save_energy(self, fname, energy):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1550,7 +1608,7 @@ filename-prefix is prepended automatically).
 <div class="class_members" markdown="1">
 
 ```python
-def load_energy(self, fname, energy): 
+def load_energy(self, fname, energy):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1571,7 +1629,7 @@ processors.
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_energy(self, fname, energy): 
+def load_minus_energy(self, fname, energy):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1605,7 +1663,7 @@ The usage is similar to the [flux spectra](Python_Tutorials/Basics.md#transmitta
 <div class="class_members" markdown="1">
 
 ```python
-def add_force(self, *args): 
+def add_force(self, *args):
 def add_force(fcen, df, nfreq, freq, ForceRegions...):
 ```
 
@@ -1639,7 +1697,7 @@ Once you have called `add_force`, the Fourier transforms of the fields are accum
 <div class="class_members" markdown="1">
 
 ```python
-def display_forces(self, *forces): 
+def display_forces(self, *forces):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1661,7 +1719,7 @@ You might have to do something lower-level if you have multiple force regions co
 <a id="get_force_freqs"></a>
 
 ```python
-def get_force_freqs(f): 
+def get_force_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1674,7 +1732,7 @@ spectrum for.
 <a id="get_forces"></a>
 
 ```python
-def get_forces(f): 
+def get_forces(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1693,7 +1751,7 @@ As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md
 <div class="class_members" markdown="1">
 
 ```python
-def save_force(self, fname, force): 
+def save_force(self, fname, force):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1711,7 +1769,7 @@ filename-prefix is prepended automatically).
 <div class="class_members" markdown="1">
 
 ```python
-def load_force(self, fname, force): 
+def load_force(self, fname, force):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1732,7 +1790,7 @@ processors.
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_force(self, fname, force): 
+def load_minus_force(self, fname, force):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1753,7 +1811,7 @@ To keep the fields in memory and avoid writing to and reading from a file, use t
 <div class="class_members" markdown="1">
 
 ```python
-def get_force_data(self, force): 
+def get_force_data(self, force):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1772,7 +1830,7 @@ opaque.
 <div class="class_members" markdown="1">
 
 ```python
-def load_force_data(self, force, fdata): 
+def load_force_data(self, force, fdata):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1791,7 +1849,7 @@ object that was created by `get_force_data` in a simulation of the same dimensio
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_force_data(self, force, fdata): 
+def load_minus_force_data(self, force, fdata):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1812,7 +1870,7 @@ Meep can also calculate the LDOS (local density of states) spectrum, as describe
 <a id="Ldos"></a>
 
 ```python
-def Ldos(*args): 
+def Ldos(*args):
 def Ldos(fcen, df, nfreq, freq):
 ```
 
@@ -1829,7 +1887,7 @@ argument.
 <a id="get_ldos_freqs"></a>
 
 ```python
-def get_ldos_freqs(l): 
+def get_ldos_freqs(l):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -1842,7 +1900,7 @@ spectrum for.
 <a id="dft_ldos"></a>
 
 ```python
-def dft_ldos(*args, **kwargs): 
+def dft_ldos(*args, **kwargs):
 def dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None):
 ```
 
@@ -1884,7 +1942,7 @@ There are three steps to using the near-to-far-field feature: first, define the 
 <div class="class_members" markdown="1">
 
 ```python
-def add_near2far(self, *args, **kwargs): 
+def add_near2far(self, *args, **kwargs):
 def add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1):
 ```
 
@@ -1914,7 +1972,7 @@ If you have Bloch-periodic boundary conditions, then the corresponding near-to-f
 <div class="class_members" markdown="1">
 
 ```python
-def get_farfield(self, near2far, x): 
+def get_farfield(self, near2far, x):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1941,7 +1999,7 @@ def output_farfields(self,
                      resolution,
                      where=None,
                      center=None,
-                     size=None): 
+                     size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1971,7 +2029,7 @@ def get_farfields(self,
                   resolution,
                   where=None,
                   center=None,
-                  size=None): 
+                  size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1996,7 +2054,7 @@ This lower-level function is also available:
 <a id="get_near2far_freqs"></a>
 
 ```python
-def get_near2far_freqs(f): 
+def get_near2far_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2019,7 +2077,7 @@ For a scattered-field computation, you often want to separate the scattered and 
 <div class="class_members" markdown="1">
 
 ```python
-def save_near2far(self, fname, near2far): 
+def save_near2far(self, fname, near2far):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2037,7 +2095,7 @@ filename-prefix is prepended automatically.
 <div class="class_members" markdown="1">
 
 ```python
-def load_near2far(self, fname, near2far): 
+def load_near2far(self, fname, near2far):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2058,7 +2116,7 @@ processors.
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_near2far(self, fname, near2far): 
+def load_minus_near2far(self, fname, near2far):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2080,7 +2138,7 @@ To keep the fields in memory and avoid writing to and reading from a file, use t
 <div class="class_members" markdown="1">
 
 ```python
-def get_near2far_data(self, near2far): 
+def get_near2far_data(self, near2far):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2099,7 +2157,7 @@ considered opaque.
 <div class="class_members" markdown="1">
 
 ```python
-def load_near2far_data(self, near2far, n2fdata): 
+def load_near2far_data(self, near2far, n2fdata):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2119,7 +2177,7 @@ processors.
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_near2far_data(self, near2far, n2fdata): 
+def load_minus_near2far_data(self, near2far, n2fdata):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2138,7 +2196,7 @@ See also this lower-level function:
 <a id="scale_near2far_fields"></a>
 
 ```python
-def scale_near2far_fields(s, near2far): 
+def scale_near2far_fields(s, near2far):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2157,7 +2215,7 @@ And this [`DftNear2Far`](#DftNear2Far) method:
 <div class="class_members" markdown="1">
 
 ```python
-def flux(self, direction, where, resolution): 
+def flux(self, direction, where, resolution):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2183,7 +2241,7 @@ These functions dump the raw ε and μ data to disk and load it back for doing m
 <div class="class_members" markdown="1">
 
 ```python
-def dump_structure(self, fname): 
+def dump_structure(self, fname):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2199,7 +2257,7 @@ Dumps the structure to the file `fname`.
 <div class="class_members" markdown="1">
 
 ```python
-def load_structure(self, fname): 
+def load_structure(self, fname):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2216,7 +2274,7 @@ the `Simulation` constructor via the `load_structure` keyword argument.
 <div class="class_members" markdown="1">
 
 ```python
-def dump_chunk_layout(self, fname): 
+def dump_chunk_layout(self, fname):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2294,7 +2352,7 @@ This feature is only available if Meep is built with [libGDSII](Build_From_Sourc
 <a id="GDSII_layers"></a>
 
 ```python
-def GDSII_layers(fname): 
+def GDSII_layers(fname):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2312,7 +2370,7 @@ Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 <a id="GDSII_prisms"></a>
 
 ```python
-def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0): 
+def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2325,7 +2383,7 @@ Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer numb
 <a id="GDSII_vol"></a>
 
 ```python
-def GDSII_vol(fname, layer, zmin, zmax): 
+def GDSII_vol(fname, layer, zmin, zmax):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2366,7 +2424,7 @@ def plot2D(self,
            plot_sources_flag=True,
            plot_monitors_flag=True,
            plot_boundaries_flag=True,
-           **kwargs): 
+           **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2456,7 +2514,7 @@ plt.savefig('sim_domain.png')
 <div class="class_members" markdown="1">
 
 ```python
-def plot3D(self): 
+def plot3D(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2473,7 +2531,7 @@ Can also be embedded in Jupyter notebooks.
 <div class="class_members" markdown="1">
 
 ```python
-def visualize_chunks(self): 
+def visualize_chunks(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2504,7 +2562,7 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 <div class="class_members" markdown="1">
 
 ```python
-def run(self, *step_funcs, **kwargs): 
+def run(self, *step_funcs, **kwargs):
 def run(step_functions..., until=condition/time):
 def run(step_functions..., until_after_sources=condition/time):
 ```
@@ -2540,7 +2598,7 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 <a id="stop_when_fields_decayed"></a>
 
 ```python
-def stop_when_fields_decayed(dt, c, pt, decay_by): 
+def stop_when_fields_decayed(dt, c, pt, decay_by):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2564,7 +2622,7 @@ slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.m
 <a id="stop_after_walltime"></a>
 
 ```python
-def stop_after_walltime(t): 
+def stop_after_walltime(t):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2577,7 +2635,7 @@ parameter. Stops the simulation after `t` seconds of wall time have passed.
 <a id="stop_on_interrupt"></a>
 
 ```python
-def stop_on_interrupt(): 
+def stop_on_interrupt():
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2598,7 +2656,7 @@ Finally, another run function, useful for computing ω(**k**) band diagrams, is 
 <div class="class_members" markdown="1">
 
 ```python
-def run_k_points(self, t, k_points): 
+def run_k_points(self, t, k_points):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2625,7 +2683,7 @@ Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.m
 <div class="class_members" markdown="1">
 
 ```python
-def run_k_point(self, t, k): 
+def run_k_point(self, t, k):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2656,7 +2714,7 @@ Note that although the various field components are stored at different places i
 <div class="class_members" markdown="1">
 
 ```python
-def output_dft(self, dft_fields, fname): 
+def output_dft(self, dft_fields, fname):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2673,7 +2731,7 @@ suffix).
 <a id="output_epsilon"></a>
 
 ```python
-def output_epsilon(sim, *step_func_args, **kwargs): 
+def output_epsilon(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2689,7 +2747,7 @@ frequency-independent part of ε (the $\omega\to\infty$ limit).
 <a id="output_mu"></a>
 
 ```python
-def output_mu(sim, *step_func_args, **kwargs): 
+def output_mu(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2705,7 +2763,7 @@ frequency-independent part of μ (the $\omega\to\infty$ limit).
 <a id="output_poynting"></a>
 
 ```python
-def output_poynting(sim): 
+def output_poynting(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2720,7 +2778,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_hpwr"></a>
 
 ```python
-def output_hpwr(sim): 
+def output_hpwr(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2732,7 +2790,7 @@ Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 <a id="output_dpwr"></a>
 
 ```python
-def output_dpwr(sim): 
+def output_dpwr(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2744,7 +2802,7 @@ Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 <a id="output_tot_pwr"></a>
 
 ```python
-def output_tot_pwr(sim): 
+def output_tot_pwr(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2759,7 +2817,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_png"></a>
 
 ```python
-def output_png(compnt, options, rm_h5=True): 
+def output_png(compnt, options, rm_h5=True):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2789,7 +2847,7 @@ file requires `output_png(component, h5topng_options, rm_h5=False)`.
 <a id="output_hfield"></a>
 
 ```python
-def output_hfield(sim): 
+def output_hfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2802,7 +2860,7 @@ the different components are stored as different datasets within the *same* file
 <a id="output_hfield_x"></a>
 
 ```python
-def output_hfield_x(sim): 
+def output_hfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2816,7 +2874,7 @@ imaginary parts, respectively.
 <a id="output_hfield_y"></a>
 
 ```python
-def output_hfield_y(sim): 
+def output_hfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2830,7 +2888,7 @@ imaginary parts, respectively.
 <a id="output_hfield_z"></a>
 
 ```python
-def output_hfield_z(sim): 
+def output_hfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2844,7 +2902,7 @@ imaginary parts, respectively.
 <a id="output_hfield_r"></a>
 
 ```python
-def output_hfield_r(sim): 
+def output_hfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2858,7 +2916,7 @@ imaginary parts, respectively.
 <a id="output_hfield_p"></a>
 
 ```python
-def output_hfield_p(sim): 
+def output_hfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2873,7 +2931,7 @@ and imaginary parts, respectively.
 <a id="output_bfield"></a>
 
 ```python
-def output_bfield(sim): 
+def output_bfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2886,7 +2944,7 @@ the different components are stored as different datasets within the *same* file
 <a id="output_bfield_x"></a>
 
 ```python
-def output_bfield_x(sim): 
+def output_bfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2900,7 +2958,7 @@ imaginary parts, respectively.
 <a id="output_bfield_y"></a>
 
 ```python
-def output_bfield_y(sim): 
+def output_bfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2914,7 +2972,7 @@ imaginary parts, respectively.
 <a id="output_bfield_z"></a>
 
 ```python
-def output_bfield_z(sim): 
+def output_bfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2928,7 +2986,7 @@ imaginary parts, respectively.
 <a id="output_bfield_r"></a>
 
 ```python
-def output_bfield_r(sim): 
+def output_bfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2942,7 +3000,7 @@ imaginary parts, respectively.
 <a id="output_bfield_p"></a>
 
 ```python
-def output_bfield_p(sim): 
+def output_bfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2960,7 +3018,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_efield"></a>
 
 ```python
-def output_efield(sim): 
+def output_efield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2973,7 +3031,7 @@ the different components are stored as different datasets within the *same* file
 <a id="output_efield_x"></a>
 
 ```python
-def output_efield_x(sim): 
+def output_efield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -2987,7 +3045,7 @@ imaginary parts, respectively.
 <a id="output_efield_y"></a>
 
 ```python
-def output_efield_y(sim): 
+def output_efield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3001,7 +3059,7 @@ imaginary parts, respectively.
 <a id="output_efield_z"></a>
 
 ```python
-def output_efield_z(sim): 
+def output_efield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3015,7 +3073,7 @@ imaginary parts, respectively.
 <a id="output_efield_r"></a>
 
 ```python
-def output_efield_r(sim): 
+def output_efield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3029,7 +3087,7 @@ imaginary parts, respectively.
 <a id="output_efield_p"></a>
 
 ```python
-def output_efield_p(sim): 
+def output_efield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3047,7 +3105,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_dfield"></a>
 
 ```python
-def output_dfield(sim): 
+def output_dfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3060,7 +3118,7 @@ is, the different components are stored as different datasets within the *same* 
 <a id="output_dfield_x"></a>
 
 ```python
-def output_dfield_x(sim): 
+def output_dfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3074,7 +3132,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_y"></a>
 
 ```python
-def output_dfield_y(sim): 
+def output_dfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3088,7 +3146,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_z"></a>
 
 ```python
-def output_dfield_z(sim): 
+def output_dfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3102,7 +3160,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_r"></a>
 
 ```python
-def output_dfield_r(sim): 
+def output_dfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3116,7 +3174,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_p"></a>
 
 ```python
-def output_dfield_p(sim): 
+def output_dfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3134,7 +3192,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_sfield"></a>
 
 ```python
-def output_sfield(sim): 
+def output_sfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3150,7 +3208,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_sfield_x"></a>
 
 ```python
-def output_sfield_x(sim): 
+def output_sfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3164,7 +3222,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_y"></a>
 
 ```python
-def output_sfield_y(sim): 
+def output_sfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3178,7 +3236,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_z"></a>
 
 ```python
-def output_sfield_z(sim): 
+def output_sfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3192,7 +3250,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_r"></a>
 
 ```python
-def output_sfield_r(sim): 
+def output_sfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3206,7 +3264,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_p"></a>
 
 ```python
-def output_sfield_p(sim): 
+def output_sfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3234,7 +3292,7 @@ def output_field_function(self,
                           cs,
                           func,
                           real_only=False,
-                          h5file=None): 
+                          h5file=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3270,7 +3328,7 @@ def get_array(self,
               cmplx=None,
               arr=None,
               frequency=0,
-              omega=0): 
+              omega=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3333,7 +3391,7 @@ arrays; rather, you should simply rely on Meep's output.
 <div class="class_members" markdown="1">
 
 ```python
-def get_dft_array(self, dft_obj, component, num_freq): 
+def get_dft_array(self, dft_obj, component, num_freq):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3371,7 +3429,7 @@ def get_array_metadata(self,
                        dft_cell=None,
                        collapse=False,
                        snap=False,
-                       return_pw=False): 
+                       return_pw=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3451,7 +3509,7 @@ plt.show()
 
   # x-directed Poynting flux through monitor from frequency-domain fields
   monitor        = mp.FluxRegion(center=mon_center, size=mon_size)
-  dft_cell       = sim.add_flux(freq, freq, 1, monitor)
+  dft_cell       = sim.add_flux(freq, 0, 1, monitor)
   sim.run(...)    # timestep until DFTs converged
   (Ey,Ez,Hy,Hz)  = [sim.get_dft_array(dft_cell,c,0) for c in [mp.Ey, mp.Ez, mp.Hy, mp.Hz]]
   (x,y,z,w)      = sim.get_array_metadata(dft=dft_cell)
@@ -3471,7 +3529,7 @@ def get_source(self,
                component,
                vol=None,
                center=None,
-               size=None): 
+               size=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3494,8 +3552,7 @@ The following step function collects field data from a given point and runs [Har
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior.
-See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 
 #### Miscellaneous Step-Function Modifiers
@@ -3504,7 +3561,7 @@ See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 <a id="combine_step_funcs"></a>
 
 ```python
-def combine_step_funcs(*step_funcs): 
+def combine_step_funcs(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3517,7 +3574,7 @@ all of the passed step functions.
 <a id="synchronized_magnetic"></a>
 
 ```python
-def synchronized_magnetic(*step_funcs): 
+def synchronized_magnetic(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3536,7 +3593,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="when_true"></a>
 
 ```python
-def when_true(cond, *step_funcs): 
+def when_true(cond, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3549,7 +3606,7 @@ no arguments), evaluate the step functions whenever `condition` returns `True`.
 <a id="when_false"></a>
 
 ```python
-def when_false(cond, *step_funcs): 
+def when_false(cond, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3562,7 +3619,7 @@ no arguments), evaluate the step functions whenever `condition` returns `False`.
 <a id="at_every"></a>
 
 ```python
-def at_every(dt, *step_funcs): 
+def at_every(dt, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3575,7 +3632,7 @@ Given zero or more step functions, evaluates them at every time interval of $dT$
 <a id="after_time"></a>
 
 ```python
-def after_time(t, *step_funcs): 
+def after_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3588,7 +3645,7 @@ units have elapsed from the start of the run.
 <a id="before_time"></a>
 
 ```python
-def before_time(t, *step_funcs): 
+def before_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3601,7 +3658,7 @@ units have elapsed from the start of the run.
 <a id="at_time"></a>
 
 ```python
-def at_time(t, *step_funcs): 
+def at_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3614,7 +3671,7 @@ have elapsed from the start of the run.
 <a id="after_sources"></a>
 
 ```python
-def after_sources(*step_funcs): 
+def after_sources(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3627,7 +3684,7 @@ sources have turned off.
 <a id="after_sources_and_time"></a>
 
 ```python
-def after_sources_and_time(t, *step_funcs): 
+def after_sources_and_time(t, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3640,7 +3697,7 @@ sources have turned off, plus an additional $T$ time units have elapsed.
 <a id="during_sources"></a>
 
 ```python
-def during_sources(*step_funcs): 
+def during_sources(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3653,7 +3710,7 @@ sources have turned off.
 <a id="at_beginning"></a>
 
 ```python
-def at_beginning(*step_funcs): 
+def at_beginning(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3666,7 +3723,7 @@ run.
 <a id="at_end"></a>
 
 ```python
-def at_end(*step_funcs): 
+def at_end(*step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3682,7 +3739,7 @@ Given zero or more step functions, evaluates them only once, at the end of the r
 <a id="in_volume"></a>
 
 ```python
-def in_volume(v, *step_funcs): 
+def in_volume(v, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3696,7 +3753,7 @@ output a subset (or a superset) of the cell, corresponding to the `meep::volume*
 <a id="in_point"></a>
 
 ```python
-def in_point(pt, *step_funcs): 
+def in_point(pt, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3709,7 +3766,7 @@ output a single *point* of data, at `pt` (a `Vector3`).
 <a id="to_appended"></a>
 
 ```python
-def to_appended(fname, *step_funcs): 
+def to_appended(fname, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3724,7 +3781,7 @@ dimension* to their datasets, corresponding to time.
 <a id="with_prefix"></a>
 
 ```python
-def with_prefix(pre, *step_funcs): 
+def with_prefix(pre, *step_funcs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -3907,7 +3964,7 @@ def __init__(self,
              E_chi3=None,
              H_chi2=None,
              H_chi3=None,
-             valid_freq_range=FreqRange(min=-1e+20, max=1e+20)): 
+             valid_freq_range=FreqRange(min=-1e+20, max=1e+20)):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3974,7 +4031,7 @@ Creates a `Medium` object.
 <div class="class_members" markdown="1">
 
 ```python
-def __repr__(self): 
+def __repr__(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3990,7 +4047,7 @@ Return repr(self).
 <div class="class_members" markdown="1">
 
 ```python
-def epsilon(self, freq): 
+def epsilon(self, freq):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4008,7 +4065,7 @@ of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 <div class="class_members" markdown="1">
 
 ```python
-def mu(self, freq): 
+def mu(self, freq):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4026,7 +4083,7 @@ of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 <div class="class_members" markdown="1">
 
 ```python
-def transform(self, m): 
+def transform(self, m):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4072,7 +4129,7 @@ anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-disper
 def __init__(self,
              sigma_diag=Vector3<0.0, 0.0, 0.0>,
              sigma_offdiag=Vector3<0.0, 0.0, 0.0>,
-             sigma=None): 
+             sigma=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4115,7 +4172,7 @@ the parameters (in addition to σ):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, frequency=0.0, gamma=0.0, **kwargs): 
+def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4155,7 +4212,7 @@ Dispersion](Materials.md#material-dispersion), with the parameters (in addition 
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, frequency=0.0, gamma=0.0, **kwargs): 
+def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4199,7 +4256,7 @@ Absorption](Materials.md#saturable-gain-and-absorption).
 def __init__(self,
              initial_populations=[],
              transitions=[],
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4247,7 +4304,7 @@ def __init__(self,
              frequency=0,
              sigma_diag=Vector3<1.0, 1.0, 1.0>,
              gamma=0,
-             pumping_rate=0): 
+             pumping_rate=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4299,7 +4356,7 @@ space and time, zero mean) added to the **P** damped-oscillator equation.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, noise_amp=0.0, **kwargs): 
+def __init__(self, noise_amp=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4350,7 +4407,7 @@ space and time, zero mean) added to the **P** damped-oscillator equation.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, noise_amp=0.0, **kwargs): 
+def __init__(self, noise_amp=0.0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4401,7 +4458,7 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs): 
+def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4440,7 +4497,7 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs): 
+def __init__(self, bias=Vector3<0.0, 0.0, 0.0>, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4486,7 +4543,7 @@ def __init__(self,
              frequency=0.0,
              gamma=0.0,
              alpha=0.0,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4543,7 +4600,7 @@ iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
 <div class="class_members" markdown="1">
 
 ```python
-def __add__(self, other): 
+def __add__(self, other):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4563,7 +4620,7 @@ v3 = v1 + v2
 <div class="class_members" markdown="1">
 
 ```python
-def __eq__(self, other): 
+def __eq__(self, other):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4585,7 +4642,7 @@ v1 == v2
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, x=0.0, y=0.0, z=0.0): 
+def __init__(self, x=0.0, y=0.0, z=0.0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4602,7 +4659,7 @@ zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
 <div class="class_members" markdown="1">
 
 ```python
-def __mul__(self, other): 
+def __mul__(self, other):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4623,7 +4680,7 @@ c = v1 * other
 <div class="class_members" markdown="1">
 
 ```python
-def __ne__(self, other): 
+def __ne__(self, other):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4645,7 +4702,7 @@ v1 != v2
 <div class="class_members" markdown="1">
 
 ```python
-def __repr__(self): 
+def __repr__(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4661,7 +4718,7 @@ Return repr(self).
 <div class="class_members" markdown="1">
 
 ```python
-def __rmul__(self, other): 
+def __rmul__(self, other):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4682,7 +4739,7 @@ c = other * v1
 <div class="class_members" markdown="1">
 
 ```python
-def __sub__(self, other): 
+def __sub__(self, other):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4702,7 +4759,7 @@ v3 = v1 - v2
 <div class="class_members" markdown="1">
 
 ```python
-def cdot(self, v): 
+def cdot(self, v):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4718,7 +4775,7 @@ Returns the conjugated dot product: *self*\* dot *v*.
 <div class="class_members" markdown="1">
 
 ```python
-def close(self, v, tol=1e-07): 
+def close(self, v, tol=1e-07):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4739,7 +4796,7 @@ v1.close(v2, [tol])
 <div class="class_members" markdown="1">
 
 ```python
-def cross(self, v): 
+def cross(self, v):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4759,7 +4816,7 @@ v3 = v1.cross(v2)
 <div class="class_members" markdown="1">
 
 ```python
-def dot(self, v): 
+def dot(self, v):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4779,7 +4836,7 @@ v3 = v1.dot(v2)
 <div class="class_members" markdown="1">
 
 ```python
-def norm(self): 
+def norm(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4799,7 +4856,7 @@ v2 = v1.norm()
 <div class="class_members" markdown="1">
 
 ```python
-def rotate(self, axis, theta): 
+def rotate(self, axis, theta):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4822,7 +4879,7 @@ v2 = v1.rotate(axis, theta)
 <div class="class_members" markdown="1">
 
 ```python
-def unit(self): 
+def unit(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4911,7 +4968,7 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 def __init__(self,
              material=Medium(),
              center=Vector3<0.0, 0.0, 0.0>,
-             epsilon_func=None): 
+             epsilon_func=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4943,7 +5000,7 @@ constructor via keyword arguments.
 <div class="class_members" markdown="1">
 
 ```python
-def info(self, indent_by=0): 
+def info(self, indent_by=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4960,7 +5017,7 @@ Displays all properties and current values of a `GeometricObject`, indented by
 <div class="class_members" markdown="1">
 
 ```python
-def shift(self, vec): 
+def shift(self, vec):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5004,7 +5061,7 @@ Represents a sphere.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, radius, **kwargs): 
+def __init__(self, radius, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5050,7 +5107,7 @@ def __init__(self,
              radius,
              axis=Vector3<0.0, 0.0, 1.0>,
              height=1e+20,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5087,7 +5144,7 @@ def __init__(self,
              radius,
              wedge_angle=6.283185307179586,
              wedge_start=Vector3<1.0, 0.0, 0.0>,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5124,7 +5181,7 @@ is halfway between the two circular ends.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, radius, radius2=0, **kwargs): 
+def __init__(self, radius, radius2=0, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5166,7 +5223,7 @@ def __init__(self,
              e1=Vector3<1.0, 0.0, 0.0>,
              e2=Vector3<0.0, 1.0, 0.0>,
              e3=Vector3<0.0, 0.0, 1.0>,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5208,7 +5265,7 @@ properties, but defines an ellipsoid inscribed inside the block.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, **kwargs): 
+def __init__(self, **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5247,7 +5304,7 @@ def __init__(self,
              axis=Vector3<0.0, 0.0, 1.0>,
              center=None,
              sidewall_angle=0,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5337,7 +5394,7 @@ def __init__(self,
              c2=Vector3<0.0, 0.0, 0.0>,
              c3=Vector3<0.0, 0.0, 0.0>,
              diag=Vector3<0.0, 0.0, 0.0>,
-             offdiag=Vector3<0.0, 0.0, 0.0>): 
+             offdiag=Vector3<0.0, 0.0, 0.0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5353,7 +5410,7 @@ Constructs a `Matrix`.
 <div class="class_members" markdown="1">
 
 ```python
-def __repr__(self): 
+def __repr__(self):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5369,7 +5426,7 @@ Return repr(self).
 <a id="get_rotation_matrix"></a>
 
 ```python
-def get_rotation_matrix(axis, theta): 
+def get_rotation_matrix(axis, theta):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -5424,7 +5481,7 @@ the axis of the rotation.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, direction, phase=1): 
+def __init__(self, direction, phase=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5549,11 +5606,11 @@ properties.
 ```python
 def __init__(self,
              thickness,
-             direction=-1,
-             side=-1,
+             direction=mp.ALL,
+             side=mp.ALL,
              R_asymptotic=1e-15,
              mean_stretch=1.0,
-             pml_profile=<function PML.<lambda> at 0x7fc840abd7a0>): 
+             pml_profile=DefaultPMLProfile):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5689,7 +5746,7 @@ def __init__(self,
              amplitude=1.0,
              amp_func=None,
              amp_func_file='',
-             amp_data=None): 
+             amp_data=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5832,7 +5889,7 @@ it does support anisotropic ε. Any nonlinearities, magnetic responses μ,
 conductivities σ, or dispersive polarizations in your materials will be *ignored* when
 computing the eigenmode source. PML will also be ignored.
 
-The `src_time` object (`Source.src`), which specifies the time dependence of the
+The `SourceTime` object (`Source.src`), which specifies the time dependence of the
 source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
 
 </div>
@@ -5850,24 +5907,24 @@ def __init__(self,
              volume=None,
              eig_lattice_size=None,
              eig_lattice_center=None,
-             component=20,
-             direction=-1,
+             component=mp.ALL_COMPONENTS,
+             direction=mp.AUTOMATIC,
              eig_band=1,
              eig_kpoint=Vector3<0.0, 0.0, 0.0>,
              eig_match_freq=True,
-             eig_parity=0,
+             eig_parity=mp.NO_PARITY,
              eig_resolution=0,
              eig_tolerance=1e-12,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
 
 Construct an `EigenModeSource`.
 
-+ **`eig_band` [`integer`]** — The index *n* (1,2,3,...) of the desired band
++ **`eig_band` [`integer` or `DiffractedPlanewave`]** — Either the index *n* (1,2,3,...) of the desired band
   ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
-  band at a given **k** point, and so on.
+  band at a given **k** point, and so on, or alternatively a diffracted planewaeve in homogeneous media.
 
 + **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`],
   `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]** — By
@@ -5950,12 +6007,66 @@ Construct an `EigenModeSource`.
 <div class="class_members" markdown="1">
 
 ```python
-def eig_power(self, freq): 
+def eig_power(self, freq):
 ```
 
 <div class="method_docstring" markdown="1">
 
 Returns the total power of the fields from the eigenmode source at frequency `freq`.
+
+</div>
+
+</div>
+
+---
+<a id="GaussianBeamSource"></a>
+
+### GaussianBeamSource
+
+```python
+class GaussianBeamSource(Source):
+```
+
+<div class="class_docstring" markdown="1">
+
+This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\mathbf{E}(r,z)=E_0\hat{x}\frac{w_0}{w(z)}\exp\left(\frac{-r^2}{w(z)^2}\right)\exp\left(-i\left(kz + k\frac{r^2}{2R(z)}\right)\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\pi n/\lambda$ is the wavenumber (for a free-space wavelength $\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
+
+(In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.)
+
+The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
+
+</div>
+
+
+
+<a id="GaussianBeamSource.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(self,
+             src,
+             center=None,
+             volume=None,
+             component=mp.ALL_COMPONENTS,
+             beam_x0=Vector3<0.0, 0.0, 0.0>,
+             beam_kdir=Vector3<0.0, 0.0, 0.0>,
+             beam_w0=None,
+             beam_E0=Vector3<0.0, 0.0, 0.0>,
+             **kwargs):
+```
+
+<div class="method_docstring" markdown="1">
+
+Construct a `GaussianBeamSource`.
+
++ **`beam_x0` [`Vector3`]** — The location of the beam focus *relative* to the center of the source. The beam focus does *not* need to lie within the source region (i.e., the beam focus can be anywhere, inside or outside the cell, independent of the position of the source).
+
++ **`beam_kdir` [`Vector3`]** — The propagation direction of the beam. The length is *ignored*. The wavelength of the beam is determined by the center frequency of the `Source.src` object and the refractive index (real part only) at the center of the source region.
+
++ **`beam_w0` [`number`]** — The beam waist radius.
+
++ **`beam_E0` [`Vector3`]** — The polarization vector of the beam. Elements can be complex valued (i.e., for circular polarization). The polarization vector must be *parallel* to the source region in order to generate a transverse mode.
 
 </div>
 
@@ -5994,7 +6105,7 @@ def __init__(self,
              fwidth=inf,
              cutoff=3.0,
              wavelength=None,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6069,7 +6180,7 @@ def __init__(self,
              start_time=0,
              cutoff=5.0,
              wavelength=None,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6155,7 +6266,7 @@ def __init__(self,
              start_time=-1e+20,
              end_time=1e+20,
              center_frequency=0,
-             **kwargs): 
+             **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6224,9 +6335,9 @@ the box add instead of subtract.
 def __init__(self,
              center=None,
              size=Vector3<0.0, 0.0, 0.0>,
-             direction=-1,
+             direction=mp.AUTOMATIC,
              weight=1.0,
-             volume=None): 
+             volume=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6355,7 +6466,7 @@ def __init__(self,
              size=Vector3<0.0, 0.0, 0.0>,
              dims=2,
              is_cylindrical=False,
-             vertices=[]): 
+             vertices=[]):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6371,7 +6482,7 @@ Construct a Volume.
 <a id="get_center_and_size"></a>
 
 ```python
-def get_center_and_size(vol): 
+def get_center_and_size(vol):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -6423,12 +6534,12 @@ swigobj_attr and return the property they requested.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, func, args): 
+def __init__(self, func, args):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See `help(type(self))` for accurate signature.
+Construct a `DftObj`.
 
 </div>
 
@@ -6456,12 +6567,12 @@ class DftFlux(DftObj):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, func, args): 
+def __init__(self, func, args):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See `help(type(self))` for accurate signature.
+Construct a `DftFlux`.
 
 </div>
 
@@ -6489,12 +6600,12 @@ class DftForce(DftObj):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, func, args): 
+def __init__(self, func, args):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See `help(type(self))` for accurate signature.
+Construct a `DftForce`.
 
 </div>
 
@@ -6522,12 +6633,12 @@ class DftNear2Far(DftObj):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, func, args): 
+def __init__(self, func, args):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See `help(type(self))` for accurate signature.
+Construct a `DftNear2Far`.
 
 </div>
 
@@ -6538,7 +6649,7 @@ Initialize self.  See `help(type(self))` for accurate signature.
 <div class="class_members" markdown="1">
 
 ```python
-def flux(self, direction, where, resolution): 
+def flux(self, direction, where, resolution):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6575,12 +6686,12 @@ class DftEnergy(DftObj):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, func, args): 
+def __init__(self, func, args):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See `help(type(self))` for accurate signature.
+Construct a `DftEnergy`.
 
 </div>
 
@@ -6608,12 +6719,12 @@ class DftFields(DftObj):
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, func, args): 
+def __init__(self, func, args):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Initialize self.  See `help(type(self))` for accurate signature.
+Construct a `DftFields`.
 
 </div>
 
@@ -6668,7 +6779,7 @@ track different volume locations (using `mp.in_volume`) or field components.
 <div class="class_members" markdown="1">
 
 ```python
-def __call__(self, sim, todo): 
+def __call__(self, sim, todo):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6691,7 +6802,7 @@ def __init__(self,
              realtime=False,
              normalize=False,
              plot_modifiers=None,
-             **customization_args): 
+             **customization_args):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6739,7 +6850,7 @@ Construct an `Animate2D` object.
 <div class="class_members" markdown="1">
 
 ```python
-def to_gif(self, fps, filename): 
+def to_gif(self, fps, filename):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6759,7 +6870,7 @@ format only supports 256 colors from a _predefined_ color palette. Requires
 <div class="class_members" markdown="1">
 
 ```python
-def to_jshtml(self, fps): 
+def to_jshtml(self, fps):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6777,7 +6888,7 @@ playback. User must specify a frame rate `fps` in frames per second.
 <div class="class_members" markdown="1">
 
 ```python
-def to_mp4(self, fps, filename): 
+def to_mp4(self, fps, filename):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6855,7 +6966,7 @@ sim.run(mp.after_sources(h))
 <div class="class_members" markdown="1">
 
 ```python
-def __call__(self, sim, todo): 
+def __call__(self, sim, todo):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6871,7 +6982,7 @@ Allows a Haminv instance to be used as a step function.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, c, pt, fcen, df, mxbands=None): 
+def __init__(self, c, pt, fcen, df, mxbands=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6899,7 +7010,7 @@ Miscellaneous Functions Reference
 <a id="quiet"></a>
 
 ```python
-def quiet(quietval=True): 
+def quiet(quietval=True):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -6911,26 +7022,13 @@ value will persist across runs within the same script.
 
 </div>
 
-
-<a id="verbosity"></a>
-
-```python
-def verbosity(v=1): 
-```
-
-<div class="function_docstring" markdown="1">
-
-Given a number `v`, specify the degree of Meep's output: `0` is quiet mode, `1` (the
-default) is ordinary output, `2` is extra debugging output, and `3` is all debugging
-output.
-
-</div>
+@@ verbosity @@
 
 
 <a id="interpolate"></a>
 
 ```python
-def interpolate(n, nums): 
+def interpolate(n, nums):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -6947,7 +7045,7 @@ original list.
 <a id="get_flux_freqs"></a>
 
 ```python
-def get_flux_freqs(f): 
+def get_flux_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -6961,7 +7059,7 @@ spectrum for.
 <a id="get_fluxes"></a>
 
 ```python
-def get_fluxes(f): 
+def get_fluxes(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -6975,7 +7073,7 @@ accumulated.
 <a id="scale_flux_fields"></a>
 
 ```python
-def scale_flux_fields(s, flux): 
+def scale_flux_fields(s, flux):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -6990,7 +7088,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g.
 <a id="get_eigenmode_freqs"></a>
 
 ```python
-def get_eigenmode_freqs(f): 
+def get_eigenmode_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7007,7 +7105,7 @@ spectrum for.
 <a id="get_energy_freqs"></a>
 
 ```python
-def get_energy_freqs(f): 
+def get_energy_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7020,7 +7118,7 @@ spectrum for.
 <a id="get_electric_energy"></a>
 
 ```python
-def get_electric_energy(f): 
+def get_electric_energy(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7033,7 +7131,7 @@ electric fields that it has accumulated.
 <a id="get_magnetic_energy"></a>
 
 ```python
-def get_magnetic_energy(f): 
+def get_magnetic_energy(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7046,7 +7144,7 @@ magnetic fields that it has accumulated.
 <a id="get_total_energy"></a>
 
 ```python
-def get_total_energy(f): 
+def get_total_energy(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7063,7 +7161,7 @@ total fields that it has accumulated.
 <a id="get_force_freqs"></a>
 
 ```python
-def get_force_freqs(f): 
+def get_force_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7076,7 +7174,7 @@ spectrum for.
 <a id="get_forces"></a>
 
 ```python
-def get_forces(f): 
+def get_forces(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7093,7 +7191,7 @@ accumulated.
 <a id="Ldos"></a>
 
 ```python
-def Ldos(*args): 
+def Ldos(*args):
 def Ldos(fcen, df, nfreq, freq):
 ```
 
@@ -7110,7 +7208,7 @@ argument.
 <a id="get_ldos_freqs"></a>
 
 ```python
-def get_ldos_freqs(l): 
+def get_ldos_freqs(l):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7123,7 +7221,7 @@ spectrum for.
 <a id="dft_ldos"></a>
 
 ```python
-def dft_ldos(*args, **kwargs): 
+def dft_ldos(*args, **kwargs):
 def dft_ldos(fcen=None, df=None, nfreq=None, freq=None, ldos=None):
 ```
 
@@ -7149,7 +7247,7 @@ is complete.
 <a id="get_near2far_freqs"></a>
 
 ```python
-def get_near2far_freqs(f): 
+def get_near2far_freqs(f):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7162,7 +7260,7 @@ spectrum for.
 <a id="scale_near2far_fields"></a>
 
 ```python
-def scale_near2far_fields(s, near2far): 
+def scale_near2far_fields(s, near2far):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7180,7 +7278,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 <a id="GDSII_layers"></a>
 
 ```python
-def GDSII_layers(fname): 
+def GDSII_layers(fname):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7198,7 +7296,7 @@ Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 <a id="GDSII_prisms"></a>
 
 ```python
-def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0): 
+def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7211,7 +7309,7 @@ Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer numb
 <a id="GDSII_vol"></a>
 
 ```python
-def GDSII_vol(fname, layer, zmin, zmax): 
+def GDSII_vol(fname, layer, zmin, zmax):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7233,7 +7331,7 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 <a id="stop_when_fields_decayed"></a>
 
 ```python
-def stop_when_fields_decayed(dt, c, pt, decay_by): 
+def stop_when_fields_decayed(dt, c, pt, decay_by):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7257,7 +7355,7 @@ slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.m
 <a id="stop_after_walltime"></a>
 
 ```python
-def stop_after_walltime(t): 
+def stop_after_walltime(t):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7270,7 +7368,7 @@ parameter. Stops the simulation after `t` seconds of wall time have passed.
 <a id="stop_on_interrupt"></a>
 
 ```python
-def stop_on_interrupt(): 
+def stop_on_interrupt():
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7289,7 +7387,7 @@ follows the `run` function (e.g., outputting fields).
 <a id="output_epsilon"></a>
 
 ```python
-def output_epsilon(sim, *step_func_args, **kwargs): 
+def output_epsilon(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7305,7 +7403,7 @@ frequency-independent part of ε (the $\omega\to\infty$ limit).
 <a id="output_mu"></a>
 
 ```python
-def output_mu(sim, *step_func_args, **kwargs): 
+def output_mu(sim, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7321,7 +7419,7 @@ frequency-independent part of μ (the $\omega\to\infty$ limit).
 <a id="output_poynting"></a>
 
 ```python
-def output_poynting(sim): 
+def output_poynting(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7336,7 +7434,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_hpwr"></a>
 
 ```python
-def output_hpwr(sim): 
+def output_hpwr(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7348,7 +7446,7 @@ Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 <a id="output_dpwr"></a>
 
 ```python
-def output_dpwr(sim): 
+def output_dpwr(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7360,7 +7458,7 @@ Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 <a id="output_tot_pwr"></a>
 
 ```python
-def output_tot_pwr(sim): 
+def output_tot_pwr(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7375,7 +7473,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_png"></a>
 
 ```python
-def output_png(compnt, options, rm_h5=True): 
+def output_png(compnt, options, rm_h5=True):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7405,7 +7503,7 @@ file requires `output_png(component, h5topng_options, rm_h5=False)`.
 <a id="output_hfield"></a>
 
 ```python
-def output_hfield(sim): 
+def output_hfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7418,7 +7516,7 @@ the different components are stored as different datasets within the *same* file
 <a id="output_hfield_x"></a>
 
 ```python
-def output_hfield_x(sim): 
+def output_hfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7432,7 +7530,7 @@ imaginary parts, respectively.
 <a id="output_hfield_y"></a>
 
 ```python
-def output_hfield_y(sim): 
+def output_hfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7446,7 +7544,7 @@ imaginary parts, respectively.
 <a id="output_hfield_z"></a>
 
 ```python
-def output_hfield_z(sim): 
+def output_hfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7460,7 +7558,7 @@ imaginary parts, respectively.
 <a id="output_hfield_r"></a>
 
 ```python
-def output_hfield_r(sim): 
+def output_hfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7474,7 +7572,7 @@ imaginary parts, respectively.
 <a id="output_hfield_p"></a>
 
 ```python
-def output_hfield_p(sim): 
+def output_hfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7489,7 +7587,7 @@ and imaginary parts, respectively.
 <a id="output_bfield"></a>
 
 ```python
-def output_bfield(sim): 
+def output_bfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7502,7 +7600,7 @@ the different components are stored as different datasets within the *same* file
 <a id="output_bfield_x"></a>
 
 ```python
-def output_bfield_x(sim): 
+def output_bfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7516,7 +7614,7 @@ imaginary parts, respectively.
 <a id="output_bfield_y"></a>
 
 ```python
-def output_bfield_y(sim): 
+def output_bfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7530,7 +7628,7 @@ imaginary parts, respectively.
 <a id="output_bfield_z"></a>
 
 ```python
-def output_bfield_z(sim): 
+def output_bfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7544,7 +7642,7 @@ imaginary parts, respectively.
 <a id="output_bfield_r"></a>
 
 ```python
-def output_bfield_r(sim): 
+def output_bfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7558,7 +7656,7 @@ imaginary parts, respectively.
 <a id="output_bfield_p"></a>
 
 ```python
-def output_bfield_p(sim): 
+def output_bfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7576,7 +7674,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_efield"></a>
 
 ```python
-def output_efield(sim): 
+def output_efield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7589,7 +7687,7 @@ the different components are stored as different datasets within the *same* file
 <a id="output_efield_x"></a>
 
 ```python
-def output_efield_x(sim): 
+def output_efield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7603,7 +7701,7 @@ imaginary parts, respectively.
 <a id="output_efield_y"></a>
 
 ```python
-def output_efield_y(sim): 
+def output_efield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7617,7 +7715,7 @@ imaginary parts, respectively.
 <a id="output_efield_z"></a>
 
 ```python
-def output_efield_z(sim): 
+def output_efield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7631,7 +7729,7 @@ imaginary parts, respectively.
 <a id="output_efield_r"></a>
 
 ```python
-def output_efield_r(sim): 
+def output_efield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7645,7 +7743,7 @@ imaginary parts, respectively.
 <a id="output_efield_p"></a>
 
 ```python
-def output_efield_p(sim): 
+def output_efield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7663,7 +7761,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_dfield"></a>
 
 ```python
-def output_dfield(sim): 
+def output_dfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7676,7 +7774,7 @@ is, the different components are stored as different datasets within the *same* 
 <a id="output_dfield_x"></a>
 
 ```python
-def output_dfield_x(sim): 
+def output_dfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7690,7 +7788,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_y"></a>
 
 ```python
-def output_dfield_y(sim): 
+def output_dfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7704,7 +7802,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_z"></a>
 
 ```python
-def output_dfield_z(sim): 
+def output_dfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7718,7 +7816,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_r"></a>
 
 ```python
-def output_dfield_r(sim): 
+def output_dfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7732,7 +7830,7 @@ and imaginary parts, respectively.
 <a id="output_dfield_p"></a>
 
 ```python
-def output_dfield_p(sim): 
+def output_dfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7750,7 +7848,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_sfield"></a>
 
 ```python
-def output_sfield(sim): 
+def output_sfield(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7766,7 +7864,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 <a id="output_sfield_x"></a>
 
 ```python
-def output_sfield_x(sim): 
+def output_sfield_x(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7780,7 +7878,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_y"></a>
 
 ```python
-def output_sfield_y(sim): 
+def output_sfield_y(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7794,7 +7892,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_z"></a>
 
 ```python
-def output_sfield_z(sim): 
+def output_sfield_z(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7808,7 +7906,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_r"></a>
 
 ```python
-def output_sfield_r(sim): 
+def output_sfield_r(sim):
 ```
 
 <div class="function_docstring" markdown="1">
@@ -7822,7 +7920,7 @@ and imaginary parts, respectively.
 <a id="output_sfield_p"></a>
 
 ```python
-def output_sfield_p(sim): 
+def output_sfield_p(sim):
 ```
 
 <div class="function_docstring" markdown="1">

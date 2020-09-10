@@ -59,12 +59,14 @@ static char *py2_string_as_utf8(PyObject *po) {
 #endif
 
 static PyObject *get_geom_mod() {
+  // Return value: Borrowed reference
   static PyObject *geom_mod = NULL;
   if (geom_mod == NULL) { geom_mod = PyImport_ImportModule("meep.geom"); }
   return geom_mod;
 }
 
 static PyObject *py_material_object() {
+  // Return value; Borrowed reference
   static PyObject *material_object = NULL;
   if (material_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -74,6 +76,7 @@ static PyObject *py_material_object() {
 }
 
 static PyObject *py_material_grid_object() {
+  // Return value: Borrowed reference
   static PyObject *material_object = NULL;
   if (material_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -83,6 +86,7 @@ static PyObject *py_material_grid_object() {
 }
 
 static PyObject *py_vector3_object() {
+  // Return value: Borrowed reference
   static PyObject *vector3_object = NULL;
   if (vector3_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -92,6 +96,7 @@ static PyObject *py_vector3_object() {
 }
 
 static PyObject *py_volume_object() {
+  // Return value: Borrowed reference
   static PyObject *volume_object = NULL;
   if (volume_object == NULL) {
     PyObject *geom_mod = get_geom_mod();
@@ -101,7 +106,7 @@ static PyObject *py_volume_object() {
 }
 
 static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
-
+  // Return value: New reference
   double x = 0, y = 0, z = 0;
 
   switch (v.dim) {
@@ -151,6 +156,7 @@ static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
     Py_DECREF(pyy);
     Py_DECREF(pyz);
 
+    Py_INCREF(py_callback_v3);
     return py_callback_v3;
   }
 }
@@ -164,6 +170,7 @@ static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct
 
   if (!pymedium_to_medium(pyret, medium)) { abort_with_stack_trace(); }
 
+  Py_DECREF(py_vec);
   Py_DECREF(pyret);
 }
 
@@ -180,6 +187,7 @@ static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medi
   medium->epsilon_diag.y = eps;
   medium->epsilon_diag.z = eps;
 
+  Py_DECREF(py_vec);
   Py_DECREF(pyret);
 }
 
@@ -247,6 +255,7 @@ static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
 }
 
 static PyObject *v3_to_pyv3(vector3 *v) {
+  // Return value: New reference
   PyObject *v3_class = py_vector3_object();
   PyObject *args = Py_BuildValue("(ddd)", v->x, v->y, v->z);
   PyObject *py_v = PyObject_Call(v3_class, args, NULL);
@@ -257,26 +266,27 @@ static PyObject *v3_to_pyv3(vector3 *v) {
 }
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
+  int rval = 1;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
   if (!py_attr) { abort_with_stack_trace(); }
 
-  if (!pyv3_to_v3(py_attr, v)) { return 0; }
+  if (!pyv3_to_v3(py_attr, v)) { rval = 0; }
 
   Py_XDECREF(py_attr);
-  return 1;
+  return rval;
 }
 
 static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
-
+  int rval = 1;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
   if (!py_attr) { abort_with_stack_trace(); }
 
-  if (!pyv3_to_cv3(py_attr, v)) { return 0; }
+  if (!pyv3_to_cv3(py_attr, v)) { rval = 0; }
 
   Py_XDECREF(py_attr);
-  return 1;
+  return rval;
 }
 
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
@@ -300,11 +310,12 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
 }
 
 static int get_attr_material(PyObject *po, material_type *m) {
+  int rval = 1;
   PyObject *py_material = PyObject_GetAttrString(po, "material");
 
   if (!py_material) { abort_with_stack_trace(); }
 
-  if (!pymaterial_to_material(py_material, m)) { return 0; }
+  if (!pymaterial_to_material(py_material, m)) { rval = 0; }
 
   Py_XDECREF(py_material);
 
@@ -433,8 +444,13 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
 static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   // po must be a python MaterialGrid object
 
+  int rval = 1;
+
   // specify the type of material grid
-  long gt_enum = PyInt_AsLong(PyObject_GetAttrString(po, "grid_type"));
+  PyObject * type = PyObject_GetAttrString(po, "grid_type");
+  long gt_enum = PyInt_AsLong(type);
+  Py_DECREF(type);
+
   switch (gt_enum) {
     case 0: md->material_grid_kinds = material_data::U_MIN; break;
     case 1: md->material_grid_kinds = material_data::U_PROD; break;
@@ -471,21 +487,31 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");
   PyObject *py_e_sus_m2 = PyObject_GetAttrString(po_medium2, "E_susceptibilities");
-  if (!py_e_sus_m1 || !py_e_sus_m2) { return 0; }
+  if (!py_e_sus_m1 || !py_e_sus_m2) { rval = 0; }
 
-  PyObject *py_sus = PyList_New(0);
-  for (int i = 0; i < PyList_Size(py_e_sus_m1); i++) {
-    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m1, i)) != 0)
-      meep::abort("unable to merge e sus lists.\n");
+  PyObject *py_sus = NULL;
+  if (rval != 0) {
+    py_sus = PyList_New(0);
+    for (int i = 0; i < PyList_Size(py_e_sus_m1); i++) {
+      if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m1, i)) != 0)
+        meep::abort("unable to merge e sus lists.\n");
+    }
+    for (int i = 0; i < PyList_Size(py_e_sus_m2); i++) {
+      if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m2, i)) != 0)
+        meep::abort("unable to merge e sus lists.\n");
+    }
+
+    if (!py_list_to_susceptibility_list(py_sus, &md->medium.E_susceptibilities)) { rval = 0; }
   }
-  for (int i = 0; i < PyList_Size(py_e_sus_m2); i++) {
-    if (PyList_Append(py_sus, PyList_GetItem(py_e_sus_m2, i)) != 0)
-      meep::abort("unable to merge e sus lists.\n");
-  }
 
-  if (!py_list_to_susceptibility_list(py_sus, &md->medium.E_susceptibilities)) { return 0; }
+  Py_DECREF(po_medium1);
+  Py_DECREF(po_medium2);
+  Py_DECREF(po_dp);
+  Py_DECREF(py_e_sus_m1);
+  Py_DECREF(py_e_sus_m2);
+  Py_XDECREF(py_sus);
 
-  return 1;
+  return rval;
 }
 
 static int pymaterial_to_material(PyObject *po, material_type *mt) {
@@ -552,6 +578,7 @@ template <class T> static void set_v3_on_pyobj(PyObject *py_obj, T *v3, const ch
 }
 
 static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
+  // Return value: New reference
   PyObject *geom_mod = get_geom_mod();
 
   PyObject *res;
@@ -629,6 +656,7 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
 }
 
 static PyObject *susceptibility_list_to_py_list(susceptibility_list *sl) {
+  // Return value: New reference
   PyObject *res = PyList_New(sl->num_items);
 
   for (Py_ssize_t i = 0; i < sl->num_items; ++i) {
@@ -639,6 +667,7 @@ static PyObject *susceptibility_list_to_py_list(susceptibility_list *sl) {
 }
 
 static PyObject *material_to_py_material(material_type mat) {
+  // Return value: New reference
   switch (mat->which_subclass) {
     case meep_geom::material_data::MEDIUM: {
       PyObject *geom_mod = get_geom_mod();
@@ -691,11 +720,16 @@ static int pymedium_to_medium(PyObject *po, medium_struct *m) {
   PyObject *py_e_susceptibilities = PyObject_GetAttrString(po, "E_susceptibilities");
   PyObject *py_h_susceptibilities = PyObject_GetAttrString(po, "H_susceptibilities");
 
-  if (!py_e_susceptibilities || !py_h_susceptibilities) { return 0; }
+  if (!py_e_susceptibilities || !py_h_susceptibilities) {
+    Py_XDECREF(py_e_susceptibilities);
+    Py_XDECREF(py_h_susceptibilities);
+    return 0;
+  }
 
   if (!py_list_to_susceptibility_list(py_e_susceptibilities, &m->E_susceptibilities) ||
       !py_list_to_susceptibility_list(py_h_susceptibilities, &m->H_susceptibilities)) {
-
+    Py_XDECREF(py_e_susceptibilities);
+    Py_XDECREF(py_h_susceptibilities);
     return 0;
   }
 
@@ -856,7 +890,10 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
 
   for (Py_ssize_t i = 0; i < num_vertices; ++i) {
     vector3 v3;
-    if (!pyv3_to_v3(PyList_GetItem(py_vert_list, i), &v3)) { return 0; }
+    if (!pyv3_to_v3(PyList_GetItem(py_vert_list, i), &v3)) {
+      Py_DECREF(py_vert_list);
+      return 0;
+    }
     vertices[i] = v3;
   }
 
@@ -923,6 +960,7 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
 }
 
 static PyObject *gobj_to_py_obj(geometric_object *gobj) {
+  // Return value: New reference
   switch (gobj->which_subclass) {
     case geometric_object::PRISM: {
       PyObject *geom_mod = get_geom_mod();
@@ -967,7 +1005,7 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
 }
 
 static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
-
+  // Return value: New reference
   PyObject *py_res = PyList_New(objs->num_items);
 
   for (int i = 0; i < objs->num_items; ++i) {

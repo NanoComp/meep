@@ -99,5 +99,4 @@ diff_cross_section = ff_r**2 * Pr / intensity
 scatt_cross_section_meep = 2*np.pi * np.sum(np.multiply(diff_cross_section,np.sin(angles))) * np.pi/npts
 scatt_cross_section_theory = ps.MieQ(n_sphere,1000/frq_cen,2*r*1000,asDict=True,asCrossSection=True)['Csca']*1e-6 # units of um^2
 
-if mp.am_master():
-    print("scatt:, {:.16f} (meep), {:.16f} (theory)".format(scatt_cross_section_meep,scatt_cross_section_theory))
+print("scatt:, {:.16f} (meep), {:.16f} (theory)".format(scatt_cross_section_meep,scatt_cross_section_theory))

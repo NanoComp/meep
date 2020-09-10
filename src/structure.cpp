@@ -820,7 +820,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   }
   condinv_stale = o->condinv_stale;
   // Allocate the PML conductivity arrays:
-  FOR_DIRECTIONS(d) {
+  for (int d = 0; d < 6; ++d) {
     sig[d] = NULL;
     kap[d] = NULL;
     siginv[d] = NULL;
@@ -977,7 +977,7 @@ structure_chunk::structure_chunk(const grid_volume &thegv, const volume &vol_lim
     condinv[c][d] = NULL;
   }
   condinv_stale = false;
-  FOR_DIRECTIONS(d) {
+  for (int d = 0; d < 6; ++d) {
     sig[d] = NULL;
     kap[d] = NULL;
     siginv[d] = NULL;

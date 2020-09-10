@@ -98,6 +98,7 @@ Meep supports a large number of functions to perform computations on the fields.
 @@ Simulation.phase_in_material @@
 @@ Simulation.get_field_point @@
 @@ Simulation.get_epsilon_point @@
+@@ Simulation.get_mu_point @@
 @@ Simulation.initialize_field @@
 @@ Simulation.add_dft_fields @@
 @@ Simulation.flux_in_box @@
@@ -169,7 +170,7 @@ The `Simulation` class also provides some aliases for the corresponding "flux" m
 
 ### Mode Decomposition
 
-Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Mode Decomposition](Mode_Decomposition.md).
+Given a structure, Meep can decompose the Fourier-transformed fields into a superposition of its harmonic modes. For a theoretical background, see [Features/Mode Decomposition](Mode_Decomposition.md).
 
 @@ Simulation.get_eigenmode_coefficients @@
 
@@ -189,7 +190,7 @@ The following top-level function is also available:
 
 @@ get_eigenmode_freqs @@
 
-
+@@ DiffractedPlanewave[methods-with-docstrings] @@
 
 ### Energy Density Spectra
 
@@ -577,7 +578,7 @@ plt.show()
 
   # x-directed Poynting flux through monitor from frequency-domain fields
   monitor        = mp.FluxRegion(center=mon_center, size=mon_size)
-  dft_cell       = sim.add_flux(freq, freq, 1, monitor)
+  dft_cell       = sim.add_flux(freq, 0, 1, monitor)
   sim.run(...)    # timestep until DFTs converged
   (Ey,Ez,Hy,Hz)  = [sim.get_dft_array(dft_cell,c,0) for c in [mp.Ey, mp.Ez, mp.Hy, mp.Hz]]
   (x,y,z,w)      = sim.get_array_metadata(dft=dft_cell)
@@ -599,8 +600,7 @@ The following step function collects field data from a given point and runs [Har
 
 ### Step-Function Modifiers
 
-Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior.
-See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
+Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
 
 
 #### Miscellaneous Step-Function Modifiers
@@ -777,6 +777,8 @@ The following classes are available directly via the `meep` package.
 @@ SourceTime @@
 
 @@ EigenModeSource[methods-with-docstrings] @@
+
+@@ GaussianBeamSource[methods-with-docstrings] @@
 
 @@ ContinuousSource[methods-with-docstrings] @@
 
