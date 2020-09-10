@@ -26,7 +26,6 @@
 
 #include <vector>
 
-#include <iostream>
 namespace meep {
 
 /* We use the type realnum for large arrays, e.g. the fields.
@@ -1192,11 +1191,6 @@ public:
 
 
 
-struct near_data{
-  vec near_x;
-  component near_fd_comp;
-  std::vector<std::vector<std::complex<double> > > matrix_elt;
-};
 
 struct sourcedata{
   component near_fd_comp;
@@ -1266,7 +1260,6 @@ public:
   double periodic_k[2], period[2];
 
 
-  std::vector<near_data> near_fds(const vec &x);
 
   std::vector<sourcedata> near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ);
 };
@@ -1728,8 +1721,10 @@ public:
   void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
 
-
   void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec);
+
+
+  
 
   // mpb.cpp
 

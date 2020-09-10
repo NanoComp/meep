@@ -305,6 +305,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
 }
 
 void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec){
+  sources = src->add_to(sources, &src);
   ptrdiff_t* index_arr = new ptrdiff_t[n];
   for (size_t i = 0; i < n; i++)
     index_arr[i] = cur_data.idx_arr[i];

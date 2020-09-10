@@ -25,7 +25,6 @@
 #include "config.h"
 #include <math.h>
 
-#include <iostream>
 
 using namespace std;
 
@@ -643,66 +642,6 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
 
 
 //Modified from farfield_lowlevel
-std::vector<struct near_data> dft_near2far::near_fds(const vec &x) {
-  if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
-    abort("only 2d or 3d or cylindrical far-field computation is supported");
-  greenfunc green = x.dim == D2 ? green2d : green3d;
-
-  const size_t Nfreq = freq.size();
-
-  std::vector<struct near_data> temp;
-  std::vector<std::complex<double> > EH00 (6,0);
-  std::vector<std::vector<std::complex<double> > > EH0 (Nfreq, EH00);
-
-  for (dft_chunk *f = F; f; f = f->next_in_dft) {
-    assert(Nfreq == f->omega.size());
-
-    component c0 = component(f->vc); /* equivalent source component */
-
-    vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-      std::complex<double> EH6[6];
-      size_t idx_dft = 0;
-      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
-        IVEC_LOOP_LOC(f->fc->gv, x0);
-        x0 = f->S.transform(x0, f->sn) + rshift;
-        vec xs(x0);
-
-        double w;
-        w = IVEC_LOOP_WEIGHT(f->s0, f->s1, f->e0, f->e1, f->dV0 + f->dV1 * loop_i2);
-
-
-        near_data temp_struct = {xs, component(f->c), EH0};
-
-        temp.push_back(temp_struct);
-
-
-        for (size_t i = 0; i < Nfreq; ++i) {
-
-
-        for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
-          if (periodic_d[0] != NO_DIRECTION)
-            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
-          double phase0 = i0 * periodic_k[0];
-          for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
-            if (periodic_d[1] != NO_DIRECTION)
-              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
-            double phase = phase0 + i1 * periodic_k[1];
-            std::complex<double> cphase = std::polar(1.0, phase);
-            if (x.dim == Dcyl)
-              greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
-            else
-              green(EH6, x, freq[i], eps, mu, xs, c0, w);
-            for (int j = 0; j < 6; ++j)
-              (*(temp.end()-1)).matrix_elt[i][j] += EH6[j] * cphase * (f->stored_weight);
-          }
-        }
-        idx_dft++;
-      }
-    }
-  }
-  return temp;
-}
-
 std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ) {
   if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
     abort("only 2d or 3d or cylindrical far-field computation is supported");
@@ -711,15 +650,11 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
   const size_t Nfreq = freq.size();
 
   std::vector<struct sourcedata> temp;
-  //std::vector<std::vector<std::complex<double> > > EH0 (Nfreq, EH00);
-
-
-
 
   for (dft_chunk *f = F; f; f = f->next_in_dft) {
     assert(Nfreq == f->omega.size());
     std::vector<ptrdiff_t> idx_arr;
-    std::vector<std::vector<std::complex<double> > > amp_arr;
+    std::vector<std::complex<double> > amp_arr;
 
     component c0 = component(f->vc); /* equivalent source component */
 
@@ -731,7 +666,6 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
       //temp.push_back(temp_struct);
 
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
-        std::vector<std::complex<double> > EH0 (Nfreq,0);
         IVEC_LOOP_LOC(f->fc->gv, x0);
         x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
@@ -743,29 +677,27 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
         temp_struct.idx_arr.push_back(idx);
 
         for (size_t i = 0; i < Nfreq; ++i) {
-
-
-        for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
-          if (periodic_d[0] != NO_DIRECTION)
-            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
-          double phase0 = i0 * periodic_k[0];
-          for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
-            if (periodic_d[1] != NO_DIRECTION)
-              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
-            double phase = phase0 + i1 * periodic_k[1];
-            std::complex<double> cphase = std::polar(1.0, phase);
-            if (x.dim == Dcyl)
-              greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
-            else
-              green(EH6, x, freq[i], eps, mu, xs, c0, w);
-            for (int j = 0; j < 6; ++j)
-              EH0[i] += EH6[j] * cphase * (f->stored_weight) * dJ[6*i+j];
+          std::complex<double> EH0 = 0;
+          for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
+            if (periodic_d[0] != NO_DIRECTION)
+              xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
+            double phase0 = i0 * periodic_k[0];
+            for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
+              if (periodic_d[1] != NO_DIRECTION)
+                xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
+              double phase = phase0 + i1 * periodic_k[1];
+              std::complex<double> cphase = std::polar(1.0, phase);
+              if (x.dim == Dcyl)
+                greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
+              else
+                green(EH6, x, freq[i], eps, mu, xs, c0, w);
+              for (int j = 0; j < 6; ++j)
+                EH0 += EH6[j] * cphase * (f->stored_weight) * dJ[6*i+j];
           }
         }
         idx_dft++;
+        temp_struct.amp_arr.push_back(EH0);
       }
-      temp_struct.amp_arr.push_back(EH0);
-
     }
     temp.push_back(temp_struct);
   }
