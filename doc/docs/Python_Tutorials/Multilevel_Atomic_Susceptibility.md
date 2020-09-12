@@ -38,7 +38,7 @@ The cavity contains roughly 10 wavelengths. This is an unphysically small cavity
 Next, we need to specify the non-radiative transition rates of the two-level atomic medium we're using as well as the total number of gain atoms in the system $N_0$. The non-radiative transition rates are specified in units of $c$/$a$.
 
 ```py
-rate_21 = 0.005        # non-radiative rate  (units of a/c)
+rate_21 = 0.005        # non-radiative rate  (units of c/a)
 N0 = 37                # initial population density of ground state
 Rp = 0.0051            # pumping rate of ground to excited state
 ```
