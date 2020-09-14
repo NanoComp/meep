@@ -1017,12 +1017,12 @@ class Simulation(object):
           as the default material, use the `material_function` keyword argument (below).
 
         + **`material_function` [ function ]** — A Python function that takes a `Vector3`
-          and returns a `Medium`. See also [Material Function](#material-function).
+          and returns a `Medium`. See also [Material Function](#medium).
           Defaults to `None`.
 
         + **`epsilon_func` [ function ]** — A Python function that takes a `Vector3` and
           returns the dielectric constant at that point. See also [Material
-          Function](#material-function). Defaults to `None`.
+          Function](#medium). Defaults to `None`.
 
         + **`epsilon_input_file` [`string`]** — If this string is not empty (the default),
           then it should be the name of an HDF5 file whose first/only dataset defines a
@@ -1092,7 +1092,7 @@ class Simulation(object):
 
         + **`eps_averaging` [`boolean`]** — If `True` (the default), then [subpixel
           averaging](Subpixel_Smoothing.md) is used when initializing the dielectric
-          function. For simulations involving a [material function](#material-function),
+          function. For simulations involving a [material function](#medium),
           `eps_averaging` is `False` (the default) and must be
           [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in
           which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and

@@ -179,12 +179,12 @@ Python. `Vector3` is a `meep` class.
   as the default material, use the `material_function` keyword argument (below).
 
 + **`material_function` [ function ]** — A Python function that takes a `Vector3`
-  and returns a `Medium`. See also [Material Function](#material-function).
+  and returns a `Medium`. See also [Material Function](#medium).
   Defaults to `None`.
 
 + **`epsilon_func` [ function ]** — A Python function that takes a `Vector3` and
   returns the dielectric constant at that point. See also [Material
-  Function](#material-function). Defaults to `None`.
+  Function](#medium). Defaults to `None`.
 
 + **`epsilon_input_file` [`string`]** — If this string is not empty (the default),
   then it should be the name of an HDF5 file whose first/only dataset defines a
@@ -254,7 +254,7 @@ Python. `Vector3` is a `meep` class.
 
 + **`eps_averaging` [`boolean`]** — If `True` (the default), then [subpixel
   averaging](Subpixel_Smoothing.md) is used when initializing the dielectric
-  function. For simulations involving a [material function](#material-function),
+  function. For simulations involving a [material function](#medium),
   `eps_averaging` is `False` (the default) and must be
   [enabled](Subpixel_Smoothing.md#enabling-averaging-for-material-function) in
   which case the input variables `subpixel_maxeval` (default 10<sup>4</sup>) and
@@ -4764,7 +4764,7 @@ def cdot(self, v):
 
 <div class="method_docstring" markdown="1">
 
-Returns the conjugated dot product: *self*\* dot *v*.
+Returns the conjugated dot product: `conj(self)` dot `v`.
 
 </div>
 
@@ -4781,7 +4781,7 @@ def close(self, v, tol=1e-07):
 <div class="method_docstring" markdown="1">
 
 Returns whether or not the corresponding components of the `self` and `v` vectors
-are within *`tol`* of each other. Defaults to 1e-7.
+are within `tol` of each other. Defaults to 1e-7.
 
 ```python
 v1.close(v2, [tol])
@@ -5026,7 +5026,7 @@ Shifts the object's `center` by `vec` (`Vector3`), returning a new object.
 This can also be accomplished via the `+` operator:
 
 ```python
-geometric_obj + Vector3(10,10,10)`
+geometric_obj + Vector3(10,10,10)
 ```
 
 Using `+=` will shift the object in place.
@@ -5435,9 +5435,10 @@ Like `Vector3.rotate`, except returns the (unitary) rotation matrix that perform
 given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result
 as `v.rotate(axis, theta)`.
 
-+ axis [`Vector3`] —
++ `axis` [`Vector3`] — The vector around which the rotation is applied in the right-hand direction.
 
-+ theta [`number`] —
++ `theta` [`number`] — The rotation angle (in radians).
+
 
 </div>
 

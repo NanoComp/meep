@@ -99,12 +99,15 @@ The above example calls the integration, maximum, and output routines only once,
 
 **Python**
 ```py
-meep.Simulation.run(mp.at_every(1, meep.Simulation.output_field_function("weird-function", [meep.Ex, meep.Hz, meep.Dielectric], f)), until=200)
+meep.Simulation.run(
+        mp.at_every(1, meep.Simulation.output_field_function("weird-function", [meep.Ex, meep.Hz, meep.Dielectric], f)),
+        until=200)
 ```
 
 **Scheme**
 ```scm
-(run-until 200 (at-every 1 (output-field-function "weird-function" (list Ex Hz Dielectric) f)))
+(run-until 200
+        (at-every 1 (output-field-function "weird-function" (list Ex Hz Dielectric) f)))
 ```
 
 This is **wrong**, and will cause Meep to exit with a strange error message. The reason is that the step functions you pass to `meep.Simulation.run` (Python) or `run-until` (Scheme) must be *functions*. For example, if you call `meep.Simulation.run(meep.output_hfield, until=200)` (Python) or `(run-until 200 output-hfield)` (Scheme),`output_hfield` (Python) or  `output-hfield` (Scheme)  is the name of a *function* which `meep.Simulation.run` (Python) or `run-until` (Scheme) will call to output the field. The incorrect code above, however, first *calls* the function `output_field_function` (Python) or `output-field-function` (Scheme) to output an HDF5 file, and then passes the *result* of this function to `meep.Simulation.run` (Python) or `run-until` (Scheme). Instead, you must write a new function which you can pass to `meep.Simulation.run` (Python) or `run-until` (Scheme), like the following:
@@ -112,7 +115,7 @@ This is **wrong**, and will cause Meep to exit with a strange error message. The
 **Python**
 ```py
 def my_weird_output(sim):
-    meep.Simulation.output_field_function("weird-function", [meep.Ex, meep.Hz, meep.Dielectric], f)    
+    meep.Simulation.output_field_function("weird-function", [meep.Ex, meep.Hz, meep.Dielectric], f)
 
 meep.Simulation.run(meep.at_every(1,my_weird_output), until=200)
 ```
