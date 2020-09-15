@@ -201,109 +201,15 @@ if mp.am_master():
 
 The field profiles confirm that for `d` of 0.06 μm (Figure 1), the input signal in Port 1 of the top branch is almost completely transferred to Port 4 of the bottom branch. For `d` of 0.13 μm (Figure 2), the input signal is split evenly between the two branches. Finally, for `d` of 0.30 μm (Figure 3), there is no longer any evanescent coupling and the signal remains completely in the top branch. The waveguide regions with no fields in Ports 3 and 4 are PML.
 
-### When computing the reflection coefficient S<sub>11</sub>, is it necessary to perform a separate normalization run to obtain the incident fields?
+### When computing the reflection coefficient |S<sub>11</sub>|<sup>2</sup>, is it necessary to perform a separate normalization run to obtain the incident fields?
 
-In the calculation of the reflection coefficent $S_{11}$ (which is based on the leftward-propagating fields in Port 1 given the rightward-propagating fields of an eigenmode source also in Port 1 that is positioned to the *left* of the mode monitor) involving a single run, slight discretization errors in the eigenmode-coefficient extraction will result in a "noise floor" below which the reflection cannot be measured in this way. In order to accurately extract a tiny (i.e., close to machine precision) backscattered field, a separate normalization run is required to compute the incident fields which are then subtracted from the Fourier-transformed fields in Port 1. This procedure is similar to those involving [flux calculations](Basics.md#transmittance-spectrum-of-a-waveguide-bend).
-
-As a demonstration, the following example computes $S_{11}$ for a straight waveguide (identical to the one used in the directional coupler example above) for the two cases of with and without normalization of the incident fields. The script is used to generate a plot of $S_{11}$ versus resolution which is shown below.
-
-The simulation script is in [examples/straight_waveguide_S11.py](https://github.com/NanoComp/meep/blob/master/python/examples/straight_waveguide_S11.py).
-
-```py
-import meep as mp
-import argparse
-
-from meep import mpb
-mpb.verbosity(0)
-
-parser = argparse.ArgumentParser()
-parser.add_argument('-res', type=int,
-                    default=50,
-                    help='resolution (default: 50 pixels/um)')
-parser.add_argument('-norm',
-                    action='store_true',
-                    default=False,
-                    help='normalization of incident fields? (default: false)')
-args = parser.parse_args()
-
-dpml = 1.0
-
-silicon = mp.Medium(epsilon=12)
-
-fcen = 1/1.55
-df = 0.2*fcen
-
-sxy = 5.0
-
-cell_size = mp.Vector3(sxy,sxy,0)
-
-boundary_layers = [mp.PML(thickness=dpml)]
-
-eig_parity = mp.EVEN_Y+mp.ODD_Z
-
-symmetries = [mp.Mirror(mp.Y)]
-
-w = 0.6 # waveguide width
-
-geometry = [mp.Block(material=silicon,
-                     center=mp.Vector3(),
-                     size=mp.Vector3(mp.inf,w,mp.inf))]
-
-sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
-                              center=mp.Vector3(-0.5*sxy+dpml,0),
-                              size=mp.Vector3(0,sxy,0),
-                              eig_band=1,
-                              eig_parity=eig_parity,
-                              eig_match_freq=True)]
-
-sim = mp.Simulation(resolution=args.res,
-                    cell_size=cell_size,
-                    boundary_layers=boundary_layers,
-                    sources=sources,
-                    geometry=geometry,
-                    symmetries=symmetries)
-
-mode = sim.add_flux(fcen, 0, 1,
-                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml),size=mp.Vector3(0,sxy,0)))
-
-sim.run(until_after_sources=20)
-
-input_data = sim.get_flux_data(mode)
-input_flux = mp.get_fluxes(mode)[0]
-
-sim.reset_meep()
-
-sim = mp.Simulation(resolution=args.res,
-                    cell_size=cell_size,
-                    boundary_layers=boundary_layers,
-                    sources=sources,
-                    geometry=geometry,
-                    symmetries=symmetries)
-
-mode = sim.add_flux(fcen, 0, 1,
-                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml),size=mp.Vector3(0,sxy,0)))
-
-if args.norm:
-    sim.load_minus_flux_data(mode, input_data)
-
-sim.run(until_after_sources=20)
-
-# mode coefficients
-coeff_minus = sim.get_eigenmode_coefficients(mode,[1],eig_parity).alpha[0,0,1]
-
-# S parameters
-S11 = abs(coeff_minus)**2/input_flux
-
-print("S11:, {}, {}".format(args.res,S11))
-```
-
-Note that in practice the $S_{11}$ mode monitor used to compute the reflected/incident fields should be positioned at least *several pixels* to the right of the source in order to avoid any overlap due to discretization.
+No (generally). In the single-run calculation of the reflection coefficent $|S_{11}|^2$ which is based on the back-scattered fields in Port 1 (due to the finite taper/bend length which breaks translational symmetry) given the forward-propagating fields of an eigenmode source also in Port 1, slight discretization errors in the eigenmode-coefficient extraction (as described in paragraph 3 of Section 4.2.2 of this [book chapter](https://arxiv.org/abs/1301.5366)) will result in a "noise floor" below which the reflection cannot be measured in this way. This is demonstrated in the figure below which shows a plot of the reflectance for $S_{11}$ and $S_{12}$ versus resolution. (In these types of calculations, it is important that the source and mode monitor in the same port be separated by *at least several pixels* in order to avoid any overlap due to discretization.)
 
 <center>
-![](../images/straight_waveguide_S11.png)
+![](../images/coupler_refl_S11_S12.png)
 </center>
 
-The figure above shows that at in the limit of infinite resolution, the "with normalization" case produces a reflection coefficient that is nearly 24 orders of magnitude smaller than the "without normalization" case (i.e., ~10<sup>-31</sup> vs. ~10<sup>-7</sup>). While this is a large discrepancy in the *relative* value of the backscattered fields, an absolute value of 10<sup>-7</sup> (the "noise floor") for the unnormalized case is likely sufficiently small for most practical applications that a separate normalization run is generally not necessary.
+In the limit of infinite resolution, the reflectance for $S_{11}$ and $S_{12}$ converge to constant values of ~10<sup>-6</sup> and ~10<sup>-8</sup>, respectively. (Note that the backscattered fields in Port 2 are two orders of magnitude smaller than those in Port 1 because the input fields in the upper branch of the directional coupler must cross into the lower branch to reach Port 2.) In order to accurately extract a tiny (i.e., close to machine precision) backscattered field, a separate normalization run is required to compute the incident fields which are then subtracted from the Fourier-transformed fields in Port 1 (and Port 2). This procedure is similar to those involving [flux calculations](Basics.md#transmittance-spectrum-of-a-waveguide-bend). However, the values for the backscattered fields are likely sufficiently small for most practical applications that a separate run to obtain the incident fields is generally not necessary.
 
 Modes of a Ring Resonator
 -------------------------
