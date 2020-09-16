@@ -5,9 +5,6 @@ import math
 import cmath
 import numpy as np
 
-from meep import mpb
-mpb.verbosity(0)
-
 resolution = 50        # pixels/μm
 
 dpml = 1.0             # PML thickness
