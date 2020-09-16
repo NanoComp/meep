@@ -420,7 +420,7 @@ for nm in range(nm_r):
   r_kdom = res.kdom[nm]
   Rmode = abs(r_coeffs[nm,0,1])**2/input_flux[0]
   r_angle = np.sign(r_kdom.y)*math.acos(r_kdom.x/(ng*fcen))
-  print("refl:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
+  print("refl:, {:2d}, {:6.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
   Rsum += Rmode
 
 nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)       # number of transmitted orders
@@ -436,7 +436,7 @@ for nm in range(nm_t):
   t_kdom = res.kdom[nm]
   Tmode = abs(t_coeffs[nm,0,0])**2/input_flux[0]
   t_angle = np.sign(t_kdom.y)*math.acos(t_kdom.x/fcen)
-  print("tran:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
+  print("tran:, {:2d}, {:6.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
   Tsum += Tmode
 
 print("mode-coeff:, {:.6f}, {:.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
@@ -454,27 +454,27 @@ The following are several lines of output for eight of the reflected and transmi
 
 ```
 ...
-refl:, 7, 6.83, 0.00006655
-refl:, 8, -8.49, 0.00005703
-refl:, 9, 8.76, 0.00015782
-refl:, 10, -10.43, 0.00001277
-refl:, 11, 10.70, 0.04414104
-refl:, 12, -12.38, 0.00005981
-refl:, 13, 12.65, 0.00041466
-refl:, 14, -14.34, 0.00001991
+refl:,  7,   6.83, 0.00006645
+refl:,  8,  -8.49, 0.00005695
+refl:,  9,   8.76, 0.00015756
+refl:, 10, -10.43, 0.00001272
+refl:, 11,  10.70, 0.04414669
+refl:, 12, -12.38, 0.00005969
+refl:, 13,  12.65, 0.00041535
+refl:, 14, -14.34, 0.00001986
 ...
 ```
 
 ```
 ...
-tran:, 12, -18.75, 0.00095295
-tran:, 13, 19.18, 0.38261656
-tran:, 14, -21.81, 0.00198510
-tran:, 15, 22.24, 0.00107184
-tran:, 16, -24.93, 0.00098452
-tran:, 17, 25.37, 0.04148787
-tran:, 18, -28.13, 0.00137329
-tran:, 19, 28.59, 0.00113850
+tran:, 12, -18.75, 0.00095438
+tran:, 13,  19.18, 0.38260804
+tran:, 14, -21.81, 0.00198524
+tran:, 15,  22.24, 0.00107212
+tran:, 16, -24.93, 0.00098416
+tran:, 17,  25.37, 0.04148390
+tran:, 18, -28.13, 0.00137340
+tran:, 19,  28.59, 0.00113876
 ...
 ```
 

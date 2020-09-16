@@ -176,7 +176,7 @@ class Vector3(object):
         return self.x * v.x + self.y * v.y + self.z * v.z
 
     def cdot(self, v):
-        """Returns the conjugated dot product: *self*\\* dot *v*."""
+        """Returns the conjugated dot product: `conj(self)` dot `v`."""
         return self.conj().dot(v)
 
     def cross(self, v):
@@ -216,7 +216,7 @@ class Vector3(object):
     def close(self, v, tol=1.0e-7):
         """
         Returns whether or not the corresponding components of the `self` and `v` vectors
-        are within *`tol`* of each other. Defaults to 1e-7.
+        are within `tol` of each other. Defaults to 1e-7.
 
         ```python
         v1.close(v2, [tol])
@@ -921,7 +921,7 @@ class GeometricObject(object):
         This can also be accomplished via the `+` operator:
 
         ```python
-        geometric_obj + Vector3(10,10,10)`
+        geometric_obj + Vector3(10,10,10)
         ```
 
         Using `+=` will shift the object in place.
@@ -1530,9 +1530,9 @@ def get_rotation_matrix(axis, theta):
     given rotation. i.e., `get_rotation_matrix(axis, theta) * v` produces the same result
     as `v.rotate(axis, theta)`.
 
-    + axis [`Vector3`] —
+    + `axis` [`Vector3`] — The vector around which the rotation is applied in the right-hand direction.
 
-    + theta [`number`] —
+    + `theta` [`number`] — The rotation angle (in radians).
     """
     return Matrix(Vector3(x=1).rotate(axis, theta),
                   Vector3(y=1).rotate(axis, theta),

@@ -15,11 +15,11 @@ The subpixel smoothing has four limitations: (1) it only applies to frequency-in
 Smoothed Permittivity Tensor via Perturbation Theory
 ----------------------------------------------------
 
-Any scheme for smoothing the interface perturbs the problem you are solving, as shown in the figure above, and a second-order accurate smoothing scheme must mean that the perturbation's effect is zero to first order in the smoothing diameter (the resolution). This turns out to require that the smoothing scheme be anisotropic. Even if the initial interface is between isotropic materials, one obtains an effective tensor $\tilde{ε}$ (or $\tilde{μ}$) which uses the mean ε for fields parallel to the interface and the harmonic mean (inverse of mean of ε<sup>-1</sup>) for fields perpendicular to the interface:
+Any scheme for smoothing the interface perturbs the problem you are solving, as shown in the figure above, and a second-order accurate smoothing scheme must mean that the perturbation's effect is zero to first order in the smoothing diameter (the resolution). This turns out to require that the smoothing scheme be anisotropic. Even if the initial interface is between isotropic materials, one obtains an effective tensor $\tilde{\varepsilon}$ (or $\tilde{\mu}$) which uses the mean $\varepsilon$ for fields parallel to the interface and the harmonic mean (inverse of mean of $\varepsilon^{-1}$) for fields perpendicular to the interface:
 
 <center>
 
-$$ \tilde{ε}^{-1} = \textbf{P}\langleε^{-1}\rangle + \big(1-\textbf{P}\big)\langleε\rangle^{-1} $$
+$$ \tilde{\varepsilon}^{-1} = \textbf{P}\langle\varepsilon^{-1}\rangle + \big(1-\textbf{P}\big)\langle\varepsilon\rangle^{-1} $$
 
 </center>
 
@@ -140,7 +140,7 @@ When subpixel smoothing is disabled by either (1) setting `eps_averaging=False` 
 Subpixel Smoothing vs. Bilinear Interpolation
 ---------------------------------------------
 
-In certain cases, using subpixel smoothing may be impractical given the poor runtime performance of the adaptive numerical integration method as discussed previously. A partial workaround, to ensure that Meep responds continuously to changes in the simulation parameters (even if absolute accuracy is not improved) is to *interpolate* any discontinuous structure onto the Yee grid. Otherwise, tiny changes in Meep's [Yee grid](Yee_Lattice.md) due to e.g. small changes in the resolution could cause discontinuous jumps in ε.
+In certain cases, using subpixel smoothing may be impractical given the poor runtime performance of the adaptive numerical integration method as discussed previously. A partial workaround, to ensure that Meep responds continuously to changes in the simulation parameters (even if absolute accuracy is not improved) is to *interpolate* any discontinuous structure onto the Yee grid. Otherwise, tiny changes in Meep's [Yee grid](Yee_Lattice.md) due to e.g. small changes in the resolution could cause discontinuous jumps in $\varepsilon$.
 
 As a demonstration of this effect, consider a ring resonator (inner radius: 2 μm, width: 1 μm; same structure as [above](#continuously-varying-shapes-and-results)) in which the ring geometry can be represented using five different methods:
 

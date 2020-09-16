@@ -115,7 +115,7 @@ for nm in range(nm_r):
   r_kdom = res.kdom[nm]
   Rmode = abs(r_coeffs[nm,0,1])**2/input_flux[0]
   r_angle = np.sign(r_kdom.y)*math.acos(r_kdom.x/(ng*fcen))
-  print("refl:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
+  print("refl:, {:2d}, {:6.2f}, {:.8f}".format(nm,math.degrees(r_angle),Rmode))
   Rsum += Rmode
 
 nm_t = np.floor((fcen-k.y)*gp)-np.ceil((-fcen-k.y)*gp)       # number of transmitted orders
@@ -131,7 +131,7 @@ for nm in range(nm_t):
   t_kdom = res.kdom[nm]
   Tmode = abs(t_coeffs[nm,0,0])**2/input_flux[0]
   t_angle = np.sign(t_kdom.y)*math.acos(t_kdom.x/fcen)
-  print("tran:, {}, {:.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
+  print("tran:, {:2d}, {:6.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
   Tsum += Tmode
 
 print("mode-coeff:, {:.6f}, {:.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
