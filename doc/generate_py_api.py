@@ -34,6 +34,29 @@ docstring, keeping it in place.
 
     NOTE: Currently the signature tags functionality assumes that the signature
           does not span more than one line.
+
+In order to get the actual text for default parameters, (rather than the value
+that the inspect module gives us) Python's ast module is used to find the actual
+text from the source code for those defaults. Then means that we can get
+constants like `mp.ALL_COMPONENTS` instead of `20`. This works well for most
+cases, but the AST for the following types of default parameters are complex enough
+that it's probably not worth the effort to use the AST for them. In these cases
+they fallback to using the `inspect` module's evaluated form of the default.
+With a little tweaking of the code the downsides of this approach can be
+mitigated.
+
+* Lambdas: The easiest way to workaround this is to assign the lambda to a
+  global and then use that global as the default value for the parameter.
+
+* Function calls: If the object returned by the call has a good `__repr__`
+  representation, then that will be used for the default's text in the
+  documentaion. If not, then an approach like the above is recommended.
+
+* Math expressions: An example of this case is `angle=2*math.pi` which will
+  result in the documentation using `angle=6.283185307179586`. If it's desired
+  to have something more meaningful in the API documentation then assigning the
+  value to a symbolic name and using that name for the default value works well
+  in this case too.
 """
 
 import sys
