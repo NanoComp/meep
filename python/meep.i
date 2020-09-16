@@ -879,7 +879,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c);
 
     destroy_geom_box_tree(geometry_tree);
-    delete[] l;
+    delete l;
     Py_DECREF(swigobj);
 }
 %}
