@@ -813,14 +813,18 @@ The following classes are available directly via the `meep` package.
 
 @@ Harminv[methods-with-docstrings] @@
 
+@@ Verbosity @@
+@@ Verbosity.__init__ @@
+@@ Verbosity.__call__ @@
+@@ Verbosity.add_verbosity_var @@
+@@ Verbosity.get @@
+@@ Verbosity.set @@
 
 
 Miscellaneous Functions Reference
 ---------------------------------
 
 @@ quiet @@
-
-@@ verbosity @@
 
 @@ interpolate @@
 

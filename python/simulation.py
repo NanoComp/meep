@@ -5050,6 +5050,8 @@ def quiet(quietval=True):
     This output can be suppressed by calling this function with `True` (the default). The
     output can be enabled again by passing `False`. This sets a global variable, so the
     value will persist across runs within the same script.
+
+    This function is deprecated, please use the [Verbosity](#verbosity) class instead.
     """
     verbosity(int(not quietval))
 
