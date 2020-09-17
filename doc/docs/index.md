@@ -17,7 +17,7 @@
 -   [Perfectly matched layer](Perfectly_Matched_Layer/) (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of [symmetries](Exploiting_Symmetry) to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   [Subpixel smoothing](Subpixel_Smoothing.md) for improving accuracy and shape optimization.
--   [Custom current sources](Python_Tutorials/Custom_Source.md) with arbitrary time and spatial profile as well as a [mode launcher](Python_Tutorials/Eigenmode_Source.md) for waveguides and planewaves.
+-   [Custom current sources](Python_Tutorials/Custom_Source.md) with arbitrary time and spatial profile as well as a [mode launcher](Python_Tutorials/Eigenmode_Source.md) for waveguides and planewaves, and [Gaussian beams](Python_User_Interface.md#gaussianbeamsource).
 -   [Frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source as well as a [frequency-domain eigensolver](Python_User_Interface.md#frequency-domain-eigensolver) for finding resonant modes.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   [GDSII](Python_User_Interface.md#gdsii-support) file import for planar geometries.
@@ -52,7 +52,7 @@ This documentation is for the master branch of the [source repository](Download.
 
 ### Mailing Lists
 
-Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce) to receive notifications of updates and releases. Subscribe to the [meep-discuss mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for discussions regarding using Meep. The [meep-discuss archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) includes all postings since 2006 spanning a large number and variety of discussion topics related to installation, setting up simulations, post-processing output, etc. This list can also be accessed using a [newsgroup reader](https://en.wikipedia.org/wiki/List_of_Usenet_newsreaders) via the NNTP interface address: `news.gmane.io/gmane.comp.science.electromagnetism.meep.general`.
+Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce) to receive notifications of updates and releases. Subscribe to the [meep-discuss mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for discussions regarding using Meep. The [meep-discuss archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) includes all postings since 2006 spanning a large number and variety of discussion topics related to installation, setting up simulations, post-processing output, etc. The list archives can also be accessed using a [newsgroup reader](https://en.wikipedia.org/wiki/List_of_Usenet_newsreaders) via the NNTP interface address: `news.gmane.io/gmane.comp.science.electromagnetism.meep.general`.
 
 ### Bug Reports and Feature Requests
 

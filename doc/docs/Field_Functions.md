@@ -2,7 +2,7 @@
 # Field Functions
 ---
 
-As described in [Python User Interface](Python_User_Interface.md), Meep provides several routines to integrate, analyze, and output arbitrary user-defined functions of the field components. See the functions whose names end with `_field_function`. This facility, while powerful, requires a bit more programming than most Meep usage, and is best illustrated by a few examples.
+As described in [Python Interface](Python_User_Interface.md), Meep provides several routines to integrate, analyze, and output arbitrary user-defined functions of the field components. See the functions whose names end with `_field_function`. This facility, while powerful, requires a bit more programming than most Meep usage, and is best illustrated by a few examples.
 
 Note: field functions can be applied to time-domain and [frequency-domain](Python_User_Interface.md#frequency-domain-solver) fields.
 
@@ -139,7 +139,7 @@ meep.Simulation.run(meep.synchronized_magnetic(meep.at_every(1,my_weird_output))
 (run-until 200 (synchronized-magnetic (at-every 1 my-weird-output)))
 ```
 
-For more information, see [Python User Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme User Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).
+For more information, see [Python Interface/Writing Your Own Step Functions](Python_User_Interface.md#writing-your-own-step-functions) or [Scheme Interface/Writing Your Own Step Functions](Scheme_User_Interface.md#writing-your-own-step-functions).
 
 Coordinates of the Yee Grid
 ---------------------------

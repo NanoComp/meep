@@ -18,7 +18,7 @@ import numpy as np
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
-from meep.source import EigenModeSource, check_positive, IndexedSource
+from meep.source import EigenModeSource, GaussianBeamSource, IndexedSource, check_positive
 import meep.visualization as vis
 from meep.verbosity_mgr import Verbosity
 
@@ -39,6 +39,7 @@ verbosity = Verbosity(mp.cvar, 1)
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
 mp.set_meep_printf_callback(mp.py_master_printf_wrap)
+mp.set_meep_printf_stderr_callback(mp.py_master_printf_stderr_wrap)
 mp.set_ctl_printf_callback(mp.py_master_printf_wrap)
 mp.set_mpb_printf_callback(mp.py_master_printf_wrap)
 
@@ -98,6 +99,70 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
     else:
         raise ValueError("Invalid dimensions in Volume: {}".format(dims))
 
+def bands_to_diffractedplanewave(where,bands):
+    if bands.axis is None:
+        if where.in_direction(mp.X) != 0:
+            axis = np.array([1, 0, 0], dtype=np.float64)
+        elif where.in_direction(mp.Y) != 0:
+            axis = np.array([0, 1, 0], dtype=np.float64)
+        elif where.in_direction(mp.Z) != 0:
+            axis = np.array([0, 0, 1], dtype=np.float64)
+        else:
+            raise ValueError("axis parameter of DiffractedPlanewave must be a non-zero Vector3")
+    elif isinstance(bands.axis,mp.Vector3):
+        axis = np.array([bands.axis.x, bands.axis.y, bands.axis.z], dtype=np.float64)
+    else:
+        raise TypeError("axis parameter of DiffractedPlanewave must be a Vector3")
+    diffractedplanewave_args = [
+        np.array(bands.g, dtype=np.intc),
+        axis,
+        bands.s * 1.0,
+        bands.p * 1.0
+    ]
+    return mp.diffractedplanewave(*diffractedplanewave_args)
+
+class DiffractedPlanewave(object):
+    """
+    For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
+    """
+    def __init__(self,
+                 g=None,
+                 axis=None,
+                 s=None,
+                 p=None):
+        """
+        Construct a `DiffractedPlanewave`.
+
+        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+
+        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
+
+        + **`s` [ `complex` ]** — The complex amplitude of the $\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
+
+        + **`p` [ `complex` ]** — The complex amplitude of the $\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
+        """
+        self._g = g
+        self._axis = axis
+        self._s = complex(s)
+        self._p = complex(p)
+
+    @property
+    def g(self):
+        return self._g
+
+    @property
+    def axis(self):
+        return self._axis
+
+    @property
+    def s(self):
+        return self._s
+
+    @property
+    def p(self):
+        return self._p
+
+DefaultPMLProfile = lambda u: u * u
 
 class PML(object):
     """
@@ -114,7 +179,7 @@ class PML(object):
                  side=mp.ALL,
                  R_asymptotic=1e-15,
                  mean_stretch=1.0,
-                 pml_profile=lambda u: u * u):
+                 pml_profile=DefaultPMLProfile):
         """
         + **`thickness` [`number`]** — The spatial thickness of the PML layer which
           extends from the boundary towards the *inside* of the cell. The thinner it is,
@@ -499,6 +564,7 @@ class DftObj(object):
     swigobj_attr and return the property they requested.
     """
     def __init__(self, func, args):
+        """Construct a `DftObj`."""
         self.func = func
         self.args = args
         self.swigobj = None
@@ -538,6 +604,7 @@ class DftFlux(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftFlux`."""
         super(DftFlux, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
@@ -576,6 +643,7 @@ class DftForce(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftForce`."""
         super(DftForce, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
@@ -606,6 +674,7 @@ class DftNear2Far(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftNear2Far`."""
         super(DftNear2Far, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.nperiods = args[1]
@@ -651,6 +720,7 @@ class DftEnergy(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftEnergy`."""
         super(DftEnergy, self).__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
@@ -677,6 +747,7 @@ class DftFields(DftObj):
     """
 
     def __init__(self, func, args):
+        """Construct a `DftFields`."""
         super(DftFields, self).__init__(func, args)
         self.nfreqs = len(args[4])
         self.regions = [FieldsRegion(where=args[1], center=args[2], size=args[3])]
@@ -693,6 +764,7 @@ Mode = namedtuple('Mode', ['freq', 'decay', 'Q', 'amp', 'err'])
 class EigenmodeData(object):
 
     def __init__(self, band_num, freq, group_velocity, k, swigobj, kdom):
+        """Construct an `EigenmodeData`."""
         self.band_num = band_num
         self.freq = freq
         self.group_velocity = group_velocity
@@ -1997,13 +2069,26 @@ class Simulation(object):
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permittivity tensor at that location and frequency. If `frequency` is
         non-zero, the result is complex valued; otherwise it is the real,
-        frequency-independent part of ε (the $\\omega\\to\\infty$ limit).
+        frequency-independent part of $\\varepsilon$ (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         if omega != 0:
             frequency = omega
             warnings.warn("get_epsilon_point: omega has been deprecated; use frequency instead", RuntimeWarning)
         return self.fields.get_eps(v3,frequency)
+
+    def get_mu_point(self, pt, frequency=0, omega=0):
+        """
+        Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
+        of the permeability tensor at that location and frequency. If `frequency` is
+        non-zero, the result is complex valued; otherwise it is the real,
+        frequency-independent part of $\\mu$ (the $\\omega\\to\\infty$ limit).
+        """
+        v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
+        if omega != 0:
+            frequency = omega
+            warnings.warn("get_mu_point: omega has been deprecated; use frequency instead", RuntimeWarning)
+        return self.fields.get_mu(v3,frequency)
 
     def get_filename_prefix(self):
         """
@@ -2218,13 +2303,19 @@ class Simulation(object):
             eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions,
                              is_cylindrical=self.is_cylindrical).swigobj
 
+            if isinstance(src.eig_band, DiffractedPlanewave):
+                eig_band = 1
+                diffractedplanewave = bands_to_diffractedplanewave(where, src.eig_band)
+            elif isinstance(src.eig_band, int):
+                eig_band = src.eig_band
+
             add_eig_src_args = [
                 src.component,
                 src.src.swigobj,
                 direction,
                 where,
                 eig_vol,
-                src.eig_band,
+                eig_band,
                 py_v3_to_vec(self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical),
                 src.eig_match_freq,
                 src.eig_parity,
@@ -2234,10 +2325,24 @@ class Simulation(object):
             ]
             add_eig_src = functools.partial(self.fields.add_eigenmode_source, *add_eig_src_args)
 
-            if src.amp_func is None:
-                add_eig_src()
+            if isinstance(src.eig_band, DiffractedPlanewave):
+                add_eig_src(src.amp_func, diffractedplanewave)
             else:
                 add_eig_src(src.amp_func)
+        elif isinstance (src, GaussianBeamSource):
+            gaussianbeam_args = [
+                py_v3_to_vec(self.dimensions, src.beam_x0, is_cylindrical=self.is_cylindrical),
+                py_v3_to_vec(self.dimensions, src.beam_kdir, is_cylindrical=self.is_cylindrical),
+                src.beam_w0,
+                src.src.swigobj.frequency().real,
+                self.fields.get_eps(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
+                self.fields.get_mu(py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)).real,
+                np.array([src.beam_E0.x, src.beam_E0.y, src.beam_E0.z], dtype=np.complex128)
+            ]
+            gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
+            add_vol_src_args = [src.src.swigobj, where, gaussianbeam]
+            add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)
+            add_vol_src()
         else:
             add_vol_src_args = [src.component, src.src.swigobj, where]
             add_vol_src = functools.partial(self.fields.add_volume_source, *add_vol_src_args)
@@ -3210,7 +3315,7 @@ class Simulation(object):
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
         """
-        Given a flux object and list of band indices, return a `namedtuple` with the
+        Given a flux object and list of band indices `bands` or `DiffractedPlanewave`, return a `namedtuple` with the
         following fields:
 
         + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
@@ -3233,25 +3338,54 @@ class Simulation(object):
         if direction is None or direction == mp.AUTOMATIC:
             direction = flux.normal_direction
 
-        num_bands = len(bands)
-        coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
-        vgrp = np.zeros(num_bands * flux.freq.size())
-        cscale = np.zeros(num_bands * flux.freq.size())
+        try:
+            bands_list_range = isinstance(bands, (list,range))
+        except TypeError:
+            bands_list_range = isinstance(bands, list)
 
-        kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
-            self.fields,
-            flux.swigobj,
-            eig_vol,
-            np.array(bands, dtype=np.intc),
-            eig_parity,
-            eig_resolution,
-            eig_tolerance,
-            coeffs,
-            vgrp,
-            kpoint_func,
-            cscale,
-            direction
-        )
+        if bands_list_range:
+            num_bands = len(bands)
+            coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
+            vgrp = np.zeros(num_bands * flux.freq.size())
+            cscale = np.zeros(num_bands * flux.freq.size())
+
+            kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
+                self.fields,
+                flux.swigobj,
+                eig_vol,
+                np.array(bands, dtype=np.intc),
+                eig_parity,
+                eig_resolution,
+                eig_tolerance,
+                coeffs,
+                vgrp,
+                kpoint_func,
+                cscale,
+                direction
+            )
+        elif isinstance(bands, DiffractedPlanewave):
+            num_bands = 1
+            coeffs = np.zeros(2 * num_bands * flux.freq.size(), dtype=np.complex128)
+            vgrp = np.zeros(num_bands * flux.freq.size())
+            cscale = np.zeros(num_bands * flux.freq.size())
+            diffractedplanewave = bands_to_diffractedplanewave(flux.where, bands)
+
+            kpoints, kdom = mp.get_eigenmode_coefficients_and_kpoints(
+                self.fields,
+                flux.swigobj,
+                eig_vol,
+                diffractedplanewave,
+                eig_parity,
+                eig_resolution,
+                eig_tolerance,
+                coeffs,
+                vgrp,
+                kpoint_func,
+                cscale,
+                direction
+            )
+        else:
+            raise TypeError("get_eigenmode_coefficients: bands must be either a list or DiffractedPlanewave object")
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.freq.size(), 2)), vgrp, kpoints, kdom, cscale)
 
@@ -3263,7 +3397,7 @@ class Simulation(object):
         object that can be used to inspect the computed mode.  In particular, it returns
         an `EigenmodeData` instance with the following fields:
 
-        + `band_num`: same as the `band_num` parameter
+        + `band_num`: same as a single element of the `bands` parameter
         + `freq`: the computed frequency, same as the `frequency` input parameter if
           `match_frequency=True`
         + `group_velocity`: the group velocity of the mode in `direction`

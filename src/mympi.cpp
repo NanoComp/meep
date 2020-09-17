@@ -574,6 +574,7 @@ void fields::boundary_communications(field_type ft) {
 bool am_really_master() { return (my_global_rank() == 0); }
 
 static meep_printf_callback_func master_printf_callback = NULL;
+static meep_printf_callback_func master_printf_stderr_callback = NULL;
 
 meep_printf_callback_func set_meep_printf_callback(meep_printf_callback_func func) {
   meep_printf_callback_func old_func = master_printf_callback;
@@ -581,21 +582,40 @@ meep_printf_callback_func set_meep_printf_callback(meep_printf_callback_func fun
   return old_func;
 }
 
-void master_printf(const char *fmt, ...) {
-  va_list ap;
-  va_start(ap, fmt);
+meep_printf_callback_func set_meep_printf_stderr_callback(meep_printf_callback_func func) {
+  meep_printf_callback_func old_func = master_printf_stderr_callback;
+  master_printf_stderr_callback = func;
+  return old_func;
+}
+
+static void _do_master_printf(FILE* output, meep_printf_callback_func callback,
+                              const char *fmt, va_list ap) {
   if (am_really_master()) {
-    if (master_printf_callback) {
+    if (callback) {
       char *s;
       vasprintf(&s, fmt, ap);
-      master_printf_callback(s);
+      callback(s);
       free(s);
     }
     else {
-      vprintf(fmt, ap);
-      fflush(stdout);
+      vfprintf(output, fmt, ap);
+      fflush(output);
     }
   }
+  va_end(ap);
+}
+
+void master_printf(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  _do_master_printf(stdout, master_printf_callback, fmt, ap);
+  va_end(ap);
+}
+
+void master_printf_stderr(const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  _do_master_printf(stderr, master_printf_stderr_callback, fmt, ap);
   va_end(ap);
 }
 

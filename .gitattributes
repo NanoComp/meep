@@ -1,0 +1,8 @@
+python/examples/* linguist-documentation
+python/examples/adjoint_optimization/* linguist-documentation
+python/tests/* linguist-documentation
+tests/* linguist-documentation
+scheme/examples/* linguist-documentation
+python/numpy.i linguist-vendored
+src/support/mt19937ar.c linguist-vendored
+src/support/meep_mt.h linguist-language=C++

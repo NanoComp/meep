@@ -662,6 +662,10 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
       reduced_dims[reduced_rank++] = dims[r];
     }
   }
+  if (reduced_rank==0) {
+    *rank = 0;
+    return array; // return array as is for singleton use case
+  }
   if (reduced_rank == full_rank) return array; // nothing to collapse
 
   /*--------------------------------------------------------------*/
@@ -673,11 +677,8 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   else if (full_rank == 3) {
     stride[0] = dims[1] * dims[2];
     stride[1] = dims[2];
-    if (reduced_stride[0] != 0)
-      reduced_stride[0] = reduced_dims[1];
-    else if (reduced_stride[1] != 0)
-      reduced_stride[1] = reduced_dims[1];
-    // else: two degenerate dimensions->reduced array is 1-diml, no strides needed
+    if (reduced_rank == 2)
+      reduced_stride[reduced_stride[0] != 0 ? 0 : 1] = reduced_dims[1];
   }
 
   /*--------------------------------------------------------------*/

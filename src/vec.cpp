@@ -27,6 +27,8 @@ using namespace std;
 
 namespace meep {
 
+static bool isinteger(double value) { return value == floor(value); }
+
 ivec grid_volume::round_vec(const vec &p) const {
   ivec result(dim);
   LOOP_OVER_DIRECTIONS(dim, d) { result.set_direction(d, my_round(p.in_direction(d) * 2 * a)); }
@@ -899,10 +901,16 @@ vec grid_volume::dz() const {
 }
 
 grid_volume volone(double zsize, double a) {
+  if (!isinteger(zsize * a))
+    master_printf_stderr(
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
   return grid_volume(D1, a, 0, 0, (int)(zsize * a + 0.5));
 }
 
 grid_volume voltwo(double xsize, double ysize, double a) {
+  if (!isinteger(xsize * a) || !isinteger(ysize * a))
+    master_printf_stderr(
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
   return grid_volume(D2, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
                      (ysize == 0) ? 1 : (int)(ysize * a + 0.5), 0);
 }
@@ -912,12 +920,19 @@ grid_volume vol1d(double zsize, double a) { return volone(zsize, a); }
 grid_volume vol2d(double xsize, double ysize, double a) { return voltwo(xsize, ysize, a); }
 
 grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
+  if (!isinteger(xsize * a) || !isinteger(ysize * a) || !isinteger(zsize * a))
+    master_printf_stderr(
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
   return grid_volume(D3, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
                      (ysize == 0) ? 1 : (int)(ysize * a + 0.5),
                      (zsize == 0) ? 1 : (int)(zsize * a + 0.5));
 }
 
 grid_volume volcyl(double rsize, double zsize, double a) {
+  if (!isinteger(rsize) || !isinteger(zsize))
+    master_printf_stderr(
+      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
+
   if (zsize == 0.0)
     return grid_volume(Dcyl, a, (int)(rsize * a + 0.5), 0, 1);
   else
@@ -1658,6 +1673,42 @@ const char *vec::str(char *buffer, size_t buflen) {
     snprintf(buffer, buflen, "{%f,%f,%f}", t[X], t[Y], t[Z]);
   return buffer;
 }
+
+const char *volume::str(char *buffer, size_t buflen) {
+  static char sbuf[1024]; // TODO: Use a bufring like the above?
+  if (buffer == 0) {
+    buffer = sbuf;
+    buflen = sizeof(sbuf);
+  }
+  snprintf(buffer, buflen, "min_corner:%s, max_corner:%s",
+           min_corner.str(), max_corner.str());
+  return buffer;
+}
+
+const char *grid_volume::str(char *buffer, size_t buflen) {
+  static char sbuf[1024]; // TODO: is this big enough?
+  int written = 0;
+  if (buffer == 0) {
+    buffer = sbuf;
+    buflen = sizeof(sbuf);
+  }
+
+  written += snprintf(buffer+written, buflen-written,
+                      "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
+                      dimension_name(dim), a, inva, num[0], num[1], num[2]);
+
+  // Adapted from the print() method
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    written += snprintf(buffer+written, buflen-written,
+              "  %s =%5g - %5g (%5g) \t", direction_name(d), origin.in_direction(d),
+              origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
+    if (buflen-written <=0)
+        break;
+  }
+  snprintf(buffer+written, buflen-written, "\n}");
+  return buffer;
+}
+
 
 /********************************************************************/
 /********************************************************************/
