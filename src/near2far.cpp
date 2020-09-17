@@ -25,7 +25,6 @@
 #include "config.h"
 #include <math.h>
 
-
 using namespace std;
 
 namespace meep {
@@ -640,7 +639,6 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
                       period);
 }
 
-
 //Modified from farfield_lowlevel
 std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ) {
   if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
@@ -648,34 +646,27 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
   const size_t Nfreq = freq.size();
-
   std::vector<struct sourcedata> temp;
 
   for (dft_chunk *f = F; f; f = f->next_in_dft) {
     assert(Nfreq == f->omega.size());
     std::vector<ptrdiff_t> idx_arr;
     std::vector<std::complex<double> > amp_arr;
-
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
       std::complex<double> EH6[6];
       size_t idx_dft = 0;
-
       sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
-      //temp.push_back(temp_struct);
 
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
         IVEC_LOOP_LOC(f->fc->gv, x0);
         x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
-
         double w;
         w = IVEC_LOOP_WEIGHT(f->s0, f->s1, f->e0, f->e1, f->dV0 + f->dV1 * loop_i2);
 
-
         temp_struct.idx_arr.push_back(idx);
-
         for (size_t i = 0; i < Nfreq; ++i) {
           std::complex<double> EH0 = 0;
           for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {

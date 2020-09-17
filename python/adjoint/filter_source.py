@@ -81,7 +81,6 @@ class FilteredSource(CustomSource):
             return self(t)
         return _f
 
-
     def estimate_impulse_response(self,H):
         # Use vandermonde matrix to calculate weights of each gaussian. Each window is centered at each frequency point.
         # TODO: come up with a more sophisticated way to choose temporal window size and basis locations

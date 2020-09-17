@@ -138,7 +138,6 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
 
 class FourierFields(ObjectiveQuantitiy):
     def __init__(self,sim,volume, component):
-
         self.sim = sim
         self.volume=volume
         self.eval = None
@@ -149,11 +148,9 @@ class FourierFields(ObjectiveQuantitiy):
         self.frequencies = np.asarray(frequencies)
         self.num_freq = len(self.frequencies)
         self.monitor = self.sim.add_dft_fields([self.component], self.frequencies, where=self.volume, yee_grid=False)
-
         return self.monitor
 
     def place_adjoint_source(self,dJ):
-
         dt = self.sim.fields.dt
         T = self.sim.meep_time()
 
@@ -165,7 +162,6 @@ class FourierFields(ObjectiveQuantitiy):
             dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
 
         self.sources = []
-
         iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix
         src = self.time_src
 
@@ -203,13 +199,11 @@ class FourierFields(ObjectiveQuantitiy):
 
     def __call__(self):
         self.time_src = self.sim.sources[0].src
-
         self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
         self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
         return self.eval
 
     def get_evaluation(self):
-
         try:
             return self.eval
         except AttributeError:
@@ -231,10 +225,8 @@ class Near2FarFields(ObjectiveQuantitiy):
         return self.monitor
 
     def place_adjoint_source(self,dJ):
-
         dt = self.sim.fields.dt
         T = self.sim.meep_time()
-
         self.sources = []
 
         iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix

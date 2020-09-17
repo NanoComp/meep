@@ -453,8 +453,6 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   require_component(c);
 }
 
-
-
 /***************************************************************/
 /* helper routine for add_eigenmode_source that calls          */
 /* add_volume_source only if certain conditions are met        */

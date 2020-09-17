@@ -75,8 +75,6 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 %include "numpy.i"
 %include "std_vector.i"
 
-
-
 %init %{
   import_array();
 %}
@@ -853,7 +851,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     // clean the volume object
     void* where;
 
-
     PyObject *swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
     SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
     const meep::volume* where_vol = (const meep::volume*)where;
@@ -1470,13 +1467,10 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "typemaps.i"
 %template(near_src_data) std::vector<meep::sourcedata>;
 
-
 %include "std_complex.i"
-
 %template(ComplexVector) std::vector<std::complex<double> >;
 
 std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x, std::vector<std::complex<double> > dJ);
-
 
 struct vector3 {
     double x;
@@ -1869,5 +1863,3 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     return s;
 }
 %}
-
-

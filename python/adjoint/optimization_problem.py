@@ -404,7 +404,6 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
     c ............... a list of components to monitor
 
     '''
-
     # get monitor dft output array dimensions
     dims = []
     for m in mon:
@@ -414,22 +413,13 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
             ci_dims += [simob.get_array_slice_dimensions(comp,vol=m.where)[0]]
         dims.append(ci_dims)
 
-
     # Record data in closure so that we can persitently edit
-    '''
-    closure = {
-        'previous_fields': [[np.ones(di,dtype=np.complex128) for di in d] for d in dims],
-        't0': 0
-    }
-    '''
-
     closure = {
         'previous_fields': [[None for di in d] for d in dims],
         't0': 0
     }
 
     def _stop(sim):
-
         if sim.round_time() <= dt + closure['t0']:
             return False
         else:
@@ -444,14 +434,10 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
                         current_fields[mi][ic] = mp.get_fluxes(m)[fcen_idx]
                     elif isinstance(m,mp.DftFields):
                         current_fields[mi][ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
-
                     elif isinstance(m, mp.simulation.DftNear2Far):
                         current_fields[mi][ic] = atleast_3d(sim.get_dft_array(m, cc, fcen_idx))
                     else:
                         raise TypeError("Monitor of type {} not supported".format(type(m)))
-
-                    #relative_change_raw = np.abs(previous_fields[mi][ic] - current_fields[mi][ic]) / np.abs(previous_fields[mi][ic])
-                    #relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
 
                     if previous_fields[mi][ic] is not None:
                         if np.sum(np.abs(previous_fields[mi][ic] - current_fields[mi][ic])) == 0:
@@ -461,13 +447,10 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
                             relative_change.append(np.mean(relative_change_raw.flatten())) # average across space and frequency
                         else:
                             relative_change.append(1)
-
                     else:
                         relative_change.append(1)
 
-
             relative_change = np.mean(relative_change) # average across monitors
-            print(relative_change)
             closure['previous_fields'] = current_fields
             closure['t0'] = sim.round_time()
 

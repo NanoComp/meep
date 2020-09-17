@@ -1189,8 +1189,6 @@ public:
 };
 
 
-
-
 struct sourcedata{
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
@@ -1198,8 +1196,6 @@ struct sourcedata{
   std::vector<std::complex<double> > amp_arr;
 
 };
-
-
 
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
@@ -1257,8 +1253,6 @@ public:
   direction periodic_d[2];
   int periodic_n[2];
   double periodic_k[2], period[2];
-
-
 
   std::vector<sourcedata> near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ);
 };
@@ -1735,11 +1729,7 @@ public:
                          std::complex<double> amp = 1.0);
   void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
-
   void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec);
-
-
-
 
   // mpb.cpp
 
