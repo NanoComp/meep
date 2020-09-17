@@ -526,3 +526,12 @@ class EigenModeSource(Source):
         if callable(getattr(self.src, "fourier_transform", None)):
            amp *= self.src.fourier_transform(freq)
         return abs(amp)**2
+
+class IndexedSource(Source):
+    def __init__(self, src, num_pts, srcdata, amp_arr):
+        self.src = src
+        self.num_pts = num_pts
+        self.srcdata = srcdata
+        self.amp_arr_vec = mp.ComplexVector(num_pts)
+        for i in range(num_pts):
+            self.amps_arr_vec[i] = amp_arr[i]

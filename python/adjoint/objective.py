@@ -136,8 +136,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             raise RuntimeError("You must first run a forward simulation before resquesting an eigenmode coefficient.")
 
 
-
-class Fourier_Coefficients(ObjectiveQuantitiy):
+class FourierFields(ObjectiveQuantitiy):
     def __init__(self,sim,volume, component):
 
         self.sim = sim
@@ -156,6 +155,7 @@ class Fourier_Coefficients(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
 
         dt = self.sim.fields.dt
+        T = self.sim.meep_time()
 
         if self.sim.cell_size.y == 0:
             dV = 1/self.sim.resolution
@@ -166,16 +166,26 @@ class Fourier_Coefficients(ObjectiveQuantitiy):
 
         self.sources = []
 
+        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix
+        src = self.time_src
+
+        # an ugly way to calcuate the scaled dtft of the forward source
+        y = np.array([src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+        fwd_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi) # dtft
+
+        # we need to compensate for the phase added by the time envelope at our freq of interest
+        src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi)
+        adj_src_phase = np.exp(1j*np.angle(src_center_dtft))
+
         if self.num_freq == 1:
-            scale = dV * 1j * 2 * np.pi * self.frequencies[0] / self.time_src.fourier_transform(self.frequencies[0])
-            amp = -atleast_3d(dJ[0]) * scale
+            amp = -atleast_3d(dJ[0]) * dV * iomega / fwd_dtft / adj_src_phase
             if self.component in [mp.Hx, mp.Hy, mp.Hz]:
                 amp = -amp
             for zi in range(len(self.dg.z)):
                 for yi in range(len(self.dg.y)):
                     for xi in range(len(self.dg.x)):
                         if amp[xi, yi, zi] != 0:
-                            self.sources += [mp.Source(self.time_src, component=self.component, amplitude= amp[xi, yi, zi],
+                            self.sources += [mp.Source(src, component=self.component, amplitude= amp[xi, yi, zi],
                             center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
         else:
             dJ_4d = np.array([atleast_3d(dJ[f]) for f in range(self.num_freq)])
@@ -184,8 +194,8 @@ class Fourier_Coefficients(ObjectiveQuantitiy):
             for zi in range(len(self.dg.z)):
                 for yi in range(len(self.dg.y)):
                     for xi in range(len(self.dg.x)):
-                        scale = -dJ_4d[:,xi,yi,zi] * dV * 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
-                        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
+                        scale = -dJ_4d[:,xi,yi,zi] * dV * iomega / adj_src_phase
+                        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
                         self.sources += [mp.Source(src, component=self.component, amplitude= 1,
                                 center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
 
@@ -206,8 +216,7 @@ class Fourier_Coefficients(ObjectiveQuantitiy):
             raise RuntimeError("You must first run a forward simulation.")
 
 
-
-class Far_Coefficients(ObjectiveQuantitiy):
+class Near2FarFields(ObjectiveQuantitiy):
     def __init__(self,sim,Near2FarRegions, far_pt):
         self.sim = sim
         self.Near2FarRegions=Near2FarRegions
@@ -224,18 +233,20 @@ class Far_Coefficients(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
 
         dt = self.sim.fields.dt
+        T = self.sim.meep_time()
 
-        if self.sim.cell_size.y == 0:
-            dV = 1/self.sim.resolution
-        elif self.sim.cell_size.z == 0:
-            dV = 1/self.sim.resolution * 1/self.sim.resolution
-        else:
-            dV = 1/self.sim.resolution * 1/self.sim.resolution * 1/self.sim.resolution
+        self.sources = []
 
-        self.sources = ['src_vol']
+        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self.frequencies) * dt)) * (1.0 / dt) # scaled frequency factor with discrete time derivative fix
+        src = self.time_src
 
+        # an ugly way to calcuate the scaled dtft of the forward source
+        y = np.array([src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
+        fwd_dtft = np.matmul(np.exp(1j*2*np.pi*self.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi) # dtft
 
-        freq_scale = 1j * 2 * np.pi * self.frequencies / np.array([self.time_src.fourier_transform(f) for f in self.frequencies])
+        # we need to compensate for the phase added by the time envelope at our freq of interest
+        src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi)
+        adj_src_phase = np.exp(1j*np.angle(src_center_dtft))
 
         dJ = list(dJ.flatten())
         dJ_c = mp.ComplexVector(len(dJ))
@@ -245,26 +256,20 @@ class Far_Coefficients(ObjectiveQuantitiy):
         #TODO far_pts in 3d or cylindrical, perhaps py_v3_to_vec from simulation.py
         self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(mp.vec(self.far_pt.x, self.far_pt.y), dJ_c)
 
-
         for near_data in self.all_nearsrcdata:
             cur_comp = near_data.near_fd_comp
-            amp_arr = near_data.amp_arr.reshape(self.num_freq, -1)
-
-
-            if cur_comp in [mp.Ex, mp.Ey, mp.Ez]:
-                scale = -freq_scale * amp_arr
-            else:
-                scale = freq_scale * amp_arr
+            amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
+            num_pts = amp_arr.shape[0]
+            scale = amp_arr * iomega / adj_src_phase
 
             if self.num_freq == 1:
-                ##TODO
-                self.sources += [mp.Source(self.time_src, component=cur_comp, amplitude=scale[0], center=near_pt)]
+                scale /= fwd_dtft
+                self.sources += [mp.IndexedSource(self.time_src, num_pts, near_data, scale[:,0])]
             else:
-                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt,self.time_src)
-                self.sources+=[(src.nodes, src.time_src_bf, near_data)]
-
-
-
+                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
+                (num_basis, num_pts) = src.nodes.shape
+                for basis_i in range(num_basis):
+                    self.sources += [mp.IndexedSource(src.time_src_bf[basis_i], num_pts, near_data, src.nodes[basis_i])]
 
         return self.sources
 

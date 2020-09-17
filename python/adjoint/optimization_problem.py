@@ -234,26 +234,8 @@ class OptimizationProblem(object):
         # Reset the fields
         self.sim.reset_meep()
 
-
         # Update the sources
-        #self.sim.change_sources(self.adjoint_sources)
-
-        if self.adjoint_sources[0] == 'src_vol':
-            self.sim.change_sources([])
-            self.sim.init_sim()
-            for (lincoeff, basisfunc, srcdata) in self.adjoint_sources[1:]:
-                (num_basis, num_pts) = lincoeff.shape
-                for basis_i in range(num_basis):
-                    amps_arr_vec = mp.ComplexVector(num_pts)
-                    for i in range(num_pts):
-                        amps_arr_vec[i] = lincoeff[basis_i, i]
-                    self.sim.fields.add_srcdata(srcdata, basisfunc[basis_i].swigobj, num_pts, amps_arr_vec)
-
-        else:
-            # Update the sources
-            self.sim.change_sources(self.adjoint_sources)
-
-
+        self.sim.change_sources(self.adjoint_sources)
 
         # register design flux
         self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]

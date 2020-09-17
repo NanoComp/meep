@@ -309,7 +309,6 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, st
   ptrdiff_t* index_arr = new ptrdiff_t[n];
   for (size_t i = 0; i < n; i++)
     index_arr[i] = cur_data.idx_arr[i];
-  cur_data.idx_arr.data();
   component c = cur_data.near_fd_comp;
   complex<double> *amps_arr = new complex<double>[n];
   for (size_t i = 0; i < n; i++){
