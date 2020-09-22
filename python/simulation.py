@@ -2042,7 +2042,6 @@ class Simulation(object):
         [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
         ![](images/phase-in-material.png)
-
         """
         if self.fields is None:
             self.init_sim()
@@ -3002,7 +3001,6 @@ class Simulation(object):
         components $c_1,\\ldots$ and ask Meep to integrate it over a given volume, find its
         maximum, or output it (via `output_field_function`, described later). This is done
         via the functions:
-
         """
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using modal_volume_in_box')

@@ -594,7 +594,6 @@ in
 [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
 ![](images/phase-in-material.png)
-
 </div>
 
 </div>
@@ -824,7 +823,6 @@ $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field
 components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its
 maximum, or output it (via `output_field_function`, described later). This is done
 via the functions:
-
 </div>
 
 </div>
@@ -3937,7 +3935,6 @@ Drude resonances via the `LorentzianSusceptibility` or
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of
 objects that are subclasses of type `Susceptibility`.
-
 </div>
 
 

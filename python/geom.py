@@ -258,7 +258,8 @@ class Vector3(object):
 
 
 class Medium(object):
-    """This class is used to specify the materials that geometric objects are made of. It
+    """
+    This class is used to specify the materials that geometric objects are made of. It
     represents an electromagnetic medium which is possibly nonlinear and/or dispersive.
     See also [Materials](Materials.md). To model a perfectly-conducting metal, use the
     predefined `metal` object, above. To model imperfect conductors, use a dispersive
@@ -307,7 +308,6 @@ class Medium(object):
 
     Dispersive dielectric and magnetic materials, above, are specified via a list of
     objects that are subclasses of type `Susceptibility`.
-
     """
     def __init__(self, epsilon_diag=Vector3(1, 1, 1),
                  epsilon_offdiag=Vector3(),
