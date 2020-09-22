@@ -581,14 +581,16 @@ def phase_in_material(self, structure, time):
 
 <div class="method_docstring" markdown="1">
 
-`newstructure` should be the `structure` field of another `Simulation` object with
-the same cell size and resolution.   Over the next time period `phasetime` (in the
-current simulation's time units), the current structure (ε, μ, and conductivity)
-will be gradually changed to `newstructure`. In particular, at each timestep it
-linearly interpolates between the old structure and the new structure. After
-`phasetime` has elapsed, the structure will remain equal to `newstructure`. This
-is demonstrated in the following image for two [Cylinder](#cylinder) objects (the
-simulation script is in
+`newstructure` should be the `structure` field of another `Simulation`
+object with the same cell size and resolution.  Over the next time
+period `phasetime` (in the current simulation's time units), the
+current structure ($\varepsilon$, $\mu$, and conductivity $\sigma_D$)
+will be gradually changed to `newstructure`. In particular, at each
+timestep it linearly interpolates between the old structure and the
+new structure. After `phasetime` has elapsed, the structure will
+remain equal to `newstructure`. This is demonstrated in the following
+image for two [Cylinder](#cylinder) objects (the simulation script is
+in
 [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
 ![](images/phase-in-material.png)
@@ -801,10 +803,11 @@ def modal_volume_in_box(self, box=None, center=None, size=None):
 
 <div class="method_docstring" markdown="1">
 
-Given a `mp.Volume`, returns the instantaneous modal volume according to the
-Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum
-(ε|E|<sup>2</sup>). If no volume argument is provided, the entire cell is used by
-default. If the `center` and `size` arguments are provided instead of `box`, Meep
+Given a `mp.Volume`, returns the instantaneous modal volume according
+to the Purcell-effect definition: 
+$\left(\int\varepsilon|\mathbf{E}|^2\right)/\left(\max{\varepsilon|\mathbf{E}|^2}\right)$.
+If no volume argument is provided, the entire cell is used by default. If
+the `center` and `size` arguments are provided instead of `box`, Meep
 will construct the appropriate volume for you.
 
 Note that if you are at a fixed frequency and you use complex fields (via
@@ -1139,7 +1142,7 @@ def save_flux(self, fname, flux):
 <div class="method_docstring" markdown="1">
 
 Save the Fourier-transformed fields corresponding to the given flux object in an
-HDF5 file of the given `filename` without the ".h5" suffix (the current
+HDF5 file of the given `filename` without the `.h5` suffix (the current
 filename-prefix is prepended automatically).
 
 </div>
@@ -1158,7 +1161,7 @@ def load_flux(self, fname, flux):
 
 Load the Fourier-transformed fields into the given flux object (replacing any
 values currently there) from an HDF5 file of the given `filename` without the
-".h5" suffix (the current filename-prefix is prepended automatically). You must
+`.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_flux` in a simulation of the same
 dimensions (for both the cell and the flux regions) with the same number of
 processors.
@@ -1596,7 +1599,7 @@ def save_energy(self, fname, energy):
 <div class="method_docstring" markdown="1">
 
 Save the Fourier-transformed fields corresponding to the given energy object in an
-HDF5 file of the given `filename` without the ".h5" suffix (the current
+HDF5 file of the given `filename` without the `.h5` suffix (the current
 filename-prefix is prepended automatically).
 
 </div>
@@ -1615,7 +1618,7 @@ def load_energy(self, fname, energy):
 
 Load the Fourier-transformed fields into the given energy object (replacing any
 values currently there) from an HDF5 file of the given `filename` without the
-".h5" suffix (the current filename-prefix is prepended automatically). You must
+`.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_energy` in a simulation of the same
 dimensions for both the cell and the energy regions with the same number of
 processors.
@@ -1757,7 +1760,7 @@ def save_force(self, fname, force):
 <div class="method_docstring" markdown="1">
 
 Save the Fourier-transformed fields corresponding to the given force object in an
-HDF5 file of the given `filename` without the ".h5" suffix (the current
+HDF5 file of the given `filename` without the `.h5` suffix (the current
 filename-prefix is prepended automatically).
 
 </div>
@@ -1776,7 +1779,7 @@ def load_force(self, fname, force):
 
 Load the Fourier-transformed fields into the given force object (replacing any
 values currently there) from an HDF5 file of the given `filename` without the
-".h5" suffix (the current filename-prefix is prepended automatically). You must
+`.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_force` in a simulation of the same
 dimensions for both the cell and the force regions with the same number of
 processors.
@@ -2083,7 +2086,7 @@ def save_near2far(self, fname, near2far):
 <div class="method_docstring" markdown="1">
 
 Save the Fourier-transformed fields corresponding to the given `near2far` object
-in an HDF5 file of the given `filename` (without the ".h5" suffix). The current
+in an HDF5 file of the given `filename` (without the `.h5` suffix). The current
 filename-prefix is prepended automatically.
 
 </div>
@@ -2102,7 +2105,7 @@ def load_near2far(self, fname, near2far):
 
 Load the Fourier-transformed fields into the given `near2far` object (replacing
 any values currently there) from an HDF5 file of the given `filename` without the
-".h5" suffix (the current filename-prefix is prepended automatically). You must
+`.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_near2far` in a simulation of *the same
 dimensions* for both the cell and the near2far regions with the same number of
 processors.
@@ -3905,26 +3908,32 @@ Instead of the `material` or `material_function` arguments, you can also use the
 `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a
 function of position that returns the dielectric constant at that point.
 
-**Important:** If your material function returns nonlinear, dispersive (Lorentzian or
-conducting), or magnetic materials, you should also include a list of these materials
-in the `extra_materials` input variable (above) to let Meep know that it needs to
-support these material types in your simulation. For dispersive materials, you need to
-include a material with the *same* values of γ<sub>*n*</sub> and ω<sub>*n*</sub>, so
-you can only have a finite number of these, whereas σ<sub>*n*</sub> can vary
-continuously and a matching σ<sub>*n*</sub> need not be specified in
-`extra_materials`. For nonlinear or conductivity materials, your `extra_materials`
-list need not match the actual values of σ or χ returned by your material function,
-which can vary continuously.
+**Important:** If your material function returns nonlinear, dispersive
+(Lorentzian or conducting), or magnetic materials, you should also
+include a list of these materials in the `extra_materials` input
+variable (above) to let Meep know that it needs to support these
+material types in your simulation. For dispersive materials, you need
+to include a material with the *same* values of $\gamma_n$ and
+$\omega_n$, so you can only have a finite number of these, whereas
+$\sigma_n$ can vary continuously and a matching $\sigma_n$ need not be
+specified in `extra_materials`. For nonlinear or conductivity
+materials, your `extra_materials` list need not match the actual
+values of $\sigma$ or $\chi$ returned by your material function, which
+can vary continuously.
 
-**Complex ε and μ**: you cannot specify a frequency-independent complex ε or μ in Meep
-where the imaginary part is a frequency-independent loss but there is an alternative.
-That is because there are only two important physical situations. First, if you only
-care about the loss in a narrow bandwidth around some frequency, you can set the loss
-at that frequency via the [conductivity](Materials.md#conductivity-and-complex).
-Second, if you care about a broad bandwidth, then all physical materials have a
-frequency-dependent complex ε and/or μ, and you need to specify that frequency
-dependence by fitting to Lorentzian and/or Drude resonances via the
-`LorentzianSusceptibility` or `DrudeSusceptibility` classes below.
+**Complex $\varepsilon$ and $\mu$**: you cannot specify a
+frequency-independent complex $\varepsilon$ or $\mu$ in Meep where the
+imaginary part is a frequency-independent loss but there is an
+alternative.  That is because there are only two important physical
+situations. First, if you only care about the loss in a narrow
+bandwidth around some frequency, you can set the loss at that
+frequency via the
+[conductivity](Materials.md#conductivity-and-complex).  Second, if you
+care about a broad bandwidth, then all physical materials have a
+frequency-dependent complex $\varepsilon$ and/or $\mu$, and you need
+to specify that frequency dependence by fitting to Lorentzian and/or
+Drude resonances via the `LorentzianSusceptibility` or
+`DrudeSusceptibility` classes below.
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of
 objects that are subclasses of type `Susceptibility`.
@@ -5961,8 +5970,8 @@ Construct an `EigenModeSource`.
   region*, with respect to the `center` of the source region.  (In particular, it
   does not matter if your simulation as a whole has that symmetry, only the cross
   section where you are introducing the source.) If the structure has both $y$ and
-  $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z +
-  ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands
+  $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`.
+  Default is `NO_PARITY`, in which case MPB computes all of the bands
   which will still be even or odd if the structure has mirror symmetry, of course.
   This is especially useful in 2d simulations to restrict yourself to a desired
   polarization.
@@ -6831,13 +6840,13 @@ Construct an `Animate2D` object.
   object, and must return that same axis object. The following modifier changes
   the `xlabel`:
 
-  ```py
+```py
   def mod1(ax):
       ax.set_xlabel('Testing')
       return ax
 
   plot_modifiers = [mod1]
-  ```
+```
 
 + **`**customization_args`** — Customization keyword arguments passed to
   `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)

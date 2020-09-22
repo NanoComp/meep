@@ -759,13 +759,13 @@ class Animate2D(object):
           object, and must return that same axis object. The following modifier changes
           the `xlabel`:
 
-          ```py
+        ```py
           def mod1(ax):
               ax.set_xlabel('Testing')
               return ax
 
           plot_modifiers = [mod1]
-          ```
+        ```
 
         + **`**customization_args`** — Customization keyword arguments passed to
           `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)

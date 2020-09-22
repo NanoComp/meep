@@ -411,8 +411,8 @@ class EigenModeSource(Source):
           region*, with respect to the `center` of the source region.  (In particular, it
           does not matter if your simulation as a whole has that symmetry, only the cross
           section where you are introducing the source.) If the structure has both $y$ and
-          $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z +
-          ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands
+          $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z + ODD_Y`.
+          Default is `NO_PARITY`, in which case MPB computes all of the bands
           which will still be even or odd if the structure has mirror symmetry, of course.
           This is especially useful in 2d simulations to restrict yourself to a desired
           polarization.
