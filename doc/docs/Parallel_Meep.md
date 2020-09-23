@@ -11,7 +11,7 @@ Installing Parallel Meep
 
 To build from source the parallel version of Meep, you must have a version of MPI installed on your system. For an overview, see [Build From Source/MPI](Build_From_Source.md#mpi).
 
-We also strongly recommend installing the [HDF5 package](Build_From_Source.md#hdf5) with **parallel** I/O support if you are going to run with more than a few cores/processors. HDF5 needs to be configured with the flag `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`.
+We also strongly recommend installing the [HDF5 package](Build_From_Source.md#hdf5) with **parallel** I/O support if you are going to run with more than a few cores/processors. When building from source, HDF5 needs to be configured with the flag `--enable-parallel`. You may also have to set the `CC` environment variable to `mpicc`.
 
 If you don't install HDF5 with parallel I/O support, you can still do I/O from MPI &mdash; Meep has some hacks to let it write HDF5 files using serial I/O from multiple processes, one at a time. However, this does not scale very well to many processors. Some MPI implementations have been observed to freeze under the strain of trying to write from many processes at once.
 

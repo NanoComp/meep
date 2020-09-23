@@ -2028,14 +2028,17 @@ class Simulation(object):
 
     def phase_in_material(self, structure, time):
         """
-        `newstructure` should be the `structure` field of another `Simulation` object with
-        the same cell size and resolution.   Over the next time period `phasetime` (in the
-        current simulation's time units), the current structure (ε, μ, and conductivity)
-        will be gradually changed to `newstructure`. In particular, at each timestep it
-        linearly interpolates between the old structure and the new structure. After
-        `phasetime` has elapsed, the structure will remain equal to `newstructure`. This
-        is demonstrated in the following image for two [Cylinder](#cylinder) objects (the
-        simulation script is in
+        `newstructure` should be the `structure` field of another
+        `Simulation` object with the same cell size and resolution.
+        Over the next time period `phasetime` (in the current
+        simulation's time units), the current structure
+        ($\varepsilon$, $\mu$, and conductivity $\sigma_D$) will be
+        gradually changed to `newstructure`. In particular, at each
+        timestep it linearly interpolates between the old structure
+        and the new structure. After `phasetime` has elapsed, the
+        structure will remain equal to `newstructure`. This is
+        demonstrated in the following image for two
+        [Cylinder](#cylinder) objects (the simulation script is in
         [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
         ![](images/phase-in-material.png)
@@ -2511,7 +2514,7 @@ class Simulation(object):
         """
         Load the Fourier-transformed fields into the given energy object (replacing any
         values currently there) from an HDF5 file of the given `filename` without the
-        ".h5" suffix (the current filename-prefix is prepended automatically). You must
+        `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_energy` in a simulation of the same
         dimensions for both the cell and the energy regions with the same number of
         processors.
@@ -2523,7 +2526,7 @@ class Simulation(object):
     def save_energy(self, fname, energy):
         """
         Save the Fourier-transformed fields corresponding to the given energy object in an
-        HDF5 file of the given `filename` without the ".h5" suffix (the current
+        HDF5 file of the given `filename` without the `.h5` suffix (the current
         filename-prefix is prepended automatically).
         """
         if self.fields is None:
@@ -2607,7 +2610,7 @@ class Simulation(object):
         """
         Load the Fourier-transformed fields into the given `near2far` object (replacing
         any values currently there) from an HDF5 file of the given `filename` without the
-        ".h5" suffix (the current filename-prefix is prepended automatically). You must
+        `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_near2far` in a simulation of *the same
         dimensions* for both the cell and the near2far regions with the same number of
         processors.
@@ -2619,7 +2622,7 @@ class Simulation(object):
     def save_near2far(self, fname, near2far):
         """
         Save the Fourier-transformed fields corresponding to the given `near2far` object
-        in an HDF5 file of the given `filename` (without the ".h5" suffix). The current
+        in an HDF5 file of the given `filename` (without the `.h5` suffix). The current
         filename-prefix is prepended automatically.
         """
         if self.fields is None:
@@ -2701,7 +2704,7 @@ class Simulation(object):
         """
         Load the Fourier-transformed fields into the given force object (replacing any
         values currently there) from an HDF5 file of the given `filename` without the
-        ".h5" suffix (the current filename-prefix is prepended automatically). You must
+        `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_force` in a simulation of the same
         dimensions for both the cell and the force regions with the same number of
         processors.
@@ -2713,7 +2716,7 @@ class Simulation(object):
     def save_force(self, fname, force):
         """
         Save the Fourier-transformed fields corresponding to the given force object in an
-        HDF5 file of the given `filename` without the ".h5" suffix (the current
+        HDF5 file of the given `filename` without the `.h5` suffix (the current
         filename-prefix is prepended automatically).
         """
         if self.fields is None:
@@ -2830,7 +2833,7 @@ class Simulation(object):
         """
         Load the Fourier-transformed fields into the given flux object (replacing any
         values currently there) from an HDF5 file of the given `filename` without the
-        ".h5" suffix (the current filename-prefix is prepended automatically). You must
+        `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_flux` in a simulation of the same
         dimensions (for both the cell and the flux regions) with the same number of
         processors.
@@ -2845,7 +2848,7 @@ class Simulation(object):
     def save_flux(self, fname, flux):
         """
         Save the Fourier-transformed fields corresponding to the given flux object in an
-        HDF5 file of the given `filename` without the ".h5" suffix (the current
+        HDF5 file of the given `filename` without the `.h5` suffix (the current
         filename-prefix is prepended automatically).
         """
         if self.fields is None:
@@ -2976,11 +2979,13 @@ class Simulation(object):
 
     def modal_volume_in_box(self, box=None, center=None, size=None):
         """
-        Given a `mp.Volume`, returns the instantaneous modal volume according to the
-        Purcell-effect definition: integral (ε|E|<sup>2</sup>) / maximum
-        (ε|E|<sup>2</sup>). If no volume argument is provided, the entire cell is used by
-        default. If the `center` and `size` arguments are provided instead of `box`, Meep
-        will construct the appropriate volume for you.
+        Given a `mp.Volume`, returns the instantaneous modal volume
+        according to the Purcell-effect definition: 
+        $\left(\int\varepsilon|\mathbf{E}|^2\right)/\left(\max{\varepsilon|\mathbf{E}|^2}\right)$.
+        If no volume argument is provided, the entire cell is used by
+        default. If the `center` and `size` arguments are provided
+        instead of `box`, Meep will construct the appropriate volume
+        for you.
 
         Note that if you are at a fixed frequency and you use complex fields (via
         Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the
@@ -4901,7 +4906,7 @@ def scale_near2far_fields(s, near2far):
     `load_minus_near2far` is equivalent to `load_near2far` followed by
     `scale_near2far_fields` with `s=-1`.
     """
-    n2f.scale_dfts(s)
+    near2far.scale_dfts(s)
 
 
 def get_near2far_freqs(f):
