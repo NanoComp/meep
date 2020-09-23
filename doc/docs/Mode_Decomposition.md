@@ -153,14 +153,11 @@ These functions are implemented in [src/mpb.cpp](https://github.com/NanoComp/mee
 ````
   void output_dft(dft_flux flux, const char *HDF5FileName);
 
-  void output_mode_fields(void *mode_data, dft_flux flux, const char *HDF5FileName);
 ````
 
 `output_dft` exports the components of the frequency-domain fields stored in `flux` to an HDF5 file with the given filename In general, `flux` will store data for fields at multiple frequencies.
 
-`output_mode_fields` is similar, but instead exports the components of the eigenmode described by `mode_data` which should be the return value of a call to `get_eigenmode`.
-
-These functions are implemented in [src/dft.cpp](https://github.com/NanoComp/meep/blob/master/src/dft.cpp#L982-L1021).
+This function is implemented in [src/dft.cpp](https://github.com/NanoComp/meep/blob/master/src/dft.cpp#L1184-L1196).
 
 ### Computing Overlap Integrals
 ````

@@ -1182,20 +1182,6 @@ void fields::output_dft(dft_fields fdft, const char *HDF5FileName) {
 }
 
 /***************************************************************/
-/* does the same thing as output_dft(flux ...), but using      */
-/* eigenmode fields instead of dft_flux fields.                */
-/***************************************************************/
-void fields::output_mode_fields(void *mode_data, dft_flux flux, const char *HDF5FileName) {
-  h5file *file = open_h5file(HDF5FileName, h5file::WRITE);
-  delete file;
-
-  dft_chunk *chunklists[2];
-  chunklists[0] = flux.E;
-  chunklists[1] = flux.H;
-  FOR_E_AND_H(c) { process_dft_component(chunklists, 2, 0, c, 0, 0, 0, 0, 0, mode_data, 0, c); }
-}
-
-/***************************************************************/
 /***************************************************************/
 /***************************************************************/
 void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int num_freq,

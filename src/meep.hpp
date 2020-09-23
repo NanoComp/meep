@@ -1897,7 +1897,6 @@ public:
   void output_dft(dft_force force, const char *HDF5FileName);
   void output_dft(dft_near2far n2f, const char *HDF5FileName);
   void output_dft(dft_fields fdft, const char *HDF5FileName);
-  void output_mode_fields(void *mode_data, dft_flux flux, const char *HDF5FileName);
 
   // get array of DFT field values
   std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
