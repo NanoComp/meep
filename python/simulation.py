@@ -3206,9 +3206,6 @@ class Simulation(object):
         else:
             dft_swigobj = dft_obj
 
-        if num_freq > dft_obj.nfreqs-1:
-            raise ValueError("get_dft_array: frequency index {} exceeds max index {}".format(num_freq,dft_obj.nfreqs-1))
-
         if type(dft_swigobj) is mp.dft_fields:
             return mp.get_dft_fields_array(self.fields, dft_swigobj, component, num_freq)
         elif type(dft_swigobj) is mp.dft_flux:
