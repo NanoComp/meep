@@ -82,6 +82,15 @@ DESTDOC = os.path.join(HERE, 'docs/Python_User_Interface.md')
 # can be excluded by using 'Classname.method_name'
 EXCLUDES = ['']
 
+
+# ast.Constant was added in Python 3.6, and ast.NameConstant is deprecated
+# starting in Python 3.8, so use Constant if it exists, otherwise fall back to
+# NameConstant.
+try:
+    Constant = ast.Constant
+except AttributeError:
+    Constant = ast.NameConstant
+
 #----------------------------------------------------------------------------
 
 class Item(object):
@@ -207,7 +216,7 @@ class FunctionItem(Item):
             default = repr(node.s)
         elif isinstance(node, ast.Num):
             default = repr(node.n)
-        elif isinstance(node, (ast.Constant, ast.NameConstant)):
+        elif isinstance(node, Constant):
             default = node.value
         elif isinstance(node, ast.Name):
             default = node.id
