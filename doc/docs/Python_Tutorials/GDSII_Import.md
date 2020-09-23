@@ -201,6 +201,16 @@ if mp.am_master():
 
 The field profiles confirm that for `d` of 0.06 μm (Figure 1), the input signal in Port 1 of the top branch is almost completely transferred to Port 4 of the bottom branch. For `d` of 0.13 μm (Figure 2), the input signal is split evenly between the two branches. Finally, for `d` of 0.30 μm (Figure 3), there is no longer any evanescent coupling and the signal remains completely in the top branch. The waveguide regions with no fields in Ports 3 and 4 are PML.
 
+### When computing the reflection coefficient |S<sub>11</sub>|<sup>2</sup>, is it necessary to perform a separate normalization run to obtain the incident fields?
+
+No (generally). In the single-run calculation of the reflection coefficent $|S_{11}|^2$ which is based on the back-scattered fields in Port 1 (due to the finite taper/bend length which breaks translational symmetry) given the forward-propagating fields of an eigenmode source also in Port 1, slight discretization errors in the eigenmode-coefficient extraction (as described in paragraph 3 of Section 4.2.2 of this [book chapter](https://arxiv.org/abs/1301.5366)) will result in a "noise floor" below which the reflection cannot be measured in this way. This "noise floor" only applies at a fixed resolution — as the resolution is increased, the discretization error in the mode-coefficient calculation goes away, and $|S_{11}|^2$ should approach the "true" reflection from the taper/bend. This is demonstrated in the figure below which shows a plot of the $S_{11}$ and $S_{12}$ reflectance versus resolution. (In these types of calculations, it is important that the source and mode monitor in the same port be separated by *at least several pixels* in order to avoid any overlap due to the grid discretization.)
+
+<center>
+![](../images/coupler_refl_S11_S12.png)
+</center>
+
+In the limit of infinite resolution, the discretization error is removed and the reflectance for $S_{11}$ and $S_{12}$ converge to their "true" values of ~10<sup>-6</sup> and ~10<sup>-8</sup>, respectively. (Note that the back-scattered fields in Port 2 are two orders of magnitude smaller than those in Port 1 because the input fields in the upper branch of the directional coupler must cross into the lower branch to reach Port 2.) In this example, $|S_{12}|^2$ requires a resolution of at least ~150 to minimize discretization errors. The discretization errors due to the eigenmode-coefficient extraction can be greatly reduced by using a separate normalization run to compute the incident fields for just a straight waveguide (i.e., no taper/bend) which are then subtracted from the Fourier-transformed fields in Port 1 and 2 of the directional coupler. This procedure is similar to those involving [flux calculations](Basics.md#transmittance-spectrum-of-a-waveguide-bend). For practical applications, however, reflectance values less than 40 dB (e.g., for telecom multi-path interference tolerances) are often considered negligible. On the other hand, there may be theoretical investigations where trying to resolve such small reflections could be important.  (As reflections approach 10<sup>-15</sup>, the limits of floating-point precision will eventually limit accuracy even for the normalization approach.)
+
 Modes of a Ring Resonator
 -------------------------
 
