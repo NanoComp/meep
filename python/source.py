@@ -584,10 +584,11 @@ class GaussianBeamSource(Source):
         return self._beam_E0
 
 class IndexedSource(Source):
-    def __init__(self, src, num_pts, srcdata, amp_arr):
+    """
+    created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
+    """
+    def __init__(self, src, srcdata, amp_arr):
         self.src = src
-        self.num_pts = num_pts
+        self.num_pts = len(amp_arr)
         self.srcdata = srcdata
-        self.amp_arr_vec = mp.ComplexVector(num_pts)
-        for i in range(num_pts):
-            self.amps_arr_vec[i] = amp_arr[i]
+        self.amp_arr = amp_arr

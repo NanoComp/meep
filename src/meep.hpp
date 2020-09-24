@@ -573,8 +573,8 @@ public:
   realnum *conductivity[NUM_FIELD_COMPONENTS][5];
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale;                        // true if condinv needs to be recomputed
-  double *sig[6], *kap[6], *siginv[6];       // conductivity array for uPML
-  int sigsize[6];                            // conductivity array size
+  double *sig[5], *kap[5], *siginv[5];       // conductivity array for uPML
+  int sigsize[5];                            // conductivity array size
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
   susceptibility *chiP[NUM_FIELD_TYPES]; // only E_stuff and H_stuff are used
@@ -843,7 +843,9 @@ public:
   }
 
   std::complex<double> dipole() const { return current_dipole; }
-  std::complex<double> current() const { return current_current; }
+  std::complex<double> current() const {
+    return current_current;
+  }
   void update(double time, double dt) {
     if (time != current_time) {
       current_dipole = dipole(time);
@@ -1194,8 +1196,8 @@ struct sourcedata{
   std::vector<ptrdiff_t> idx_arr;
   int fc_idx;
   std::vector<std::complex<double> > amp_arr;
-
 };
+
 
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
@@ -1254,7 +1256,8 @@ public:
   int periodic_n[2];
   double periodic_k[2], period[2];
 
-  std::vector<sourcedata> near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ);
+
+  std::vector<sourcedata> near_sourcedata(const vec &x, std::complex<double>* dJ);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1497,27 +1500,11 @@ public:
   std::vector<std::complex<double> > values; // updated by update_values(idx)
 };
 
-class diffractedplanewave {
-
-public:
-  diffractedplanewave(int g[3], double axis[3], std::complex<double> s, std::complex<double> p);
-  int *get_g() { return g; };
-  double *get_axis() { return axis; }
-  std::complex<double> get_s() const { return s; };
-  std::complex<double> get_p() const { return p; };
-
-private:
-  int g[3];                // diffraction order
-  double axis[3];          // axis vector
-  std::complex<double> s;  // s polarization amplitude
-  std::complex<double> p;  // p polarization ampiltude
-};
-
 class gaussianbeam {
 
 public:
   gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq,
-               double eps, double mu, std::complex<double> E0[3]);
+               double eps, double mu, std::complex<double> EO[3]);
   void get_fields(std::complex<double> *EH, const vec &x) const;
   std::complex<double> get_E0(int n) const { return E0[n]; };
 
@@ -1729,7 +1716,9 @@ public:
                          std::complex<double> amp = 1.0);
   void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
-  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::vector<std::complex<double> > amps_arr_vec);
+
+
+  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr);
 
   // mpb.cpp
 
@@ -1740,27 +1729,24 @@ public:
   void *get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, double *kdom = 0,
-                      void **user_mdata = 0, diffractedplanewave *dp = 0);
+                      void **user_mdata = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
                             bool match_frequency, int parity, double eig_resolution,
                             double eigensolver_tol, std::complex<double> amp,
-                            std::complex<double> A(const vec &) = 0,
-                            diffractedplanewave *dp = 0);
+                            std::complex<double> A(const vec &) = 0);
 
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
-                                  vec *kpoints, vec *kdom, double *cscale, direction d,
-                                  diffractedplanewave *dp = 0);
+                                  vec *kpoints, vec *kdom, double *cscale, direction d);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func = 0, void *user_kpoint_data = 0,
-                                  vec *kpoints = 0, vec *kdom = 0, double *cscale = 0,
-                                  diffractedplanewave *dp = 0);
+                                  vec *kpoints = 0, vec *kdom = 0, double *cscale = 0);
 
   // initialize.cpp:
   void initialize_field(component, std::complex<double> f(const vec &));

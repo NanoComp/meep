@@ -640,7 +640,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
 }
 
 //Modified from farfield_lowlevel
-std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::vector<std::complex<double> > dJ) {
+std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::complex<double>* dJ) {
   if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
     abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
@@ -668,7 +668,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
 
         temp_struct.idx_arr.push_back(idx);
         for (size_t i = 0; i < Nfreq; ++i) {
-          std::complex<double> EH0 = 0;
+          std::complex<double> EH0 = std::complex<double>(0,0);
           for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
             if (periodic_d[0] != NO_DIRECTION)
               xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
