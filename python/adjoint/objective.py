@@ -49,6 +49,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         dJ ........ the user needs to pass the dJ/dMonitor evaluation
         '''
         dJ = np.atleast_1d(dJ)
+        dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         # determine starting kpoint for reverse mode eigenmode source
         direction_scalar = 1 if self.forward else -1
         if self.kpoint_func is None:
@@ -64,7 +65,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dJ = np.sum(dJ,axis=1)
         da_dE = 0.5 * self.cscale # scalar popping out of derivative
 
-        scale = adj_src_scale(self)
+        scale = adj_src_scale(self, dt)
 
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
@@ -123,8 +124,9 @@ class FourierFields(ObjectiveQuantitiy):
         return self.monitor
 
     def place_adjoint_source(self,dJ):
+        dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         self.sources = []
-        scale = adj_src_scale(self)
+        scale = adj_src_scale(self, dt)
 
         if self.num_freq == 1:
             amp = -atleast_3d(dJ[0]) * scale
@@ -178,6 +180,7 @@ class Near2FarFields(ObjectiveQuantitiy):
         return self.monitor
 
     def place_adjoint_source(self,dJ):
+        dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         self.sources = []
         dJ = dJ.flatten()
 
@@ -186,7 +189,7 @@ class Near2FarFields(ObjectiveQuantitiy):
         for near_data in self.all_nearsrcdata:
             cur_comp = near_data.near_fd_comp
             amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
-            scale = amp_arr * adj_src_scale(self, include_resolution=False)
+            scale = amp_arr * adj_src_scale(self, dt, include_resolution=False)
 
             if self.num_freq == 1:
                 self.sources += [mp.IndexedSource(self.time_src, near_data, scale[:,0])]
@@ -211,12 +214,11 @@ class Near2FarFields(ObjectiveQuantitiy):
             raise RuntimeError("You must first run a forward simulation.")
 
 
-def adj_src_scale(obj_quantity, include_resolution=True):
+def adj_src_scale(obj_quantity, dt, include_resolution=True):
     # -------------------------------------- #
     # Get scaling factor
     # -------------------------------------- #
     # leverage linearity and combine source for multiple frequencies
-    dt = obj_quantity.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
     T = obj_quantity.sim.meep_time()
 
     if not include_resolution:
