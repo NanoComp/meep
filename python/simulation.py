@@ -12,7 +12,11 @@ import sys
 import warnings
 from collections import namedtuple
 from collections import OrderedDict
-from collections import Sequence
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections.abc import Sequence
 
 import numpy as np
 

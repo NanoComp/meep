@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
-from collections import OrderedDict
-from collections import Sequence
 import warnings
 
 import numpy as np
