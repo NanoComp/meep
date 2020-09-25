@@ -601,8 +601,8 @@ class TestMatrix(unittest.TestCase):
     def test_to_numpy_array(self):
         m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
         adjoint = m.H
-        m_arr = np.matrix(m)
-        np_adjoint = m_arr.H
+        m_arr = np.array(m)
+        np_adjoint = m_arr.conj().transpose()
         np.testing.assert_allclose(adjoint, np_adjoint)
 
 
