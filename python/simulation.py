@@ -16,7 +16,7 @@ from collections import OrderedDict
 try:
     from collections.abc import Sequence
 except ImportError:
-    from collections.abc import Sequence
+    from collections import Sequence
 
 import numpy as np
 
