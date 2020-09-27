@@ -807,6 +807,10 @@ private:
   void write_susceptibility_params(h5file *file, const char *dname, int EorH);
 };
 
+// defined in structure.cpp
+std::vector<grid_volume> choose_chunkdivision(const grid_volume &gv, int num_chunks,
+                                              const symmetry &s);
+
 class src_vol;
 class fields;
 class fields_chunk;

@@ -1655,18 +1655,17 @@ class Simulation(object):
 
         if self._output_stats and isinstance(self.default_material, mp.Medium) and verbosity > 0:
             stats = self._compute_fragment_stats(gv)
-            print("STATS: aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
-            print("STATS: anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
-            print("STATS: nonlinear: {}".format(stats.num_nonlinear_pixels))
-            print("STATS: susceptibility: {}".format(stats.num_susceptibility_pixels))
-            print("STATS: nonzero_cond: {}".format(stats.num_nonzero_conductivity_pixels))
-            print("STATS: pml_1d: {}".format(stats.num_1d_pml_pixels))
-            print("STATS: pml_2d: {}".format(stats.num_2d_pml_pixels))
-            print("STATS: pml_3d: {}".format(stats.num_3d_pml_pixels))
-            print("STATS: dft: {}".format(stats.num_dft_pixels))
-            print("STATS: total_pixels: {}".format(stats.num_pixels_in_box))
-            print("STATS: num_cores: {}".format(mp.count_processors()))
-            sys.exit(0)
+            print("STATS:, aniso_eps:, {}".format(stats.num_anisotropic_eps_pixels))
+            print("STATS:, anis_mu:, {}".format(stats.num_anisotropic_mu_pixels))
+            print("STATS:, nonlinear:, {}".format(stats.num_nonlinear_pixels))
+            print("STATS:, susceptibility:, {}".format(stats.num_susceptibility_pixels))
+            print("STATS:, conductivity:, {}".format(stats.num_nonzero_conductivity_pixels))
+            print("STATS:, pml_1d:, {}".format(stats.num_1d_pml_pixels))
+            print("STATS:, pml_2d:, {}".format(stats.num_2d_pml_pixels))
+            print("STATS:, pml_3d:, {}".format(stats.num_3d_pml_pixels))
+            print("STATS:, dft:, {}".format(stats.num_dft_pixels))
+            print("STATS:, total_pixels:, {}".format(stats.num_pixels_in_box))
+            print("STATS:, num_cores:, {}".format(mp.count_processors()))
 
         fragment_vols = self._make_fragment_lists(gv)
         self.dft_data_list = fragment_vols[0]
@@ -1699,8 +1698,12 @@ class Simulation(object):
             self.extra_materials,
             self.split_chunks_evenly,
             False if self.chunk_layout else True,
-            None
-       )
+            None,
+            True if self._output_stats is not None else False
+        )
+
+        if self._output_stats:
+            sys.exit(0)
 
         if self.chunk_layout:
             self.load_chunk_layout(br, self.chunk_layout)

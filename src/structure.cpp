@@ -227,6 +227,52 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   }
 }
 
+std::vector<grid_volume> choose_chunkdivision(const grid_volume &gv, int desired_num_chunks,
+                                              const symmetry &s) {
+  if (desired_num_chunks == 0) desired_num_chunks = count_processors();
+  if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+
+  // initialize effort volumes
+  int num_effort_volumes = 1;
+  grid_volume *effort_volumes = new grid_volume[num_effort_volumes];
+  effort_volumes[0] = gv;
+  double *effort = new double[num_effort_volumes];
+  effort[0] = 1.0;
+
+  std::vector<int> prime_factors = get_prime_factors(desired_num_chunks);
+
+  // We may have to use a different number of chunks than the user requested
+  int adjusted_num_chunks = 1;
+  for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i)
+    adjusted_num_chunks *= prime_factors[i];
+
+  int my_num_chunks =
+      meep_geom::fragment_stats::split_chunks_evenly ? desired_num_chunks : adjusted_num_chunks;
+
+  // Finally, create the chunks:
+  std::vector<grid_volume> chunk_volumes;
+
+  bool by_cost = false;
+  if (meep_geom::fragment_stats::resolution == 0 ||
+      meep_geom::fragment_stats::split_chunks_evenly) {
+    if (verbosity > 0 && my_num_chunks > 1)
+      master_printf("Splitting into %d chunks evenly\n", my_num_chunks);
+    for (int i = 0; i < my_num_chunks; i++) {
+      grid_volume vi =
+          gv.split_by_effort(my_num_chunks, i, num_effort_volumes, effort_volumes, effort);
+      chunk_volumes.push_back(vi);
+    }
+  }
+  else {
+    if (verbosity > 0 && my_num_chunks > 1)
+      master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
+    split_by_cost(prime_factors, gv, chunk_volumes);
+    by_cost = true;
+  }
+
+  return chunk_volumes;
+}
+
 double structure::estimated_cost(int process) {
   double proc_cost = 0;
   for (int i = 0; i < num_chunks; i++) {
