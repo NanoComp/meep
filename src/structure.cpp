@@ -227,10 +227,42 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   }
 }
 
-std::vector<grid_volume> choose_chunkdivision(const grid_volume &gv, int desired_num_chunks,
-                                              const symmetry &s) {
+std::vector<grid_volume> choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
+                                              const symmetry &S) {
+  grid_volume gv = thegv;
+
   if (desired_num_chunks == 0) desired_num_chunks = count_processors();
   if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+
+  // First, reduce overall grid_volume gv by symmetries:
+  if (S.multiplicity() > 1) {
+    bool break_this[3];
+    for (int dd = 0; dd < 3; dd++) {
+      const direction d = (direction)dd;
+      break_this[dd] = false;
+      for (int n = 0; n < S.multiplicity(); n++)
+        if (has_direction(gv.dim, d) &&
+            (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
+          if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
+            master_printf("Padding %s to even number of grid points.\n", direction_name(d));
+          break_this[dd] = true;
+        }
+    }
+    int break_mult = 1;
+    for (int d = 0; d < 3; d++) {
+      if (break_mult == S.multiplicity()) break_this[d] = false;
+      if (break_this[d]) {
+        break_mult *= 2;
+        if (verbosity > 0)
+          master_printf("Halving computational cell along direction %s\n",
+                        direction_name(direction(d)));
+        gv = gv.halve((direction)d);
+      }
+    }
+    // Pad the little cell in any direction that we've shrunk:
+    for (int d = 0; d < 3; d++)
+      if (break_this[d]) gv = gv.pad((direction)d);
+  }
 
   // initialize effort volumes
   int num_effort_volumes = 1;

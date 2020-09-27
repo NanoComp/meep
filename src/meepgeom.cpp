@@ -2159,16 +2159,16 @@ double fragment_stats::cost() const {
 
 void fragment_stats::print_stats() const {
   master_printf("Fragment stats\n");
-  master_printf("  num_anisotropic_eps_pixels: %zd\n", num_anisotropic_eps_pixels);
-  master_printf("  num_anisotropic_mu_pixels: %zd\n", num_anisotropic_mu_pixels);
-  master_printf("  num_nonlinear_pixels: %zd\n", num_nonlinear_pixels);
-  master_printf("  num_susceptibility_pixels: %zd\n", num_susceptibility_pixels);
-  master_printf("  num_nonzero_conductivity_pixels: %zd\n", num_nonzero_conductivity_pixels);
-  master_printf("  num_1d_pml_pixels: %zd\n", num_1d_pml_pixels);
-  master_printf("  num_2d_pml_pixels: %zd\n", num_2d_pml_pixels);
-  master_printf("  num_3d_pml_pixels: %zd\n", num_3d_pml_pixels);
-  master_printf("  num_dft_pixels: %zd\n", num_dft_pixels);
-  master_printf("  num_pixels_in_box: %zd\n", num_pixels_in_box);
+  master_printf("  anisotropic_eps: %zu\n", num_anisotropic_eps_pixels);
+  master_printf("  anisotropic_mu: %zu\n", num_anisotropic_mu_pixels);
+  master_printf("  nonlinear: %zu\n", num_nonlinear_pixels);
+  master_printf("  susceptibility: %zu\n", num_susceptibility_pixels);
+  master_printf("  conductivity: %zu\n", num_nonzero_conductivity_pixels);
+  master_printf("  pml_1d: %zu\n", num_1d_pml_pixels);
+  master_printf("  pml_2d: %zu\n", num_2d_pml_pixels);
+  master_printf("  pml_3d: %zu\n", num_3d_pml_pixels);
+  master_printf("  dft: %zu\n", num_dft_pixels);
+  master_printf("  pixels_in_box: %zu\n", num_pixels_in_box);
   master_printf("  box.low:  {%f, %f, %f}\n", box.low.x, box.low.y, box.low.z);
   master_printf("  box.high: {%f, %f, %f}\n\n", box.high.x, box.high.y, box.high.z);
 }
