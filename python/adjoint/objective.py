@@ -86,7 +86,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                     size=self.volume.size,
                     center=self.volume.center,
                     **self.EigenMode_kwargs)]
-
+        
         return self.source
 
     def __call__(self):
@@ -145,8 +145,8 @@ class FourierFields(ObjectiveQuantitiy):
             for zi in range(len(self.dg.z)):
                 for yi in range(len(self.dg.y)):
                     for xi in range(len(self.dg.x)):
-                        scale = -dJ_4d[:,xi,yi,zi] * scale
-                        src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
+                        final_scale = -dJ_4d[:,xi,yi,zi] * scale
+                        src = FilteredSource(self.time_src.frequency,self.frequencies,final_scale,dt)
                         self.sources += [mp.Source(src, component=self.component, amplitude=1,
                                 center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
 

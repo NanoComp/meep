@@ -412,7 +412,7 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
             comp = ci if yee_grid else mp.Dielectric
             ci_dims += [simob.get_array_slice_dimensions(comp,vol=m.where)[0]]
         dims.append(ci_dims)
-
+    
     # Record data in closure so that we can persitently edit
     closure = {
         'previous_fields': [[None for di in d] for d in dims],
