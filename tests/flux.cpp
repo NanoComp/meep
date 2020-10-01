@@ -219,8 +219,8 @@ int flux_2d(const double xmax, const double ymax, double eps(const vec &)) {
                   fl1[i] / fl2[i]);
     if (!compare(fl1[i], fl2[i], 0.09, 0, "Flux spectrum")) return 0;
   }
-  delete fl2;
-  delete fl1;
+  delete[] fl2;
+  delete[] fl1;
 
   return 1;
 }
@@ -287,8 +287,8 @@ int flux_cyl(const double rmax, const double zmax, double eps(const vec &), int 
                   fl1[i] / fl2[i]);
     if (!compare(fl1[i], fl2[i], 0.08, 0, "Flux spectrum")) return 0;
   }
-  delete fl2;
-  delete fl1;
+  delete[] fl2;
+  delete[] fl1;
 
   return 1;
 }

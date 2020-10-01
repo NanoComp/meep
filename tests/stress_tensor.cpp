@@ -79,8 +79,8 @@ int main(int argc, char **argv) {
   double *fr = forceR.force();
   master_printf("flux is %0.8g, force is %0.8g, F/P = %0.8g\n", fl[0], fr[0], -0.5 * fr[0] / fl[0]);
   double FoverP = -0.5 * fr[0] / fl[0];
-  delete fl;
-  delete fr;
+  delete[] fl;
+  delete[] fr;
   return fabs(FoverP + 0.33628872) / 0.33628872 > 0.1;
   // MPB: -0.33628872
 }
