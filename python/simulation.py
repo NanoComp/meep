@@ -18,7 +18,7 @@ import numpy as np
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
-from meep.source import EigenModeSource, GaussianBeamSource, check_positive
+from meep.source import EigenModeSource, GaussianBeamSource, IndexedSource, check_positive
 import meep.visualization as vis
 from meep.verbosity_mgr import Verbosity
 
@@ -2289,6 +2289,10 @@ class Simulation(object):
     def add_source(self, src):
         if self.fields is None:
             self.init_sim()
+
+        if isinstance(src, IndexedSource):
+            self.fields.add_srcdata(src.srcdata, src.src.swigobj, src.num_pts, src.amp_arr)
+            return
 
         where = Volume(src.center, src.size, dims=self.dimensions,
                        is_cylindrical=self.is_cylindrical).swigobj

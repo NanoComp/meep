@@ -1395,6 +1395,14 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     double *total
 };
 
+%typemap(in) std::complex<double>* dJ {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+%typemap(in) std::complex<double>* amp_arr {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
 %exception {
   try {
     $action
@@ -1463,6 +1471,16 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+
+%include "typemaps.i"
+%template(near_src_data) std::vector<meep::sourcedata>;
+
+%include "std_complex.i"
+%template(ComplexVector) std::vector<std::complex<double> >;
+
+std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x, std::complex<double>* dJ);
+
+void meep::fields::add_srcdata(struct meep::sourcedata cur_data, meep::src_time *src, size_t n, std::complex<double>* amp_arr);
 
 struct vector3 {
     double x;
@@ -1720,6 +1738,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         CustomSource,
         EigenModeSource,
         GaussianSource,
+        IndexedSource,
         Source,
         SourceTime,
         check_positive,
@@ -1858,5 +1877,3 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     return s;
 }
 %}
-
-

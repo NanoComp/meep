@@ -2266,7 +2266,7 @@ meep::realnum get_material_gradient(
     meep::component field_dir,      // current field component
     meep::realnum du                // step size
 ) {
-  /* Note that the current implementation assumes that 
+  /* Note that the current implementation assumes that
   no materials have off-diag components and that if a material
   has dispersion, it is either a lorentzian or drude profile.
   */
@@ -2285,7 +2285,7 @@ meep::realnum get_material_gradient(
           default: meep::abort("Invalid field component specified in gradient.");
         }
       }
-    
+
   /* For now we do a finite difference approach to estimate the
   gradient of the system matrix `A` since it's fairly accurate,
   cheap, and easy to generalize. */
@@ -2475,7 +2475,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
 
     int rank = f->get_array_slice_dimensions(where, &dims[3 * c], dirs, collapse, snap, min_max_loc,
                                              0, field_dir[c]);
-    
+
     vector3 max_corner = vec_to_vector3(min_max_loc[1]);
     meep::realnum max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
     vector3 min_corner = vec_to_vector3(min_max_loc[0]);
