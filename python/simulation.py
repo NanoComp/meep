@@ -12,7 +12,11 @@ import sys
 import warnings
 from collections import namedtuple
 from collections import OrderedDict
-from collections import Sequence
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 import numpy as np
 
@@ -133,13 +137,13 @@ class DiffractedPlanewave(object):
         """
         Construct a `DiffractedPlanewave`.
 
-        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
-        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
+        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\\mathcal{S}$ and $\\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
-        + **`s` [ `complex` ]** — The complex amplitude of the $\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
+        + **`s` [ `complex` ]** — The complex amplitude of the $\\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
 
-        + **`p` [ `complex` ]** — The complex amplitude of the $\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
+        + **`p` [ `complex` ]** — The complex amplitude of the $\\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
         """
         self._g = g
         self._axis = axis
@@ -2032,7 +2036,7 @@ class Simulation(object):
         `Simulation` object with the same cell size and resolution.
         Over the next time period `phasetime` (in the current
         simulation's time units), the current structure
-        ($\varepsilon$, $\mu$, and conductivity $\sigma_D$) will be
+        ($\\varepsilon$, $\\mu$, and conductivity $\\sigma_D$) will be
         gradually changed to `newstructure`. In particular, at each
         timestep it linearly interpolates between the old structure
         and the new structure. After `phasetime` has elapsed, the
@@ -2984,8 +2988,8 @@ class Simulation(object):
     def modal_volume_in_box(self, box=None, center=None, size=None):
         """
         Given a `mp.Volume`, returns the instantaneous modal volume
-        according to the Purcell-effect definition: 
-        $\left(\int\varepsilon|\mathbf{E}|^2\right)/\left(\max{\varepsilon|\mathbf{E}|^2}\right)$.
+        according to the Purcell-effect definition:
+        $\\left(\\int\\varepsilon|\\mathbf{E}|^2\\right)/\\left(\\max{\\varepsilon|\\mathbf{E}|^2}\\right)$.
         If no volume argument is provided, the entire cell is used by
         default. If the `center` and `size` arguments are provided
         instead of `box`, Meep will construct the appropriate volume
