@@ -184,7 +184,7 @@ $$
    \qquad \{\sigma,\tau\}\in\{+,-\}
 $$
 
-where the (indefinite) inner product involves an integration over transverse coordinates:
+where the (indefinite) inner product between two fields $\psi=(E_y,E_z,H_y,H_z)$ and $\psi'=(E_y',E_z',H_y',H_z')$ involves an integration over transverse coordinates:
 
 $$ \left\langle \psi , \psi' \right\rangle
    \equiv
