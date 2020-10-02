@@ -4431,14 +4431,20 @@ def output_png(compnt, options, rm_h5=True):
     return _output_png
 
 
-def output_epsilon(sim,*step_func_args,**kwargs):
+def output_epsilon(sim=None,*step_func_args,**kwargs):
     """
-    Given a frequency `frequency`, (provided as a keyword argument) output ε (relative
-    permittivity); for an anisotropic ε tensor the output is the [harmonic
-    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If
+    Given a frequency `frequency`, (provided as a keyword argument) output $\varepsilon$ (relative
+    permittivity); for an anisotropic $\varepsilon$ tensor the output is the [harmonic
+    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\varepsilon$ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
-    frequency-independent part of ε (the $\\omega\\to\\infty$ limit).
+    frequency-independent part of $\varepsilon$ (the $\\omega\\to\\infty$ limit).
+    When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
+    the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
+    `sim.run(mp.at_beginning(mp.output_epsilon(frequency=1/0.7)),until=10)`.
     """
+    if sim is None:
+        return lambda sim: mp.output_epsilon(sim, *step_func_args, **kwargs)
+
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
     if omega != 0:
@@ -4447,14 +4453,20 @@ def output_epsilon(sim,*step_func_args,**kwargs):
     sim.output_component(mp.Dielectric,frequency=frequency)
 
 
-def output_mu(sim,*step_func_args,**kwargs):
+def output_mu(sim=None,*step_func_args,**kwargs):
     """
-    Given a frequency `frequency`, (provided as a keyword argument) output μ (relative
-    permeability); for an anisotropic μ tensor the output is the [harmonic
-    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If
+    Given a frequency `frequency`, (provided as a keyword argument) output $\mu$ (relative
+    permeability); for an anisotropic $\mu$ tensor the output is the [harmonic
+    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\mu$ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
-    frequency-independent part of μ (the $\\omega\\to\\infty$ limit).
+    frequency-independent part of $\mu$ (the $\\omega\\to\\infty$ limit).
+    When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
+    the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
+    `sim.run(mp.at_beginning(mp.output_mu(frequency=1/0.7)),until=10)`.
     """
+    if sim is None:
+        return lambda sim: mp.output_mu(sim, *step_func_args, **kwargs)
+
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
     if omega != 0:
