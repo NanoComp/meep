@@ -223,8 +223,7 @@ once each and then combined with the correct signs to obtain $\alpha^\pm_n$.
 These integrals are computed numerically by a trapezoidal-type rule on Meep's
 Yee grid, interpolating the MPB-computed eigenmode fields as needed. This calculation is carried out by the routine `fields::get_mode_flux_overlap`. Although simple in principle, the implementation is complicated by the fact that, in multi-processor calculations, the Meep fields needed to evaluate the integrals are generally not all present on any one processor, but are instead distributed over multiple processors, requiring some interprocess communication to evaluate the full integral.
 
-As mentioned above, the Poynting flux $P$ carried by the Meep fields is
-The Poynting flux carried by the Meep fields may be expressed in the form:
+As mentioned above, the Poynting flux $P$ carried by the Meep fields may be expressed in the form:
 
 $$
 P = \frac{1}{2} \langle \psi, \psi \rangle = \sum_n \left( |a_n^+|^2 - |a_n^-|^2) \right)
