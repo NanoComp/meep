@@ -179,7 +179,7 @@ These functions are implemented in [src/dft.cpp](https://github.com/NanoComp/mee
 The theoretical basis of the mode-decomposition algorithm is an orthogonality relation satisfied by the eigenmodes:
 
 $$
-\left\langle \psi_m^\sigma, \psi_m^\tau_n \right\rangle
+\left\langle \psi_m^{\sigma}, \psi_n^{\tau} \right\rangle
 =C_{m}\delta_{mn}\delta_{\sigma\tau}
    \qquad \{\sigma,\tau\}\in\{+,-\}
 $$
@@ -194,9 +194,9 @@ $$ \left\langle \psi , \psi' \right\rangle
   \tag{5}
 $$
 
-where $S$ is a cross-section transverse to the direction of propagation and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e. $\hat{\mathbf{z}}$ in the case considered above).  The normalization constant $C_{m}$ is a matter of convention, but for MPB-computed modes (which normalizes proportional to unit energy) it is effectively the group velocity of the mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$: $$C_m = 2 v_m A_S$$.   However, we can divide the MPB modes by $\sqrt{\int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}}}$ to renormalize them to $C_m = 2$, which is equivalent to normalizing the MPB modes to unit power.
+where $S$ is a cross-section transverse to the direction of propagation and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e. $\hat{\mathbf{z}}$ in the case considered above).  The normalization constant $C_{m}$ is a matter of convention, but for MPB-computed modes (which normalizes proportional to unit energy) it is effectively the group velocity of the mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$: $$C_m = 2 v_m A_S$$   However, we can divide the MPB modes by $\sqrt{\int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}}}$ to renormalize them to $C_m = 2$, which is equivalent to normalizing the MPB modes to unit power.
 
-(There is some subtlety about the use of complex conjugation for orthogonality in the inner product above that arises for evanescent modes, which we don't consider here because Meep only computes coefficients of propagating modes.  The above definition has the nice property that $\langle \psi, \psi \rangle = 2 \int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}}} = 2P$ where $P$ is the Poynting flux.)
+(There is some subtlety about the use of complex conjugation for orthogonality in the inner product above that arises for evanescent modes, which we don't consider here because Meep only computes coefficients of propagating modes.  The above definition has the nice property that $\langle \psi, \psi \rangle = 2 \int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}} = 2P$ where $P$ is the Poynting flux.)
 
 Now consider a Meep calculation in which we have accumulated tranverse frequency-domain fields $\psi^{\text{meep}} = (\mathbf E^{\text{meep}}_\parallel, \mathbf H^{\text{meep}}_\parallel)$ on a `dft_flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane means that
 Meep fields take the form:
