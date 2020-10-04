@@ -122,9 +122,10 @@ static void split_by_cost(std::vector<int> factors, grid_volume gvol,
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
                                      const boundary_region &br, const symmetry &s) {
-  user_volume = thegv;
-  if (desired_num_chunks == 0) desired_num_chunks = count_processors();
+
   if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+
+  user_volume = thegv;
   gv = thegv;
   v = gv.surroundings();
   S = s;
@@ -173,6 +174,9 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
 std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
                                               const symmetry &S) {
+
+  if (desired_num_chunks == 0) desired_num_chunks = count_processors();
+  if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
 
   // First, reduce overall grid_volume gv by symmetries:
   if (S.multiplicity() > 1) {
