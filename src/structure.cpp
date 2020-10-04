@@ -131,37 +131,10 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   a = gv.a;
   dt = Courant / a;
 
-  // First, reduce overall grid_volume gv by symmetries:
-  if (S.multiplicity() > 1) {
-    bool break_this[3];
-    for (int dd = 0; dd < 3; dd++) {
-      const direction d = (direction)dd;
-      break_this[dd] = false;
-      for (int n = 0; n < S.multiplicity(); n++)
-        if (has_direction(thegv.dim, d) &&
-            (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
-          if (thegv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
-            master_printf("Padding %s to even number of grid points.\n", direction_name(d));
-          break_this[dd] = true;
-        }
-    }
-    int break_mult = 1;
-    for (int d = 0; d < 3; d++) {
-      if (break_mult == S.multiplicity()) break_this[d] = false;
-      if (break_this[d]) {
-        break_mult *= 2;
-        if (verbosity > 0)
-          master_printf("Halving computational cell along direction %s\n",
-                        direction_name(direction(d)));
-        gv = gv.halve((direction)d);
-      }
-    }
-    // Before padding, find the corresponding geometric grid_volume.
-    v = gv.surroundings();
-    // Pad the little cell in any direction that we've shrunk:
-    for (int d = 0; d < 3; d++)
-      if (break_this[d]) gv = gv.pad((direction)d);
-  }
+  // create the chunks:
+  std::vector<grid_volume> chunk_volumes = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+
+  int my_num_chunks = chunk_volumes.size();
 
   // initialize effort volumes
   num_effort_volumes = 1;
@@ -173,40 +146,9 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   // Next, add effort volumes for PML boundary regions:
   br.apply(this);
 
-  std::vector<int> prime_factors = get_prime_factors(desired_num_chunks);
-
-  // We may have to use a different number of chunks than the user requested
-  int adjusted_num_chunks = 1;
-  for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i)
-    adjusted_num_chunks *= prime_factors[i];
-
-  int my_num_chunks =
-      meep_geom::fragment_stats::split_chunks_evenly ? desired_num_chunks : adjusted_num_chunks;
-
-  // Finally, create the chunks:
+  // Break off PML regions into their own chunks
   num_chunks = 0;
   chunks = new structure_chunk_ptr[my_num_chunks * num_effort_volumes];
-  std::vector<grid_volume> chunk_volumes;
-
-  bool by_cost = false;
-  if (meep_geom::fragment_stats::resolution == 0 ||
-      meep_geom::fragment_stats::split_chunks_evenly) {
-    if (verbosity > 0 && my_num_chunks > 1)
-      master_printf("Splitting into %d chunks evenly\n", my_num_chunks);
-    for (int i = 0; i < my_num_chunks; i++) {
-      grid_volume vi =
-          gv.split_by_effort(my_num_chunks, i, num_effort_volumes, effort_volumes, effort);
-      chunk_volumes.push_back(vi);
-    }
-  }
-  else {
-    if (verbosity > 0 && my_num_chunks > 1)
-      master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
-    split_by_cost(prime_factors, gv, chunk_volumes);
-    by_cost = true;
-  }
-
-  // Break off PML regions into their own chunks
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
     const int proc = i * count_processors() / my_num_chunks;
     for (int j = 0; j < num_effort_volumes; ++j) {
@@ -217,22 +159,20 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       }
     }
   }
+
   check_chunks();
 
-  if (by_cost) {
+  if (meep_geom::fragment_stats::resolution != 0) {
     // Save cost of each chunk's grid_volume
     for (int i = 0; i < num_chunks; ++i) {
       chunks[i]->cost = chunks[i]->gv.get_cost();
     }
   }
+
 }
 
-std::vector<grid_volume> choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
+std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
                                               const symmetry &S) {
-  grid_volume gv = thegv;
-
-  if (desired_num_chunks == 0) desired_num_chunks = count_processors();
-  if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
 
   // First, reduce overall grid_volume gv by symmetries:
   if (S.multiplicity() > 1) {
@@ -259,6 +199,8 @@ std::vector<grid_volume> choose_chunkdivision(const grid_volume &thegv, int desi
         gv = gv.halve((direction)d);
       }
     }
+    // Before padding, find the corresponding geometric grid_volume.
+    v = gv.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d = 0; d < 3; d++)
       if (break_this[d]) gv = gv.pad((direction)d);
@@ -284,7 +226,6 @@ std::vector<grid_volume> choose_chunkdivision(const grid_volume &thegv, int desi
   // Finally, create the chunks:
   std::vector<grid_volume> chunk_volumes;
 
-  bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && my_num_chunks > 1)
@@ -299,7 +240,6 @@ std::vector<grid_volume> choose_chunkdivision(const grid_volume &thegv, int desi
     if (verbosity > 0 && my_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
-    by_cost = true;
   }
 
   return chunk_volumes;

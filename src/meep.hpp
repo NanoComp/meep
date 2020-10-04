@@ -808,7 +808,9 @@ private:
 };
 
 // defined in structure.cpp
-std::vector<grid_volume> choose_chunkdivision(const grid_volume &gv, int num_chunks,
+std::vector<grid_volume> choose_chunkdivision(grid_volume &gv,
+                                              volume &v,
+                                              int num_chunks,
                                               const symmetry &s);
 
 class src_vol;

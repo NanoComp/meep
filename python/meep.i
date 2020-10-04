@@ -1816,7 +1816,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                            &gv, cell_size, center, &gobj_list);
 
     if (output_chunk_costs) {
-         std::vector<grid_volume> chunk_vols = choose_chunkdivision(gv, num_chunks, sym);
+         meep::volume thev = gv.surroundings();
+         std::vector<grid_volume> chunk_vols = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
          for (size_t i = 0; i < chunk_vols.size(); ++i)
               master_printf("CHUNK:, %2zu, %f\n",i,chunk_vols[i].get_cost());
          return NULL;
