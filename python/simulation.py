@@ -38,7 +38,7 @@ try:
 except ImportError:
     do_progress = False
 
-verbosity = Verbosity(mp.cvar, 1)
+verbosity = Verbosity(mp.cvar, 'meep', 1)
 
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
