@@ -154,7 +154,8 @@ HPPFILES=                                    \
  $(top_srcdir)/src/meep/vec.hpp              \
  $(top_srcdir)/src/meep/mympi.hpp            \
  $(top_srcdir)/src/meepgeom.hpp              \
- $(top_srcdir)/src/material_data.hpp
+ $(top_srcdir)/src/material_data.hpp         \
+ $(top_srcdir)/src/adjust_verbosity.hpp
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
