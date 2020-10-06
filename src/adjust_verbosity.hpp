@@ -14,9 +14,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #ifndef ADJUST_VERBOSITY_H
 #define ADJUST_VERBOSITY_H
+
+// NOTE: This header assumes it has been #included *after* headers that declare
+// verbosity, HAVE_MPB, and mpb_verbosity.
 
 namespace meep {
 
@@ -32,6 +34,7 @@ public:
       if (mpb_verbosity > 3) mpb_verbosity = 3;
       master_printf("adjust mpb_verbosity: %d\n", mpb_verbosity);
     #else
+      // avoid warnings
       (void)amount;
       (void)old_level;
     #endif
