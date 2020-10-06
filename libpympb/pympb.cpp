@@ -687,7 +687,6 @@ bool mode_solver::using_mu() { return mdata && mdata->mu_inv != NULL; }
 
 void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
                        meep_geom::material_data *_default_material) {
-  meep::adjust_mpb_verbosity amv;
   int have_old_fields = 0;
 
   default_material = _default_material;
@@ -907,7 +906,6 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
 }
 
 void mode_solver::reset_epsilon(geometric_object_list *geometry) {
-  meep::adjust_mpb_verbosity amv;
   int mesh[3] = {
       mesh_size,
       (dimensions > 1) ? mesh_size : 1,
@@ -973,8 +971,6 @@ bool mode_solver::material_has_mu(void *mt) {
 }
 
 void mode_solver::set_parity(integer p) {
-  meep::adjust_mpb_verbosity amv;
-
   if (!mdata) {
     meep::master_fprintf(stderr, "init must be called before set-parity!\n");
     return;
@@ -1015,8 +1011,6 @@ void mode_solver::randomize_fields() {
 }
 
 void mode_solver::solve_kpoint(vector3 kvector) {
-  meep::adjust_mpb_verbosity amv;
-
   // if we get too close to singular k==0 point, just set k=0 exploit our
   // special handling of this k
   if (vector3_norm(kvector) < 1e-10) { kvector.x = kvector.y = kvector.z = 0; }
@@ -1344,7 +1338,6 @@ void mode_solver::curfield_reset() {
 /* get the specified component of the dielectric tensor,
    or the inverse tensor if inv != 0 */
 void mode_solver::get_epsilon_tensor(int c1, int c2, int imag, int inv) {
-  meep::adjust_mpb_verbosity amv;
   int conj = 0, offset = 0;
 
   curfield_type = '-'; /* only used internally, for now */
@@ -1398,7 +1391,6 @@ void mode_solver::get_efield(int band) {
 }
 
 void mode_solver::get_efield_from_dfield() {
-  meep::adjust_mpb_verbosity amv;
   if (!curfield || curfield_type != 'd') {
     meep::master_fprintf(stderr, "get_dfield must be called before get-efield-from-dfield!\n");
     return;
@@ -1409,7 +1401,6 @@ void mode_solver::get_efield_from_dfield() {
 }
 
 void mode_solver::get_dfield(int band) {
-  meep::adjust_mpb_verbosity amv;
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1456,7 +1447,6 @@ void mode_solver::get_dfield(int band) {
 }
 
 void mode_solver::get_hfield(int band) {
-  meep::adjust_mpb_verbosity amv;
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1495,8 +1485,6 @@ void mode_solver::get_hfield(int band) {
 }
 
 void mode_solver::get_bfield(int band) {
-  meep::adjust_mpb_verbosity amv;
-
   if (!kpoint_index) {
     meep::master_fprintf(stderr, "solve_kpoint must be called before get_dfield\n");
     return;
@@ -1935,8 +1923,6 @@ void mode_solver::multiply_bloch_phase(std::complex<double> *cdata) {
 
 // Replace the current field with its scalar divergence; only works for Bloch fields
 void mode_solver::compute_field_divergence() {
-  meep::adjust_mpb_verbosity amv;
-
   scalar *field = (scalar *)curfield;
   scalar *field2 = mdata->fft_data == mdata->fft_data2
                        ? field
@@ -2148,7 +2134,6 @@ double mode_solver::get_eigensolver_flops() { return eigensolver_flops; }
 int mode_solver::get_iterations() { return iterations; }
 
 std::vector<mpb_real> mode_solver::compute_zparities() {
-  meep::adjust_mpb_verbosity amv;
   std::vector<mpb_real> z_parity(num_bands);
   double *d = maxwell_zparity(H, mdata);
 
@@ -2161,7 +2146,6 @@ std::vector<mpb_real> mode_solver::compute_zparities() {
 }
 
 std::vector<mpb_real> mode_solver::compute_yparities() {
-  meep::adjust_mpb_verbosity amv;
   std::vector<mpb_real> y_parity(num_bands);
   double *d = maxwell_yparity(H, mdata);
 
@@ -2178,7 +2162,6 @@ std::vector<mpb_real> mode_solver::compute_yparities() {
    Should only be called after solve_kpoint.  Returns a list of the
    group velocities, one for each band, in units of c. */
 std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
-  meep::adjust_mpb_verbosity amv;
   curfield_reset(); // has the side effect of overwriting curfield scratch
 
   if (!mdata) {
@@ -2245,7 +2228,6 @@ std::vector<mpb_real> mode_solver::compute_group_velocity_component(vector3 d) {
 
 /* as above, but only computes for given band */
 mpb_real mode_solver::compute_1_group_velocity_component(vector3 d, int b) {
-  meep::adjust_mpb_verbosity amv;
   mpb_real u[3];
   int ib = b - 1;
   mpb_real group_v = 0;
@@ -2479,7 +2461,6 @@ number mode_solver::compute_energy_integral(field_integral_func field_func,
 vector3 mode_solver::get_dominant_planewave(int band) {
   double kdom[3] = {0, 0, 0};
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
-  meep::adjust_mpb_verbosity amv;
   maxwell_dominant_planewave(mdata, H, band, kdom);
 #endif
   vector3 result = {kdom[0], kdom[1], kdom[2]};

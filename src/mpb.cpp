@@ -55,6 +55,7 @@ typedef struct {
 static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_real n[3],
                         mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3],
                         void *eps_data_) {
+  adjust_mpb_verbosity amv;
   meep_mpb_eps_data *eps_data = (meep_mpb_eps_data *)eps_data_;
   size_t i = eps_data->icache;
 
@@ -765,6 +766,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 }
 
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
+  adjust_mpb_verbosity amv;
   eigenmode_data *edata = (eigenmode_data *)vedata;
   destroy_evectmatrix(edata->H);
   if (destroy_mdata) destroy_maxwell_data(edata->mdata);
