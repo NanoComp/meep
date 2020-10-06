@@ -32,7 +32,6 @@ public:
       mpb_verbosity = verbosity - 1;
       if (mpb_verbosity < 0) mpb_verbosity = 0;
       if (mpb_verbosity > 3) mpb_verbosity = 3;
-      master_printf("adjust mpb_verbosity: %d\n", mpb_verbosity);
     #else
       // avoid warnings
       (void)amount;
@@ -43,7 +42,6 @@ public:
   ~adjust_mpb_verbosity() {
     #ifdef HAVE_MPB
       mpb_verbosity = old_level;
-      master_printf("adjust mpb_verbosity: %d\n", mpb_verbosity);
     #endif
   }
 
