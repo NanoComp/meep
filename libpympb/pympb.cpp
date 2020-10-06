@@ -696,12 +696,12 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
   n[1] = grid_size.y;
   n[2] = grid_size.z;
 
-  if (target_freq != 0.0 && mpb_verbosity >= 2) { meep::master_printf("Target frequency is %g\n", target_freq); }
+  if (target_freq != 0.0 && mpb_verbosity >= 1) { meep::master_printf("Target frequency is %g\n", target_freq); }
 
   int true_rank = n[2] > 1 ? 3 : (n[1] > 1 ? 2 : 1);
   if (true_rank < dimensions) { dimensions = true_rank; }
   else if (true_rank > dimensions) {
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("WARNING: rank of grid is > dimensions.\n"
                         "         setting extra grid dims. to 1.\n");
     // force extra dims to be 1
@@ -709,7 +709,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
     if (dimensions <= 1) { n[1] = 1; }
   }
 
-  if (mpb_verbosity >= 2) {
+  if (mpb_verbosity >= 1) {
     meep::master_printf("Working in %d dimensions.\n", dimensions);
     meep::master_printf("Grid size is %d x %d x %d.\n", n[0], n[1], n[2]);
   }
@@ -723,7 +723,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
       block_size = (num_bands - block_size - 1) / (-block_size);
       block_size = (num_bands + block_size - 1) / block_size;
     }
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("Solving for %d bands at a time.\n", block_size);
   }
   else {
@@ -764,7 +764,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
     srand(314159); // * (rank + 1));
   }
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Creating Maxwell data...\n");
   mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, block_size,
                               NUM_FFT_BANDS);
@@ -776,7 +776,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list geometry,
   if (check_maxwell_dielectric(mdata, 0)) { meep::abort("invalid dielectric function for MPB"); }
 
   if (!have_old_fields) {
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("Allocating fields...\n");
 
     int N = n[0] * n[1] * n[2];
@@ -816,14 +816,14 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   mpb_real no_size_y = geometry_lattice.size.y == 0 ? 1 : geometry_lattice.size.y;
   mpb_real no_size_z = geometry_lattice.size.z == 0 ? 1 : geometry_lattice.size.z;
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Mesh size is %d.\n", mesh_size);
 
   Rm.c0 = vector3_scale(no_size_x, geometry_lattice.basis.c0);
   Rm.c1 = vector3_scale(no_size_y, geometry_lattice.basis.c1);
   Rm.c2 = vector3_scale(no_size_z, geometry_lattice.basis.c2);
 
-  if (mpb_verbosity >= 2) {
+  if (mpb_verbosity >= 1) {
     meep::master_printf("Lattice vectors:\n");
     meep::master_printf("     (%g, %g, %g)\n", Rm.c0.x, Rm.c0.y, Rm.c0.z);
     meep::master_printf("     (%g, %g, %g)\n", Rm.c1.x, Rm.c1.y, Rm.c1.z);
@@ -831,11 +831,11 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   }
 
   vol = fabs(matrix3x3_determinant(Rm));
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Cell volume = %g\n", vol);
 
   Gm = matrix3x3_inverse(matrix3x3_transpose(Rm));
-  if (mpb_verbosity >= 2) {
+  if (mpb_verbosity >= 1) {
     meep::master_printf("Reciprocal lattice vectors (/ 2 pi):\n");
     meep::master_printf("     (%g, %g, %g)\n", Gm.c0.x, Gm.c0.y, Gm.c0.z);
     meep::master_printf("     (%g, %g, %g)\n", Gm.c1.x, Gm.c1.y, Gm.c1.z);
@@ -847,7 +847,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
 
   geom_fix_object_list(*geometry);
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Geometric objects:\n");
   if (meep::am_master()) {
     for (int i = 0; i < geometry->num_items; ++i) {
@@ -888,7 +888,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   }
 
   if (verbose && meep::am_master()) {
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("Geometry object bounding box tree:\n");
     display_geom_box_tree(5, geometry_tree);
   }
@@ -896,7 +896,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
   int tree_depth;
   int tree_nobjects;
   geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Geometric object tree has depth %d and %d object nodes"
                         " (vs. %d actual objects)\n",
                         tree_depth, tree_nobjects, geometry->num_items);
@@ -922,13 +922,13 @@ void mode_solver::reset_epsilon(geometric_object_list *geometry) {
   // if (!mu_input_file.empty()) {
   // }
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Initializing epsilon function...\n");
   set_maxwell_dielectric(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
                          static_cast<void *>(this));
 
   if (has_mu(geometry)) {
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("Initializing mu function...\n");
     eps = false;
     set_maxwell_mu(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
@@ -987,7 +987,7 @@ void mode_solver::set_parity(integer p) {
     meep::master_fprintf(stderr, "k vector incompatible with parity\n");
     exit(EXIT_FAILURE);
   }
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Solving for band polarization: %s.\n", parity_string(mdata));
 
   last_parity = p;
@@ -1006,7 +1006,7 @@ void mode_solver::set_kpoint_index(int i) { kpoint_index = i; }
 void mode_solver::randomize_fields() {
 
   if (!mdata) { return; }
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Initializing fields to random numbers...\n");
 
   for (int i = 0; i < H.n * H.p; ++i) {
@@ -1021,13 +1021,13 @@ void mode_solver::solve_kpoint(vector3 kvector) {
   // special handling of this k
   if (vector3_norm(kvector) < 1e-10) { kvector.x = kvector.y = kvector.z = 0; }
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("solve_kpoint (%g,%g,%g):\n", kvector.x, kvector.y, kvector.z);
 
   curfield_reset();
 
   if (num_bands == 0) {
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("  num-bands is zero, not solving for any bands\n");
     return;
   }
@@ -1039,7 +1039,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   // If this is the first k point, print out a header line for the frequency
   // grep data.
-  if (mpb_verbosity >= 2) {
+  if (mpb_verbosity >= 1) {
     if (!kpoint_index && meep::am_master()) {
       meep::master_printf("%sfreqs:, k index, k1, k2, k3, kmag/2pi", parity_string(mdata));
 
@@ -1061,7 +1061,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   // TODO: Get flags from python
   int flags = EIGS_DEFAULT_FLAGS;
-  if (verbose || mpb_verbosity >= 2) { flags |= EIGS_VERBOSE; }
+  if (verbose || mpb_verbosity >= 1) { flags |= EIGS_VERBOSE; }
 
   // Constant (zero frequency) bands at k=0 are handled specially, so remove
   // them from the solutions for the eigensolver.
@@ -1106,7 +1106,7 @@ void mode_solver::solve_kpoint(vector3 kvector) {
       evectmatrix_resize(&Hblock, num_bands - ib, 0);
     }
 
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("Solving for bands %d to %d...\n", ib + 1, ib + Hblock.p);
 
     constraints = NULL;
@@ -1165,14 +1165,14 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
     evect_destroy_constraints(constraints);
 
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf("Finished solving for bands %d to %d after %d iterations.\n", ib + 1,
                           ib + Hblock.p, num_iters);
 
     total_iters += num_iters * Hblock.p;
   }
 
-  if (num_bands - ib0 > Hblock.alloc_p && mpb_verbosity >= 2) {
+  if (num_bands - ib0 > Hblock.alloc_p && mpb_verbosity >= 1) {
     meep::master_printf("Finished k-point with %g mean iterations/band.\n",
                         total_iters * 1.0 / num_bands);
   }
@@ -1209,17 +1209,17 @@ void mode_solver::solve_kpoint(vector3 kvector) {
 
   set_kpoint_index(kpoint_index + 1);
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("%sfreqs:, %d, %g, %g, %g, %g", parity_string(mdata), kpoint_index,
                         (double)k[0], (double)k[1], (double)k[2],
                         vector3_norm(matrix3x3_vector3_mult(Gm, kvector)));
 
   for (int i = 0; i < num_bands; ++i) {
     freqs[i] = negative_epsilon_ok ? eigvals[i] : sqrt(eigvals[i]);
-    if (mpb_verbosity >= 2)
+    if (mpb_verbosity >= 1)
       meep::master_printf(", %g", freqs[i]);
   }
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("\n");
 
   eigensolver_flops = evectmatrix_flops;
@@ -1273,7 +1273,7 @@ void mode_solver::get_epsilon() {
   eps_mean /= N;
   eps_inv_mean = N / eps_inv_mean;
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("epsilon: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n", eps_low,
                         eps_high, eps_mean, eps_inv_mean, (100.0 * fill_count) / N,
                         eps_high == eps_low ? 100.0
@@ -1329,7 +1329,7 @@ void mode_solver::get_mu() {
   eps_mean /= N;
   mu_inv_mean = N / mu_inv_mean;
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("mu: %g-%g, mean %g, harm. mean %g, %g%% > 1, %g%% \"fill\"\n", eps_low,
                         eps_high, eps_mean, mu_inv_mean, (100.0 * fill_count) / N,
                         eps_high == eps_low ? 100.0
@@ -1662,15 +1662,15 @@ std::vector<mpb_real> mode_solver::compute_field_energy() {
   mpb_real comp_sum[6];
   mpb_real energy_sum = compute_field_energy_internal(comp_sum);
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("%c-energy-components:, %d, %d", curfield_type, kpoint_index, curfield_band);
   for (int i = 0; i < 6; ++i) {
     comp_sum[i] /= (energy_sum == 0 ? 1 : energy_sum);
-    if (i % 2 == 1 && mpb_verbosity >= 2) {
+    if (i % 2 == 1 && mpb_verbosity >= 1) {
       meep::master_printf(", %g", comp_sum[i] + comp_sum[i - 1]);
       }
   }
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("\n");
 
   /* The return value is a list of 7 items: the total energy,
@@ -2087,7 +2087,7 @@ void mode_solver::fix_field_phase() {
 
   ASSIGN_SCALAR(phase, SCALAR_RE(phase) * maxabs_sign, SCALAR_IM(phase) * maxabs_sign);
 
-  if (mpb_verbosity >= 2)
+  if (mpb_verbosity >= 1)
     meep::master_printf("Fixing %c-field (band %d) phase by %g + %gi; "
                         "max ampl. = %g\n",
                         curfield_type, curfield_band, SCALAR_RE(phase), SCALAR_IM(phase), maxabs);
@@ -2675,7 +2675,7 @@ void map_data(mpb_real *d_in_re, int size_in_re, mpb_real *d_in_im, int size_in_
 #undef IN_INDEX
       }
 
-  if (verbose || mpb_verbosity >= 2) {
+  if (verbose || mpb_verbosity >= 1) {
     meep::master_printf("real part range: %g .. %g\n", min_out_re, max_out_re);
     if (size_out_im > 0) meep::master_printf("imag part range: %g .. %g\n", min_out_im, max_out_im);
   }
