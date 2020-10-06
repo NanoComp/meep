@@ -7,7 +7,6 @@
 #include "config.h"
 #include "pympb.hpp"
 #include "meep/mympi.hpp"
-#include "adjust_verbosity.hpp"
 
 // If the MPB lib is not new enough to have the mpb_verbosity global then make
 // one here to give the swig wrapper something to link with.
