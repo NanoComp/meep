@@ -24,6 +24,7 @@
 
 #ifdef HAVE_MPB
 #include <mpb.h>
+#include "adjust_verbosity.hpp"
 #ifndef SCALAR_COMPLEX
 #error Meep requires complex version of MPB
 #endif
@@ -317,6 +318,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
+  adjust_mpb_verbosity amv;
 
   // if the mode region extends over the full computational grid and we are bloch-periodic
   // in any direction, set the corresponding component of the eigenmode initial-guess
@@ -794,6 +796,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
   /*--------------------------------------------------------------*/
+  adjust_mpb_verbosity amv;
   double frequency = real(src.frequency());
 
   am_now_working_on(MPBTime);
@@ -881,6 +884,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
                                         double *cscale, direction d, diffractedplanewave *dp) {
+  adjust_mpb_verbosity amv;
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
