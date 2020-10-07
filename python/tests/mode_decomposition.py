@@ -26,7 +26,6 @@ class TestModeDecomposition(unittest.TestCase):
         half_Lt = 0.5 * Lt
         src_pt = mp.Vector3(-0.5 * sx + dpml + 0.2 * Lw, 0, 0)
         sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=0.2 * fcen),
-                                      component=mp.Ez,
                                       center=src_pt,
                                       size=mp.Vector3(0, sy - 2 * dpml, 0),
                                       eig_match_freq=True,
