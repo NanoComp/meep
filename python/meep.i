@@ -1817,7 +1817,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     meep_geom::material_type_list extra_materials,
                                                     bool split_chunks_evenly,
                                                     bool set_materials,
-                                                    meep::structure *existing_s) {
+                                                    meep::structure *existing_s,
+                                                    bool output_chunk_costs) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1832,6 +1833,15 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
     meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
                                            &gv, cell_size, center, &gobj_list);
+
+    if (output_chunk_costs) {
+         meep::volume thev = gv.surroundings();
+         std::vector<grid_volume> chunk_vols = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
+         for (size_t i = 0; i < chunk_vols.size(); ++i)
+              master_printf("CHUNK:, %2zu, %f\n",i,chunk_vols[i].get_cost());
+         return NULL;
+    }
+
     meep::structure *s;
     if (existing_s) {
       s = existing_s;
