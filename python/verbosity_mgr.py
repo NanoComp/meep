@@ -19,8 +19,8 @@ class Verbosity(object):
     as `meep.verbosity`.
 
     Note that this class is a Singleton, meaning that each call to
-    `Verbosity(cvar)` gives you the same instance. The new `cvar` will be added to a
-    list of verbosity flags managed by this class.
+    `Verbosity(cvar)` gives you the same instance. The new `cvar` will be added
+    to a list of verbosity flags managed by this class.
     """
     _instance = None
 
@@ -37,14 +37,23 @@ class Verbosity(object):
         Set up the initial state of the singleton. Called only when the first
         instance is created.
         """
-        self._master_verbosity = 1
-        self._cvars = list()
+        self._master_verbosity = -1
+        self._cvars = dict()
 
-    def __init__(self, cvar=None, initial_level=None):
+    @classmethod
+    def reset(cls):
+        # Probably just for testing. Drops the existing the singleton instance
+        # so a new one will be created the next time a new Verbosity is
+        # instantiated.
+        if cls._instance is not None:
+            cls._instance._init()
+            cls._instance = None
+
+    def __init__(self, cvar=None, name=None, initial_level=1):
         """See `add_verbosity_var()`"""
-        self.add_verbosity_var(cvar, initial_level)
+        self.add_verbosity_var(cvar, name, initial_level)
 
-    def add_verbosity_var(self, cvar=None, initial_level=None):
+    def add_verbosity_var(self, cvar=None, name=None, initial_level=1):
         """
         Add a new verbosity flag to be managed. `cvar` should be some object
         that has a `verbosity` attribute, such as `meep.cvar` or `mpb.cvar`.
@@ -57,13 +66,22 @@ class Verbosity(object):
             class _dummy():
                 def __init__(self): self.verbosity = 1
             cvar = _dummy()
-        self._cvars.append(cvar)
-        if initial_level is not None:
+
+        # If a name is not given then manufacture one
+        if name is None:
+            name = 'cvar_{}'.format(len(self._cvars))
+        self._cvars[name] = cvar
+
+        # And create a property for so it can be accessed like `verbosity.mpb`
+        self.make_property(name)
+
+        # The initial master (global) level is determined by the first instance created
+        if self._master_verbosity == -1:
             self.set(initial_level)
 
     def get(self):
         """
-        Returns the current verbosity level.
+        Returns the current global verbosity level.
         """
         return self._master_verbosity
 
@@ -73,7 +91,7 @@ class Verbosity(object):
         is mostly intended for debugging this class and won't likely be useful
         otherwise.
         """
-        return [cvar.verbosity for cvar in self._cvars ]
+        return [value.verbosity for value in self._cvars.values() ]
 
     def set(self, level):
         """
@@ -83,16 +101,17 @@ class Verbosity(object):
         if level < 0 or level > 3:
             raise ValueError('Only verbosity levels 0-3 are supported')
         old = self._master_verbosity
-        for cvar in self._cvars:
+        for cvar in self._cvars.values():
             cvar.verbosity = level
         self._master_verbosity = level
         return old
 
     def __call__(self, level):
         """
-        Convenience for setting the verbosity level. This lets you set the level
-        by calling the instance like a function. For example, if `verbosity` is
-        an instance of this class, then it's value can be changed like this:
+        Convenience for setting the verbosity level. This lets you set the
+        global level by calling the instance like a function. For example, if
+        `verbosity` is an instance of this class, then it's value can be changed
+        like this:
 
         ```
         verbosity(0)
@@ -102,8 +121,8 @@ class Verbosity(object):
 
     def __int__(self):
         """
-        A convenience for getting the verbosity level anywhere an integer is
-        expected.
+        A convenience for getting the global verbosity level anywhere an integer
+        is expected.
         """
         return self.get()
 
@@ -118,42 +137,17 @@ class Verbosity(object):
     def __le__(self, o): return self.get() <= o
     def __ge__(self, o): return self.get() >= o
 
+    def make_property(self, name):
+        """
+        Add a property to the class with the given name that gets or sets the
+        verbosity in the cvar with that name in self._cvars.
+        """
+        def _getter(self, name=name):
+            return self._cvars[name].verbosity
+        def _setter(self, level, name=name):
+            if level < 0 or level > 3:
+                raise ValueError('Only verbosity levels 0-3 are supported')
+            self._cvars[name].verbosity = level
 
+        setattr(Verbosity, name, property(_getter, _setter))
 
-
-def main():
-    # simple test code
-    import sys
-
-    class MyCvar:
-        def __init__(self): self.verbosity = 1
-
-    verbosity = Verbosity()
-    v2 = Verbosity(MyCvar())
-    print(verbosity is v2)
-    print(id(verbosity), id(v2))
-    print(verbosity.get_all())
-
-    print('initial value: {}'.format(verbosity.get()))
-
-    print('v==1: {}'.format(verbosity == 1))
-    print('v==2: {}'.format(verbosity == 2))
-
-    print('v>1: {}'.format(verbosity > 1))
-    print('v<3: {}'.format(verbosity < 3))
-    print('v>=2: {}'.format(verbosity >= 2))
-    print('v<=1: {}'.format(verbosity <= 1))
-
-    verbosity(3)
-    print('v==1: {}'.format(verbosity == 1))
-    print('v==2: {}'.format(verbosity == 2))
-    print('v==3: {}'.format(verbosity == 3))
-
-    print(verbosity.get_all())
-
-    # should raise ValueError
-    verbosity(5)
-
-
-if __name__ == '__main__':
-    main()
