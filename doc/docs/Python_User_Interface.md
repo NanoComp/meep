@@ -1290,8 +1290,6 @@ following fields:
 + `cscale`: a NumPy array of each mode's scaling coefficient. Useful for adjoint
   calculations.
 
-See [Mode Decomposition](#mode-decomposition)
-
 </div>
 
 </div>

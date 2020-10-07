@@ -388,7 +388,7 @@ For a given computational grid when `split_chunks_evenly=True` (the default), Me
 
 Unless the computational parallelism outweighs the extra communications overhead, the parallel program will actually be *slower* than the serial one.  This means, for example, that even if you really have two or more physical processors you won't be able to benefit from parallelization until the problem is sufficiently large. In general, you will need large simulations to benefit from lots of processors. A rule of thumb is to keep doubling the number of processors until you no longer see much speedup.
 
-For more details on Meep's load balancing features as well as some performance metrics, see [arXiv:2003.04287](https://arxiv.org/abs/2003.04287).
+For more details on Meep's load balancing features as well as some performance metrics, see [arXiv:2003.04287](https://arxiv.org/abs/2003.04287) and [Features/Parallel Meep/Runtime Scaling on MPI Clusters](Parallel_Meep.md#runtime-scaling-on-mpi-clusters).
 
 ### Why are simulations involving Fourier-transformed fields slow?
 

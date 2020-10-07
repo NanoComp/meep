@@ -3335,8 +3335,6 @@ class Simulation(object):
         + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
         + `cscale`: a NumPy array of each mode's scaling coefficient. Useful for adjoint
           calculations.
-
-        See [Mode Decomposition](#mode-decomposition)
         """
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
@@ -4433,9 +4431,9 @@ def output_png(compnt, options, rm_h5=True):
 
 def output_epsilon(sim=None,*step_func_args,**kwargs):
     """
-    Given a frequency `frequency`, (provided as a keyword argument) output $\varepsilon$ (relative
-    permittivity); for an anisotropic $\varepsilon$ tensor the output is the [harmonic
-    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\varepsilon$ eigenvalues. If
+    Given a frequency `frequency`, (provided as a keyword argument) output $\\varepsilon$ (relative
+    permittivity); for an anisotropic $\\varepsilon$ tensor the output is the [harmonic
+    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\\varepsilon$ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
     frequency-independent part of $\varepsilon$ (the $\\omega\\to\\infty$ limit).
     When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
