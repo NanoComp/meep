@@ -29,7 +29,7 @@ class Verbosity(object):
     level for all library components. For example, this:
 
     ```python
-    meep.verbosity = 2
+    meep.verbosity(2)
     # or meep.verbosity.set(2) if you prefer being more explicit
     ```
 
