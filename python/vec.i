@@ -70,6 +70,12 @@
 %rename(vec_dim_val) meep::vec::vec(ndim, double);
 %rename(vec_dim) meep::vec::vec(ndim);
 
+// ignore methods that conflict with python built-ins
+%ignore meep::vec::str;
+%ignore meep::ivec::str;
+%ignore meep::volume::str;
+%ignore meep::grid_volume::str;
+
 
 // Include the C++ class declarations
 %include "meep/vec.hpp"
