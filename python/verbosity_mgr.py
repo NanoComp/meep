@@ -15,13 +15,39 @@ class Verbosity(object):
     * 2: a lot
     * 3: debugging
 
-    An instace of `Verbosity` is created when meep is imported, and is accessible
-    as `meep.verbosity`.
+    An instance of `Verbosity` is created when meep is imported, and is
+    accessible as `meep.verbosity`. The `meep.mpb` package also has a verbosity
+    flag in its C library, and it can also be managed via the `Verbosity` class
+    after `meep.mpb` is imported.
 
-    Note that this class is a Singleton, meaning that each call to
-    `Verbosity(cvar)` gives you the same instance. The new `cvar` will be added
-    to a list of verbosity flags managed by this class.
+    Note that this class is a Singleton, meaning that each call to create a new
+    `Verbosity` actually gives you the same instance. The new C `verbosity`
+    flag will be added to a list of verbosity flags managed by this class.
+
+    The `Verbosity` instance can be used as a global verbosity controller, and
+    assignments to any instance of `Verbosity` will set the global verbosity
+    level for all library components. For example, this:
+
+    ```python
+    meep.verbosity = 2
+    # or meep.verbosity.set(2) if you prefer being more explicit
+    ```
+
+    will set all of the managed verbosity flags to level 2.
+
+    Each managed verbosity flag can also be accessed individually if desired.
+    Each time a new C/C++ library verbosity flag is added to this Python class a
+    new property is added which can be used to access that individual flag.
+    Currently the properties that are available are named simply `meep` and
+    `mpb`. This means that you can set two different verbosity levels like this:
+
+    ```python
+    verbosity = meep.verbosity # not required, it's just to save some typing
+    verbosity.meep = 2
+    verbosity.mpb = 1
+    ```
     """
+
     _instance = None
 
     def __new__(cls, *args, **kw):
