@@ -20,6 +20,7 @@
 #include <math.h>
 #include <string.h>
 #include <algorithm>
+#include <assert.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -1247,6 +1248,70 @@ void fields::get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
 void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                                    std::complex<double> overlaps[2]) {
   get_overlap(mode1_data, mode2_data, flux, 0, overlaps);
+}
+
+//Modified from dft_near2far::near_sourcedata
+std::vector<struct sourcedata> dft_flux::flux_sourcedata(std::complex<double> *dJ) {
+
+  const size_t Nfreq = freq.size();
+  std::vector<struct sourcedata> temp;
+
+  // Determine which components we care about
+  component cE_t[2] = {Ex, Ey}, cH_t[2] = {Hy, Hx};
+  switch (normal_direction) {
+    case X: cE_t[0] = Ey, cE_t[1] = Ez, cH_t[0] = Hz, cH_t[1] = Hy; break;
+    case Y: cE_t[0] = Ez, cE_t[1] = Ex, cH_t[0] = Hx, cH_t[1] = Hz; break;
+    case R: cE_t[0] = Ep, cE_t[1] = Ez, cH_t[0] = Hz, cH_t[1] = Hp; break;
+    case P: cE_t[0] = Ez, cE_t[1] = Er, cH_t[0] = Hr, cH_t[1] = Hz; break;
+    case Z:
+      if (cE==Er) // check the stored cE, which only stores the first component
+        cE_t[0] = Er, cE_t[1] = Ep, cH_t[0] = Hp, cH_t[1] = Hr;
+      else
+        cE_t[0] = Ex, cE_t[1] = Ey, cH_t[0] = Hy, cH_t[1] = Hx;
+      break;
+    default: abort("invalid flux component!");
+  }
+  component c0[4] = {cE_t[0], cE_t[1], cH_t[0], cH_t[1]};
+  component c_adj[4] = {cH_t[1], cH_t[0], cE_t[1], cE_t[0]};
+
+  // Loop over chunkloops and chunks
+  dft_chunk *chunklists[2];
+  chunklists[0] = E;
+  chunklists[1] = H;
+  for (int ncl = 0; ncl < 2; ncl++) {
+    int chunk_idx = 0;
+    for (dft_chunk *chunk = chunklists[ncl]; chunk; chunk = chunk->next_in_dft) {
+      int ci = ncl * 2 + chunk_idx;
+      component currentComp = c0[ci];
+      component adjointComp = c_adj[ci];
+
+      assert(Nfreq == chunk->omega.size());
+      std::vector<ptrdiff_t> idx_arr;
+      std::vector<std::complex<double> > amp_arr;
+
+      vec rshift(chunk->shift * (0.5 * chunk->fc->gv.inva));
+      size_t idx_dft = 0;
+      sourcedata temp_struct = {adjointComp, idx_arr, chunk->fc->chunk_idx, amp_arr};
+      LOOP_OVER_IVECS(chunk->fc->gv, chunk->is, chunk->ie, idx) {
+        IVEC_LOOP_LOC(chunk->fc->gv, x0);
+        x0 = chunk->S.transform(x0, chunk->sn) + rshift;
+        vec xs(x0);
+        double w = IVEC_LOOP_WEIGHT(chunk->s0, chunk->s1, chunk->e0, chunk->e1, chunk->dV0 + chunk->dV1 * loop_i2);
+
+        temp_struct.idx_arr.push_back(idx);
+        for (size_t i = 0; i < Nfreq; ++i) {
+          cdouble dft_val = chunk->dft[chunk->omega.size() * (idx_dft++) + Nfreq]/w; // chunk->stored_weight;
+          dft_val = std::conj(dft_val);
+          // principle of equivalence
+          if (is_electric(currentComp)) dft_val *= -1;
+
+          temp_struct.amp_arr.push_back(dft_val);
+        }
+      }
+      temp.push_back(temp_struct);
+    }
+  }
+  return temp;
 }
 
 } // namespace meep

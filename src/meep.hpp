@@ -995,6 +995,13 @@ public:
                double fmin, double fmax, int maxbands);
 };
 
+struct sourcedata{
+  component near_fd_comp;
+  std::vector<ptrdiff_t> idx_arr;
+  int fc_idx;
+  std::vector<std::complex<double> > amp_arr;
+};
+
 // dft.cpp
 // this should normally only be created with fields::add_dft
 class dft_chunk {
@@ -1125,6 +1132,8 @@ public:
   volume where;
   direction normal_direction;
   bool use_symmetry;
+
+  std::vector<struct sourcedata> flux_sourcedata(std::complex<double>* dJ);
 };
 
 // dft.cpp (normally created with fields::add_dft_energy)
@@ -1193,15 +1202,6 @@ public:
   dft_chunk *offdiag1, *offdiag2, *diag;
   volume where;
 };
-
-
-struct sourcedata{
-  component near_fd_comp;
-  std::vector<ptrdiff_t> idx_arr;
-  int fc_idx;
-  std::vector<std::complex<double> > amp_arr;
-};
-
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
 class dft_near2far {
