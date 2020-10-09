@@ -581,19 +581,21 @@ def phase_in_material(self, structure, time):
 
 <div class="method_docstring" markdown="1">
 
-`newstructure` should be the `structure` field of another `Simulation`
-object with the same cell size and resolution.  Over the next time
-period `phasetime` (in the current simulation's time units), the
-current structure ($\varepsilon$, $\mu$, and conductivity $\sigma_D$)
-will be gradually changed to `newstructure`. In particular, at each
-timestep it linearly interpolates between the old structure and the
-new structure. After `phasetime` has elapsed, the structure will
-remain equal to `newstructure`. This is demonstrated in the following
-image for two [Cylinder](#cylinder) objects (the simulation script is
-in
+`newstructure` should be the `structure` field of another
+`Simulation` object with the same cell size and resolution.
+Over the next time period `phasetime` (in the current
+simulation's time units), the current structure
+($\varepsilon$, $\mu$, and conductivity $\sigma_D$) will be
+gradually changed to `newstructure`. In particular, at each
+timestep it linearly interpolates between the old structure
+and the new structure. After `phasetime` has elapsed, the
+structure will remain equal to `newstructure`. This is
+demonstrated in the following image for two
+[Cylinder](#cylinder) objects (the simulation script is in
 [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
 ![](images/phase-in-material.png)
+
 </div>
 
 </div>
@@ -802,12 +804,13 @@ def modal_volume_in_box(self, box=None, center=None, size=None):
 
 <div class="method_docstring" markdown="1">
 
-Given a `mp.Volume`, returns the instantaneous modal volume according
-to the Purcell-effect definition: 
+Given a `mp.Volume`, returns the instantaneous modal volume
+according to the Purcell-effect definition:
 $\left(\int\varepsilon|\mathbf{E}|^2\right)/\left(\max{\varepsilon|\mathbf{E}|^2}\right)$.
-If no volume argument is provided, the entire cell is used by default. If
-the `center` and `size` arguments are provided instead of `box`, Meep
-will construct the appropriate volume for you.
+If no volume argument is provided, the entire cell is used by
+default. If the `center` and `size` arguments are provided
+instead of `box`, Meep will construct the appropriate volume
+for you.
 
 Note that if you are at a fixed frequency and you use complex fields (via
 Bloch-periodic boundary conditions or `fields_complex=True`), then one half of the
@@ -823,6 +826,7 @@ $f(\mathbf{x},c_1,c_2,\ldots)$ of position $\mathbf{x}$ and various field
 components $c_1,\ldots$ and ask Meep to integrate it over a given volume, find its
 maximum, or output it (via `output_field_function`, described later). This is done
 via the functions:
+
 </div>
 
 </div>
@@ -2739,9 +2743,9 @@ Given a frequency `frequency`, (provided as a keyword argument) output $\varepsi
 permittivity); for an anisotropic $\varepsilon$ tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\varepsilon$ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
+frequency-independent part of $arepsilon$ (the $\omega\to\infty$ limit).
 When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
-the `sim` argument specifying the `Simulation` object can be omitted, e.g.
+the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 `sim.run(mp.at_beginning(mp.output_epsilon(frequency=1/0.7)),until=10)`.
 
 </div>
@@ -2760,7 +2764,7 @@ mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\mu$ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
 frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
-the `sim` argument specifying the `Simulation` object can be omitted, e.g.
+the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 `sim.run(mp.at_beginning(mp.output_mu(frequency=1/0.7)),until=10)`.
 
 </div>
@@ -3910,35 +3914,34 @@ Instead of the `material` or `material_function` arguments, you can also use the
 `epsilon_func` keyword argument to `Simulation` and `GeometricObject`, which takes a
 function of position that returns the dielectric constant at that point.
 
-**Important:** If your material function returns nonlinear, dispersive
-(Lorentzian or conducting), or magnetic materials, you should also
-include a list of these materials in the `extra_materials` input
-variable (above) to let Meep know that it needs to support these
-material types in your simulation. For dispersive materials, you need
-to include a material with the *same* values of $\gamma_n$ and
-$\omega_n$, so you can only have a finite number of these, whereas
-$\sigma_n$ can vary continuously and a matching $\sigma_n$ need not be
-specified in `extra_materials`. For nonlinear or conductivity
-materials, your `extra_materials` list need not match the actual
-values of $\sigma$ or $\chi$ returned by your material function, which
-can vary continuously.
+**Important:** If your material function returns nonlinear, dispersive (Lorentzian or
+conducting), or magnetic materials, you should also include a list of these materials
+in the `extra_materials` input variable (above) to let Meep know that it needs to
+support these material types in your simulation. For dispersive materials, you need to
+include a material with the *same* values of $\gamma_n$ and $\omega_n$, so
+you can only have a finite number of these, whereas $\sigma_n$ can vary
+continuously and a matching $\sigma_n$ need not be specified in
+`extra_materials`. For nonlinear or conductivity materials, your `extra_materials`
+list need not match the actual values of $\sigma$ or $\chi$ returned by your material function,
+which can vary continuously.
 
 **Complex $\varepsilon$ and $\mu$**: you cannot specify a
-frequency-independent complex $\varepsilon$ or $\mu$ in Meep where the
-imaginary part is a frequency-independent loss but there is an
-alternative.  That is because there are only two important physical
-situations. First, if you only care about the loss in a narrow
-bandwidth around some frequency, you can set the loss at that
-frequency via the
-[conductivity](Materials.md#conductivity-and-complex).  Second, if you
-care about a broad bandwidth, then all physical materials have a
-frequency-dependent complex $\varepsilon$ and/or $\mu$, and you need
-to specify that frequency dependence by fitting to Lorentzian and/or
-Drude resonances via the `LorentzianSusceptibility` or
+frequency-independent complex $\varepsilon$ or $\mu$ in Meep where
+the imaginary part is a frequency-independent loss but there is an
+alternative.  That is because there are only two important
+physical situations. First, if you only care about the loss in a
+narrow bandwidth around some frequency, you can set the loss at
+that frequency via the
+[conductivity](Materials.md#conductivity-and-complex).  Second, if
+you care about a broad bandwidth, then all physical materials have
+a frequency-dependent complex $\varepsilon$ and/or $\mu$, and you
+need to specify that frequency dependence by fitting to Lorentzian
+and/or Drude resonances via the `LorentzianSusceptibility` or
 `DrudeSusceptibility` classes below.
 
 Dispersive dielectric and magnetic materials, above, are specified via a list of
 objects that are subclasses of type `Susceptibility`.
+
 </div>
 
 
@@ -5448,7 +5451,6 @@ as `v.rotate(axis, theta)`.
 + `axis` [`Vector3`] — The vector around which the rotation is applied in the right-hand direction.
 
 + `theta` [`number`] — The rotation angle (in radians).
-
 
 </div>
 
@@ -7034,12 +7036,37 @@ The verbosity levels are:
 * 2: a lot
 * 3: debugging
 
-An instace of `Verbosity` is created when meep is imported, and is accessible
-as `meep.verbosity`.
+An instance of `Verbosity` is created when meep is imported, and is
+accessible as `meep.verbosity`. The `meep.mpb` package also has a verbosity
+flag in its C library, and it can also be managed via the `Verbosity` class
+after `meep.mpb` is imported.
 
-Note that this class is a Singleton, meaning that each call to
-`Verbosity(cvar)` gives you the same instance. The new `cvar` will be added to a
-list of verbosity flags managed by this class.
+Note that this class is a Singleton, meaning that each call to create a new
+`Verbosity` actually gives you the same instance. The new C `verbosity`
+flag will be added to a list of verbosity flags managed by this class.
+
+The `Verbosity` instance can be used as a global verbosity controller, and
+assignments to any instance of `Verbosity` will set the global verbosity
+level for all library components. For example, this:
+
+```python
+meep.verbosity(2)
+# or meep.verbosity.set(2) if you prefer being more explicit
+```
+
+will set all of the managed verbosity flags to level 2.
+
+Each managed verbosity flag can also be accessed individually if desired.
+Each time a new C/C++ library verbosity flag is added to this Python class a
+new property is added which can be used to access that individual flag.
+Currently the properties that are available are named simply `meep` and
+`mpb`. This means that you can set two different verbosity levels like this:
+
+```python
+verbosity = meep.verbosity # not required, it's just to save some typing
+verbosity.meep = 2
+verbosity.mpb = 1
+```
 
 </div>
 
@@ -7050,7 +7077,7 @@ list of verbosity flags managed by this class.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, cvar=None, initial_level=None):
+def __init__(self, cvar=None, name=None, initial_level=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7071,9 +7098,10 @@ def __call__(self, level):
 
 <div class="method_docstring" markdown="1">
 
-Convenience for setting the verbosity level. This lets you set the level
-by calling the instance like a function. For example, if `verbosity` is
-an instance of this class, then it's value can be changed like this:
+Convenience for setting the verbosity level. This lets you set the
+global level by calling the instance like a function. For example, if
+`verbosity` is an instance of this class, then it's value can be changed
+like this:
 
 ```
 verbosity(0)
@@ -7088,7 +7116,7 @@ verbosity(0)
 <div class="class_members" markdown="1">
 
 ```python
-def add_verbosity_var(self, cvar=None, initial_level=None):
+def add_verbosity_var(self, cvar=None, name=None, initial_level=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7110,7 +7138,7 @@ def get(self):
 
 <div class="method_docstring" markdown="1">
 
-Returns the current verbosity level.
+Returns the current global verbosity level.
 
 </div>
 
@@ -7518,32 +7546,38 @@ follows the `run` function (e.g., outputting fields).
 <a id="output_epsilon"></a>
 
 ```python
-def output_epsilon(sim, *step_func_args, **kwargs):
+def output_epsilon(sim=None, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
 
-Given a frequency `frequency`, (provided as a keyword argument) output ε (relative
-permittivity); for an anisotropic ε tensor the output is the [harmonic
-mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If
+Given a frequency `frequency`, (provided as a keyword argument) output $\varepsilon$ (relative
+permittivity); for an anisotropic $\varepsilon$ tensor the output is the [harmonic
+mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\varepsilon$ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of ε (the $\omega\to\infty$ limit).
+frequency-independent part of $arepsilon$ (the $\omega\to\infty$ limit).
+When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
+the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
+`sim.run(mp.at_beginning(mp.output_epsilon(frequency=1/0.7)),until=10)`.
 
 </div>
 
 <a id="output_mu"></a>
 
 ```python
-def output_mu(sim, *step_func_args, **kwargs):
+def output_mu(sim=None, *step_func_args, **kwargs):
 ```
 
 <div class="function_docstring" markdown="1">
 
-Given a frequency `frequency`, (provided as a keyword argument) output μ (relative
-permeability); for an anisotropic μ tensor the output is the [harmonic
-mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If
+Given a frequency `frequency`, (provided as a keyword argument) output $\mu$ (relative
+permeability); for an anisotropic $\mu$ tensor the output is the [harmonic
+mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\mu$ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of μ (the $\omega\to\infty$ limit).
+frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
+When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
+the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
+`sim.run(mp.at_beginning(mp.output_mu(frequency=1/0.7)),until=10)`.
 
 </div>
 
