@@ -12,13 +12,17 @@ import sys
 import warnings
 from collections import namedtuple
 from collections import OrderedDict
-from collections import Sequence
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 import numpy as np
 
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
-from meep.source import EigenModeSource, GaussianBeamSource, check_positive
+from meep.source import EigenModeSource, GaussianBeamSource, IndexedSource, check_positive
 import meep.visualization as vis
 from meep.verbosity_mgr import Verbosity
 
@@ -34,7 +38,7 @@ try:
 except ImportError:
     do_progress = False
 
-verbosity = Verbosity(mp.cvar, 1)
+verbosity = Verbosity(mp.cvar, 'meep', 1)
 
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
@@ -133,13 +137,13 @@ class DiffractedPlanewave(object):
         """
         Construct a `DiffractedPlanewave`.
 
-        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
-        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
+        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\\mathcal{S}$ and $\\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
-        + **`s` [ `complex` ]** — The complex amplitude of the $\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
+        + **`s` [ `complex` ]** — The complex amplitude of the $\\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
 
-        + **`p` [ `complex` ]** — The complex amplitude of the $\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
+        + **`p` [ `complex` ]** — The complex amplitude of the $\\mathcal{P}$ polarziation (i.e., electric field parallel to the plane of incidence).
         """
         self._g = g
         self._axis = axis
@@ -1630,7 +1634,7 @@ class Simulation(object):
         return stats
 
     def _init_structure(self, k=False):
-        if verbosity > 0:
+        if verbosity.meep > 0:
             print('-' * 11)
             print('Initializing structure...')
 
@@ -1653,20 +1657,19 @@ class Simulation(object):
         if self.collect_stats and isinstance(self.default_material, mp.Medium):
             self.fragment_stats = self._compute_fragment_stats(gv)
 
-        if self._output_stats and isinstance(self.default_material, mp.Medium) and verbosity > 0:
+        if self._output_stats and isinstance(self.default_material, mp.Medium) and verbosity.meep > 0:
             stats = self._compute_fragment_stats(gv)
-            print("STATS: aniso_eps: {}".format(stats.num_anisotropic_eps_pixels))
-            print("STATS: anis_mu: {}".format(stats.num_anisotropic_mu_pixels))
-            print("STATS: nonlinear: {}".format(stats.num_nonlinear_pixels))
-            print("STATS: susceptibility: {}".format(stats.num_susceptibility_pixels))
-            print("STATS: nonzero_cond: {}".format(stats.num_nonzero_conductivity_pixels))
-            print("STATS: pml_1d: {}".format(stats.num_1d_pml_pixels))
-            print("STATS: pml_2d: {}".format(stats.num_2d_pml_pixels))
-            print("STATS: pml_3d: {}".format(stats.num_3d_pml_pixels))
-            print("STATS: dft: {}".format(stats.num_dft_pixels))
-            print("STATS: total_pixels: {}".format(stats.num_pixels_in_box))
-            print("STATS: num_cores: {}".format(mp.count_processors()))
-            sys.exit(0)
+            print("FRAGMENT:, aniso_eps:, {}".format(stats.num_anisotropic_eps_pixels))
+            print("FRAGMENT:, aniso_mu:, {}".format(stats.num_anisotropic_mu_pixels))
+            print("FRAGMENT:, nonlinear:, {}".format(stats.num_nonlinear_pixels))
+            print("FRAGMENT:, susceptibility:, {}".format(stats.num_susceptibility_pixels))
+            print("FRAGMENT:, conductivity:, {}".format(stats.num_nonzero_conductivity_pixels))
+            print("FRAGMENT:, pml_1d:, {}".format(stats.num_1d_pml_pixels))
+            print("FRAGMENT:, pml_2d:, {}".format(stats.num_2d_pml_pixels))
+            print("FRAGMENT:, pml_3d:, {}".format(stats.num_3d_pml_pixels))
+            print("FRAGMENT:, dft:, {}".format(stats.num_dft_pixels))
+            print("FRAGMENT:, total_pixels:, {}".format(stats.num_pixels_in_box))
+            print("FRAGMENT:, procs:, {}".format(mp.count_processors()))
 
         fragment_vols = self._make_fragment_lists(gv)
         self.dft_data_list = fragment_vols[0]
@@ -1699,8 +1702,12 @@ class Simulation(object):
             self.extra_materials,
             self.split_chunks_evenly,
             False if self.chunk_layout else True,
-            None
-       )
+            None,
+            True if self._output_stats is not None else False
+        )
+
+        if self._output_stats is not None:
+            sys.exit(0)
 
         if self.chunk_layout:
             self.load_chunk_layout(br, self.chunk_layout)
@@ -1846,7 +1853,8 @@ class Simulation(object):
             self.extra_materials,
             self.split_chunks_evenly,
             True,
-            self.structure
+            self.structure,
+            False
         )
 
     def dump_structure(self, fname):
@@ -1925,7 +1933,7 @@ class Simulation(object):
 
         if use_real(self):
             self.fields.use_real_fields()
-        elif verbosity > 0:
+        elif verbosity.meep > 0:
             print("Meep: using complex fields.")
 
         if self.k_point:
@@ -2032,7 +2040,7 @@ class Simulation(object):
         `Simulation` object with the same cell size and resolution.
         Over the next time period `phasetime` (in the current
         simulation's time units), the current structure
-        ($\varepsilon$, $\mu$, and conductivity $\sigma_D$) will be
+        ($\\varepsilon$, $\\mu$, and conductivity $\\sigma_D$) will be
         gradually changed to `newstructure`. In particular, at each
         timestep it linearly interpolates between the old structure
         and the new structure. After `phasetime` has elapsed, the
@@ -2129,7 +2137,7 @@ class Simulation(object):
         closure = {'trashed': False}
 
         def hook():
-            if verbosity > 0:
+            if verbosity.meep > 0:
                 print("Meep: using output directory '{}'".format(dname))
             self.fields.set_output_directory(dname)
             if not closure['trashed']:
@@ -2190,7 +2198,7 @@ class Simulation(object):
             self.progress.value = t0 + stop_time
             self.progress.description = "100% done "
 
-        if verbosity > 0:
+        if verbosity.meep > 0:
             print("run {} finished at t = {} ({} timesteps)".format(self.run_index, self.meep_time(), self.fields.t))
         self.run_index += 1
 
@@ -2289,6 +2297,10 @@ class Simulation(object):
     def add_source(self, src):
         if self.fields is None:
             self.init_sim()
+
+        if isinstance(src, IndexedSource):
+            self.fields.add_srcdata(src.srcdata, src.src.swigobj, src.num_pts, src.amp_arr)
+            return
 
         where = Volume(src.center, src.size, dims=self.dimensions,
                        is_cylindrical=self.is_cylindrical).swigobj
@@ -2980,8 +2992,8 @@ class Simulation(object):
     def modal_volume_in_box(self, box=None, center=None, size=None):
         """
         Given a `mp.Volume`, returns the instantaneous modal volume
-        according to the Purcell-effect definition: 
-        $\left(\int\varepsilon|\mathbf{E}|^2\right)/\left(\max{\varepsilon|\mathbf{E}|^2}\right)$.
+        according to the Purcell-effect definition:
+        $\\left(\\int\\varepsilon|\\mathbf{E}|^2\\right)/\\left(\\max{\\varepsilon|\\mathbf{E}|^2}\\right)$.
         If no volume argument is provided, the entire cell is used by
         default. If the `center` and `size` arguments are provided
         instead of `box`, Meep will construct the appropriate volume
@@ -3327,8 +3339,6 @@ class Simulation(object):
         + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
         + `cscale`: a NumPy array of each mode's scaling coefficient. Useful for adjoint
           calculations.
-
-        See [Mode Decomposition](#mode-decomposition)
         """
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling get_eigenmode_coefficients")
@@ -4222,7 +4232,7 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
             closure['cur_max'] = 0
             closure['t0'] = sim.round_time()
             closure['max_abs'] = max(closure['max_abs'], old_cur)
-            if closure['max_abs'] != 0 and verbosity > 0:
+            if closure['max_abs'] != 0 and verbosity.meep > 0:
                 fmt = "field decay(t = {}): {} / {} = {}"
                 print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
             return old_cur <= closure['max_abs'] * decay_by
@@ -4340,7 +4350,7 @@ def display_progress(t0, t, dt):
                 sim.progress.value = val1
                 sim.progress.description = "{}% done ".format(int(val2))
 
-            if verbosity > 0:
+            if verbosity.meep > 0:
                 print(msg_fmt.format(val1, t, val2, val3, val4))
             closure['tlast'] = t1
 
@@ -4423,14 +4433,20 @@ def output_png(compnt, options, rm_h5=True):
     return _output_png
 
 
-def output_epsilon(sim,*step_func_args,**kwargs):
+def output_epsilon(sim=None,*step_func_args,**kwargs):
     """
-    Given a frequency `frequency`, (provided as a keyword argument) output ε (relative
-    permittivity); for an anisotropic ε tensor the output is the [harmonic
-    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the ε eigenvalues. If
+    Given a frequency `frequency`, (provided as a keyword argument) output $\\varepsilon$ (relative
+    permittivity); for an anisotropic $\\varepsilon$ tensor the output is the [harmonic
+    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\\varepsilon$ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
-    frequency-independent part of ε (the $\\omega\\to\\infty$ limit).
+    frequency-independent part of $\varepsilon$ (the $\\omega\\to\\infty$ limit).
+    When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
+    the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
+    `sim.run(mp.at_beginning(mp.output_epsilon(frequency=1/0.7)),until=10)`.
     """
+    if sim is None:
+        return lambda sim: mp.output_epsilon(sim, *step_func_args, **kwargs)
+
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
     if omega != 0:
@@ -4439,14 +4455,20 @@ def output_epsilon(sim,*step_func_args,**kwargs):
     sim.output_component(mp.Dielectric,frequency=frequency)
 
 
-def output_mu(sim,*step_func_args,**kwargs):
+def output_mu(sim=None,*step_func_args,**kwargs):
     """
-    Given a frequency `frequency`, (provided as a keyword argument) output μ (relative
-    permeability); for an anisotropic μ tensor the output is the [harmonic
-    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the μ eigenvalues. If
+    Given a frequency `frequency`, (provided as a keyword argument) output $\mu$ (relative
+    permeability); for an anisotropic $\mu$ tensor the output is the [harmonic
+    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\mu$ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
-    frequency-independent part of μ (the $\\omega\\to\\infty$ limit).
+    frequency-independent part of $\mu$ (the $\\omega\\to\\infty$ limit).
+    When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
+    the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
+    `sim.run(mp.at_beginning(mp.output_mu(frequency=1/0.7)),until=10)`.
     """
+    if sim is None:
+        return lambda sim: mp.output_mu(sim, *step_func_args, **kwargs)
+
     frequency = kwargs.pop('frequency', 0.0)
     omega = kwargs.pop('omega', 0.0)
     if omega != 0:

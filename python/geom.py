@@ -285,15 +285,15 @@ class Medium(object):
     conducting), or magnetic materials, you should also include a list of these materials
     in the `extra_materials` input variable (above) to let Meep know that it needs to
     support these material types in your simulation. For dispersive materials, you need to
-    include a material with the *same* values of $\gamma_n$ and $\omega_n$, so
-    you can only have a finite number of these, whereas $\sigma_n$ can vary
-    continuously and a matching $\sigma_n$ need not be specified in
+    include a material with the *same* values of $\\gamma_n$ and $\\omega_n$, so
+    you can only have a finite number of these, whereas $\\sigma_n$ can vary
+    continuously and a matching $\\sigma_n$ need not be specified in
     `extra_materials`. For nonlinear or conductivity materials, your `extra_materials`
-    list need not match the actual values of $\sigma$ or $\chi$ returned by your material function,
+    list need not match the actual values of $\\sigma$ or $\\chi$ returned by your material function,
     which can vary continuously.
 
-    **Complex $\varepsilon$ and $\mu$**: you cannot specify a
-    frequency-independent complex $\varepsilon$ or $\mu$ in Meep where
+    **Complex $\\varepsilon$ and $\\mu$**: you cannot specify a
+    frequency-independent complex $\\varepsilon$ or $\\mu$ in Meep where
     the imaginary part is a frequency-independent loss but there is an
     alternative.  That is because there are only two important
     physical situations. First, if you only care about the loss in a
@@ -301,7 +301,7 @@ class Medium(object):
     that frequency via the
     [conductivity](Materials.md#conductivity-and-complex).  Second, if
     you care about a broad bandwidth, then all physical materials have
-    a frequency-dependent complex $\varepsilon$ and/or $\mu$, and you
+    a frequency-dependent complex $\\varepsilon$ and/or $\\mu$, and you
     need to specify that frequency dependence by fitting to Lorentzian
     and/or Drude resonances via the `LorentzianSusceptibility` or
     `DrudeSusceptibility` classes below.

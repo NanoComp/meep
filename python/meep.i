@@ -1395,6 +1395,14 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     double *total
 };
 
+%typemap(in) std::complex<double>* dJ {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
+%typemap(in) std::complex<double>* amp_arr {
+    $1 = (std::complex<double> *)array_data($input);
+}
+
 %exception {
   try {
     $action
@@ -1463,6 +1471,16 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+
+%include "typemaps.i"
+%template(near_src_data) std::vector<meep::sourcedata>;
+
+%include "std_complex.i"
+%template(ComplexVector) std::vector<std::complex<double> >;
+
+std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x, std::complex<double>* dJ);
+
+void meep::fields::add_srcdata(struct meep::sourcedata cur_data, meep::src_time *src, size_t n, std::complex<double>* amp_arr);
 
 struct vector3 {
     double x;
@@ -1720,6 +1738,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         CustomSource,
         EigenModeSource,
         GaussianSource,
+        IndexedSource,
         Source,
         SourceTime,
         check_positive,
@@ -1798,7 +1817,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     meep_geom::material_type_list extra_materials,
                                                     bool split_chunks_evenly,
                                                     bool set_materials,
-                                                    meep::structure *existing_s) {
+                                                    meep::structure *existing_s,
+                                                    bool output_chunk_costs) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1813,6 +1833,15 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
     meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
                                            &gv, cell_size, center, &gobj_list);
+
+    if (output_chunk_costs) {
+         meep::volume thev = gv.surroundings();
+         std::vector<grid_volume> chunk_vols = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
+         for (size_t i = 0; i < chunk_vols.size(); ++i)
+              master_printf("CHUNK:, %2zu, %f\n",i,chunk_vols[i].get_cost());
+         return NULL;
+    }
+
     meep::structure *s;
     if (existing_s) {
       s = existing_s;
@@ -1858,5 +1887,3 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     return s;
 }
 %}
-
-

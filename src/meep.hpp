@@ -807,6 +807,12 @@ private:
   void write_susceptibility_params(h5file *file, const char *dname, int EorH);
 };
 
+// defined in structure.cpp
+std::vector<grid_volume> choose_chunkdivision(grid_volume &gv,
+                                              volume &v,
+                                              int num_chunks,
+                                              const symmetry &s);
+
 class src_vol;
 class fields;
 class fields_chunk;
@@ -1188,6 +1194,15 @@ public:
   volume where;
 };
 
+
+struct sourcedata{
+  component near_fd_comp;
+  std::vector<ptrdiff_t> idx_arr;
+  int fc_idx;
+  std::vector<std::complex<double> > amp_arr;
+};
+
+
 // near2far.cpp (normally created with fields::add_dft_near2far)
 class dft_near2far {
 public:
@@ -1243,6 +1258,8 @@ public:
   direction periodic_d[2];
   int periodic_n[2];
   double periodic_k[2], period[2];
+
+  std::vector<sourcedata> near_sourcedata(const vec &x, std::complex<double>* dJ);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1346,11 +1363,12 @@ public:
   structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
+  int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin);
+               bool zero_fields_near_cylorigin, int chunkidx);
 
-  fields_chunk(const fields_chunk &);
+  fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
 
   void use_real_fields();
@@ -1716,6 +1734,7 @@ public:
                          std::complex<double> amp = 1.0);
   void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
   void require_component(component c);
+  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr);
 
   // mpb.cpp
 

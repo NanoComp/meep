@@ -122,14 +122,61 @@ static void split_by_cost(std::vector<int> factors, grid_volume gvol,
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
                                      const boundary_region &br, const symmetry &s) {
-  user_volume = thegv;
-  if (desired_num_chunks == 0) desired_num_chunks = count_processors();
+
   if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+
+  user_volume = thegv;
   gv = thegv;
   v = gv.surroundings();
   S = s;
   a = gv.a;
   dt = Courant / a;
+
+  // create the chunks:
+  std::vector<grid_volume> chunk_volumes = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+
+  int my_num_chunks = chunk_volumes.size();
+
+  // initialize effort volumes
+  num_effort_volumes = 1;
+  effort_volumes = new grid_volume[num_effort_volumes];
+  effort_volumes[0] = gv;
+  effort = new double[num_effort_volumes];
+  effort[0] = 1.0;
+
+  // Next, add effort volumes for PML boundary regions:
+  br.apply(this);
+
+  // Break off PML regions into their own chunks
+  num_chunks = 0;
+  chunks = new structure_chunk_ptr[my_num_chunks * num_effort_volumes];
+  for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
+    const int proc = i * count_processors() / my_num_chunks;
+    for (int j = 0; j < num_effort_volumes; ++j) {
+      grid_volume vc;
+      if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
+        chunks[num_chunks] = new structure_chunk(vc, v, Courant, proc);
+        br.apply(this, chunks[num_chunks++]);
+      }
+    }
+  }
+
+  check_chunks();
+
+  if (meep_geom::fragment_stats::resolution != 0) {
+    // Save cost of each chunk's grid_volume
+    for (int i = 0; i < num_chunks; ++i) {
+      chunks[i]->cost = chunks[i]->gv.get_cost();
+    }
+  }
+
+}
+
+std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
+                                              const symmetry &S) {
+
+  if (desired_num_chunks == 0) desired_num_chunks = count_processors();
+  if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
 
   // First, reduce overall grid_volume gv by symmetries:
   if (S.multiplicity() > 1) {
@@ -138,9 +185,9 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       const direction d = (direction)dd;
       break_this[dd] = false;
       for (int n = 0; n < S.multiplicity(); n++)
-        if (has_direction(thegv.dim, d) &&
+        if (has_direction(gv.dim, d) &&
             (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
-          if (thegv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
+          if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
             master_printf("Padding %s to even number of grid points.\n", direction_name(d));
           break_this[dd] = true;
         }
@@ -164,14 +211,11 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   }
 
   // initialize effort volumes
-  num_effort_volumes = 1;
-  effort_volumes = new grid_volume[num_effort_volumes];
+  int num_effort_volumes = 1;
+  grid_volume *effort_volumes = new grid_volume[num_effort_volumes];
   effort_volumes[0] = gv;
-  effort = new double[num_effort_volumes];
+  double *effort = new double[num_effort_volumes];
   effort[0] = 1.0;
-
-  // Next, add effort volumes for PML boundary regions:
-  br.apply(this);
 
   std::vector<int> prime_factors = get_prime_factors(desired_num_chunks);
 
@@ -184,11 +228,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       meep_geom::fragment_stats::split_chunks_evenly ? desired_num_chunks : adjusted_num_chunks;
 
   // Finally, create the chunks:
-  num_chunks = 0;
-  chunks = new structure_chunk_ptr[my_num_chunks * num_effort_volumes];
   std::vector<grid_volume> chunk_volumes;
 
-  bool by_cost = false;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && my_num_chunks > 1)
@@ -203,28 +244,9 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
     if (verbosity > 0 && my_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
-    by_cost = true;
   }
 
-  // Break off PML regions into their own chunks
-  for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = i * count_processors() / my_num_chunks;
-    for (int j = 0; j < num_effort_volumes; ++j) {
-      grid_volume vc;
-      if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
-        chunks[num_chunks] = new structure_chunk(vc, v, Courant, proc);
-        br.apply(this, chunks[num_chunks++]);
-      }
-    }
-  }
-  check_chunks();
-
-  if (by_cost) {
-    // Save cost of each chunk's grid_volume
-    for (int i = 0; i < num_chunks; ++i) {
-      chunks[i]->cost = chunks[i]->gv.get_cost();
-    }
-  }
+  return chunk_volumes;
 }
 
 double structure::estimated_cost(int process) {

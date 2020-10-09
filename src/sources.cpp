@@ -304,6 +304,24 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
 }
 
+void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr){
+  sources = src->add_to(sources, &src);
+  ptrdiff_t* index_arr = new ptrdiff_t[n];
+  std::complex<double>* amp_arr_copy = new std::complex<double>[n];
+  for (size_t i = 0; i < n; i++){
+    index_arr[i] = cur_data.idx_arr[i];
+    amp_arr_copy[i] = amp_arr[i];
+  }
+  component c = cur_data.near_fd_comp;
+  src_vol *tmp = new src_vol(c, src, n, index_arr, amp_arr_copy);
+  field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
+  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) abort("fields chunk index out of range");
+  fields_chunk *fc = chunks[cur_data.fc_idx];
+  if (!fc->is_mine()) abort("wrong fields chunk");
+  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+  require_component(c);
+}
+
 static realnum *amp_func_data_re = NULL;
 static realnum *amp_func_data_im = NULL;
 static const volume *amp_func_vol = NULL;

@@ -1,6 +1,24 @@
 # Meep Release Notes
 
-## Meep 1.16.0-alpha
+## Meep 1.16.0
+
+10/6/2020
+
+* Gaussian beam source feature (#1303 and #1310).
+
+* New API for specifying planewave diffraction orders for eigenmode sources
+  and coefficients (#1316).
+
+* More accurate gradients in adjoint code (#1285).
+
+* Simpler Python API for outputting ε or μ at a given frequency (#1374).
+
+* `--with-libctl-dir` option of `configure` now accepts simply the installation `prefix` in addition to `prefix/share/libctl` (#1286).
+
+* Less verbose mode-solver output from MPB (#1302, #1388), and new
+  `meep.verbosity` option in Python (#1349).
+
+* Bug fix for single-point DFT monitor (#1333).
 
 ## Meep 1.15.0
 
