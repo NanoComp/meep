@@ -863,7 +863,7 @@ ivec grid_volume::iloc(component c, ptrdiff_t ind) const {
 size_t grid_volume::surface_area() const {
   switch(dim) {
     case Dcyl: return 2*(nr()+nz());
-    case D1: abort("grid_volume::surface_area() does not support 1d\n");
+    case D1: 2;
     case D2: return 2*(nx()+ny());
     case D3: return 2*(nx()*ny()+nx()*nz()+ny()*nz());
   }
