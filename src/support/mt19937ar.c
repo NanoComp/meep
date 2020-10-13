@@ -61,7 +61,8 @@ static unsigned long mt_save[N]; /* save state from before latest genrand */
 /* initializes mt[N] with a seed */
 void meep_mt_init_genrand(unsigned long s)
 {
-    for (int i=0; i<N; ++i) mt_save[i] = mt[i];
+    int i;
+    for (i=0; i<N; ++i) mt_save[i] = mt[i];
     mt[0]= s & 0xffffffffUL;
     for (mti=1; mti<N; mti++) {
         mt[mti] =
@@ -77,7 +78,8 @@ void meep_mt_init_genrand(unsigned long s)
 
 /* restores state to what it was before most recent call to genrand */
 void meep_mt_restore_genrand() {
-    for (int i=0; i<N; ++i) mt[i] = mt_save[i];
+    int i;
+    for (i=0; i<N; ++i) mt[i] = mt_save[i];
 }
 
 /* initialize by an array with array-length */
