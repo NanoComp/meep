@@ -73,6 +73,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             amp = da_dE * dJ * scale # final scale factor
+            src = self.time_src
         else:
             # multi frequency simulations
             scale = da_dE * dJ * scale
@@ -130,30 +131,23 @@ class FourierFields(ObjectiveQuantitiy):
         dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         self.sources = []
         scale = adj_src_scale(self, dt)
+        # Pull a list of amp array data for each chunk on the current proc
+        self.all_dftsrcdata = self.monitor.swigobj.dft_sourcedata(dJ)
+        # Loop over chunk list and create a volume source for each chunk
+        for dft_data in self.all_dftsrcdata:
+            amp_arr = np.array(dft_data.amp_arr).reshape(-1, self.num_freq)
+            scale = amp_arr.flatten()*adj_src_scale(self, dt).flatten()*dJ.flatten()
+            print(scale)
+            if self.num_freq == 1:
+                self.sources += [mp.IndexedSource(self.time_src, dft_data, scale,center=self.volume.center,size=self.volume.size)]
+            else:
+                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
+                (num_basis, num_pts) = src.nodes.shape
+                # For each frequency (i.e. basis function) add a volume source.
+                for basis_i in range(num_basis):
+                    self.sources += [mp.IndexedSource(src.time_src_bf[basis_i], flux_data, src.nodes[basis_i],center=self.volume.center,size=self.volume.size)]
 
-        if self.num_freq == 1:
-            amp = -atleast_3d(dJ[0]) * scale
-            if self.component in [mp.Hx, mp.Hy, mp.Hz]:
-                amp = -amp
-            for zi in range(len(self.dg.z)):
-                for yi in range(len(self.dg.y)):
-                    for xi in range(len(self.dg.x)):
-                        if amp[xi, yi, zi] != 0:
-                            self.sources += [mp.Source(src, component=self.component, amplitude=amp[xi, yi, zi],
-                            center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
-        else:
-            dJ_4d = np.array([atleast_3d(dJ[f]) for f in range(self.num_freq)])
-            if self.component in [mp.Hx, mp.Hy, mp.Hz]:
-                dJ_4d = -dJ_4d
-            for zi in range(len(self.dg.z)):
-                for yi in range(len(self.dg.y)):
-                    for xi in range(len(self.dg.x)):
-                        final_scale = -dJ_4d[:,xi,yi,zi] * scale
-                        src = FilteredSource(self.time_src.frequency,self.frequencies,final_scale,dt)
-                        self.sources += [mp.Source(src, component=self.component, amplitude=1,
-                                center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
-
-        return self.sources
+        return self.sources      
 
     def __call__(self):
         self.time_src = self.sim.sources[0].src

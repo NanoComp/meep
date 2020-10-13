@@ -1304,6 +1304,9 @@ public:
   std::vector<double> freq;
   dft_chunk *chunks;
   volume where;
+
+  // compute dft adjoint sources
+  std::vector<struct sourcedata> dft_sourcedata(std::complex<double>* dJ);
 };
 
 enum in_or_out { Incoming = 0, Outgoing };

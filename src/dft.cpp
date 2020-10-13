@@ -1087,7 +1087,8 @@ cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *
   cdouble *array;
   direction dirs[3];
   process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
-  return collapse_array(array, rank, dims, dirs, fdft.where);
+  return collapse_array(array, rank, dims, dirs, fdft.where);;
+
 }
 
 /***************************************************************/
@@ -1310,6 +1311,53 @@ std::vector<struct sourcedata> dft_flux::flux_sourcedata(std::complex<double> *d
       }
       temp.push_back(temp_struct);
     }
+  }
+  return temp;
+}
+
+//Modified from dft_near2far::near_sourcedata
+std::vector<struct sourcedata> dft_fields::dft_sourcedata(std::complex<double> *dJ) {
+
+  const size_t Nfreq = freq.size();
+  std::vector<struct sourcedata> temp;
+
+  // Loop over chunkloops and chunks
+  int c_i = 0;
+  for (dft_chunk *f = chunks; f; f = f->next_in_dft) {
+    component currentComp = f->c;
+    component adjointComp = currentComp; // for simple dft fields, adjoint comp is same as forward comp
+
+    assert(Nfreq == f->omega.size());
+    std::vector<ptrdiff_t> idx_arr;
+    std::vector<std::complex<double> > amp_arr;
+
+    vec rshift(f->shift * (0.5 * f->fc->gv.inva));
+    size_t idx_dft = 0;
+    sourcedata temp_struct = {adjointComp, idx_arr, f->fc->chunk_idx, amp_arr};
+    LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+      
+      //Calculate the interpolation weights
+      IVEC_LOOP_LOC(f->fc->gv, x0);
+      x0 = f->S.transform(x0, f->sn) + rshift;
+      vec xs(x0);
+      double w = IVEC_LOOP_WEIGHT(f->s0, f->s1, f->e0, f->e1, f->dV0 + f->dV1 * loop_i2);
+
+      temp_struct.idx_arr.push_back(idx); // store index of current point
+      
+      // iterate through frequency points
+      for (size_t i = 0; i < Nfreq; ++i) {
+        
+        //cdouble dft_val = f->dft[f->omega.size() * (idx_dft++) + Nfreq];
+        //dft_val = std::conj(dft_val);
+        cdouble dft_val = 1;
+        // principle of equivalence
+        if (is_electric(currentComp)) dft_val *= -1;
+
+        temp_struct.amp_arr.push_back(dft_val);
+      }
+    }
+    temp.push_back(temp_struct);
+    c_i++;
   }
   return temp;
 }
