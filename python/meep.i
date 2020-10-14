@@ -1479,7 +1479,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %template(ComplexVector) std::vector<std::complex<double> >;
 
 std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x, std::complex<double>* dJ);
-
+std::vector<struct meep::sourcedata> meep::dft_flux::flux_sourcedata(std::complex<double>* dJ);
 void meep::fields::add_srcdata(struct meep::sourcedata cur_data, meep::src_time *src, size_t n, std::complex<double>* amp_arr);
 
 struct vector3 {
