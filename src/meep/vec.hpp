@@ -948,6 +948,7 @@ public:
   vec loc_at_resolution(ptrdiff_t index, double res) const;
   size_t ntot_at_resolution(double res) const;
   ivec iloc(component, ptrdiff_t index) const;
+  size_t surface_area() const;
 
   ptrdiff_t yee_index(component c) const {
     ptrdiff_t idx = 0;

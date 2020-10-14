@@ -860,6 +860,16 @@ ivec grid_volume::iloc(component c, ptrdiff_t ind) const {
   return out + iyee_shift(c) + io;
 }
 
+size_t grid_volume::surface_area() const {
+  switch(dim) {
+    case Dcyl: return 2*(nr()+nz());
+    case D1: 2;
+    case D2: return 2*(nx()+ny());
+    case D3: return 2*(nx()*ny()+nx()*nz()+ny()*nz());
+  }
+  return 0; // This is never reached.
+}
+
 vec grid_volume::dr() const {
   switch (dim) {
     case Dcyl: return veccyl(inva, 0.0);

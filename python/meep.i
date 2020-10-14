@@ -1838,7 +1838,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
          meep::volume thev = gv.surroundings();
          std::vector<grid_volume> chunk_vols = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
          for (size_t i = 0; i < chunk_vols.size(); ++i)
-              master_printf("CHUNK:, %2zu, %f\n",i,chunk_vols[i].get_cost());
+              master_printf("CHUNK:, %2zu, %f, %zu\n",i,chunk_vols[i].get_cost(),chunk_vols[i].surface_area());
          return NULL;
     }
 
