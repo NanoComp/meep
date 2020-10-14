@@ -39,7 +39,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
 
     def register_monitors(self,frequencies):
         self.frequencies = np.asarray(frequencies)
-        self.monitor = self.sim.add_mode_monitor(frequencies,mp.FluxRegion(center=self.volume.center,size=self.volume.size),yee_grid=True)
+        self.monitor = self.sim.add_mode_monitor(frequencies,mp.ModeRegion(center=self.volume.center,size=self.volume.size),yee_grid=True)
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
 
@@ -70,6 +70,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             amp = da_dE * dJ * scale # final scale factor
+            src = self.time_src
         else:
             # multi frequency simulations
             scale = da_dE * dJ * scale
@@ -130,6 +131,7 @@ class FourierFields(ObjectiveQuantitiy):
 
         if self.num_freq == 1:
             amp = -atleast_3d(dJ[0]) * scale
+            src = self.time_src
             if self.component in [mp.Hx, mp.Hy, mp.Hz]:
                 amp = -amp
             for zi in range(len(self.dg.z)):
