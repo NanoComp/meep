@@ -490,7 +490,9 @@ void fields::require_component(component c) {
           chunks[i]->s->has_chi(Hx, Z) || chunks[i]->s->has_chi(Hy, Z) ||
           chunks[i]->s->has_chi(Hz, X) || chunks[i]->s->has_chi(Hz, Y))
         break;
+    am_now_working_on(MpiTime);
     aniso2d = or_to_all(i < num_chunks);
+    finished_working();
   }
   if (aniso2d && beta != 0 && is_real)
     abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
@@ -505,7 +507,9 @@ void fields::require_component(component c) {
   }
 
   if (need_to_reconnect) figure_out_step_plan();
+  am_now_working_on(MpiTime);
   if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
+  finished_working();
 }
 
 void fields_chunk::remove_sources() {

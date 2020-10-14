@@ -440,7 +440,9 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // then, synchronize the data
     eps_data.ncache = eps_data.icache; // actual amount of cached data
     double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
+    am_now_working_on(MpiTime);
     sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
+    finished_working();
     free(eps_data.cache);
     eps_data.cache = summed_cache;
 

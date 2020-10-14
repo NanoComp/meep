@@ -238,9 +238,11 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
   loop_in_chunks(h5_findsize_chunkloop, (void *)&data, where, Centered, true, true);
 
   file->prevent_deadlock(); // can't hold a lock since *_to_all is collective
+  am_now_working_on(MpiTime);
   data.max_corner = max_to_all(data.max_corner);
   data.min_corner = -max_to_all(-data.min_corner); // i.e., min_to_all
   data.num_chunks = sum_to_all(data.num_chunks);
+  finished_working();
   if (data.num_chunks == 0 || !(data.min_corner <= data.max_corner)) return; // no data to write;
 
   int rank = 0;

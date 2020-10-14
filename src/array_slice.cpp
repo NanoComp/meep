@@ -437,6 +437,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, cgrid, use_symmetry,
                  snap_empty_dimensions);
 
+  am_now_working_on(MpiTime);
   data->min_corner = -max_to_all(-data->min_corner); // i.e., min_to_all
   data->max_corner = max_to_all(data->max_corner);
   if (min_max_loc) LOOP_OVER_DIRECTIONS(gv.dim, d) {
@@ -444,6 +445,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
       max_loc->set_direction(d, max_to_all(max_loc->in_direction(d)));
     }
   data->num_chunks = sum_to_all(data->num_chunks);
+  finished_working();
   if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner))
     return 0; // no data to write;
 
