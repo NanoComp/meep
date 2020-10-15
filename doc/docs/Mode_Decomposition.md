@@ -184,7 +184,7 @@ $$
    \qquad \{\sigma,\tau\}\in\{+,-\}
 $$
 
-where the (indefinite) inner product between two fields $\psi=(E_y,E_z,H_y,H_z)$ and $\psi'=(E_y',E_z',H_y',H_z')$ involves an integration over transverse coordinates:
+where the (indefinite) inner product between two vectors of the transverse field components, e.g. $\psi=(E_y,E_z,H_y,H_z)$ and $\psi'=(E_y',E_z',H_y',H_z')$ for propagation in the $x$ direction, involves an integration over transverse coordinates:
 
 $$ \left\langle \psi , \psi' \right\rangle
    \equiv
@@ -194,7 +194,7 @@ $$ \left\langle \psi , \psi' \right\rangle
   \tag{5}
 $$
 
-where $S$ is a cross-section transverse to the direction of propagation and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e. $\hat{\mathbf{z}}$ in the case considered above).  The normalization constant $C_{m}$ is a matter of convention, but for MPB-computed modes (which normalizes proportional to unit energy) it is effectively the group velocity of the mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$: $$C_m = 2 v_m A_S$$   However, we can divide the MPB modes by $\sqrt{\int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}}}$ to renormalize them to $C_m = 2$, which is equivalent to normalizing the MPB modes to unit power.
+where $S$ is a cross-section transverse to the direction of propagation and $\hat{\mathbf{n}}$ is the unit normal vector to $S$ (i.e. $\hat{\mathbf{x}}$ in the case considered above).  The normalization constant $C_{m}$ is a matter of convention, but for MPB-computed modes (which normalizes proportional to unit energy) it is effectively the group velocity of the mode, $v_m$, times the area $A_S$ of the cross-sectional surface $S$: $$C_m = 2 v_m A_S$$   However, we can divide the MPB modes by $\sqrt{\int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}}}$ to renormalize them to $C_m = 2$, which is equivalent to normalizing the MPB modes to unit power.
 
 (There is some subtlety about the use of complex conjugation for orthogonality in the inner product above that arises for evanescent modes, which we don't consider here because Meep only computes coefficients of propagating modes.  The above definition has the nice property that $\langle \psi, \psi \rangle = 2 \int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}} = 2P$ where $P$ is the Poynting flux.)
 
