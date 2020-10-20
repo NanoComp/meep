@@ -2743,7 +2743,7 @@ Given a frequency `frequency`, (provided as a keyword argument) output $\varepsi
 permittivity); for an anisotropic $\varepsilon$ tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\varepsilon$ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of $arepsilon$ (the $\omega\to\infty$ limit).
+frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
 the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 `sim.run(mp.at_beginning(mp.output_epsilon(frequency=1/0.7)),until=10)`.
