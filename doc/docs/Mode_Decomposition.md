@@ -8,9 +8,9 @@ Meep contains a feature to decompose arbitrary fields into a superposition of th
 
 The theory underlying mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
 
-Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse directions $(y,z)$.   Let $\psi = (E_y,E_z,H_y,H_z)$ denote the tranverse components of the electric and magnetic fields.  For a given angular frequency ω we can solve for the eigenmodes of the structure: solutions of the form $\psi^\pm_n(y,z) e^{\pm i \beta_n x - i\omega t}$, where $\beta_n$ are the propagation constants of the right ($+$) and left ($-$) traveling modes.   (There are also evanescent modes with complex $\beta_n$ values, but we will focus mainly here on the propagating modes with real $\beta_n$.)
+Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse directions $(y,z)$.   Let $\psi = (E_y,E_z,H_y,H_z)$ denote the tranverse components of the electric and magnetic fields.  For a given angular frequency $\omega$ we can solve for the eigenmodes of the structure: solutions of the form $\psi^\pm_n(y,z) e^{\pm i \beta_n x - i\omega t}$, where $\beta_n$ are the propagation constants of the right ($+$) and left ($-$) traveling modes.   (There are also evanescent modes with complex $\beta_n$ values, but we will focus mainly here on the propagating modes with real $\beta_n$.)
 
-Any *arbitrary* fields $\psi$, Fourier-transformed to a particular ω, can be expressed in the basis of these eigenmodes:
+Any *arbitrary* fields $\psi$, Fourier-transformed to a particular $\omega$, can be expressed in the basis of these eigenmodes:
 
 $$
 \psi(x,y,z) = \begin{pmatrix} E_y \\ E_z \\ H_y \\ H_z \end{pmatrix} =
@@ -25,7 +25,7 @@ $\alpha^{\pm}_n$ are the expansion coefficients (the amplitudes of each mode pre
 
 2.  In MPB, compute the eigenmodes $\psi^\pm_n$ as well as the propagation constants $\beta_n$ for the same cross-sectional structure.
 
-3.  Compute the coefficients $\alpha_n^\pm$ for any number of eigenmodes n=1,2,....
+3.  Compute the coefficients $\alpha_n^\pm$ for any number of eigenmodes $n=1,2,...$.
 
 This is all done automatically in Meep using the `get_eigenmode_coefficients` routine.
 Meep normalizes the modes $\psi^\pm_n$ to unit power $\Re \int \mathbf{E}^*\times\mathbf{H} = 1$, so that $|\alpha^{\pm}_n|^2$ is equal to the **power**
@@ -47,8 +47,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux,
                                         double *vgrp,
                                         kpoint_func user_kpoint_func,
                                         void *user_kpoint_data,
+                                        vec *kpoint_list,
                                         vec *kdom_list,
-                                        bool verbose)
+                                        double *cscale,
+                                        direction d,
+                                        diffractedplanewave *dp)
 ```
 The following are the parameters:
 
@@ -72,15 +75,23 @@ The following are the parameters:
 
 + `user_kpoint_func` is an optional function you supply to provide an initial guess of the wavevector of a mode with given frequency and band index having the following prototype:
 
-+ `verbose` controls the verbosity of `get_eigenmode`. Defaults to `false`.
-
 ```c++
 vec (*kpoint_func)(double freq, int mode, void *user_data);
 ```
 
 + `user_kpoint_data` is the user data passed to the `user_kpoint_func`.
 
++ `kpoint_list` is a user allocated array of `meep::vec` objects of length (`num_bands*num_freqs`). If non-null, this array is filled in with the wavevectors of the eigenmode for each band from 1 to `num_bands*num_freqs`.
+
 + `kdom_list` is a user allocated array of `meep::vec` objects of length (`num_bands*num_freqs`). If non-null, this array is filled in with the wavevectors of the dominant planewave in the Fourier series expansion for each band from 1 to `num_bands*num_freqs`. `kdom_list[nb*num_freqs + nf]` is the dominant planewave of the mode with frequency `nf` and band index `nb` which defaults to `NULL`.  This is especially useful for interpreting the modes computed in a uniform medium, because those modes are exactly planewaves proportional to $\exp(2\pi i \vec{k}_{dom}\cdot \vec{x})$ where $\vec{k}_{dom}$ (`kdom`) is the wavevector.
+
++ `cscale` is a user allocated array of `double` objects of length (`num_bands*num_freqs`). If non-null, this array is filled in with scalar coefficients used for adjoint calculations.
+
++ `d` is the direction normal to the monitor plane.
+
++ `dp` is a user allocated `diffractedplanewave` used to specify a diffracted planewave in homogeneous media.
+
+The following is a demonstration of typical usage:
 
 ```c++
  int num_bands = bands.size();
@@ -93,7 +104,7 @@ vec (*kpoint_func)(double freq, int mode, void *user_data);
   for(int nf=0; nf<num_freqs++; nf++)
    {
      // get coefficients of forward- and backward-traveling
-     // waves in eigenmode bands[nb] at frequency #nf
+     // waves in eigenmode bands[nb] at frequency nf
      cdouble AlphaPlus = coeffs[2*nb*num_freqs+nf+0];
      cdouble AlphaMinus = coeffs[2*nb*num_freqs+nf+1];
      ...
@@ -113,19 +124,22 @@ Besides `get_eigenmode_coefficients`, there are a few computational routines in 
 
 ### Computing MPB Eigenmodes
 ````
-  void *fields::get_eigenmode(double &omega,
-                              direction d, const volume &where,
-                              const volume &eig_vol,
+  void *fields::get_eigenmode(double frequency,
+                              direction d,
+                              const volume where,
+                              const volume eig_vol,
                               int band_num,
-                              const vec &kpoint, bool match_frequency,
+                              const vec kpoint,
+                              bool match_frequency,
                               int parity,
                               double resolution,
                               double eigensolver_tol,
-                              bool verbose,
-                              double *kdom);
+                              double *kdom,
+                              void **user_mdata,
+                              diffractedplanewave *dp);
 ````
 
-Calls MPB to compute the `band_num`th eigenmode at frequency `omega` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [src/mpb.cpp](https://github.com/NanoComp/meep/blob/master/src/mpb.cpp).
+Calls MPB to compute the `band_num`th eigenmode at frequency `frequency` for the portion of your geometry lying in `where` which is typically a cross-sectional slice of a waveguide. `kpoint` is an initial starting guess for what the propagation vector of the waveguide mode will be. `kdom`, if non-NULL and length 3, is filled in with the dominant planewave for the current band (see above). This is implemented in [src/mpb.cpp](https://github.com/NanoComp/meep/blob/master/src/mpb.cpp).
 
 ### Working with MPB Eigenmodes
 
