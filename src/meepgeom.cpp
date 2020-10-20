@@ -1108,7 +1108,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
 
   /* check for trivial case of only one object/material */
   if (material_type_equal(mat, mat_behind)) {
-    if (is_variable(mat)) eval_material_pt(mat, p_mat);
+    if (is_variable(mat)) eval_material_pt(mat, vec_to_vector3(v.center()));
     goto trivial;
   }
 
