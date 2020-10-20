@@ -434,6 +434,20 @@ class Volume(object):
             return True
         else:
             return False
+    
+    def get_nonzero_dims(self):
+        if ((self.size.x != 0) and (self.size.y != 0) and (self.size.z != 0)):
+            return 3
+        elif (((self.size.x == 0) and (self.size.y != 0) and (self.size.z != 0)) or
+        ((self.size.x != 0) and (self.size.y == 0) and (self.size.z != 0)) or
+        ((self.size.x != 0) and (self.size.y != 0) and (self.size.z == 0))):
+            return 2
+        elif (((self.size.x == 0) and (self.size.y == 0) and (self.size.z != 0)) or
+        ((self.size.x != 0) and (self.size.y == 0) and (self.size.z == 0)) or
+        ((self.size.x == 0) and (self.size.y != 0) and (self.size.z == 0))):
+            return 1
+        else:
+            return 0
 
 
 class FluxRegion(object):
@@ -2372,7 +2386,7 @@ class Simulation(object):
             elif src.amp_func:
                 add_vol_src(src.amp_func, src.amplitude * 1.0)
             elif src.amp_data is not None:
-                add_vol_src(src.amp_data, src.amplitude * 1.0)
+                add_vol_src(src.amp_data, src.amplitude * 1.0, src.amp_data_use_grid)
             else:
                 add_vol_src(src.amplitude * 1.0)
 

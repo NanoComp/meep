@@ -325,7 +325,8 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, st
 static realnum *amp_func_data_re = NULL;
 static realnum *amp_func_data_im = NULL;
 static const volume *amp_func_vol = NULL;
-static size_t amp_file_dims[3];
+static realnum ampl_func_dims[3]; // effective volume dimensions
+static size_t amp_file_dims[3]; // array dimensions
 
 complex<double> amp_file_func(const vec &p) {
   double x_size = 0, y_size = 0, z_size = 0;
@@ -333,17 +334,17 @@ complex<double> amp_file_func(const vec &p) {
   switch (amp_func_vol->dim) {
     case D1: z_size = amp_func_vol->in_direction(Z); break;
     case D2:
-      x_size = amp_func_vol->in_direction(X);
-      y_size = amp_func_vol->in_direction(Y);
+      x_size = ampl_func_dims[0];
+      y_size = ampl_func_dims[1];
       break;
     case D3:
-      x_size = amp_func_vol->in_direction(X);
-      y_size = amp_func_vol->in_direction(Y);
-      z_size = amp_func_vol->in_direction(Z);
+      x_size = ampl_func_dims[0];
+      y_size = ampl_func_dims[1];
+      z_size = ampl_func_dims[2];
       break;
     case Dcyl:
-      x_size = amp_func_vol->in_direction(X);
-      z_size = amp_func_vol->in_direction(Z);
+      x_size = ampl_func_dims[0];
+      z_size = ampl_func_dims[2];
       break;
   }
 
@@ -361,7 +362,7 @@ complex<double> amp_file_func(const vec &p) {
 
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
                                complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
-                               complex<double> amp) {
+                               complex<double> amp, bool use_grid) {
 
   amp_func_vol = &where_;
 
@@ -377,7 +378,32 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
     amp_func_data_re[i] = real(arr[i]);
     amp_func_data_im[i] = imag(arr[i]);
   }
+  
+  /* The default amp_array interpolation behavior
+  is to use the actual borders of the volume object
+  as the edges of our interpolation cell.
 
+  In some cases,(e.g. adjoint calculations) it's important
+  to define our interpolation cell by what's returned by
+  get_dft_array(). This often corresponds to a volume
+  that is padded by an extra pixel on each side. We can 
+  consistenly predict the size of this volume using
+  get_array_slice_dimensions().*/
+  if (use_grid){
+    size_t dims[3];
+    direction dirs[3];
+    vec min_max_loc[2]; // extremal points in subgrid
+    int rank = get_array_slice_dimensions(*amp_func_vol, dims, dirs, false /*collapse_empty_dimensions*/,
+                                        true /*snap_empty_dimensions*/,
+                                        min_max_loc);
+    ampl_func_dims[0] = min_max_loc[1].x() - min_max_loc[0].x();
+    ampl_func_dims[1] = min_max_loc[1].y() - min_max_loc[0].y();
+    ampl_func_dims[2] = min_max_loc[1].z() - min_max_loc[0].z();
+  } else{
+    ampl_func_dims[0] = amp_func_vol->in_direction(X);
+    ampl_func_dims[1] = amp_func_vol->in_direction(Y);
+    ampl_func_dims[2] = amp_func_vol->in_direction(Z);
+  }
   add_volume_source(c, src, where_, amp_file_func, amp);
 
   delete[] amp_func_data_re;

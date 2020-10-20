@@ -128,31 +128,43 @@ class FourierFields(ObjectiveQuantitiy):
         return self.monitor
 
     def place_adjoint_source(self,dJ):
+        # Correctly format the dJ matrix
+        print(dJ.shape)
+        dJ_shape = np.array(self.weights.shape)
+        dJ_shape[-1] = self.num_freq
+        dJ = np.ascontiguousarray((dJ).reshape(dJ_shape))
+        
         dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
-        self.sources = []
-        scale = adj_src_scale(self, dt)
-        # Pull a list of amp array data for each chunk on the current proc
-        self.all_dftsrcdata = self.monitor.swigobj.dft_sourcedata(dJ)
-        # Loop over chunk list and create a volume source for each chunk
-        for dft_data in self.all_dftsrcdata:
-            amp_arr = np.array(dft_data.amp_arr).reshape(-1, self.num_freq)
-            scale = amp_arr.flatten()*adj_src_scale(self, dt).flatten()*dJ.flatten()
-            print(scale)
-            if self.num_freq == 1:
-                self.sources += [mp.IndexedSource(self.time_src, dft_data, scale,center=self.volume.center,size=self.volume.size)]
-            else:
-                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
-                (num_basis, num_pts) = src.nodes.shape
-                # For each frequency (i.e. basis function) add a volume source.
-                for basis_i in range(num_basis):
-                    self.sources += [mp.IndexedSource(src.time_src_bf[basis_i], flux_data, src.nodes[basis_i],center=self.volume.center,size=self.volume.size)]
 
-        return self.sources      
+        mon_dv = self.sim.resolution ** self.volume.get_nonzero_dims()
+        time_scale = adj_src_scale(self, dt)
+        amp = dJ*time_scale*mon_dv
+        self.sources = []
+        if self.component in [mp.Ex, mp.Ey, mp.Ez]:
+            amp = -amp
+        if self.num_freq == 1:
+            self.sources += [mp.Source(self.time_src,component=self.component,amp_data=amp[:,:,:,0],
+                            center=self.volume.center,size=self.volume.size,amp_data_use_grid=True)]
+        else:
+            src = FilteredSource(self.time_src.frequency,self.frequencies,amp.reshape(-1, *amp.shape[-1:]),dt)
+            (num_basis, num_pts) = src.nodes.shape
+            fit_data = src.nodes
+            fit_data = (fit_data.T)[:,np.newaxis,np.newaxis,:]#fit_data.reshape(dJ_shape)
+            for basis_i in range(num_basis):
+                self.sources += [mp.Source(src.time_src_bf[basis_i],component=self.component,amp_data=np.ascontiguousarray(fit_data[:,:,:,basis_i]),
+                            center=self.volume.center,size=self.volume.size,amp_data_use_grid=True)]
+        return self.sources 
 
     def __call__(self):
         self.time_src = self.sim.sources[0].src
-        self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
         self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
+        
+        # Calculate, shape, and store weights
+        self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
+        self.expected_dims = np.array([len(self.dg.x),len(self.dg.y),len(self.dg.z)])
+        self.weights = self.dg.w.reshape(self.expected_dims)
+        self.weights = self.weights[...,np.newaxis]
+        
         return self.eval
 
     def get_evaluation(self):
@@ -225,38 +237,54 @@ class PoyntingFlux(ObjectiveQuantitiy):
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
 
-    def place_adjoint_source(self,dJ):
-        '''
-        We'll add one volume source for every chunk at every frequency.
-        All of the scaling will occur inside of the `flux_sourcedata()`
-        function. So long as we cache the results of our temporal
-        basis function, this should be rather computationally cheap.
-        '''
-        dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
-        self.sources = []
-        dJ = np.atleast_1d(dJ)
-        dJ = np.sum(dJ,axis=1)
+    def place_adjoint_source(self,dJ):        
         
-        # Pull a list of amp array data for each chunk on the current proc
-        self.all_fluxsrcdata = self.monitor.swigobj.flux_sourcedata(dJ)
-        # Loop over chunk list and create a volume source for each chunk
-        for flux_data in self.all_fluxsrcdata:
-            amp_arr = np.array(flux_data.amp_arr).reshape(-1, self.num_freq)
-            scale = amp_arr * adj_src_scale(self, dt)
-            if self.num_freq == 1:
-                self.sources += [mp.IndexedSource(self.time_src, flux_data, scale[:,0],center=self.volume.center,size=self.volume.size)]
-            else:
-                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
-                (num_basis, num_pts) = src.nodes.shape
-                # For each frequency (i.e. basis function) add a volume source.
-                for basis_i in range(num_basis):
-                    self.sources += [mp.IndexedSource(src.time_src_bf[basis_i], flux_data, src.nodes[basis_i],center=self.volume.center,size=self.volume.size)]
-
-        return self.sources
+        # Format jacobian (and use linearity)
+        if dJ.ndim == 2:
+            dJ = np.sum(dJ,axis=1)
+        dJ = dJ.reshape(1,1,1,self.num_freq,1)
+        
+        # Adjust for time scaling
+        dt = self.sim.fields.dt
+        time_scale = adj_src_scale(self, dt).reshape(1,1,1,self.num_freq,1)
+        
+        # final source amplitude as a function of position
+        amp = dJ * time_scale * np.conj(self.m_EH) * self.weights * (self.sim.resolution**self.volume.get_nonzero_dims())
+        
+        self.sources = []
+        for ic,c in enumerate(EH_components[self.normal_direction]):
+            # principle of equivalence
+            amp_scale = -1 if c in [mp.Hx,mp.Hy,mp.Hz] else 1
+            
+            if np.any(amp[:,:,:,:,ic]):
+                # single frequency case
+                if self.num_freq == 1:
+                    self.sources += [mp.Source(self.time_src,component=EH_components[self.normal_direction][3-ic],amp_data=np.ascontiguousarray(amp[:,:,:,0,ic]),
+                                center=self.volume.center,size=self.volume.size,amp_data_use_grid=True,amplitude=amp_scale)]
+                # multi frequency case
+                else:
+                    src = FilteredSource(self.time_src.frequency,self.frequencies,amp[...,ic].reshape(-1, self.num_freq),dt) # fit data to basis functions
+                    fit_data = (src.nodes.T).reshape(amp[...,ic].shape) # format new amplitudes
+                    for basis_i in range(self.num_freq):
+                        self.sources += [mp.Source(src.time_src_bf[basis_i],EH_components[self.normal_direction][3-ic],amp_data=np.ascontiguousarray(fit_data[:,:,:,basis_i]),
+                                    center=self.volume.center,size=self.volume.size,amp_data_use_grid=True,amplitude=amp_scale)]
+        return self.sources 
 
     def __call__(self):
         self.time_src = self.sim.sources[0].src
+
+        # Evaluate poynting flux
         self.eval = np.array(mp.get_fluxes(self.monitor))
+
+        # Calculate, shape, and store weights
+        self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
+        self.weights = self.dg.w.reshape((len(self.dg.x),len(self.dg.y),len(self.dg.z),1,1))
+
+        # Store fields at monitor
+        self.m_EH = np.zeros((len(self.dg.x), len(self.dg.y), len(self.dg.z), self.num_freq, 4), dtype=complex)
+        for f in range(self.num_freq):
+            for ic, c in enumerate(EH_components[self.normal_direction]):
+                self.m_EH[..., f, ic] = self.sim.get_dft_array(self.monitor, c, f).reshape(len(self.dg.x), len(self.dg.y), len(self.dg.z))
         
         return self.eval
 

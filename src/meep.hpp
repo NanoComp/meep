@@ -1728,7 +1728,7 @@ public:
 
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          std::complex<double> *arr, size_t dim1, size_t dim2, size_t dim3,
-                         std::complex<double> amp);
+                         std::complex<double> amp, bool use_grid=false);
   void add_volume_source(component c, const src_time &src, const volume &where_,
                          const char *filename, const char *dataset, std::complex<double> amp);
   void add_volume_source(component c, const src_time &src, const volume &,

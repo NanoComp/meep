@@ -37,7 +37,7 @@ class Source(object):
     Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
     """
     def __init__(self, src, component, center=None, volume=None, size=Vector3(), amplitude=1.0, amp_func=None,
-                 amp_func_file='', amp_data=None):
+                 amp_func_file='', amp_data=None,amp_data_use_grid=False):
         """
         Construct a `Source`.
 
@@ -83,6 +83,11 @@ class Source(object):
           For a 2d simulation, just pass 1 for the third dimension, e.g., `arr =
           np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
+        + **`amp_data_use_grid` [`bool`]** — Default: False. If either `amp_data` or `amp_func_file`
+        are used, specify whether to use the typical volume edges when interpolating
+        (the default behavior) or whether to use the grid returned from `get_array_metadata`
+        (i.e. when using this feature for adjoint calculations).
+
         As described in Section 4.2 ("Incident Fields and Equivalent Currents") in
         [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source
         Conditions") of the book [Advances in FDTD Computational Electrodynamics:
@@ -113,6 +118,7 @@ class Source(object):
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
+        self.amp_data_use_grid = amp_data_use_grid
 
 
 class SourceTime(object):
