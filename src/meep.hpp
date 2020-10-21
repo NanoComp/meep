@@ -1628,6 +1628,8 @@ public:
                       const char *prefix = NULL, bool timestamp = false);
   const char *h5file_name(const char *name, const char *prefix = NULL, bool timestamp = false);
 
+  void output_times(const char *fname);
+
   // array_slice.cpp methods
 
   // given a subvolume, compute the dimensions of the array slice
