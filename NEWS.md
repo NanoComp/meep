@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.16.1
+
+10/20/2020
+
+* Bugfix in adjoint code (#1403).
+
 ## Meep 1.16.0
 
 10/6/2020
