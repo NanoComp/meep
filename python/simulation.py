@@ -3673,7 +3673,7 @@ class Simulation(object):
         """
         return self.fields.time_spent_on(time_sink)
 
-    def output_times(self, fname=''):
+    def output_times(self, fname):
         """
         Call after running a simulation to output to a file with filename `fname` the
         times spent on various types of work as CSV (comma separated values) with headers

@@ -552,7 +552,7 @@ other.
 <div class="class_members" markdown="1">
 
 ```python
-def output_times(self, fname=''):
+def output_times(self, fname):
 ```
 
 <div class="method_docstring" markdown="1">

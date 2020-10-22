@@ -132,7 +132,7 @@ void fields::print_times() {
 }
 
 void fields::output_times(const char *fname) {
-  if (verbosity > 0) master_printf("creating timings output file \"%s\"...\n", fname);
+  if (verbosity > 0) master_printf("outputting timing statistics to file \"%s\"...\n", fname);
   FILE *tf = master_fopen(fname, "w");
   if (!tf) abort("Unable to create file %s!\n", fname);
 
