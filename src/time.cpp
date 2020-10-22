@@ -133,8 +133,10 @@ void fields::print_times() {
 
 void fields::output_times(const char *fname) {
   if (verbosity > 0) master_printf("creating timings output file \"%s\"...\n", fname);
-  h5file file(fname, h5file::WRITE, true);
-  size_t n = count_processors();
+  FILE *tf = master_fopen(fname, "w");
+  if (!tf) abort("Unable to create file %s!\n", fname);
+
+  int n = count_processors();
   double *alltimes_tmp = new double[n * (Other + 1)];
   double *alltimes = new double[n * (Other + 1)];
   for (int i = 0; i <= Other; ++i) {
@@ -143,10 +145,17 @@ void fields::output_times(const char *fname) {
   }
   sum_to_master(alltimes_tmp, alltimes, n * (Other + 1));
   delete[] alltimes_tmp;
-  for (size_t i = 0; i <= Other; i++) {
-    file.create_data(ts2n((time_sink)i), 1, n);
-    if (am_master()) file.write_chunk(1, i*n, n, alltimes);
+
+  for (int i = 0; i <= Other-1; ++i)
+    master_fprintf(tf, "%s, ", ts2n((time_sink)i));
+  master_fprintf(tf, "%s\n", ts2n(Other));
+
+  for (int j = 0; j < n; ++j) {
+    for (int i = 0; i <= Other-1; ++i)
+      master_fprintf(tf, "%g, ", alltimes[i * n + j]);
+    master_fprintf(tf, "%g\n", alltimes[Other * n + j]);
   }
+  master_fclose(tf);
   delete[] alltimes;
 }
 
