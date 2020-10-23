@@ -559,7 +559,7 @@ def output_times(self, fname):
 
 Call after running a simulation to output to a file with filename `fname` the
 times spent on various types of work as CSV (comma separated values) with headers
-for each column.
+for each column and one row per process.
 
 </div>
 
