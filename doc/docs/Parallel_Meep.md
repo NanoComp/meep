@@ -53,6 +53,10 @@ However, there is an alternative strategy for parallelization. If you have many 
 
 Meep also supports [thread-level parallelism](https://en.wikipedia.org/wiki/Task_parallelism) (i.e., multi-threading) on a single, shared-memory, multi-core machine for multi-frequency [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) computations. Meep does not currently use thread-level parallelism for the time stepping although this feature may be added in the future (see [Issue \#228](https://github.com/NanoComp/meep/issues/228)).
 
+### Random Initial Conditions for Optimization
+
+When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/AdjointSolver.md)), every process stores the *same* copy of the optimization variables. The overhead due to this storage redundancy is minimal. For random initial conditions, the seed of the random number generator must be specified otherwise each process will have a different initial condition which will cause a crash.
+
 Technical Details
 -----------------
 
