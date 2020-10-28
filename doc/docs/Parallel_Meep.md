@@ -53,9 +53,9 @@ However, there is an alternative strategy for parallelization. If you have many 
 
 Meep also supports [thread-level parallelism](https://en.wikipedia.org/wiki/Task_parallelism) (i.e., multi-threading) on a single, shared-memory, multi-core machine for multi-frequency [near-to-far field](Python_User_Interface.md#near-to-far-field-spectra) computations. Meep does not currently use thread-level parallelism for the time stepping although this feature may be added in the future (see [Issue \#228](https://github.com/NanoComp/meep/issues/228)).
 
-### Random Initial Conditions for Optimization
+### Optimization Studies of Parallel Simulations
 
-When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/AdjointSolver.md)), every process stores the *same* copy of the optimization variables. The overhead due to this storage redundancy is minimal. For random initial conditions, the seed of the random number generator must be specified otherwise each process will have a different initial condition which will cause a crash.
+When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/AdjointSolver.md)), in order to keep all processes synchronized every process runs the same optimization algorithm on the same optimization variables. The overhead due to the duplication across all processes of the computational cost of the optimization algorithm and storage of the design variables is negligible compared to those of the Meep simulation. For optimization studies involving random initial conditions, the seed of the random number generator must be specified otherwise each process will have a different initial condition which will cause a crash. For example, if you are initializing the design variables with `numpy.random.rand`, then you should call `numpy.random.seed(some number)` to set the same `numpy.random` seed on every process.
 
 Technical Details
 -----------------
