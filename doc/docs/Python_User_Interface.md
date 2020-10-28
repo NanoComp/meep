@@ -547,6 +547,23 @@ other.
 
 </div>
 
+<a id="Simulation.output_times"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def output_times(self, fname):
+```
+
+<div class="method_docstring" markdown="1">
+
+Call after running a simulation to output to a file with filename `fname` the
+times spent on various types of work as CSV (comma separated values) with headers
+for each column and one row per process.
+
+</div>
+
+</div>
 
 ### Field Computations
 

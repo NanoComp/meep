@@ -3673,6 +3673,17 @@ class Simulation(object):
         """
         return self.fields.time_spent_on(time_sink)
 
+    def output_times(self, fname):
+        """
+        Call after running a simulation to output to a file with filename `fname` the
+        times spent on various types of work as CSV (comma separated values) with headers
+        for each column and one row per process.
+        """
+        if self.fields:
+            if not fname.endswith('.csv'):
+                fname += '.csv'
+            self.fields.output_times(fname)
+
     def get_epsilon(self,frequency=0,omega=0):
         if omega != 0:
             frequency = omega

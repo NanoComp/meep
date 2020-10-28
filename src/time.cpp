@@ -131,4 +131,32 @@ void fields::print_times() {
   }
 }
 
+void fields::output_times(const char *fname) {
+  if (verbosity > 0) master_printf("outputting timing statistics to file \"%s\"...\n", fname);
+  FILE *tf = master_fopen(fname, "w");
+  if (!tf) abort("Unable to create file %s!\n", fname);
+
+  int n = count_processors();
+  double *alltimes_tmp = new double[n * (Other + 1)];
+  double *alltimes = new double[n * (Other + 1)];
+  for (int i = 0; i <= Other; ++i) {
+    for (int j = 0; j < n; ++j)
+      alltimes_tmp[i * n + j] = j == my_rank() ? times_spent[i] : 0;
+  }
+  sum_to_master(alltimes_tmp, alltimes, n * (Other + 1));
+  delete[] alltimes_tmp;
+
+  for (int i = 0; i <= Other-1; ++i)
+    master_fprintf(tf, "%s, ", ts2n((time_sink)i));
+  master_fprintf(tf, "%s\n", ts2n(Other));
+
+  for (int j = 0; j < n; ++j) {
+    for (int i = 0; i <= Other-1; ++i)
+      master_fprintf(tf, "%g, ", alltimes[i * n + j]);
+    master_fprintf(tf, "%g\n", alltimes[Other * n + j]);
+  }
+  master_fclose(tf);
+  delete[] alltimes;
+}
+
 } // namespace meep
