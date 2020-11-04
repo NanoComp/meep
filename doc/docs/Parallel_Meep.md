@@ -55,7 +55,11 @@ Meep also supports [thread-level parallelism](https://en.wikipedia.org/wiki/Task
 
 ### Optimization Studies of Parallel Simulations
 
-When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/AdjointSolver.md)), in order to keep all processes synchronized every process runs the same optimization algorithm on the same optimization variables. The overhead due to the duplication across all processes of the computational cost of the optimization algorithm and storage of the design variables is negligible compared to those of the Meep simulation. For optimization studies involving random initial conditions, the seed of the random number generator must be specified otherwise each process will have a different initial condition which will cause a crash. For example, if you are initializing the design variables with `numpy.random.rand`, then you should call `numpy.random.seed(some number)` to set the same `numpy.random` seed on every process.
+When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/AdjointSolver.md)), in order to keep all processes synchronized *every* process runs the same optimization algorithm on the same optimization variables. The overhead of duplicating the computational cost of the optimization algorithm and storage of the design variables across all processes is negligible compared to those of the Meep simulation.
+
+For comparison, consider the scenario where the optimization runs on just a single master process. That would mean that during each iteration of the optimization after the Meep simulation has computed the objective function (and its gradient), only the master process uses this information to update the optimization parameters (i.e., the design region). The master process would then need to send the updated design region to the other processes so that they could all begin the next Meep simulation. As a result, additional bookkeeping is required to synchronize the processes.
+
+Note: for optimization studies involving *random* initial conditions, the seed of the random number generator must be specified otherwise each process will have a different initial condition which will cause a crash. For example, if you are initializing the design variables with `numpy.random.rand`, then you should call `numpy.random.seed(...)` to set the same `numpy.random` seed on every process.
 
 Technical Details
 -----------------
