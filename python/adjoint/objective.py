@@ -188,24 +188,24 @@ class Near2FarFields(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
         dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         self.sources = []
-        dJ = dJ.reshape((self.nfar_pts, -1))
+        dJ = dJ.flatten()
+        farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
+        far_pt0 = self.far_pts[0]
+        far_pt_vec = py_v3_to_vec(self.sim.dimensions, far_pt0, self.sim.is_cylindrical)
 
-        for far_pt_i in range(self.nfar_pts):
-            far_pt = self.far_pts[far_pt_i]
-            far_pt_vec = py_v3_to_vec(self.sim.dimensions, far_pt, self.sim.is_cylindrical)
-            self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(far_pt_vec, dJ[far_pt_i,:])
-            for near_data in self.all_nearsrcdata:
-                cur_comp = near_data.near_fd_comp
-                amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
-                scale = amp_arr * adj_src_scale(self, dt, include_resolution=False)
+        self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(far_pt_vec, farpt_list, self.nfar_pts, dJ)
+        for near_data in self.all_nearsrcdata:
+            cur_comp = near_data.near_fd_comp
+            amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
+            scale = amp_arr * adj_src_scale(self, dt, include_resolution=False)
 
-                if self.num_freq == 1:
-                    self.sources += [mp.IndexedSource(self.time_src, near_data, scale[:,0])]
-                else:
-                    src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
-                    (num_basis, num_pts) = src.nodes.shape
-                    for basis_i in range(num_basis):
-                        self.sources += [mp.IndexedSource(src.time_src_bf[basis_i], near_data, src.nodes[basis_i])]
+            if self.num_freq == 1:
+                self.sources += [mp.IndexedSource(self.time_src, near_data, scale[:,0])]
+            else:
+                src = FilteredSource(self.time_src.frequency,self.frequencies,scale,dt)
+                (num_basis, num_pts) = src.nodes.shape
+                for basis_i in range(num_basis):
+                    self.sources += [mp.IndexedSource(src.time_src_bf[basis_i], near_data, src.nodes[basis_i])]
 
         return self.sources
 
