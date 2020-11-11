@@ -17,9 +17,9 @@ Physically, material dispersion arises because the polarization of the material 
 
 $$\mathbf{D} = \varepsilon_\infty \mathbf{E} + \mathbf{P}$$
 
-where $\varepsilon_\infty$, which [must be positive](FAQ.md#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence ε(ω).
+where $\varepsilon_\infty$, which [must be positive](FAQ.md#why-does-my-simulation-diverge-if-0), is the *instantaneous* dielectric function (the infinite-frequency response) and **P** is the remaining frequency-dependent *polarization* density in the material. **P**, in turn, has its own time-evolution equation, and the exact form of this equation determines the frequency-dependence $\varepsilon(\omega)$.
 
-**Note:** Meep's definition of $\omega$ uses a sign convention $\exp(-i\omega t)$ for the time dependence; ε formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of $\gamma$ and $\omega$ as-is for loss; don't be confused by the difference in $\omega$ sign convention and flip the sign of the parameters.
+**Note:** Meep's definition of $\omega$ uses a sign convention $\exp(-i\omega t)$ for the time dependence; $\varepsilon$ formulas in engineering papers that use the opposite sign convention for $\omega$ will have a sign flip in all the imaginary terms below. If you are using parameters from the literature, you should use **positive** values of $\gamma$ and $\omega$ as-is for loss; don't be confused by the difference in $\omega$ sign convention and flip the sign of the parameters.
 
 Meep supports a Lorentzian susceptibility profile which consists of a sum of harmonic resonances plus a term for the frequency-independent electric conductivity:
 
@@ -37,7 +37,7 @@ $$\mathbf{P} = \sum_n \mathbf{P}_n$$
 
 $$\frac{d^2\mathbf{P}_n}{dt^2} + \gamma_n \frac{d\mathbf{P}_n}{dt} +  \omega_n^2 \mathbf{P}_n = \sigma_n(\mathbf{x}) \omega_n^2 \mathbf{E}$$
 
-That is, we must store and evolve a set of auxiliary fields $\mathbf{P}_n$ along with the electric field in order to keep track of the polarization $\mathbf{P}$. Essentially any ε(ω) could be modeled by including enough of these polarization fields &mdash; Meep allows you to specify any number of these, limited only by computer memory and time which increases with the number of polarization terms you require.
+That is, we must store and evolve a set of auxiliary fields $\mathbf{P}_n$ along with the electric field in order to keep track of the polarization $\mathbf{P}$. Essentially any $\varepsilon(\omega)$ could be modeled by including enough of these polarization fields &mdash; Meep allows you to specify any number of these, limited only by computer memory and time which increases with the number of polarization terms you require.
 
 Note that the conductivity $\sigma_D$ corresponds to an imaginary part of $\varepsilon$ given by $i \varepsilon_\infty \sigma_D / \omega$. This does not include the harmonic-resonance terms. When you specify frequency in Meep units, however, you are specifying $f$ without the $2\pi$, so the imaginary part of $\varepsilon$ is $i \varepsilon_\infty \sigma_D / 2\pi f$.
 
