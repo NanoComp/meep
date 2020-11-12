@@ -139,15 +139,13 @@ class OptimizationProblem(object):
                 self.forward_run()
                 print("Starting adjoint run...")
                 self.a_E = []
-                for ar in range(len(self.objective_functions)):
-                    self.adjoint_run(ar)
+                self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
             elif self.current_state == "FWD":
                 print("Starting adjoint run...")
                 self.a_E = []
-                for ar in range(len(self.objective_functions)):
-                    self.adjoint_run(ar)
+                self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
             else:
@@ -225,36 +223,37 @@ class OptimizationProblem(object):
 
         # update solver's current state
         self.current_state = "FWD"
-    def prepare_adjoint_run(self,objective_idx):
+    def prepare_adjoint_run(self):
         # Compute adjoint sources
-        self.adjoint_sources = []
-        for mi, m in enumerate(self.objective_arguments):
-            dJ = jacobian(self.objective_functions[objective_idx],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
-            if np.any(dJ):
-                self.adjoint_sources += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
+        self.adjoint_sources = [[] for i in range(len(self.objective_functions))]
+        for ar in range(len(self.objective_functions)):
+            for mi, m in enumerate(self.objective_arguments):
+                dJ = jacobian(self.objective_functions[ar],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
+                if np.any(dJ):
+                    self.adjoint_sources[ar] += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
 
-        # Reset the fields
-        self.sim.reset_meep()
-
-        # Update the sources
-        self.sim.change_sources(self.adjoint_sources)
-
-        # register design flux
-        self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
-
-    def adjoint_run(self,objective_idx=0):
+    def adjoint_run(self):
         # set up adjoint sources and monitors
-        self.prepare_adjoint_run(objective_idx)
+        self.prepare_adjoint_run()
+        for ar in range(len(self.objective_functions)):
+            # Reset the fields
+            self.sim.reset_meep()
 
-        # Adjoint run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time, self.maximum_run_time))
+            # Update the sources
+            self.sim.change_sources(self.adjoint_sources[ar])
 
-        # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
-        self.a_E.append([[np.zeros((self.nf,c[0],c[1],c[2]),dtype=np.complex128) for c in dg] for dg in self.design_grids])
-        for nb, dgm in enumerate(self.design_region_monitors):
-            for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
-                for f in range(self.nf):
-                    self.a_E[objective_idx][nb][ic][f,:,:,:] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+            # register design flux
+            self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
+
+            # Adjoint run
+            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time, self.maximum_run_time))
+
+            # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
+            self.a_E.append([[np.zeros((self.nf,c[0],c[1],c[2]),dtype=np.complex128) for c in dg] for dg in self.design_grids])
+            for nb, dgm in enumerate(self.design_region_monitors):
+                for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
+                    for f in range(self.nf):
+                        self.a_E[ar][nb][ic][f,:,:,:] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # update optimizer's state
         self.current_state = "ADJ"
