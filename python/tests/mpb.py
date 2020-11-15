@@ -284,7 +284,7 @@ class TestModeSolver(unittest.TestCase):
             ((1.2806248475163993, mp.Vector3(0.20000000000000004, 0.0, 0.0)),
              (1.5811388300892486, mp.Vector3(0.5, 0.5, 0.0))),
             ((1.4142135623752818, mp.Vector3(0.0, 0.0, 0.0)),
-             (1.8027756376524453, mp.Vector3(0.5, 0.0, 0.0))),
+             (1.8027756376524435, mp.Vector3(0.5, 0.0, 0.0))),
         ]
 
         ms = self.init_solver(geom=False)
@@ -418,8 +418,8 @@ class TestModeSolver(unittest.TestCase):
         self.assertAlmostEqual(pt, 1.330368347216153e-9)
 
         expected_fp = mp.Vector3(
-            2.5823356723958247e-5 + 6.713243287584132e-12j,
-            -2.575955745071957e-5 - 6.696552990958943e-12j,
+            2.582338850993523e-05+6.674311589555886e-12j,
+            -2.5759589225968237e-05-6.657825513845581e-12j,
             0.0 - 0.0j
         )
 
@@ -882,7 +882,7 @@ class TestModeSolver(unittest.TestCase):
         z_parities = ms.mode_solver.compute_zparities()
 
         expected_y_parities = [-0.9997979443175137, 1.0000061871738222, -1.000010781704281, -0.9997880312884855]
-        expected_z_parities = [0.9992335747085693, -0.9955122771195629, -0.9970929846091117, -0.995110556144587]
+        expected_z_parities = [0.9992335747085693, -0.9955122771195629, -0.9970929846091117, -0.9945407488966614]
 
         for e, r in zip(expected_y_parities, y_parities):
             self.assertAlmostEqual(e, r, places=3)
@@ -897,7 +897,7 @@ class TestModeSolver(unittest.TestCase):
                           mpb.display_yparities, mpb.display_group_velocities)
 
         expected_kvals = [
-            1.03584503595498,
+            1.0395768316060294,
             0.9776221778906993,
             0.8358057689930384,
             0.788801145849691
@@ -1215,7 +1215,7 @@ class TestModeSolver(unittest.TestCase):
 
         expected_gap_list = [
             (3.848610367089048e-5, 0.5781812856814899, 0.5781815082009817),
-            (1.4651880980150234, 0.8051999839699242, 0.8170847453549156),
+            (1.469257717113039, 0.8051999839699242, 0.8170847453549156),
             (0.75255857475812, 1.0580309832489785, 1.0660233597945266),
         ]
 
@@ -1364,7 +1364,7 @@ class TestModeSolver(unittest.TestCase):
         ref_path = os.path.join(self.data_dir, ref_fn)
         self.check_fields_against_h5(ref_path, bloch_efield)
 
-    def test_multiply_bloch_in_map_data(self):
+    def test_multiply_bloch_in_mpb_data(self):
         ms = self.init_solver()
 
         # multilpy_bloch_phase happens in get_efield
@@ -1375,7 +1375,7 @@ class TestModeSolver(unittest.TestCase):
         md = mpb.MPBData(rectify=True, resolution=32, periods=3)
         result1 = md.convert(efield)
 
-        # multiply_bloch_phase happens in map_data
+        # multiply_bloch_phase happens in MPBData
         ms.run_te()
         mpb.fix_efield_phase(ms, 8)
         efield_no_bloch = ms.get_efield(8, False)
@@ -1383,7 +1383,7 @@ class TestModeSolver(unittest.TestCase):
         md = mpb.MPBData(rectify=True, resolution=32, periods=3)
         result2 = md.convert(efield_no_bloch)
 
-        compare_arrays(self, result1, result2, tol=1e-7)
+        compare_arrays(self, result1, result2, tol=1e-5)
 
     def test_poynting(self):
         ms = self.init_solver()
