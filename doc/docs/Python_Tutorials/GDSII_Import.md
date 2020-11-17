@@ -216,6 +216,8 @@ Modes of a Ring Resonator
 
 The next example is similar to [Tutorial/Basics/Modes of a Ring Resonator](../Python_Tutorials/Basics.md#modes-of-a-ring-resonator) and consists of two parts: (1) creating the ring resonator geometry using [gdspy](https://gdspy.readthedocs.io/en/stable/) and (2) finding its modes using [Harminv](../Python_User_Interface.md#harminv). The cell, geometry, source, and monitor are defined on separate layers within the same GDSII file.
 
+The simulation script is in [examples/coupler.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring_gds.py).
+
 ```py
 import numpy as np
 import gdspy
@@ -326,9 +328,8 @@ def find_modes(filename,wvl=1.55,bw=0.05):
 if __name__ == '__main__':
     filename = create_ring_gds(2.0,0.5)
     wvls, Qs = find_modes(filename,1.55,0.05)
-    if mp.am_master():
-        for w, Q in zip(wvls,Qs):
-            print("mode:, {}, {}".format(w,Q))
+    for w, Q in zip(wvls,Qs):
+        print("mode: {}, {}".format(w,Q))
 ```
 
 Note the absence of `symmetries` even though, in principle, the ring geometry and the two line sources satisfy two mirror symmetry planes through the $x$ (even) and $y$ (odd) axes. This omission is due to the fact that the ring geometry created using gdspy and imported from the GDSII file is actually a [`Prism`](../Python_User_Interface.md#prism) consisting of a discrete number of vertices (rather than two overlapping `Cylinder`s as in [Tutorial/Basics/Modes of a Ring Resonator](../Python_Tutorials/Basics.md#modes-of-a-ring-resonator)). Discretization artifacts of the ring geometry slightly break its mirror symmetry. (Attempting to use `symmetries` in this case yields unpredictable results.)
