@@ -107,6 +107,5 @@ def find_modes(filename,wvl=1.55,bw=0.05):
 if __name__ == '__main__':
     filename = create_ring_gds(2.0,0.5)
     wvls, Qs = find_modes(filename,1.55,0.05)
-    if mp.am_master():
-        for w, Q in zip(wvls,Qs):
-            print("mode: {}, {}".format(w,Q))
+    for w, Q in zip(wvls,Qs):
+        print("mode: {}, {}".format(w,Q))
