@@ -5,6 +5,7 @@ General filter functions to be used in other projection and morphological transf
 import numpy as np
 from autograd import numpy as npa
 import meep as mp
+from scipy import special
 
 def _centered(arr, newshape):
     '''Helper function that reformats the padded array of the fft filter operation.
@@ -581,7 +582,7 @@ def tanh_projection(x,beta,eta):
     
     return (npa.tanh(beta*eta) + npa.tanh(beta*(x-eta))) / (npa.tanh(beta*eta) + npa.tanh(beta*(1-eta)))
 
-def heaviside_projection(x, beta):
+def heaviside_projection(x, beta, eta):
     '''Projection filter that thresholds the input parameters between 0 and 1.
 
     Parameters
@@ -880,7 +881,6 @@ def gray_indicator(x):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    return np.mean(4 * x.flatten()) * (1-x.flatten()) * 100
-
+    return npa.mean(4 * x.flatten() * (1-x.flatten())) * 100
 
 
