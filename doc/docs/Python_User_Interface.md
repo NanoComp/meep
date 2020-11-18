@@ -4034,13 +4034,13 @@ Creates a `Medium` object.
   which takes a `Vector3` to give the $\sigma_B$ tensor diagonal. See also
   [Conductivity](Materials.md#conductivity-and-complex).
 
-+ **`chi2` [`number`]** — The nonlinear
++ **`chi2` [`number`]** — The nonlinear electric
   [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility
-  $\chi^{(2)}$. Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+  $\chi^{(2)}$ (quadratic nonlinearity). Default is 0. See also [Nonlinearity](Materials.md#nonlinearity). This is equivalent to setting `E_chi2`; alternatively, an analogous magnetic nonlinearity can be specified using `H_chi2`.  These are isotropic nonlinearities, but *diagonal* anisotropic polarizations of the form $\chi_i^{(2)} E_i^2$ can be specified with `E_chi2_diag` (which defaults to `[E_chi2,E_chi2,E_chi2]`).
 
-+ **`chi3` [`number`]** — The nonlinear
-  [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$.
-  Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
++ **`chi3` [`number`]** — The nonlinear electric
+  [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$ (cubic nonlinearity).
+  Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).  This is equivalent to setting `E_chi3`; alternatively, an analogous magnetic nonlinearity can be specified using `H_chi3`.  These are isotropic nonlinearities, but *diagonal* anisotropic polarizations of the form $\chi_i^{(3)} |E|^2 E_i$ can be specified with `E_chi3_diag` (which defaults to `[E_chi3,E_chi3,E_chi3]`).
 
 + **`E_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
   susceptibilities (see below) added to the dielectric constant ε in order to
