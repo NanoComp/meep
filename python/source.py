@@ -60,7 +60,11 @@ class Source(object):
           region instead of a `center` and a `size`.
 
         + **`amplitude` [`complex`]** — An overall complex amplitude multiplying the
-          current source. Default is 1.0.
+          current source. Default is 1.0. Note that specifying a complex `amplitude` which
+          imparts a phase shift to the current (e.g., a circular-polarized planewave source
+          comprised of two overlapping linear-polarized planewaves which are 90° out of phase)
+          does *not* require using complex fields (via `force_complex_fields=True`) for
+          the entire simulation.
 
         + **`amp_func` [`function`]** — A Python function of a single argument, that takes
           a `Vector3` giving a position and returns a complex current amplitude for that

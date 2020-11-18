@@ -743,7 +743,7 @@ A schematic of the grating geometry is shown below. The grating is a 2d slab in 
 ![](../images/polarization_grating_schematic.png)
 </center>
 
-In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of $\lambda = 0.54$ μm. The linear polarization is in the $yz$-plane with a rotation angle of 45° counter clockwise around the *x* axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to $+k_y + -k_y$ (cosine) and $+k_y - -k_y$ (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. Following usual practice, this requires a separate normalization run to compute the power of the input planewave.
+In this example, the input is a linear-polarized planewave pulse at normal incidence with center wavelength of $\lambda = 0.54$ μm. The linear polarization is in the $yz$-plane with a rotation angle of 45° counter clockwise around the $x$ axis. Two sets of mode coefficients are computed in the air region adjacent to the grating for each orthogonal polarization: `ODD_Z+EVEN_Y` and `EVEN_Z+ODD_Y`, which correspond to $+k_y + -k_y$ (cosine) and $+k_y - -k_y$ (sine) modes. From these coefficients for linear-polarized modes, the power in the circular-polarized modes can be computed: |ODD_Z+EVEN_Y|<sup>2</sup>+|EVEN_Z+ODD_Y|<sup>2</sup>. The power is identical for the two circular-polarized modes with opposite chiralities since the input is linearly polarized and at normal incidence. The transmittance for the diffraction orders are computed from the mode coefficients. Following usual practice, this requires a separate normalization run to compute the power of the input planewave.
 
 The simulation script is in [examples/polarization_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/polarization_grating.py). The notebook is [examples/polarization_grating.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/polarization_grating.ipynb).
 
@@ -929,10 +929,12 @@ sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen), component=mp.Ez, 
            mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen), component=mp.Ey, center=src_pt, size=mp.Vector3(0,sy,0), amplitude=1j)]
 ```
 
-Note that even though the $J_y$ current amplitude is complex in this example, only its real part is used and the resulting fields are therefore still real (the default).
+Note that even though the $J_y$ current amplitude is complex in this example, only its real part is used and the resulting fields are therefore still real (the default). There is no need to set `force_complex_fields=True` in the `Simulation` constructor.
 
 The figure below shows a snapshot of $E_z$ within the cell for four different cases: phase delays ($\Delta nd/\lambda$) of 0.5 and 1.0, and planewave circular polarization of $E_z + iE_y$ and $E_z - iE_y$. The empty regions on the cell sides are PMLs. The thin solid black line denotes the boundary between the grating (on the left) and air. As expected, for $\Delta nd/\lambda=0.5$ there is just a single ±1 diffraction order which depends on the chirality of the input planewave (this is not the case for a linear-polarized planewave). The angle of this diffracted order (±4.8°) agrees with the analytic result. Snapshots of $E_y$ are similar.
 
 <center>
 ![](../images/polarization_grating_diffraction_orders.png)
 </center>
+
+For computing the mode coefficient of an [elliptical-polarized](https://en.wikipedia.org/wiki/Elliptical_polarization) mode in 3d, the mode coefficients of two orthogonal linear-polarized modes (i.e., $\mathcal{S}$ and $\mathcal{P}$ polarizations) should first be computed separately using the [`DiffractedPlanewave`](../Python_User_Interface.md#diffractedplanewave) object which is passed as the `bands` parameter to `get_eigenmode_coefficients`. These complex mode coefficients for the two polarizations can then be combined in post processing using a linear combination to compute the mode coefficient for any elliptical-polarized mode.
