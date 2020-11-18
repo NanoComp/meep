@@ -4036,11 +4036,19 @@ Creates a `Medium` object.
 
 + **`chi2` [`number`]** — The nonlinear electric
   [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility
-  $\chi^{(2)}$ (quadratic nonlinearity). Default is 0. See also [Nonlinearity](Materials.md#nonlinearity). This is equivalent to setting `E_chi2`; alternatively, an analogous magnetic nonlinearity can be specified using `H_chi2`.  These are isotropic nonlinearities, but *diagonal* anisotropic polarizations of the form $\chi_i^{(2)} E_i^2$ can be specified with `E_chi2_diag` (which defaults to `[E_chi2,E_chi2,E_chi2]`).
+  $\chi^{(2)}$ (quadratic nonlinearity). Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+  This is equivalent to setting `E_chi2`; alternatively, an analogous magnetic
+  nonlinearity can be specified using `H_chi2`. These are isotropic nonlinearities,
+  but *diagonal* anisotropic polarizations of the form $\chi_i^{(2)} E_i^2$ can
+  be specified with `E_chi2_diag` (which defaults to `[E_chi2,E_chi2,E_chi2]`).
 
 + **`chi3` [`number`]** — The nonlinear electric
-  [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$ (cubic nonlinearity).
-  Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).  This is equivalent to setting `E_chi3`; alternatively, an analogous magnetic nonlinearity can be specified using `H_chi3`.  These are isotropic nonlinearities, but *diagonal* anisotropic polarizations of the form $\chi_i^{(3)} |E|^2 E_i$ can be specified with `E_chi3_diag` (which defaults to `[E_chi3,E_chi3,E_chi3]`).
+  [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$
+  (cubic nonlinearity). Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
+  This is equivalent to setting `E_chi3`; alternatively, an analogous magnetic nonlinearity
+  can be specified using `H_chi3`. These are isotropic nonlinearities, but *diagonal*
+  anisotropic polarizations of the form $\chi_i^{(3)} |E|^2 E_i$ can be specified with
+  `E_chi3_diag` (which defaults to `[E_chi3,E_chi3,E_chi3]`).
 
 + **`E_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
   susceptibilities (see below) added to the dielectric constant ε in order to
@@ -5802,7 +5810,11 @@ Construct a `Source`.
   region instead of a `center` and a `size`.
 
 + **`amplitude` [`complex`]** — An overall complex amplitude multiplying the
-  current source. Default is 1.0.
+  current source. Default is 1.0. Note that specifying a complex `amplitude` which
+  imparts a phase shift to the current (e.g., a circular-polarized planewave source
+  comprised of two overlapping linear-polarized planewaves which are 90° out of phase)
+  does *not* require using complex fields (via `force_complex_fields=True`) for
+  the entire simulation.
 
 + **`amp_func` [`function`]** — A Python function of a single argument, that takes
   a `Vector3` giving a position and returns a complex current amplitude for that
@@ -7572,7 +7584,7 @@ Given a frequency `frequency`, (provided as a keyword argument) output $\varepsi
 permittivity); for an anisotropic $\varepsilon$ tensor the output is the [harmonic
 mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\varepsilon$ eigenvalues. If
 `frequency` is non-zero, the output is complex; otherwise it is the real,
-frequency-independent part of $arepsilon$ (the $\omega\to\infty$ limit).
+frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
 the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 `sim.run(mp.at_beginning(mp.output_epsilon(frequency=1/0.7)),until=10)`.
