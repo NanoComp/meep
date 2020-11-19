@@ -188,6 +188,8 @@ class Near2FarFields(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
         dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         self.sources = []
+        if dJ.ndim == 4:
+            dJ = np.sum(dJ,axis=0)
         dJ = dJ.flatten()
         farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
         far_pt0 = self.far_pts[0]
