@@ -936,7 +936,7 @@ sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.05*fcen),
                      amplitude=1j)]
 ```
 
-Note that when imparting a phase offset using a complex `amplitude`, there is no need to set `force_complex_fields=True` in the `Simulation` constructor since the real part of the current *includes* the phase offset.
+Note: when imparting a phase offset using a complex `amplitude`, it is *not* necessary to set `force_complex_fields=True` in the `Simulation` constructor since the real part of the current *includes* the phase offset.
 
 The figure below shows a snapshot of $E_z$ for four different cases: phase delays ($\Delta nd/\lambda$) of 0.5 and 1.0, and circular-polarized planewave sources of $E_z + iE_y$ and $E_z - iE_y$. The empty regions on the cell sides are PMLs. The thin solid black line denotes the boundary between the grating (on the left) and air. As expected, for $\Delta nd/\lambda=0.5$ there is just a single ±1 diffraction order which depends on the chirality of the input planewave (this is not the case for a linear-polarized planewave). The angle of this diffracted order (±4.8°) agrees with the analytic result. Snapshots of $E_y$ are similar.
 

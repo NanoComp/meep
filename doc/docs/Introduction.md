@@ -51,8 +51,6 @@ Moreover, since $c=1$ in Meep units, $a$ (or $a/c$) is the unit of *time* as wel
 
 For example, suppose we are describing some photonic structure at [infrared](https://en.wikipedia.org/wiki/Infrared) frequencies, where it is convenient to specify distances in [microns](https://en.wikipedia.org/wiki/Micrometre). Thus, we let $a$ = 1 μm. Then, if we want to specify a source corresponding to a vacuum wavelength of $\lambda$ = 1.55 μm, we specify the frequency $f$ as 1/1.55 = 0.6452. If we want to run our simulation for 100 periods, we then run it for 155 time units (= 100/$f$). At a grid resolution ($\Delta x$) of 10 pixels/μm and [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition) ($S$) of 0.5, one timestep is 0.05 time units or 166.67 μs ($c\Delta t = S\Delta x$).
 
-As another demonstration, the frequency resolution $\Delta f$ for a [DFT fields monitor](Python_User_Interface.md#flux-spectra) given a wavelength resolution $\Delta\lambda$ around a wavelength $\lambda$ is $\Delta f = \Delta\lambda / \lambda^2$. This relationship is derived from the wave relation $f = c/\lambda$. For example, a 10 nm wavelength resolution around 1.30 μm is equivalent to a frequency resolution of approximately 0.006.
-
 A transmittance spectrum, for example, would be a ratio of transmitted to incident intensities, so the units of $\mathbf{E}$ are irrelevant unless there are [nonlinearities](Units_and_Nonlinearity.md).
 
 The Bloch wavevector (see below) $\mathbf{k}$ is specified in Cartesian coordinates in units of 2π/$a$. This is *different* from MPB: it is equivalent to taking MPB's k-points and transforming them with `reciprocal->cartesian`.
