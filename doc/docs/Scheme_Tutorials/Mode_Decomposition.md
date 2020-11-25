@@ -890,8 +890,7 @@ title("homogeneous uniaxial grating");
 
 The left figure shows good agreement between the simulation results and analytic theory for the homogeneous uniaxial grating. Approximately 6% of the power in the input planewave is lost due to reflection from the grating. This value is an average over all phase delays. The total transmittance is therefore around 94%. The twisted-nematic grating, with results shown in the right figure, produces ±1 diffraction orders with nearly-constant peak transmittance over a broader bandwidth around Δnd/λ=0.5 than the homogeneous uniaxial polarization grating. This is consistent with results from the reference. The average reflectance and transmittance for the twisted-nematic grating are similar to those for the homogeneous uniaxial grating.
 
-
-Finally, we demonstrate that when Δnd/λ=0.5 a circular-polarized planewave input produces just a single ±1 diffraction order. To specify a $E_z$+i$E_y$ circular-polarized planewave requires setting the `amplitude` of the $E_y$ source to an imaginary number (from its default of 1):
+Finally, we demonstrate that when $\Delta nd/\lambda=0.5$ a circular-polarized planewave input produces just a single ±1 diffraction order. To create a $\mathcal{J}_z + i\mathcal{J}_y$ circular-polarized planewave current source involves overlapping two linear-polarized planewave sources for $\mathcal{J}_y$ and $\mathcal{J}_z$ where the `amplitude` property of one of the sources is the imaginary number `1j` in order to create a phase offset of 90°:
 
 ```scm
 (set! sources (list (make source
@@ -907,7 +906,7 @@ Finally, we demonstrate that when Δnd/λ=0.5 a circular-polarized planewave inp
                       (amplitude 0+1i))))
 ```
 
-Note that even though the J<sub>y</sub> current amplitude is complex in this example, only its real part is used and the resulting fields are therefore still real (the default).
+Note: when imparting a phase offset using a complex `amplitude`, it is *not* necessary to set `force_complex_fields=True` in the `Simulation` constructor since the real part of the current *includes* the phase offset.
 
 The figure below shows a snapshot of $E_z$ within the cell for four different cases: phase delays (Δnd/λ) of 0.5 and 1.0, and planewave circular polarization of $E_z$+i$E_y$ and $E_z$-i$E_y$. The empty regions on the cell sides are PMLs. The thin solid black line denotes the boundary between the grating (on the left) and air. As expected, for Δnd/λ=0.5 there is just a single ±1 diffraction order which depends on the chirality of the input planewave (this is not the case for a linear-polarized planewave). The angle of this diffracted order (±4.8°) agrees with the analytic result. Snapshots of $E_y$ are similar.
 

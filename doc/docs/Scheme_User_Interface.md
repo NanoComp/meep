@@ -647,7 +647,7 @@ The size of the current distribution along each direction of the cell. Default i
 
 **`amplitude` [`cnumber`]**
 —
-An overall complex amplitude multiplying the the current source. Default is 1.0.
+An overall complex amplitude multiplying the the current source. Default is 1.0. Note that specifying a complex `amplitude` imparts a phase shift to the real part of the overall current and thus does *not* require using complex fields for the entire simulation (via setting `force-complex-fields?` to `true`).
 
 **`amp-func` [`function`]**
 —
