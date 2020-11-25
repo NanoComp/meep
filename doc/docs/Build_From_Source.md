@@ -238,7 +238,7 @@ By default, Meep's `configure` script picks compiler flags to optimize Meep as m
 
 **`--with-gcc-arch=arch`, `--without-gcc-arch`**
 —
-By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
+By default, Meep's configure script tries to guess the gcc `-march` flag for the system you are compiling on using `-mtune` instead when `--enable-portable-binary` is specified. If it guesses wrong, or if you want to specify a different architecture, you can pass it here. Alternatively, if you want to compile using your native architecture, you can just use `--disable-portable-binary` and omit `--with-gcc-arch` entirely. This approach will leave it up to your compiler to automatically determine the architecture. If you want to omit `-march`/`-mtune` flags entirely, pass `--without-gcc-arch`.
 
 **`--with-openmp`**
 —
