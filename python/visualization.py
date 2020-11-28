@@ -346,7 +346,7 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None,frequency=0):
     eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric, frequency=frequency)))
     if mp.am_master():
         if eps_parameters['contour']:
-            ax.contour(eps_data, extent=extent, linewidths=eps_parameters['contour_linewidth'], **filter_dict(eps_parameters, ax.contour))
+            ax.contour(eps_data, 0, colors='black', extent=extent, linewidths=eps_parameters['contour_linewidth'])
         else:
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
