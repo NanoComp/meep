@@ -3876,6 +3876,8 @@ class Simulation(object):
             - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
             - `cmap='binary'`: the color map of the geometry
             - `alpha=1.0`: transparency of geometry
+            - `contour=False`: if True, plot a contour of the geometry rather than its image
+            - `contour_linewidth=0.5`: width of the contour lines if `contour=True`
         * `boundary_parameters`: a `dict` of optional plotting parameters that override
           the default parameters for the boundary layers.
             - `alpha=1.0`: transparency of boundary layers
