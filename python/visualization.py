@@ -45,7 +45,9 @@ default_field_parameters = {
 default_eps_parameters = {
         'interpolation':'spline36',
         'cmap':'binary',
-        'alpha':1.0
+        'alpha':1.0,
+        'contour':False,
+        'contour_linewidth':1
     }
 
 default_boundary_parameters = {
@@ -343,7 +345,10 @@ def plot_eps(sim,ax,output_plane=None,eps_parameters=None,frequency=0):
 
     eps_data = np.rot90(np.real(sim.get_array(center=center, size=cell_size, component=mp.Dielectric, frequency=frequency)))
     if mp.am_master():
-        ax.imshow(eps_data, extent=extent, **eps_parameters)
+        if eps_parameters['contour']:
+            ax.contour(eps_data, 0, colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
+        else:
+            ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
