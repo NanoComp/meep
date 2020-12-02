@@ -533,7 +533,7 @@ The output functions described above write the data for the fields and materials
 
 @@ Simulation.get_array_metadata @@
 
-This routine provides geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. Here are some examples of how array metadata can be used:
+The following are some examples of how array metadata can be used.
 
 **Labeling Axes in Plots of Grid Quantities**
 

@@ -2492,7 +2492,7 @@ plt.savefig('sim_domain.png')
     - `facecolor='g'`: color of polygon face
     - `edgecolor='g'`: color of outline stroke
     - `linewidth=1`: line width of outline stroke
-    - `hatch=''`: hatching pattern
+    - `hatch='\'`: hatching pattern
 * `source_parameters`: a `dict` of optional plotting parameters that override the
   default parameters for the sources.
     - `color='r'`: color of line and pt sources
@@ -2500,7 +2500,7 @@ plt.savefig('sim_domain.png')
     - `facecolor='none'`: color of polygon face for planar sources
     - `edgecolor='r'`: color of outline stroke for planar sources
     - `linewidth=1`: line width of outline stroke
-    - `hatch=''`: hatching pattern
+    - `hatch='\'`: hatching pattern
     - `label_color='r'`: color of source labels
     - `label_alpha=0.3`: transparency of source label box
     - `offset=20`: distance from source center and label box
@@ -2511,7 +2511,7 @@ plt.savefig('sim_domain.png')
     - `facecolor='none'`: color of polygon face for planar monitors
     - `edgecolor='r'`: color of outline stroke for planar monitors
     - `linewidth=1`: line width of outline stroke
-    - `hatch=''`: hatching pattern
+    - `hatch='\'`: hatching pattern
     - `label_color='g'`: color of source labels
     - `label_alpha=0.3`: transparency of monitor label box
     - `offset=20`: distance from monitor center and label box
@@ -3492,7 +3492,7 @@ then the entire cell is used.
 
 </div>
 
-This routine provides geometric information useful for interpreting the arrays returned by `get_array` or `get_dft_array` for the spatial region defined by `vol` or `center/size`. Here are some examples of how array metadata can be used:
+The following are some examples of how array metadata can be used.
 
 **Labeling Axes in Plots of Grid Quantities**
 
