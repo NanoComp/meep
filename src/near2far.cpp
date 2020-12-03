@@ -640,10 +640,10 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
 }
 
 //Modified from farfield_lowlevel
-std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::complex<double>* dJ) {
-  if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
+std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ) {
+  if (x_0.dim != D3 && x_0.dim != D2 && x_0.dim != Dcyl)
     abort("only 2d or 3d or cylindrical far-field computation is supported");
-  greenfunc green = x.dim == D2 ? green2d : green3d;
+  greenfunc green = x_0.dim == D2 ? green2d : green3d;
 
   const size_t Nfreq = freq.size();
   std::vector<struct sourcedata> temp;
@@ -678,12 +678,15 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x, std::
                 xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
               double phase = phase0 + i1 * periodic_k[1];
               std::complex<double> cphase = std::polar(1.0, phase);
-              if (x.dim == Dcyl)
-                greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
-              else
-                green(EH6, x, freq[i], eps, mu, xs, c0, w);
-              for (int j = 0; j < 6; ++j)
-                EH0 += EH6[j] * cphase * (f->stored_weight) * dJ[6*i+j];
+              for (size_t ipt = 0; ipt < nfar_pts; ++ipt){
+                vec x = vec(farpt_list[3*ipt], farpt_list[3*ipt+1], farpt_list[3*ipt+2]);
+                if (x_0.dim == Dcyl)
+                  greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
+                else
+                  green(EH6, x, freq[i], eps, mu, xs, c0, w);
+                for (int j = 0; j < 6; ++j)
+                  EH0 += EH6[j] * cphase * (f->stored_weight) * dJ[6*Nfreq*ipt + 6*i + j];
+              }
           }
         }
         idx_dft++;

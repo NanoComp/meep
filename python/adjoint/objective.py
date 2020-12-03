@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
-from .optimization_problem import atleast_3d, Grid
+from .optimization_problem import Grid
+from meep.simulation import py_v3_to_vec
 
 class ObjectiveQuantitiy(ABC):
     @abstractmethod
@@ -87,7 +88,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                     size=self.volume.size,
                     center=self.volume.center,
                     **self.EigenMode_kwargs)]
-        
+
         return self.source
 
     def __call__(self):
@@ -129,24 +130,26 @@ class FourierFields(ObjectiveQuantitiy):
         self.sources = []
         scale = adj_src_scale(self, dt)
 
+        x_dim, y_dim, z_dim = len(self.dg.x), len(self.dg.y), len(self.dg.z)
+
         if self.num_freq == 1:
-            amp = -atleast_3d(dJ[0]) * scale
+            amp = -dJ[0].copy().reshape(x_dim, y_dim, z_dim) * scale
             src = self.time_src
             if self.component in [mp.Hx, mp.Hy, mp.Hz]:
                 amp = -amp
-            for zi in range(len(self.dg.z)):
-                for yi in range(len(self.dg.y)):
-                    for xi in range(len(self.dg.x)):
+            for zi in range(z_dim):
+                for yi in range(y_dim):
+                    for xi in range(x_dim):
                         if amp[xi, yi, zi] != 0:
                             self.sources += [mp.Source(src, component=self.component, amplitude=amp[xi, yi, zi],
                             center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
         else:
-            dJ_4d = np.array([atleast_3d(dJ[f]) for f in range(self.num_freq)])
+            dJ_4d = np.array([dJ[f].copy().reshape(x_dim, y_dim, z_dim) for f in range(self.num_freq)])
             if self.component in [mp.Hx, mp.Hy, mp.Hz]:
                 dJ_4d = -dJ_4d
-            for zi in range(len(self.dg.z)):
-                for yi in range(len(self.dg.y)):
-                    for xi in range(len(self.dg.x)):
+            for zi in range(z_dim):
+                for yi in range(y_dim):
+                    for xi in range(x_dim):
                         final_scale = -dJ_4d[:,xi,yi,zi] * scale
                         src = FilteredSource(self.time_src.frequency,self.frequencies,final_scale,dt)
                         self.sources += [mp.Source(src, component=self.component, amplitude=1,
@@ -157,7 +160,7 @@ class FourierFields(ObjectiveQuantitiy):
     def __call__(self):
         self.time_src = self.sim.sources[0].src
         self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
-        self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)]) #Shape = (num_freq, [pts])
+        self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)])
         return self.eval
 
     def get_evaluation(self):
@@ -168,11 +171,12 @@ class FourierFields(ObjectiveQuantitiy):
 
 
 class Near2FarFields(ObjectiveQuantitiy):
-    def __init__(self,sim,Near2FarRegions, far_pt):
+    def __init__(self,sim,Near2FarRegions, far_pts):
         self.sim = sim
         self.Near2FarRegions=Near2FarRegions
         self.eval = None
-        self.far_pt = far_pt
+        self.far_pts = far_pts #list of far pts
+        self.nfar_pts = len(far_pts)
         return
 
     def register_monitors(self,frequencies):
@@ -184,10 +188,14 @@ class Near2FarFields(ObjectiveQuantitiy):
     def place_adjoint_source(self,dJ):
         dt = self.sim.fields.dt # the timestep size from sim.fields.dt of the forward sim
         self.sources = []
+        if dJ.ndim == 4:
+            dJ = np.sum(dJ,axis=0)
         dJ = dJ.flatten()
+        farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
+        far_pt0 = self.far_pts[0]
+        far_pt_vec = py_v3_to_vec(self.sim.dimensions, far_pt0, self.sim.is_cylindrical)
 
-        #TODO far_pts in 3d or cylindrical, perhaps py_v3_to_vec from simulation.py
-        self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(mp.vec(self.far_pt.x, self.far_pt.y), dJ)
+        self.all_nearsrcdata = self.monitor.swigobj.near_sourcedata(far_pt_vec, farpt_list, self.nfar_pts, dJ)
         for near_data in self.all_nearsrcdata:
             cur_comp = near_data.near_fd_comp
             amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
@@ -205,8 +213,7 @@ class Near2FarFields(ObjectiveQuantitiy):
 
     def __call__(self):
         self.time_src = self.sim.sources[0].src
-        self.eval = np.array(self.sim.get_farfield(self.monitor, self.far_pt))
-        self.eval = self.eval.reshape((self.num_freq, 6))
+        self.eval = np.array([self.sim.get_farfield(self.monitor, far_pt) for far_pt in self.far_pts]).reshape((self.nfar_pts, self.num_freq, 6))
         return self.eval
 
     def get_evaluation(self):

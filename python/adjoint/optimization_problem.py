@@ -61,7 +61,8 @@ class OptimizationProblem(object):
                 decay_dt=50,
                 decay_fields=[mp.Ez],
                 decay_by=1e-6,
-                minimum_run_time=0
+                minimum_run_time=0,
+                maximum_run_time=None
                  ):
 
         self.sim = simulation
@@ -106,6 +107,7 @@ class OptimizationProblem(object):
         self.decay_fields=decay_fields
         self.decay_dt=decay_dt
         self.minimum_run_time=minimum_run_time
+        self.maximum_run_time=maximum_run_time
 
         # store sources for finite difference estimations
         self.forward_sources = self.sim.sources
@@ -137,15 +139,13 @@ class OptimizationProblem(object):
                 self.forward_run()
                 print("Starting adjoint run...")
                 self.a_E = []
-                for ar in range(len(self.objective_functions)):
-                    self.adjoint_run(ar)
+                self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
             elif self.current_state == "FWD":
                 print("Starting adjoint run...")
                 self.a_E = []
-                for ar in range(len(self.objective_functions)):
-                    self.adjoint_run(ar)
+                self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
             else:
@@ -199,7 +199,7 @@ class OptimizationProblem(object):
         self.prepare_forward_run()
 
         # Forward run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
+        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time, self.maximum_run_time))
 
         # record objective quantities from user specified monitors
         self.results_list = []
@@ -223,36 +223,37 @@ class OptimizationProblem(object):
 
         # update solver's current state
         self.current_state = "FWD"
-    def prepare_adjoint_run(self,objective_idx):
+    def prepare_adjoint_run(self):
         # Compute adjoint sources
-        self.adjoint_sources = []
-        for mi, m in enumerate(self.objective_arguments):
-            dJ = jacobian(self.objective_functions[objective_idx],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
-            if np.any(dJ):
-                self.adjoint_sources += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
+        self.adjoint_sources = [[] for i in range(len(self.objective_functions))]
+        for ar in range(len(self.objective_functions)):
+            for mi, m in enumerate(self.objective_arguments):
+                dJ = jacobian(self.objective_functions[ar],mi)(*self.results_list) # get gradient of objective w.r.t. monitor
+                if np.any(dJ):
+                    self.adjoint_sources[ar] += m.place_adjoint_source(dJ) # place the appropriate adjoint sources
 
-        # Reset the fields
-        self.sim.reset_meep()
-
-        # Update the sources
-        self.sim.change_sources(self.adjoint_sources)
-
-        # register design flux
-        self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
-
-    def adjoint_run(self,objective_idx=0):
+    def adjoint_run(self):
         # set up adjoint sources and monitors
-        self.prepare_adjoint_run(objective_idx)
+        self.prepare_adjoint_run()
+        for ar in range(len(self.objective_functions)):
+            # Reset the fields
+            self.sim.reset_meep()
 
-        # Adjoint run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
+            # Update the sources
+            self.sim.change_sources(self.adjoint_sources[ar])
 
-        # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
-        self.a_E.append([[np.zeros((self.nf,c[0],c[1],c[2]),dtype=np.complex128) for c in dg] for dg in self.design_grids])
-        for nb, dgm in enumerate(self.design_region_monitors):
-            for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
-                for f in range(self.nf):
-                    self.a_E[objective_idx][nb][ic][f,:,:,:] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
+            # register design flux
+            self.design_region_monitors = [self.sim.add_dft_fields([mp.Ex,mp.Ey,mp.Ez],self.frequencies,where=dr.volume,yee_grid=True) for dr in self.design_regions]
+
+            # Adjoint run
+            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.design_region_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time, self.maximum_run_time))
+
+            # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
+            self.a_E.append([[np.zeros((self.nf,c[0],c[1],c[2]),dtype=np.complex128) for c in dg] for dg in self.design_grids])
+            for nb, dgm in enumerate(self.design_region_monitors):
+                for ic, c in enumerate([mp.Ex,mp.Ey,mp.Ez]):
+                    for f in range(self.nf):
+                        self.a_E[ar][nb][ic][f,:,:,:] = atleast_3d(self.sim.get_dft_array(dgm,c,f))
 
         # update optimizer's state
         self.current_state = "ADJ"
@@ -324,7 +325,7 @@ class OptimizationProblem(object):
             for m in self.objective_arguments:
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
 
-            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
+            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time, self.maximum_run_time))
 
 
             # record final objective function value
@@ -348,7 +349,7 @@ class OptimizationProblem(object):
                 self.forward_monitors.append(m.register_monitors(self.frequencies))
 
             # add monitor used to track dft convergence
-            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time))
+            self.sim.run(until_after_sources=stop_when_dft_decayed(self.sim, self.forward_monitors, self.decay_dt, self.decay_fields, self.fcen_idx, self.decay_by, True, self.minimum_run_time, self.maximum_run_time))
 
             # record final objective function value
             results_list = []
@@ -397,7 +398,7 @@ class OptimizationProblem(object):
 
         self.sim.plot2D(**kwargs)
 
-def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False, minimum_run_time=0):
+def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False, minimum_run_time=0, maximum_run_time=None):
     '''Step function that monitors the relative change in DFT fields for a list of monitors.
 
     mon ............. a list of monitors
@@ -422,6 +423,8 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
     def _stop(sim):
         if sim.round_time() <= dt + closure['t0']:
             return False
+        elif maximum_run_time and sim.round_time() > maximum_run_time:
+            return True
         else:
             previous_fields = closure['previous_fields']
 

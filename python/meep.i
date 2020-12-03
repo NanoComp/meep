@@ -1403,6 +1403,10 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     $1 = (std::complex<double> *)array_data($input);
 }
 
+%typemap(in) double* farpt_list {
+    $1 = (double *)array_data($input);
+}
+
 %exception {
   try {
     $action
@@ -1478,7 +1482,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "std_complex.i"
 %template(ComplexVector) std::vector<std::complex<double> >;
 
-std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x, std::complex<double>* dJ);
+std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ);
 
 void meep::fields::add_srcdata(struct meep::sourcedata cur_data, meep::src_time *src, size_t n, std::complex<double>* amp_arr);
 
