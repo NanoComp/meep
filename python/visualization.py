@@ -516,11 +516,11 @@ def plot_fields(sim,ax=None,fields=None,output_plane=None,field_parameters=None)
     return ax
 
 def plot2D(sim,ax=None, output_plane=None, fields=None, labels=False,
-            eps_parameters=None,boundary_parameters=None,
-            source_parameters=None,monitor_parameters=None,
-            field_parameters=None, frequency=None,
-            plot_eps_flag=True, plot_sources_flag=True,
-            plot_monitors_flag=True, plot_boundaries_flag=True):
+           eps_parameters=None,boundary_parameters=None,
+           source_parameters=None,monitor_parameters=None,
+           field_parameters=None, frequency=None,
+           plot_eps_flag=True, plot_sources_flag=True,
+           plot_monitors_flag=True, plot_boundaries_flag=True):
 
     # Initialize the simulation
     if sim.structure is None:

@@ -77,14 +77,6 @@ class Simulation(object):
 The `Simulation` [class](#classes) contains all the attributes that you can set to
 control various parameters of the Meep computation.
 
-#### Output File Names
-
-The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by
-the `filename_prefix` parameter. If `filename_prefix` is `None` (the default),
-however, then Meep constructs a default prefix based on the current Python filename
-with `".py"` replaced by `"-"`: e.g. `test.py` implies a prefix of `"test-"`. You can
-get this prefix by calling `get_filename_prefix`.
-
 </div>
 
 
@@ -168,9 +160,8 @@ Python. `Vector3` is a `meep` class.
   optimized. See `dimensions` below. **Note:** because Maxwell's equations are
   scale invariant, you can use any units of distance you want to specify the cell
   size: nanometers, microns, centimeters, etc. However, it is usually convenient
-  to pick some characteristic lengthscale of your problem and set that length to
-  1. See also [Units](Introduction.md#units-in-meep). Required argument (no
-  default).
+  to pick some characteristic lengthscale of your problem and set that length to 1.
+  See also [Units](Introduction.md#units-in-meep). Required argument (no default).
 
 + **`default_material` [`Medium` class ]** — Holds the default material that is
   used for points not in any object of the geometry list. Defaults to `air` (ε=1).
@@ -283,10 +274,10 @@ Python. `Vector3` is a `meep` class.
   simulate all fields, even those that remain zero throughout the simulation, by
   setting `force_all_components` to `True`.
 
-+ **`filename_prefix` [`string`]** — A string prepended to all output filenames.
-  If empty (the default), then Meep uses the name of the current Python file, with
-  ".py" replaced by "-" (e.g. `foo.py` uses a `"foo-"` prefix). See also [Output
-  File Names](Python_User_Interface.md#output-file-names).
++ **`filename_prefix` [`string`]** — A string prepended to all output filenames
+  (e.g., for HDF5 files). If `None` (the default), then Meep constructs a default
+  prefix based on the current Python filename ".py" replaced by "-" (e.g. `foo.py`
+  uses a `"foo-"` prefix). You can get this prefix by calling `get_filename_prefix`.
 
 + **`Courant` [`number`]** — Specify the
   [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition)
@@ -3464,7 +3455,7 @@ def get_array_metadata(self,
 
 This routine provides geometric information useful for interpreting the arrays
 returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
-or `center/size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
+or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
 
 + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
   grid slice
@@ -5310,7 +5301,7 @@ def __init__(self, **kwargs):
 
 <div class="method_docstring" markdown="1">
 
-Construct an `Ellipsiod`.
+Construct an `Ellipsoid`.
 
 </div>
 

@@ -1077,7 +1077,7 @@ class Ellipsoid(Block):
     """
     def __init__(self, **kwargs):
         """
-        Construct an `Ellipsiod`.
+        Construct an `Ellipsoid`.
         """
         super(Ellipsoid, self).__init__(**kwargs)
 
