@@ -3849,6 +3849,9 @@ class Simulation(object):
         plt.savefig('sim_domain.png')
         ```
 
+        Warning: When running a [parallel simulation](Parallel_Meep.md), do *not* call `plot2D` from within an
+        `if meep.am_master():` statement since this will cause one of the MPI processes to deadlock.
+
         **Parameters:**
 
         * `ax`: a `matplotlib` axis object. `plot2D()` will add plot objects, like lines,
