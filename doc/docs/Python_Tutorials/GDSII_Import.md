@@ -315,8 +315,9 @@ def find_modes(filename,wvl=1.55,bw=0.05):
             until_after_sources=100)
 
     plt.figure()
-    sim.plot2D(fields=mp.Hz)
-    plt.savefig('ring_resonator_Hz.png')
+    sim.plot2D(fields=mp.Hz,
+               eps_parameters={'contour':True})
+    plt.savefig('ring_resonator_Hz.png',bbox_inches='tight',dpi=150)
 
     wvl = np.array([1/m.freq for m in h.modes])
     Q = np.array([m.Q for m in h.modes])
