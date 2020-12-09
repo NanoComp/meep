@@ -732,7 +732,13 @@ std::vector<double> fields::get_array_metadata(const volume &where, bool collaps
     full_dirs[fr] = dirs[fr];
 
   double *weights = get_array_slice(where, NO_COMPONENT);
-  if (collapse_empty_dimensions) weights = collapse_array(weights, &rank, dims, dirs, where);
+  if (collapse_empty_dimensions) {
+    double *newweights = collapse_array(weights, &rank, dims, dirs, where);
+    if (weights != newweights) {
+      delete[] weights;
+      weights = newweights;
+    }
+  }
 
   /* get length and endpoints of x,y,z tics arrays */
   size_t nxyz[3] = {1, 1, 1};
@@ -762,6 +768,7 @@ std::vector<double> fields::get_array_metadata(const volume &where, bool collaps
   for (unsigned nw = 0; nw < (nxyz[0] * nxyz[1] * nxyz[2]); nw++)
     xyzw.push_back(weights[nw]);
 
+  delete[] weights;
   return xyzw;
 
 } // get_array_metadata
