@@ -3849,8 +3849,8 @@ class Simulation(object):
         plt.savefig('sim_domain.png')
         ```
 
-        Warning: When running a [parallel simulation](Parallel_Meep.md), do *not* call `plot2D` from within an
-        `if meep.am_master():` statement since this will cause one of the MPI processes to deadlock.
+        Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function expects to be called
+        on all processes, but only generates a plot on the master process.
 
         **Parameters:**
 
