@@ -1,6 +1,6 @@
 import meep as mp
 import numpy as np
-from autograd import grad, jacobian
+from jax import grad, jacobian
 from collections import namedtuple
 
 Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
