@@ -942,17 +942,17 @@ def M_diff_open_close(x,f_open,f_close,p=1):
     '''
 
     '''
-    return npj.mean(npj.abs(f_close(x.flatten())-f_open(x.flatten()))**p)
+    return npj.mean(npj.abs(f_close(x.flatten())-f_open(x.flatten()))**p) * 100
 
 def M_diff_identity_open(x,f_open,p=1):
     '''
 
     '''
-    return npj.mean(npj.abs(x.flatten()-f_open(x.flatten()))**p)
+    return npj.mean(npj.abs(x.flatten()-f_open(x.flatten()))**p) * 100
 
 def M_diff_identity_close(x,f_close,p=1):
     '''
 
     '''
-    return npj.mean(npj.abs(x.flatten()-f_close(x.flatten()))**p)
+    return npj.mean(npj.abs(x.flatten()-f_close(x.flatten()))**p) * 100
 
