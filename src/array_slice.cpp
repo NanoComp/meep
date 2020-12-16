@@ -762,6 +762,7 @@ std::vector<double> fields::get_array_metadata(const volume &where, bool collaps
   for (unsigned nw = 0; nw < (nxyz[0] * nxyz[1] * nxyz[2]); nw++)
     xyzw.push_back(weights[nw]);
 
+  delete[] weights;
   return xyzw;
 
 } // get_array_metadata
