@@ -38,9 +38,10 @@ sim = mp.Simulation(cell_size=cell_size,
 sim.run(until=100)
 
 nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10,10,0))
-ez_data = sim.get_array(vol=nonpml_vol, component=mp.Ez)
 
-plt.figure()
-plt.imshow(np.flipud(np.transpose(np.real(ez_data))), interpolation='spline36', cmap='RdBu')
-plt.axis('off')
-plt.show()
+sim.plot2D(fields=mp.Ez,
+           output_plane=nonpml_vol)
+
+if mp.am_master():
+    plt.axis('off')
+    plt.savefig('pw.png',bbox_inches='tight')
