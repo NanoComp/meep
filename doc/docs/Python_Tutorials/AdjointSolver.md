@@ -16,6 +16,6 @@ Six Jupyter notebooks that demonstrate usage of the adjoint solver are available
 
 - [Broadband Objective Function using Epigraph Formulation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/05-Minimax.ipynb)
 
-- [Objective Function based on Poynting Flux and Near to Far-Field Transformation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/FourierAndNear2Far.ipynb)
+- [Objective Function based on Near to Far-Field Transformation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/Near2Far-Optimization-with-Epigraph-Formulation.ipynb)
 
 More documentation will be available soon.
