@@ -7,7 +7,18 @@ import jax
 from jax import numpy as npj
 import meep as mp
 from scipy import special
-from .optimization_problem import atleast_3d
+
+
+def atleast_3d(ary):
+    if ary.ndim == 0:
+        result = npj.expand_dims(ary, axis=(0,1,2))#ary.reshape(1, 1, 1)
+    elif ary.ndim == 1:
+        result = npj.expand_dims(ary, axis=(1,2))
+    elif ary.ndim == 2:
+        result = npj.expand_dims(ary, axis=(2))
+    else:
+        result = ary
+    return result
 
 
 def _centered(arr, newshape):
@@ -17,8 +28,8 @@ def _centered(arr, newshape):
     https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
     '''
     # Return the center newshape portion of the array.
-    newshape = np.asarray(newshape)
-    currshape = np.array(arr.shape)
+    newshape = npj.array(newshape)
+    currshape = npj.array(arr.shape)
     startind = (currshape - newshape) // 2
     endind = startind + newshape
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
@@ -44,17 +55,6 @@ def meep_filter(x,kernel):
     # remove paddings
     return _centered(yp,x_shape)
 
-def symmetric_kernel(kernel,dims):
-    '''
-    Given a 1D array for a kernel, do sucessive outer products
-    to get higher dimensional equivalents.
-    '''
-    k = kernel.copy()
-    for k in range(dims-1):
-        k = npj.unfunc.outer(k,kernel)
-    
-    return k
-
 def cylindrical_filter(x,radius):
     x = atleast_3d(x)
     xl = npj.linspace(-x.shape[0]/2,x.shape[0]/2,x.shape[0])
@@ -64,10 +64,8 @@ def cylindrical_filter(x,radius):
     X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True)
     kernel = X**2+Y**2+Z**2 <= radius**2
     kernel = kernel/npj.sum(kernel.flatten()) # normalize
-    
-    return meep_filter(npj.squeeze(x),npj.squeeze(kernel))
 
-    
+    return meep_filter(npj.squeeze(x),npj.squeeze(kernel))
 
 def conic_filter(x,radius):
     x = atleast_3d(x)
