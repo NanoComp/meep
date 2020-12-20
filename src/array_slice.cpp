@@ -485,6 +485,8 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   // by tradition, empty dimensions in time-domain field arrays are *not* collapsed
   // TODO make this a caller-specifiable parameter to get_array_slice()?
   bool collapse = false, snap = true;
+  if ((components.size() == 1) && (components[0] == NO_COMPONENT))
+    snap = false;
   size_t dims[3];
   direction dirs[3];
   array_slice_data data;
@@ -550,7 +552,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       ++data.ninvmu;
     }
 
-  loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, true);
+  loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, snap);
 
   /***************************************************************/
   /*consolidate full array on all cores                          */
@@ -717,15 +719,14 @@ cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dir
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-std::vector<double> fields::get_array_metadata(const volume &where, bool collapse_empty_dimensions,
-                                               bool snap_empty_dimensions) {
+std::vector<double> fields::get_array_metadata(const volume &where, bool collapse_empty_dimensions) {
 
   /* get extremal corners of subgrid and array of weights, collapsed if necessary */
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2]; // extremal points in subgrid
   int rank = get_array_slice_dimensions(where, dims, dirs, false /*collapse_empty_dimensions*/,
-                                        snap_empty_dimensions, min_max_loc);
+                                        false, min_max_loc);
   int full_rank = rank;
   direction full_dirs[3];
   for (int fr = 0; fr < rank; fr++)

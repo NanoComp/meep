@@ -1698,8 +1698,7 @@ public:
   /* fetch and return coordinates and integration weights of grid points covered by an array slice,
    */
   /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ] */
-  std::vector<double> get_array_metadata(const volume &where, bool collapse_empty_dimensions = true,
-                                         bool snap_empty_dimensions = false);
+  std::vector<double> get_array_metadata(const volume &where, bool collapse_empty_dimensions = true);
 
   // step.cpp methods:
   double last_step_output_wall_time;

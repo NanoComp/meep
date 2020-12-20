@@ -2457,8 +2457,8 @@ plt.show()
 plt.savefig('sim_domain.png')
 ```
 
-Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function must be called
-from all parallel processes, but only produces a plot on the `meep.am_master()` process.
+Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function expects to be called
+on all processes, but only generates a plot on the master process.
 
 **Parameters:**
 
@@ -3450,7 +3450,6 @@ def get_array_metadata(self,
                        size=None,
                        dft_cell=None,
                        collapse=False,
-                       snap=False,
                        return_pw=False):
 ```
 
@@ -3460,9 +3459,9 @@ This routine provides geometric information useful for interpreting the arrays
 returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
 or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
 
-+ `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
++ `x,y,z` are tuples storing the $x,y,z$ coordinates of the points in the
   grid slice
-+ `w` is an array of the same dimensions as the array returned by
++ `w` is a NumPy array of the same dimensions as the array returned by
   `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule
   for integrating over the spatial region (with the points in the cubature rule
   being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is
@@ -3472,15 +3471,26 @@ or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, wher
 $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
 
 This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions
-in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an
+in which $\mathcal{V}$ has zero extent. If the $Q_n$ samples are stored in an
 array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is
 just one line: `np.sum(w*Q).`
 
 A convenience parameter `dft_cell` is provided as an alternative to `vol` or
-`center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object to define the
-region covered by the array. If the `dft` argument is provided then all other
-arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided,
-then the entire cell is used.
+`center`/`size`. Set `dft_cell` to a `dft_flux` or `dft_fields` object to define the
+region covered by the array. If the `dft_cell` argument is provided then all other
+arguments related to the spatial region (`vol`, `center`, and `size`) are ignored.
+If no arguments are provided, then the entire cell is used.
+
+By default, for empty dimensions of the grid slice `get_array_metadata` will return
+*two* elements corresponding to the nearest Yee grid points. Setting `collapse=True`
+will collapse the empty dimensions into a *single* element using a linear interpolation
+of the nearest Yee grid points. If the empty dimension of the grid slice exactly
+overlaps the Yee grid points, the array slice that is returned will *always* have
+a single element independent of the value for `collapse`.
+
+If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
+list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by
+default the return value is a 4-tuple `(x,y,z,w)`.
 
 </div>
 
