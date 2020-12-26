@@ -3157,7 +3157,7 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
 
-        _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, True)
+        _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True)
 
         dims = [s for s in dim_sizes if s != 0]
 

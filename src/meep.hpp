@@ -1642,22 +1642,13 @@ public:
   // if collapse_empty_dimensions==true, all such length-2
   // array dimensions are collaped to length 1 by doing the
   // interpolation before returning the array.
-  // currently, collapse_empty_dimensions is always false for the
-  // time-domain arrays returned by get_field_array and always
-  // true for the frequency-domain arrays returned by get_dft_array,
-  // so an alternative name for `collapse_empty_dimensions` would be
-  // `is_dft_array`.
   //
   // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
   int get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
                                  bool collapse_empty_dimensions = false,
-                                 bool snap_empty_dimensions = false, vec *min_max_loc = NULL,
+                                 vec *min_max_loc = NULL,
                                  void *data = 0, component cgrid = Centered);
-
-  int get_dft_array_dimensions(const volume &where, size_t dims[3], direction dirs[3]) {
-    return get_array_slice_dimensions(where, dims, dirs, true);
-  }
 
   // given a subvolume, return a column-major array containing
   // the given function of the field components in that subvolume
@@ -1695,10 +1686,9 @@ public:
                            field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
                            double frequency = 0);
 
-  /* fetch and return coordinates and integration weights of grid points covered by an array slice,
-   */
+  /* fetch and return coordinates and integration weights of grid points covered by an array slice, */
   /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ] */
-  std::vector<double> get_array_metadata(const volume &where, bool collapse_empty_dimensions = true);
+  std::vector<double> get_array_metadata(const volume &where);
 
   // step.cpp methods:
   double last_step_output_wall_time;

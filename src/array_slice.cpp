@@ -409,7 +409,7 @@ cdouble *array_to_all(cdouble *array, size_t array_size) {
 /* get_array_slice.                                            */
 /***************************************************************/
 int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
-                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
+                                       bool collapse_empty_dimensions,
                                        vec *min_max_loc, void *caller_data, component cgrid) {
   am_now_working_on(FieldOutput);
 
@@ -435,7 +435,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
 
   bool use_symmetry = true;
   loop_in_chunks(get_array_slice_dimensions_chunkloop, (void *)data, where, cgrid, use_symmetry,
-                 snap_empty_dimensions);
+                 false);
 
   am_now_working_on(MpiTime);
   data->min_corner = -max_to_all(-data->min_corner); // i.e., min_to_all
@@ -468,166 +468,6 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   finished_working();
 
   return rank;
-}
-
-/**********************************************************************/
-/* precisely one of fun, rfun, should be non-NULL                     */
-/**********************************************************************/
-void *fields::do_get_array_slice(const volume &where, std::vector<component> components,
-                                 field_function fun, field_rfunction rfun, void *fun_data,
-                                 void *vslice, double frequency) {
-  am_now_working_on(FieldOutput);
-
-  /***************************************************************/
-  /* call get_array_slice_dimensions to get slice dimensions and */
-  /* partially initialze an array_slice_data struct              */
-  /***************************************************************/
-  // by tradition, empty dimensions in time-domain field arrays are *not* collapsed
-  // TODO make this a caller-specifiable parameter to get_array_slice()?
-  bool collapse = false, snap = true;
-  if ((components.size() == 1) && (components[0] == NO_COMPONENT))
-    snap = false;
-  size_t dims[3];
-  direction dirs[3];
-  array_slice_data data;
-  get_array_slice_dimensions(where, dims, dirs, collapse, snap, 0, &data);
-  size_t slice_size = data.slice_size;
-
-  bool complex_data = (rfun == 0);
-  cdouble *zslice;
-  double *slice;
-  if (vslice == 0) {
-    if (complex_data) {
-      zslice = new cdouble[slice_size];
-      memset(zslice, 0, slice_size * sizeof(cdouble));
-      vslice = (void *)zslice;
-    }
-    else {
-      slice = new double[slice_size];
-      memset(slice, 0, slice_size * sizeof(double));
-      vslice = (void *)slice;
-    }
-  }
-
-  data.vslice = vslice;
-  data.fun = fun;
-  data.rfun = rfun;
-  data.fun_data = fun_data;
-  data.components = components;
-  data.frequency = frequency;
-  int num_components = components.size();
-  data.cS = new component[num_components];
-  data.ph = new cdouble[num_components];
-  data.fields = new cdouble[num_components];
-  data.offsets = new ptrdiff_t[2 * num_components];
-  memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
-
-  /* compute inverse-epsilon directions for computing Dielectric fields */
-  data.ninveps = 0;
-  bool needs_dielectric = false;
-  for (int i = 0; i < num_components; ++i)
-    if (components[i] == Dielectric) {
-      needs_dielectric = true;
-      break;
-    }
-  if (needs_dielectric) FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninveps == 3) abort("more than 3 field components??");
-      data.inveps_cs[data.ninveps] = c;
-      data.inveps_ds[data.ninveps] = component_direction(c);
-      ++data.ninveps;
-    }
-
-  /* compute inverse-mu directions for computing Permeability fields */
-  data.ninvmu = 0;
-  bool needs_permeability = false;
-  for (int i = 0; i < num_components; ++i)
-    if (components[i] == Permeability) {
-      needs_permeability = true;
-      break;
-    }
-  if (needs_permeability) FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninvmu == 3) abort("more than 3 field components??");
-      data.invmu_cs[data.ninvmu] = c;
-      data.invmu_ds[data.ninvmu] = component_direction(c);
-      ++data.ninvmu;
-    }
-
-  loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, snap);
-
-  /***************************************************************/
-  /*consolidate full array on all cores                          */
-  /***************************************************************/
-  vslice = (void *)array_to_all((double *)vslice, (complex_data ? 2 : 1) * slice_size);
-
-  delete[] data.offsets;
-  delete[] data.fields;
-  delete[] data.ph;
-  delete[] data.cS;
-  finished_working();
-
-  return vslice;
-}
-
-/***************************************************************/
-/* entry points to get_array_slice                             */
-/***************************************************************/
-double *fields::get_array_slice(const volume &where, std::vector<component> components,
-                                field_rfunction rfun, void *fun_data, double *slice,
-                                double frequency) {
-  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice,
-                                      frequency);
-}
-
-cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                         field_function fun, void *fun_data, cdouble *slice,
-                                         double frequency) {
-  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
-                                       frequency);
-}
-
-double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency) {
-  std::vector<component> components(1);
-  components[0] = c;
-  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice,
-                                      frequency);
-}
-
-double *fields::get_array_slice(const volume &where, derived_component c, double *slice,
-                                double frequency) {
-  int nfields;
-  component carray[12];
-  field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
-  std::vector<component> cs(carray, carray + nfields);
-  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice, frequency);
-}
-
-cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice,
-                                         double frequency) {
-  std::vector<component> components(1);
-  components[0] = c;
-  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
-                                       frequency);
-}
-
-cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
-                                  cdouble *slice) {
-
-  size_t dims[3];
-  direction dirs[3];
-  vec min_max_loc[2];
-  bool collapse = false, snap = false;
-  int rank = get_array_slice_dimensions(where, dims, dirs, collapse, snap, min_max_loc);
-  size_t slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
-
-  source_slice_data data;
-  data.source_component = source_slice_component;
-  data.slice_imin = gv.round_vec(min_max_loc[0]);
-  data.slice_imax = gv.round_vec(min_max_loc[1]);
-  data.slice = slice ? slice : new cdouble[slice_size];
-  if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
-
-  loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, true);
-  return array_to_all(data.slice, slice_size);
 }
 
 /**********************************************************************/
@@ -716,24 +556,185 @@ cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dir
   return (cdouble *)collapse_array((double *)array, rank, dims, dirs, where, 2);
 }
 
+/**********************************************************************/
+/* precisely one of fun, rfun, should be non-NULL                     */
+/**********************************************************************/
+void *fields::do_get_array_slice(const volume &where, std::vector<component> components,
+                                 field_function fun, field_rfunction rfun, void *fun_data,
+                                 void *vslice, double frequency) {
+  am_now_working_on(FieldOutput);
+
+  /***************************************************************/
+  /* call get_array_slice_dimensions to get slice dimensions and */
+  /* partially initialze an array_slice_data struct              */
+  /***************************************************************/
+  size_t dims[3];
+  direction dirs[3];
+  array_slice_data data;
+  int rank = get_array_slice_dimensions(where, dims, dirs, false, 0, &data);
+  size_t slice_size = data.slice_size;
+
+  bool complex_data = (rfun == 0);
+  cdouble *zslice;
+  double *slice;
+  void *vslice_uncollapsed;
+
+  if (complex_data) {
+    zslice = new cdouble[slice_size];
+    memset(zslice, 0, slice_size * sizeof(cdouble));
+    vslice_uncollapsed = (void *)zslice;
+    }
+  else {
+    slice = new double[slice_size];
+    memset(slice, 0, slice_size * sizeof(double));
+    vslice_uncollapsed = (void *)slice;
+  }
+
+  data.vslice = vslice_uncollapsed;
+  data.fun = fun;
+  data.rfun = rfun;
+  data.fun_data = fun_data;
+  data.components = components;
+  data.frequency = frequency;
+  int num_components = components.size();
+  data.cS = new component[num_components];
+  data.ph = new cdouble[num_components];
+  data.fields = new cdouble[num_components];
+  data.offsets = new ptrdiff_t[2 * num_components];
+  memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
+
+  /* compute inverse-epsilon directions for computing Dielectric fields */
+  data.ninveps = 0;
+  bool needs_dielectric = false;
+  for (int i = 0; i < num_components; ++i)
+    if (components[i] == Dielectric) {
+      needs_dielectric = true;
+      break;
+    }
+  if (needs_dielectric) FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
+      if (data.ninveps == 3) abort("more than 3 field components??");
+      data.inveps_cs[data.ninveps] = c;
+      data.inveps_ds[data.ninveps] = component_direction(c);
+      ++data.ninveps;
+    }
+
+  /* compute inverse-mu directions for computing Permeability fields */
+  data.ninvmu = 0;
+  bool needs_permeability = false;
+  for (int i = 0; i < num_components; ++i)
+    if (components[i] == Permeability) {
+      needs_permeability = true;
+      break;
+    }
+  if (needs_permeability) FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
+      if (data.ninvmu == 3) abort("more than 3 field components??");
+      data.invmu_cs[data.ninvmu] = c;
+      data.invmu_ds[data.ninvmu] = component_direction(c);
+      ++data.ninvmu;
+    }
+
+  loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, false);
+
+  vslice = collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, complex_data ? 2 : 1);
+
+  /***************************************************************/
+  /*consolidate full array on all cores                          */
+  /***************************************************************/
+  vslice = (void *)array_to_all((double *)vslice, (complex_data ? 2 : 1) * slice_size);
+
+  delete[] data.offsets;
+  delete[] data.fields;
+  delete[] data.ph;
+  delete[] data.cS;
+  finished_working();
+
+  return vslice;
+}
+
+/***************************************************************/
+/* entry points to get_array_slice                             */
+/***************************************************************/
+double *fields::get_array_slice(const volume &where, std::vector<component> components,
+                                field_rfunction rfun, void *fun_data, double *slice,
+                                double frequency) {
+  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice,
+                                      frequency);
+}
+
+cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
+                                         field_function fun, void *fun_data, cdouble *slice,
+                                         double frequency) {
+  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
+                                       frequency);
+}
+
+double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency) {
+  std::vector<component> components(1);
+  components[0] = c;
+  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice,
+                                      frequency);
+}
+
+double *fields::get_array_slice(const volume &where, derived_component c, double *slice,
+                                double frequency) {
+  int nfields;
+  component carray[12];
+  field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
+  std::vector<component> cs(carray, carray + nfields);
+  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice, frequency);
+}
+
+cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice,
+                                         double frequency) {
+  std::vector<component> components(1);
+  components[0] = c;
+  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
+                                       frequency);
+}
+
+cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
+                                  cdouble *slice) {
+
+  size_t dims[3];
+  direction dirs[3];
+  vec min_max_loc[2];
+  int rank = get_array_slice_dimensions(where, dims, dirs, false, min_max_loc);
+  size_t slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
+
+  source_slice_data data;
+  data.source_component = source_slice_component;
+  data.slice_imin = gv.round_vec(min_max_loc[0]);
+  data.slice_imax = gv.round_vec(min_max_loc[1]);
+  data.slice = slice ? slice : new cdouble[slice_size];
+  if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
+
+  loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
+
+  cdouble *slice_collapsed = collapse_array(data.slice, &rank, dims, dirs, where);
+  rank = get_array_slice_dimensions(where, dims, dirs, true);
+  slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
+
+  return array_to_all(slice_collapsed, slice_size);
+}
+
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-std::vector<double> fields::get_array_metadata(const volume &where, bool collapse_empty_dimensions) {
+std::vector<double> fields::get_array_metadata(const volume &where) {
 
   /* get extremal corners of subgrid and array of weights, collapsed if necessary */
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2]; // extremal points in subgrid
-  int rank = get_array_slice_dimensions(where, dims, dirs, false /*collapse_empty_dimensions*/,
-                                        false, min_max_loc);
+  int rank = get_array_slice_dimensions(where, dims, dirs, false, min_max_loc);
+
   int full_rank = rank;
   direction full_dirs[3];
   for (int fr = 0; fr < rank; fr++)
     full_dirs[fr] = dirs[fr];
 
   double *weights = get_array_slice(where, NO_COMPONENT);
-  if (collapse_empty_dimensions) weights = collapse_array(weights, &rank, dims, dirs, where);
+  weights = collapse_array(weights, &rank, dims, dirs, where);
 
   /* get length and endpoints of x,y,z tics arrays */
   size_t nxyz[3] = {1, 1, 1};
@@ -741,7 +742,7 @@ std::vector<double> fields::get_array_metadata(const volume &where, bool collaps
   for (int fr = 0, rr = 0; fr < full_rank; fr++) {
     direction d = full_dirs[fr];
     int nd = d - X;
-    if (where.in_direction(d) == 0.0 && collapse_empty_dimensions) {
+    if (where.in_direction(d) == 0.0) {
       xyzmin[nd] = xyzmax[nd] = where.in_direction_min(d);
       nxyz[nd] = 1;
     }
