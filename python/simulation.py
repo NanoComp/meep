@@ -3264,7 +3264,7 @@ class Simulation(object):
 
         For empty dimensions of the grid slice `get_array_metadata` will collapse
         the *two* elements corresponding to the nearest Yee grid points into a *single*
-        element using a linear interpolation.
+        element using linear interpolation.
 
         If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
         list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by

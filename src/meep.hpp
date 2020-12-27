@@ -1640,7 +1640,7 @@ public:
   // in the x direction (corresponding to the two grid points
   // nearest x0, from which fields at x0 are interpolated).
   // if collapse_empty_dimensions==true, all such length-2
-  // array dimensions are collaped to length 1 by doing the
+  // array dimensions are collapsed to length 1 by doing the
   // interpolation before returning the array.
   //
   // the `data` parameter is used internally in get_array_slice

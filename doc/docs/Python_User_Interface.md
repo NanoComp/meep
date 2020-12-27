@@ -3349,8 +3349,7 @@ def get_array(self,
               size=None,
               cmplx=None,
               arr=None,
-              frequency=0,
-              omega=0):
+              frequency=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3449,7 +3448,6 @@ def get_array_metadata(self,
                        center=None,
                        size=None,
                        dft_cell=None,
-                       collapse=False,
                        return_pw=False):
 ```
 
@@ -3481,12 +3479,9 @@ region covered by the array. If the `dft_cell` argument is provided then all oth
 arguments related to the spatial region (`vol`, `center`, and `size`) are ignored.
 If no arguments are provided, then the entire cell is used.
 
-By default, for empty dimensions of the grid slice `get_array_metadata` will return
-*two* elements corresponding to the nearest Yee grid points. Setting `collapse=True`
-will collapse the empty dimensions into a *single* element using a linear interpolation
-of the nearest Yee grid points. If the empty dimension of the grid slice exactly
-overlaps the Yee grid points, the array slice that is returned will *always* have
-a single element independent of the value for `collapse`.
+For empty dimensions of the grid slice `get_array_metadata` will collapse
+the *two* elements corresponding to the nearest Yee grid points into a *single*
+element using linear interpolation.
 
 If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
 list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by

@@ -637,11 +637,6 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 
   void *vslice_collapsed = (void *)collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, complex_data ? 2 : 1);
 
-  /***************************************************************/
-  /*consolidate full array on all cores                          */
-  /***************************************************************/
-  vslice_collapsed = (void *)array_to_all((double *)vslice_collapsed, (complex_data ? 2 : 1) * slice_size);
-
   rank = get_array_slice_dimensions(where, dims, dirs, true, 0, &data);
   slice_size = data.slice_size;
 
@@ -653,13 +648,17 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       zslice_collapsed = (cdouble *)vslice_collapsed;
       for (size_t i = 0; i < slice_size; ++i)
         zslice[i] = zslice_collapsed[i];
+      zslice = array_to_all(zslice, slice_size);
     } else {
       slice = (double *)vslice;
       slice_collapsed = (double *)vslice_collapsed;
       for (size_t i = 0; i < slice_size; ++i)
         slice[i] = slice_collapsed[i];
+      slice = array_to_all(slice, slice_size);
     }
   }
+
+  vslice_collapsed = (void *)array_to_all((double *)vslice_collapsed, (complex_data ? 2 : 1) * slice_size);
 
   delete[] data.offsets;
   delete[] data.fields;
@@ -723,7 +722,7 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   data.source_component = source_slice_component;
   data.slice_imin = gv.round_vec(min_max_loc[0]);
   data.slice_imax = gv.round_vec(min_max_loc[1]);
-  data.slice = slice ? slice : new cdouble[slice_size];
+  data.slice = new cdouble[slice_size];
   if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
@@ -732,12 +731,13 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   rank = get_array_slice_dimensions(where, dims, dirs, true);
   slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
-  slice_collapsed = array_to_all(slice_collapsed, slice_size);
-
   if (slice != 0) {
     for (size_t i = 0; i < slice_size; ++i)
       slice[i] = slice_collapsed[i];
+    slice = array_to_all(slice, slice_size);
   }
+
+  slice_collapsed = array_to_all(slice_collapsed, slice_size);
 
   return slice_collapsed;
 }
