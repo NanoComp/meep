@@ -68,15 +68,15 @@ bool equal_float(double *array1, double *array2, int N) {
 /* if the environment variable MEEP_ARRAY_METADATA_LOGFILE is  */
 /* set, more detailed output is written to that file.          */
 /***************************************************************/
-bool test_array_metadata(meep::fields &f, const volume &where, bool collapse_empty_dimensions) {
+bool test_array_metadata(meep::fields &f, const volume &where) {
   /***************************************************************/
   /* step 1: get coordinate grids and weights as reported by     */
   /* get_array_metadata                                          */
   /***************************************************************/
   size_t dims[3];
   direction dirs[3];
-  int rank = f.get_array_slice_dimensions(where, dims, dirs, collapse_empty_dimensions);
-  std::vector<double> xyzw = f.get_array_metadata(where, collapse_empty_dimensions);
+  int rank = f.get_array_slice_dimensions(where, dims, dirs);
+  std::vector<double> xyzw = f.get_array_metadata(where);
 
   // convert to a more convenient format
   int offset = 0;
@@ -225,8 +225,6 @@ int main(int argc, char *argv[]) {
 
   double res = 10.0;
 
-  bool collapse_empty_dimensions = false;
-
   // double-valued command-line parameters
   vector<const char *> parm_name;
   vector<double *> parm_adrs;
@@ -255,13 +253,6 @@ int main(int argc, char *argv[]) {
   /*- parse arguments --------------------------------------------*/
   /*--------------------------------------------------------------*/
   for (int narg = 1; narg < argc; narg++) {
-    // process boolean-valued parameters
-    if (!strcasecmp(argv[narg], "--collapse")) {
-      collapse_empty_dimensions = true;
-      printf("Collapsing empty array dimensions.\n");
-      continue;
-    }
-
     // process double-valued parameters
     size_t np;
     for (np = 0; np < parm_name.size(); np++)
@@ -327,6 +318,6 @@ int main(int argc, char *argv[]) {
     vmax.set_direction(Z, vzmax);
   }
   volume slice(vmin, vmax);
-  bool test_passed = test_array_metadata(f, slice, collapse_empty_dimensions);
+  bool test_passed = test_array_metadata(f, slice);
   return test_passed ? 0 : 1;
 }
