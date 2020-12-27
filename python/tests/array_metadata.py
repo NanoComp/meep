@@ -70,16 +70,13 @@ class TestArrayMetadata(unittest.TestCase):
                             boundary_layers=pml_layers)
 
         dft_obj = sim.add_dft_fields([mp.Ez], fcen, 0, 1, where=nonpml_vol)
-        dft_obj_yee = sim.add_dft_fields([mp.Hy], fcen, 0, 1, where=nonpml_vol,yee_grid=True)
         sim.run(until_after_sources=100)
 
-        Hy_yee_dims,_,_ = sim.get_array_slice_dimensions(mp.Hy, dft_obj.where)
-        
         Ez = sim.get_dft_array(dft_obj, mp.Ez, 0)
         (X,Y,Z,W) = sim.get_array_metadata(dft_cell=dft_obj)
-        Eps = sim.get_array(vol=nonpml_vol,component=mp.Dielectric)
+        Eps = sim.get_array(vol=nonpml_vol, component=mp.Dielectric)
         EpsE2 = np.real(Eps*np.conj(Ez)*Ez)
-        xm, ym = np.meshgrid(X,Y)
+        xm, ym = np.meshgrid(X, Y)
         vec_func_sum = np.sum(W*(xm**2 + 2*ym**2))
         pulse_modal_volume = np.sum(W*EpsE2)/np.max(EpsE2) * vec_func_sum
 

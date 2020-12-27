@@ -3094,7 +3094,7 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, frequency=0, omega=0):
+    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, frequency=0):
         """
         Takes as input a subregion of the cell and the field/material component. The
         method returns a NumPy array containing values of the field/material at the
@@ -3160,10 +3160,6 @@ class Simulation(object):
         _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True)
 
         dims = [s for s in dim_sizes if s != 0]
-
-        if omega != 0:
-            frequency = omega
-            warnings.warn("get_array: omega has been deprecated; use frequency instead", RuntimeWarning)
 
         if cmplx is None:
             cmplx = frequency != 0 or (component < mp.Dielectric and not self.fields.is_real)
@@ -3231,14 +3227,14 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, True)
+        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(dims, dtype=np.complex128)
-        self.fields.get_source_slice(v, component ,arr)
+        self.fields.get_source_slice(v, component, arr)
         return arr
 
     def get_array_metadata(self, vol=None, center=None, size=None, dft_cell=None,
-                           collapse=False, return_pw=False):
+                           return_pw=False):
         """
         This routine provides geometric information useful for interpreting the arrays
         returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
@@ -3266,31 +3262,28 @@ class Simulation(object):
         arguments related to the spatial region (`vol`, `center`, and `size`) are ignored.
         If no arguments are provided, then the entire cell is used.
 
-        By default, for empty dimensions of the grid slice `get_array_metadata` will return
-        *two* elements corresponding to the nearest Yee grid points. Setting `collapse=True`
-        will collapse the empty dimensions into a *single* element using a linear interpolation
-        of the nearest Yee grid points. If the empty dimension of the grid slice exactly
-        overlaps the Yee grid points, the array slice that is returned will *always* have
-        a single element independent of the value for `collapse`.
+        For empty dimensions of the grid slice `get_array_metadata` will collapse
+        the *two* elements corresponding to the nearest Yee grid points into a *single*
+        element using a linear interpolation.
 
         If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
         list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by
         default the return value is a 4-tuple `(x,y,z,w)`.
         """
         if dft_cell:
-            vol, collapse = dft_cell.where, True
+            vol = dft_cell.where
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
         else:
             v = self._volume_from_kwargs(vol, center, size)
-        xyzw_vector = self.fields.get_array_metadata(v, collapse)
+        xyzw_vector = self.fields.get_array_metadata(v)
         offset, tics = 0, []
         for n in range(3):
             N = int(xyzw_vector[offset])
             tics.append( xyzw_vector[offset+1:offset+1+N] )
             offset += 1+N
-        wshape=[len(t) for t in tics if len(t)>1]
-        weights=np.reshape(xyzw_vector[offset:],wshape)
+        wshape = [len(t) for t in tics if len(t)>1]
+        weights = np.reshape(xyzw_vector[offset:], wshape)
         if return_pw:
             points=[ mp.Vector3(x,y,z) for x in tics[0] for y in tics[1] for z in tics[2] ]
             return points,weights
@@ -3312,7 +3305,7 @@ class Simulation(object):
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
         corners = []
-        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, False, False, component,corners)
+        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True, component, corners)
         dim_sizes[dim_sizes==0] = 1
         min_corner = corners[0]
         max_corner = corners[1]

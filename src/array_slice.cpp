@@ -635,12 +635,31 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 
   loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, false);
 
-  vslice = collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, complex_data ? 2 : 1);
+  void *vslice_collapsed = (void *)collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, complex_data ? 2 : 1);
 
   /***************************************************************/
   /*consolidate full array on all cores                          */
   /***************************************************************/
-  vslice = (void *)array_to_all((double *)vslice, (complex_data ? 2 : 1) * slice_size);
+  vslice_collapsed = (void *)array_to_all((double *)vslice_collapsed, (complex_data ? 2 : 1) * slice_size);
+
+  rank = get_array_slice_dimensions(where, dims, dirs, true, 0, &data);
+  slice_size = data.slice_size;
+
+  cdouble *zslice_collapsed = 0;
+  double *slice_collapsed = 0;
+  if (vslice != 0) {
+    if (complex_data) {
+      zslice = (cdouble *)vslice;
+      zslice_collapsed = (cdouble *)vslice_collapsed;
+      for (size_t i = 0; i < slice_size; ++i)
+        zslice[i] = zslice_collapsed[i];
+    } else {
+      slice = (double *)vslice;
+      slice_collapsed = (double *)vslice_collapsed;
+      for (size_t i = 0; i < slice_size; ++i)
+        slice[i] = slice_collapsed[i];
+    }
+  }
 
   delete[] data.offsets;
   delete[] data.fields;
@@ -648,7 +667,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   delete[] data.cS;
   finished_working();
 
-  return vslice;
+  return vslice_collapsed;
 }
 
 /***************************************************************/
@@ -694,7 +713,6 @@ cdouble *fields::get_complex_array_slice(const volume &where, component c, cdoub
 
 cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
                                   cdouble *slice) {
-
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];
@@ -714,7 +732,14 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   rank = get_array_slice_dimensions(where, dims, dirs, true);
   slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
-  return array_to_all(slice_collapsed, slice_size);
+  slice_collapsed = array_to_all(slice_collapsed, slice_size);
+
+  if (slice != 0) {
+    for (size_t i = 0; i < slice_size; ++i)
+      slice[i] = slice_collapsed[i];
+  }
+
+  return slice_collapsed;
 }
 
 /***************************************************************/
@@ -726,7 +751,7 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2]; // extremal points in subgrid
-  int rank = get_array_slice_dimensions(where, dims, dirs, false, min_max_loc);
+  int rank = get_array_slice_dimensions(where, dims, dirs, true, min_max_loc);
 
   int full_rank = rank;
   direction full_dirs[3];
@@ -734,7 +759,6 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
     full_dirs[fr] = dirs[fr];
 
   double *weights = get_array_slice(where, NO_COMPONENT);
-  weights = collapse_array(weights, &rank, dims, dirs, where);
 
   /* get length and endpoints of x,y,z tics arrays */
   size_t nxyz[3] = {1, 1, 1};
