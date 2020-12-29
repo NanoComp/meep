@@ -3111,7 +3111,7 @@ class Simulation(object):
           supplying a `Volume`.
 
         + `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`,
-          `mp.Dielectric`, etc). Defaults to `mp.Ez`.
+          `mp.Dielectric`, etc). Defaults to `None`.
 
         + `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return
           real-valued data (default).
@@ -3194,9 +3194,9 @@ class Simulation(object):
         + `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
           obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
 
-        + `component`: a field component (e.g., `mp.Ez`)
+        + `component`: a field component (e.g., `mp.Ez`).
 
-        + `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`,
+        + `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
           `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
         """
@@ -3221,6 +3221,7 @@ class Simulation(object):
         Return an array of complex values of the [source](#source) amplitude for
         `component` over the given `vol` or `center`/`size`. The array has the same
         dimensions as that returned by [`get_array`](#array-slices).
+        Not supported for [cylindrical coordinates](Python_Tutorials/Cylindrical_Coordinates.md).
         """
         if vol is None and center is None and size is None:
             v = self.fields.total_volume()
