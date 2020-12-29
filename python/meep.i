@@ -1471,6 +1471,18 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %template(IntVector) std::vector<int>;
 %template(DoubleVector) std::vector<double>;
 
+// use NumPy arrays for returning common std::vector types:
+%typemap(out) std::vector<double> {
+    npy_intp vec_len = (npy_intp) $1.size();
+    $result = PyArray_SimpleNew(1, &vec_len, NPY_DOUBLE);
+    memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(double));
+}
+%typemap(out) std::vector<int> {
+    npy_intp vec_len = (npy_intp) $1.size();
+    $result = PyArray_SimpleNew(1, &vec_len, NPY_INT);
+    memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(int));
+}
+
 %include "vec.i"
 %include "meep.hpp"
 %include "meep/mympi.hpp"
@@ -1481,6 +1493,12 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %include "std_complex.i"
 %template(ComplexVector) std::vector<std::complex<double> >;
+
+%typemap(out) std::vector<std::complex<double> > {
+    npy_intp vec_len = (npy_intp) $1.size();
+    $result = PyArray_SimpleNew(1, &vec_len, NPY_COMPLEX128);
+    memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(double) * 2);
+}
 
 std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ);
 
