@@ -7,6 +7,7 @@ import jax
 from jax import numpy as npj
 import meep as mp
 from scipy import special
+import jax.numpy.fft as fft
 
 
 def atleast_3d(ary):
@@ -39,18 +40,41 @@ def meep_filter(x,kernel):
     '''
     General convolution for 1D, 2D, and 3D design spaces.
 
-    x and kernel must have the shape you wish to filter.
+    Currently, Jax's XLA convolution kernel *always* uses 
+    the overlap-add method, which is very costly for 
+    the large arrays we typically convolve.
+
+    In the meantime, we can do a manual n-dimensional
+    FFT (also using jax). Note, however, that Jax
+    doesn't support automatic padding (like numpy does)
+    so we need to do the padding ourselves (in addition
+    to the edge padding we use for boundary conditions).
+
+    Note that we need to fftshift the output since we 
+    padded *both* sides of our signals.
+
+    Parameters
+    ----------
+    x : array_like (1D, 2D, or 3D)
+        Input array to be filtered.
+    kernel : array_like (1D, 2D, or 3D)
+        Filter kernel (before the DFT). Must be same size as `x`
+    
+    Returns
+    -------
+    array_like (1D, 2D, or 3D)
+        The output of the N-D convolution.
     '''
     # store shapes
     x_shape = x.shape; k_shape = kernel.shape
-
+    
     # edge pad
     npad = *((s,s) for s in x_shape),
     kernelp = npj.pad(kernel,npad,mode='edge')
     xp = npj.pad(x,npad,mode='edge')
     
     # convolve
-    yp = jax.scipy.signal.convolve(xp,kernelp,mode='same')
+    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * fft.fftn(kernelp))).real
     
     # remove paddings
     return _centered(yp,x_shape)
