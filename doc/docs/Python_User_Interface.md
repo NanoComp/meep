@@ -3349,7 +3349,8 @@ def get_array(self,
               size=None,
               cmplx=None,
               arr=None,
-              frequency=0):
+              frequency=0,
+              snap=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3381,7 +3382,15 @@ current simulation time.
   fetching the same slice repeatedly at different times).
 
 + `frequency`: optional frequency point over which the average eigenvalue of the
-  dielectric and permeability tensors are evaluated (defaults to 0).
+  $\varepsilon$ and $\mu$ tensors are evaluated (defaults to 0).
+
++ `snap`: By default, the elements of the grid slice are obtained using a bilinear
+  interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
+  are "collapsed" into a single element. However, if `snap` is set to `True`, this
+  interpolation behavior is disabled and the grid slice is instead "snapped"
+  everywhere to the nearest grid point. (Empty slice dimensions are still of size
+  one.) This feature is mainly useful for comparing results with the
+  [`output_` routines](#output-functions) (e.g., `output_epsilon`, `output_efield_z`, etc.).
 
 For convenience, the following wrappers for `get_array` over the entire cell are
 available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`,
@@ -3389,7 +3398,8 @@ available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`,
 `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`,
 `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent
 with the fields (real or complex). The routines `get_epsilon()` and `get_mu()`
-accept the optional `frequency` parameter (defaults to 0).
+accept the optional argument `frequency` (defaults to 0) and all routines accept
+`snap` (defaults to `False`).
 
 **Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`,
 etc. use as default `size=meep.Simulation.fields.total_volume()` which for
@@ -3457,7 +3467,7 @@ This routine provides geometric information useful for interpreting the arrays
 returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
 or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
 
-+ `x,y,z` are tuples storing the $x,y,z$ coordinates of the points in the
++ `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
   grid slice
 + `w` is a NumPy array of the same dimensions as the array returned by
   `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule

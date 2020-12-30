@@ -224,13 +224,13 @@ int main(int argc, char *argv[]) {
     //
     rank = f.get_array_slice_dimensions(v1d, dims1D, dirs1D, true);
     if (rank != 1 || dims1D[0] != NX) abort("incorrect dimensions for 1D slice");
-    cdouble *slice1d = f.get_complex_array_slice(v1d, Hz);
+    cdouble *slice1d = f.get_complex_array_slice(v1d, Hz, 0, 0, true);
     double RelErr1D = Compare(slice1d, file_slice1d, NX, "Hz_1d");
     master_printf("1D: rel error %e\n", RelErr1D);
 
     rank = f.get_array_slice_dimensions(v2d, dims2D, dirs2D, true);
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) abort("incorrect dimensions for 2D slice");
-    double *slice2d = f.get_array_slice(v2d, Sy);
+    double *slice2d = f.get_array_slice(v2d, Sy, 0, 0, true);
     double RelErr2D = Compare(slice2d, file_slice2d, NX * NY, "Sy_2d");
     master_printf("2D: rel error %e\n", RelErr2D);
 

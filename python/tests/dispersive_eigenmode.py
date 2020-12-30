@@ -63,7 +63,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
         sim.init_sim()
         
         # Check to make sure the get_slice routine is working with frequency
-        n_slice = np.sqrt(np.max(sim.get_epsilon(frequency)))
+        n_slice = np.sqrt(np.max(sim.get_epsilon(frequency=frequency,snap=True)))
         self.assertAlmostEqual(n,n_slice, places=4)
 
         # Check to make sure h5 output is working with frequency

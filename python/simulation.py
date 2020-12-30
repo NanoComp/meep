@@ -3094,7 +3094,7 @@ class Simulation(object):
         cmd = re.sub(r'\$EPS', self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
-    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, frequency=0):
+    def get_array(self, component=None, vol=None, center=None, size=None, cmplx=None, arr=None, frequency=0, snap=False):
         """
         Takes as input a subregion of the cell and the field/material component. The
         method returns a NumPy array containing values of the field/material at the
@@ -3123,7 +3123,15 @@ class Simulation(object):
           fetching the same slice repeatedly at different times).
 
         + `frequency`: optional frequency point over which the average eigenvalue of the
-          dielectric and permeability tensors are evaluated (defaults to 0).
+          $\\varepsilon$ and $\\mu$ tensors are evaluated (defaults to 0).
+
+        + `snap`: By default, the elements of the grid slice are obtained using a bilinear
+          interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
+          are "collapsed" into a single element. However, if `snap` is set to `True`, this
+          interpolation behavior is disabled and the grid slice is instead "snapped"
+          everywhere to the nearest grid point. (Empty slice dimensions are still of size
+          one.) This feature is mainly useful for comparing results with the
+          [`output_` routines](#output-functions) (e.g., `output_epsilon`, `output_efield_z`, etc.).
 
         For convenience, the following wrappers for `get_array` over the entire cell are
         available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`,
@@ -3131,7 +3139,8 @@ class Simulation(object):
         `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`,
         `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent
         with the fields (real or complex). The routines `get_epsilon()` and `get_mu()`
-        accept the optional `frequency` parameter (defaults to 0).
+        accept the optional argument `frequency` (defaults to 0) and all routines accept
+        `snap` (defaults to `False`).
 
         **Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`,
         etc. use as default `size=meep.Simulation.fields.total_volume()` which for
@@ -3179,9 +3188,9 @@ class Simulation(object):
             arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
         if np.iscomplexobj(arr):
-            self.fields.get_complex_array_slice(v, component, arr, frequency)
+            self.fields.get_complex_array_slice(v, component, arr, frequency, snap)
         else:
-            self.fields.get_array_slice(v, component, arr, frequency)
+            self.fields.get_array_slice(v, component, arr, frequency, snap)
 
         return arr
 
@@ -3241,7 +3250,7 @@ class Simulation(object):
         returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
         or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
 
-        + `x,y,z` are tuples storing the $x,y,z$ coordinates of the points in the
+        + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
           grid slice
         + `w` is a NumPy array of the same dimensions as the array returned by
           `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule
@@ -3288,7 +3297,7 @@ class Simulation(object):
         if return_pw:
             points=[ mp.Vector3(x,y,z) for x in tics[0] for y in tics[1] for z in tics[2] ]
             return points,weights
-        return tics + [weights]
+        return tuple(tics) + (weights,)
 
     def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
         """
@@ -3671,153 +3680,150 @@ class Simulation(object):
                 fname += '.csv'
             self.fields.output_times(fname)
 
-    def get_epsilon(self,frequency=0,omega=0):
-        if omega != 0:
-            frequency = omega
-            warnings.warn("get_epsilon: omega has been deprecated; use frequency instead", RuntimeWarning)
-        return self.get_array(component=mp.Dielectric,frequency=frequency)
+    def get_epsilon(self,frequency=0,snap=False):
+        return self.get_array(component=mp.Dielectric,frequency=frequency,snap=snap)
 
-    def get_mu(self):
-        return self.get_array(component=mp.Permeability)
+    def get_mu(self,frequency=0,snap=False):
+        return self.get_array(component=mp.Permeability,frequency=frequency,snap=snap)
 
-    def get_hpwr(self):
-        return self.get_array(component=mp.H_EnergyDensity)
+    def get_hpwr(self,snap=False):
+        return self.get_array(component=mp.H_EnergyDensity,snap=snap)
 
-    def get_dpwr(self):
-        return self.get_array(component=mp.D_EnergyDensity)
+    def get_dpwr(self,snap=False):
+        return self.get_array(component=mp.D_EnergyDensity,snap=snap)
 
-    def get_tot_pwr(self):
-        return self.get_array(component=mp.EnergyDensity)
+    def get_tot_pwr(self,snap=False):
+        return self.get_array(component=mp.EnergyDensity,snap=snap)
 
-    def get_hfield(self):
+    def get_hfield(self,snap=False):
         if self.is_cylindrical:
-            r = self.get_array(mp.Hr, cmplx=not self.fields.is_real)
-            p = self.get_array(mp.Hp, cmplx=not self.fields.is_real)
+            r = self.get_array(mp.Hr, cmplx=not self.fields.is_real, snap=snap)
+            p = self.get_array(mp.Hp, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Hx, cmplx=not self.fields.is_real)
-            y = self.get_array(mp.Hy, cmplx=not self.fields.is_real)
-            z = self.get_array(mp.Hz, cmplx=not self.fields.is_real)
+            x = self.get_array(mp.Hx, cmplx=not self.fields.is_real, snap=snap)
+            y = self.get_array(mp.Hy, cmplx=not self.fields.is_real, snap=snap)
+            z = self.get_array(mp.Hz, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([x, y, z], axis=-1)
 
-    def get_hfield_x(self):
-        return self.get_array(mp.Hx, cmplx=not self.fields.is_real)
+    def get_hfield_x(self,snap=False):
+        return self.get_array(mp.Hx, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_hfield_y(self):
-        return self.get_array(mp.Hy, cmplx=not self.fields.is_real)
+    def get_hfield_y(self,snap=False):
+        return self.get_array(mp.Hy, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_hfield_z(self):
-        return self.get_array(mp.Hz, cmplx=not self.fields.is_real)
+    def get_hfield_z(self,snap=False):
+        return self.get_array(mp.Hz, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_hfield_r(self):
-        return self.get_array(mp.Hr, cmplx=not self.fields.is_real)
+    def get_hfield_r(self,snap=False):
+        return self.get_array(mp.Hr, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_hfield_p(self):
-        return self.get_array(mp.Hp, cmplx=not self.fields.is_real)
+    def get_hfield_p(self,snap=False):
+        return self.get_array(mp.Hp, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_bfield(self):
+    def get_bfield(self,snap=False):
         if self.is_cylindrical:
-            r = self.get_array(mp.Br, cmplx=not self.fields.is_real)
-            p = self.get_array(mp.Bp, cmplx=not self.fields.is_real)
+            r = self.get_array(mp.Br, cmplx=not self.fields.is_real, snap=snap)
+            p = self.get_array(mp.Bp, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Bx, cmplx=not self.fields.is_real)
-            y = self.get_array(mp.By, cmplx=not self.fields.is_real)
-            z = self.get_array(mp.Bz, cmplx=not self.fields.is_real)
+            x = self.get_array(mp.Bx, cmplx=not self.fields.is_real, snap=snap)
+            y = self.get_array(mp.By, cmplx=not self.fields.is_real, snap=snap)
+            z = self.get_array(mp.Bz, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([x, y, z], axis=-1)
 
-    def get_bfield_x(self):
-        return self.get_array(mp.Bx, cmplx=not self.fields.is_real)
+    def get_bfield_x(self,snap=False):
+        return self.get_array(mp.Bx, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_bfield_y(self):
-        return self.get_array(mp.By, cmplx=not self.fields.is_real)
+    def get_bfield_y(self,snap=False):
+        return self.get_array(mp.By, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_bfield_z(self):
-        return self.get_array(mp.Bz, cmplx=not self.fields.is_real)
+    def get_bfield_z(self,snap=False):
+        return self.get_array(mp.Bz, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_bfield_r(self):
-        return self.get_array(mp.Br, cmplx=not self.fields.is_real)
+    def get_bfield_r(self,snap=False):
+        return self.get_array(mp.Br, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_bfield_p(self):
-        return self.get_array(mp.Bp, cmplx=not self.fields.is_real)
+    def get_bfield_p(self,snap=False):
+        return self.get_array(mp.Bp, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_efield(self):
+    def get_efield(self,snap=False):
         if self.is_cylindrical:
-            r = self.get_array(mp.Er, cmplx=not self.fields.is_real)
-            p = self.get_array(mp.Ep, cmplx=not self.fields.is_real)
+            r = self.get_array(mp.Er, cmplx=not self.fields.is_real, snap=snap)
+            p = self.get_array(mp.Ep, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Ex, cmplx=not self.fields.is_real)
-            y = self.get_array(mp.Ey, cmplx=not self.fields.is_real)
-            z = self.get_array(mp.Ez, cmplx=not self.fields.is_real)
+            x = self.get_array(mp.Ex, cmplx=not self.fields.is_real, snap=snap)
+            y = self.get_array(mp.Ey, cmplx=not self.fields.is_real, snap=snap)
+            z = self.get_array(mp.Ez, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([x, y, z], axis=-1)
 
-    def get_efield_x(self):
-        return self.get_array(mp.Ex, cmplx=not self.fields.is_real)
+    def get_efield_x(self,snap=False):
+        return self.get_array(mp.Ex, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_efield_y(self):
-        return self.get_array(mp.Ey, cmplx=not self.fields.is_real)
+    def get_efield_y(self,snap=False):
+        return self.get_array(mp.Ey, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_efield_z(self):
-        return self.get_array(mp.Ez, cmplx=not self.fields.is_real)
+    def get_efield_z(self,snap=False):
+        return self.get_array(mp.Ez, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_efield_r(self):
-        return self.get_array(mp.Er, cmplx=not self.fields.is_real)
+    def get_efield_r(self,snap=False):
+        return self.get_array(mp.Er, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_efield_p(self):
-        return self.get_array(mp.Ep, cmplx=not self.fields.is_real)
+    def get_efield_p(self,snap=False):
+        return self.get_array(mp.Ep, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_dfield(self):
+    def get_dfield(self,snap=False):
         if self.is_cylindrical:
-            r = self.get_array(mp.Dr, cmplx=not self.fields.is_real)
-            p = self.get_array(mp.Dp, cmplx=not self.fields.is_real)
+            r = self.get_array(mp.Dr, cmplx=not self.fields.is_real, snap=snap)
+            p = self.get_array(mp.Dp, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Dx, cmplx=not self.fields.is_real)
-            y = self.get_array(mp.Dy, cmplx=not self.fields.is_real)
-            z = self.get_array(mp.Dz, cmplx=not self.fields.is_real)
+            x = self.get_array(mp.Dx, cmplx=not self.fields.is_real, snap=snap)
+            y = self.get_array(mp.Dy, cmplx=not self.fields.is_real, snap=snap)
+            z = self.get_array(mp.Dz, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([x, y, z], axis=-1)
 
-    def get_dfield_x(self):
-        return self.get_array(mp.Dx, cmplx=not self.fields.is_real)
+    def get_dfield_x(self,snap=False):
+        return self.get_array(mp.Dx, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_dfield_y(self):
-        return self.get_array(mp.Dy, cmplx=not self.fields.is_real)
+    def get_dfield_y(self,snap=False):
+        return self.get_array(mp.Dy, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_dfield_z(self):
-        return self.get_array(mp.Dz, cmplx=not self.fields.is_real)
+    def get_dfield_z(self,snap=False):
+        return self.get_array(mp.Dz, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_dfield_r(self):
-        return self.get_array(mp.Dr, cmplx=not self.fields.is_real)
+    def get_dfield_r(self,snap=False):
+        return self.get_array(mp.Dr, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_dfield_p(self):
-        return self.get_array(mp.Dp, cmplx=not self.fields.is_real)
+    def get_dfield_p(self,snap=False):
+        return self.get_array(mp.Dp, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_sfield(self):
+    def get_sfield(self,snap=False):
         if self.is_cylindrical:
-            r = self.get_array(mp.Sr, cmplx=not self.fields.is_real)
-            p = self.get_array(mp.Sp, cmplx=not self.fields.is_real)
+            r = self.get_array(mp.Sr, cmplx=not self.fields.is_real, snap=snap)
+            p = self.get_array(mp.Sp, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([r, p], axis=-1)
         else:
-            x = self.get_array(mp.Sx, cmplx=not self.fields.is_real)
-            y = self.get_array(mp.Sy, cmplx=not self.fields.is_real)
-            z = self.get_array(mp.Sz, cmplx=not self.fields.is_real)
+            x = self.get_array(mp.Sx, cmplx=not self.fields.is_real, snap=snap)
+            y = self.get_array(mp.Sy, cmplx=not self.fields.is_real, snap=snap)
+            z = self.get_array(mp.Sz, cmplx=not self.fields.is_real, snap=snap)
             return np.stack([x, y, z], axis=-1)
 
-    def get_sfield_x(self):
-        return self.get_array(mp.Sx, cmplx=not self.fields.is_real)
+    def get_sfield_x(self,snap=False):
+        return self.get_array(mp.Sx, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_sfield_y(self):
-        return self.get_array(mp.Sy, cmplx=not self.fields.is_real)
+    def get_sfield_y(self,snap=False):
+        return self.get_array(mp.Sy, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_sfield_z(self):
-        return self.get_array(mp.Sz, cmplx=not self.fields.is_real)
+    def get_sfield_z(self,snap=False):
+        return self.get_array(mp.Sz, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_sfield_r(self):
-        return self.get_array(mp.Sr, cmplx=not self.fields.is_real)
+    def get_sfield_r(self,snap=False):
+        return self.get_array(mp.Sr, cmplx=not self.fields.is_real, snap=snap)
 
-    def get_sfield_p(self):
-        return self.get_array(mp.Sp, cmplx=not self.fields.is_real)
+    def get_sfield_p(self,snap=False):
+        return self.get_array(mp.Sp, cmplx=not self.fields.is_real, snap=snap)
 
 
     def plot2D(self, ax=None, output_plane=None, fields=None, labels=False,

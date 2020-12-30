@@ -112,7 +112,7 @@ TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrica
 if WITH_MPI
   LOG_COMPILER = $(RUNCODE)
 else
-  TESTS += cyl-ellipsoid-ll
+  TESTS += cyl-ellipsoid-ll array-slice-ll
 endif
 
 # Note: this requires GNU make

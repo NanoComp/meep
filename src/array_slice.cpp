@@ -76,6 +76,7 @@ typedef struct {
   component invmu_cs[3];
   direction invmu_ds[3];
 
+  bool snap;
 } array_slice_data;
 
 #define UNUSED(x) (void)x // silence compiler warnings
@@ -332,7 +333,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           frequency));
           if (abs(tr) == 0.0) tr += 4.0; // default inveps == 1
         }
-        fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0) * (4.0 * data->ninveps) / tr;
+        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0)) * (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
         complex<double> tr(0.0, 0.0);
@@ -344,7 +345,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           frequency));
           if (abs(tr) == 0.0) tr += 4.0; // default invmu == 1
         }
-        fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0) * (4.0 * data->ninvmu) / tr;
+        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0)) * (4.0 * data->ninvmu) / tr;
       }
       else {
         double f[2];
@@ -355,7 +356,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                            fc->f[cS[i]][k][idx + off[2 * i] + off[2 * i + 1]]);
           else
             f[k] = 0;
-        fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0) * complex<double>(f[0], f[1]) * ph[i];
+        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0)) * complex<double>(f[0], f[1]) * ph[i];
       }
     }
 
@@ -561,7 +562,7 @@ cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dir
 /**********************************************************************/
 void *fields::do_get_array_slice(const volume &where, std::vector<component> components,
                                  field_function fun, field_rfunction rfun, void *fun_data,
-                                 void *vslice, double frequency) {
+                                 void *vslice, double frequency, bool snap) {
   am_now_working_on(FieldOutput);
 
   /***************************************************************/
@@ -573,7 +574,6 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   array_slice_data data;
   int rank = get_array_slice_dimensions(where, dims, dirs, false, 0, &data);
   size_t slice_size = data.slice_size;
-
   bool complex_data = (rfun == 0);
   cdouble *zslice;
   double *slice;
@@ -591,6 +591,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   }
 
   data.vslice = vslice_uncollapsed;
+  data.snap = snap;
   data.fun = fun;
   data.rfun = rfun;
   data.fun_data = fun_data;
@@ -674,40 +675,42 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 /***************************************************************/
 double *fields::get_array_slice(const volume &where, std::vector<component> components,
                                 field_rfunction rfun, void *fun_data, double *slice,
-                                double frequency) {
+                                double frequency, bool snap) {
   return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice,
-                                      frequency);
+                                      frequency, snap);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
                                          field_function fun, void *fun_data, cdouble *slice,
-                                         double frequency) {
+                                         double frequency, bool snap) {
   return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
-                                       frequency);
+                                       frequency, snap);
 }
 
-double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency) {
+double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency,
+                                bool snap) {
   std::vector<component> components(1);
   components[0] = c;
   return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice,
-                                      frequency);
+                                      frequency, snap);
 }
 
 double *fields::get_array_slice(const volume &where, derived_component c, double *slice,
-                                double frequency) {
+                                double frequency, bool snap) {
   int nfields;
   component carray[12];
   field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
   std::vector<component> cs(carray, carray + nfields);
-  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice, frequency);
+  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice,
+                                      frequency, snap);
 }
 
 cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice,
-                                         double frequency) {
+                                         double frequency, bool snap) {
   std::vector<component> components(1);
   components[0] = c;
   return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
-                                       frequency);
+                                       frequency, snap);
 }
 
 cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
