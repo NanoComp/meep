@@ -2124,6 +2124,7 @@ class Simulation(object):
         """
         if not dname:
             dname = self.get_filename_prefix() + '-out'
+            self.filename_prefix = ''
 
         closure = {'trashed': False}
 
@@ -2139,8 +2140,7 @@ class Simulation(object):
 
         if self.fields is not None:
             hook()
-        self.filename_prefix = None
-
+       
         return dname
 
     def _run_until(self, cond, step_funcs):
@@ -2638,7 +2638,7 @@ class Simulation(object):
         loaded. This means that they will be *subtracted* from any future field Fourier
         transforms that are accumulated.
         """
-        self.load_near2far(fname, n2f)
+        self.load_near2far(fname, near2far)
         near2far.scale_dfts(-1.0)
 
     def get_near2far_data(self, near2far):
