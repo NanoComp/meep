@@ -575,20 +575,10 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   int rank = get_array_slice_dimensions(where, dims, dirs, false, snap, 0, &data);
   size_t slice_size = data.slice_size;
   bool complex_data = (rfun == 0);
-  cdouble *zslice;
-  double *slice;
+  int elem_size = complex_data ? 2 : 1;
   void *vslice_uncollapsed;
 
-  if (complex_data) {
-    zslice = new cdouble[slice_size];
-    memset(zslice, 0, slice_size * sizeof(cdouble));
-    vslice_uncollapsed = (void *)zslice;
-    }
-  else {
-    slice = new double[slice_size];
-    memset(slice, 0, slice_size * sizeof(double));
-    vslice_uncollapsed = (void *)slice;
-  }
+  vslice_uncollapsed = memset(new double[slice_size * elem_size], 0, slice_size * elem_size * sizeof(double));
 
   data.vslice = vslice_uncollapsed;
   data.snap = snap;
@@ -636,36 +626,20 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 
   loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, snap);
 
-  void *vslice_collapsed = 0;
   if (!snap) {
-    vslice_collapsed = (void *)collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, complex_data ? 2 : 1);
-
+    double *slice = collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, elem_size);
     rank = get_array_slice_dimensions(where, dims, dirs, true, false, 0, &data);
     slice_size = data.slice_size;
+    vslice_uncollapsed = (double*) slice;
   }
-
-  cdouble *zslice_ref = 0;
-  double *slice_ref = 0;
-  if (vslice != 0) {
-    if (complex_data) {
-      zslice = (cdouble *)vslice;
-      zslice_ref = (cdouble *) (snap ? vslice_uncollapsed : vslice_collapsed);
-      for (size_t i = 0; i < slice_size; ++i)
-        zslice[i] = zslice_ref[i];
-      zslice = array_to_all(zslice, slice_size);
-    } else {
-      slice = (double *)vslice;
-      slice_ref = (double *) (snap ? vslice_uncollapsed : vslice_collapsed);
-      for (size_t i = 0; i < slice_size; ++i)
-        slice[i] = slice_ref[i];
-      slice = array_to_all(slice, slice_size);
-    }
+  if (vslice) {
+    memcpy(vslice, vslice_uncollapsed, slice_size * elem_size * sizeof(double));
+    delete[] (double*) vslice_uncollapsed;
   }
-
-  if (snap)
-    vslice_uncollapsed = (void *)array_to_all((double *)vslice_uncollapsed, (complex_data ? 2 : 1) * slice_size);
   else
-    vslice_collapsed = (void *)array_to_all((double *)vslice_collapsed, (complex_data ? 2 : 1) * slice_size);
+    vslice = vslice_uncollapsed;
+
+  array_to_all((double *)vslice, elem_size * slice_size);
 
   delete[] data.offsets;
   delete[] data.fields;
@@ -673,7 +647,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   delete[] data.cS;
   finished_working();
 
-  return snap ? vslice_uncollapsed : vslice_collapsed;
+  return vslice;
 }
 
 /***************************************************************/
