@@ -1640,13 +1640,8 @@ public:
   // in the x direction (corresponding to the two grid points
   // nearest x0, from which fields at x0 are interpolated).
   // if collapse_empty_dimensions==true, all such length-2
-  // array dimensions are collaped to length 1 by doing the
+  // array dimensions are collapsed to length 1 by doing the
   // interpolation before returning the array.
-  // currently, collapse_empty_dimensions is always false for the
-  // time-domain arrays returned by get_field_array and always
-  // true for the frequency-domain arrays returned by get_dft_array,
-  // so an alternative name for `collapse_empty_dimensions` would be
-  // `is_dft_array`.
   //
   // the `data` parameter is used internally in get_array_slice
   // and should be ignored by external callers.
@@ -1654,10 +1649,6 @@ public:
                                  bool collapse_empty_dimensions = false,
                                  bool snap_empty_dimensions = false, vec *min_max_loc = NULL,
                                  void *data = 0, component cgrid = Centered);
-
-  int get_dft_array_dimensions(const volume &where, size_t dims[3], direction dirs[3]) {
-    return get_array_slice_dimensions(where, dims, dirs, true);
-  }
 
   // given a subvolume, return a column-major array containing
   // the given function of the field components in that subvolume
@@ -1667,24 +1658,27 @@ public:
   // must eventually be caller-deallocated via delete[].
   double *get_array_slice(const volume &where, std::vector<component> components,
                           field_rfunction rfun, void *fun_data, double *slice = 0,
-                          double frequency = 0);
+                          double frequency = 0,
+                          bool snap = false);
 
   std::complex<double> *get_complex_array_slice(const volume &where,
                                                 std::vector<component> components,
                                                 field_function fun, void *fun_data,
                                                 std::complex<double> *slice = 0,
-                                                double frequency = 0);
+                                                double frequency = 0,
+                                                bool snap = false);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
   // derived component.)
   double *get_array_slice(const volume &where, component c, double *slice = 0,
-                          double frequency = 0);
+                          double frequency = 0, bool snap = false);
   double *get_array_slice(const volume &where, derived_component c, double *slice = 0,
-                          double frequency = 0);
+                          double frequency = 0, bool snap = false);
   std::complex<double> *get_complex_array_slice(const volume &where, component c,
                                                 std::complex<double> *slice = 0,
-                                                double frequency = 0);
+                                                double frequency = 0,
+                                                bool snap = false);
 
   // like get_array_slice, but for *sources* instead of fields
   std::complex<double> *get_source_slice(const volume &where, component source_slice_component,
@@ -1693,13 +1687,11 @@ public:
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where, std::vector<component> components,
                            field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
-                           double frequency = 0);
+                           double frequency = 0, bool snap = false);
 
-  /* fetch and return coordinates and integration weights of grid points covered by an array slice,
-   */
+  /* fetch and return coordinates and integration weights of grid points covered by an array slice, */
   /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ] */
-  std::vector<double> get_array_metadata(const volume &where, bool collapse_empty_dimensions = true,
-                                         bool snap_empty_dimensions = false);
+  std::vector<double> get_array_metadata(const volume &where);
 
   // step.cpp methods:
   double last_step_output_wall_time;

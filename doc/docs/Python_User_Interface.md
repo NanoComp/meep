@@ -2457,8 +2457,8 @@ plt.show()
 plt.savefig('sim_domain.png')
 ```
 
-Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function must be called
-from all parallel processes, but only produces a plot on the `meep.am_master()` process.
+Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function expects to be called
+on all processes, but only generates a plot on the master process.
 
 **Parameters:**
 
@@ -3334,7 +3334,7 @@ See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic 
 
 #### Array Slices
 
-The output functions described above write the data for the fields and materials for the entire cell to an HDF5 file. This is useful for post-processing as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
+The output functions described above write the data for the fields and materials for the entire cell to an HDF5 file. This is useful for post-processing large datasets which may not fit into memory as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 
 <a id="Simulation.get_array"></a>
@@ -3350,7 +3350,7 @@ def get_array(self,
               cmplx=None,
               arr=None,
               frequency=0,
-              omega=0):
+              snap=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3370,7 +3370,7 @@ current simulation time.
   supplying a `Volume`.
 
 + `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`,
-  `mp.Dielectric`, etc). Defaults to `mp.Ez`.
+  `mp.Dielectric`, etc). Defaults to `None`.
 
 + `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return
   real-valued data (default).
@@ -3382,7 +3382,15 @@ current simulation time.
   fetching the same slice repeatedly at different times).
 
 + `frequency`: optional frequency point over which the average eigenvalue of the
-  dielectric and permeability tensors are evaluated (defaults to 0).
+  $\varepsilon$ and $\mu$ tensors are evaluated (defaults to 0).
+
++ `snap`: By default, the elements of the grid slice are obtained using a bilinear
+  interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
+  are "collapsed" into a single element. However, if `snap` is set to `True`, this
+  interpolation behavior is disabled and the grid slice is instead "snapped"
+  everywhere to the nearest grid point. (Empty slice dimensions are still of size
+  one.) This feature is mainly useful for comparing results with the
+  [`output_` routines](#output-functions) (e.g., `output_epsilon`, `output_efield_z`, etc.).
 
 For convenience, the following wrappers for `get_array` over the entire cell are
 available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`,
@@ -3390,7 +3398,8 @@ available: `get_epsilon()`, `get_mu()`, `get_hpwr()`, `get_dpwr()`,
 `get_Xfield_z()`, `get_Xfield_r()`, `get_Xfield_p()` where `X` is one of `h`, `b`,
 `e`, `d`, or `s`. The routines `get_Xfield_*` all return an array type consistent
 with the fields (real or complex). The routines `get_epsilon()` and `get_mu()`
-accept the optional `frequency` parameter (defaults to 0).
+accept the optional argument `frequency` (defaults to 0) and all routines accept
+`snap` (defaults to `False`).
 
 **Note on array-slice dimensions:** The routines `get_epsilon`, `get_Xfield_z`,
 etc. use as default `size=meep.Simulation.fields.total_volume()` which for
@@ -3425,9 +3434,9 @@ Returns the Fourier-transformed fields as a NumPy array.
 + `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
   obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
 
-+ `component`: a field component (e.g., `mp.Ez`)
++ `component`: a field component (e.g., `mp.Ez`).
 
-+ `num_freq`: the index of the frequency: an integer in the range `0...nfreq-1`,
++ `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
   where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
   `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
 
@@ -3449,8 +3458,6 @@ def get_array_metadata(self,
                        center=None,
                        size=None,
                        dft_cell=None,
-                       collapse=False,
-                       snap=False,
                        return_pw=False):
 ```
 
@@ -3462,7 +3469,7 @@ or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, wher
 
 + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
   grid slice
-+ `w` is an array of the same dimensions as the array returned by
++ `w` is a NumPy array of the same dimensions as the array returned by
   `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule
   for integrating over the spatial region (with the points in the cubature rule
   being just the grid points contained in the region). Thus, if $Q(\mathbf{x})$ is
@@ -3472,15 +3479,23 @@ or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, wher
 $$ \int_{\mathcal V} Q(\mathbf{x})d\mathbf{x} \approx \sum_{n} w_n Q_n.$$
 
 This is a 1-, 2-, or 3-dimensional integral depending on the number of dimensions
-in which $\mathcal{V}$ has zero extent. If the $\{Q_n\}$ samples are stored in an
+in which $\mathcal{V}$ has zero extent. If the $Q_n$ samples are stored in an
 array `Q` of the same dimensions as `w`, then evaluating the sum on the RHS is
 just one line: `np.sum(w*Q).`
 
 A convenience parameter `dft_cell` is provided as an alternative to `vol` or
-`center/size`; set `dft_cell` to a `dft_flux` or `dft_fields` object to define the
-region covered by the array. If the `dft` argument is provided then all other
-arguments (`vol`, `center`, and `size`) are ignored. If no arguments are provided,
-then the entire cell is used.
+`center`/`size`. Set `dft_cell` to a `dft_flux` or `dft_fields` object to define the
+region covered by the array. If the `dft_cell` argument is provided then all other
+arguments related to the spatial region (`vol`, `center`, and `size`) are ignored.
+If no arguments are provided, then the entire cell is used.
+
+For empty dimensions of the grid slice `get_array_metadata` will collapse
+the *two* elements corresponding to the nearest Yee grid points into a *single*
+element using linear interpolation.
+
+If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
+list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by
+default the return value is a 4-tuple `(x,y,z,w)`.
 
 </div>
 
@@ -3559,6 +3574,7 @@ def get_source(self,
 Return an array of complex values of the [source](#source) amplitude for
 `component` over the given `vol` or `center`/`size`. The array has the same
 dimensions as that returned by [`get_array`](#array-slices).
+Not supported for [cylindrical coordinates](Python_Tutorials/Cylindrical_Coordinates.md).
 
 </div>
 

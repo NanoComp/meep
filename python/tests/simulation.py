@@ -373,10 +373,10 @@ class TestSimulation(unittest.TestCase):
         mp.output_tot_pwr(sim)
         mp.output_efield(sim)
 
-        eps_arr = sim.get_epsilon()
-        efield_z_arr = sim.get_efield_z()
-        energy_arr = sim.get_tot_pwr()
-        efield_arr = sim.get_efield()
+        eps_arr = sim.get_epsilon(snap=True)
+        efield_z_arr = sim.get_efield_z(snap=True)
+        energy_arr = sim.get_tot_pwr(snap=True)
+        efield_arr = sim.get_efield(snap=True)
 
         fname_fmt = os.path.join(self.temp_dir, 'test_get_array_output-{}-000020.00.h5')
 

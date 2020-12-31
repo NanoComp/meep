@@ -41,12 +41,11 @@ class TestFaradayRotation(unittest.TestCase):
                                  boundary_layers=pml_layers,
                                  default_material=mat, resolution=resolution)
 
-        record_vol = mp.Volume(center=mp.Vector3(0, 0, zout))
         record_Ex, record_Ey, record_t = [], [], []
 
         def record_ex_ey(sim):
-            record_Ex.append(sim.get_array(vol=record_vol, component=mp.Ex))
-            record_Ey.append(sim.get_array(vol=record_vol, component=mp.Ey))
+            record_Ex.append(sim.get_field_point(mp.Ex, mp.Vector3(0, 0, zout)))
+            record_Ey.append(sim.get_field_point(mp.Ey, mp.Vector3(0, 0, zout)))
             record_t.append(sim.meep_time())
 
         self.sim.run(mp.after_time(0.5*tmax, mp.at_every(1e-6, record_ex_ey)), until=tmax)
