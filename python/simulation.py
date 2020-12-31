@@ -3166,7 +3166,7 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
 
-        _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True)
+        _, dirs = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, not snap, snap)
 
         dims = [s for s in dim_sizes if s != 0]
 
@@ -3237,7 +3237,7 @@ class Simulation(object):
         else:
             v = self._volume_from_kwargs(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True)
+        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True, False)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(dims, dtype=np.complex128)
         self.fields.get_source_slice(v, component, arr)
@@ -3298,28 +3298,6 @@ class Simulation(object):
             points=[ mp.Vector3(x,y,z) for x in tics[0] for y in tics[1] for z in tics[2] ]
             return points,weights
         return tuple(tics) + (weights,)
-
-    def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
-        """
-        Computes the dimensions of a dft array for a particular `component` (`mp.Ez`, `mp.Ey`, etc.).
-
-        Accepts either a volume object (`vol`), or a `center` and `size` `Vector3` pair.
-
-        Returns a tuple containing the dimensions (`dim_sizes`), a `Vector3` object
-        corresponding to the minimum corner of the volume DFT volume object (`min_corner`),
-        and a `Vector3` object corresponding to the maximum corner (`max_corner`).
-        """
-        if vol is None and center is None and size is None:
-            v = self.fields.total_volume()
-        else:
-            v = self._volume_from_kwargs(vol, center, size)
-        dim_sizes = np.zeros(3, dtype=np.uintp)
-        corners = []
-        _,_ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True, component, corners)
-        dim_sizes[dim_sizes==0] = 1
-        min_corner = corners[0]
-        max_corner = corners[1]
-        return dim_sizes, min_corner, max_corner
 
     def get_eigenmode_coefficients(self, flux, bands, eig_parity=mp.NO_PARITY, eig_vol=None,
                                    eig_resolution=0, eig_tolerance=1e-12, kpoint_func=None, direction=mp.AUTOMATIC):
