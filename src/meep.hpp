@@ -1647,7 +1647,7 @@ public:
   // and should be ignored by external callers.
   int get_array_slice_dimensions(const volume &where, size_t dims[3], direction dirs[3],
                                  bool collapse_empty_dimensions = false,
-                                 vec *min_max_loc = NULL,
+                                 bool snap_empty_dimensions = false, vec *min_max_loc = NULL,
                                  void *data = 0, component cgrid = Centered);
 
   // given a subvolume, return a column-major array containing

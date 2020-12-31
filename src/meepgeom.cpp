@@ -2472,7 +2472,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   size_t dims[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (int c = 0; c < 3; c++) {
 
-    int rank = f->get_array_slice_dimensions(where, &dims[3 * c], dirs, true, min_max_loc,
+    int rank = f->get_array_slice_dimensions(where, &dims[3 * c], dirs, true, false, min_max_loc,
                                              0, field_dir[c]);
 
     vector3 max_corner = vec_to_vector3(min_max_loc[1]);
