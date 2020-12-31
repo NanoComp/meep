@@ -320,7 +320,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
     for (int i = 0; i < num_components; ++i) {
       // special case for fetching grid point coordinates and weights
       if (cS[i] == NO_COMPONENT) {
-        fields[i] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
+        fields[i] = dV0 + dV1 * loop_i2;
       }
       else if (cS[i] == Dielectric) {
         complex<double> tr(0.0, 0.0);
