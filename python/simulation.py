@@ -2638,7 +2638,7 @@ class Simulation(object):
         loaded. This means that they will be *subtracted* from any future field Fourier
         transforms that are accumulated.
         """
-        self.load_near2far(fname, near2far)
+        self.load_near2far(fname, n2f)
         near2far.scale_dfts(-1.0)
 
     def get_near2far_data(self, near2far):
