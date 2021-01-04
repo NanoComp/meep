@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(meep, m4_esyscmd([./version.sh 1.17]))
+AC_INIT(meep, m4_esyscmd([./version.sh 1.17.1 alpha]))
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
