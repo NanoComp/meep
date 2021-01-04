@@ -577,9 +577,19 @@ class TestSimulation(unittest.TestCase):
 
     def test_source_slice(self):
         sim = self.init_simple_simulation()
-        sim.run(until=5)
-        slice = sim.get_source(mp.Ez)
-        print(slice)
+        sim.run(until=1)
+
+        vol1d = mp.Volume(center=mp.Vector3(0.1234,0), size=mp.Vector3(0,5.07))
+        source_slice = sim.get_source(mp.Ez, vol=vol1d)
+        x,y,z,w = sim.get_array_metadata(vol=vol1d)
+        self.assertEqual(source_slice.shape, w.shape)
+        self.assertEqual(np.sum(source_slice), 0)
+
+        vol2d = mp.Volume(center=mp.Vector3(-0.541,0.791), size=mp.Vector3(3.5,2.8))
+        source_slice = sim.get_source(mp.Ez, vol=vol2d)
+        x,y,z,w = sim.get_array_metadata(vol=vol2d)
+        self.assertEqual(source_slice.shape, w.shape)
+        self.assertNotEqual(np.sum(source_slice), 0)
 
     def test_has_mu(self):
 
