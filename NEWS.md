@@ -1,5 +1,19 @@
 # Meep Release Notes
 
+## Meep 1.17
+
+1/4/2021
+
+* `get_array_slice` now does continuous interpolation as the slice position is moved (#1456).
+
+* New `contour` option for contour-plotting in `plot2D` (#1437).
+
+* Adjoint optimization of `near2far` transformations (#1417).
+
+* `get_array_metadata` is now consistent between array slices and DFT slices (#1456), no longer leaks memory (#1447), and returns numpy arrays rather than tuples (#1458).
+
+* Bugfixes in adjoint-optimization filters (#1427).
+
 ## Meep 1.16.1
 
 10/20/2020
