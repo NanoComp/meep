@@ -714,15 +714,16 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   rank = get_array_slice_dimensions(where, dims, dirs, true, false);
   slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
-  if (slice != 0) {
-    for (size_t i = 0; i < slice_size; ++i)
-      slice[i] = slice_collapsed[i];
-    slice = array_to_all(slice, slice_size);
+  if (slice) {
+    memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(double));
+    delete[] (cdouble*) slice_collapsed;
   }
+  else
+    slice = slice_collapsed;
 
-  slice_collapsed = array_to_all(slice_collapsed, slice_size);
+  array_to_all(slice, slice_size);
 
-  return slice_collapsed;
+  return slice;
 }
 
 /***************************************************************/
