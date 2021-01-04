@@ -77,6 +77,7 @@ typedef struct {
   direction invmu_ds[3];
 
   bool snap;
+  bool empty_dim[5];
 } array_slice_data;
 
 #define UNUSED(x) (void)x // silence compiler warnings
@@ -307,6 +308,22 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int k = 0; k < data->ninvmu; ++k)
     fc->gv.yee2cent_offsets(imcs[k], imos[2 * k], imos[2 * k + 1]);
 
+  /*****************************************************************/
+  /* For collapsing empty dimensions, we want to retain interpolation
+     weights for empty dimensions, but not interpolation weights for
+     integration of edge pixels (for retain_interp_weights == true).
+     All of the weights are stored in (s0, s1, e0, e1), so we make
+     a copy of these with the weights for non-empty dimensions set to 1. */
+  vec s0i(s0), s1i(s1), e0i(e0), e1i(e1);
+  LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
+    if (!data->empty_dim[d]) {
+      s0i.set_direction(d, 1.0);
+      s1i.set_direction(d, 1.0);
+      e0i.set_direction(d, 1.0);
+      e1i.set_direction(d, 1.0);
+    }
+  }
+
   vec rshift(shift * (0.5 * fc->gv.inva));
   // main loop over all grid points owned by this field chunk.
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
@@ -333,7 +350,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           frequency));
           if (abs(tr) == 0.0) tr += 4.0; // default inveps == 1
         }
-        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0)) * (4.0 * data->ninveps) / tr;
+        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0)) * (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
         complex<double> tr(0.0, 0.0);
@@ -345,7 +362,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           frequency));
           if (abs(tr) == 0.0) tr += 4.0; // default invmu == 1
         }
-        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0)) * (4.0 * data->ninvmu) / tr;
+        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0)) * (4.0 * data->ninvmu) / tr;
       }
       else {
         double f[2];
@@ -356,7 +373,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                            fc->f[cS[i]][k][idx + off[2 * i] + off[2 * i + 1]]);
           else
             f[k] = 0;
-        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1.0)) * complex<double>(f[0], f[1]) * ph[i];
+        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0)) * complex<double>(f[0], f[1]) * ph[i];
       }
     }
 
@@ -593,6 +610,9 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   data.fields = new cdouble[num_components];
   data.offsets = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
+  data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] =
+      data.empty_dim[4] = false;
+  LOOP_OVER_DIRECTIONS(where.dim, d) { data.empty_dim[d] = where.in_direction(d) == 0; }
 
   /* compute inverse-epsilon directions for computing Dielectric fields */
   data.ninveps = 0;
