@@ -350,7 +350,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           frequency));
           if (abs(tr) == 0.0) tr += 4.0; // default inveps == 1
         }
-        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0)) * (4.0 * data->ninveps) / tr;
+        fields[i] = IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) * (4.0 * data->ninveps) / tr;
       }
       else if (cS[i] == Permeability) {
         complex<double> tr(0.0, 0.0);
@@ -362,7 +362,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                                           frequency));
           if (abs(tr) == 0.0) tr += 4.0; // default invmu == 1
         }
-        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0)) * (4.0 * data->ninvmu) / tr;
+        fields[i] = IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) * (4.0 * data->ninvmu) / tr;
       }
       else {
         double f[2];
@@ -373,7 +373,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
                            fc->f[cS[i]][k][idx + off[2 * i] + off[2 * i + 1]]);
           else
             f[k] = 0;
-        fields[i] = (data->snap ? 1.0 : IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0)) * complex<double>(f[0], f[1]) * ph[i];
+        fields[i] = IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) * complex<double>(f[0], f[1]) * ph[i];
       }
     }
 
