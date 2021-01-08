@@ -9,6 +9,18 @@ import meep as mp
 from scipy import special
 import jax.numpy.fft as fft
 
+def centered(arr, newshape):
+    '''Helper function that reformats the padded array of the fft filter operation.
+    Borrowed from scipy:
+    https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
+    '''
+    # Return the center newshape portion of the array.
+    newshape = np.asarray(newshape)
+    currshape = np.array(arr.shape)
+    startind = (currshape - newshape) // 2
+    endind = startind + newshape
+    myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
+    return arr[tuple(myslice)]
 
 def atleast_3d(ary):
     if ary.ndim == 0:
@@ -80,6 +92,10 @@ def meep_filter(x,kernel):
     return _centered(yp,x_shape)
 
 def cylindrical_filter(x,radius):
+    # filter radius is in pixels, so make sure radius >= 1
+    if radius < 1:
+        raise ValueError("The filter radius must be at least 1 pixel") 
+
     x = atleast_3d(x)
     xl = npj.linspace(-x.shape[0]/2,x.shape[0]/2,x.shape[0])
     yl = npj.linspace(-x.shape[1]/2,x.shape[1]/2,x.shape[1])
