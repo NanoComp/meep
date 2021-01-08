@@ -252,7 +252,9 @@ breakout:
 
     if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
         wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
-      master_printf("subpixel-averaging is %g%% done, %g s remaining\n", ipixel * 100.0 / npixels,
+      master_printf("%s is %g%% done, %g s remaining\n",
+                    use_anisotropic_averaging ? "subpixel-averaging" : "grid initialization",
+                    ipixel * 100.0 / npixels,
                     (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);
       last_output_time = wall_time();
     }
