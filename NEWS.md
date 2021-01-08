@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.17.1
+
+1/8/2021
+
+* Fix accidental breakage of the adjoint routines ([#1464]).
+
 ## Meep 1.17
 
 1/4/2021
