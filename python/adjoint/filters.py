@@ -86,7 +86,18 @@ def meep_filter(x,kernel):
     xp = npj.pad(x,npad,mode='edge')
     
     # convolve
-    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * fft.fftn(kernelp))).real
+    '''
+    As is the case with any convolution, the filter will
+    introduce a delay in every specified dimension. To 
+    compensate for this delay, we can perform a zero-phase
+    filter operation. We first convolve normally, and then
+    "flip" the signal and convolve again, effectively eliminating
+    the phase delay. This effectively applies the filter kernel
+    twice, however. We sqrt the kernel in the frequency domain
+    to somewhat compensate for this.
+    '''
+    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * npj.sqrt(fft.fftn(kernelp)))).real
+    yp = fft.fftshift(fft.ifftn(fft.fftn(npj.flip(yp,axis=None)) * npj.sqrt(fft.fftn(kernelp)))).real
     
     # remove paddings
     return _centered(yp,x_shape)
@@ -101,7 +112,7 @@ def cylindrical_filter(x,radius):
     yl = npj.linspace(-x.shape[1]/2,x.shape[1]/2,x.shape[1])
     zl = npj.linspace(-x.shape[2]/2,x.shape[2]/2,x.shape[2])
 
-    X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True)
+    X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True,indexing='ij')
     kernel = X**2+Y**2+Z**2 <= radius**2
     kernel = kernel/npj.sum(kernel.flatten()) # normalize
 
@@ -113,7 +124,7 @@ def conic_filter(x,radius):
     yl = npj.linspace(-x.shape[1]/2,x.shape[1]/2,x.shape[1])
     zl = npj.linspace(-x.shape[2]/2,x.shape[2]/2,x.shape[2])
 
-    X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True)
+    X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True,indexing='ij')
     kernel = np.where(np.abs(X**2+Y**2+Z**2) <= radius**2,(1-np.sqrt(npj.abs(X**2+Y**2+Z**2))/radius),0)
     kernel = kernel/npj.sum(kernel.flatten()) # normalize
 
@@ -126,7 +137,7 @@ def gaussian_filter(x,sigma):
     yl = npj.linspace(-x.shape[1]/2,x.shape[1]/2,x.shape[1])
     zl = npj.linspace(-x.shape[2]/2,x.shape[2]/2,x.shape[2])
 
-    X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True)
+    X,Y,Z = npj.meshgrid(xl,yl,zl,sparse=True,indexing='ij')
     kernel = np.multiply.outer(np.outer(gaussian(X, sigma), gaussian(Y, sigma)),gaussian(Z, sigma)) # Gaussian filter kernel
     kernel = kernel/npj.sum(kernel.flatten()) # normalize
 
