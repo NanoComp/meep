@@ -84,7 +84,7 @@ def meep_filter(x,kernel):
     npad = *((s,s) for s in x_shape),
     kernelp = npj.pad(kernel,npad,mode='edge')
     xp = npj.pad(x,npad,mode='edge')
-    
+
     # convolve
     '''
     As is the case with any convolution, the filter will
@@ -96,8 +96,9 @@ def meep_filter(x,kernel):
     twice, however. We sqrt the kernel in the frequency domain
     to somewhat compensate for this.
     '''
-    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * npj.sqrt(fft.fftn(kernelp)))).real
-    yp = fft.fftshift(fft.ifftn(fft.fftn(npj.flip(yp,axis=None)) * npj.sqrt(fft.fftn(kernelp)))).real
+
+    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * fft.fftn(kernelp))).real
+    yp = fft.fftshift(fft.ifftn(fft.fftn(npj.flip(yp,axis=None)) * fft.fftn(kernelp))).real
     
     # remove paddings
     return _centered(yp,x_shape)
