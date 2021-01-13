@@ -98,7 +98,7 @@ def meep_filter(x,kernel):
     '''
 
     yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * fft.fftn(kernelp))).real
-    yp = fft.fftshift(fft.ifftn(fft.fftn(npj.flip(yp,axis=None)) * fft.fftn(kernelp))).real
+    yp = npj.flip(fft.fftshift(fft.ifftn(fft.fftn(npj.flip(yp,axis=None)) * fft.fftn(kernelp))).real,axis=None)
     
     # remove paddings
     return _centered(yp,x_shape)
@@ -751,29 +751,29 @@ def gray_indicator(x):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    return npj.mean(4 * x.flatten() * (1-x.flatten())) * 100
+    return npj.mean(4 * x.flatten() * (1-x.flatten()))
 
-def F_diff_open_close(x,f_open,f_close,beta=64):
+def F_diff_open_close(x,f_open,f_close,beta=64,p=2):
     '''
 
     '''
-    return npj.mean(tanh_projection(npj.abs(f_close(x.flatten())-f_open(x.flatten()))),beta,0.5)
+    return npj.mean(tanh_projection(npj.abs(f_close(x)-f_open(x)).flatten()**2),beta,0.5) * 100
 
-def M_diff_open_close(x,f_open,f_close,p=1):
+def M_diff_open_close(x,f_open,f_close,p=2):
     '''
 
     '''
-    return npj.mean(npj.abs(f_close(x.flatten())-f_open(x.flatten()))**p) * 100
+    return npj.mean(npj.abs(f_close(x)-f_open(x)).flatten()**p) * 100
 
-def M_diff_identity_open(x,f_open,p=1):
+def M_diff_identity_open(x,f_open,p=2):
     '''
 
     '''
-    return npj.mean(npj.abs(x.flatten()-f_open(x.flatten()))**p) * 100
+    return npj.mean(npj.abs(x-f_open(x)).flatten()**p) * 100
 
-def M_diff_identity_close(x,f_close,p=1):
+def M_diff_identity_close(x,f_close,p=2):
     '''
 
     '''
-    return npj.mean(npj.abs(x.flatten()-f_close(x.flatten()))**p) * 100
+    return npj.mean(npj.abs(x-f_close(x)).flatten()**p) * 100
 
