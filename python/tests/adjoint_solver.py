@@ -1,5 +1,5 @@
 import meep as mp
-import meep.adjoint as mpa
+import adjoint as mpa
 import numpy as np
 from autograd import numpy as npa
 from copy import deepcopy
@@ -9,8 +9,6 @@ class TestAdjointSolver(unittest.TestCase):
 
     def test_adjoint_solver(self):
         np.random.seed(9861548)
-        mp.verbosity(1)
-
         resolution = 25
 
         silicon = mp.Medium(epsilon=12)
@@ -99,7 +97,9 @@ class TestAdjointSolver(unittest.TestCase):
                                 sources=sources,
                                 geometry=geometry)
 
-            obj_list = [mpa.EigenmodeCoefficient(sim,mp.Volume(center=mp.Vector3(0.5*sxy-dpml),size=mp.Vector3(0,sxy,0)),1)]
+            obj_list = [mpa.EigenmodeCoefficient(sim,
+                                                 mp.Volume(center=mp.Vector3(0.5*sxy-dpml),
+                                                           size=mp.Vector3(0,sxy,0)),1)]
 
             def J(mode_mon):
                 return npa.abs(mode_mon)**2
@@ -117,34 +117,28 @@ class TestAdjointSolver(unittest.TestCase):
 
             sim.reset_meep()
 
-            return dJ_du
+            return f, dJ_du
 
-        design_params_orig = np.random.rand(Nx*Ny)
+        p = np.random.rand(Nx*Ny)
 
         ## compute gradient using adjoint solver
-        adjsol_grad = adjoint_solver(design_params_orig)
+        adjsol_obj, adjsol_grad = adjoint_solver(p)
 
-        ## compute gradient using finite differences
-        S12_unperturbed = forward_simulation(design_params_orig)
+        ## compute unperturbed S12
+        S12_unperturbed = forward_simulation(p)
 
-        ## epsilon perturbation
-        deps = 1e-7
+        print("S12:, {:.6f}, {:.6f}".format(adjsol_obj,S12_unperturbed))
+        self.assertAlmostEqual(adjsol_obj,S12_unperturbed,places=2)
 
-        design_params = deepcopy(design_params_orig)
-        design_params[2984] = design_params[2984] + deps
-        S12_perturbed = forward_simulation(design_params)
-        fd_grad1 = (S12_perturbed - S12_unperturbed) / deps
+        ## random epsilon perturbation for computing gradient via finite difference
+        deps = 1e-5
+        dp = deps*np.random.rand(Nx*Ny)
 
-        print("gradient #1:, {:.10f}, {:.10f}".format(fd_grad1,adjsol_grad[2984]))
-        self.assertAlmostEqual(fd_grad1,adjsol_grad[2984],places=3)
+        ## compute perturbed S12
+        S12_perturbed = forward_simulation(p+dp)
 
-        design_params = deepcopy(design_params_orig)
-        design_params[5044] = design_params[5044] + deps
-        S12_perturbed = forward_simulation(design_params)
-        fd_grad2 = (S12_perturbed - S12_unperturbed) / deps
-
-        print("gradient #2:, {:.10f}, {:.10f}".format(fd_grad2,adjsol_grad[5044]))
-        self.assertAlmostEqual(fd_grad2,adjsol_grad[5044],places=3)
+        print("directional_derivative:, {:.10f}, {:.10f}".format(np.dot(dp,adjsol_grad),S12_perturbed-S12_unperturbed))
+        self.assertAlmostEqual(np.dot(dp,adjsol_grad),S12_perturbed-S12_unperturbed,places=5)
 
 if __name__ == '__main__':
     unittest.main()
