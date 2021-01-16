@@ -265,9 +265,8 @@ Python. `Vector3` is a `meep` class.
 
 + **`force_all_components` [`boolean`]** — By default, in a 2d simulation Meep
   uses only the field components that might excited by your current sources:
-  either the in-plane (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or out-of-plane
-  (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>) polarization, depending on the
-  source.  (Both polarizations are excited if you use multiple source
+  either the in-plane $(E_x,E_y,H_z)$ or out-of-plane $(H_x,H_y,E_z)$ polarization,
+  depending on the source.  (Both polarizations are excited if you use multiple source
   polarizations, or if an anisotropic medium is present that couples the two
   polarizations.)   In rare cases (primarily for combining results of multiple
   simulations with differing polarizations), you might want to force it to
@@ -2244,7 +2243,7 @@ is a 1d array of `nfreq` dimensions.
 
 ### Load and Dump Structure
 
-These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive ε and μ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
+These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive $\varepsilon$ and $\mu$ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
 
 <a id="Simulation.dump_structure"></a>
@@ -5938,8 +5937,8 @@ calculations by the power computed in a separate normalization run at the same
 resolution, as shown in several of the tutorial examples.
 
 Note that Meep's MPB interface only supports dispersionless non-magnetic materials but
-it does support anisotropic ε. Any nonlinearities, magnetic responses μ,
-conductivities σ, or dispersive polarizations in your materials will be *ignored* when
+it does support anisotropic $\varepsilon$. Any nonlinearities, magnetic responses $\mu$,
+conductivities $\sigma$, or dispersive polarizations in your materials will be *ignored* when
 computing the eigenmode source. PML will also be ignored.
 
 The `SourceTime` object (`Source.src`), which specifies the time dependence of the

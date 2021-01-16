@@ -202,9 +202,9 @@ An additional discussion of the natural units for saturable media is given in [a
 Gyrotropic Media
 ----------------
 
-(**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator).
+(**Experimental feature**) Meep supports gyrotropic media, which break optical reciprocity and give rise to magneto-optical phenomena such as the [Faraday effect](https://en.wikipedia.org/wiki/Faraday_effect). Such materials are used in devices like [Faraday rotators](https://en.wikipedia.org/wiki/Faraday_rotator). For a demonstration, see [Tutorial/Gyrotropic Media](Python_Tutorials/Gyrotropic_Media.md).
 
-In a gyrotropic medium, the polarization vector undergoes precession around a preferred direction. In the frequency domain, this corresponds to the presence of skew-symmetric off-diagonal components in the ε tensor (for a gyroelectric medium) or the μ tensor (for a gyromagnetic medium). Two different gyrotropy models are supported:
+In a gyrotropic medium, the polarization vector undergoes precession around a preferred direction. In the frequency domain, this corresponds to the presence of skew-symmetric off-diagonal components in the $\varepsilon$ tensor (for a gyroelectric medium) or the μ tensor (for a gyromagnetic medium). Two different gyrotropy models are supported:
 
 ### Gyrotropic Drude-Lorentz Model
 
@@ -259,6 +259,17 @@ As an example, to import aluminum from the library into a Python script requires
 from meep.materials import Al
 ```
 Then, the material can be simply used as `geometry = [meep.Cylinder(material=Al, ...]`.
+
+You can inspect the frequency range over which the permittivity profile for aluminum is defined and also inspect the value of its permittivity tensor at a wavelength of 1.55 µm using the `epsilon(frequency)` function of the `Medium` class:
+
+```py
+> Al.valid_freq_range
+FreqRange(min=0.08065817067268914, max=4.839334107626791)
+> Al.epsilon(1/1.55)
+array([[-232.66329725+47.08102623j,  0.         +0.j        ,  0.         +0.j        ],
+       [ 0.         +0.j        , -232.66329725+47.08102623j,  0.         +0.j        ],
+       [ 0.         +0.j        ,  0.         +0.j       ,  -232.66329725+47.08102623j]])
+```
 
 In Scheme, the materials library is already included when Meep is run, so you can use it without any initialization:
 

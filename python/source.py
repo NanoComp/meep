@@ -351,8 +351,8 @@ class EigenModeSource(Source):
     resolution, as shown in several of the tutorial examples.
 
     Note that Meep's MPB interface only supports dispersionless non-magnetic materials but
-    it does support anisotropic ε. Any nonlinearities, magnetic responses μ,
-    conductivities σ, or dispersive polarizations in your materials will be *ignored* when
+    it does support anisotropic $\\varepsilon$. Any nonlinearities, magnetic responses $\\mu$,
+    conductivities $\\sigma$, or dispersive polarizations in your materials will be *ignored* when
     computing the eigenmode source. PML will also be ignored.
 
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the

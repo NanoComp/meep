@@ -1107,9 +1107,8 @@ class Simulation(object):
 
         + **`force_all_components` [`boolean`]** — By default, in a 2d simulation Meep
           uses only the field components that might excited by your current sources:
-          either the in-plane (E<sub>x</sub>,E<sub>y</sub>,H<sub>z</sub>) or out-of-plane
-          (H<sub>x</sub>,H<sub>y</sub>,E<sub>z</sub>) polarization, depending on the
-          source.  (Both polarizations are excited if you use multiple source
+          either the in-plane $(E_x,E_y,H_z)$ or out-of-plane $(H_x,H_y,E_z)$ polarization,
+          depending on the source.  (Both polarizations are excited if you use multiple source
           polarizations, or if an anisotropic medium is present that couples the two
           polarizations.)   In rare cases (primarily for combining results of multiple
           simulations with differing polarizations), you might want to force it to
