@@ -37,6 +37,7 @@ endif
 TESTS =                                   \
     $(TEST_DIR)/3rd_harm_1d.py            \
     $(TEST_DIR)/absorber_1d.py            \
+    $(TEST_DIR)/adjoint_solver.py         \
     $(TEST_DIR)/antenna_radiation.py      \
     $(TEST_DIR)/array_metadata.py         \
     $(TEST_DIR)/bend_flux.py              \
@@ -210,11 +211,11 @@ HL_IFACE =                  \
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
 adjointdir = $(pkgpythondir)/adjoint
-adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py			\
-                  $(srcdir)/adjoint/basis.py  			\
-                  $(srcdir)/adjoint/objective.py        	\
-                  $(srcdir)/adjoint/optimization_problem.py	\
-                  $(srcdir)/adjoint/filters.py	\
+adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
+                  $(srcdir)/adjoint/basis.py                 \
+                  $(srcdir)/adjoint/objective.py             \
+                  $(srcdir)/adjoint/optimization_problem.py  \
+                  $(srcdir)/adjoint/filters.py               \
                   $(srcdir)/adjoint/filter_source.py
 
 ######################################################################
