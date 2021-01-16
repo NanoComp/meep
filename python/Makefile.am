@@ -211,11 +211,11 @@ HL_IFACE =                  \
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
 adjointdir = $(pkgpythondir)/adjoint
-adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py			\
-                  $(srcdir)/adjoint/basis.py  			\
-                  $(srcdir)/adjoint/objective.py        	\
-                  $(srcdir)/adjoint/optimization_problem.py	\
-                  $(srcdir)/adjoint/filters.py	                \
+adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
+                  $(srcdir)/adjoint/basis.py                 \
+                  $(srcdir)/adjoint/objective.py             \
+                  $(srcdir)/adjoint/optimization_problem.py  \
+                  $(srcdir)/adjoint/filters.py               \
                   $(srcdir)/adjoint/filter_source.py
 
 ######################################################################

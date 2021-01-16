@@ -1,5 +1,8 @@
 import meep as mp
-import adjoint as mpa
+try:
+    import meep.adjoint as mpa
+except:
+    import adjoint as mpa
 import numpy as np
 from autograd import numpy as npa
 from copy import deepcopy
