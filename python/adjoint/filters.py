@@ -614,15 +614,12 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
 
     filtered_field = filter_f(x)
     design_field = threshold_f(filtered_field)
-    gradient_filtered_field = npj.gradient(filtered_field)
-    grad_mag = (gradient_filtered_field[0]*resolution) ** 2 + (gradient_filtered_field[1]*resolution) ** 2
-    if grad_mag.ndim != 2:
-        raise ValueError("The gradient fields must be 2 dimensional. Check input array and filter functions.")
-    I_s = design_field * npj.exp(-c * grad_mag)
-    return I_s
+    gradient_filtered_field = npj.gradient(filtered_field,resolution)
+    #gradient_filtered_field = gradient_filtered_field if isinstance(gradient_filtered_field,list) else [gradient_filtered_field]
+    grad_mag = npj.sum(npj.array(gradient_filtered_field)**2,axis=0)
+    return design_field * npj.exp(-c * grad_mag)
 
-
-def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
+def constraint_solid(x,c,eta_e,filter_f,threshold_f,resolution=1):
     '''Calculates the constraint function of the solid phase needed for minimum length optimization [1].
     
     Parameters
@@ -655,8 +652,8 @@ def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
     '''
 
     filtered_field = filter_f(x)
-    I_s = indicator_solid(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten()
-    return npj.mean(I_s * npj.minimum(filtered_field.flatten()-eta_e,0)**2)
+    I_s = indicator_solid(x,c,filter_f,threshold_f,resolution)
+    return npj.mean(I_s.flatten() * npj.minimum(filtered_field.flatten()-eta_e,0)**2)
 
 
 def indicator_void(x, c, filter_f, threshold_f, resolution):
@@ -685,17 +682,15 @@ def indicator_void(x, c, filter_f, threshold_f, resolution):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
-
-    filtered_field = filter_f(x).reshape(x.shape)
+    
+    filtered_field = filter_f(x)
     design_field = threshold_f(filtered_field)
-    gradient_filtered_field = npj.gradient(filtered_field)
-    grad_mag = (gradient_filtered_field[0]*resolution) ** 2 + (gradient_filtered_field[1]*resolution) ** 2
-    if grad_mag.ndim != 2:
-        raise ValueError("The gradient fields must be 2 dimensional. Check input array and filter functions.")
+    gradient_filtered_field = npj.gradient(filtered_field,resolution)
+    #gradient_filtered_field = gradient_filtered_field if isinstance(list, gradient_filtered_field) else [gradient_filtered_field]
+    grad_mag = npj.sum(npj.array(gradient_filtered_field)**2,axis=0)
     return (1 - design_field) * npj.exp(-c * grad_mag)
 
-
-def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
+def constraint_void(x,c,eta_d,filter_f,threshold_f,resolution=1):
     '''Calculates the constraint function of the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -728,8 +723,8 @@ def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
     '''
 
     filtered_field = filter_f(x)
-    I_v = indicator_void(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten()
-    return npj.mean(I_v * npj.minimum(eta_d-filtered_field.flatten(),0)**2)
+    I_v = indicator_void(x,c,filter_f,threshold_f,resolution)
+    return npj.mean(I_v.flatten() * npj.minimum(eta_d-filtered_field.flatten(),0)**2)
 
 def gray_indicator(x):
     '''Calculates a measure of "grayness" according to [1].
