@@ -154,6 +154,7 @@ class TestAdjointSolver(unittest.TestCase):
     def test_gradient_backpropagation(self):
         p = np.random.rand(Nx*Ny)
 
+        ## filter/thresholding parameters
         filter_radius = 0.21985
         eta = 0.49093
         beta = 4.0698
@@ -176,7 +177,7 @@ class TestAdjointSolver(unittest.TestCase):
         deps = 1e-5
         dp = deps*np.random.rand(Nx*Ny)
 
-        ## compute perturbed S12 of
+        ## compute perturbed S12
         S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta))
 
         print("directional_derivative:, {:.10f}, {:.10f}".format(np.dot(dp,bp_adjsol_grad),S12_perturbed-S12_unperturbed))
