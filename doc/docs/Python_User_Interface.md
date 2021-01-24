@@ -485,8 +485,8 @@ Example output:
 
 ```
 Field time usage:
-            time stepping: 0.996411 s +/- 0.232147 s
         connecting chunks: 0.0156826 s +/- 0.002525 s
+            time stepping: 0.996411 s +/- 0.232147 s
        copying boundaries: 0.148588 s +/- 0.0390397 s
     all-all communication: 1.39423 s +/- 0.581098 s
         1-1 communication: 0.136174 s +/- 0.0107685 s
@@ -510,7 +510,7 @@ def time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return a list of times spent by each process for a type of work `time_sink` which
-can be one of ten integer values `0`-`9`: (`0`) time stepping, (`1`) connecting chunks,
+can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
 (`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
 (`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
 (`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
@@ -530,7 +530,7 @@ def mean_time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return the mean time spent by all processes for a type of work `time_sink` which
-can be one of ten integer values `0`-`9`: (`0`) time stepping, (`1`) connecting chunks,
+can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
 (`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
 (`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
 (`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.

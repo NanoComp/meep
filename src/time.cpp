@@ -77,7 +77,7 @@ static const char *ts2n(time_sink s) {
     case FieldOutput: return "outputting fields";
     case FourierTransforming: return "Fourier transforming";
     case MPBTime: return "MPB mode solver";
-    case GetFarfieldsTime: return "far field transform";
+    case GetFarfieldsTime: return "far-field transform";
     case Other: break;
   }
   return "everything else";

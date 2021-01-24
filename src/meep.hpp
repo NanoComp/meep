@@ -1455,8 +1455,8 @@ private:
 
 enum boundary_condition { Periodic = 0, Metallic, Magnetic, None };
 enum time_sink {
-  Stepping,
   Connecting,
+  Stepping,
   Boundaries,
   MPI_all,
   MPI_one,
