@@ -107,7 +107,7 @@ void fields::phase_material() {
         changed = changed || chunks[i]->new_s;
       }
     phasein_time--;
-    am_now_working_on(MpiTime);
+    am_now_working_on(MPI_all);
     bool changed_mpi = or_to_all(changed);
     finished_working();
     if (changed_mpi) {
@@ -130,8 +130,6 @@ void fields_chunk::phase_material(int phasein_time) {
 
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
-
-  am_now_working_on(MpiTime);
 
   // Do the metals first!
   for (int i = 0; i < num_chunks; i++)
@@ -158,7 +156,9 @@ void fields::step_boundaries(field_type ft) {
       }
     }
 
+  am_now_working_on(MPI_one);
   boundary_communications(ft);
+  finished_working();
 
   // Finally, copy incoming data to the fields themselves, multiplying phases:
   for (int i = 0; i < num_chunks; i++)
@@ -186,7 +186,6 @@ void fields::step_boundaries(field_type ft) {
       }
     }
 
-  finished_working();
 }
 
 void fields::step_source(field_type ft, bool including_integrated) {

@@ -3637,12 +3637,13 @@ class Simulation(object):
 
         ```
         Field time usage:
-                connecting chunks: 0.0819176 s +/- 0.000428381 s
-                    time stepping: 0.198949 s +/- 0.0225551 s
-                    communicating: 0.410577 s +/- 0.278853 s
-                outputting fields: 0.512352 s +/- 0.0238399 s
-             Fourier transforming: 0.0738274 s +/- 0.0967926 s
-                  everything else: 0.324933 s +/- 0.377573 s
+                connecting chunks: 0.0115492 s +/- 0.00117823 s
+                    time stepping: 1.13699 s +/- 0.228692 s
+            all-all communication: 0.855598 s +/- 0.371897 s
+                1-1 communication: 0.0979027 s +/- 0.00206078 s
+             Fourier transforming: 0.0363347 s +/- 0.0608857 s
+                              MPB: 0.225922 s +/- 0.254856 s
+                  everything else: 0.157477 s +/- 0.00848126 s
         ```
         """
         if self.fields:
@@ -3652,9 +3653,9 @@ class Simulation(object):
         """
         Return the mean time spent by all processes for a type of work `time_sink` which
         can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time
-        stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`)
-        Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`)
-        other.
+        stepping, (`2`) MPI all-to-all communication/synchronization,
+        (`3`) MPI one-to-one communication, (`4`) field output, (`5`) Fourier transforming,
+        (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
         """
         return self.fields.mean_time_spent_on(time_sink)
 
@@ -3662,9 +3663,9 @@ class Simulation(object):
         """
         Return a list of times spent by each process for a type of work `time_sink` which
         can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time
-        stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`)
-        Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`)
-        other.
+        stepping, (`2`) MPI all-to-all communication/synchronization,
+        (`3`) MPI one-to-one communication, (`4`) field output, (`5`) Fourier transforming,
+        (`6`) MPB, (`7`) near to far field transformation, and (`8`) other.
         """
         return self.fields.time_spent_on(time_sink)
 

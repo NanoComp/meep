@@ -490,7 +490,7 @@ void fields::require_component(component c) {
           chunks[i]->s->has_chi(Hx, Z) || chunks[i]->s->has_chi(Hy, Z) ||
           chunks[i]->s->has_chi(Hz, X) || chunks[i]->s->has_chi(Hz, Y))
         break;
-    am_now_working_on(MpiTime);
+    am_now_working_on(MPI_all);
     aniso2d = or_to_all(i < num_chunks);
     finished_working();
   }
@@ -507,7 +507,7 @@ void fields::require_component(component c) {
   }
 
   if (need_to_reconnect) figure_out_step_plan();
-  am_now_working_on(MpiTime);
+  am_now_working_on(MPI_all);
   if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
   finished_working();
 }
