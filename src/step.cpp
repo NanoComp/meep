@@ -142,6 +142,7 @@ void fields::step_boundaries(field_type ft) {
      of the connections for process i' for i < i'  */
 
   // First copy outgoing data to buffers...
+  am_now_working_on(Boundaries);
   for (int j = 0; j < num_chunks; j++)
     if (chunks[j]->is_mine()) {
       int wh[3] = {0, 0, 0};
@@ -155,12 +156,14 @@ void fields::step_boundaries(field_type ft) {
         }
       }
     }
+  finished_working();
 
   am_now_working_on(MPI_one);
   boundary_communications(ft);
   finished_working();
 
   // Finally, copy incoming data to the fields themselves, multiplying phases:
+  am_now_working_on(Boundaries);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       int wh[3] = {0, 0, 0};
@@ -185,6 +188,7 @@ void fields::step_boundaries(field_type ft) {
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++]) = comm_blocks[ft][pair][n0 + n];
       }
     }
+  finished_working();
 
 }
 
