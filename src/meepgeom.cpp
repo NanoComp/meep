@@ -1978,8 +1978,8 @@ void fragment_stats::update_stats_from_material(material_type mat, size_t pixels
           nonzero_conductivity_pixels_extmat_already_added =
               count_nonzero_conductivity_pixels(med, pixels);
         }
-        break;
       }
+      break;
     }
     default:
       // Only Medium and Material Function are supported
