@@ -2198,32 +2198,76 @@ static void print_tensor(std::complex<double> *in) {
 
 /* convenience routine to get element of material tensors */
 static std::complex<double> cvec_to_value(vector3 diag, cvector3 offdiag, int idx) {
+  std::complex<double> val = std::complex<double>(0, 0);
   switch (idx) {
-    case 0: return std::complex<double>(diag.x, 0);
-    case 1: return std::complex<double>(offdiag.x.re, offdiag.x.im);
-    case 2: return std::complex<double>(offdiag.y.re, offdiag.y.im);
-    case 3: return std::complex<double>(offdiag.x.re, -offdiag.x.im);
-    case 4: return std::complex<double>(diag.y, 0);
-    case 5: return std::complex<double>(offdiag.z.re, offdiag.z.im);
-    case 6: return std::complex<double>(offdiag.y.re, -offdiag.y.im);
-    case 7: return std::complex<double>(offdiag.z.re, -offdiag.z.im);
-    case 8: return std::complex<double>(diag.z, 0);
+    case 0:
+      val = std::complex<double>(diag.x, 0);
+      break;
+    case 1:
+      val = std::complex<double>(offdiag.x.re, offdiag.x.im);
+      break;
+    case 2:
+      val = std::complex<double>(offdiag.y.re, offdiag.y.im);
+      break;
+    case 3:
+      val = std::complex<double>(offdiag.x.re, -offdiag.x.im);
+      break;
+    case 4:
+      val = std::complex<double>(diag.y, 0);
+      break;
+    case 5:
+      val = std::complex<double>(offdiag.z.re, offdiag.z.im);
+      break;
+    case 6:
+      val = std::complex<double>(offdiag.y.re, -offdiag.y.im);
+      break;
+    case 7:
+      val = std::complex<double>(offdiag.z.re, -offdiag.z.im);
+      break;
+    case 8:
+      val = std::complex<double>(diag.z, 0);
+      break;
+    default:
+      meep::abort("Invalid value in switch statement.");
   }
+  return val;
 }
 
 /* convenience routine to get element of material tensors */
 double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
+  double val = 0.0;
   switch (idx) {
-    case 0: return diag.x;
-    case 1: return offdiag.x;
-    case 2: return offdiag.y;
-    case 3: return offdiag.x;
-    case 4: return diag.y;
-    case 5: return offdiag.z;
-    case 6: return offdiag.y;
-    case 7: return offdiag.z;
-    case 8: return diag.z;
+    case 0:
+      val = diag.x;
+      break;
+    case 1:
+      val = offdiag.x;
+      break;
+    case 2:
+      val = offdiag.y;
+      break;
+    case 3:
+      val = offdiag.x;
+      break;
+    case 4:
+      val = diag.y;
+      break;
+    case 5:
+      val = offdiag.z;
+      break;
+    case 6:
+      val = offdiag.y;
+      break;
+    case 7:
+      val = offdiag.z;
+      break;
+    case 8:
+      val = diag.z;
+      break;
+    default:
+      meep::abort("Invalid value in switch statement.");
   }
+  return val;
 }
 
 void get_material_tensor(const medium_struct *mm, meep::realnum freq,
