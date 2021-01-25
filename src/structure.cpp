@@ -245,6 +245,8 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
       master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
     split_by_cost(prime_factors, gv, chunk_volumes);
   }
+  delete [] effort_volumes;
+  delete [] effort;
 
   return chunk_volumes;
 }
