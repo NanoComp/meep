@@ -2345,7 +2345,7 @@ meep::realnum get_material_gradient(
   for (int i = 0; i < 9; i++)
     dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2 * du);
 
-  int dir_idx;
+  int dir_idx = 0;
   if (field_dir == meep::Ex)
     dir_idx = 0;
   else if (field_dir == meep::Ey)
@@ -2516,8 +2516,8 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   size_t dims[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (int c = 0; c < 3; c++) {
 
-    int rank = f->get_array_slice_dimensions(where, &dims[3 * c], dirs, true, false, min_max_loc,
-                                             0, field_dir[c]);
+    f->get_array_slice_dimensions(where, &dims[3 * c], dirs, true, false, min_max_loc,
+                                  0, field_dir[c]);
 
     vector3 max_corner = vec_to_vector3(min_max_loc[1]);
     meep::realnum max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
@@ -2538,7 +2538,6 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
     s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
 
     for (int i1 = 0; i1 < nf; ++i1) {       // freq
-      meep::realnum *v_cur = &v[ng * i1];
       for (int i2 = 0; i2 < n2; ++i2) {     // x
         for (int i3 = 0; i3 < n3; ++i3) {   // y
           for (int i4 = 0; i4 < n4; ++i4) { // z
