@@ -6023,7 +6023,7 @@ Construct an `EigenModeSource`.
   the Meep `resolution` in which case the structure is linearly interpolated from
   the Meep pixels.
 
-+ **`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]** — The tolerance to
++ **`eig_tolerance` [`number`, defaults to 10<sup>–12</sup> ]** — The tolerance to
   use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to
   less than this fractional tolerance.
 
