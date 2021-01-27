@@ -6023,7 +6023,7 @@ Construct an `EigenModeSource`.
   the Meep `resolution` in which case the structure is linearly interpolated from
   the Meep pixels.
 
-+ **`eig_tolerance` [`number`, defaults to 10<sup>–7</sup> ]** — The tolerance to
++ **`eig_tolerance` [`number`, defaults to 10<sup>–12</sup> ]** — The tolerance to
   use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to
   less than this fractional tolerance.
 
@@ -6240,9 +6240,9 @@ def __init__(self,
 Construct a `GaussianSource`.
 
 + **`frequency` [`number`]** — The center frequency $f$ in units of $c$/distance
-  (or ω in units of 2π$c$/distance). See [Units](Introduction.md#units-in-meep).
+  (or $\omega$ in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep).
   No default value. You can instead specify `wavelength=x` or `period=x`, which
-  are both a synonym for `frequency=1/x`; i.e. 1/ω in these units is the vacuum
+  are both a synonym for `frequency=1/x`; i.e. $1/\omega$ in these units is the vacuum
   wavelength or the temporal period.
 
 + **`width` [`number`]** — The width $w$ used in the Gaussian. No default value.
@@ -6267,7 +6267,7 @@ Construct a `GaussianSource`.
   Default is `False`.
 
 + **`fourier_transform(f)`** — Returns the Fourier transform of the current
-  evaluated at frequency `f` (`ω=2πf`) given by:
+  evaluated at frequency `f` ($\omega=2\pi f$) given by:
   $$
   \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
   \int e^{i\omega t}G(t)\,dt \equiv

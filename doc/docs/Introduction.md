@@ -123,13 +123,13 @@ Given the Green's function, one can then compute a wide variety of useful things
 
 ### Transmittance/Reflectance Spectra
 
-Perhaps the most common task to which FDTD is applied is that of computing the transmittance or scattering spectra from some finite structure, such as a resonant cavity, in response to some stimulus. One could, of course, compute the fields (and thus the transmitted flux) at each frequency ω separately, as described above. However, it is much more efficient to compute a broadband response via a single computation by Fourier-transforming the response to a short pulse.
+Perhaps the most common task to which FDTD is applied is that of computing the transmittance or scattering spectra from some finite structure, such as a resonant cavity, in response to some stimulus. One could, of course, compute the fields (and thus the transmitted flux) at each frequency $\omega$ separately, as described above. However, it is much more efficient to compute a broadband response via a single computation by Fourier-transforming the response to a short pulse.
 
-For example, suppose we want the transmitted power through some structure. For fields at a given frequency ω, this is the integral of the Poynting vector (in the normal $\hat{\mathbf{n}}$ direction) over a plane on the far side of the structure:
+For example, suppose we want the transmitted power through some structure. For fields at a given frequency $\omega$, this is the integral of the Poynting vector (in the normal $\hat{\mathbf{n}}$ direction) over a plane on the far side of the structure:
 
-$$P(\omega) = \mathrm{Re}\, \hat{\mathbf{n}}\cdot \int \mathbf{E}_\omega(\mathbf{x})^* \times \mathbf{H}_\omega(\mathbf{x}) \, d^2\mathbf{x}$$ Now, if we input a short pulse, it is tempting to compute the integral $P(t)$ of the Poynting vector at each time, and then Fourier-transform this to find $P(\omega)$. That is **incorrect**, however, because what we want is the flux of the Fourier-transformed fields **E** and **H**, which is not the same as the transform of the time-domain flux. The flux is not a linear function of the fields.
+$$P(\omega) = \mathrm{Re}\, \hat{\mathbf{n}}\cdot \int \mathbf{E}_\omega(\mathbf{x})^* \times \mathbf{H}_\omega(\mathbf{x}) \, d^2\mathbf{x}$$ Now, if we input a short pulse, it is tempting to compute the integral $P(t)$ of the Poynting vector at each time, and then Fourier-transform this to find $P(\omega)$. That is **incorrect**, however, because what we want is the flux of the Fourier-transformed fields $\mathbf{E}$ and $\mathbf{H}$, which is not the same as the transform of the time-domain flux. The flux is not a linear function of the fields.
 
-Instead, what one does is to accumulate the Fourier transforms $\mathbf{E}_ω(\mathbf{x})$ and $\mathbf{H}_ω(\mathbf{x})$ for every point in the flux plane via summation over the discrete time steps $n$:
+Instead, what one does is to accumulate the Fourier transforms $\mathbf{E}_\omega(\mathbf{x})$ and $\mathbf{H}_\omega(\mathbf{x})$ for every point in the flux plane via summation over the discrete time steps $n$:
 
 $$\tilde{f}(\omega) = \frac{1}{\sqrt{2\pi}}  \sum_n e^{i\omega n \Delta t} f(n\Delta t) \Delta t \approx \frac{1}{\sqrt{2\pi}} \int e^{i\omega t} f(t) dt$$ and then, at the end of the time-stepping, computing $P(\omega)$ by the fluxes of these Fourier-transformed fields. Meep takes care of all of this for you automatically, of course &mdash; you simply specify the regions over which you want to integrate the flux, and the frequencies that you want to compute.
 
