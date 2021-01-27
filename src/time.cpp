@@ -72,8 +72,8 @@ static const char *ts2n(time_sink s) {
     case Stepping: return "time stepping";
     case Connecting: return "connecting chunks";
     case Boundaries: return "copying boundaries";
-    case MPI_all: return "all-all communication";
-    case MPI_one: return "1-1 communication";
+    case MpiAllTime: return "all-all communication";
+    case MpiOneTime: return "1-1 communication";
     case FieldOutput: return "outputting fields";
     case FourierTransforming: return "Fourier transforming";
     case MPBTime: return "MPB mode solver";

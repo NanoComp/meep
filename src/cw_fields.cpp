@@ -195,7 +195,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
       double babs = abs(b[i]);
       if (babs > bmax) bmax = babs;
     }
-    am_now_working_on(MPI_all);
+    am_now_working_on(MpiAllTime);
     if (max_to_all(bmax) == 0.0) abort("zero current amplitudes in solve_cw");
     finished_working();
   }

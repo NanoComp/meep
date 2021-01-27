@@ -107,7 +107,7 @@ void fields::phase_material() {
         changed = changed || chunks[i]->new_s;
       }
     phasein_time--;
-    am_now_working_on(MPI_all);
+    am_now_working_on(MpiAllTime);
     bool changed_mpi = or_to_all(changed);
     finished_working();
     if (changed_mpi) {
@@ -158,7 +158,7 @@ void fields::step_boundaries(field_type ft) {
     }
   finished_working();
 
-  am_now_working_on(MPI_one);
+  am_now_working_on(MpiOneTime);
   boundary_communications(ft);
   finished_working();
 

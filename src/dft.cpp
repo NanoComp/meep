@@ -942,7 +942,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       }
       bufsz = max(bufsz, this_bufsz);
     }
-  am_now_working_on(MPI_all);
+  am_now_working_on(MpiAllTime);
   max_corner = max_to_all(max_corner);
   min_corner = -max_to_all(-min_corner); // i.e., min_to_all
   finished_working();
@@ -1026,7 +1026,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       size_t remaining = array_size;
       while (remaining != 0) {
         size_t size = (remaining > BUFSIZE ? BUFSIZE : remaining);
-        am_now_working_on(MPI_all);
+        am_now_working_on(MpiAllTime);
         sum_to_all(field_array + offset, buf, size);
         finished_working();
         memcpy(field_array + offset, buf, size * sizeof(cdouble));
@@ -1040,7 +1040,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   if (HDF5FileName)
     delete[] buffer;
   else {
-    am_now_working_on(MPI_all);
+    am_now_working_on(MpiAllTime);
     overlap = sum_to_all(overlap);
     finished_working();
   }
@@ -1125,7 +1125,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
     snprintf(filename, 100, "%s%s", HDF5FileName, strstr("%.h5", HDF5FileName) ? "" : ".h5");
     file = new h5file(filename, h5file::WRITE, false /*parallel*/);
   }
-  am_now_working_on(MPI_all);
+  am_now_working_on(MpiAllTime);
   if (have_empty_dims) NumFreqs = max_to_all(NumFreqs); // subtle!
   finished_working();
 
