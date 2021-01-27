@@ -485,12 +485,14 @@ Example output:
 
 ```
 Field time usage:
-        connecting chunks: 0.0819176 s +/- 0.000428381 s
-            time stepping: 0.198949 s +/- 0.0225551 s
-            communicating: 0.410577 s +/- 0.278853 s
-        outputting fields: 0.512352 s +/- 0.0238399 s
-     Fourier transforming: 0.0738274 s +/- 0.0967926 s
-          everything else: 0.324933 s +/- 0.377573 s
+        connecting chunks: 0.0156826 s +/- 0.002525 s
+            time stepping: 0.996411 s +/- 0.232147 s
+       copying boundaries: 0.148588 s +/- 0.0390397 s
+    all-all communication: 1.39423 s +/- 0.581098 s
+        1-1 communication: 0.136174 s +/- 0.0107685 s
+     Fourier transforming: 0.0321625 s +/- 0.0614168 s
+          MPB mode solver: 0.348019 s +/- 0.370068 s
+          everything else: 0.207387 s +/- 0.0164821 s
 ```
 
 </div>
@@ -508,10 +510,10 @@ def time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return a list of times spent by each process for a type of work `time_sink` which
-can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time
-stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`)
-Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`)
-other.
+can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
+(`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
+(`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
+(`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
 
 </div>
 
@@ -528,10 +530,10 @@ def mean_time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return the mean time spent by all processes for a type of work `time_sink` which
-can be one of nine integer values `0`-`8`: (`0`) connecting chunks, (`1`) time
-stepping, (`2`) boundaries, (`3`) MPI/synchronization, (`4`) field output, (`5`)
-Fourier transforming, (`6`) MPB, (`7`) near to far field transformation, and (`8`)
-other.
+can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
+(`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
+(`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
+(`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
 
 </div>
 

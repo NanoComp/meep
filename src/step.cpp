@@ -107,7 +107,7 @@ void fields::phase_material() {
         changed = changed || chunks[i]->new_s;
       }
     phasein_time--;
-    am_now_working_on(MpiTime);
+    am_now_working_on(MpiAllTime);
     bool changed_mpi = or_to_all(changed);
     finished_working();
     if (changed_mpi) {
@@ -131,8 +131,6 @@ void fields_chunk::phase_material(int phasein_time) {
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
 
-  am_now_working_on(MpiTime);
-
   // Do the metals first!
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
@@ -144,6 +142,7 @@ void fields::step_boundaries(field_type ft) {
      of the connections for process i' for i < i'  */
 
   // First copy outgoing data to buffers...
+  am_now_working_on(Boundaries);
   for (int j = 0; j < num_chunks; j++)
     if (chunks[j]->is_mine()) {
       int wh[3] = {0, 0, 0};
@@ -157,10 +156,14 @@ void fields::step_boundaries(field_type ft) {
         }
       }
     }
+  finished_working();
 
+  am_now_working_on(MpiOneTime);
   boundary_communications(ft);
+  finished_working();
 
   // Finally, copy incoming data to the fields themselves, multiplying phases:
+  am_now_working_on(Boundaries);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       int wh[3] = {0, 0, 0};
@@ -185,8 +188,8 @@ void fields::step_boundaries(field_type ft) {
           *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++]) = comm_blocks[ft][pair][n0 + n];
       }
     }
-
   finished_working();
+
 }
 
 void fields::step_source(field_type ft, bool including_integrated) {

@@ -440,7 +440,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     // then, synchronize the data
     eps_data.ncache = eps_data.icache; // actual amount of cached data
     double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
-    am_now_working_on(MpiTime);
+    am_now_working_on(MpiAllTime);
     sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
     finished_working();
     free(eps_data.cache);
@@ -654,7 +654,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   for (int i = 0; i < 3; ++i)
     destroy_evectmatrix(W[i]);
 
-  am_now_working_on(MpiTime);
+  am_now_working_on(MpiAllTime);
   /* We only run MPB eigensolver on the master process to avoid
      any possibility of inconsistent mode solutions (#568) */
   eigval = broadcast(0, eigval);

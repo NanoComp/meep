@@ -122,7 +122,7 @@ void fields::disconnect_chunks() {
 
 void fields::connect_chunks() {
   /* make sure all processes agree on chunk_connections_valid to avoid deadlocks */
-  am_now_working_on(MpiTime);
+  am_now_working_on(MpiAllTime);
   chunk_connections_valid = and_to_all(chunk_connections_valid);
   finished_working();
 
@@ -323,7 +323,7 @@ void fields::connect_the_chunks() {
     FOR_H_AND_B(hc, bc) {
       B_redundant[5 * (num_chunks + i) + bc - Bx] = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
     }
-  am_now_working_on(MpiTime);
+  am_now_working_on(MpiAllTime);
   and_to_all(B_redundant + 5 * num_chunks, B_redundant, 5 * num_chunks);
   finished_working();
 
@@ -342,7 +342,7 @@ void fields::connect_the_chunks() {
     for (int i = 0; i < num_chunks; i++)
       needs_W_notowned[c] = needs_W_notowned[c] || chunks[i]->needs_W_notowned(c);
   }
-  am_now_working_on(MpiTime);
+  am_now_working_on(MpiAllTime);
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
   finished_working();
 
