@@ -524,7 +524,7 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
 
 gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
                            double eps_, double mu_, std::complex<double> E0_[3]) {
-  if (x0.dim == Dcyl) abort("wrong dimensionality in gaussianbeam");
+  if (x0_.dim == Dcyl) abort("wrong dimensionality in gaussianbeam");
 
   x0 = x0_;
   kdir = kdir_;

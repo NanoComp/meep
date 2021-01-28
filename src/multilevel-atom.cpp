@@ -88,7 +88,7 @@ extern "C" void DGETRI(const int *n, realnum *A, const int *lda, int *ipiv, real
 /* S -> inv(S), where S is a p x p matrix in row-major order */
 static bool invert(realnum *S, int p) {
 #ifdef HAVE_LAPACK
-  int info;
+  int info = 0;
   int *ipiv = new int[p];
   DGETRF(&p, &p, S, &p, ipiv, &info);
   if (info < 0) abort("invalid argument %d in DGETRF", -info);
@@ -98,11 +98,11 @@ static bool invert(realnum *S, int p) {
   } // singular
 
   int lwork = -1;
-  realnum work1;
+  realnum work1 = 0.0;
   DGETRI(&p, S, &p, ipiv, &work1, &lwork, &info);
   if (info != 0) abort("error %d in DGETRI workspace query", info);
   lwork = int(work1);
-  realnum *work = new realnum[lwork];
+  realnum *work = new realnum[lwork]();
   DGETRI(&p, S, &p, ipiv, work, &lwork, &info);
   if (info < 0) abort("invalid argument %d in DGETRI", -info);
 
