@@ -83,7 +83,7 @@ Required Dependencies
 
 [libctl](https://libctl.readthedocs.io) is required to use the Python or Scheme interfaces. If you don't install it, you can only use the C++ interface. libctl version **4.0 or later** is required.
 
-If you only want the Python interface, it is possible to install libctl without having Scheme/Guile by configuring libctl with `--without-guile`.
+If you only want the Python interface, it is possible to install the library portions of libctl without having Scheme/Guile by configuring libctl with `--without-guile`.   You should then configure MPB `--without-libctl`, which builds only the C library of MPB, but still configure Meep `--with-libctl`: Meep will then build the Python interface for both Meep and MPB using the libctl and MPB libraries.
 
 Instead of using Guile directly in our Scheme interface, we separated much of the user interface code into a package called libctl, in the hope that this might be more generally useful. libctl automatically handles the communication between the program and Guile, converting complicated data structures and so on, to make it even easier to use Guile to control scientific applications. Download libctl from the [libctl page](https://libctl.readthedocs.io), unpack it, and run the usual `configure`, `make`, `make install` sequence. You'll also want to browse the [libctl manual](https://libctl.readthedocs.io), as this will give you a general overview of what the user interface will be like.
 
