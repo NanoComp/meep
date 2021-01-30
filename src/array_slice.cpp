@@ -757,19 +757,13 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
   vec min_max_loc[2]; // extremal points in subgrid
   int rank = get_array_slice_dimensions(where, dims, dirs, true, false, min_max_loc);
 
-  int full_rank = rank;
-  direction full_dirs[3];
-  for (int fr = 0; fr < rank; fr++)
-    full_dirs[fr] = dirs[fr];
-
   double *weights = get_array_slice(where, NO_COMPONENT);
 
   /* get length and endpoints of x,y,z tics arrays */
   size_t nxyz[3] = {1, 1, 1};
   double xyzmin[3] = {0.0, 0.0, 0.0}, xyzmax[3] = {0.0, 0.0, 0.0};
-  for (int fr = 0, rr = 0; fr < full_rank; fr++) {
-    direction d = full_dirs[fr];
-    int nd = d - X;
+  for (int nd = 0, rr = 0; nd < 3; ++nd) {
+    direction d = direction(nd);
     if (where.in_direction(d) == 0.0) {
       xyzmin[nd] = xyzmax[nd] = where.in_direction_min(d);
       nxyz[nd] = 1;
