@@ -9,9 +9,7 @@ from autograd import tensor_jacobian_product
 import unittest
 from enum import Enum
 
-class MonitorObject(Enum):
-    eigenmode = 1
-    DFT_fields = 2
+MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 
 resolution = 25
 
@@ -173,16 +171,16 @@ class TestAdjointSolver(unittest.TestCase):
 
     def test_adjoint_solver_DFT_fields(self):
         ## compute gradient using adjoint solver
-        adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.DFT_fields)
+        adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.DFT)
 
         ## compute unperturbed Ez2
-        Ez2_unperturbed = forward_simulation(p, MonitorObject.DFT_fields)
+        Ez2_unperturbed = forward_simulation(p, MonitorObject.DFT)
 
         print("Ez2:, {:.6f}, {:.6f}".format(adjsol_obj,Ez2_unperturbed))
         self.assertAlmostEqual(adjsol_obj,Ez2_unperturbed,places=3)
 
         ## compute perturbed Ez2
-        Ez2_perturbed = forward_simulation(p+dp, MonitorObject.DFT_fields)
+        Ez2_perturbed = forward_simulation(p+dp, MonitorObject.DFT)
 
         print("directional_derivative:, {:.6f}, {:.6f}".format(np.dot(dp,adjsol_grad),Ez2_perturbed-Ez2_unperturbed))
         self.assertAlmostEqual(np.dot(dp,adjsol_grad),Ez2_perturbed-Ez2_unperturbed,places=5)
@@ -190,16 +188,16 @@ class TestAdjointSolver(unittest.TestCase):
 
     def test_adjoint_solver_eigenmode(self):
         ## compute gradient using adjoint solver
-        adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.eigenmode)
+        adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.EIGENMODE)
 
         ## compute unperturbed S12
-        S12_unperturbed = forward_simulation(p, MonitorObject.eigenmode)
+        S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE)
 
         print("S12:, {:.6f}, {:.6f}".format(adjsol_obj,S12_unperturbed))
         self.assertAlmostEqual(adjsol_obj,S12_unperturbed,places=3)
 
         ## compute perturbed S12
-        S12_perturbed = forward_simulation(p+dp, MonitorObject.eigenmode)
+        S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE)
 
         print("directional_derivative:, {:.6f}, {:.6f}".format(np.dot(dp,adjsol_grad),S12_perturbed-S12_unperturbed))
         self.assertAlmostEqual(np.dot(dp,adjsol_grad),S12_perturbed-S12_unperturbed,places=5)
@@ -214,19 +212,19 @@ class TestAdjointSolver(unittest.TestCase):
         mapped_p = mapping(p,filter_radius,eta,beta)
 
         ## compute gradient using adjoint solver
-        adjsol_obj, adjsol_grad = adjoint_solver(mapped_p, MonitorObject.eigenmode)
+        adjsol_obj, adjsol_grad = adjoint_solver(mapped_p, MonitorObject.EIGENMODE)
 
         ## backpropagate the gradient
         bp_adjsol_grad = tensor_jacobian_product(mapping,0)(p,filter_radius,eta,beta,adjsol_grad)
 
         ## compute unperturbed S12
-        S12_unperturbed = forward_simulation(mapped_p, MonitorObject.eigenmode)
+        S12_unperturbed = forward_simulation(mapped_p, MonitorObject.EIGENMODE)
 
         print("S12:, {:.6f}, {:.6f}".format(adjsol_obj,S12_unperturbed))
         self.assertAlmostEqual(adjsol_obj,S12_unperturbed,places=3)
 
         ## compute perturbed S12
-        S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta), MonitorObject.eigenmode)
+        S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta), MonitorObject.EIGENMODE)
 
         print("directional_derivative:, {:.6f}, {:.6f}".format(np.dot(dp,bp_adjsol_grad),S12_perturbed-S12_unperturbed))
         self.assertAlmostEqual(np.dot(dp,bp_adjsol_grad),S12_perturbed-S12_unperturbed,places=5)
