@@ -21,7 +21,7 @@ cell_size = mp.Vector3(sxy,sxy,0)
 dpml = 1.0
 boundary_layers = [mp.PML(thickness=dpml)]
 
-eig_parity = mp.EVEN_Y+mp.ODD_Z
+eig_parity = mp.EVEN_Y + mp.ODD_Z
 
 design_shape = mp.Vector3(1.5,1.5)
 design_region_resolution = int(2*resolution)
@@ -71,14 +71,14 @@ def forward_simulation(design_params,mon_type):
                         sources=sources,
                         geometry=geometry)
 
-    if mon_type.name == 'eigenmode':
+    if mon_type.name == 'EIGENMODE':
         mode = sim.add_mode_monitor(fcen,
                                     0,
                                     1,
                                     mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml),size=mp.Vector3(0,sxy,0)),
                                     yee_grid=True)
 
-    elif mon_type.name == 'DFT_fields':
+    elif mon_type.name == 'DFT':
         mode = sim.add_dft_fields([mp.Ez],
                                   fcen,
                                   0,
@@ -89,19 +89,19 @@ def forward_simulation(design_params,mon_type):
 
     sim.run(until_after_sources=20)
 
-    if mon_type.name == 'eigenmode':
+    if mon_type.name == 'EIGENMODE':
         coeff = sim.get_eigenmode_coefficients(mode,[1],eig_parity).alpha[0,0,0]
         S12 = abs(coeff)**2
 
-    elif mon_type.name == 'DFT_fields':
+    elif mon_type.name == 'DFT':
         Ez_dft = sim.get_dft_array(mode, mp.Ez, 0)
-        Ez2 = abs(Ez_dft[47])**2
+        Ez2 = abs(Ez_dft[63])**2
 
     sim.reset_meep()
 
-    if mon_type.name == 'eigenmode':
+    if mon_type.name == 'EIGENMODE':
         return S12
-    elif mon_type.name == 'DFT_fields':
+    elif mon_type.name == 'DFT':
         return Ez2
 
 
@@ -127,7 +127,7 @@ def adjoint_solver(design_params, mon_type):
                         sources=sources,
                         geometry=geometry)
 
-    if mon_type.name == 'eigenmode':
+    if mon_type.name == 'EIGENMODE':
         obj_list = [mpa.EigenmodeCoefficient(sim,
                                              mp.Volume(center=mp.Vector3(0.5*sxy-dpml),
                                                        size=mp.Vector3(0,sxy,0)),1)]
@@ -135,14 +135,14 @@ def adjoint_solver(design_params, mon_type):
         def J(mode_mon):
             return npa.abs(mode_mon)**2
 
-    elif mon_type.name == 'DFT_fields':
+    elif mon_type.name == 'DFT':
         obj_list = [mpa.FourierFields(sim,
                                       mp.Volume(center=mp.Vector3(0.5*sxy-dpml),
                                                 size=mp.Vector3(0,sxy,0)),
                                       mp.Ez)]
 
         def J(mode_mon):
-            return npa.abs(mode_mon[0,47])**2
+            return npa.abs(mode_mon[0,63])**2
 
     opt = mpa.OptimizationProblem(
         simulation = sim,
@@ -177,7 +177,7 @@ class TestAdjointSolver(unittest.TestCase):
         Ez2_unperturbed = forward_simulation(p, MonitorObject.DFT)
 
         print("Ez2:, {:.6f}, {:.6f}".format(adjsol_obj,Ez2_unperturbed))
-        self.assertAlmostEqual(adjsol_obj,Ez2_unperturbed,places=3)
+        self.assertAlmostEqual(adjsol_obj,Ez2_unperturbed,places=2)
 
         ## compute perturbed Ez2
         Ez2_perturbed = forward_simulation(p+dp, MonitorObject.DFT)
