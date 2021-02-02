@@ -372,7 +372,7 @@ functions (if any) at each timestep. The keyword argument `until` is *either* a
 number, in which case it is an additional time (in Meep units) to run for, *or* it
 is a function (of no arguments) which returns `True` when the simulation should
 stop. `until` can also be a list of stopping conditions which may include a number
-and additional functions.
+of additional functions.
 
 `run(step_functions..., until_after_sources=condition/time)`
 
@@ -434,7 +434,8 @@ def use_output_directory(self, dname=''):
 Put output in a subdirectory, which is created if necessary. If the optional
 argument dirname is specified, that is the name of the directory. Otherwise, the
 directory name is the current Python file name with `".py"` replaced by `"-out"`:
-e.g. `test.py` implies a directory of `"test-out"`.
+e.g. `test.py` implies a directory of `"test-out"`. Also resets `filename_prefix`
+to `None`.
 
 </div>
 
@@ -2593,7 +2594,7 @@ functions (if any) at each timestep. The keyword argument `until` is *either* a
 number, in which case it is an additional time (in Meep units) to run for, *or* it
 is a function (of no arguments) which returns `True` when the simulation should
 stop. `until` can also be a list of stopping conditions which may include a number
-and additional functions.
+of additional functions.
 
 `run(step_functions..., until_after_sources=condition/time)`
 
@@ -5858,10 +5859,10 @@ a single waveguide mode (or other mode of some cross section or periodic region)
 at a single frequency, and which couples primarily into that mode as long as the
 bandwidth is not too broad. This is possible if you have
 [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the
-field profile of the desired mode, and uses the field profile to produce an
-equivalent current source. Note: this feature does *not* work in cylindrical
-coordinates. To do this, instead of a `source` you should use an
-`EigenModeSource`
+field profile of the desired mode, and use the field profile to produce an
+equivalent current source. The mode-launcher feature does *not* work in
+cylindrical coordinates. To use the mode launcher, instead of a `source` you
+should use an `EigenModeSource`.
 
 </div>
 

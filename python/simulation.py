@@ -2119,7 +2119,8 @@ class Simulation(object):
         Put output in a subdirectory, which is created if necessary. If the optional
         argument dirname is specified, that is the name of the directory. Otherwise, the
         directory name is the current Python file name with `".py"` replaced by `"-out"`:
-        e.g. `test.py` implies a directory of `"test-out"`.
+        e.g. `test.py` implies a directory of `"test-out"`. Also resets `filename_prefix`
+        to `None`.
         """
         if not dname:
             dname = self.get_filename_prefix() + '-out'
@@ -3599,7 +3600,7 @@ class Simulation(object):
         number, in which case it is an additional time (in Meep units) to run for, *or* it
         is a function (of no arguments) which returns `True` when the simulation should
         stop. `until` can also be a list of stopping conditions which may include a number
-        and additional functions.
+        of additional functions.
 
         `run(step_functions..., until_after_sources=condition/time)`  ##sig-keep
 
