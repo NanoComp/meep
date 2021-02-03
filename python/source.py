@@ -95,10 +95,10 @@ class Source(object):
         at a single frequency, and which couples primarily into that mode as long as the
         bandwidth is not too broad. This is possible if you have
         [MPB](https://mpb.readthedocs.io) installed: Meep will call MPB to compute the
-        field profile of the desired mode, and uses the field profile to produce an
-        equivalent current source. Note: this feature does *not* work in cylindrical
-        coordinates. To do this, instead of a `source` you should use an
-        `EigenModeSource`
+        field profile of the desired mode, and use the field profile to produce an
+        equivalent current source. The mode-launcher feature does *not* work in
+        cylindrical coordinates. To use the mode launcher, instead of a `source` you
+        should use an `EigenModeSource`.
         """
         if center is None and volume is None:
             raise ValueError("Source requires either center or volume")
