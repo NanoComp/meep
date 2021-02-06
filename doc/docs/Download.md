@@ -16,21 +16,16 @@ To receive notifications when new versions are released, subscribe to the [meep-
 Precompiled Packages for Ubuntu
 -------------------------------
 
-Precompiled packages of the out-of-date [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) are available for [Ubuntu](https://packages.ubuntu.com/search?keywords=meep). We recommend Ubuntu as Meep and all of its dependencies can be installed using just one line:
+Precompiled packages of [Meep version 1.17.1](https://github.com/NanoComp/meep/releases/tag/v1.17.1) (January 2021) with Python interface will be available for [Ubuntu 21.04 ("Hirsute Hippo")](https://packages.ubuntu.com/hirsute/python3-meep) in April 2021. We recommend Ubuntu as Meep and all of its dependencies will be able to be installed using just one line:
 
 ```sh
-sudo apt-get install meep h5utils
+sudo apt-get install python3-meep h5utils
 ```
 
-You can also install the parallel version of Meep which is based on [OpenMPI](https://www.open-mpi.org/) using:
+You will also be able to install the [parallel version of Meep](https://packages.ubuntu.com/hirsute/python3-meep-openmpi) which is based on [OpenMPI](https://www.open-mpi.org/) using:
 
 ```sh
-sudo apt-get install meep-openmpi
+sudo apt-get install python3-meep-openmpi
 ```
 
-The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [Debian package](https://packages.debian.org/search?searchon=names&keywords=meep).
-
-Amazon Web Services (AWS)
--------------------------
-
-The latest stable version of Meep preinstalled on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu) 16.04 can be accessed for free on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as an [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS) provided by [Simpetus](http://www.simpetus.com/launchsims.html).
+These upcoming Meep packages for Ubuntu 21.04 are derived from the Debian 11 ("Bullseye") packages ([serial](https://packages.debian.org/bullseye/python3-meep) and [parallel](https://packages.debian.org/bullseye/python3-meep-openmpi)). Debian 11 is currently the testing distribution.

@@ -35,11 +35,7 @@ For a list of more than 2500 published works which have used Meep, see the [Goog
 
 ### Can I access Meep in the public cloud?
 
-Yes. Meep is available preinstalled on Ubuntu on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
-
-### Are professional consulting services available?
-
-Yes. [Simpetus](http://www.simpetus.com), a company started by Meep's developers and maintainers, provides professional consulting services for photonic design and modeling including development of turn-key simulation modules as well as training and technical support for getting up and running with Meep.
+Yes. Using a virtual instance running Ubuntu, you can install the [Conda package for Meep](Installation.md#conda-packages).
 
 Installation
 ------------

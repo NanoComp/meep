@@ -61,11 +61,9 @@ For bug reports and feature requests, please file a [GitHub issue](https://githu
 Acknowledgements
 ----------------
 
-The Meep project is maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep). [Acknowledgements](Acknowledgements.md) provides a complete listing of the project contributors.
+The Meep project is maintained by the developer community on [GitHub](https://github.com/NanoComp/meep). [Acknowledgements](Acknowledgements.md) provides a complete listing of the project contributors.
 
 Support and Feedback
 ---------------------
 
 If you have questions or problems regarding Meep, you are encouraged to query the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/).
-
-Professional consulting services for photonic design and modeling including development of custom, turn-key simulation modules, training, technical support, and access to Meep in the public cloud via Amazon Web Services (AWS) are provided by [Simpetus](http://www.simpetus.com).

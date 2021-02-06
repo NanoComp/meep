@@ -13,8 +13,6 @@ Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/
 
 Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/NanoComp/meep/releases), and you can also do a `git clone` of the master branch of the [Meep repository on Github](https://github.com/NanoComp/meep) if you have Autotools installed. For more information, see [Build From Source](Build_From_Source.md).
 
-The latest version of Meep preinstalled on Ubuntu can be accessed on Amazon Web Services (AWS) Elastic Compute Cloud (EC2) as a free [Amazon Machine Image (AMI)](https://aws.amazon.com/marketplace/pp/B01KHWH0AS). To access this AMI, follow these [instructions](http://www.simpetus.com/launchsims.html).
-
 Conda Packages
 ---------------
 
@@ -130,15 +128,11 @@ To install the PyMeep Conda package on a [non-networked system](https://docs.ana
 Installation on Linux
 -------------------------
 
-For most [Linux distributions](https://en.wikipedia.org/wiki/Linux_distribution), there should be precompiled packages for most of Meep's prerequisites below, and we *highly* recommend installing those prerequisites using the available packages for your system whenever possible. Using precompiled packages means that you don't have to worry about how to install things manually. You are using packages which have already been tweaked to work well with your system, and usually your packages will be automatically upgraded when you upgrade the rest of your system. For easy access to the Python interface, we provide a binary installation in the form of Conda packages. Details can be found [below](#conda-packages).
+For most [Linux distributions](https://en.wikipedia.org/wiki/Linux_distribution), there should be precompiled packages for most of Meep's prerequisites below, and we *highly* recommend installing those prerequisites using the available packages for your system whenever possible. Using precompiled packages means that you don't have to worry about how to install things manually. You are using packages which have already been tweaked to work well with your system, and usually your packages will be automatically upgraded when you upgrade the rest of your system.
 
-The following precompiled packages are available: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md).
+There are upcoming packages for [Meep version 1.17.1](https://github.com/NanoComp/meep/releases/tag/v1.17.1) with Python interface for Ubuntu 21.04 ("Hirsute Hippo") ([serial](https://packages.ubuntu.com/hirsute/python3-meep) and [parallel](https://packages.ubuntu.com/hirsute/python3-meep-openmpi)) and Debian 11 ("Bullseye") ([serial](https://packages.debian.org/bullseye/python3-meep) and [parallel](https://packages.debian.org/bullseye/python3-meep-openmpi)) which will be released in April 2021.
 
-The easiest installation is on [Ubuntu](https://en.wikipedia.org/wiki/Ubuntu_(operating_system)) which has precompiled packages for Meep:
-
-```sh
-apt-get install meep h5utils
-```
+In the meantime, the following dependencies are already available as precompiled packages: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md).
 
 Installation on macOS 
 -----------------------
