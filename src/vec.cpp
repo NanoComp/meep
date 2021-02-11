@@ -1036,28 +1036,31 @@ double grid_volume::get_cost() const {
 
 // return complex(left cost, right cost).  Should really be a tuple, but we don't want to require
 // C++11? yet?
-std::complex<double> grid_volume::get_split_costs(direction d, int split_point) const {
+std::complex<double> grid_volume::get_split_costs(direction d, int split_point,
+                                                  bool frag_cost) const {
   double left_cost = 0, right_cost = 0;
   if (split_point > 0) {
     grid_volume v_left = *this;
     v_left.set_num_direction(d, split_point);
-    left_cost = v_left.get_cost();
+    left_cost = frag_cost ? v_left.get_cost() : v_left.nowned_min();
   }
   if (split_point < num_direction(d)) {
     grid_volume v_right = *this;
     v_right.set_num_direction(d, num_direction(d) - split_point);
     v_right.shift_origin(d, split_point * 2);
-    right_cost = v_right.get_cost();
+    right_cost = frag_cost ? v_right.get_cost() : v_right.nowned_min();
   }
   return std::complex<double>(left_cost, right_cost);
 }
 
 static double cost_diff(int desired_chunks, std::complex<double> costs) {
-  double left_cost = real(costs), right_cost = imag(costs);
-  return right_cost - left_cost * (desired_chunks - 1);
+  double left_cost = real(costs) / (desired_chunks / 2);
+  double right_cost = imag(costs) / (desired_chunks - desired_chunks / 2);
+  return right_cost - left_cost;
 }
 
-void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
+void grid_volume::find_best_split(int desired_chunks, bool frag_cost,
+                                  int &best_split_point,
                                   direction &best_split_direction,
                                   double &left_effort_fraction) const {
   if (size_t(desired_chunks) > nowned_min()) {
@@ -1083,7 +1086,7 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
     int first = 0, last = num_direction(d);
     while (first < last) { // bisection search for balanced splitting
       int mid = (first + last) / 2;
-      double mid_diff = cost_diff(desired_chunks, get_split_costs(d, mid));
+      double mid_diff = cost_diff(desired_chunks, get_split_costs(d, mid, frag_cost));
       if (mid_diff > 0) {
         if (first == mid) break;
         first = mid;
@@ -1094,10 +1097,10 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
         break;
     }
     int split_point = (first + last) / 2;
-    std::complex<double> costs = get_split_costs(d, split_point);
+    std::complex<double> costs = get_split_costs(d, split_point, frag_cost);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
-    double split_measure = max(left_cost * (desired_chunks - 1), right_cost);
+    double split_measure = max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - (desired_chunks / 2)));
     if (split_measure < best_split_measure) {
       if (d == longest_axis || split_measure < (best_split_measure - (0.3 * best_split_measure))) {
         // Only use this split_measure if we're on the longest_axis, or if the split_measure is
@@ -1113,25 +1116,6 @@ void grid_volume::find_best_split(int desired_chunks, int &best_split_point,
       }
     }
   }
-}
-
-std::vector<grid_volume> grid_volume::split_into_n(int n) const {
-  std::vector<grid_volume> result;
-  grid_volume rest_gv = *this;
-  while (n > 1) {
-    int best_split_point;
-    direction best_split_direction;
-    double effort_fraction;
-    rest_gv.find_best_split(n, best_split_point, best_split_direction, effort_fraction);
-    int num_in_split_dir = num_direction(best_split_direction);
-    result.push_back(
-        rest_gv.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir));
-    rest_gv =
-        rest_gv.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
-    --n;
-  }
-  result.push_back(rest_gv);
-  return result;
 }
 
 grid_volume grid_volume::split_at_fraction(bool want_high, int numer, int bestd,

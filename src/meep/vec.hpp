@@ -992,7 +992,6 @@ public:
   grid_volume split(size_t num, int which) const;
   grid_volume split_by_effort(int num, int which, int Ngv = 0, const grid_volume *v = NULL,
                               double *effort = NULL) const;
-  std::vector<grid_volume> split_into_n(int n) const;
   grid_volume split_at_fraction(bool want_high, int numer, int bestd = -1, int bestlen = 1) const;
   double get_cost() const;
   grid_volume halve(direction d) const;
@@ -1031,10 +1030,13 @@ public:
 
   const char *str(char *buffer = 0, size_t buflen = 0);
 
-private:
-  std::complex<double> get_split_costs(direction d, int split_point) const;
-  void find_best_split(int desired_chunks, int &best_split_point, direction &best_split_direction,
+  std::complex<double> get_split_costs(direction d, int split_point,
+                                       bool frag_cost) const;
+  void find_best_split(int desired_chunks, bool frag_cost,
+                       int &best_split_point, direction &best_split_direction,
                        double &left_effort_fraction) const;
+
+private:
   grid_volume(ndim d, double ta, int na, int nb, int nc);
   ivec io;    // integer origin ... always change via set_origin etc.!
   vec origin; // cache of operator[](io), for performance
