@@ -76,7 +76,8 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
 }
 
 static void split_by_cost(int n, grid_volume gvol,
-                          std::vector<grid_volume> &result) {
+                          std::vector<grid_volume> &result,
+                          bool frag_cost) {
   if (n == 1) {
     result.push_back(gvol);
     return;
@@ -85,13 +86,13 @@ static void split_by_cost(int n, grid_volume gvol,
     int best_split_point;
     direction best_split_direction;
     double left_effort_fraction;
-    gvol.find_best_split(n, true, best_split_point, best_split_direction, left_effort_fraction);
+    gvol.find_best_split(n, frag_cost, best_split_point, best_split_direction, left_effort_fraction);
     int num_in_split_dir = gvol.num_direction(best_split_direction);
     grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir);
     const int num_left = (size_t)(left_effort_fraction * n + 0.5);
-    split_by_cost(num_left, left_gvol, result);
+    split_by_cost(num_left, left_gvol, result, frag_cost);
     grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
-    split_by_cost(n - num_left, right_gvol, result);
+    split_by_cost(n - num_left, right_gvol, result, frag_cost);
     return;
   }
 }
@@ -186,13 +187,6 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
       if (break_this[d]) gv = gv.pad((direction)d);
   }
 
-  // initialize effort volumes
-  int num_effort_volumes = 1;
-  grid_volume *effort_volumes = new grid_volume[num_effort_volumes];
-  effort_volumes[0] = gv;
-  double *effort = new double[num_effort_volumes];
-  effort[0] = 1.0;
-
   // Finally, create the chunks:
   std::vector<grid_volume> chunk_volumes;
 
@@ -200,19 +194,13 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks evenly\n", desired_num_chunks);
-    for (int i = 0; i < desired_num_chunks; i++) {
-      grid_volume vi =
-          gv.split_by_effort(desired_num_chunks, i, num_effort_volumes, effort_volumes, effort);
-      chunk_volumes.push_back(vi);
-    }
+    split_by_cost(desired_num_chunks, gv, chunk_volumes, false);
   }
   else {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
-    split_by_cost(desired_num_chunks, gv, chunk_volumes);
+    split_by_cost(desired_num_chunks, gv, chunk_volumes, true);
   }
-  delete [] effort_volumes;
-  delete [] effort;
 
   return chunk_volumes;
 }
