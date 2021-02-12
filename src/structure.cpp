@@ -77,7 +77,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
 
 static void split_by_cost(int n, grid_volume gvol,
                           std::vector<grid_volume> &result,
-                          bool frag_cost) {
+                          bool fragment_cost) {
   if (n == 1) {
     result.push_back(gvol);
     return;
@@ -86,13 +86,13 @@ static void split_by_cost(int n, grid_volume gvol,
     int best_split_point;
     direction best_split_direction;
     double left_effort_fraction;
-    gvol.find_best_split(n, frag_cost, best_split_point, best_split_direction, left_effort_fraction);
+    gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction, left_effort_fraction);
     int num_in_split_dir = gvol.num_direction(best_split_direction);
     grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir);
     const int num_left = (size_t)(left_effort_fraction * n + 0.5);
-    split_by_cost(num_left, left_gvol, result, frag_cost);
+    split_by_cost(num_left, left_gvol, result, fragment_cost);
     grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
-    split_by_cost(n - num_left, right_gvol, result, frag_cost);
+    split_by_cost(n - num_left, right_gvol, result, fragment_cost);
     return;
   }
 }
@@ -193,7 +193,7 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && desired_num_chunks > 1)
-      master_printf("Splitting into %d chunks evenly\n", desired_num_chunks);
+      master_printf("Splitting into %d chunks by voxels\n", desired_num_chunks);
     split_by_cost(desired_num_chunks, gv, chunk_volumes, false);
   }
   else {

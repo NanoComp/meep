@@ -959,18 +959,18 @@ double grid_volume::get_cost() const {
 // return complex(left cost, right cost).  Should really be a tuple, but we don't want to require
 // C++11? yet?
 std::complex<double> grid_volume::get_split_costs(direction d, int split_point,
-                                                  bool frag_cost) const {
+                                                  bool fragment_cost) const {
   double left_cost = 0, right_cost = 0;
   if (split_point > 0) {
     grid_volume v_left = *this;
     v_left.set_num_direction(d, split_point);
-    left_cost = frag_cost ? v_left.get_cost() : v_left.nowned_min();
+    left_cost = fragment_cost ? v_left.get_cost() : v_left.nowned_min();
   }
   if (split_point < num_direction(d)) {
     grid_volume v_right = *this;
     v_right.set_num_direction(d, num_direction(d) - split_point);
     v_right.shift_origin(d, split_point * 2);
-    right_cost = frag_cost ? v_right.get_cost() : v_right.nowned_min();
+    right_cost = fragment_cost ? v_right.get_cost() : v_right.nowned_min();
   }
   return std::complex<double>(left_cost, right_cost);
 }
@@ -981,7 +981,7 @@ static double cost_diff(int desired_chunks, std::complex<double> costs) {
   return right_cost - left_cost;
 }
 
-void grid_volume::find_best_split(int desired_chunks, bool frag_cost,
+void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
                                   int &best_split_point,
                                   direction &best_split_direction,
                                   double &left_effort_fraction) const {
@@ -1008,7 +1008,7 @@ void grid_volume::find_best_split(int desired_chunks, bool frag_cost,
     int first = 0, last = num_direction(d);
     while (first < last) { // bisection search for balanced splitting
       int mid = (first + last) / 2;
-      double mid_diff = cost_diff(desired_chunks, get_split_costs(d, mid, frag_cost));
+      double mid_diff = cost_diff(desired_chunks, get_split_costs(d, mid, fragment_cost));
       if (mid_diff > 0) {
         if (first == mid) break;
         first = mid;
@@ -1019,7 +1019,7 @@ void grid_volume::find_best_split(int desired_chunks, bool frag_cost,
         break;
     }
     int split_point = (first + last) / 2;
-    std::complex<double> costs = get_split_costs(d, split_point, frag_cost);
+    std::complex<double> costs = get_split_costs(d, split_point, fragment_cost);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
     double split_measure = max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - (desired_chunks / 2)));
