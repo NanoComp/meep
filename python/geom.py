@@ -523,7 +523,7 @@ class Medium(object):
         return np.squeeze(epsmu)
 
 class MaterialGrid(object):
-    def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT"):
+    def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT",do_averaging=False):
         self.grid_size = mp.Vector3(*grid_size)
         self.medium1 = medium1
         self.medium2 = medium2
@@ -536,7 +536,7 @@ class MaterialGrid(object):
         if isclose(self.grid_size.z,0):
             self.grid_size.z = 1
         self.num_params=int(self.grid_size.x*self.grid_size.y*self.grid_size.z)
-
+        self.do_averaging = do_averaging
         if design_parameters is None:
             self.design_parameters = np.zeros((self.num_params,))
         elif design_parameters.size != self.num_params:

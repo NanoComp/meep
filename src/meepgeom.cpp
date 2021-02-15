@@ -869,7 +869,6 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
   symmetric_matrix meps_inv;
   bool fallback;
   eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);
-  ;
 
   if (fallback) { fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval); }
   else {
@@ -916,7 +915,9 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
 
   if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
     get_material_pt(mat, v.center());
-    if (mat && mat->which_subclass == material_data::MATERIAL_USER && mat->do_averaging) {
+    if (mat && (mat->which_subclass == material_data::MATERIAL_USER ||
+                mat->which_subclass == material_data::MATERIAL_GRID)
+        && mat->do_averaging) {
       fallback = true;
       return;
     }
@@ -1797,10 +1798,10 @@ material_type make_file_material(const char *eps_input_file) {
 /******************************************************************************/
 /* Material grid functions                                                    */
 /******************************************************************************/
-material_type make_material_grid() {
+material_type make_material_grid(bool do_averaging) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_GRID;
-  md->do_averaging = false;
+  md->do_averaging = do_averaging;
   return md;
 }
 

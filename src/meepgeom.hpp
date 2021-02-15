@@ -174,7 +174,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
 material_type make_file_material(const char *eps_input_file);
-material_type make_material_grid();
+material_type make_material_grid(bool do_averaging);
 
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
