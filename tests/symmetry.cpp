@@ -152,16 +152,16 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
   f.add_point_source(Er, 0.7, 2.5, 0.0, 4.0, veccyl(0.5, 0.5));
   // f.add_point_source(Ep, 0.8, 0.6, 0.0, 4.0, veccyl(0.401,0.5));
   check_unequal_layout(f, f1);
-  double field_energy_check_time = 1.0;
+  double field_check_time = 4.0;
   while (f.round_time() < ttot) {
     f.step();
     f1.step();
-    if (!compare_point(f, f1, veccyl(0.01, 0.5))) return 0;
-    if (!compare_point(f, f1, veccyl(0.21, 0.5))) return 0;
-    if (!compare_point(f, f1, veccyl(0.501, 0.5))) return 0;
-    if (!compare_point(f, f1, veccyl(0.33, 0.46))) return 0;
-    if (!compare_point(f, f1, veccyl(0.2, 0.2))) return 0;
-    if (f.round_time() >= field_energy_check_time) {
+    if (f.round_time() >= field_check_time) {
+      if (!compare_point(f, f1, veccyl(0.01, 0.5))) return 0;
+      if (!compare_point(f, f1, veccyl(0.21, 0.5))) return 0;
+      if (!compare_point(f, f1, veccyl(0.501, 0.5))) return 0;
+      if (!compare_point(f, f1, veccyl(0.33, 0.46))) return 0;
+      if (!compare_point(f, f1, veccyl(0.2, 0.2))) return 0;
       if (!compare(f.electric_energy_in_box(gv.surroundings()),
                    f1.electric_energy_in_box(gv.surroundings()), "electric energy"))
         return 0;
@@ -169,7 +169,7 @@ int test_cyl_metal_mirror_nonlinear(double eps(const vec &)) {
                    f1.magnetic_energy_in_box(gv.surroundings()), "magnetic energy"))
         return 0;
       if (!compare(f.field_energy(), f1.field_energy(), "   total energy")) return 0;
-      field_energy_check_time += 1.0;
+      field_check_time += 1.0;
     }
   }
   return 1;
@@ -976,8 +976,8 @@ int main(int argc, char **argv) {
   if (!nonlinear_ex(vol1d(1.0, 30.0), one)) abort("error in 1D nonlinear vacuum\n");
   if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) abort("error in 3D nonlinear vacuum\n");
 
-  // if (!test_cyl_metal_mirror_nonlinear(one))
-  //   abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
+  if (!test_cyl_metal_mirror_nonlinear(one))
+    abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
 
   if (!exact_metal_rot4z_nonlinear(one)) abort("error in exact_metal_rot4z nonlinear vacuum\n");
   if (!exact_metal_rot4z_nonlinear(rods_2d))
