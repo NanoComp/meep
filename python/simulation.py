@@ -833,7 +833,7 @@ class Harminv(object):
         Construct a Harminv object.
 
         A `Harminv` is a step function that collects data from the field component `c`
-        (e.g. E<sub>x</sub>, etc.) at the given point `pt` (a `Vector3`). Then, at the end
+        (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end
         of the run, it uses Harminv to look for modes in the given frequency range (center
         `fcen` and width `df`), printing the results to standard output (prefixed by
         `harminv:`) as comma-delimited text, and also storing them to the variable
@@ -2117,10 +2117,11 @@ class Simulation(object):
     def use_output_directory(self, dname=''):
         """
         Put output in a subdirectory, which is created if necessary. If the optional
-        argument dirname is specified, that is the name of the directory. Otherwise, the
-        directory name is the current Python file name with `".py"` replaced by `"-out"`:
-        e.g. `test.py` implies a directory of `"test-out"`. Also resets `filename_prefix`
-        to `None`.
+        argument `dname` is specified, that is the name of the directory. If the `dname`
+        is omitted, the directory name is the current Python file name (if `filename_prefix`
+        is `None`) with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
+        `"test-out"`. Also resets `filename_prefix` to `None`. Otherwise the directory name
+        is set to `filename_prefix`.
         """
         if not dname:
             dname = self.get_filename_prefix() + '-out'
