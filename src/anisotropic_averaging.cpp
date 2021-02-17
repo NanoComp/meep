@@ -2,11 +2,6 @@
 
 #include "meep_internals.hpp"
 
-/* This file contains routines to compute the "average" or "effective"
-   dielectric constant for a pixel, using an anisotropic averaging
-   procedure described in an upcoming paper (similar to the one in
-   MPB). */
-
 using namespace std;
 
 namespace meep {

@@ -212,6 +212,39 @@ No (generally). In the single-run calculation of the reflection coefficent $|S_{
 
 In the limit of infinite resolution, the discretization error is removed and the reflectance for $S_{11}$ and $S_{12}$ converge to their "true" values of ~10<sup>-6</sup> and ~10<sup>-8</sup>, respectively. (Note that the back-scattered fields in Port 2 are two orders of magnitude smaller than those in Port 1 because the input fields in the upper branch of the directional coupler must cross into the lower branch to reach Port 2.) In this example, $|S_{12}|^2$ requires a resolution of at least ~150 to minimize discretization errors. The discretization errors due to the eigenmode-coefficient extraction can be greatly reduced by using a separate normalization run to compute the incident fields for just a straight waveguide (i.e., no taper/bend) which are then subtracted from the Fourier-transformed fields in Port 1 and 2 of the directional coupler. This procedure is similar to those involving [flux calculations](Basics.md#transmittance-spectrum-of-a-waveguide-bend). For practical applications, however, reflectance values less than 40 dB (e.g., for telecom multi-path interference tolerances) are often considered negligible. On the other hand, there may be theoretical investigations where trying to resolve such small reflections could be important.  (As reflections approach 10<sup>-15</sup>, the limits of floating-point precision will eventually limit accuracy even for the normalization approach.)
 
+### Importing a GDS Layer using a Tuple
+
+In the directional coupler example above, individual layers of the GDS file were imported by specifying a single number in the `get_GDSII_prisms` routine (i.e., 1, 2, 31, 32, etc.). However, there are certain GDS files in which the layers are referenced using a 2-tuple (e.g., (37,4)). Since `get_GDSII_prisms` which is based on [`libGDSII`](https://github.com/HomerReid/libGDSII) does not support this feature, you will need to use [`gdspy`](https://gdspy.readthedocs.io/) as demonstrated in the following example.
+
+```py
+## load the GDS file
+gds = gdspy.GdsLibrary(infile=gds_file)
+
+## define cell size and center
+box = gds.top_level()[0].get_bounding_box()
+cell_center = 0.5*mp.Vector3(box[1][0] + box[0][0],box[1][1] + box[0][1])
+
+## define the geometry using all the polygons from layer (37,4)
+polygons = gds.top_level()[0].get_polygons(True)[37,4]
+
+design_geometry = []
+for pg in polygons:
+  vertices = []
+  for vt in pg:
+    ## define vertices relative to center of cell
+    vertices.append(mp.Vector3(vt[0],vt[1])-cell_center)
+  design_geometry.append(mp.Prism(vertices=vertices,
+                                  height=0.5,
+                                  axis=mp.Vector3(0,0,+1),
+                                  material=mp.Medium(index=3.5)))
+  design_geometry.append(mp.Prism(vertices=vertices,
+                                  height=0.5,
+                                  axis=mp.Vector3(0,0,-1),
+                                  material=mp.Medium(index=3.5)))
+```
+
+Note that for each polygon in the GDS layer, there are *two* `Prism` objects: one extending in the $+z$ direction and the other in $-z$ with a combined height of `1.0`.
+
 Modes of a Ring Resonator
 -------------------------
 
