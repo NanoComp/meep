@@ -365,7 +365,7 @@ meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md
       (tanh_beta_eta + tanh(md->beta*(1-md->eta)));
   }
 
-  return md->beta ? u_proj : u_interp;
+  return (md->beta != 0) ? u_proj : u_interp;
 }
 static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2,
                             cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out,
