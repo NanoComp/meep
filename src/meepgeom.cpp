@@ -359,9 +359,11 @@ meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md
 
   // project interpolated grid point
   meep::realnum u_proj;
-  if (md->beta)
-    u_proj = (tanh(md->beta*md->eta) + tanh(md->beta*(u_interp-md->eta))) /
-      (tanh(md->beta*md->eta) + tanh(md->beta*(1-md->eta)));
+  if (md->beta != 0) {
+    double tanh_beta_eta = tanh(md->beta*md->eta);
+    u_proj = (tanh_beta_eta + tanh(md->beta*(u_interp-md->eta))) /
+      (tanh_beta_eta + tanh(md->beta*(1-md->eta)));
+  }
 
   return md->beta ? u_proj : u_interp;
 }
@@ -1808,7 +1810,7 @@ material_type make_file_material(const char *eps_input_file) {
 /******************************************************************************/
 /* Material grid functions                                                    */
 /******************************************************************************/
-  material_type make_material_grid(bool do_averaging, double beta, double eta) {
+material_type make_material_grid(bool do_averaging, double beta, double eta) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_GRID;
   md->do_averaging = do_averaging;

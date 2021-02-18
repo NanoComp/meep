@@ -534,6 +534,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     md = make_material_grid(do_averaging,beta,eta);
     if (!pymaterial_grid_to_material_grid(po, md)) { return 0; }
     Py_XDECREF(py_do_averaging);
+    Py_XDECREF(py_beta);
+    Py_XDECREF(py_eta);
   }
   else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
