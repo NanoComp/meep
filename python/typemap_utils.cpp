@@ -525,7 +525,13 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
     bool do_averaging = false;
     if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
-    md = make_material_grid(do_averaging);
+    PyObject *py_beta = PyObject_GetAttrString(po, "beta");
+    double beta = 0;
+    if (py_beta) { beta = PyFloat_AsDouble(py_beta); }
+    PyObject *py_eta = PyObject_GetAttrString(po, "eta");
+    double eta = 0;
+    if (py_eta) { eta = PyFloat_AsDouble(py_eta); }
+    md = make_material_grid(do_averaging,beta,eta);
     if (!pymaterial_grid_to_material_grid(po, md)) { return 0; }
     Py_XDECREF(py_do_averaging);
   }
