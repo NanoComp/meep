@@ -75,49 +75,26 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   }
 }
 
-static std::vector<int> get_prime_factors(int n) {
-  int initial_n = n;
-  std::vector<int> result;
-
-  while (n % 2 == 0) {
-    result.push_back(2);
-    n /= 2;
-  }
-
-  for (int i = 3; i <= sqrt(n); i += 2) {
-    while (n % i == 0) {
-      result.push_back(i);
-      n /= i;
-    }
-  }
-
-  if (n > 5) {
-    // If we end up with a prime number greater than 5, then start over with n -1 in order to get
-    // the largest number that is a multiple of 2, 3, or 5.
-    return get_prime_factors(initial_n - 1);
-  }
-  else if (n >= 2 && n <= 5) {
-    result.push_back(n);
-  }
-  return result;
-}
-
-static void split_by_cost(std::vector<int> factors, grid_volume gvol,
-                          std::vector<grid_volume> &result) {
-
-  if (factors.size() == 0) {
+static void split_by_cost(int n, grid_volume gvol,
+                          std::vector<grid_volume> &result,
+                          bool fragment_cost) {
+  if (n == 1) {
     result.push_back(gvol);
     return;
   }
-
-  int n = factors.back();
-  factors.pop_back();
-
-  std::vector<grid_volume> new_gvs = gvol.split_into_n(n);
-  if (new_gvs.size() != (size_t)n)
-    abort("Error splitting by cost: expected %d grid_volumes but got %zu", n, new_gvs.size());
-  for (int i = 0; i < n; ++i)
-    split_by_cost(factors, new_gvs[i], result);
+  else {
+    int best_split_point;
+    direction best_split_direction;
+    double left_effort_fraction;
+    gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction, left_effort_fraction);
+    int num_in_split_dir = gvol.num_direction(best_split_direction);
+    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir);
+    const int num_left = (size_t)(left_effort_fraction * n + 0.5);
+    split_by_cost(num_left, left_gvol, result, fragment_cost);
+    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
+    split_by_cost(n - num_left, right_gvol, result, fragment_cost);
+    return;
+  }
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
@@ -210,43 +187,20 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
       if (break_this[d]) gv = gv.pad((direction)d);
   }
 
-  // initialize effort volumes
-  int num_effort_volumes = 1;
-  grid_volume *effort_volumes = new grid_volume[num_effort_volumes];
-  effort_volumes[0] = gv;
-  double *effort = new double[num_effort_volumes];
-  effort[0] = 1.0;
-
-  std::vector<int> prime_factors = get_prime_factors(desired_num_chunks);
-
-  // We may have to use a different number of chunks than the user requested
-  int adjusted_num_chunks = 1;
-  for (size_t i = 0, stop = prime_factors.size(); i < stop; ++i)
-    adjusted_num_chunks *= prime_factors[i];
-
-  int my_num_chunks =
-      meep_geom::fragment_stats::split_chunks_evenly ? desired_num_chunks : adjusted_num_chunks;
-
   // Finally, create the chunks:
   std::vector<grid_volume> chunk_volumes;
 
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
-    if (verbosity > 0 && my_num_chunks > 1)
-      master_printf("Splitting into %d chunks evenly\n", my_num_chunks);
-    for (int i = 0; i < my_num_chunks; i++) {
-      grid_volume vi =
-          gv.split_by_effort(my_num_chunks, i, num_effort_volumes, effort_volumes, effort);
-      chunk_volumes.push_back(vi);
-    }
+    if (verbosity > 0 && desired_num_chunks > 1)
+      master_printf("Splitting into %d chunks by voxels\n", desired_num_chunks);
+    split_by_cost(desired_num_chunks, gv, chunk_volumes, false);
   }
   else {
-    if (verbosity > 0 && my_num_chunks > 1)
-      master_printf("Splitting into %d chunks by cost\n", my_num_chunks);
-    split_by_cost(prime_factors, gv, chunk_volumes);
+    if (verbosity > 0 && desired_num_chunks > 1)
+      master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
+    split_by_cost(desired_num_chunks, gv, chunk_volumes, true);
   }
-  delete [] effort_volumes;
-  delete [] effort;
 
   return chunk_volumes;
 }

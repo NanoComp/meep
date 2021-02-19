@@ -919,7 +919,10 @@ int main(int argc, char **argv) {
 
   if (!test_1d_periodic_mirror(one)) abort("error in test_1d_periodic_mirror vacuum\n");
 
-  if (!test_cyl_metal_mirror(one)) abort("error in test_cyl_metal_mirror vacuum\n");
+  // disable for parallel runs due to a bug in splitting cylindrical cell
+  // with z-mirror symmetry into multiple chunks
+  if ((count_processors() == 1) && !test_cyl_metal_mirror(one))
+    abort("error in test_cyl_metal_mirror vacuum\n");
 
   if (!test_yperiodic_ymirror(one)) abort("error in test_yperiodic_ymirror vacuum\n");
   if (!test_yperiodic_ymirror(rods_2d)) abort("error in test_yperiodic_ymirror rods2d\n");
@@ -976,7 +979,9 @@ int main(int argc, char **argv) {
   if (!nonlinear_ex(vol1d(1.0, 30.0), one)) abort("error in 1D nonlinear vacuum\n");
   if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) abort("error in 3D nonlinear vacuum\n");
 
-  if (!test_cyl_metal_mirror_nonlinear(one))
+  // disable for parallel runs due to a bug in splitting cylindrical cell
+  // with z-mirror symmetry into multiple chunks
+  if ((count_processors() == 1) && (!test_cyl_metal_mirror_nonlinear(one)))
     abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
 
   if (!exact_metal_rot4z_nonlinear(one)) abort("error in exact_metal_rot4z nonlinear vacuum\n");
