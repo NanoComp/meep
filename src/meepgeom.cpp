@@ -350,12 +350,22 @@ meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md
     ++matgrid_val_count;
   }
 
-  return (md->material_grid_kinds == material_data::U_MIN
-              ? umin
-              : (md->material_grid_kinds == material_data::U_PROD
-                     ? uprod
-                     : (md->material_grid_kinds == material_data::U_SUM ? usum / matgrid_val_count
-                                                                        : udefault)));
+  meep::realnum u_interp = (md->material_grid_kinds == material_data::U_MIN
+                            ? umin
+                            : (md->material_grid_kinds == material_data::U_PROD
+                               ? uprod
+                               : (md->material_grid_kinds == material_data::U_SUM ? usum / matgrid_val_count
+                                  : udefault)));
+
+  // project interpolated grid point
+  meep::realnum u_proj;
+  if (md->beta != 0) {
+    double tanh_beta_eta = tanh(md->beta*md->eta);
+    u_proj = (tanh_beta_eta + tanh(md->beta*(u_interp-md->eta))) /
+      (tanh_beta_eta + tanh(md->beta*(1-md->eta)));
+  }
+
+  return (md->beta != 0) ? u_proj : u_interp;
 }
 static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2,
                             cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out,
@@ -697,8 +707,10 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
       geom_box_tree tp;
 
       tp = geom_tree_search(p, restricted_tree, &oi);
-      u = matgrid_val(p, tp, oi, md); // interpolate onto material grid
-      epsilon_material_grid(md, u);   // interpolate material from material grid point
+      // interpolate and (possibly) project onto material grid
+      u = matgrid_val(p, tp, oi, md);
+      // interpolate material from material grid point
+      epsilon_material_grid(md, u);
 
       return;
     // material read from file: interpolate to get properties at r
@@ -869,7 +881,6 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
   symmetric_matrix meps_inv;
   bool fallback;
   eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);
-  ;
 
   if (fallback) { fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval); }
   else {
@@ -916,7 +927,9 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
 
   if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
     get_material_pt(mat, v.center());
-    if (mat && mat->which_subclass == material_data::MATERIAL_USER && mat->do_averaging) {
+    if (mat && (mat->which_subclass == material_data::MATERIAL_USER ||
+                mat->which_subclass == material_data::MATERIAL_GRID)
+        && mat->do_averaging) {
       fallback = true;
       return;
     }
@@ -1797,10 +1810,12 @@ material_type make_file_material(const char *eps_input_file) {
 /******************************************************************************/
 /* Material grid functions                                                    */
 /******************************************************************************/
-material_type make_material_grid() {
+material_type make_material_grid(bool do_averaging, double beta, double eta) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_GRID;
-  md->do_averaging = false;
+  md->do_averaging = do_averaging;
+  md->beta = beta;
+  md->eta = eta;
   return md;
 }
 

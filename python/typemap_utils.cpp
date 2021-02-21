@@ -522,8 +522,20 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     if (!pymedium_to_medium(po, &md->medium)) { return 0; }
   }
   else if (PyObject_IsInstance(po, py_material_grid_object())) { // Material grid subclass
-    md = make_material_grid();
+    PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
+    bool do_averaging = false;
+    if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
+    PyObject *py_beta = PyObject_GetAttrString(po, "beta");
+    double beta = 0;
+    if (py_beta) { beta = PyFloat_AsDouble(py_beta); }
+    PyObject *py_eta = PyObject_GetAttrString(po, "eta");
+    double eta = 0;
+    if (py_eta) { eta = PyFloat_AsDouble(py_eta); }
+    md = make_material_grid(do_averaging,beta,eta);
     if (!pymaterial_grid_to_material_grid(po, md)) { return 0; }
+    Py_XDECREF(py_do_averaging);
+    Py_XDECREF(py_beta);
+    Py_XDECREF(py_eta);
   }
   else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
