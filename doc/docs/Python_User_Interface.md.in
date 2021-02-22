@@ -714,6 +714,8 @@ The following classes are available directly via the `meep` package.
 
 @@ Medium[methods-with-docstrings] @@
 
+@@ MaterialGrid[methods-with-docstrings] @@
+
 @@ Susceptibility[methods-with-docstrings] @@
 
 @@ LorentzianSusceptibility[methods-with-docstrings] @@
