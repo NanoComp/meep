@@ -97,7 +97,7 @@ def meep_filter(x,kernel):
     to somewhat compensate for this.
     '''
 
-    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * fft.fftn(kernelp))).real
+    yp = fft.fftshift(fft.ifftn(fft.fftn(xp) * (fft.fftn(kernelp)))).real
     yp = npj.flip(fft.fftshift(fft.ifftn(fft.fftn(npj.flip(yp,axis=None)) * fft.fftn(kernelp))).real,axis=None)
     
     # remove paddings
