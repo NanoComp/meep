@@ -523,7 +523,39 @@ class Medium(object):
         return np.squeeze(epsmu)
 
 class MaterialGrid(object):
+    """
+    This class is used to specify materials interpolated from a discrete Cartesian grid. A class object is passed as the
+    `material` argument of a [`GeometricObject`](#GeometricObject) or the `default_material` argument of the `Simulation`
+    constructor (similar to a material function).
+    """
     def __init__(self,grid_size,medium1,medium2,design_parameters=None,grid_type="U_DEFAULT",do_averaging=False,beta=0,eta=0.5):
+        """
+        Creates a `MaterialGrid` object.
+
+        The input are two materials `medium1` and `medium2` which are linearly interpolated at each grid point using
+        a NumPy array `design_parameters` of size `grid_size` (a 3-tuple or `Vector3` of integers) with floating-point values in
+        the range [0,1] used to define a linear weight (i.e., 0 is `medium1` and 1 is `medium2`). Currently, only two material
+        types are supported: (1) frequency-independent isotropic $\\varepsilon$ or $\\mu$ and (2) `LorentzianSusceptibility`.
+        `medium1` and `medium2` must both be the same type.
+
+        [Subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`. If you want to use a
+        material grid to define a (nearly) discontinuous, piecewise-constant material that is either `medium1` or `medium2`
+        almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
+        positive value. When the projection feature is enabled, the design parameters $u(x)$ can be thought of as a [level-set
+        function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\\eta$ with a smoothing factor
+        $\\beta$ ($\\beta=\\infty$ gives an unsmoothed, discontinuous interface). The projection operator is $(\\tanh(\\beta*\\eta)
+        + \\tanh(\\beta*(u-\\eta))) / (\\tanh(\\beta*\\eta) + \\tanh(\\beta*(1-\\eta)))$ involving the parameters `beta`
+        ($\\beta$: "smoothness" of the turn on) and `eta` ($\\eta$: erosion/dilation). The level set provides a general approach for
+        defining a *discontinuous* function of the otherwise continuously varying (via the bilinear interpolation) grid values.
+        The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
+        can be specified using the [`Simulation`](#Simulation) constructor.
+
+        Grids which are symmetric (e.g., mirror, rotation) must be explicitly defined. One way to implement this is by overlapping
+        a given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping `MaterialGrid`
+        objects (with no intervening objects), any overlapping points are combined using the method `grid_type` which is one of
+        `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product), `"U_SUM"` (mean), `"U_DEFAULT"`
+        (topmost material at grid point).
+        """
         self.grid_size = mp.Vector3(*grid_size)
         self.medium1 = medium1
         self.medium2 = medium2
@@ -558,6 +590,9 @@ class MaterialGrid(object):
 
         self.swigobj = None
     def update_parameters(self,x):
+        """
+        Reset the design grid `design_parameters` to `x`.
+        """
         if x.size != self.num_params:
             raise ValueError("design_parameters of shape {} do not match user specified grid dimension: {}".format(self.design_parameters.size,self.grid_size))
         self.design_parameters[:]=x.flatten().astype(np.float64)

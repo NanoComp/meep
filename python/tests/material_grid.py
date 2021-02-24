@@ -1,63 +1,82 @@
 import meep as mp
 import numpy as np
-from meep.materials import Si, SiO2
+from scipy.ndimage import gaussian_filter
 import unittest
 
-class TestMaterialGrid(unittest.TestCase):
-    def gen_sim(self):
-        resolution = 10 # pixels/um
-        cell_size = mp.Vector3(14,14)
-        pml_layers = [mp.PML(thickness=2)]
-        w = 3.0 # width of waveguide
-        m1 = SiO2
-        m2 = Si
-        n = 10
-        gs = mp.Vector3(n,n)
-        np.random.seed(1)
-        dp = np.random.rand(n*n)
-        mg = mp.MaterialGrid(gs,m1,m2,dp,"U_SUM")
-        geometry = []
-        rot_angle = np.radians(0)
-        geometry += [mp.Block(center=mp.Vector3(),
-                            size=mp.Vector3(w,w,mp.inf),
-                            e1=mp.Vector3(x=1).rotate(mp.Vector3(z=1), rot_angle),
-                            e2=mp.Vector3(y=1).rotate(mp.Vector3(z=1), rot_angle),
-                            material=mg)]
-        geometry += [mp.Block(center=mp.Vector3(),
-                            size=mp.Vector3(w,w,mp.inf),
-                            e1=mp.Vector3(x=-1).rotate(mp.Vector3(z=1), np.pi/2),
-                            e2=mp.Vector3(y=1).rotate(mp.Vector3(z=1), np.pi/2),
-                            material=mg)]
-        fsrc = 1/1.55 # frequency of eigenmode or constant-amplitude source
-        bnum = 1    # band number of eigenmode
-        kpoint = mp.Vector3(x=1).rotate(mp.Vector3(z=1), rot_angle)
-        compute_flux = True # compute flux (True) or plot the field profile (False)
-        eig_src = True # eigenmode (True) or constant-amplitude (False) source
-        if eig_src:
-            sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc) if compute_flux else mp.ContinuousSource(fsrc),
-                                        center=mp.Vector3(),
-                                        size=mp.Vector3(y=3*w),
-                                        direction=mp.NO_DIRECTION,
-                                        eig_kpoint=kpoint,
-                                        eig_band=bnum,
-                                        eig_parity=mp.EVEN_Y+mp.ODD_Z if rot_angle == 0 else mp.ODD_Z,
-                                        eig_match_freq=True)]
-        else:
-            sources = [mp.Source(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc) if compute_flux else mp.ContinuousSource(fsrc),
-                                center=mp.Vector3(),
-                                size=mp.Vector3(y=3*w),
-                                component=mp.Ez)]
+def compute_resonant_mode(res):
+        cell_size = mp.Vector3(1,1,0)
 
-        sim = mp.Simulation(cell_size=cell_size,
-                            resolution=resolution,
-                            boundary_layers=pml_layers,
+        rad = 0.301943
+
+        fcen = 0.3
+        df = 0.2*fcen
+        sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                             component=mp.Hz,
+                             center=mp.Vector3(-0.1057,0.2094,0))]
+
+        k_point = mp.Vector3(0.3892,0.1597,0)
+
+        design_shape = mp.Vector3(1,1,0)
+        design_region_resolution = 50
+        Nx = int(design_region_resolution*design_shape.x)
+        Ny = int(design_region_resolution*design_shape.y)
+        x = np.linspace(-0.5*design_shape.x,0.5*design_shape.x,Nx)
+        y = np.linspace(-0.5*design_shape.y,0.5*design_shape.y,Ny)
+        xv, yv = np.meshgrid(x,y)
+        design_params = np.sqrt(np.square(xv) + np.square(yv)) < rad
+        filtered_design_params = gaussian_filter(design_params,
+                                                 sigma=3.0,
+                                                 output=np.double)
+
+        matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
+                                  mp.air,
+                                  mp.Medium(index=3.5),
+                                  design_parameters=filtered_design_params,
+                                  do_averaging=True,
+                                  beta=1000,
+                                  eta=0.5)
+
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(design_shape.x,design_shape.y,0),
+                             material=matgrid)]
+
+        sim = mp.Simulation(resolution=res,
+                            cell_size=cell_size,
+                            geometry=geometry,
                             sources=sources,
-                            extra_materials = [m1,m2],
-                            geometry=geometry
-                            )
-        return sim
-    
-    def test_eval(self):
-        sim = self.gen_sim()
+                            k_point=k_point)
+
+        h = mp.Harminv(mp.Hz, mp.Vector3(0.3718,-0.2076), fcen, df)
+        sim.run(mp.after_sources(h),
+                until_after_sources=200)
+
+        try:
+            for m in h.modes:
+                print("harminv:, {}, {}, {}".format(res,m.freq,m.Q))
+            freq = h.modes[0].freq
+        except:
+            print("No resonant modes found.")
+
+        sim.reset_meep()
+        return freq
+
+class TestMaterialGrid(unittest.TestCase):
+
+    def test_material_grid(self):
+        ## reference frequency computed using MaterialGrid at resolution = 300
+        freq_ref = 0.3068839373003908
+
+        res = [25, 50]
+        freq_matgrid = []
+        for r in res:
+            freq_matgrid.append(compute_resonant_mode(r))
+            ## verify that the resonant mode is approximately equivalent to
+            ## the reference value
+            self.assertAlmostEqual(freq_ref, freq_matgrid[-1], 2)
+
+        ## verify that the relative error is decreasing with increasing resolution
+        ## and is better than linear convergence
+        self.assertLess(abs(freq_matgrid[1]-freq_ref),abs(freq_matgrid[0]-freq_ref)/2)
+
 if __name__ == '__main__':
     unittest.main()
