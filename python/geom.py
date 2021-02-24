@@ -543,7 +543,7 @@ class MaterialGrid(object):
         almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
         positive value. When the projection feature is enabled, the design parameters $u(x)$ can be thought of as a [level-set
         function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\\eta$ with a smoothing factor
-        $\\beta$ ($\\beta=\\infty$ gives an unsmoothed, discontinuous interface). The projection operator is $\\(tanh(\\beta*\\eta)
+        $\\beta$ ($\\beta=\\infty$ gives an unsmoothed, discontinuous interface). The projection operator is $(\\tanh(\\beta*\\eta)
         + \\tanh(\\beta*(u-\\eta))) / (\\tanh(\\beta*\\eta) + \\tanh(\\beta*(1-\\eta)))$ involving the parameters `beta`
         ($\\beta$: "smoothness" of the turn on) and `eta` ($\\eta$: erosion/dilation). The level set provides a general approach for
         defining a *discontinuous* function of the otherwise continuously varying (via the bilinear interpolation) grid values.

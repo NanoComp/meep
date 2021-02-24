@@ -75,7 +75,8 @@ class TestMaterialGrid(unittest.TestCase):
             self.assertAlmostEqual(freq_ref, freq_matgrid[-1], 2)
 
         ## verify that the relative error is decreasing with increasing resolution
-        self.assertLess(abs(freq_matgrid[1]-freq_ref),abs(freq_matgrid[0]-freq_ref))
+        ## and is better than linear convergence
+        self.assertLess(abs(freq_matgrid[1]-freq_ref),abs(freq_matgrid[0]-freq_ref)/2)
 
 if __name__ == '__main__':
     unittest.main()
