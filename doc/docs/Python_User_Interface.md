@@ -4204,19 +4204,20 @@ types are supported: (1) frequency-independent isotropic $\varepsilon$ or $\mu$ 
 [Subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`. If you want to use a
 material grid to define a (nearly) discontinuous, piecewise-constant material that is either `medium1` or `medium2`
 almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
-positive value. When the projection feature is enabled, the design parameters $u(x)$ can be though of as level-set
-function defining an interface at $u(x)=\eta$ with a smoothing factor $\beta$ ($\beta=\infty$ gives an unsmoothed,
-discontinuous interface). The projection operator is `tanh(beta*eta) + tanh(beta*(x-eta))) / (tanh(beta*eta) + 
-tanh(beta*(1-eta)))` involving the parameters `beta` ($\beta$: "smoothness" of the turn on) and `eta` ($\eta$: 
-erosion/dilation). The level set provides a general approach for defining a *discontinuous* representation of the otherwise
-continuously varying (via the bilinear interpolation) grid values. The subpixel smoothing is based on an adaptive quadrature
-scheme with properties `subpixel_maxeval` and `subpixel_tol` which can be specified using the [`Simulation`](#Simulation)
-constructor.
+positive value. When the projection feature is enabled, the design parameters $u(x)$ can be thought of as a [level-set
+function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
+$\beta$ ($\beta=\infty$ gives an unsmoothed, discontinuous interface). The projection operator is $\(tanh(\beta*\eta)
++ \tanh(\beta*(u-\eta))) / (\tanh(\beta*\eta) + \tanh(\beta*(1-\eta)))$ involving the parameters `beta`
+($\beta$: "smoothness" of the turn on) and `eta` ($\eta$: erosion/dilation). The level set provides a general approach for
+defining a *discontinuous* function of the otherwise continuously varying (via the bilinear interpolation) grid values.
+The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
+can be specified using the [`Simulation`](#Simulation) constructor.
 
-Grids which are symmetric (e.g., mirror, rotation) must be explicitly defined. This requires overlapping a given
-`MaterialGrid` object with a symmetrized copy of itself. In this case, the overlapping grid points are combined using
-the method `grid_type` which is one of `"U_MIN"` (minimum of two grid values), `"U_PROD"` (product), `"U_SUM"` (sum),
-`"U_DEFAULT"` (topmost material at grid point).
+Grids which are symmetric (e.g., mirror, rotation) must be explicitly defined. One way to implement this is by overlapping
+a given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping `MaterialGrid`
+objects (with no intervening objects), any overlapping points are combined using the method `grid_type` which is one of
+`"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product), `"U_SUM"` (mean), `"U_DEFAULT"`
+(topmost material at grid point).
 
 </div>
 
