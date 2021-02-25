@@ -22,7 +22,7 @@ except NameError:
 
 U_MIN = 0
 U_PROD = 1
-U_SUM = 2
+U_MEAN = 2
 
 
 class MPBArray(np.ndarray):

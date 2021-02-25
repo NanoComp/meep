@@ -16,7 +16,7 @@ class DesignRegion(object):
         self.num_design_params=design_parameters.num_params
         self.MaterialGrid=MaterialGrid
     def update_design_parameters(self,design_parameters):
-        self.design_parameters.update_parameters(design_parameters)
+        self.design_parameters.update_weights(design_parameters)
     def get_gradient(self,sim,fields_a,fields_f,frequencies):
         for c in range(3):
             fields_a[c] = fields_a[c].flatten(order='C')
@@ -310,7 +310,7 @@ class OptimizationProblem(object):
         for k in fd_gradient_idx:
 
             b0 = np.ones((self.num_design_params[design_variables_idx],))
-            b0[:] = (self.design_regions[design_variables_idx].design_parameters.design_parameters)
+            b0[:] = (self.design_regions[design_variables_idx].design_parameters.weights)
             # -------------------------------------------- #
             # left function evaluation
             # -------------------------------------------- #

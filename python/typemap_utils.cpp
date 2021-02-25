@@ -454,7 +454,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   switch (gt_enum) {
     case 0: md->material_grid_kinds = material_data::U_MIN; break;
     case 1: md->material_grid_kinds = material_data::U_PROD; break;
-    case 2: md->material_grid_kinds = material_data::U_SUM; break;
+    case 2: md->material_grid_kinds = material_data::U_MEAN; break;
     case 3: md->material_grid_kinds = material_data::U_DEFAULT; break;
     default: meep::abort("Invalid material grid enumeration code: %d.\n", gt_enum);
   }
@@ -474,15 +474,15 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     meep::abort("MaterialGrid medium2 failed to init.");
   }
 
-  // Initialize design parameters
-  PyObject *po_dp = PyObject_GetAttrString(po, "design_parameters");
+  // Initialize weights
+  PyObject *po_dp = PyObject_GetAttrString(po, "weights");
   PyArrayObject *pao = (PyArrayObject *)po_dp;
-  if (!PyArray_Check(pao)) { meep::abort("MaterialGrid design_parameters failed to init."); }
+  if (!PyArray_Check(pao)) { meep::abort("MaterialGrid weights failed to init."); }
   if (!PyArray_ISCARRAY(pao)) {
-    meep::abort("Numpy array design_parameters must be C-style contiguous.");
+    meep::abort("Numpy array weights must be C-style contiguous.");
   }
-  md->design_parameters = new realnum[PyArray_SIZE(pao)];
-  memcpy(md->design_parameters, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
+  md->weights = new realnum[PyArray_SIZE(pao)];
+  memcpy(md->weights, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
 
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");

@@ -312,7 +312,7 @@ meep::realnum material_grid_val(vector3 p, material_data *md) {
 
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
   meep::realnum u;
-  u = meep::linear_interpolate(p.x, p.y, p.z, md->design_parameters, md->grid_size.x,
+  u = meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
                                md->grid_size.y, md->grid_size.z, 1);
   return u;
 }
@@ -354,7 +354,7 @@ meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md
                             ? umin
                             : (md->material_grid_kinds == material_data::U_PROD
                                ? uprod
-                               : (md->material_grid_kinds == material_data::U_SUM ? usum / matgrid_val_count
+                               : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
                                   : udefault)));
 
   // project interpolated grid point
@@ -397,7 +397,7 @@ static void interp_tensors(vector3 diag_in_1, vector3 offdiag_in_1, vector3 diag
 void epsilon_material_grid(material_data *md, meep::realnum u) {
   // NOTE: assume p lies on normalized grid within (0,1)
 
-  if (!(md->design_parameters)) meep::abort("material params were not initialized!");
+  if (!(md->weights)) meep::abort("material params were not initialized!");
 
   medium_struct *mm = &(md->medium);
   medium_struct *m1 = &(md->medium_1);
@@ -1819,9 +1819,9 @@ material_type make_material_grid(bool do_averaging, double beta, double eta) {
   return md;
 }
 
-void update_design_parameters(material_type matgrid, double *design_parameters) {
+void update_weights(material_type matgrid, double *weights) {
   int N = matgrid->grid_size.x * matgrid->grid_size.y * matgrid->grid_size.z;
-  memcpy(matgrid->design_parameters, design_parameters, N * sizeof(meep::realnum));
+  memcpy(matgrid->weights, weights, N * sizeof(meep::realnum));
 }
 
 /******************************************************************************/
@@ -2461,7 +2461,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
     return; /* no material grids at this point */
 
   // Calculate the number of material grids if we are averaging values
-  if ((tp) && ((kind = mg->material_grid_kinds) == material_data::U_SUM)) {
+  if ((tp) && ((kind = mg->material_grid_kinds) == material_data::U_MEAN)) {
     int matgrid_val_count = 0;
     geom_box_tree tp_sum;
     tp_sum = geom_tree_search(p, geometry_tree, &ois);
@@ -2489,7 +2489,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
     it's up to the user to only have one unique design grid in this volume.*/
     vector3 sz = mg->grid_size;
     meep::realnum *vcur = v, *ucur;
-    ucur = mg->design_parameters;
+    ucur = mg->weights;
     uval = matgrid_val(p, tp, oi, mg);
     do {
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
@@ -2506,7 +2506,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
     vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
     vector3 sz = mg->grid_size;
     meep::realnum *vcur = v, *ucur;
-    ucur = mg->design_parameters;
+    ucur = mg->weights;
     uval = matgrid_val(p, tp, oi, mg);
     add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
                             get_material_gradient(uval, fields_a, fields_f, freq, mg, field_dir) *
