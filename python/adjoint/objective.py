@@ -66,12 +66,13 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dJ = np.sum(dJ,axis=1)
         da_dE = 0.5 * self.cscale # scalar popping out of derivative
 
+        self.time_src = mp.GaussianSource(self.frequencies[0],fwidth=0.1*self.frequencies[0])
         scale = adj_src_scale(self, dt)
 
         if self.frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
             amp = da_dE * dJ * scale # final scale factor
-            src = self.time_src
+            src=self.time_src
         else:
             # multi frequency simulations
             scale = da_dE * dJ * scale
@@ -92,9 +93,6 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         return self.source
 
     def __call__(self):
-        # We just need a workable time profile, so just grab the first available time profile and use that.
-        self.time_src = self.sim.sources[0].src
-
         # Eigenmode data
         direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
         ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],direction=direction,kpoint_func=self.kpoint_func,**self.EigenMode_kwargs)
@@ -246,6 +244,7 @@ def adj_src_scale(obj_quantity, dt, include_resolution=True):
     # an ugly way to calcuate the scaled dtft of the forward source
     y = np.array([src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
     fwd_dtft = np.matmul(np.exp(1j*2*np.pi*obj_quantity.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi) # dtft
+    #fwd_dtft = src.fourier_transform(src.frequency)
 
     # we need to compensate for the phase added by the time envelope at our freq of interest
     src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi)
