@@ -60,7 +60,7 @@ class OptimizationProblem(object):
                 nf=None,
                 decay_dt=50,
                 decay_fields=[mp.Ez],
-                decay_by=1e-4,
+                decay_by=1e-6,
                 minimum_run_time=0,
                 maximum_run_time=None
                  ):
@@ -460,7 +460,6 @@ def stop_when_dft_decayed(simob, mon, dt, c, fcen_idx, decay_by, yee_grid=False,
             if mp.verbosity > 0:
                 fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
                 print(fmt.format(sim.meep_time(), np.real(relative_change)))
-            print("DEBUG: ",relative_change,decay_by,sim.round_time(),minimum_run_time)
             return relative_change <= decay_by and sim.round_time() >= minimum_run_time
     return _stop
 

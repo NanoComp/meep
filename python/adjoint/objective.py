@@ -66,7 +66,6 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             dJ = np.sum(dJ,axis=1)
         da_dE = 0.5 * self.cscale # scalar popping out of derivative
 
-        self.time_src = mp.GaussianSource(self.frequencies[0],fwidth=0.1*self.frequencies[0])
         scale = adj_src_scale(self, dt)
 
         if self.frequencies.size == 1:
@@ -94,6 +93,7 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
 
     def __call__(self):
         # Eigenmode data
+        self.time_src = create_time_profile(self)
         direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
         ob = self.sim.get_eigenmode_coefficients(self.monitor,[self.mode],direction=direction,kpoint_func=self.kpoint_func,**self.EigenMode_kwargs)
         self.eval = np.squeeze(ob.alpha[:,:,self.forward]) # record eigenmode coefficients for scaling
@@ -142,23 +142,39 @@ class FourierFields(ObjectiveQuantitiy):
                             self.sources += [mp.Source(src, component=self.component, amplitude=amp[xi, yi, zi],
                             center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
         else:
+            '''The adjoint solver requires the objective function
+            to be scalar valued with regard to objective arguments
+            and position, but the function may be vector valued
+            with regard to frequency. In this case, the Jacobian
+            will be of the form [F,F,...] where F is the number of
+            frequencies. Because of linearity, we can sum across the
+            second frequency dimension to calculate a frequency
+            scale factor for each point (rather than a scale vector).
+            '''
+            dJ = np.sum(dJ,axis=1) # sum along first dimension bc Jacobian is always diag
             dJ_4d = np.array([dJ[f].copy().reshape(x_dim, y_dim, z_dim) for f in range(self.num_freq)])
             if self.component in [mp.Hx, mp.Hy, mp.Hz]:
                 dJ_4d = -dJ_4d
             for zi in range(z_dim):
                 for yi in range(y_dim):
                     for xi in range(x_dim):
-                        final_scale = -dJ_4d[:,xi,yi,zi] * scale
-                        src = FilteredSource(self.time_src.frequency,self.frequencies,final_scale,dt)
-                        self.sources += [mp.Source(src, component=self.component, amplitude=1,
-                                center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
+                        '''We only need to add a current source if the
+                        jacobian is nonzero for all frequencies at 
+                        that particular point. Otherwise, the fitting
+                        algorithm is going to fail.
+                        '''
+                        if not np.all((dJ_4d[:,xi,yi,zi] == 0)):
+                            final_scale = -dJ_4d[:,xi,yi,zi] * scale
+                            src = FilteredSource(self.time_src.frequency,self.frequencies,final_scale,dt)
+                            self.sources += [mp.Source(src, component=self.component, amplitude=1,
+                                    center=mp.Vector3(self.dg.x[xi], self.dg.y[yi], self.dg.z[zi]))]
 
         return self.sources
 
     def __call__(self):
-        self.time_src = self.sim.sources[0].src
         self.dg = Grid(*self.sim.get_array_metadata(dft_cell=self.monitor))
         self.eval = np.array([self.sim.get_dft_array(self.monitor, self.component, i) for i in range(self.num_freq)])
+        self.time_src = create_time_profile(self)
         return self.eval
 
     def get_evaluation(self):
@@ -210,7 +226,7 @@ class Near2FarFields(ObjectiveQuantitiy):
         return self.sources
 
     def __call__(self):
-        self.time_src = self.sim.sources[0].src
+        self.time_src = create_time_profile(self)
         self.eval = np.array([self.sim.get_farfield(self.monitor, far_pt) for far_pt in self.far_pts]).reshape((self.nfar_pts, self.num_freq, 6))
         return self.eval
 
@@ -220,6 +236,19 @@ class Near2FarFields(ObjectiveQuantitiy):
         except AttributeError:
             raise RuntimeError("You must first run a forward simulation.")
 
+def create_time_profile(obj_quantity,fwidth_frac=0.1):
+    '''
+    For single frequency objective functions, we should
+    generate a guassian pulse with a reasonable bandwidth
+    centered at said frequency.
+    
+    TODO:
+    The user may specify a scalar valued objective
+    function across multiple frequencies (e.g. MSE)
+    in which case we should check that all the frequencies
+    fit in the specified bandwidth.
+    '''
+    return mp.GaussianSource(np.mean(obj_quantity.frequencies),fwidth=fwidth_frac*np.mean(obj_quantity.frequencies))
 
 def adj_src_scale(obj_quantity, dt, include_resolution=True):
     # -------------------------------------- #
@@ -244,9 +273,15 @@ def adj_src_scale(obj_quantity, dt, include_resolution=True):
     # an ugly way to calcuate the scaled dtft of the forward source
     y = np.array([src.swigobj.current(t,dt) for t in np.arange(0,T,dt)]) # time domain signal
     fwd_dtft = np.matmul(np.exp(1j*2*np.pi*obj_quantity.frequencies[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi) # dtft
+    
+    # Interestingly, the real parts of the DTFT and fourier transform match, but the imaginary parts are very different...
     #fwd_dtft = src.fourier_transform(src.frequency)
 
-    # we need to compensate for the phase added by the time envelope at our freq of interest
+    '''
+    For some reason, there seems to be an additional phase
+    factor at the center frequency that needs to be applied
+    to *all* frequencies...
+    '''
     src_center_dtft = np.matmul(np.exp(1j*2*np.pi*np.array([src.frequency])[:,np.newaxis]*np.arange(y.size)*dt), y)*dt/np.sqrt(2*np.pi)
     adj_src_phase = np.exp(1j*np.angle(src_center_dtft))
 
