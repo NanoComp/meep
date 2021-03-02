@@ -435,7 +435,7 @@ template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq) {
     // Return value: New reference
     int rank;
-    size_t dims[3] = {1,1,1};
+    size_t dims[3];
     std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
     if (dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
