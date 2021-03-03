@@ -8,6 +8,7 @@ from autograd import numpy as npa
 from autograd import tensor_jacobian_product
 import unittest
 from enum import Enum
+mp.quiet(True)
 
 MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 
@@ -44,7 +45,7 @@ waveguide_geometry = [mp.Block(material=silicon,
                                size=mp.Vector3(mp.inf,w,mp.inf))]
 
 fcen = 1/1.55
-df = 0.2*fcen
+df = 0.23*fcen
 sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                               center=mp.Vector3(-0.5*sxy+dpml,0),
                               size=mp.Vector3(0,sxy),
@@ -52,7 +53,7 @@ sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                               eig_parity=eig_parity)]
 
 
-def forward_simulation(design_params,mon_type):
+def forward_simulation(design_params,mon_type,frequencies=None):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -70,32 +71,33 @@ def forward_simulation(design_params,mon_type):
                         boundary_layers=boundary_layers,
                         sources=sources,
                         geometry=geometry)
+    if not frequencies:
+        frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
-        mode = sim.add_mode_monitor(fcen,
-                                    0,
-                                    1,
+        mode = sim.add_mode_monitor(frequencies,
                                     mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml),size=mp.Vector3(0,sxy,0)),
                                     yee_grid=True)
 
     elif mon_type.name == 'DFT':
         mode = sim.add_dft_fields([mp.Ez],
-                                  fcen,
-                                  0,
-                                  1,
-                                  center=mp.Vector3(0.5*sxy-dpml),
-                                  size=mp.Vector3(0,sxy),
+                                  frequencies,
+                                  center=mp.Vector3(1.25),
+                                  size=mp.Vector3(0.25,1,0),
                                   yee_grid=False)
 
-    sim.run(until_after_sources=20)
+    sim.run(until_after_sources=50)
 
     if mon_type.name == 'EIGENMODE':
-        coeff = sim.get_eigenmode_coefficients(mode,[1],eig_parity).alpha[0,0,0]
+        coeff = sim.get_eigenmode_coefficients(mode,[1],eig_parity).alpha[0,:,0]
         S12 = abs(coeff)**2
 
     elif mon_type.name == 'DFT':
-        Ez_dft = sim.get_dft_array(mode, mp.Ez, 0)
-        Ez2 = abs(Ez_dft[63])**2
+        Ez2 = []
+        for f in range(len(frequencies)):
+            Ez_dft = sim.get_dft_array(mode, mp.Ez, f)
+            Ez2.append(abs(Ez_dft[4,10])**2)
+        Ez2 = np.array(Ez2)
 
     sim.reset_meep()
 
@@ -105,7 +107,7 @@ def forward_simulation(design_params,mon_type):
         return Ez2
 
 
-def adjoint_solver(design_params, mon_type):
+def adjoint_solver(design_params, mon_type, frequencies=None):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -126,6 +128,8 @@ def adjoint_solver(design_params, mon_type):
                         boundary_layers=boundary_layers,
                         sources=sources,
                         geometry=geometry)
+    if not frequencies:
+        frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
         obj_list = [mpa.EigenmodeCoefficient(sim,
@@ -137,19 +141,19 @@ def adjoint_solver(design_params, mon_type):
 
     elif mon_type.name == 'DFT':
         obj_list = [mpa.FourierFields(sim,
-                                      mp.Volume(center=mp.Vector3(0.5*sxy-dpml),
-                                                size=mp.Vector3(0,sxy,0)),
+                                      mp.Volume(center=mp.Vector3(1.25),
+                                                size=mp.Vector3(0.25,1,0)),
                                       mp.Ez)]
 
         def J(mode_mon):
-            return npa.abs(mode_mon[0,63])**2
+            return npa.abs(mode_mon[:,4,10])**2
 
     opt = mpa.OptimizationProblem(
         simulation = sim,
         objective_functions = J,
         objective_arguments = obj_list,
         design_regions = [matgrid_region],
-        frequencies=[fcen],
+        frequencies=frequencies,
         decay_fields=[mp.Ez])
 
     f, dJ_du = opt([design_params])
@@ -170,64 +174,94 @@ def mapping(x,filter_radius,eta,beta):
 class TestAdjointSolver(unittest.TestCase):
 
     def test_adjoint_solver_DFT_fields(self):
-        ## compute gradient using adjoint solver
-        adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.DFT)
+        print("*** TESTING DFT ADJOINT FEATURES ***")
+        ## test the single frequency and multi frequency cases
+        for frequencies in [[fcen], [1/1.58, fcen, 1/1.53]]:
+            ## compute gradient using adjoint solver
+            adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.DFT, frequencies)
 
-        ## compute unperturbed Ez2
-        Ez2_unperturbed = forward_simulation(p, MonitorObject.DFT)
+            ## compute unperturbed S12
+            S12_unperturbed = forward_simulation(p, MonitorObject.DFT, frequencies)
+            
+            ## compare objective results
+            print("|Ez|^2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+            np.testing.assert_array_almost_equal(adjsol_obj,S12_unperturbed,decimal=3)
 
-        print("Ez2:, {:.6f}, {:.6f}".format(adjsol_obj,Ez2_unperturbed))
-        self.assertAlmostEqual(adjsol_obj,Ez2_unperturbed,places=2)
-
-        ## compute perturbed Ez2
-        Ez2_perturbed = forward_simulation(p+dp, MonitorObject.DFT)
-
-        print("directional_derivative:, {:.6f}, {:.6f}".format(np.dot(dp,adjsol_grad),Ez2_perturbed-Ez2_unperturbed))
-        self.assertAlmostEqual(np.dot(dp,adjsol_grad),Ez2_perturbed-Ez2_unperturbed,places=5)
+            ## compute perturbed S12
+            S12_perturbed = forward_simulation(p+dp, MonitorObject.DFT, frequencies)
+            
+            ## compare gradients
+            if adjsol_grad.ndim < 2:
+                adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
+            adj_scale = (dp[None,:]@adjsol_grad).flatten()
+            fd_grad = S12_perturbed-S12_unperturbed
+            print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+            np.testing.assert_array_almost_equal(adj_scale,fd_grad,decimal=5)
 
 
     def test_adjoint_solver_eigenmode(self):
-        ## compute gradient using adjoint solver
-        adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.EIGENMODE)
+        print("*** TESTING EIGENMODE ADJOINT FEATURES ***")
+        ## test the single frequency and multi frequency cases
+        for frequencies in [[fcen], [1/1.58, fcen, 1/1.53]]:
+            ## compute gradient using adjoint solver
+            adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.EIGENMODE, frequencies)
 
-        ## compute unperturbed S12
-        S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE)
+            ## compute unperturbed S12
+            S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE, frequencies)
+            
+            ## compare objective results
+            print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+            np.testing.assert_array_almost_equal(adjsol_obj,S12_unperturbed,decimal=3)
 
-        print("S12:, {:.6f}, {:.6f}".format(adjsol_obj,S12_unperturbed))
-        self.assertAlmostEqual(adjsol_obj,S12_unperturbed,places=3)
-
-        ## compute perturbed S12
-        S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE)
-
-        print("directional_derivative:, {:.6f}, {:.6f}".format(np.dot(dp,adjsol_grad),S12_perturbed-S12_unperturbed))
-        self.assertAlmostEqual(np.dot(dp,adjsol_grad),S12_perturbed-S12_unperturbed,places=5)
+            ## compute perturbed S12
+            S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies)
+            
+            ## compare gradients
+            if adjsol_grad.ndim < 2:
+                adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
+            adj_scale = (dp[None,:]@adjsol_grad).flatten()
+            fd_grad = S12_perturbed-S12_unperturbed
+            print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+            np.testing.assert_array_almost_equal(adj_scale,fd_grad,decimal=5)
 
 
     def test_gradient_backpropagation(self):
-        ## filter/thresholding parameters
-        filter_radius = 0.21985
-        eta = 0.49093
-        beta = 4.0698
+        print("*** TESTING BACKPROP FEATURES ***")
+        for frequencies in [[fcen], [1/1.58, fcen, 1/1.53]]:
+            ## filter/thresholding parameters
+            filter_radius = 0.21985
+            eta = 0.49093
+            beta = 4.0698
 
-        mapped_p = mapping(p,filter_radius,eta,beta)
+            mapped_p = mapping(p,filter_radius,eta,beta)
 
-        ## compute gradient using adjoint solver
-        adjsol_obj, adjsol_grad = adjoint_solver(mapped_p, MonitorObject.EIGENMODE)
+            ## compute gradient using adjoint solver
+            adjsol_obj, adjsol_grad = adjoint_solver(mapped_p, MonitorObject.EIGENMODE,frequencies)
 
-        ## backpropagate the gradient
-        bp_adjsol_grad = tensor_jacobian_product(mapping,0)(p,filter_radius,eta,beta,adjsol_grad)
+            ## backpropagate the gradient
+            if len(frequencies) > 1:
+                bp_adjsol_grad = np.zeros(adjsol_grad.shape)
+                for i in range(len(frequencies)):
+                    bp_adjsol_grad[:,i] = tensor_jacobian_product(mapping,0)(p,filter_radius,eta,beta,adjsol_grad[:,i])
+            else:
+                bp_adjsol_grad = tensor_jacobian_product(mapping,0)(p,filter_radius,eta,beta,adjsol_grad)
 
-        ## compute unperturbed S12
-        S12_unperturbed = forward_simulation(mapped_p, MonitorObject.EIGENMODE)
+            ## compute unperturbed S12
+            S12_unperturbed = forward_simulation(mapped_p, MonitorObject.EIGENMODE,frequencies)
 
-        print("S12:, {:.6f}, {:.6f}".format(adjsol_obj,S12_unperturbed))
-        self.assertAlmostEqual(adjsol_obj,S12_unperturbed,places=3)
+            ## compare objective results
+            print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+            np.testing.assert_array_almost_equal(adjsol_obj,S12_unperturbed,decimal=3)
 
-        ## compute perturbed S12
-        S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta), MonitorObject.EIGENMODE)
+            ## compute perturbed S12
+            S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta), MonitorObject.EIGENMODE,frequencies)
 
-        print("directional_derivative:, {:.6f}, {:.6f}".format(np.dot(dp,bp_adjsol_grad),S12_perturbed-S12_unperturbed))
-        self.assertAlmostEqual(np.dot(dp,bp_adjsol_grad),S12_perturbed-S12_unperturbed,places=5)
+            if bp_adjsol_grad.ndim < 2:
+                bp_adjsol_grad = np.expand_dims(bp_adjsol_grad,axis=1)
+            adj_scale = (dp[None,:]@bp_adjsol_grad).flatten()
+            fd_grad = S12_perturbed-S12_unperturbed
+            print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+            np.testing.assert_array_almost_equal(adj_scale,fd_grad,decimal=5)
 
 
 if __name__ == '__main__':
