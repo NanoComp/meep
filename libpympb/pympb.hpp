@@ -5,7 +5,7 @@
 
 #include "ctlgeom.h"
 #include "mpb.h"
-#include "../src/meepgeom.hpp"
+#include "meepgeom.hpp"
 
 namespace py_mpb {
 
