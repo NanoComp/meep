@@ -744,7 +744,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
         if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
         }
-        delete[] ((material_data *)$1.material)->design_parameters;
+        delete[] ((material_data *)$1.material)->weights;
         delete[] ((material_data *)$1.material)->epsilon_data;
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
@@ -786,7 +786,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
             delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
         }
         delete[] ((material_data *)$1.items[i].material)->epsilon_data;
-        delete[] ((material_data *)$1.items[i].material)->design_parameters;
+        delete[] ((material_data *)$1.items[i].material)->weights;
         delete (material_data *)$1.items[i].material;
         geometric_object_destroy($1.items[i]);
     }
@@ -978,7 +978,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if ($1->medium.H_susceptibilities.items) {
         delete[] $1->medium.H_susceptibilities.items;
     }
-    delete[] $1->design_parameters;
+    delete[] $1->weights;
     delete[] $1->epsilon_data;
     delete $1;
 }
@@ -1351,7 +1351,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
             if ($1.items[i]->medium.H_susceptibilities.items) {
                 delete[] $1.items[i]->medium.H_susceptibilities.items;
             }
-            delete[] $1.items[i]->design_parameters;
+            delete[] $1.items[i]->weights;
             delete[] $1.items[i]->epsilon_data;
         }
         delete[] $1.items;

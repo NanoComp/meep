@@ -31,7 +31,7 @@ def compute_resonant_mode(res):
         matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                                   mp.air,
                                   mp.Medium(index=3.5),
-                                  design_parameters=filtered_design_params,
+                                  weights=filtered_design_params,
                                   do_averaging=True,
                                   beta=1000,
                                   eta=0.5)
@@ -75,8 +75,8 @@ class TestMaterialGrid(unittest.TestCase):
             self.assertAlmostEqual(freq_ref, freq_matgrid[-1], 2)
 
         ## verify that the relative error is decreasing with increasing resolution
-        ## and is better than linear convergence
-        self.assertLess(abs(freq_matgrid[1]-freq_ref),abs(freq_matgrid[0]-freq_ref)/2)
+        ## and is better than linear convergence because of subpixel smoothing
+        self.assertLess(abs(freq_matgrid[1]-freq_ref)*(res[1]**2)/2,abs(freq_matgrid[0]-freq_ref)*(res[0]**2))
 
 if __name__ == '__main__':
     unittest.main()

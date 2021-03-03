@@ -187,7 +187,7 @@ struct material_data {
 
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
-  meep::realnum *design_parameters;
+  meep::realnum *weights;
   medium_struct medium_1;
   medium_struct medium_2;
   meep::realnum beta;
@@ -206,7 +206,7 @@ struct material_data {
   stalling convergence, although we try to avoid this by making the
   minimum u = 1e-4 instead of 0.
 
-  For U_SUM: The gradient is divided by the number of overlapping grids.
+  For U_MEAN: The gradient is divided by the number of overlapping grids.
   This doesn't have the property that u=0 in one grid makes the total
   u=0, unfortunately, which is desirable if u=0 indicates "drilled holes".
 
@@ -214,11 +214,11 @@ struct material_data {
   the object on top always wins and everything underneath is ignored.
   Specifically, that means that u = the top material grid value at that point.
   */
-  enum { U_MIN = 0, U_PROD = 1, U_SUM = 2, U_DEFAULT = 3 } material_grid_kinds;
+  enum { U_MIN = 0, U_PROD = 1, U_MEAN = 2, U_DEFAULT = 3 } material_grid_kinds;
 
   material_data()
       : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL),
-        design_parameters(NULL), medium_1(), medium_2() {
+        weights(NULL), medium_1(), medium_2() {
     epsilon_dims[0] = 0;
     epsilon_dims[1] = 0;
     epsilon_dims[2] = 0;
@@ -247,7 +247,7 @@ material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(char *epsilon_input_file);
 material_type make_material_grid(bool do_averaging, double beta, double eta);
 void read_epsilon_file(const char *eps_input_file);
-void update_design_parameters(material_type matgrid, double *design_parameters);
+void update_weights(material_type matgrid, double *weights);
 
 }; // namespace meep_geom
 

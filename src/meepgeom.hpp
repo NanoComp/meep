@@ -201,7 +201,7 @@ geom_box gv2box(const meep::volume &v);
 /***************************************************************/
 // material grid functions
 /***************************************************************/
-void update_design_parameters(material_type matgrid, double *design_parameters);
+void update_weights(material_type matgrid, double *weights);
 meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 meep::realnum material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);

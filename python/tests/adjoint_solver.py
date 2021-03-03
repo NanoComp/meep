@@ -57,8 +57,8 @@ def forward_simulation(design_params,mon_type,frequencies=None):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
-                              design_parameters=design_params.reshape(Nx,Ny),
-                              grid_type='U_SUM')
+                              weights=design_params.reshape(Nx,Ny),
+                              grid_type='U_MEAN')
             
     matgrid_geometry = [mp.Block(center=mp.Vector3(),
                                  size=mp.Vector3(design_shape.x,design_shape.y,0),
@@ -111,7 +111,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
-                              design_parameters=np.ones((Nx,Ny)))
+                              weights=np.ones((Nx,Ny)))
 
     matgrid_region = mpa.DesignRegion(matgrid,
                                       volume=mp.Volume(center=mp.Vector3(),
