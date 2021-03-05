@@ -736,8 +736,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(arginit) GEOMETRIC_OBJECT {
+    $1.material = NULL;
+}
+
 %typemap(freearg) GEOMETRIC_OBJECT {
-    if($1.subclass.sphere_data || $1.subclass.cylinder_data || $1.subclass.block_data) {
+    if ($1.material) {
         if (((material_data *)$1.material)->medium.E_susceptibilities.items) {
             delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
         }
@@ -777,6 +781,11 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(arginit) geometric_object_list {
+    $1.num_items = 0;
+    $1.items = NULL;
+}
+
 %typemap(freearg) geometric_object_list {
     for(int i = 0; i < $1.num_items; i++) {
         if (((material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
@@ -811,6 +820,11 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     if(!py_list_to_susceptibility_list($input, &$1)) {
         SWIG_fail;
     }
+}
+
+%typemap(arginit) susceptibility_list {
+    $1.num_items = 0;
+    $1.items = NULL;
 }
 
 %typemap(freearg) susceptibility_list {
@@ -971,16 +985,22 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     }
 }
 
+%typemap(arginit) material_type {
+    $1 = NULL;
+}
+
 %typemap(freearg) material_type {
-    if ($1->medium.E_susceptibilities.items) {
-        delete[] $1->medium.E_susceptibilities.items;
+    if ($1) {
+        if ($1->medium.E_susceptibilities.items) {
+            delete[] $1->medium.E_susceptibilities.items;
+        }
+        if ($1->medium.H_susceptibilities.items) {
+            delete[] $1->medium.H_susceptibilities.items;
+        }
+        delete[] $1->weights;
+        delete[] $1->epsilon_data;
+        delete $1;
     }
-    if ($1->medium.H_susceptibilities.items) {
-        delete[] $1->medium.H_susceptibilities.items;
-    }
-    delete[] $1->weights;
-    delete[] $1->epsilon_data;
-    delete $1;
 }
 
 // For some reason SWIG needs the namespaced version too
@@ -1271,12 +1291,8 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %typemap(freearg) (int num_fields1, const meep::component *components1, int num_fields2,
                    const meep::component *components2, meep::field_function integrand, void *integrand_data_) {
-    if ($2) {
-        delete[] $2;
-    }
-    if ($4) {
-        delete[] $4;
-    }
+    delete[] $2;
+    delete[] $4;
     Py_XDECREF(data$argnum.func);
 }
 
@@ -1311,10 +1327,12 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     }
 }
 
+%typemap(arginit) meep_geom::absorber_list {
+    $1 = NULL;
+}
+
 %typemap(freearg) meep_geom::absorber_list {
-    if ($1) {
-        destroy_absorber_list($1);
-    }
+    destroy_absorber_list($1);
 }
 
 // Typemap suite for material_type_list
@@ -1342,6 +1360,11 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     }
 }
 
+%typemap(arginit) material_type_list {
+    $1.num_items = 0;
+    $1.items = NULL;
+}
+
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
@@ -1354,8 +1377,8 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
             delete[] $1.items[i]->weights;
             delete[] $1.items[i]->epsilon_data;
         }
-        delete[] $1.items;
     }
+    delete[] $1.items;
 }
 
 // For some reason SWIG needs the namespaced version too
