@@ -2370,7 +2370,8 @@ class Simulation(object):
     def add_sources(self):
         for s in self.sources:
             self.add_source(s)
-        self.fields.require_source_components() # needed by IndexedSource objects
+        if self.sources:
+            self.fields.require_source_components() # needed by IndexedSource objects
 
     def _evaluate_dft_objects(self):
         for dft in self.dft_objects:
