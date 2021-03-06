@@ -472,15 +472,30 @@ bool fields_chunk::alloc_f(component c) {
   return changed;
 }
 
-void fields::require_component(component c) {
-  if (!gv.has_field(c))
-    abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
+// allocate fields for components required by any source on any process
+// ... this is needed after calling the low-level fields::add_srcdata
+void fields::require_source_components() {
+  int needed[NUM_FIELD_COMPONENTS];
+  memset(needed, 0, sizeof(needed));
+  for (int i = 0; i < num_chunks; i++) {
+    FOR_FIELD_TYPES(ft) {
+      for (src_vol *src = chunks[i]->sources[ft]; src; src = src->next)
+        needed[src->c] = 1;
+    }
+  }
+  int allneeded[NUM_FIELD_COMPONENTS];
+  am_now_working_on(MpiAllTime);
+  or_to_all(needed, allneeded, NUM_FIELD_COMPONENTS);
+  finished_working();
 
-  if (beta != 0 && gv.dim != D2) abort("Nonzero beta unsupported in dimensions other than 2.");
+  bool aniso2d = is_aniso2d();
+  for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
+    if (allneeded[c])
+      _require_component(component(c), aniso2d);
+}
 
-  components_allocated = true;
-
-  // check if we are in 2d but anisotropy couples xy with z
+// check if we are in 2d but anisotropy couples xy with z
+bool fields::is_aniso2d() {
   bool aniso2d = false;
   if (gv.dim == D2) {
     int i;
@@ -494,9 +509,18 @@ void fields::require_component(component c) {
     aniso2d = or_to_all(i < num_chunks);
     finished_working();
   }
+  else if (beta != 0)
+    abort("Nonzero beta unsupported in dimensions other than 2.");
   if (aniso2d && beta != 0 && is_real)
     abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
-  aniso2d = aniso2d || (beta != 0); // beta couples TE/TM
+  return aniso2d || (beta != 0); // beta couples TE/TM
+}
+
+void fields::_require_component(component c, bool aniso2d) {
+  if (!gv.has_field(c))
+    abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
+
+  components_allocated = true;
 
   // allocate fields if they haven't been allocated yet for this component
   int need_to_reconnect = 0;
@@ -506,10 +530,10 @@ void fields::require_component(component c) {
         if (chunks[i]->alloc_f(c_alloc)) need_to_reconnect++;
   }
 
-  if (need_to_reconnect) figure_out_step_plan();
-  am_now_working_on(MpiAllTime);
-  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
-  finished_working();
+  if (need_to_reconnect) {
+    figure_out_step_plan();
+    chunk_connections_valid = false; // connect_chunks() will synchronize this for us
+  }
 }
 
 void fields_chunk::remove_sources() {

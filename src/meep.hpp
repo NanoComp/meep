@@ -1728,7 +1728,10 @@ public:
   void add_volume_source(component c, const src_time &src, const volume &,
                          std::complex<double> amp = 1.0);
   void add_volume_source(const src_time &src, const volume &, gaussianbeam beam);
-  void require_component(component c);
+  bool is_aniso2d();
+  void require_source_components();
+  void _require_component(component c, bool aniso2d);
+  void require_component(component c) { _require_component(c, is_aniso2d()); }
   void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr);
 
   // mpb.cpp

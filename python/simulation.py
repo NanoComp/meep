@@ -1930,8 +1930,7 @@ class Simulation(object):
             v = Vector3(self.k_point.x, self.k_point.y) if self.special_kz else self.k_point
             self.fields.use_bloch(py_v3_to_vec(self.dimensions, v, self.is_cylindrical))
 
-        for s in self.sources:
-            self.add_source(s)
+        self.add_sources()
 
         for hook in self.init_sim_hooks:
             hook()
@@ -2367,6 +2366,13 @@ class Simulation(object):
                 add_vol_src(src.amp_data, src.amplitude * 1.0)
             else:
                 add_vol_src(src.amplitude * 1.0)
+
+    def add_sources(self):
+        if self.fields is None:
+            self.init_sim() # in case only some processes have IndexedSources
+        for s in self.sources:
+            self.add_source(s)
+        self.fields.require_source_components() # needed by IndexedSource objects
 
     def _evaluate_dft_objects(self):
         for dft in self.dft_objects:
@@ -3567,8 +3573,7 @@ class Simulation(object):
         self.sources = new_sources
         if self.fields:
             self.fields.remove_sources()
-            for s in self.sources:
-                self.add_source(s)
+            self.add_sources()
 
     def reset_meep(self):
         """
