@@ -484,7 +484,9 @@ void fields::require_source_components() {
     }
   }
   int allneeded[NUM_FIELD_COMPONENTS];
+  am_now_working_on(MpiAllTime);
   or_to_all(needed, allneeded, NUM_FIELD_COMPONENTS);
+  finished_working();
 
   bool aniso2d = is_aniso2d();
   for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
