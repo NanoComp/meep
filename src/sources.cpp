@@ -321,7 +321,7 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, st
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
   // We can't do require_component(c) since that only works if all processes are adding
   // srcdata for the same components in the same order, which may not be true.
-  // ... instead, the caller should call fields::require_source_components() after
+  // ... instead, the caller should call fields::require_source_components()
   //     after all add_srcdata calls are complete.
 }
 
