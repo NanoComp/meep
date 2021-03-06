@@ -2368,10 +2368,11 @@ class Simulation(object):
                 add_vol_src(src.amplitude * 1.0)
 
     def add_sources(self):
+        if self.fields is None:
+            self.init_sim() # in case only some processes have IndexedSources
         for s in self.sources:
             self.add_source(s)
-        if self.sources:
-            self.fields.require_source_components() # needed by IndexedSource objects
+        self.fields.require_source_components() # needed by IndexedSource objects
 
     def _evaluate_dft_objects(self):
         for dft in self.dft_objects:
