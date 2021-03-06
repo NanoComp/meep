@@ -532,9 +532,6 @@ void fields::_require_component(component c, bool aniso2d) {
     figure_out_step_plan();
     chunk_connections_valid = false; // connect_chunks() will synchronize this for us
   }
-  am_now_working_on(MpiAllTime);
-  if (sum_to_all(need_to_reconnect)) chunk_connections_valid = false;
-  finished_working();
 }
 
 void fields_chunk::remove_sources() {
