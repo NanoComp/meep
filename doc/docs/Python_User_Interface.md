@@ -666,6 +666,29 @@ frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
 </div>
 
+<a id="Simulation.get_epsilon_grid"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None):
+```
+
+<div class="method_docstring" markdown="1">
+
+Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
+grid anywhere within the cell volume, compute the trace of the $\varepsilon$ tensor from the `geometry`
+exactly at each grid point. (For [`MaterialGrid`](#materialgrid)s, the $\varepsilon$ at each grid
+point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly also
+projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
+$\varepsilon$ by bilinearly interpolating from the nearest Yee grid points. This function is useful for
+sampling the material geometry to any arbitrary resolution. The return value is a NumPy array with shape
+equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
+
+</div>
+
+</div>
+
 <a id="Simulation.initialize_field"></a>
 
 <div class="class_members" markdown="1">
