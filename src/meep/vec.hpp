@@ -989,7 +989,7 @@ public:
   friend grid_volume vol2d(double xsize, double ysize, double a);
   friend grid_volume vol3d(double xsize, double ysize, double zsize, double a);
 
-  grid_volume split_at_fraction(bool want_high, int numer, int bestd = -1, int bestlen = 1) const;
+  grid_volume split_at_fraction(bool side_high, int split_pt, int split_dir) const;
   double get_cost() const;
   grid_volume halve(direction d) const;
   void pad_self(direction d);

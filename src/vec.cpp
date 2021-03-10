@@ -1035,38 +1035,21 @@ void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
   }
 }
 
-grid_volume grid_volume::split_at_fraction(bool want_high, int numer, int bestd,
-                                           int bestlen) const {
-
-  if (bestd == -1) {
-    for (int i = 0; i < 3; i++)
-      if (num[i] > bestlen) {
-        bestd = i;
-        bestlen = num[i];
-      }
-  }
-  else {
-    bestd %= 3;
-  }
-
-  if (bestd == -1) {
-    for (int i = 0; i < 3; i++)
-      master_printf("num[%d] = %d\n", i, num[i]);
-    abort("Crazy weird splitting error.\n");
-  }
+grid_volume grid_volume::split_at_fraction(bool side_high, int split_pt, int split_dir) const {
+  if (dim == Dcyl) split_dir %= 3;
   grid_volume retval(dim, a, 1, 1, 1);
   for (int i = 0; i < 3; i++)
     retval.num[i] = num[i];
-  if (numer >= num[bestd]) abort("Aaack bad bug in split_at_fraction.\n");
-  direction d = (direction)bestd;
+  if (split_pt >= num[split_dir]) abort("Aaack bad bug in split_at_fraction.\n");
+  direction d = (direction)split_dir;
   if (dim == Dcyl && d == X) d = R;
   retval.set_origin(io);
-  if (want_high) retval.shift_origin(d, numer * 2);
+  if (side_high) retval.shift_origin(d, split_pt * 2);
 
-  if (want_high)
-    retval.num[bestd] -= numer;
+  if (side_high)
+    retval.num[split_dir] -= split_pt;
   else
-    retval.num[bestd] = numer;
+    retval.num[split_dir] = split_pt;
   retval.num_changed();
   return retval;
 }

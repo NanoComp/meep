@@ -87,11 +87,10 @@ static void split_by_cost(int n, grid_volume gvol,
     direction best_split_direction;
     double left_effort_fraction;
     gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction, left_effort_fraction);
-    int num_in_split_dir = gvol.num_direction(best_split_direction);
-    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir);
+    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
     const int num_left = (size_t)(left_effort_fraction * n + 0.5);
     split_by_cost(num_left, left_gvol, result, fragment_cost);
-    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
+    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
     split_by_cost(n - num_left, right_gvol, result, fragment_cost);
     return;
   }
