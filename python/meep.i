@@ -1523,10 +1523,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(double) * 2);
 }
 
-std::vector<struct meep::sourcedata> meep::dft_near2far::near_sourcedata(const meep::vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ);
-
-void meep::fields::add_srcdata(struct meep::sourcedata cur_data, meep::src_time *src, size_t n, std::complex<double>* amp_arr);
-
 struct vector3 {
     double x;
     double y;
