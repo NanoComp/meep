@@ -1217,6 +1217,15 @@ int symmetry::multiplicity() const {
     return g;
 }
 
+int symmetry::multiplicity(vec &x) const {
+  int m = multiplicity();
+  for (int n=1; n<m; ++n){
+    if (transform(x,n) == x)
+      return n;
+  }
+  return m;
+}
+
 symmetry symmetry::operator+(const symmetry &b) const {
   // The following optimization ignores identity when adding symmetries
   // together.  This is important because identity has an undefined
