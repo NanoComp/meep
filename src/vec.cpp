@@ -1217,7 +1217,7 @@ int symmetry::multiplicity() const {
     return g;
 }
 
-int symmetry::multiplicity(vec &x) const {
+int symmetry::multiplicity(ivec &x) const {
   int m = multiplicity();
   for (int n=1; n<m; ++n){
     if (transform(x,n) == x)

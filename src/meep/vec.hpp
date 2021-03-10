@@ -1079,7 +1079,7 @@ public:
   int transform(int, int n) const;
   std::complex<double> phase_shift(int, int n) const;
   int multiplicity() const;
-  int multiplicity(vec &) const;
+  int multiplicity(ivec &) const;
   bool is_primitive(const ivec &) const;
 
   volume_list *reduce(const volume_list *gl) const;
