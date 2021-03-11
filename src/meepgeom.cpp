@@ -2567,17 +2567,6 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   }
 }
 
-std::complex<double> find_array_min_max(int n, double *data) {
-  double min_val = data[0], max_val = data[0];
-  for (int i = 1; i < n; ++i) {
-    if (data[i] < min_val)
-      min_val = data[i];
-    if (data[i] > max_val)
-      max_val = data[i];
-  }
-  return std::complex<double>(min_val,max_val);
-}
-
 void get_epsilon_grid(geometric_object_list gobj_list,
                       material_type_list mlist,
                       material_type _default_material,
@@ -2589,17 +2578,6 @@ void get_epsilon_grid(geometric_object_list gobj_list,
                       int ny, double *y,
                       int nz, double *z,
                       double *grid_vals) {
-  std::complex<double> min_max;
-  double min_val[3], max_val[3];
-  for (int n = 0; n < 3; ++n) {
-    if (((n == 0) ? nx : ((n == 1) ? ny : nz)) > 1) {
-      min_max = find_array_min_max(((n == 0) ? nx : ((n == 1) ? ny : nz)),
-                                   ((n == 0) ? x : ((n == 1) ? y : z)));
-      min_val[n] = real(min_max); max_val[n] = imag(min_max);
-    }
-  }
-  const meep::volume vol(meep::vec(min_val[0],min_val[1],min_val[2]),
-                         meep::vec(max_val[0],max_val[1],max_val[2]));
   init_libctl(_default_material, _ensure_periodicity, &gv,
               cell_size, cell_center, &gobj_list);
   geom_epsilon geps(gobj_list, mlist, gv.pad().surroundings());
