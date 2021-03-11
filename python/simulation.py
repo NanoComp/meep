@@ -2102,7 +2102,13 @@ class Simulation(object):
         equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
         """
         grid_vals = np.squeeze(np.empty((len(xtics), len(ytics), len(ztics))))
-        mp._get_epsilon_grid(self.geometry, self.extra_materials,
+        gv = self._create_grid_volume(False)
+        mp._get_epsilon_grid(self.geometry,
+                             self.extra_materials,
+                             self.default_material,
+                             self.ensure_periodicity and not not self.k_point,
+                             gv,
+                             self.cell_size, self.geometry_center,
                              len(xtics), xtics,
                              len(ytics), ytics,
                              len(ztics), ztics,

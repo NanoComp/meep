@@ -77,9 +77,6 @@ struct fragment_stats {
   static bool eps_averaging;
 
   static bool has_non_medium_material();
-  static void init_libctl(meep_geom::material_type default_mat, bool ensure_per,
-                          meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
-                          geometric_object_list *geom_list);
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
@@ -199,10 +196,18 @@ void check_offdiag(medium_struct *m);
 geom_box gv2box(const meep::volume &v);
 void get_epsilon_grid(geometric_object_list gobj_list,
                       material_type_list mlist,
+                      material_type _default_material,
+                      bool _ensure_periodicity,
+                      meep::grid_volume gv,
+                      vector3 cell_size,
+                      vector3 cell_center,
                       int nx, double *x,
                       int ny, double *y,
                       int nz, double *z,
                       double *grid_vals);
+void init_libctl(material_type default_mat, bool ensure_per,
+                 meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
+                 geometric_object_list *geom_list);
 
 /***************************************************************/
 // material grid functions

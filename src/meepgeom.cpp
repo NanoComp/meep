@@ -1926,7 +1926,7 @@ fragment_stats compute_fragment_stats(
   fragment_stats::extra_materials = extra_materials_;
   fragment_stats::eps_averaging = eps_averaging;
 
-  fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
+  init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
   geom_box box = make_box_from_cell(cell_size);
   fragment_stats stats = init_stats(box, tol, maxeval, gv);
   stats.compute();
@@ -1941,9 +1941,9 @@ fragment_stats::fragment_stats(geom_box &bx)
   num_pixels_in_box = get_pixels_in_box(&bx);
 }
 
-void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                                 vector3 cell_size, vector3 cell_center,
-                                 geometric_object_list *geom_) {
+void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
+                 vector3 cell_size, vector3 cell_center,
+                 geometric_object_list *geom_) {
   geom_initialize();
   default_material = default_mat;
   ensure_periodicity = ensure_per;
@@ -2568,7 +2568,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
 }
 
 std::complex<double> find_array_min_max(int n, double *data) {
-  double min_val = data[0], max_val = data[n-1];
+  double min_val = data[0], max_val = data[0];
   for (int i = 1; i < n; ++i) {
     if (data[i] < min_val)
       min_val = data[i];
@@ -2580,6 +2580,11 @@ std::complex<double> find_array_min_max(int n, double *data) {
 
 void get_epsilon_grid(geometric_object_list gobj_list,
                       material_type_list mlist,
+                      material_type _default_material,
+                      bool _ensure_periodicity,
+                      meep::grid_volume gv,
+                      vector3 cell_size,
+                      vector3 cell_center,
                       int nx, double *x,
                       int ny, double *y,
                       int nz, double *z,
@@ -2595,7 +2600,9 @@ void get_epsilon_grid(geometric_object_list gobj_list,
   }
   const meep::volume vol(meep::vec(min_val[0],min_val[1],min_val[2]),
                          meep::vec(max_val[0],max_val[1],max_val[2]));
-  geom_epsilon geps(gobj_list, mlist, vol);
+  init_libctl(_default_material, _ensure_periodicity, &gv,
+              cell_size, cell_center, &gobj_list);
+  geom_epsilon geps(gobj_list, mlist, gv.pad().surroundings());
   for (int i = 0; i < nx; ++i)
     for (int j = 0; j < ny; ++j)
       for (int k = 0; k < nz; ++k)
