@@ -660,6 +660,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
       sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
 
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+        IVEC_LOOP_ILOC(f->fc->gv, ix0);
         IVEC_LOOP_LOC(f->fc->gv, x0);
         x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
@@ -692,6 +693,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
         idx_dft++;
         if (is_electric(temp_struct.near_fd_comp))
           EH0 *= -1;
+        EH0 /= f->S.multiplicity(ix0);
         temp_struct.amp_arr.push_back(EH0);
       }
     }
