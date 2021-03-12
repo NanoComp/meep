@@ -321,9 +321,10 @@ Python. `Vector3` is a `meep` class.
   Structure](#load-and-dump-structure) for more information.
 
 + **`chunk_layout` [`string` or `Simulation` instance]** — This will cause the
-  `Simulation` to use the chunk layout described by either an h5 file (created by
-  `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump
-  Structure](#load-and-dump-structure) for more information.
+  `Simulation` to use the chunk layout described by either (1) an h5 file (created
+  using `Simulation.dump_chunk_layout`), (2) another `Simulation` or (3) a
+  `BinaryPartition` object. See [Load and Dump Structure](#load-and-dump-structure)
+  for more information.
 
 The following require a bit more understanding of the inner workings of Meep to
 use. See also [SWIG Wrappers](#swig-wrappers).

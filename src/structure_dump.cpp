@@ -414,6 +414,55 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
+binary_partition::binary_partition(int _id) {
+  id = _id;
+  split_dir = NO_DIRECTION;
+  split_pos = 0.0;
+  left = NULL;
+  right = NULL;
+}
+
+binary_partition::binary_partition(direction _split_dir, double _split_pos) {
+  split_dir = _split_dir;
+  split_pos = _split_pos;
+  id = -1;
+  left = NULL;
+  right = NULL;
+}
+
+static void split_by_binarytree(grid_volume gvol,
+                                std::vector<grid_volume> &result,
+                                std::vector<int> &chunk_ids,
+                                const binary_partition *bp) {
+  // reached a leaf
+  if ((bp->left == NULL) && (bp->right == NULL)) {
+    result.push_back(gvol);
+    chunk_ids.push_back(bp->id);
+    return;
+  }
+
+  int split_point = (size_t)((bp->split_pos - gvol.surroundings().in_direction_min(bp->split_dir)) /
+                             gvol.surroundings().in_direction(bp->split_dir) *
+                             gvol.num_direction(bp->split_dir) + 0.5);
+  // traverse left branch
+  if (bp->left != NULL) {
+    grid_volume left_gvol = gvol.split_at_fraction(false, split_point, bp->split_dir);
+    split_by_binarytree(left_gvol, result, chunk_ids, bp->left);
+  }
+  // traverse right branch
+  if (bp->right != NULL) {
+    grid_volume right_gvol = gvol.split_at_fraction(true, split_point, bp->split_dir);
+    split_by_binarytree(right_gvol, result, chunk_ids, bp->right);
+  }
+}
+
+void structure::load_chunk_layout(const binary_partition *bp, boundary_region &br) {
+  std::vector<grid_volume> gvs;
+  std::vector<int> chunk_ids;
+  split_by_binarytree(gv, gvs, chunk_ids, bp);
+  load_chunk_layout(gvs, br);
+}
+
 void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   // Load chunk grid_volumes from a file
   h5file file(filename, h5file::READONLY, true);

@@ -707,6 +707,8 @@ boundary_region pml(double thickness, direction d, double Rasymptotic = 1e-15,
 boundary_region pml(double thickness, double Rasymptotic = 1e-15, double mean_stretch = 1.0);
 #define no_pml() boundary_region()
 
+class binary_partition;
+
 class structure {
 public:
   structure_chunk **chunks;
@@ -773,6 +775,7 @@ public:
   void dump_chunk_layout(const char *filename);
   void load(const char *filename);
   void load_chunk_layout(const char *filename, boundary_region &br);
+  void load_chunk_layout(const binary_partition *bp, boundary_region &br);
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
 
   // monitor.cpp
@@ -2149,6 +2152,17 @@ vec get_k(void *vedata);
 
 realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, int nx, int ny,
                            int nz, int stride);
+
+// binary tree class for importing layout of chunk partition
+class binary_partition {
+public:
+  binary_partition(int _id);
+  binary_partition(direction _split_dir, double _split_pos);
+  direction split_dir;
+  double split_pos;
+  int id;
+  binary_partition *left, *right;
+};
 
 } /* namespace meep */
 
