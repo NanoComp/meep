@@ -822,6 +822,7 @@ The following classes are available directly via the `meep` package.
 @@ Verbosity.get @@
 @@ Verbosity.set @@
 
+@@ BinaryPartition[methods-with-docstrings] @@
 
 Miscellaneous Functions Reference
 ---------------------------------

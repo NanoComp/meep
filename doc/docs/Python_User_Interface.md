@@ -320,11 +320,11 @@ Python. `Vector3` is a `meep` class.
   `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
   Structure](#load-and-dump-structure) for more information.
 
-+ **`chunk_layout` [`string` or `Simulation` instance]** — This will cause the
-  `Simulation` to use the chunk layout described by either (1) an h5 file (created
-  using `Simulation.dump_chunk_layout`), (2) another `Simulation` or (3) a
-  `BinaryPartition` object. See [Load and Dump Structure](#load-and-dump-structure)
-  for more information.
++ **`chunk_layout` [`string` or `Simulation` or `BinaryPartition` instance]** —
+  This will cause the `Simulation` to use the chunk layout described by either
+  (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
+  `Simulation` or (3) a [`BinaryPartition`](#binarypartition) object. See
+  [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to
 use. See also [SWIG Wrappers](#swig-wrappers).
@@ -7289,6 +7289,51 @@ former value.
 
 </div>
 
+---
+<a id="BinaryPartition"></a>
+
+### BinaryPartition
+
+```python
+class BinaryPartition(object):
+```
+
+<div class="class_docstring" markdown="1">
+
+Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
+`chunk_layout` parameter of the `Simulation` class object.
+
+</div>
+
+
+
+<a id="BinaryPartition.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(self,
+             data=None,
+             split_dir=None,
+             split_pos=None,
+             left=None,
+             right=None,
+             id=None):
+```
+
+<div class="method_docstring" markdown="1">
+
+The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
+list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
+and `split_pos` define the splitting direction (i.e., `X`, `Y`, `Z`) and position (e.g., `3.5`,
+`-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
+or (b) a leaf with integer value `id` for the chunk id, (2) a node defined using `split_dir`, `split_pos`,
+`left`, and `right`, or (3) a leaf with `id`. This input format enables specifying the binary tree using
+either a single list for the entire tree or defining the nodes and leaves individually.
+
+</div>
+
+</div>
 
 Miscellaneous Functions Reference
 ---------------------------------

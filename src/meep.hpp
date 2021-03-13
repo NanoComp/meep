@@ -777,6 +777,9 @@ public:
   void load_chunk_layout(const char *filename, boundary_region &br);
   void load_chunk_layout(const binary_partition *bp, boundary_region &br);
   void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
+  void load_chunk_layout(const std::vector<grid_volume> &gvs,
+                         const std::vector<int> &chunk_ids,
+                         boundary_region &br);
 
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
