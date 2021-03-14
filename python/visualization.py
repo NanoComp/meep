@@ -670,6 +670,7 @@ def visualize_chunks(sim):
 
         ax.set_xlabel('x')
         ax.set_ylabel('y')
+        ax.set_aspect('equal')
 
         cell_box = mp.gv2box(sim.structure.gv.surroundings())
         if sim.structure.gv.dim == 2:
@@ -680,7 +681,6 @@ def visualize_chunks(sim):
         else:
             ax.set_xlim(left=cell_box.low.x,right=cell_box.high.x)
             ax.set_ylim(bottom=cell_box.low.y,top=cell_box.high.y)
-            ax.set_aspect('equal')
 
         plt.tight_layout()
         plt.show()

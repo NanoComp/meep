@@ -8,7 +8,6 @@ from autograd import numpy as npa
 from autograd import tensor_jacobian_product
 import unittest
 from enum import Enum
-mp.quiet(True)
 
 MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 

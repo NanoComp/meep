@@ -1937,10 +1937,6 @@ class Simulation(object):
 
         self._is_initialized = True
 
-    def init_fields(self):
-        warnings.warn('init_fields is deprecated. Please use init_sim instead', DeprecationWarning)
-        self.init_sim()
-
     def initialize_field(self, cmpnt, amp_func):
         """
         Initialize the component `c` fields using the function `func` which has a single
@@ -2064,7 +2060,7 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt, frequency=0, omega=0):
+    def get_epsilon_point(self, pt, frequency=0):
         """
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permittivity tensor at that location and frequency. If `frequency` is
@@ -2072,12 +2068,9 @@ class Simulation(object):
         frequency-independent part of $\\varepsilon$ (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        if omega != 0:
-            frequency = omega
-            warnings.warn("get_epsilon_point: omega has been deprecated; use frequency instead", RuntimeWarning)
         return self.fields.get_eps(v3,frequency)
 
-    def get_mu_point(self, pt, frequency=0, omega=0):
+    def get_mu_point(self, pt, frequency=0):
         """
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permeability tensor at that location and frequency. If `frequency` is
@@ -2085,9 +2078,6 @@ class Simulation(object):
         frequency-independent part of $\\mu$ (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        if omega != 0:
-            frequency = omega
-            warnings.warn("get_mu_point: omega has been deprecated; use frequency instead", RuntimeWarning)
         return self.fields.get_mu(v3,frequency)
 
     def get_filename_prefix(self):
@@ -2115,12 +2105,12 @@ class Simulation(object):
 
     def use_output_directory(self, dname=''):
         """
-        Put output in a subdirectory, which is created if necessary. If the optional
-        argument `dname` is specified, that is the name of the directory. If the `dname`
-        is omitted, the directory name is the current Python file name (if `filename_prefix`
-        is `None`) with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
-        `"test-out"`. Also resets `filename_prefix` to `None`. Otherwise the directory name
-        is set to `filename_prefix`.
+        Output all files into a subdirectory, which is created if necessary. If the optional
+        argument `dname` is specified, that is the name of the directory. If `dname`
+        is omitted and `filename_prefix` is `None`, the directory name is the current Python
+        filename with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
+        `"test-out"`. If `dname` is omitted and `filename_prefix` has been set, the directory
+        name is set to `filename_prefix` + "-out" and `filename_prefix` is then reset to `None`.
         """
         if not dname:
             dname = self.get_filename_prefix() + '-out'
@@ -2825,10 +2815,6 @@ class Simulation(object):
 
         return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
 
-    def add_eigenmode(self, *args):
-        warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
-        return self.add_mode_monitor(args)
-
     def display_fluxes(self, *fluxes):
         """
         Given a number of flux objects, this displays a comma-separated table of
@@ -3059,17 +3045,13 @@ class Simulation(object):
 
         return stuff
 
-    def output_component(self, c, h5file=None, frequency=0, omega=0):
+    def output_component(self, c, h5file=None, frequency=0):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
         vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
-
-        if omega != 0:
-            frequency = omega
-            warnings.warn("output_component: omega has been deprecated; use frequency instead", RuntimeWarning)
 
         self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(), frequency)
 
@@ -4465,10 +4447,6 @@ def output_epsilon(sim=None,*step_func_args,**kwargs):
         return lambda sim: mp.output_epsilon(sim, *step_func_args, **kwargs)
 
     frequency = kwargs.pop('frequency', 0.0)
-    omega = kwargs.pop('omega', 0.0)
-    if omega != 0:
-        frequency = omega
-        warnings.warn("output_epsilon: omega has been deprecated; use frequency instead", RuntimeWarning)
     sim.output_component(mp.Dielectric,frequency=frequency)
 
 
@@ -4487,10 +4465,6 @@ def output_mu(sim=None,*step_func_args,**kwargs):
         return lambda sim: mp.output_mu(sim, *step_func_args, **kwargs)
 
     frequency = kwargs.pop('frequency', 0.0)
-    omega = kwargs.pop('omega', 0.0)
-    if omega != 0:
-        frequency = omega
-        warnings.warn("output_mu: omega has been deprecated; use frequency instead", RuntimeWarning)
     sim.output_component(mp.Permeability,frequency=frequency)
 
 
@@ -5086,18 +5060,6 @@ def complexarray(re, im):
     z = im * 1j
     z += re
     return z
-
-
-def quiet(quietval=True):
-    """
-    Meep ordinarily prints various diagnostic and progress information to standard output.
-    This output can be suppressed by calling this function with `True` (the default). The
-    output can be enabled again by passing `False`. This sets a global variable, so the
-    value will persist across runs within the same script.
-
-    This function is deprecated, please use the [Verbosity](#verbosity) class instead.
-    """
-    verbosity(int(not quietval))
 
 
 def get_num_groups():
