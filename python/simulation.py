@@ -4968,7 +4968,7 @@ def get_total_energy(f):
 
 def interpolate(n, nums):
     """
-    Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to
+    Given a list of numbers or `Vector3`s as `nums`, linearly interpolates between them to
     add `n` new evenly-spaced values between each pair of consecutive values in the
     original list.
     """
