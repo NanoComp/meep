@@ -565,7 +565,6 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
     if (num_print < geometry.num_items && meep::verbosity > 0)
       master_printf("%*s...(+ %d objects not shown)...\n", 5, "", geometry.num_items - num_print);
   }
-
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
@@ -2567,6 +2566,17 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   }
 }
 
+std::complex<double> find_array_min_max(int n, const double *data) {
+  double min_val = data[0], max_val = data[0];
+  for (int i = 1; i < n; ++i) {
+    if (data[i] < min_val)
+      min_val = data[i];
+    if (data[i] > max_val)
+      max_val = data[i];
+  }
+  return std::complex<double>(min_val,max_val);
+}
+
 void get_epsilon_grid(geometric_object_list gobj_list,
                       material_type_list mlist,
                       material_type _default_material,
@@ -2574,13 +2584,28 @@ void get_epsilon_grid(geometric_object_list gobj_list,
                       meep::grid_volume gv,
                       vector3 cell_size,
                       vector3 cell_center,
-                      int nx, double *x,
-                      int ny, double *y,
-                      int nz, double *z,
+                      int nx, const double *x,
+                      int ny, const double *y,
+                      int nz, const double *z,
                       double *grid_vals) {
+  std::complex<double> min_max;
+  double min_val[3], max_val[3];
+  for (int n = 0; n < 3; ++n) {
+    int ndir = (n == 0) ? nx : ((n == 1) ? ny : nz);
+    if (ndir > 1) {
+      const double *adir = (n == 0) ? x : ((n == 1) ? y : z);
+      min_max = find_array_min_max(ndir, adir);
+      min_val[n] = real(min_max); max_val[n] = imag(min_max);
+    } else {
+      min_val[n] = 0; max_val[n] = 0;
+    }
+  }
+  const meep::volume vol(meep::vec(min_val[0],min_val[1],min_val[2]),
+                         meep::vec(max_val[0],max_val[1],max_val[2]));
   init_libctl(_default_material, _ensure_periodicity, &gv,
               cell_size, cell_center, &gobj_list);
-  geom_epsilon geps(gobj_list, mlist, gv.pad().surroundings());
+  dim = gv.dim; // doesn't seem to be actually necessary?
+  geom_epsilon geps(gobj_list, mlist, vol);
   for (int i = 0; i < nx; ++i)
     for (int j = 0; j < ny; ++j)
       for (int k = 0; k < nz; ++k)
