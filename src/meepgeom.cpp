@@ -2592,19 +2592,17 @@ void get_epsilon_grid(geometric_object_list gobj_list,
   double min_val[3], max_val[3];
   for (int n = 0; n < 3; ++n) {
     int ndir = (n == 0) ? nx : ((n == 1) ? ny : nz);
-    if (ndir > 1) {
-      const double *adir = (n == 0) ? x : ((n == 1) ? y : z);
-      min_max = find_array_min_max(ndir, adir);
-      min_val[n] = real(min_max); max_val[n] = imag(min_max);
-    } else {
-      min_val[n] = 0; max_val[n] = 0;
-    }
+    if (ndir < 1) meep::abort("get_epsilon_grid: ndir < 1.");
+    const double *adir = (n == 0) ? x : ((n == 1) ? y : z);
+    min_max = find_array_min_max(ndir, adir);
+    min_val[n] = real(min_max);
+    max_val[n] = imag(min_max);
   }
   const meep::volume vol(meep::vec(min_val[0],min_val[1],min_val[2]),
                          meep::vec(max_val[0],max_val[1],max_val[2]));
   init_libctl(_default_material, _ensure_periodicity, &gv,
               cell_size, cell_center, &gobj_list);
-  dim = gv.dim; // doesn't seem to be actually necessary?
+  dim = gv.dim;
   geom_epsilon geps(gobj_list, mlist, vol);
   for (int i = 0; i < nx; ++i)
     for (int j = 0; j < ny; ++j)
