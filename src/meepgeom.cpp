@@ -2566,7 +2566,7 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
   }
 }
 
-void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {
+static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {
   min_val = data[0];
   max_val = data[0];
   for (int i = 1; i < n; ++i) {
@@ -2589,7 +2589,6 @@ void get_epsilon_grid(geometric_object_list gobj_list,
                       int ny, const double *y,
                       int nz, const double *z,
                       double *grid_vals) {
-  std::complex<double> min_max;
   double min_val[3], max_val[3];
   for (int n = 0; n < 3; ++n) {
     int ndir = (n == 0) ? nx : ((n == 1) ? ny : nz);
