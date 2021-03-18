@@ -99,6 +99,7 @@ Meep supports a large number of functions to perform computations on the fields.
 @@ Simulation.get_field_point @@
 @@ Simulation.get_epsilon_point @@
 @@ Simulation.get_mu_point @@
+@@ Simulation.get_epsilon_grid @@
 @@ Simulation.initialize_field @@
 @@ Simulation.add_dft_fields @@
 @@ Simulation.flux_in_box @@

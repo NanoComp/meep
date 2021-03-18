@@ -2080,6 +2080,31 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_mu(v3,frequency)
 
+    def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None):
+        """
+        Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
+        grid anywhere within the cell volume, compute the trace of the $\\varepsilon$ tensor from the `geometry`
+        exactly at each grid point. (For [`MaterialGrid`](#materialgrid)s, the $\\varepsilon$ at each grid
+        point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly also
+        projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
+        $\\varepsilon$ by bilinearly interpolating from the nearest Yee grid points. This function is useful for
+        sampling the material geometry to any arbitrary resolution. The return value is a NumPy array with shape
+        equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
+        """
+        grid_vals = np.squeeze(np.empty((len(xtics), len(ytics), len(ztics))))
+        gv = self._create_grid_volume(False)
+        mp._get_epsilon_grid(self.geometry,
+                             self.extra_materials,
+                             self.default_material,
+                             self.ensure_periodicity and not not self.k_point,
+                             gv,
+                             self.cell_size, self.geometry_center,
+                             len(xtics), xtics,
+                             len(ytics), ytics,
+                             len(ztics), ztics,
+                             grid_vals)
+        return grid_vals
+
     def get_filename_prefix(self):
         """
         Return the current prefix string that is prepended, by default, to all file names.

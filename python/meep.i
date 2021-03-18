@@ -1087,6 +1087,40 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
+// typemaps for meep_geom::get_epsilon_grid
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* xtics {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* ytics {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* ztics {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* grid_vals {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* grid_vals {
+    $1 = (double *)array_data($input);
+}
+
 // typemap for solve_cw:
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* eigfreq {
@@ -1872,8 +1906,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::resolution = gv.a;
     meep_geom::fragment_stats::dims = gv.dim;
     meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
-    meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
-                                           &gv, cell_size, center, &gobj_list);
+    meep_geom::init_libctl(_default_material, _ensure_periodicity,
+                           &gv, cell_size, center, &gobj_list);
 
     if (output_chunk_costs) {
          meep::volume thev = gv.surroundings();
@@ -1927,4 +1961,29 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     return s;
 }
+
+void _get_epsilon_grid(geometric_object_list gobj_list,
+                       meep_geom::material_type_list mlist,
+                       meep_geom::material_type _default_material,
+                       bool _ensure_periodicity,
+                       meep::grid_volume gv,
+                       vector3 cell_size,
+                       vector3 cell_center,
+                       int nx, double *xtics,
+                       int ny, double *ytics,
+                       int nz, double *ztics,
+                       double *grid_vals) {
+     meep_geom::get_epsilon_grid(gobj_list,
+                                 mlist,
+                                 _default_material,
+                                 _ensure_periodicity,
+                                 gv,
+                                 cell_size,
+                                 cell_center,
+                                 nx, xtics,
+                                 ny, ytics,
+                                 nz, ztics,
+                                 grid_vals);
+}
+
 %}

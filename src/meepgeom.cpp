@@ -565,7 +565,6 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
     if (num_print < geometry.num_items && meep::verbosity > 0)
       master_printf("%*s...(+ %d objects not shown)...\n", 5, "", geometry.num_items - num_print);
   }
-
   geom_fix_object_list(geometry);
   geom_box box = gv2box(v);
   geometry_tree = create_geom_box_tree0(geometry, box);
@@ -1926,7 +1925,7 @@ fragment_stats compute_fragment_stats(
   fragment_stats::extra_materials = extra_materials_;
   fragment_stats::eps_averaging = eps_averaging;
 
-  fragment_stats::init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
+  init_libctl(default_mat, ensure_per, gv, cell_size, cell_center, &geom_);
   geom_box box = make_box_from_cell(cell_size);
   fragment_stats stats = init_stats(box, tol, maxeval, gv);
   stats.compute();
@@ -1941,9 +1940,9 @@ fragment_stats::fragment_stats(geom_box &bx)
   num_pixels_in_box = get_pixels_in_box(&bx);
 }
 
-void fragment_stats::init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                                 vector3 cell_size, vector3 cell_center,
-                                 geometric_object_list *geom_) {
+void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
+                 vector3 cell_size, vector3 cell_center,
+                 geometric_object_list *geom_) {
   geom_initialize();
   default_material = default_mat;
   ensure_periodicity = ensure_per;
@@ -2565,6 +2564,50 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
       }
     }
   }
+}
+
+static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {
+  min_val = data[0];
+  max_val = data[0];
+  for (int i = 1; i < n; ++i) {
+    if (data[i] < min_val)
+      min_val = data[i];
+    if (data[i] > max_val)
+      max_val = data[i];
+  }
+  return;
+}
+
+void get_epsilon_grid(geometric_object_list gobj_list,
+                      material_type_list mlist,
+                      material_type _default_material,
+                      bool _ensure_periodicity,
+                      meep::grid_volume gv,
+                      vector3 cell_size,
+                      vector3 cell_center,
+                      int nx, const double *x,
+                      int ny, const double *y,
+                      int nz, const double *z,
+                      double *grid_vals) {
+  double min_val[3], max_val[3];
+  for (int n = 0; n < 3; ++n) {
+    int ndir = (n == 0) ? nx : ((n == 1) ? ny : nz);
+    if (ndir < 1) meep::abort("get_epsilon_grid: ndir < 1.");
+    const double *adir = (n == 0) ? x : ((n == 1) ? y : z);
+    find_array_min_max(ndir, adir, min_val[n], max_val[n]);
+  }
+  const meep::volume vol(meep::vec(min_val[0],min_val[1],min_val[2]),
+                         meep::vec(max_val[0],max_val[1],max_val[2]));
+  init_libctl(_default_material, _ensure_periodicity, &gv,
+              cell_size, cell_center, &gobj_list);
+  dim = gv.dim;
+  geom_epsilon geps(gobj_list, mlist, vol);
+  for (int i = 0; i < nx; ++i)
+    for (int j = 0; j < ny; ++j)
+      for (int k = 0; k < nz; ++k)
+        /* obtain the trace of the \varepsilon tensor for each
+           grid point in row-major order (the order used by NumPy) */
+        grid_vals[k + nz*(j + ny*i)] = geps.chi1p1(meep::E_stuff, meep::vec(x[i],y[j],z[k]));
 }
 
 } // namespace meep_geom
