@@ -826,8 +826,6 @@ The following classes are available directly via the `meep` package.
 Miscellaneous Functions Reference
 ---------------------------------
 
-@@ quiet @@
-
 @@ interpolate @@
 
 #### Flux functions

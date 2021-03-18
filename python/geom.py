@@ -532,18 +532,18 @@ class MaterialGrid(object):
         """
         Creates a `MaterialGrid` object.
 
-        The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on the Cartesian grid points
+        The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on a Cartesian grid
         by the NumPy array `weights` of size `grid_size` (a 3-tuple or `Vector3` of integers). Elements of the `weights` array must be in the
-        range [0,1] where 0 is `medium1` and 1 is `medium2`. Currently, only two material types are supported: (1) frequency-independent
+        range [0,1] where 0 is `medium1` and 1 is `medium2`. Two material types are supported: (1) frequency-independent
         isotropic $\\varepsilon$ or $\\mu$ and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-        materials are bilinearly interpolated from the Cartesian grid points to Meep's [Yee grid](Yee_Lattice.md).
+        materials are bilinearly interpolated from the Cartesian grid to Meep's [Yee grid](Yee_Lattice.md).
 
         For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`.
         If you want to use a material grid to define a (nearly) discontinuous, piecewise-constant material that is *either* `medium1`
         or `medium2` almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta`
         to a positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a [level-set
         function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\\eta$ with a smoothing factor
-        $\\beta$ where $\\beta=\\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\\tanh(\\beta\\times\\eta)
+        $\\beta$ where $\\beta=+\\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\\tanh(\\beta\\times\\eta)
         +\\tanh(\\beta\\times(u-\\eta)))/(\\tanh(\\beta\\times\\eta)+\\tanh(\\beta\\times(1-\\eta)))$ involving the parameters `beta`
         ($\\beta$: "smoothness" of the turn on) and `eta` ($\\eta$: erosion/dilation). The level set provides a general approach for
         defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.

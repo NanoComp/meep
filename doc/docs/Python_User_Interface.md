@@ -431,12 +431,12 @@ def use_output_directory(self, dname=''):
 
 <div class="method_docstring" markdown="1">
 
-Put output in a subdirectory, which is created if necessary. If the optional
-argument `dname` is specified, that is the name of the directory. If the `dname`
-is omitted, the directory name is the current Python file name (if `filename_prefix`
-is `None`) with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
-`"test-out"`. Also resets `filename_prefix` to `None`. Otherwise the directory name
-is set to `filename_prefix`.
+Output all files into a subdirectory, which is created if necessary. If the optional
+argument `dname` is specified, that is the name of the directory. If `dname`
+is omitted and `filename_prefix` is `None`, the directory name is the current Python
+filename with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
+`"test-out"`. If `dname` is omitted and `filename_prefix` has been set, the directory
+name is set to `filename_prefix` + "-out" and `filename_prefix` is then reset to `None`.
 
 </div>
 
@@ -633,7 +633,7 @@ returns the value of that component at that point.
 <div class="class_members" markdown="1">
 
 ```python
-def get_epsilon_point(self, pt, frequency=0, omega=0):
+def get_epsilon_point(self, pt, frequency=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -652,7 +652,7 @@ frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 <div class="class_members" markdown="1">
 
 ```python
-def get_mu_point(self, pt, frequency=0, omega=0):
+def get_mu_point(self, pt, frequency=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4195,18 +4195,18 @@ def __init__(self,
 
 Creates a `MaterialGrid` object.
 
-The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on the Cartesian grid points
+The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on a Cartesian grid
 by the NumPy array `weights` of size `grid_size` (a 3-tuple or `Vector3` of integers). Elements of the `weights` array must be in the
-range [0,1] where 0 is `medium1` and 1 is `medium2`. Currently, only two material types are supported: (1) frequency-independent
+range [0,1] where 0 is `medium1` and 1 is `medium2`. Two material types are supported: (1) frequency-independent
 isotropic $\varepsilon$ or $\mu$ and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-materials are bilinearly interpolated from the Cartesian grid points to Meep's [Yee grid](Yee_Lattice.md).
+materials are bilinearly interpolated from the Cartesian grid to Meep's [Yee grid](Yee_Lattice.md).
 
 For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`.
 If you want to use a material grid to define a (nearly) discontinuous, piecewise-constant material that is *either* `medium1`
 or `medium2` almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta`
 to a positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a [level-set
 function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
-$\beta$ where $\beta=\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
+$\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
 +\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
 ($\beta$: "smoothness" of the turn on) and `eta` ($\eta$: erosion/dilation). The level set provides a general approach for
 defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
@@ -7293,24 +7293,6 @@ Miscellaneous Functions Reference
 ---------------------------------
 
 
-<a id="quiet"></a>
-
-```python
-def quiet(quietval=True):
-```
-
-<div class="function_docstring" markdown="1">
-
-Meep ordinarily prints various diagnostic and progress information to standard output.
-This output can be suppressed by calling this function with `True` (the default). The
-output can be enabled again by passing `False`. This sets a global variable, so the
-value will persist across runs within the same script.
-
-This function is deprecated, please use the [Verbosity](#verbosity) class instead.
-
-</div>
-
-
 <a id="interpolate"></a>
 
 ```python
@@ -7319,7 +7301,7 @@ def interpolate(n, nums):
 
 <div class="function_docstring" markdown="1">
 
-Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to
+Given a list of numbers or `Vector3`s as `nums`, linearly interpolates between them to
 add `n` new evenly-spaced values between each pair of consecutive values in the
 original list.
 
