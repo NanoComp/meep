@@ -5061,6 +5061,18 @@ def complexarray(re, im):
     z += re
     return z
 
+def quiet(quietval=True):
+    """
+    Meep ordinarily prints various diagnostic and progress information to standard output.
+    This output can be suppressed by calling this function with `True` (the default). The
+    output can be enabled again by passing `False`. This sets a global variable, so the
+    value will persist across runs within the same script.
+
+    This function is deprecated, please use the [Verbosity](#verbosity) class instead.
+    """
+    verbosity(int(not quietval))
+    warnings.warn("quiet has been deprecated; use the Verbosity class instead", RuntimeWarning)
+
 
 def get_num_groups():
     # Lazy import
