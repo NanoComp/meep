@@ -1439,6 +1439,57 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
   }
 }
 
+// typemaps for binary_partition
+
+meep::binary_partition *py_bp_to_bp(PyObject *bp) {
+    meep::binary_partition *bp = NULL;
+    if (bp == Py_None) return bp;
+
+    PyObject *id = PyObject_GetAttrString(bp, "id");
+    PyObject *split_dir = PyObject_GetAttrString(bp, "split_dir");
+    PyObject *split_pos = PyObject_GetAttrString(bp, "split_pos");
+    PyObject *left = PyObject_GetAttrString(bp, "left");
+    PyObject *right = PyObject_GetAttrString(bp, "right");
+
+    if (!id || !split_dir || !split_pos || !left || !right) {
+        // error....
+    }
+
+    if (PyLong_Check(id)) {
+         bp = new meep::binary_partition(PyLong_AsLong(id));
+    } else {
+         bp = new meep::binary_partition(direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos));
+         bp->left = py_bp_to_bp(left);
+         bp->right = py_bp_to_bp(right);
+    }
+
+    Py_XDECREF(id);
+    Py_XDECREF(split_dir);
+    Py_XDECREF(split_pos);
+    Py_XDECREF(left);
+    Py_XDECREF(right);
+    return bp;
+}
+
+%typecheck (SWIG_TYPECHECK_POINTER) binary_partition * {
+    $1 = PyObject_IsInstance($input, py_binary_partition_object());
+}
+
+%typemap(in) meep::binary_partition * {
+    $1 = py_bp_to_bp($input);
+    if(!$1) {
+        SWIG_fail;
+    }
+}
+
+%typemap(arginit) meep::binary_partition * {
+    $1 = NULL;
+}
+
+%typemap(freearg) meep::binary_partition * {
+    delete $1;
+}
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;

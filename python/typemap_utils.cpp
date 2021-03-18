@@ -1029,3 +1029,19 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
 
   return py_res;
 }
+
+static PyObject *get_meep_mod() {
+  // Return value: Borrowed reference
+  static PyObject *meep_mod = NULL;
+  if (meep_mod == NULL) { meep_mod = PyImport_ImportModule("meep"); }
+  return meep_mod;
+}
+
+static PyObject *py_binary_partition_object() {
+  // Return value: Borrowed reference
+  static PyObject *bp_type = NULL;
+  if (bp_type == NULL) {
+    bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition");
+  }
+  return bp_type;
+}
