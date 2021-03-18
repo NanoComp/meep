@@ -1030,6 +1030,36 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
   return py_res;
 }
 
+static meep::binary_partition *py_bp_to_bp(PyObject *bp) {
+    meep::binary_partition *bp = NULL;
+    if (bp == Py_None) return bp;
+
+    PyObject *id = PyObject_GetAttrString(bp, "id");
+    PyObject *split_dir = PyObject_GetAttrString(bp, "split_dir");
+    PyObject *split_pos = PyObject_GetAttrString(bp, "split_pos");
+    PyObject *left = PyObject_GetAttrString(bp, "left");
+    PyObject *right = PyObject_GetAttrString(bp, "right");
+
+    if (!id || !split_dir || !split_pos || !left || !right) {
+        // error....
+    }
+
+    if (PyLong_Check(id)) {
+         bp = new meep::binary_partition(PyLong_AsLong(id));
+    } else {
+         bp = new meep::binary_partition(direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos));
+         bp->left = py_bp_to_bp(left);
+         bp->right = py_bp_to_bp(right);
+    }
+
+    Py_XDECREF(id);
+    Py_XDECREF(split_dir);
+    Py_XDECREF(split_pos);
+    Py_XDECREF(left);
+    Py_XDECREF(right);
+    return bp;
+}
+
 static PyObject *get_meep_mod() {
   // Return value: Borrowed reference
   static PyObject *meep_mod = NULL;
