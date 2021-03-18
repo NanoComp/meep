@@ -1030,15 +1030,15 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
   return py_res;
 }
 
-static meep::binary_partition *py_bp_to_bp(PyObject *bp) {
+static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
     meep::binary_partition *bp = NULL;
-    if (bp == Py_None) return bp;
+    if (pybp == Py_None) return bp;
 
-    PyObject *id = PyObject_GetAttrString(bp, "id");
-    PyObject *split_dir = PyObject_GetAttrString(bp, "split_dir");
-    PyObject *split_pos = PyObject_GetAttrString(bp, "split_pos");
-    PyObject *left = PyObject_GetAttrString(bp, "left");
-    PyObject *right = PyObject_GetAttrString(bp, "right");
+    PyObject *id = PyObject_GetAttrString(pybp, "id");
+    PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
+    PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
+    PyObject *left = PyObject_GetAttrString(pybp, "left");
+    PyObject *right = PyObject_GetAttrString(pybp, "right");
 
     if (!id || !split_dir || !split_pos || !left || !right) {
         // error....
