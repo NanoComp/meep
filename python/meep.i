@@ -1441,7 +1441,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 // typemaps for binary_partition
 
-%typecheck (SWIG_TYPECHECK_POINTER) binary_partition * {
+%typecheck (SWIG_TYPECHECK_POINTER) meep::binary_partition * {
     $1 = PyObject_IsInstance($input, py_binary_partition_object());
 }
 
