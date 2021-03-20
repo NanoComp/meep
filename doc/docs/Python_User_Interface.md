@@ -320,10 +320,10 @@ Python. `Vector3` is a `meep` class.
   `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
   Structure](#load-and-dump-structure) for more information.
 
-+ **`chunk_layout` [`string` or `Simulation` or `BinaryPartition` instance]** —
++ **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
   This will cause the `Simulation` to use the chunk layout described by either
   (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
-  `Simulation` instance or (3) a [`BinaryPartition`](#binarypartition) object.
+  `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
   See [Load and Dump Structure](#load-and-dump-structure) for more information.
 
 The following require a bit more understanding of the inner workings of Meep to
@@ -7325,7 +7325,7 @@ def __init__(self,
 
 The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
 list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
-and `split_pos` define the splitting direction (i.e., `X`, `Y`, `Z`) and position (e.g., `3.5`,
+and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
 `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
 or (b) a leaf with integer value `id` in the range [0, num_chunks-1] for the chunk id, (2) a node
 defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with `id`. This input format

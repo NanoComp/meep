@@ -1041,7 +1041,7 @@ static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
     PyObject *right = PyObject_GetAttrString(pybp, "right");
 
     if (!id || !split_dir || !split_pos || !left || !right) {
-        // error....
+      meep::abort("BinaryPartition class object is incorrectly defined.");
     }
 
     if (PyLong_Check(id)) {

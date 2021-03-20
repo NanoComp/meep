@@ -495,6 +495,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   broadcast(0, nums, sz);
 
   std::vector<grid_volume> gvs;
+  std::vector<int> ids;
   // Populate a vector with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     int idx = i * 3;
@@ -506,23 +507,13 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
     }
     new_gv.set_origin(new_origin);
     gvs.push_back(new_gv);
+    ids.push_back(i * count_processors() / num_chunks);
   }
 
-  load_chunk_layout(gvs, br);
+  load_chunk_layout(gvs, ids, br);
 
   delete[] origins;
   delete[] nums;
-}
-
-void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br) {
-  // Recreate the chunks with the new grid_volumes
-  for (int i = 0; i < num_chunks; ++i) {
-    if (chunks[i]->refcount-- <= 1) delete chunks[i];
-    int proc = i * count_processors() / num_chunks;
-    chunks[i] = new structure_chunk(gvs[i], v, Courant, proc);
-    br.apply(this, chunks[i]);
-  }
-  check_chunks();
 }
 
 void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
