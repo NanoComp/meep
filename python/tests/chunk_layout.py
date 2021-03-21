@@ -1,7 +1,6 @@
 import meep as mp
 import copy
 import unittest
-import numpy as np
 
 chunk_ids = []
 chunk_areas = []
@@ -38,7 +37,7 @@ def traverse_tree(bp=None,min_corner=None,max_corner=None):
 class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
     def test_chunk_layout_binary_partition(self):
-        chunk_layout = mp.BinaryPartition(data=[ (mp.X,-2.0), 0, [ (mp.Y,1.5), [ (mp.X,3.0), 1, [ (mp.Y,-0.5), 4,3 ] ], 2 ] ])
+        chunk_layout = mp.BinaryPartition(data=[ (mp.X,-2.0), 0, [ (mp.Y,1.5), [ (mp.X,3.0), 1, [ (mp.Y,-0.5), 4, 3 ] ], 2 ] ])
 
         cell_size = mp.Vector3(10.0,5.0,0)
 
@@ -53,7 +52,7 @@ class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
         traverse_tree(chunk_layout,-0.5*cell_size,0.5*cell_size)
 
-        np.testing.assert_array_equal(owners,np.asarray(chunk_ids))
+        self.assertListEqual([int(f) for f in owners],chunk_ids)
         self.assertListEqual(areas,chunk_areas)
         
 if __name__ == '__main__':

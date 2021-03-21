@@ -777,7 +777,7 @@ public:
   void load_chunk_layout(const char *filename, boundary_region &br);
   void load_chunk_layout(const binary_partition *bp, boundary_region &br);
   void load_chunk_layout(const std::vector<grid_volume> &gvs,
-                         const std::vector<int> &chunk_ids,
+                         const std::vector<int> &ids,
                          boundary_region &br);
 
   // monitor.cpp

@@ -431,13 +431,13 @@ binary_partition::binary_partition(direction _split_dir, double _split_pos) {
 }
 
 static void split_by_binarytree(grid_volume gvol,
-                                std::vector<grid_volume> &result,
-                                std::vector<int> &chunk_ids,
+                                std::vector<grid_volume> &result_gvs,
+                                std::vector<int> &result_ids,
                                 const binary_partition *bp) {
   // reached a leaf
   if ((bp->left == NULL) && (bp->right == NULL)) {
-    result.push_back(gvol);
-    chunk_ids.push_back(bp->id);
+    result_gvs.push_back(gvol);
+    result_ids.push_back(bp->id);
     return;
   }
 
@@ -447,20 +447,20 @@ static void split_by_binarytree(grid_volume gvol,
   // traverse left branch
   if (bp->left != NULL) {
     grid_volume left_gvol = gvol.split_at_fraction(false, split_point, bp->split_dir);
-    split_by_binarytree(left_gvol, result, chunk_ids, bp->left);
+    split_by_binarytree(left_gvol, result_gvs, result_ids, bp->left);
   }
   // traverse right branch
   if (bp->right != NULL) {
     grid_volume right_gvol = gvol.split_at_fraction(true, split_point, bp->split_dir);
-    split_by_binarytree(right_gvol, result, chunk_ids, bp->right);
+    split_by_binarytree(right_gvol, result_gvs, result_ids, bp->right);
   }
 }
 
 void structure::load_chunk_layout(const binary_partition *bp, boundary_region &br) {
   std::vector<grid_volume> gvs;
-  std::vector<int> chunk_ids;
-  split_by_binarytree(gv, gvs, chunk_ids, bp);
-  load_chunk_layout(gvs, chunk_ids, br);
+  std::vector<int> ids;
+  split_by_binarytree(gv, gvs, ids, bp);
+  load_chunk_layout(gvs, ids, br);
 }
 
 void structure::load_chunk_layout(const char *filename, boundary_region &br) {
@@ -517,12 +517,12 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
 }
 
 void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
-                                  const std::vector<int> &chunk_ids,
+                                  const std::vector<int> &ids,
                                   boundary_region &br) {
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
-    chunks[i] = new structure_chunk(gvs[i], v, Courant, chunk_ids[i]);
+    chunks[i] = new structure_chunk(gvs[i], v, Courant, ids[i]);
     br.apply(this, chunks[i]);
   }
   check_chunks();
