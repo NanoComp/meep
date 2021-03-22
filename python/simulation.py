@@ -1183,8 +1183,8 @@ class Simulation(object):
           functions](#run-functions).
 
         + **`num_chunks` [`integer`]** — Minimum number of "chunks" (subarrays) to divide
-          the structure/fields into (default 0). Actual number is determined by number of
-          processors, PML layers, etcetera. Mainly useful for debugging.
+          the structure/fields into. Overrides the default value determined by
+          the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
         + **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
           [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
@@ -5187,7 +5187,7 @@ class BinaryPartition(object):
         list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
         and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
         `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
-        or (b) a leaf with integer value `id` in the range [0, num_chunks-1] for the chunk id, (2) a node
+        or (b) a leaf with integer value `id` in the range [0, `num_chunks`-1] for the chunk id, (2) a node
         defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with `id`. This input format
         enables specifying the binary tree using either a single list for the entire tree or defining the
         nodes and leaves individually.

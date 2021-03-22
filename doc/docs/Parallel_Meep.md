@@ -65,15 +65,15 @@ Note: for optimization studies involving *random* initial conditions, the seed o
 
 ### User-Specified Cell Partition
 
-An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on defining any arbitrary cell partition as a binary tree for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction ($x$, $y$, and $z$ in Cartesian coordinates; $r$ and $z$ in [cylindrical coordinates](Cylindrical_Coordinates.md)) and the leaves define a unique chunk ID (equivalent to the rank of the MPI process for that chunk; an integer).
+An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a binary tree for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define a unique integer-valued chunk ID (equivalent to the rank of the MPI process for that chunk).
 
-An example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in the $xy$ plane with origin at the lower-left cell boundary is partitioned into five chunks numbered one through five. (Note that the binary-tree representation for a given cell partition is not unique.)
+As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the lower-left boundary is partitioned into five chunks numbered one through five. Note that for any given cell partition, its binary-tree representation is unique.
 
 <center>
 ![](images/chunk_division_binary_tree.png)
 </center>
 
-This binary tree can be represented as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a chunk ID. There are two items to note when converting the binary tree shown above into a `BinaryPartition` class object: (1) Meep defines the cell origin to be at the geometric center of the cell (i.e., at location (5.0,2.5) in the coordinate system of the figure) and thus all splitting coordinates of the tree must be shifted accordingly, and (2) MPI ranks must be defined in the range [0,num_procs-1] and thus all chunk IDs listed above must be shifted down by one. Based on this, the cell partition shown above can be set up as follows:
+This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a chunk ID. There are two items to note when converting the binary tree shown above into a `BinaryPartition` class object: (1) by default, Meep defines the cell origin to be at the geometric center of the cell (i.e., at location (5.0,2.5) in the coordinate system of the figure) and thus all splitting coordinates must be shifted accordingly, and (2) MPI ranks must be defined in the range [0,`num_chunks`-1] which requires that all chunk IDs be shifted down by one. Based on these specifications, the cell partition from above can be set up as follows:
 
 ```py
 import meep as mp
@@ -91,9 +91,9 @@ sim = mp.Simulation(cell_size=cell_size,
 sim.visualize_chunks()
 plt.savefig('chunk_layout.png',dpi=150,bbox_inches='tight')
 ```
-Running this example requires `mpirun -np 5 python chunk_layout_example.py` (i.e., the number of MPI processes must be equivalent to the number of user-specified chunks).
+This example can be run using two different approaches: (1) with the number of MPI processes exactly equivalent to the number of user-specified chunks (i.e., `mpirun -np 5 python chunk_layout_example.py`) or (2) using *any* number of MPI processes and letting Meep automatically distribute the MPI ranks among the five chunks by additionally specifying `num_chunks=5` in the `Simulation` constructor.
 
-For improved performance, it is important to order the chunks such that adjacent chunks are numbered consecutively. This is equivalent to assigning MPI ranks in *depth first* order which ensures that adjacent chunks on the same MPI node communicate using shared memory rather than the network (which tends to be slower).
+For improved performance, it is important to order the chunks such that adjacent chunks are numbered consecutively. This is equivalent to assigning MPI ranks in [depth-first order](https://en.wikipedia.org/wiki/Depth-first_search) which ensures that adjacent chunks on the same MPI node communicate using shared memory rather than the network (which tends to be slower).
 
 Technical Details
 -----------------
