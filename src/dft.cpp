@@ -112,6 +112,43 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   next_in_dft = data->dft_chunks;
 }
 
+dft_chunk::dft_chunk(const dft_chunk &thed, dft_chunk *_next_in_chunk, dft_chunk *_next_in_dft) {
+  omega = thed.omega;
+  c = thed.c;
+  N = thed.N;
+  const int Nomega = thed.omega.size();
+  dft = new complex<realnum>[N * Nomega];
+  for (size_t i = 0; i < N * Nomega; ++i)
+    dft[i] = thed.dft[i];
+  next_in_chunk = _next_in_chunk;
+  next_in_dft = _next_in_dft;
+  stored_weight = thed.stored_weight;
+  include_dV_and_interp_weights = thed.include_dV_and_interp_weights;
+  sqrt_dV_and_interp_weights = thed.sqrt_dV_and_interp_weights;
+  extra_weight = thed.extra_weight;
+  fc = NULL;
+  is = thed.is;
+  ie = thed.ie;
+  s0 = thed.s0;
+  s1 = thed.s1;
+  e0 = thed.e0;
+  e1 = thed.e1;
+  dV0 = thed.dV0;
+  dV1 = thed.dV1;
+  for (int i = 0; i < 5; ++i)
+    empty_dim[i] = thed.empty_dim[i];
+  scale = thed.scale;
+  shift = thed.shift;
+  S = thed.S;
+  sn = thed.sn;
+  dft_phase = new complex<realnum>[Nomega];
+  for (size_t i = 0; i < Nomega; ++i)
+    dft_phase[i] = thed.dft_phase[i];
+  avg1 = thed.avg1;
+  avg2 = thed.avg2;
+  vc = thed.vc;
+}
+
 dft_chunk::~dft_chunk() {
   delete[] dft;
   delete[] dft_phase;

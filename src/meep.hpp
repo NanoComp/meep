@@ -1002,6 +1002,7 @@ public:
   dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_, double dV0_,
             double dV1_, component c_, bool use_centered_grid, std::complex<double> phase_factor,
             ivec shift_, const symmetry &S_, int sn_, const void *data_);
+  dft_chunk(const dft_chunk &thed, dft_chunk *_next_in_chunk, dft_chunk *_next_in_dft);
   ~dft_chunk();
 
   void update_dft(double time);
