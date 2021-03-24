@@ -86,12 +86,12 @@ cell_size = mp.Vector3(10.0,5.0,0)
 
 sim = mp.Simulation(cell_size=cell_size,
                     resolution=10,
+                    num_chunks=5,
                     chunk_layout=chunk_layout)
 
 sim.visualize_chunks()
 plt.savefig('chunk_layout.png',dpi=150,bbox_inches='tight')
 ```
-This example can be run by specifying the number of MPI processes exactly equivalent to the number of user-specified chunks (i.e., `mpirun -np 5 python chunk_layout_example.py`) or (2) using *any* number of MPI processes and letting Meep automatically distribute the MPI ranks among the five chunks by additionally specifying `num_chunks=5` in the `Simulation` constructor.
 
 For improved performance, it is important to order the chunks such that adjacent chunks are numbered consecutively. This is equivalent to assigning MPI ranks in [depth-first order](https://en.wikipedia.org/wiki/Depth-first_search) which ensures that adjacent chunks on the same MPI node communicate using shared memory rather than the network (which tends to be slower).
 

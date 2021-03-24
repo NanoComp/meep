@@ -340,7 +340,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
   initialized by `init_sim()` which is called automatically by any of the [run
   functions](#run-functions).
 
-+ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subarrays) to divide
++ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
   the structure/fields into. Overrides the default value determined by
   the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
