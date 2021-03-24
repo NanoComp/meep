@@ -5181,20 +5181,22 @@ class BinaryPartition(object):
     Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
     `chunk_layout` parameter of the `Simulation` class object.
     """
-    def __init__(self, data=None, split_dir=None, split_pos=None, left=None, right=None, id=None):
+    def __init__(self, data=None, split_dir=None, split_pos=None, left=None, right=None, proc_id=None):
         """
         The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
         list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
         and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
         `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
-        or (b) a leaf with integer value `id` in the range [0, `num_chunks`-1] for the chunk id, (2) a node
-        defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with `id`. This input format
+        or (b) a leaf with integer value `proc_id` in the range [0, `num_chunks`-1] for the process ID, (2) a node
+        defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with `proc_id`. Two items to note:
+        (1) the process ID *must* be between 0 and the number of processes and (2) the same process ID can be assigned
+        to as many chunks as you want, which means that that process timesteps multiple chunks. This input format
         enables specifying the binary tree using either a single list for the entire tree or defining the
         nodes and leaves individually.
         """
         self.split_dir = None
         self.split_pos = None
-        self.id = None
+        self.proc_id = None
         self.left = None
         self.right = None
         if data is not None:
@@ -5207,13 +5209,13 @@ class BinaryPartition(object):
                 self.left = BinaryPartition(data=data[1])
                 self.right = BinaryPartition(data=data[2])
             elif isinstance(data,int):
-                self.id = data
+                self.proc_id = data
             else:
-                raise ValueError("expecting list [(split_dir,split_pos), left, right] or int (id) but got {}".format(data))
+                raise ValueError("expecting list [(split_dir,split_pos), left, right] or int (proc_id) but got {}".format(data))
         elif split_dir is not None:
             self.split_dir = split_dir
             self.split_pos = split_pos
             self.left = left
             self.right = right
         else:
-            self.id = id
+            self.proc_id = proc_id

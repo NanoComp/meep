@@ -67,7 +67,7 @@ Note: for optimization studies involving *random* initial conditions, the seed o
 
 An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a binary tree for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define a unique integer-valued chunk ID (equivalent to the rank of the MPI process for that chunk).
 
-As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the lower-left boundary is partitioned into five chunks numbered one through five. Note that for any given cell partition, its binary-tree representation is unique.
+As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the lower-left boundary is partitioned into five chunks numbered one through five.
 
 <center>
 ![](images/chunk_division_binary_tree.png)

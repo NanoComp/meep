@@ -2,7 +2,7 @@ import meep as mp
 import copy
 import unittest
 
-chunk_ids = []
+process_ids = []
 chunk_areas = []
 
 def traverse_tree(bp=None,min_corner=None,max_corner=None):
@@ -11,11 +11,11 @@ def traverse_tree(bp=None,min_corner=None,max_corner=None):
 
     ## reached a leaf
     if (bp.left is None and bp.right is None):
-        chunk_ids.append(bp.id)
+        process_ids.append(bp.proc_id)
         chunk_area = (max_corner.x-min_corner.x)*(max_corner.y-min_corner.y)
         chunk_areas.append(chunk_area)
 
-    ## traverse the left branch                                      
+    ## traverse the left branch
     if (bp.left is not None):
         new_max_corner = copy.deepcopy(max_corner)
         if bp.split_dir == mp.X:
@@ -52,7 +52,7 @@ class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
         traverse_tree(chunk_layout,-0.5*cell_size,0.5*cell_size)
 
-        self.assertListEqual([int(f) for f in owners],chunk_ids)
+        self.assertListEqual([int(f) for f in owners],process_ids)
         self.assertListEqual(areas,chunk_areas)
         
 if __name__ == '__main__':

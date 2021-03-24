@@ -1034,7 +1034,7 @@ static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
     meep::binary_partition *bp = NULL;
     if (pybp == Py_None) return bp;
 
-    PyObject *id = PyObject_GetAttrString(pybp, "id");
+    PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
     PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
     PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
     PyObject *left = PyObject_GetAttrString(pybp, "left");

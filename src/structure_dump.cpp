@@ -414,8 +414,8 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
-binary_partition::binary_partition(int _id) {
-  id = _id;
+binary_partition::binary_partition(int _proc_id) {
+  proc_id = _proc_id;
   split_dir = NO_DIRECTION;
   split_pos = 0.0;
   left = NULL;
@@ -425,7 +425,7 @@ binary_partition::binary_partition(int _id) {
 binary_partition::binary_partition(direction _split_dir, double _split_pos) {
   split_dir = _split_dir;
   split_pos = _split_pos;
-  id = -1;
+  proc_id = -1;
   left = NULL;
   right = NULL;
 }
@@ -437,7 +437,7 @@ static void split_by_binarytree(grid_volume gvol,
   // reached a leaf
   if ((bp->left == NULL) && (bp->right == NULL)) {
     result_gvs.push_back(gvol);
-    result_ids.push_back(bp->id);
+    result_ids.push_back(bp->proc_id);
     return;
   }
 

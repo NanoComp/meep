@@ -2162,7 +2162,7 @@ public:
   binary_partition(direction _split_dir, double _split_pos);
   direction split_dir;
   double split_pos;
-  int id;
+  int proc_id;
   binary_partition *left, *right;
 };
 
