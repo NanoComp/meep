@@ -5187,13 +5187,12 @@ class BinaryPartition(object):
         list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
         and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
         `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
-        or (b) a leaf with integer value `proc_id` in the range [0, `num_chunks`-1] for the process ID, (2) a node
-        defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with `proc_id`. Two items to note:
-        (1) the process ID should be between 0 and the number of processes-1 (inclusive) and (2) the same process ID
-        can be assigned to as many chunks as you want, which means that that process timesteps multiple chunks. If you 
-        use fewer MPI processes, then the process ID is taken modulo the number of processes. This input format enables
-        specifying the binary tree using either a single list for the entire tree or defining the nodes and leaves
-        individually.
+        or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
+        - 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
+        `proc_id`. The `num_chunks` parameter of the `Simulation` constructor must be set to the number of chunks
+        specified by the binary tree. Note that the same process ID can be assigned to as many chunks as you want,
+        which means that one process timesteps multiple chunks. If you use fewer MPI processes, then the process ID
+        is taken modulo the number of processes.
         """
         self.split_dir = None
         self.split_pos = None

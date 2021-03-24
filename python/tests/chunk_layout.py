@@ -52,7 +52,7 @@ class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
         traverse_tree(chunk_layout,-0.5*cell_size,0.5*cell_size)
 
-        self.assertListEqual([int(f) for f in owners],process_ids)
+        self.assertListEqual([int(f) for f in owners],[f % mp.count_processors() for f in process_ids])
         self.assertListEqual(areas,chunk_areas)
         
 if __name__ == '__main__':
