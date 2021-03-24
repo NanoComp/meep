@@ -5189,10 +5189,11 @@ class BinaryPartition(object):
         `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
         or (b) a leaf with integer value `proc_id` in the range [0, `num_chunks`-1] for the process ID, (2) a node
         defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with `proc_id`. Two items to note:
-        (1) the process ID *must* be between 0 and the number of processes and (2) the same process ID can be assigned
-        to as many chunks as you want, which means that that process timesteps multiple chunks. This input format
-        enables specifying the binary tree using either a single list for the entire tree or defining the
-        nodes and leaves individually.
+        (1) the process ID should be between 0 and the number of processes-1 (inclusive) and (2) the same process ID
+        can be assigned to as many chunks as you want, which means that that process timesteps multiple chunks. If you 
+        use fewer MPI processes, then the process ID is taken modulo the number of processes. This input format enables
+        specifying the binary tree using either a single list for the entire tree or defining the nodes and leaves
+        individually.
         """
         self.split_dir = None
         self.split_pos = None

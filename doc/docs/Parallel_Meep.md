@@ -65,7 +65,7 @@ Note: for optimization studies involving *random* initial conditions, the seed o
 
 ### User-Specified Cell Partition
 
-An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a binary tree for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define a integer-valued process ID (equivalent to the rank of the MPI process for that chunk). The process ID must be between 0 and the number of processes-1 (inclusive). Note also that the same process ID can be assigned to as many chunks as you want, which just means that process timesteps multiple chunks.
+An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a binary tree for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define a integer-valued process ID (equivalent to the rank of the MPI process for that chunk). The process ID should be between 0 and the number of processes-1 (inclusive). Note also that the same process ID can be assigned to as many chunks as you want, which just means that process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number of processes.
 
 As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the lower-left boundary is partitioned into five chunks numbered one through five.
 
@@ -73,7 +73,7 @@ As a demonstration, an example of a 2d cell partition along with its binary-tree
 ![](images/chunk_division_binary_tree.png)
 </center>
 
-This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a chunk ID. Based on these specifications, the cell partition from above can be set up as follows:
+This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a process ID. Based on these specifications, the cell partition from above can be set up as follows:
 
 ```py
 import meep as mp
@@ -91,7 +91,7 @@ sim = mp.Simulation(cell_size=cell_size,
 sim.visualize_chunks()
 plt.savefig('chunk_layout.png',dpi=150,bbox_inches='tight')
 ```
-This example can be run using two different approaches: (1) with the number of MPI processes exactly equivalent to the number of user-specified chunks (i.e., `mpirun -np 5 python chunk_layout_example.py`) or (2) using *any* number of MPI processes and letting Meep automatically distribute the MPI ranks among the five chunks by additionally specifying `num_chunks=5` in the `Simulation` constructor.
+This example can be run by specifying the number of MPI processes exactly equivalent to the number of user-specified chunks (i.e., `mpirun -np 5 python chunk_layout_example.py`) or (2) using *any* number of MPI processes and letting Meep automatically distribute the MPI ranks among the five chunks by additionally specifying `num_chunks=5` in the `Simulation` constructor.
 
 For improved performance, it is important to order the chunks such that adjacent chunks are numbered consecutively. This is equivalent to assigning MPI ranks in [depth-first order](https://en.wikipedia.org/wiki/Depth-first_search) which ensures that adjacent chunks on the same MPI node communicate using shared memory rather than the network (which tends to be slower).
 

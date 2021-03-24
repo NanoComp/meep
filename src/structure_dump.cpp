@@ -522,7 +522,7 @@ void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
-    chunks[i] = new structure_chunk(gvs[i], v, Courant, ids[i]);
+    chunks[i] = new structure_chunk(gvs[i], v, Courant, ids[i] % count_processors());
     br.apply(this, chunks[i]);
   }
   check_chunks();
