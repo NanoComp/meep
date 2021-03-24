@@ -73,7 +73,7 @@ As a demonstration, an example of a 2d cell partition along with its binary-tree
 ![](images/chunk_division_binary_tree.png)
 </center>
 
-This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a chunk ID. There are two items to note when converting the binary tree shown above into a `BinaryPartition` class object: (1) by default, Meep defines the cell origin to be at the geometric center of the cell (i.e., at location (5.0,2.5) in the coordinate system of the figure) and thus all splitting coordinates must be shifted accordingly, and (2) MPI ranks must be defined in the range [0,`num_chunks`-1] which requires that all process IDs be shifted down by one. Based on these specifications, the cell partition from above can be set up as follows:
+This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a chunk ID. Based on these specifications, the cell partition from above can be set up as follows:
 
 ```py
 import meep as mp
