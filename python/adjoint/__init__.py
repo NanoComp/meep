@@ -15,3 +15,5 @@ from .optimization_problem import (OptimizationProblem, Grid, DesignRegion)
 from .filter_source import FilteredSource
 
 from .filters import *
+
+from .Connectivity import *
