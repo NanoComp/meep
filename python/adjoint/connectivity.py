@@ -108,7 +108,7 @@ class ConnectivityConstraint(object):
             fm = self.forward(rho_vector)
             fdgrad.append((fp-fm)/(2*db))
             rho_vector[k]+=db
-        return fdidx, fdgrad
+        return fdidx, -fdgrad
     def calculate_all_fd_grad(self, rho_vector, db=1e-4):
         fdgrad = []
         for k in range(self.n):
