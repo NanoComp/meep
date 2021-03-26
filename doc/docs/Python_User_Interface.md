@@ -320,10 +320,12 @@ Python. `Vector3` is a `meep` class.
   `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
   Structure](#load-and-dump-structure) for more information.
 
-+ **`chunk_layout` [`string` or `Simulation` instance]** — This will cause the
-  `Simulation` to use the chunk layout described by either an h5 file (created by
-  `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump
-  Structure](#load-and-dump-structure) for more information.
++ **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
+  This will cause the `Simulation` to use the chunk layout described by either
+  (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
+  `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
+  For more information, see [Load and Dump Structure](#load-and-dump-structure) and
+  [Parallel Meep/User-Specified Cell Partition](Parallel_Meep.md#user-specified-cell-partition).
 
 The following require a bit more understanding of the inner workings of Meep to
 use. See also [SWIG Wrappers](#swig-wrappers).
@@ -338,9 +340,9 @@ use. See also [SWIG Wrappers](#swig-wrappers).
   initialized by `init_sim()` which is called automatically by any of the [run
   functions](#run-functions).
 
-+ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subarrays) to divide
-  the structure/fields into (default 0). Actual number is determined by number of
-  processors, PML layers, etcetera. Mainly useful for debugging.
++ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
+  the structure/fields into. Overrides the default value determined by
+  the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
 + **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
   [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
@@ -7311,6 +7313,53 @@ former value.
 
 </div>
 
+---
+<a id="BinaryPartition"></a>
+
+### BinaryPartition
+
+```python
+class BinaryPartition(object):
+```
+
+<div class="class_docstring" markdown="1">
+
+Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
+`chunk_layout` parameter of the `Simulation` class object.
+
+</div>
+
+
+
+<a id="BinaryPartition.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(self,
+             data=None,
+             split_dir=None,
+             split_pos=None,
+             left=None,
+             right=None,
+             proc_id=None):
+```
+
+<div class="method_docstring" markdown="1">
+
+The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
+list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
+and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
+`-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
+or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
+- 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
+`proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
+process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
+of processes.
+
+</div>
+
+</div>
 
 Miscellaneous Functions Reference
 ---------------------------------

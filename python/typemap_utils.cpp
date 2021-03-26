@@ -1029,3 +1029,49 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
 
   return py_res;
 }
+
+static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
+    meep::binary_partition *bp = NULL;
+    if (pybp == Py_None) return bp;
+
+    PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
+    PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
+    PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
+    PyObject *left = PyObject_GetAttrString(pybp, "left");
+    PyObject *right = PyObject_GetAttrString(pybp, "right");
+
+    if (!id || !split_dir || !split_pos || !left || !right) {
+      meep::abort("BinaryPartition class object is incorrectly defined.");
+    }
+
+    if (PyLong_Check(id)) {
+         bp = new meep::binary_partition(PyLong_AsLong(id));
+    } else {
+         bp = new meep::binary_partition(direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos));
+         bp->left = py_bp_to_bp(left);
+         bp->right = py_bp_to_bp(right);
+    }
+
+    Py_XDECREF(id);
+    Py_XDECREF(split_dir);
+    Py_XDECREF(split_pos);
+    Py_XDECREF(left);
+    Py_XDECREF(right);
+    return bp;
+}
+
+static PyObject *get_meep_mod() {
+  // Return value: Borrowed reference
+  static PyObject *meep_mod = NULL;
+  if (meep_mod == NULL) { meep_mod = PyImport_ImportModule("meep"); }
+  return meep_mod;
+}
+
+static PyObject *py_binary_partition_object() {
+  // Return value: Borrowed reference
+  static PyObject *bp_type = NULL;
+  if (bp_type == NULL) {
+    bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition");
+  }
+  return bp_type;
+}

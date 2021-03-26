@@ -44,6 +44,7 @@ TESTS =                                   \
     $(BINARY_GRATING_TEST)                \
     $(TEST_DIR)/cavity_arrayslice.py      \
     $(TEST_DIR)/cavity_farfield.py        \
+    $(TEST_DIR)/chunk_layout.py           \
     $(TEST_DIR)/chunks.py                 \
     $(TEST_DIR)/cyl_ellipsoid.py          \
     $(TEST_DIR)/dft_energy.py             \

@@ -1162,10 +1162,12 @@ class Simulation(object):
           `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
           Structure](#load-and-dump-structure) for more information.
 
-        + **`chunk_layout` [`string` or `Simulation` instance]** — This will cause the
-          `Simulation` to use the chunk layout described by either an h5 file (created by
-          `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump
-          Structure](#load-and-dump-structure) for more information.
+        + **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
+          This will cause the `Simulation` to use the chunk layout described by either
+          (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
+          `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
+          For more information, see [Load and Dump Structure](#load-and-dump-structure) and
+          [Parallel Meep/User-Specified Cell Partition](Parallel_Meep.md#user-specified-cell-partition).
 
         The following require a bit more understanding of the inner workings of Meep to
         use. See also [SWIG Wrappers](#swig-wrappers).
@@ -1180,9 +1182,9 @@ class Simulation(object):
           initialized by `init_sim()` which is called automatically by any of the [run
           functions](#run-functions).
 
-        + **`num_chunks` [`integer`]** — Minimum number of "chunks" (subarrays) to divide
-          the structure/fields into (default 0). Actual number is determined by number of
-          processors, PML layers, etcetera. Mainly useful for debugging.
+        + **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
+          the structure/fields into. Overrides the default value determined by
+          the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
         + **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
           [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
@@ -1207,7 +1209,7 @@ class Simulation(object):
         self.extra_materials = extra_materials
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
-        self.num_chunks = num_chunks
+        self.num_chunks = chunk_layout.numchunks() if isinstance(chunk_layout,mp.BinaryPartition) else num_chunks
         self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
@@ -1878,8 +1880,10 @@ class Simulation(object):
 
         if isinstance(source, Simulation):
             vols = source.structure.get_chunk_volumes()
-            self.structure.load_chunk_layout(vols, br)
+            ids = source.structure.get_chunk_owners()
+            self.structure.load_chunk_layout(vols, [int(f) for f in ids], br)
         else:
+            ## source is either filename (string) or BinaryPartition class object
             self.structure.load_chunk_layout(source, br)
 
     def init_sim(self):
@@ -5170,3 +5174,54 @@ def merge_subgroup_data(data):
     comm.Alltoallv(smsg, rmsg)
 
     return output
+
+class BinaryPartition(object):
+    """
+    Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
+    `chunk_layout` parameter of the `Simulation` class object.
+    """
+    def __init__(self, data=None, split_dir=None, split_pos=None, left=None, right=None, proc_id=None):
+        """
+        The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
+        list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
+        and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
+        `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
+        or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
+        - 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
+        `proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
+        process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
+        of processes.
+        """
+        self.split_dir = None
+        self.split_pos = None
+        self.proc_id = None
+        self.left = None
+        self.right = None
+        if data is not None:
+            if isinstance(data,list) and len(data) == 3:
+                if isinstance(data[0],tuple) and len(data[0]) == 2:
+                    self.split_dir = data[0][0]
+                    self.split_pos = data[0][1]
+                else:
+                    raise ValueError("expecting 2-tuple (split_dir,split_pos) but got {}".format(data[0]))
+                self.left = BinaryPartition(data=data[1])
+                self.right = BinaryPartition(data=data[2])
+            elif isinstance(data,int):
+                self.proc_id = data
+            else:
+                raise ValueError("expecting list [(split_dir,split_pos), left, right] or int (proc_id) but got {}".format(data))
+        elif split_dir is not None:
+            self.split_dir = split_dir
+            self.split_pos = split_pos
+            self.left = left
+            self.right = right
+        else:
+            self.proc_id = proc_id
+
+    def _numchunks(self,bp):
+        if bp is None:
+            return 0
+        return max(self._numchunks(bp.left)+self._numchunks(bp.right), 1)
+
+    def numchunks(self):
+        return self._numchunks(self)

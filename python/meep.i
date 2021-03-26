@@ -1473,6 +1473,27 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
   }
 }
 
+// typemaps for binary_partition
+
+%typecheck (SWIG_TYPECHECK_POINTER) meep::binary_partition * {
+    $1 = PyObject_IsInstance($input, py_binary_partition_object());
+}
+
+%typemap(in) meep::binary_partition * {
+    $1 = py_bp_to_bp($input);
+    if(!$1) {
+        SWIG_fail;
+    }
+}
+
+%typemap(arginit) meep::binary_partition * {
+    $1 = NULL;
+}
+
+%typemap(freearg) meep::binary_partition * {
+    delete $1;
+}
+
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
@@ -1693,6 +1714,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     )
     from .simulation import (
         Absorber,
+        BinaryPartition,
         Ldos,
         EnergyRegion,
         FluxRegion,

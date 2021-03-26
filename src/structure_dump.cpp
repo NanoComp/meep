@@ -414,6 +414,55 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
+binary_partition::binary_partition(int _proc_id) {
+  proc_id = _proc_id;
+  split_dir = NO_DIRECTION;
+  split_pos = 0.0;
+  left = NULL;
+  right = NULL;
+}
+
+binary_partition::binary_partition(direction _split_dir, double _split_pos) {
+  split_dir = _split_dir;
+  split_pos = _split_pos;
+  proc_id = -1;
+  left = NULL;
+  right = NULL;
+}
+
+static void split_by_binarytree(grid_volume gvol,
+                                std::vector<grid_volume> &result_gvs,
+                                std::vector<int> &result_ids,
+                                const binary_partition *bp) {
+  // reached a leaf
+  if ((bp->left == NULL) && (bp->right == NULL)) {
+    result_gvs.push_back(gvol);
+    result_ids.push_back(bp->proc_id);
+    return;
+  }
+
+  int split_point = (size_t)((bp->split_pos - gvol.surroundings().in_direction_min(bp->split_dir)) /
+                             gvol.surroundings().in_direction(bp->split_dir) *
+                             gvol.num_direction(bp->split_dir) + 0.5);
+  // traverse left branch
+  if (bp->left != NULL) {
+    grid_volume left_gvol = gvol.split_at_fraction(false, split_point, bp->split_dir);
+    split_by_binarytree(left_gvol, result_gvs, result_ids, bp->left);
+  }
+  // traverse right branch
+  if (bp->right != NULL) {
+    grid_volume right_gvol = gvol.split_at_fraction(true, split_point, bp->split_dir);
+    split_by_binarytree(right_gvol, result_gvs, result_ids, bp->right);
+  }
+}
+
+void structure::load_chunk_layout(const binary_partition *bp, boundary_region &br) {
+  std::vector<grid_volume> gvs;
+  std::vector<int> ids;
+  split_by_binarytree(gv, gvs, ids, bp);
+  load_chunk_layout(gvs, ids, br);
+}
+
 void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   // Load chunk grid_volumes from a file
   h5file file(filename, h5file::READONLY, true);
@@ -446,6 +495,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   broadcast(0, nums, sz);
 
   std::vector<grid_volume> gvs;
+  std::vector<int> ids;
   // Populate a vector with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     int idx = i * 3;
@@ -457,20 +507,23 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
     }
     new_gv.set_origin(new_origin);
     gvs.push_back(new_gv);
+    ids.push_back(i * count_processors() / num_chunks);
   }
 
-  load_chunk_layout(gvs, br);
+  load_chunk_layout(gvs, ids, br);
 
   delete[] origins;
   delete[] nums;
 }
 
-void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br) {
+void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
+                                  const std::vector<int> &ids,
+                                  boundary_region &br) {
+  if (gvs.size() != num_chunks) abort("load_chunk_layout: wrong number of chunks.");
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
-    int proc = i * count_processors() / num_chunks;
-    chunks[i] = new structure_chunk(gvs[i], v, Courant, proc);
+    chunks[i] = new structure_chunk(gvs[i], v, Courant, ids[i] % count_processors());
     br.apply(this, chunks[i]);
   }
   check_chunks();
