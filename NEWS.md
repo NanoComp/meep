@@ -759,3 +759,15 @@ Meep 1.0.1
 1 Apr. 2006.
 
   * Initial public release.
+
+<!--- generated links: -->
+[#1464]: https://github.com/NanoComp/meep/issues/1464
+[#1487]: https://github.com/NanoComp/meep/issues/1487
+[#1499]: https://github.com/NanoComp/meep/issues/1499
+[#1512]: https://github.com/NanoComp/meep/issues/1512
+[#1515]: https://github.com/NanoComp/meep/issues/1515
+[#1519]: https://github.com/NanoComp/meep/issues/1519
+[#1521]: https://github.com/NanoComp/meep/issues/1521
+[#1522]: https://github.com/NanoComp/meep/issues/1522
+[#1527]: https://github.com/NanoComp/meep/issues/1527
+[#1528]: https://github.com/NanoComp/meep/issues/1528
