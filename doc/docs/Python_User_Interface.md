@@ -7330,10 +7330,9 @@ and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) an
 `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
 or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
 - 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
-`proc_id`. The `num_chunks` parameter of the `Simulation` constructor must be set to the number of chunks
-specified by the binary tree. Note that the same process ID can be assigned to as many chunks as you want,
-which means that one process timesteps multiple chunks. If you use fewer MPI processes, then the process ID
-is taken modulo the number of processes.
+`proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
+process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
+of processes.
 
 </div>
 

@@ -1209,7 +1209,7 @@ class Simulation(object):
         self.extra_materials = extra_materials
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
-        self.num_chunks = num_chunks
+        self.num_chunks = chunk_layout.numchunks() if isinstance(chunk_layout,mp.BinaryPartition) else num_chunks
         self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
@@ -5189,10 +5189,9 @@ class BinaryPartition(object):
         `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
         or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
         - 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
-        `proc_id`. The `num_chunks` parameter of the `Simulation` constructor must be set to the number of chunks
-        specified by the binary tree. Note that the same process ID can be assigned to as many chunks as you want,
-        which means that one process timesteps multiple chunks. If you use fewer MPI processes, then the process ID
-        is taken modulo the number of processes.
+        `proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
+        process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
+        of processes.
         """
         self.split_dir = None
         self.split_pos = None
@@ -5219,3 +5218,11 @@ class BinaryPartition(object):
             self.right = right
         else:
             self.proc_id = proc_id
+
+    def _numchunks(self,bp):
+        if bp is None:
+            return 0
+        return max(self._numchunks(bp.left)+self._numchunks(bp.right), 1)
+
+    def numchunks(self):
+        return self._numchunks(self)

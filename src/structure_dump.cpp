@@ -519,6 +519,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
 void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
                                   const std::vector<int> &ids,
                                   boundary_region &br) {
+  if (gvs.size() != num_chunks) abort("load_chunk_layout: wrong number of chunks.");
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
