@@ -1,5 +1,19 @@
 # Meep Release Notes
 
+## Meep 1.18.0
+
+3/26/2021
+
+* New `get_epsilon_grid` function for evaluating ε on user-specified grid with arbitrary resolution ([#1522]).
+
+* Support for user-specified chunk layouts for manual control over load-balancing ([#1528]).
+
+* `MaterialGrid` `design_parameters` is renamed to `weights` and `U_SUM` is renamed to `U_MEAN` ([#1512]).
+
+* Performance improvement in chunk division ([#1499]).
+
+* Various bugfixes ([#1487], [#1515], [#1519], [#1521], [#1527]), additional documentation, and tests.
+
 ## Meep 1.17.1
 
 1/8/2021
