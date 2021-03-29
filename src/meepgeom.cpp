@@ -307,6 +307,70 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
+/* implement mirror boundary conditions for i outside 0..n-1: */
+static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
+
+meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree tp, int oi) {
+  meep::vec gradient(zero_vec(v.dim));
+  vector3 pc = vec_to_vector3(v.center());
+  int x1, y1, z1, x2, y2, z2;
+  meep::realnum dx, dy, dz;
+
+  // assume there is only a single MATERIAL_GRID (i.e., no overlapping grids)
+  if (tp) {
+    vector3 p = to_geom_box_coords(pc, &tp->objects[oi]);
+    material_data *md = (material_data *)tp->objects[oi].o->material;
+
+    meep::realnum rx = p.x;
+    meep::realnum ry = p.y;
+    meep::realnum rz = p.z;
+
+    meep::realnum *data = md->weights;
+
+    int nx = md->grid_size.x;
+    int ny = md->grid_size.y;
+    int nz = md->grid_size.z;
+    int stride = 1;
+
+    /* mirror boundary conditions for r just beyond the boundary */
+    rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
+    ry = ry < 0.0 ? -ry : (ry > 1.0 ? 1.0 - ry : ry);
+    rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
+
+    /* get the point corresponding to r in the epsilon array grid: */
+    x1 = mirrorindex(int(rx * nx), nx);
+    y1 = mirrorindex(int(ry * ny), ny);
+    z1 = mirrorindex(int(rz * nz), nz);
+
+    /* get the difference between (x1,y1,z1) and the actual point */
+    dx = rx * nx - x1 - 0.5;
+    dy = ry * ny - y1 - 0.5;
+    dz = rz * nz - z1 - 0.5;
+
+    /* get the other closest point in the grid, with mirror boundaries: */
+    x2 = mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
+    y2 = mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
+    z2 = mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
+
+    /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
+    dx = fabs(dx);
+    dy = fabs(dy);
+    dz = fabs(dz);
+
+/* define a macro to give us data(x,y,z) on the grid, in row-major order: */
+#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
+
+    meep::realnum du_dx = (1-dy)*(-D(x1,y2,0)+D(x2,y2,0))+dy*(-D(x1,y1,0)+D(x2,y1,0));
+    gradient.set_direction(meep::X, du_dx);
+    meep::realnum du_dy = (1-dx)*(-D(x2,y1,0)+D(x2,y2,0))+dx*(-D(x1,y1,0)+D(x1,y2,0));
+    gradient.set_direction(meep::Y, du_dy);
+
+#undef D
+  }
+
+  return gradient/abs(gradient);
+}
+
 double material_grid_val(vector3 p, material_data *md) {
   // given the relative location, p, interpolate the material grid point.
 
@@ -1107,7 +1171,23 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
 
   symmetric_matrix chi1p1, chi1p1_inv;
   material_type material;
-  meep::vec gradient(normal_vector(meep::type(c), v));
+  vector3 p = vec_to_vector3(v.center());
+  boolean inobject;
+  material =
+      (material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
+  material_data *md = material;
+  meep::vec gradient(zero_vec(v.dim));
+
+  if (md->which_subclass == material_data::MATERIAL_GRID) {
+    int oi;
+    geom_box_tree tp;
+    tp = geom_tree_search(p, restricted_tree, &oi);
+    gradient = matgrid_grad(meep::type(c), v, tp, oi);
+  }
+  else {
+    gradient = normal_vector(meep::type(c), v);
+  }
+
   get_material_pt(material, v.center());
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
   material_gc(material);
@@ -2371,9 +2451,6 @@ double get_material_gradient(
   std::complex<double> result = fields_a * dA_du[3 * dir_idx + dir_idx] * fields_f;
   return 2 * result.real();
 }
-
-/* implement mirror boundary conditions for i outside 0..n-1: */
-static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
 
 /* add the weights from linear_interpolate (see the linear_interpolate
    function in fields.cpp) to data ... this has to be changed if
