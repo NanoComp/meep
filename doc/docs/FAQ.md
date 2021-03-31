@@ -421,10 +421,6 @@ Yes. An official [Python interface](Python_User_Interface.md) was released in [v
 
 At least 8 pixels per wavelength in the lossless dielectric material with the highest index. Resolving the [skin depth of metals](https://en.wikipedia.org/wiki/Skin_effect), which is typically tens of nanometers at optical frequencies, will require a pixel size of comparable dimensions since [subpixel averaging does not apply to dispersive materials](Subpixel_Smoothing.md#what-about-dispersive-materials).
 
-### What is a good rule of thumb for the PML thickness?
-
-Around half the wavelength, typically. (Note that the boundary condition, metallic or periodic, is essentially irrelevant to the operation of the PML.) PML allows inhomogeneous materials like waveguides as long as the materials are only varying in the boundary-*parallel* directions; wave media that are inhomogeneous in the boundary-normal directions (e.g., gratings or other periodic structures, oblique waveguides, etc.) as well as unusual waveguides with backward-wave modes cause PML to break down, in which case one alternative is a thicker non-PML [absorber](Python_User_Interface.md#absorber) as described in [Perfectly Matched Layers](Perfectly_Matched_Layer.md).
-
 ### What is Meep's frequency-domain solver and how does it work?
 
 Meep contains a [frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) that directly computes the steady-state fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave), using an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. This is possible because the FDTD timestep can be used to formulate a frequency-domain problem via an iterative linear solver. The frequency-domain response can often be determined using many fewer timesteps while exploiting the FDTD code almost without modification. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
@@ -495,4 +491,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Yes. Meep contains an [adjoint solver](Python_Tutorials/AdjointSolver.md) which can be used for sensitivity analysis and automated design optimization with respect to a grid of $\varepsilon$ values (also known as "density-based" topology optimization).  (Of course, you can always use finite differences or similar methods to compute sensitivities for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)
+Yes. Meep contains an [adjoint solver](Python_Tutorials/Adjoint_Solver.md) which can be used for sensitivity analysis and automated design optimization with respect to a grid of $\varepsilon$ values (also known as "density-based" topology optimization).  (Of course, you can always use finite differences or similar methods to compute sensitivities for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)

@@ -91,7 +91,7 @@ If you are not the system administrator of your machine, and/or want to install 
 
 ### Python
 
-If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+ and the [adjoint solver](Python_Tutorials/AdjointSolver.md) requires [autograd](https://github.com/HIPS/autograd).
+If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+ and the [adjoint solver](Python_Tutorials/Adjoint_Solver.md) requires [autograd](https://github.com/HIPS/autograd).
 
 By default, Meep's Python module is installed for the program `python` on your system.  If you want to install using a different Python program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the Meep `configure` script. An Anaconda (`conda`) [package for Meep](Installation.md#conda-packages) is also available on some systems.
 

@@ -43,7 +43,6 @@ class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
         sim = mp.Simulation(cell_size=cell_size,
                             resolution=10,
-                            num_chunks=5,
                             chunk_layout=chunk_layout)
 
         sim.init_sim()

@@ -111,8 +111,6 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   // create the chunks:
   std::vector<grid_volume> chunk_volumes = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
 
-  int my_num_chunks = chunk_volumes.size();
-
   // initialize effort volumes
   num_effort_volumes = 1;
   effort_volumes = new grid_volume[num_effort_volumes];
@@ -125,9 +123,9 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
   // Break off PML regions into their own chunks
   num_chunks = 0;
-  chunks = new structure_chunk_ptr[my_num_chunks * num_effort_volumes];
+  chunks = new structure_chunk_ptr[chunk_volumes.size() * num_effort_volumes];
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = i * count_processors() / my_num_chunks;
+    const int proc = i * count_processors() / chunk_volumes.size();
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
