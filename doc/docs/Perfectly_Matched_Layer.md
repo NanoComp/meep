@@ -64,3 +64,8 @@ For an $E_y$-polarized source and `is_integrated=True`, the wavefronts are plana
 </center>
 
 In the future, `is_integrated=True` will be set automatically for sources extending into the PML ([#1049](https://github.com/NanoComp/meep/issues/1049)).
+
+What is a Good Rule of Thumb for the PML thickness?
+---------------------------------------------------
+
+Around half the wavelength, typically. (Note that the boundary condition, metallic or periodic, is essentially irrelevant to the operation of the PML.) PML allows inhomogeneous materials like waveguides as long as the materials are only varying in the boundary-*parallel* directions; wave media that are inhomogeneous in the boundary-normal directions (e.g., gratings or other periodic structures, oblique waveguides, etc.) as well as unusual waveguides with backward-wave modes cause PML to break down, in which case one alternative is a thicker non-PML [absorber](Python_User_Interface.md#absorber).

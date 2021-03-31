@@ -550,12 +550,12 @@ class MaterialGrid(object):
         The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
         can be specified using the `Simulation` constructor.
 
-        Grids which are symmetric (e.g., mirror, rotation) must be explicitly defined. One way to implement this is by overlapping
-        a given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping `MaterialGrid`
-        objects (with no intervening objects), any overlapping points are computed using the method `grid_type` which is one of
-        `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product), `"U_MEAN"` (mean), `"U_DEFAULT"`
-        (topmost material grid). In general, these `"U_*"` options allow you to combine any material grids that overlap
-        in space with no intervening objects.
+        It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
+        (e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of
+        itself. In the case of spatially overlapping `MaterialGrid` objects (with no intervening objects), any overlapping points are
+        computed using the method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product),
+        `"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options allow you to combine any material
+        grids that overlap in space with no intervening objects.
         """
         self.grid_size = mp.Vector3(*grid_size)
         self.medium1 = medium1
