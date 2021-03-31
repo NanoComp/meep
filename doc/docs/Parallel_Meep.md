@@ -65,9 +65,9 @@ Note: for optimization studies involving *random* initial conditions, the seed o
 
 ### User-Specified Cell Partition
 
-An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a binary tree for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define a integer-valued process ID (equivalent to the rank of the MPI process for that chunk). Note also that the same process ID can be assigned to as many chunks as you want, which just means that one process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number of processes.
+An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a [binary tree](https://en.wikipedia.org/wiki/Binary_tree) for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define an integer-valued process ID (equivalent to the rank of the MPI process for that chunk). Note also that the same process ID can be assigned to as many chunks as you want, which just means that one process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number of processes.
 
-As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the lower-left boundary is partitioned into five chunks numbered one through five.
+As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the cell center is partitioned into five chunks numbered one through five.
 
 <center>
 ![](images/chunk_division_binary_tree.png)

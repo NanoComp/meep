@@ -2576,8 +2576,7 @@ class Simulation(object):
         Given a `Vector3` point `x` which can lie anywhere outside the near-field surface,
         including outside the cell and a `near2far` object, returns the computed
         (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
-        of fields
-        (E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...)
+        of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
         for the frequencies 1,2,…,`nfreq`.
         """
         return mp._get_farfield(near2far.swigobj, py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical))
@@ -4745,7 +4744,7 @@ def output_dfield_p(sim):
 # MPB compatibility
 def output_poynting(sim):
     """
-    Output the Poynting flux $\\mathrm{Re}\\{\\mathbf{E}^*\\times\\mathbf{H}\\}$. Note that you
+    Output the Poynting flux $\\Re [\\mathbf{E}^* \\times \\mathbf{H}]$. Note that you
     might want to wrap this step function in `synchronized_magnetic` to compute it more
     accurately. See [Synchronizing the Magnetic and Electric
     Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).

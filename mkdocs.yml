@@ -67,7 +67,7 @@ nav:
     - 'Tutorial/Custom Source': 'Python_Tutorials/Custom_Source.md'
     - 'Tutorial/Mode Decomposition': 'Python_Tutorials/Mode_Decomposition.md'
     - 'Tutorial/GDSII Import': 'Python_Tutorials/GDSII_Import.md'
-    - 'Tutorial/Adjoint Solver': 'Python_Tutorials/AdjointSolver.md'
+    - 'Tutorial/Adjoint Solver': 'Python_Tutorials/Adjoint_Solver.md'
 - 'Scheme Interface':
     - 'User Interface': 'Scheme_User_Interface.md'
     - 'Tutorial/Basics': 'Scheme_Tutorials/Basics.md'
