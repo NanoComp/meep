@@ -32,8 +32,6 @@
 
 using namespace std;
 
-typedef complex<double> cdouble;
-
 namespace meep {
 
 #ifdef HAVE_MPB
@@ -722,7 +720,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   // so we need to divide the E-field amplitudes by -frequency; we also take this
   // opportunity to rescale the overall E and H amplitudes to yield unit power flux.
   double scale = -1.0 / frequency, factor = 2.0 / sqrt(fabs(vgrp));
-  cdouble *efield = (cdouble *)fft_data_E, *hfield = (cdouble *)(mdata->fft_data);
+  complex<double> *efield = (complex<double> *)fft_data_E, *hfield = (complex<double> *)(mdata->fft_data);
   for (int n = 0; n < NFFT; ++n) {
     efield[n] *= factor * scale;
     hfield[n] *= factor;
@@ -938,15 +936,15 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
       /*--------------------------------------------------------------*/
-      cdouble mode_flux[2], mode_mode[2];
+      complex<double> mode_flux[2], mode_mode[2];
       get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
-      cdouble cplus = 0.5 * (mode_flux[0] + mode_flux[1]);
-      cdouble cminus = 0.5 * (mode_flux[0] - mode_flux[1]);
+      complex<double> cplus = 0.5 * (mode_flux[0] + mode_flux[1]);
+      complex<double> cminus = 0.5 * (mode_flux[0] - mode_flux[1]);
       /* MPB modes are normalized to unit power above, but we need to re-normalize here to have
          unit power as integrated on Meep's Yee grid and not on MPB's grid.  Thus, normfac differs
          from a constant factor only because of discretization effects. */
-      cdouble normfac = 0.5 * (mode_mode[0] + mode_mode[1]);
+      complex<double> normfac = 0.5 * (mode_mode[0] + mode_mode[1]);
       if (normfac == 0.0) normfac = 1.0;
       double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
       if (cscale)

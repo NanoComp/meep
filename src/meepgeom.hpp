@@ -28,10 +28,6 @@
 
 namespace meep_geom {
 
-#ifndef cdouble
-typedef std::complex<double> cdouble;
-#endif
-
 // constants from meep-ctl-const.hpp
 #define CYLINDRICAL -2
 

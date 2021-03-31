@@ -28,8 +28,6 @@
 
 using namespace std;
 
-typedef complex<double> cdouble;
-
 namespace meep {
 
 /***************************************************************************/
@@ -62,8 +60,8 @@ typedef struct {
 
   // temporary internal storage buffers
   component *cS;
-  cdouble *ph;
-  cdouble *fields;
+  complex<double> *ph;
+  complex<double> *fields;
   ptrdiff_t *offsets;
 
   double frequency;
@@ -83,13 +81,13 @@ typedef struct {
 #define UNUSED(x) (void)x // silence compiler warnings
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
-static cdouble default_field_func(const cdouble *fields, const vec &loc, void *data_) {
+static complex<double> default_field_func(const complex<double> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return fields[0];
 }
 
-static double default_field_rfunc(const cdouble *fields, const vec &loc, void *data_) {
+static double default_field_rfunc(const complex<double> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return real(fields[0]);
@@ -138,7 +136,7 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
 typedef struct {
   component source_component;
   ivec slice_imin, slice_imax;
-  cdouble *slice;
+  complex<double> *slice;
 } source_slice_data;
 
 bool in_range(int imin, int i, int imax) { return (imin <= i && i <= imax); }
@@ -186,7 +184,7 @@ static void get_source_slice_chunkloop(fields_chunk *fc, int ichnk, component cg
       // local index of the symmetry-child grid point within this
       // slice (that is, if it even lies within the slice)
       for (size_t npt = 0; npt < s->npts; npt++) {
-        cdouble amp = s->A[npt];
+        complex<double> amp = s->A[npt];
         ptrdiff_t chunk_index = s->index[npt];
         ivec iloc_parent = fc->gv.iloc(Dielectric, chunk_index);
         ivec iloc_child = S.transform(iloc_parent, sn) + shift;
@@ -275,10 +273,10 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   // tabulated on the slice, exactly as in fields::integrate.              //
   //-----------------------------------------------------------------------//
   double *slice = 0;
-  cdouble *zslice = 0;
+  complex<double> *zslice = 0;
   bool complex_data = (data->rfun == 0);
   if (complex_data)
-    zslice = (cdouble *)data->vslice;
+    zslice = (complex<double> *)data->vslice;
   else
     slice = (double *)data->vslice;
 
@@ -410,8 +408,8 @@ double *array_to_all(double *array, size_t array_size) {
   return array;
 }
 
-cdouble *array_to_all(cdouble *array, size_t array_size) {
-  return (cdouble *)array_to_all((double *)array, 2 * array_size);
+complex<double> *array_to_all(complex<double> *array, size_t array_size) {
+  return (complex<double> *)array_to_all((double *)array, 2 * array_size);
 }
 
 /***************************************************************/
@@ -569,9 +567,9 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   return reduced_array;
 }
 
-cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dirs[3],
+complex<double> *collapse_array(complex<double> *array, int *rank, size_t dims[3], direction dirs[3],
                         volume where) {
-  return (cdouble *)collapse_array((double *)array, rank, dims, dirs, where, 2);
+  return (complex<double> *)collapse_array((double *)array, rank, dims, dirs, where, 2);
 }
 
 /**********************************************************************/
@@ -606,8 +604,8 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   data.frequency = frequency;
   int num_components = components.size();
   data.cS = new component[num_components];
-  data.ph = new cdouble[num_components];
-  data.fields = new cdouble[num_components];
+  data.ph = new complex<double>[num_components];
+  data.fields = new complex<double>[num_components];
   data.offsets = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
   data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] =
@@ -680,10 +678,10 @@ double *fields::get_array_slice(const volume &where, std::vector<component> comp
                                       frequency, snap);
 }
 
-cdouble *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                         field_function fun, void *fun_data, cdouble *slice,
+complex<double> *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
+                                         field_function fun, void *fun_data, complex<double> *slice,
                                          double frequency, bool snap) {
-  return (cdouble *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
+  return (complex<double> *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
                                        frequency, snap);
 }
 
@@ -705,16 +703,16 @@ double *fields::get_array_slice(const volume &where, derived_component c, double
                                       frequency, snap);
 }
 
-cdouble *fields::get_complex_array_slice(const volume &where, component c, cdouble *slice,
+complex<double> *fields::get_complex_array_slice(const volume &where, component c, complex<double> *slice,
                                          double frequency, bool snap) {
   std::vector<component> components(1);
   components[0] = c;
-  return (cdouble *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
+  return (complex<double> *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
                                        frequency, snap);
 }
 
-cdouble *fields::get_source_slice(const volume &where, component source_slice_component,
-                                  cdouble *slice) {
+complex<double> *fields::get_source_slice(const volume &where, component source_slice_component,
+                                  complex<double> *slice) {
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];
@@ -725,18 +723,18 @@ cdouble *fields::get_source_slice(const volume &where, component source_slice_co
   data.source_component = source_slice_component;
   data.slice_imin = gv.round_vec(min_max_loc[0]);
   data.slice_imax = gv.round_vec(min_max_loc[1]);
-  data.slice = new cdouble[slice_size];
+  data.slice = new complex<double>[slice_size];
   if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
 
-  cdouble *slice_collapsed = collapse_array(data.slice, &rank, dims, dirs, where);
+  complex<double> *slice_collapsed = collapse_array(data.slice, &rank, dims, dirs, where);
   rank = get_array_slice_dimensions(where, dims, dirs, true, false);
   slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
   if (slice) {
     memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(double));
-    delete[] (cdouble*) slice_collapsed;
+    delete[] (complex<double>*) slice_collapsed;
   }
   else
     slice = slice_collapsed;
