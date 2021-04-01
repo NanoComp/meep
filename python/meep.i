@@ -310,7 +310,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
-    std::complex<double> *ff_arr = f->farfield(v);
+    std::complex<realnum> *ff_arr = f->farfield(v);
 
     for (Py_ssize_t i = 0; i < len; i++) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
@@ -839,14 +839,14 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
-    std::complex<double> * fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
+    std::complex<meep::realnum> * fields_a_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_a);
 
     // clean the forward fields array
     PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
     if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
-    std::complex<double> * fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
+    std::complex<meep::realnum> * fields_f_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_f);
 
     // scalegrad not currently used
     double scalegrad = 1.0;

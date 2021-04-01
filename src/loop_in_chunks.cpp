@@ -213,7 +213,7 @@ void chunkloop_field_components::update_values(ptrdiff_t idx) {
     ptrdiff_t ofs1 = offsets[2 * nc], ofs2 = offsets[2 * nc + 1];
     double favg[2] = {0.0, 0.0}; // real, imag parts
     for (int reim = 0; reim < 2; reim++) {
-      const double *fgrid = fc->f[cparent][reim];
+      const realnum *fgrid = fc->f[cparent][reim];
       if (!fgrid) continue;
       favg[reim] =
           0.25 * (fgrid[idx] + fgrid[idx + ofs1] + fgrid[idx + ofs2] + fgrid[idx + ofs1 + ofs2]);

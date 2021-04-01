@@ -389,7 +389,6 @@ public:
   realnum *read(const char *dataname, int *rank, size_t *dims, int maxrank);
   void write(const char *dataname, int rank, const size_t *dims, realnum *data,
              bool single_precision = true);
-
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
 
@@ -1017,7 +1016,7 @@ public:
   // fields::process_dft_component
   std::complex<double> process_dft_component(int rank, direction *ds, ivec min_corner,
                                              ivec max_corner, int num_freq, h5file *file,
-                                             double *buffer, int reim,
+                                             realnum *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
                                              void *mode2_data, int ic_conjugate,
                                              bool retain_interp_weights, fields *parent);
@@ -1200,7 +1199,7 @@ public:
 };
 
 
-struct sourcedata{
+struct sourcedata {
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
   int fc_idx;
@@ -1225,13 +1224,13 @@ public:
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
-  std::complex<double> *farfield(const vec &x);
+  std::complex<realnum> *farfield(const vec &x);
 
   /* like farfield, but requires F to be Nfreq*6 preallocated array, and
      does *not* perform the reduction over processes...an MPI allreduce
      summation by the caller is required to get the final result ... used
      by other output routine to efficiently get far field on a grid of pts */
-  void farfield_lowlevel(std::complex<double> *F, const vec &x);
+  void farfield_lowlevel(std::complex<realnum> *F, const vec &x);
 
   /* Return a newly allocated array with all far fields */
   realnum *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
@@ -2140,9 +2139,9 @@ double BesselJ(int m, double kr);
 // analytical Green's functions (in near2far.cpp); upon return,
 // EH[0..5] are set to the Ex,Ey,Ez,Hx,Hy,Hz field components at x
 // from a c0 source of amplitude f0 at x0.
-void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+void green2d(std::complex<realnum> *EH, const vec &x, double freq, double eps, double mu,
              const vec &x0, component c0, std::complex<double> f0);
-void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
+void green3d(std::complex<realnum> *EH, const vec &x, double freq, double eps, double mu,
              const vec &x0, component c0, std::complex<double> f0);
 
 // non-class methods for working with mpb eigenmode data

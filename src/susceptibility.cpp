@@ -309,7 +309,7 @@ std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) 
 void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 5;
   size_t params_dims[1] = {num_params};
-  double params_data[] = {4, (double)get_id(), omega_0, gamma, (double)no_omega_0_denominator};
+  realnum params_data[] = {4, (realnum)get_id(), omega_0, gamma, (realnum)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
@@ -341,8 +341,8 @@ void noisy_lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][
 void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 6;
   size_t params_dims[1] = {num_params};
-  double params_data[] = {
-      5, (double)get_id(), noise_amp, omega_0, gamma, (double)no_omega_0_denominator};
+  realnum params_data[] = {
+      5, (realnum)get_id(), noise_amp, omega_0, gamma, (realnum)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
@@ -618,9 +618,9 @@ realnum *gyrotropic_susceptibility::cinternal_notowned_ptr(int inotowned, compon
 void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 9;
   size_t params_dims[1] = {num_params};
-  double bias[] = {gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y]};
-  double params_data[] = {8,     (double)get_id(), bias[X], bias[Y], bias[Z], omega_0, gamma,
-                          alpha, (double)model};
+  realnum bias[] = {gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y]};
+  realnum params_data[] = {8, (realnum)get_id(), bias[X], bias[Y], bias[Z], omega_0, gamma,
+                          alpha, (realnum)model};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }

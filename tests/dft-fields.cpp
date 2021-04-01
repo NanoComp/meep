@@ -111,9 +111,9 @@ double compare_array_to_dataset(cdouble *field_array, int array_rank, size_t *ar
   h5file f(file, h5file::READONLY, false);
   char dataname[100];
   snprintf(dataname, 100, "%s.r", name);
-  double *rdata = f.read(dataname, &file_rank, file_dims, 2);
+  realnum *rdata = f.read(dataname, &file_rank, file_dims, 2);
   snprintf(dataname, 100, "%s.i", name);
-  double *idata = f.read(dataname, &file_rank, file_dims, 2);
+  realnum *idata = f.read(dataname, &file_rank, file_dims, 2);
   if (!rdata || !idata) return -1.0;
   if (file_rank != array_rank) return -1.0;
   for (int n = 0; n < file_rank; n++)
@@ -150,9 +150,9 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
   int rank1;
   size_t *dims1 = new size_t[expected_rank];
   snprintf(dataname, 100, "%s.r", name1);
-  double *rdata1 = f1.read(dataname, &rank1, dims1, expected_rank);
+  realnum *rdata1 = f1.read(dataname, &rank1, dims1, expected_rank);
   snprintf(dataname, 100, "%s.i", name1);
-  double *idata1 = f1.read(dataname, &rank1, dims1, expected_rank);
+  realnum *idata1 = f1.read(dataname, &rank1, dims1, expected_rank);
   if (!rdata1 || !idata1) return -1.0;
 
   // read dataset 2
@@ -160,9 +160,9 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
   int rank2;
   size_t *dims2 = new size_t[expected_rank];
   snprintf(dataname, 100, "%s.r", name2);
-  double *rdata2 = f2.read(dataname, &rank2, dims2, expected_rank);
+  realnum *rdata2 = f2.read(dataname, &rank2, dims2, expected_rank);
   snprintf(dataname, 100, "%s.i", name2);
-  double *idata2 = f2.read(dataname, &rank2, dims2, expected_rank);
+  realnum *idata2 = f2.read(dataname, &rank2, dims2, expected_rank);
   if (!rdata2 || !idata2) return -1.0;
 
   // check same size

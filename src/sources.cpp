@@ -373,8 +373,8 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   amp_file_dims[2] = dim3;
 
   size_t total_size = dim1 * dim2 * dim3;
-  amp_func_data_re = new double[total_size];
-  amp_func_data_im = new double[total_size];
+  amp_func_data_re = new realnum[total_size];
+  amp_func_data_im = new realnum[total_size];
 
   for (size_t i = 0; i < total_size; ++i) {
     amp_func_data_re[i] = real(arr[i]);
@@ -398,13 +398,13 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   std::string dataset_im = std::string(dataset) + ".im";
 
   size_t re_dims[] = {1, 1, 1};
-  double *real_data = eps_file.read(dataset_re.c_str(), &rank, re_dims, 3);
+  realnum *real_data = eps_file.read(dataset_re.c_str(), &rank, re_dims, 3);
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", re_dims[0], re_dims[1],
                   re_dims[2], filename, dataset_re.c_str());
 
   size_t im_dims[] = {1, 1, 1};
-  double *imag_data = eps_file.read(dataset_im.c_str(), &rank, im_dims, 3);
+  realnum *imag_data = eps_file.read(dataset_im.c_str(), &rank, im_dims, 3);
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", im_dims[0], im_dims[1],
                   im_dims[2], filename, dataset_im.c_str());
