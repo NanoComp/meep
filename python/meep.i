@@ -310,7 +310,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
-    std::complex<realnum> *ff_arr = f->farfield(v);
+    std::complex<double> *ff_arr = f->farfield(v);
 
     for (Py_ssize_t i = 0; i < len; i++) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
@@ -329,10 +329,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     int rank = 0;
     size_t N = 1;
 
-    // TODO: Support single precision?
-    if (sizeof(realnum) == sizeof(float)) abort("Single precision not supported for get_farfields");
-
-    meep::realnum *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
+    double *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
 
     if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
@@ -348,7 +345,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     }
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_DOUBLE);
-    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->freq.size());
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(double) * 2 * N * 6 * n2f->freq.size());
 
     delete[] arr_dims;
     delete[] EH;
@@ -455,7 +452,7 @@ size_t _get_dft_data_size(meep::dft_chunk *dc) {
     return meep::dft_chunks_Ntotal(dc, &istart) / 2;
 }
 
-void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
+void _get_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart) / 2;
     istart /= 2;
@@ -473,7 +470,7 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
     }
 }
 
-void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
+void _load_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart) / 2;
     istart /= 2;
@@ -597,10 +594,10 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 #endif
 %}
 
-%numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
+%numpy_typemaps(std::complex<double>, NPY_CDOUBLE, int);
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, size_t);
 
-%apply (std::complex<meep::realnum> *INPLACE_ARRAY1, int DIM1) {(std::complex<meep::realnum> *cdata, int size)};
+%apply (std::complex<double> *INPLACE_ARRAY1, int DIM1) {(std::complex<double> *cdata, int size)};
 
 // add_volume_source
 %apply (std::complex<double> *INPLACE_ARRAY3, size_t DIM1, size_t DIM2, size_t DIM3) {
@@ -630,8 +627,8 @@ PyObject *_dft_ldos_J(meep::dft_ldos *f);
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq);
 size_t _get_dft_data_size(meep::dft_chunk *dc);
-void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size);
-void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size);
+void _get_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size);
+void _load_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -831,7 +828,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
     if (PyArray_NDIM(pao_grad) !=2) {meep::abort("Numpy grad array must have 2 dimensions.");}
-    meep::realnum * grad_c = (meep::realnum *)PyArray_DATA(pao_grad);
+    meep::realnum *grad_c = (meep::realnum *)PyArray_DATA(pao_grad);
     int ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
     // clean the adjoint fields array
@@ -839,14 +836,14 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
-    std::complex<meep::realnum> * fields_a_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_a);
+    std::complex<double> *fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
 
     // clean the forward fields array
     PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
     if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
-    std::complex<meep::realnum> * fields_f_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_f);
+    std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
 
     // scalegrad not currently used
     double scalegrad = 1.0;
@@ -862,12 +859,12 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
     if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
-    meep::realnum* frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
+    meep::realnum *frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
     int nf = PyArray_DIMS(pao_freqs)[0];
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %d frequencies; it should be allocated for %d.",PyArray_DIMS(pao_grad)[0],nf);
 
     // prepare a geometry_tree
-    //TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
+    // TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
     geometric_object_list *l;
     l = new geometric_object_list();
     if (!py_list_to_gobj_list(py_geom_list,l)) meep::abort("Unable to convert geometry tree.");

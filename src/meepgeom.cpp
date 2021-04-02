@@ -2285,19 +2285,19 @@ double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
 }
 
 void get_material_tensor(const medium_struct *mm, meep::realnum freq,
-                         std::complex<meep::realnum> *tensor) {
+                         std::complex<double> *tensor) {
   /*
   Note that the current implementation assumes that any dispersion
   is either a lorentzian or drude profile.
   */
   for (int i = 0; i < 9; i++) {
-    std::complex<meep::realnum> a = std::complex<meep::realnum>(1, 0);
-    std::complex<meep::realnum> b = std::complex<meep::realnum>(0, 0);
+    std::complex<double> a = std::complex<double>(1, 0);
+    std::complex<double> b = std::complex<double>(0, 0);
     // compute first part containing conductivity
     vector3 dummy;
     dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
-    a += std::complex<meep::realnum>(0.0, conductivityCur / freq);
+    a += std::complex<double>(0.0, conductivityCur / freq);
 
     // compute lorentzian component
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
@@ -2316,13 +2316,13 @@ void get_material_tensor(const medium_struct *mm, meep::realnum freq,
 }
 
 meep::realnum get_material_gradient(
-    meep::realnum u,                // material parameter at current point
-    std::complex<meep::realnum> fields_a,  // adjoint field at current point
-    std::complex<meep::realnum> fields_f,  // forward field at current point
-    meep::realnum freq,             // frequency
+    double u,                       // material parameter at current point
+    std::complex<double> fields_a,  // adjoint field at current point
+    std::complex<double> fields_f,  // forward field at current point
+    double freq,                    // frequency
     material_data *md,              // material
     meep::component field_dir,      // current field component
-    meep::realnum du                // step size
+    double du                       // step size
 ) {
   /* Note that the current implementation assumes that
   no materials have off-diag components and that if a material
@@ -2347,15 +2347,15 @@ meep::realnum get_material_gradient(
   /* For now we do a finite difference approach to estimate the
   gradient of the system matrix `A` since it's fairly accurate,
   cheap, and easy to generalize. */
-  std::complex<meep::realnum> dA_du_0[9] = {std::complex<meep::realnum>(0, 0)};
+  std::complex<double> dA_du_0[9] = {std::complex<double>(0, 0)};
   epsilon_material_grid(md, u - du);
   get_material_tensor(mm, freq, dA_du_0);
 
-  std::complex<meep::realnum> dA_du_1[9] = {std::complex<meep::realnum>(0, 0)};
+  std::complex<double> dA_du_1[9] = {std::complex<double>(0, 0)};
   epsilon_material_grid(md, u + du);
   get_material_tensor(mm, freq, dA_du_1);
 
-  std::complex<meep::realnum> dA_du[9] = {std::complex<meep::realnum>(0, 0)};
+  std::complex<double> dA_du[9] = {std::complex<double>(0, 0)};
   for (int i = 0; i < 9; i++)
     dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2 * du);
 
@@ -2369,7 +2369,7 @@ meep::realnum get_material_gradient(
   else
     meep::abort("Invalid adjoint field component");
 
-  std::complex<meep::realnum> result = fields_a * dA_du[3 * dir_idx + dir_idx] * fields_f;
+  std::complex<double> result = fields_a * dA_du[3 * dir_idx + dir_idx] * fields_f;
   return 2 * result.real();
 }
 
@@ -2440,8 +2440,8 @@ in row-major order (the order used by HDF5): */
 #undef U
 }
 
-void material_grids_addgradient_point(meep::realnum *v, std::complex<meep::realnum> fields_a,
-                                      std::complex<meep::realnum> fields_f, meep::component field_dir,
+void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fields_a,
+                                      std::complex<double> fields_f, meep::component field_dir,
                                       vector3 p, meep::realnum scalegrad, meep::realnum freq,
                                       geom_box_tree geometry_tree) {
   geom_box_tree tp;
@@ -2515,8 +2515,8 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<meep::realn
   }
 }
 
-void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<meep::realnum> *fields_a,
-                                std::complex<meep::realnum> *fields_f, meep::realnum *frequencies,
+void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double> *fields_a,
+                                std::complex<double> *fields_f, meep::realnum *frequencies,
                                 size_t nf, meep::realnum scalegrad, const meep::volume &where,
                                 geom_box_tree geometry_tree, meep::fields *f) {
   int n2, n3, n4;

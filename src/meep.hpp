@@ -387,7 +387,7 @@ public:
   bool ok();
 
   realnum *read(const char *dataname, int *rank, size_t *dims, int maxrank);
-  void write(const char *dataname, int rank, const size_t *dims, realnum *data,
+  void write(const char *dataname, int rank, const size_t *dims, void *data,
              bool single_precision = true);
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
@@ -397,12 +397,14 @@ public:
   void extend_data(const char *dataname, int rank, const size_t *dims);
   void create_or_extend_data(const char *dataname, int rank, const size_t *dims, bool append_data,
                              bool single_precision);
-  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, realnum *data);
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
+                   bool single_precision = true);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
   void done_writing_chunks();
 
   void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
-  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, realnum *data);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
+                  bool single_precision = true);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
 
   void remove();
@@ -1029,7 +1031,7 @@ public:
   component c; // component to DFT (possibly transformed by symmetry)
 
   size_t N;                   // number of spatial points (on epsilon grid)
-  std::complex<realnum> *dft; // N x Nomega array of DFT values.
+  std::complex<double> *dft; // N x Nomega array of DFT values.
 
   class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   class dft_chunk *next_in_dft;   // next for this particular DFT vol./component
@@ -1080,7 +1082,7 @@ public:
   int sn;
 
   // cache of exp(iwt) * scale, of length Nomega
-  std::complex<realnum> *dft_phase;
+  std::complex<double> *dft_phase;
 
   ptrdiff_t avg1, avg2; // index offsets for average to get epsilon grid
 
@@ -1224,17 +1226,17 @@ public:
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
-  std::complex<realnum> *farfield(const vec &x);
+  std::complex<double> *farfield(const vec &x);
 
   /* like farfield, but requires F to be Nfreq*6 preallocated array, and
      does *not* perform the reduction over processes...an MPI allreduce
      summation by the caller is required to get the final result ... used
      by other output routine to efficiently get far field on a grid of pts */
-  void farfield_lowlevel(std::complex<realnum> *F, const vec &x);
+  void farfield_lowlevel(std::complex<double> *F, const vec &x);
 
   /* Return a newly allocated array with all far fields */
-  realnum *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                               double resolution);
+  double *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
+                              double resolution);
 
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix, const volume &where,
@@ -2139,9 +2141,9 @@ double BesselJ(int m, double kr);
 // analytical Green's functions (in near2far.cpp); upon return,
 // EH[0..5] are set to the Ex,Ey,Ez,Hx,Hy,Hz field components at x
 // from a c0 source of amplitude f0 at x0.
-void green2d(std::complex<realnum> *EH, const vec &x, double freq, double eps, double mu,
+void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
              const vec &x0, component c0, std::complex<double> f0);
-void green3d(std::complex<realnum> *EH, const vec &x, double freq, double eps, double mu,
+void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
              const vec &x0, component c0, std::complex<double> f0);
 
 // non-class methods for working with mpb eigenmode data

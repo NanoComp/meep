@@ -95,11 +95,11 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 
   const int Nomega = data->omega.size();
   omega = data->omega;
-  dft_phase = new complex<realnum>[Nomega];
+  dft_phase = new complex<double>[Nomega];
 
   N = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d) { N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
-  dft = new complex<realnum>[N * Nomega];
+  dft = new complex<double>[N * Nomega];
   for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
   for (int i = 0; i < 5; ++i)
@@ -246,12 +246,12 @@ void dft_chunk::update_dft(double time) {
         f[cmp] = w * fc->f[c][cmp][idx];
 
     if (numcmp == 2) {
-      complex<realnum> fc(f[0], f[1]);
+      complex<double> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
     }
     else {
-      realnum fr = f[0];
+      double fr = f[0];
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
     }
@@ -300,7 +300,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, sizeof(realnum) == sizeof(float));
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -328,7 +328,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->read_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->read_chunk(1, &istart, &Nchunk, (void *)cur->dft, sizeof(realnum) == sizeof(float));
     istart += Nchunk;
   }
 }
@@ -817,7 +817,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
                    ? parent->get_eps(loc)
                    : c_conjugate == Permeability
                          ? parent->get_mu(loc)
-                         : dft[omega.size() * (chunk_idx++) + num_freq] / complex<realnum>(stored_weight));
+                         : dft[omega.size() * (chunk_idx++) + num_freq] / stored_weight);
     if (include_dV_and_interp_weights) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
     complex<double> mode1val = 0.0, mode2val = 0.0;

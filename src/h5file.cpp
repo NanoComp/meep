@@ -672,9 +672,9 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
-                         realnum *data) {
+                         void *data, bool single_precision) {
   _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims, REALNUM_H5T,
-               (void *)data);
+               data);
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
@@ -694,14 +694,14 @@ void h5file::done_writing_chunks() {
   if (parallel && cur_dataname && get_extending(cur_dataname)) prevent_deadlock(); // closes id
 }
 
-void h5file::write(const char *dataname, int rank, const size_t *dims, realnum *data,
+void h5file::write(const char *dataname, int rank, const size_t *dims, void *data,
                    bool single_precision) {
   if (parallel || am_master()) {
     size_t *start = new size_t[rank + 1];
     for (int i = 0; i < rank; i++)
       start[i] = 0;
     create_data(dataname, rank, dims, false, single_precision);
-    if (am_master()) write_chunk(rank, start, dims, data);
+    if (am_master()) write_chunk(rank, start, dims, data, single_precision);
     done_writing_chunks();
     unset_cur();
     delete[] start;
@@ -803,8 +803,8 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
-                        realnum *data) {
-  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, REALNUM_H5T, (void *)data);
+                        void *data, bool single_precision) {
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, REALNUM_H5T, data);
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,

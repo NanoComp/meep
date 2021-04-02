@@ -49,7 +49,7 @@ int check_cyl(double sr, double sz, double a) {
   component c = Ep;
   const int N = 20;
   double dr = sr / N;
-  complex<realnum> F[N], F0[N], EH[6];
+  complex<double> F[N], F0[N], EH[6];
   double diff = 0.0, dot0 = 0.0;
   complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
   for (int i = 0; i < N; ++i) {
@@ -57,7 +57,7 @@ int check_cyl(double sr, double sz, double a) {
     vec x = veccyl(rr, 0.5 * sz);
     F[i] = f.get_field(c, x) * phase;
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
-    F0[i] = EH[EHcomp[c]] * realnum(2.0 * pi * x0.r()); // Ey = Ep for \phi = 0 (rz = xz) plane
+    F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
     double d = abs(F0[i] - F[i]);
     double f0 = abs(F0[i]);
     diff += d * d;
@@ -84,16 +84,16 @@ int check_cyl(double sr, double sz, double a) {
   f.update_dfts();
   n2f.scale_dfts(sqrt(2 * pi) / f.dt); // cancel time-integration factor
 
-  complex<realnum> EH_[6];
+  complex<double> EH_[6];
   diff = 0.0, dot0 = 0.0;
   for (int i = 0; i < N; ++i) {
     double rr = dr * i;
     vec x = veccyl(rr, 10.0 / w);
     n2f.farfield_lowlevel(EH_, x);
     sum_to_all(EH_, EH, 6);
-    F[i] = EH[EHcomp[c]] * complex<realnum>(phase);
+    F[i] = EH[EHcomp[c]] * phase;
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
-    F0[i] = EH[EHcomp[c]] * complex<realnum>(2.0 * pi * x0.r());
+    F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r();
     double d = abs(F0[i] - F[i]);
     double f0 = abs(F0[i]);
     diff += d * d;
@@ -143,7 +143,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
     if (gv.has_field(c)) {
       const int N = 20;
       double dx = 0.75 * (xmax / 4) / N;
-      complex<realnum> F[N], F0[N], EH[6];
+      complex<double> F[N], F0[N], EH[6];
       double diff = 0.0, dot0 = 0.0, dot = 0.0;
       complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
       vec x0 = zero_vec(dim);
@@ -208,7 +208,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
     if (gv.has_field(c)) {
       const int N = 20;
       double dx = 0.75 * (xmax / 4) / N;
-      complex<realnum> F[N], F0[N], EH_[6], EH[6];
+      complex<double> F[N], F0[N], EH_[6], EH[6];
       double diff = 0.0, dot = 0.0;
       complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
       vec x0 = zero_vec(dim);
@@ -217,7 +217,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
         vec x = dim == D2 ? vec(s, 0.5 * s) : vec(s, 0.5 * s, 0.3 * s);
         n2f.farfield_lowlevel(EH_, x);
         sum_to_all(EH_, EH, 6);
-        F[i] = EH[EHcomp[c]] * complex<realnum>(phase);
+        F[i] = EH[EHcomp[c]] * phase;
         (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c0, 1.0);
         F0[i] = EH[EHcomp[c]];
         if (c1 != NO_COMPONENT) {
