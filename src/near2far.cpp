@@ -378,7 +378,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
             else
               green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j)
-              EH[i * 6 + j] += EH6[j] * complex<double>(cphase);
+              EH[i * 6 + j] += EH6[j] * cphase;
           }
         }
         idx_dft++;
@@ -526,7 +526,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
     for (size_t i = 0; i < Nfreq; ++i) {
       for (int k = 0; k < 6; ++k)
         ff_EH[k] = std::complex<double>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i),
-                                         *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
+                                        *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
       switch (df) {
         case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
         case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;

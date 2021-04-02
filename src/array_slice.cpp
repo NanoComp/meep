@@ -568,7 +568,7 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
 }
 
 complex<double> *collapse_array(complex<double> *array, int *rank, size_t dims[3], direction dirs[3],
-                        volume where) {
+                                volume where) {
   return (complex<double> *)collapse_array((double *)array, rank, dims, dirs, where, 2);
 }
 
@@ -679,8 +679,8 @@ double *fields::get_array_slice(const volume &where, std::vector<component> comp
 }
 
 complex<double> *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                         field_function fun, void *fun_data, complex<double> *slice,
-                                         double frequency, bool snap) {
+                                                 field_function fun, void *fun_data, complex<double> *slice,
+                                                 double frequency, bool snap) {
   return (complex<double> *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
                                        frequency, snap);
 }
@@ -704,7 +704,7 @@ double *fields::get_array_slice(const volume &where, derived_component c, double
 }
 
 complex<double> *fields::get_complex_array_slice(const volume &where, component c, complex<double> *slice,
-                                         double frequency, bool snap) {
+                                                 double frequency, bool snap) {
   std::vector<component> components(1);
   components[0] = c;
   return (complex<double> *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
@@ -712,7 +712,7 @@ complex<double> *fields::get_complex_array_slice(const volume &where, component 
 }
 
 complex<double> *fields::get_source_slice(const volume &where, component source_slice_component,
-                                  complex<double> *slice) {
+                                          complex<double> *slice) {
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];

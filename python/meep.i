@@ -322,8 +322,8 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 }
 
 // Wrapper around meep::dft_near2far::get_farfields_array
- PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
-                                double resolution) {
+PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
+                               double resolution) {
     // Return value: New reference
     size_t dims[4] = {1, 1, 1, 1};
     int rank = 0;

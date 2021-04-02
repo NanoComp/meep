@@ -905,10 +905,10 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
 /* are processed.                                              */
 /***************************************************************/
 complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
-                                      component c, const char *HDF5FileName, complex<double> **pfield_array,
-                                      int *array_rank, size_t *array_dims, direction *array_dirs,
-                                      void *mode1_data, void *mode2_data, component c_conjugate,
-                                      bool *first_component, bool retain_interp_weights) {
+                                              component c, const char *HDF5FileName, complex<double> **pfield_array,
+                                              int *array_rank, size_t *array_dims, direction *array_dirs,
+                                              void *mode1_data, void *mode2_data, component c_conjugate,
+                                              bool *first_component, bool retain_interp_weights) {
 
   /***************************************************************/
   /***************************************************************/
@@ -1052,7 +1052,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
 complex<double> *collapse_array(complex<double> *array, int *rank, size_t dims[3], direction dirs[3], volume where);
 
 complex<double> *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+                                       size_t dims[3]) {
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
@@ -1063,7 +1063,7 @@ complex<double> *fields::get_dft_array(dft_flux flux, component c, int num_freq,
 }
 
 complex<double> *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+                                       size_t dims[3]) {
   dft_chunk *chunklists[3];
   chunklists[0] = force.offdiag1;
   chunklists[1] = force.offdiag2;
@@ -1075,7 +1075,7 @@ complex<double> *fields::get_dft_array(dft_force force, component c, int num_fre
 }
 
 complex<double> *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+                                       size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
   complex<double> *array;
@@ -1085,7 +1085,7 @@ complex<double> *fields::get_dft_array(dft_near2far n2f, component c, int num_fr
 }
 
 complex<double> *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+                                       size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
   complex<double> *array;
@@ -1235,13 +1235,13 @@ void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int 
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
   complex<double> ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cH[0]);
+                                               mode2_data, cH[0]);
   complex<double> EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cH[1]);
+                                               mode2_data, cH[1]);
   complex<double> HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cE[0]);
+                                               mode2_data, cE[0]);
   complex<double> HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cE[1]);
+                                               mode2_data, cE[1]);
   overlaps[0] = ExHy - EyHx;
   overlaps[1] = HyEx - HxEy;
 }
