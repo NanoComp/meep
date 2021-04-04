@@ -152,8 +152,7 @@ void send(int from, int to, double *data, int size) {
 #endif
 }
 
-#if MEEP_SINGLE
-void broadcast(int from, realnum *data, int size) {
+void broadcast(int from, float *data, int size) {
 #ifdef HAVE_MPI
   if (size == 0) return;
   MPI_Bcast(data, size, MPI_FLOAT, from, mycomm);
@@ -163,7 +162,6 @@ void broadcast(int from, realnum *data, int size) {
   UNUSED(size);
 #endif
 }
-#endif
 
 void broadcast(int from, double *data, int size) {
 #ifdef HAVE_MPI

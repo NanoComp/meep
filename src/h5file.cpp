@@ -289,9 +289,10 @@ static herr_t find_dataset(hid_t group_id, const char *name, void *d) {
 #define SIZE_T_H5T 0
 #endif
 
-realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank) {
+void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
+                   bool single_precision) {
 #ifdef HAVE_HDF5
-  realnum *data = 0;
+  void *data = 0;
   if (parallel || am_master()) {
     int i, N;
     hid_t file_id = HID(get_id()), space_id, data_id;
@@ -336,8 +337,12 @@ realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank
     delete[] dims_copy;
     H5Sclose(space_id);
 
-    data = new realnum[N];
-    H5Dread(data_id, REALNUM_H5T, H5S_ALL, H5S_ALL, H5P_DEFAULT, (void *)data);
+    if (single_precision)
+      data = new float[N];
+    else
+      data = new double[N];
+    H5Dread(data_id, single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE,
+            H5S_ALL, H5S_ALL, H5P_DEFAULT, (void *)data);
 
     if (close_data_id) H5Dclose(data_id);
   }
@@ -348,8 +353,16 @@ realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank
     size_t N = 1;
     for (int i = 0; i < *rank; ++i)
       N *= dims[i];
-    if (!am_master()) data = new realnum[N];
-    broadcast(0, data, N);
+    if (!am_master()) {
+      if (single_precision)
+        data = new float[N];
+      else
+        data = new double[N];
+    }
+    if (single_precision)
+      broadcast(0, (float *)data, N);
+    else
+      broadcast(0, (double *)data, N);
   }
 
   if (*rank == 1 && dims[0] == 1) *rank = 0;

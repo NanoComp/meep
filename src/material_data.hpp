@@ -182,16 +182,16 @@ struct material_data {
   bool do_averaging;
 
   // these fields used only if which_subclass==MATERIAL_FILE
-  meep::realnum *epsilon_data;
+  double *epsilon_data;
   size_t epsilon_dims[3];
 
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
-  meep::realnum *weights;
+  double *weights;
   medium_struct medium_1;
   medium_struct medium_2;
-  meep::realnum beta;
-  meep::realnum eta;
+  double beta;
+  double eta;
   /*
   There are several possible scenarios when material grids overlap -- these
   different scenarios enable different applications.

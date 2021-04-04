@@ -199,10 +199,10 @@ int main(int argc, char *argv[]) {
     // read 1D and 2D array-slice data from HDF5 file
     //
     h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
-    realnum *rdata = file->read("hz.r", &rank, dims1D, 1);
+    realnum *rdata = (realnum *)file->read("hz.r", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
     if (rank != 1 || dims1D[0] != NX)
       abort("failed to read 1D data(hz.r) from file %s.h5", H5FILENAME);
-    realnum *idata = file->read("hz.i", &rank, dims1D, 1);
+    realnum *idata = (realnum *)file->read("hz.i", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
     if (rank != 1 || dims1D[0] != NX)
       abort("failed to read 1D data(hz.i) from file %s.h5", H5FILENAME);
     file_slice1d = new std::complex<realnum>[dims1D[0]];
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
     delete[] rdata;
     delete[] idata;
 
-    file_slice2d = file->read("sy", &rank, dims2D, 2);
+    file_slice2d = (realnum *)file->read("sy", &rank, dims2D, 2, sizeof(realnum) == sizeof(float));
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY)
       abort("failed to read 2D reference data from file %s.h5", H5FILENAME);
     delete file;

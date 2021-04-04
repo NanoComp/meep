@@ -300,7 +300,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, sizeof(realnum) == sizeof(float));
+    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, false);
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -859,7 +859,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
 
   } // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
 
-  if (file) file->write_chunk(rank, start, file_count, buffer);
+  if (file) file->write_chunk(rank, start, file_count, buffer, false);
 
   return integral;
 }

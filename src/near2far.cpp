@@ -687,7 +687,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
                 else
                   green(EH6, x, freq[i], eps, mu, xs, c0, w);
                 for (int j = 0; j < 6; ++j)
-                  EH0 += EH6[j] * complex<double>(cphase * (f->stored_weight) * dJ[6*Nfreq*ipt + 6*i + j]);
+                  EH0 += EH6[j] * cphase * (f->stored_weight) * dJ[6*Nfreq*ipt + 6*i + j];
               }
           }
         }

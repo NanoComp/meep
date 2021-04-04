@@ -307,18 +307,17 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
-meep::realnum material_grid_val(vector3 p, material_data *md) {
+double material_grid_val(vector3 p, material_data *md) {
   // given the relative location, p, interpolate the material grid point.
 
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
-  meep::realnum u;
-  u = meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
-                               md->grid_size.y, md->grid_size.z, 1);
-  return u;
+  return meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
+                                  md->grid_size.y, md->grid_size.z, 1);
+
 }
 
-meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
-  meep::realnum uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
+double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
+  double uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
   int matgrid_val_count = 0;
 
   // iterate through object tree at current point
@@ -350,15 +349,15 @@ meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md
     ++matgrid_val_count;
   }
 
-  meep::realnum u_interp = (md->material_grid_kinds == material_data::U_MIN
-                            ? umin
-                            : (md->material_grid_kinds == material_data::U_PROD
-                               ? uprod
-                               : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
-                                  : udefault)));
+  double u_interp = (md->material_grid_kinds == material_data::U_MIN
+                     ? umin
+                     : (md->material_grid_kinds == material_data::U_PROD
+                        ? uprod
+                        : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
+                           : udefault)));
 
   // project interpolated grid point
-  meep::realnum u_proj;
+  double u_proj;
   if (md->beta != 0) {
     double tanh_beta_eta = tanh(md->beta*md->eta);
     u_proj = (tanh_beta_eta + tanh(md->beta*(u_interp-md->eta))) /
@@ -394,7 +393,7 @@ static void interp_tensors(vector3 diag_in_1, vector3 offdiag_in_1, vector3 diag
   offdiag_out->z = offdiag_in_1.z + u * (offdiag_in_2.z - offdiag_in_1.z);
 }
 // return material of the point p from the material grid
-void epsilon_material_grid(material_data *md, meep::realnum u) {
+void epsilon_material_grid(material_data *md, double u) {
   // NOTE: assume p lies on normalized grid within (0,1)
 
   if (!(md->weights)) meep::abort("material params were not initialized!");
@@ -701,7 +700,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
   switch (md->which_subclass) {
     // material grid: interpolate onto user specified material grid to get properties at r
     case material_data::MATERIAL_GRID:
-      meep::realnum u;
+      double u;
       int oi;
       geom_box_tree tp;
 
@@ -1409,7 +1408,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
   }
 
   if (mat->which_subclass == material_data::MATERIAL_GRID) {
-    meep::realnum u;
+    double u;
     int oi;
     geom_box_tree tp;
 
@@ -1796,7 +1795,7 @@ material_type make_file_material(const char *eps_input_file) {
     if (dataname) *(dataname++) = 0;
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
-    md->epsilon_data = eps_file.read(dataname, &rank, md->epsilon_dims, 3);
+    md->epsilon_data = (double *)eps_file.read(dataname, &rank, md->epsilon_dims, 3, false);
     if (meep::verbosity > 0)
       master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", md->epsilon_dims[0],
                     md->epsilon_dims[1], md->epsilon_dims[2], eps_input_file);
@@ -1820,7 +1819,7 @@ material_type make_material_grid(bool do_averaging, double beta, double eta) {
 
 void update_weights(material_type matgrid, double *weights) {
   int N = matgrid->grid_size.x * matgrid->grid_size.y * matgrid->grid_size.z;
-  memcpy(matgrid->weights, weights, N * sizeof(meep::realnum));
+  memcpy(matgrid->weights, weights, N * sizeof(double));
 }
 
 /******************************************************************************/
@@ -2284,7 +2283,7 @@ double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
   return val;
 }
 
-void get_material_tensor(const medium_struct *mm, meep::realnum freq,
+void get_material_tensor(const medium_struct *mm, double freq,
                          std::complex<double> *tensor) {
   /*
   Note that the current implementation assumes that any dispersion
@@ -2315,7 +2314,7 @@ void get_material_tensor(const medium_struct *mm, meep::realnum freq,
   }
 }
 
-meep::realnum get_material_gradient(
+double get_material_gradient(
     double u,                       // material parameter at current point
     std::complex<double> fields_a,  // adjoint field at current point
     std::complex<double> fields_f,  // forward field at current point
@@ -2381,11 +2380,11 @@ static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? 
    linear_interpolate is changed!! ...also multiply by scaleby
    etc. for different gradient types */
 
-void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz,
-                             meep::realnum *data, int nx, int ny, int nz, int stride,
-                             double scaleby, const meep::realnum *udata, int ukind, double uval) {
+void add_interpolate_weights(double rx, double ry, double rz,
+                             double *data, int nx, int ny, int nz, int stride,
+                             double scaleby, const double *udata, int ukind, double uval) {
   int x, y, z, x2, y2, z2;
-  meep::realnum dx, dy, dz, u;
+  double dx, dy, dz, u;
 
   /* mirror boundary conditions for r just beyond the boundary */
   rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
@@ -2440,14 +2439,14 @@ in row-major order (the order used by HDF5): */
 #undef U
 }
 
-void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fields_a,
+void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
                                       std::complex<double> fields_f, meep::component field_dir,
-                                      vector3 p, meep::realnum scalegrad, meep::realnum freq,
+                                      vector3 p, double scalegrad, double freq,
                                       geom_box_tree geometry_tree) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
-  meep::realnum uval;
+  double uval;
   int kind;
   tp = geom_tree_search(p, geometry_tree, &oi);
 
@@ -2487,7 +2486,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
     fashion. Since we aren't checking if each design grid is unique, however,
     it's up to the user to only have one unique design grid in this volume.*/
     vector3 sz = mg->grid_size;
-    meep::realnum *vcur = v, *ucur;
+    double *vcur = v, *ucur;
     ucur = mg->weights;
     uval = matgrid_val(p, tp, oi, mg);
     do {
@@ -2504,7 +2503,7 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
   if (!tp && is_material_grid(&default_material)) {
     vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
     vector3 sz = mg->grid_size;
-    meep::realnum *vcur = v, *ucur;
+    double *vcur = v, *ucur;
     ucur = mg->weights;
     uval = matgrid_val(p, tp, oi, mg);
     add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
@@ -2515,12 +2514,12 @@ void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fie
   }
 }
 
-void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double> *fields_a,
-                                std::complex<double> *fields_f, meep::realnum *frequencies,
-                                size_t nf, meep::realnum scalegrad, const meep::volume &where,
+void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
+                                std::complex<double> *fields_f, double *frequencies,
+                                size_t nf, double scalegrad, const meep::volume &where,
                                 geom_box_tree geometry_tree, meep::fields *f) {
   int n2, n3, n4;
-  meep::realnum s[3][3], cen[3][3], c1, c2, c3, s1, s2, s3;
+  double s[3][3], cen[3][3], c1, c2, c3, s1, s2, s3;
   vector3 p;
 
   // calculate cell dimensions
@@ -2534,9 +2533,9 @@ void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double
                                   0, field_dir[c]);
 
     vector3 max_corner = vec_to_vector3(min_max_loc[1]);
-    meep::realnum max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
+    double max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
     vector3 min_corner = vec_to_vector3(min_max_loc[0]);
-    meep::realnum min_c_array[3] = {min_corner.x, min_corner.y, min_corner.z};
+    double min_c_array[3] = {min_corner.x, min_corner.y, min_corner.z};
     for (int ci = 0; ci < 3; ci++) {
       s[c][ci] = (max_c_array[ci] - min_c_array[ci]) == 0 ? 0 : (max_c_array[ci] - min_c_array[ci]) / (dims[3 * c + ci] - 1);
       cen[c][ci] = dims[3 * c + ci] <= 1 ? 0 : min_c_array[ci];

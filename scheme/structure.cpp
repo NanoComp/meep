@@ -160,7 +160,7 @@ static geom_box gv2box(const meep::volume &v) {
 
 /***********************************************************************/
 
-static meep::realnum *epsilon_data = NULL;
+static double *epsilon_data = NULL;
 static size_t epsilon_dims[3] = {0, 0, 0};
 
 static void read_epsilon_file(const char *eps_input_file) {
@@ -175,7 +175,7 @@ static void read_epsilon_file(const char *eps_input_file) {
     if (dataname) *(dataname++) = 0;
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
-    epsilon_data = eps_file.read(dataname, &rank, epsilon_dims, 3);
+    epsilon_data = (double *)eps_file.read(dataname, &rank, epsilon_dims, 3, false);
     master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", epsilon_dims[0],
                   epsilon_dims[1], epsilon_dims[2], eps_input_file);
     delete[] fname;

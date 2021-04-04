@@ -35,7 +35,7 @@ namespace meep {
    However, we will default to using double-precision for large
    arrays, as the factor of two in memory and the moderate increase
    in speed currently don't seem worth the loss of precision. */
-#define MEEP_SINGLE 0 // 1 for single precision, 0 for double
+#define MEEP_SINGLE 1 // 1 for single precision, 0 for double
 #if MEEP_SINGLE
 typedef float realnum;
 #else
@@ -386,7 +386,8 @@ public:
 
   bool ok();
 
-  realnum *read(const char *dataname, int *rank, size_t *dims, int maxrank);
+  void *read(const char *dataname, int *rank, size_t *dims, int maxrank,
+             bool single_precision = true);
   void write(const char *dataname, int rank, const size_t *dims, void *data,
              bool single_precision = true);
   char *read(const char *dataname);
@@ -2123,10 +2124,9 @@ make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
 
 std::complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
 
-#if MEEP_SINGLE
 // in mympi.cpp ... must be here in order to use realnum type
-void broadcast(int from, realnum *data, int size);
-#endif
+void broadcast(int from, float *data, int size);
+void broadcast(int from, double *data, int size);
 
 // random number generation: random.cpp
 void set_random_seed(unsigned long seed);
@@ -2153,8 +2153,8 @@ std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);
 
-realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, int nx, int ny,
-                           int nz, int stride);
+double linear_interpolate(double rx, double ry, double rz, double *data,
+                          int nx, int ny, int nz, int stride);
 
 // binary tree class for importing layout of chunk partition
 class binary_partition {
