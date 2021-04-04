@@ -300,7 +300,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, false);
+    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, false, /* single_precision */);
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -328,7 +328,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->read_chunk(1, &istart, &Nchunk, (void *)cur->dft, sizeof(realnum) == sizeof(float));
+    file->read_chunk(1, &istart, &Nchunk, (void *)cur->dft, false /* single_precision */);
     istart += Nchunk;
   }
 }
@@ -739,7 +739,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
 complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
-                                                 int num_freq, h5file *file, realnum *buffer, int reim,
+                                                 int num_freq, h5file *file, double *buffer, int reim,
                                                  complex<double> *field_array, void *mode1_data, void *mode2_data,
                                                  int ic_conjugate, bool retain_interp_weights,
                                                  fields *parent) {
@@ -859,7 +859,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
 
   } // LOOP_OVER_IVECS(fc->gv, is, ie, idx)
 
-  if (file) file->write_chunk(rank, start, file_count, buffer, false);
+  if (file) file->write_chunk(rank, start, file_count, buffer, false /* single_precision */);
 
   return integral;
 }
@@ -978,11 +978,11 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   /* buffer for process-local contributions to HDF5 output files,*/
   /* like h5_output_data::buf in h5fields.cpp                    */
   /***************************************************************/
-  realnum *buffer = 0;
+  double *buffer = 0;
   complex<double> *field_array = 0;
   int reim_max = 0;
   if (HDF5FileName) {
-    buffer = new realnum[bufsz];
+    buffer = new double[bufsz];
     reim_max = 1;
   }
   else if (pfield_array)
@@ -1145,7 +1145,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
           array = collapse_array(array, &rank, dims, dirs, dft_volume);
           if (rank == 0) abort("%s:%i: internal error", __FILE__, __LINE__);
           size_t array_size = dims[0] * (rank >= 2 ? dims[1] * (rank == 3 ? dims[2] : 1) : 1);
-          realnum *real_array = new realnum[array_size];
+          double *real_array = new double[array_size];
           if (!real_array) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, array_size);
           for (int reim = 0; reim < 2; reim++) {
             for (size_t n = 0; n < array_size; n++)

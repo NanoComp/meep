@@ -387,25 +387,25 @@ public:
   bool ok();
 
   void *read(const char *dataname, int *rank, size_t *dims, int maxrank,
-             bool single_precision = true);
+             bool single_precision = false);
   void write(const char *dataname, int rank, const size_t *dims, void *data,
-             bool single_precision = true);
+             bool single_precision = false);
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
 
   void create_data(const char *dataname, int rank, const size_t *dims, bool append_data = false,
-                   bool single_precision = true);
+                   bool single_precision = false);
   void extend_data(const char *dataname, int rank, const size_t *dims);
   void create_or_extend_data(const char *dataname, int rank, const size_t *dims, bool append_data,
-                             bool single_precision);
+                             bool single_precision = false);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
-                   bool single_precision = true);
+                   bool single_precision = false);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
   void done_writing_chunks();
 
   void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
-                  bool single_precision = true);
+                  bool single_precision = false);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
 
   void remove();
@@ -1019,7 +1019,7 @@ public:
   // fields::process_dft_component
   std::complex<double> process_dft_component(int rank, direction *ds, ivec min_corner,
                                              ivec max_corner, int num_freq, h5file *file,
-                                             realnum *buffer, int reim,
+                                             double *buffer, int reim,
                                              std::complex<double> *field_array, void *mode1_data,
                                              void *mode2_data, int ic_conjugate,
                                              bool retain_interp_weights, fields *parent);
@@ -2124,7 +2124,6 @@ make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
 
 std::complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
 
-// in mympi.cpp ... must be here in order to use realnum type
 void broadcast(int from, float *data, int size);
 void broadcast(int from, double *data, int size);
 

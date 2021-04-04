@@ -500,7 +500,7 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims, boo
 
     delete[] dims_copy;
 
-    hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : REALNUM_H5T;
+    hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE;
 
     data_id = H5Dcreate(file_id, dataname, type_id, space_id, prop_id);
     if (data_id < 0) abort("Error creating dataset");
@@ -614,8 +614,8 @@ void h5file::create_or_extend_data(const char *dataname, int rank, const size_t 
    that have no data can be skipped).
 */
 static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
-                         const size_t *chunk_start, const size_t *chunk_dims, hid_t datatype,
-                         void *data) {
+                         const size_t *chunk_start, const size_t *chunk_dims,
+                         hid_t datatype, void *data) {
 #ifdef HAVE_HDF5
   int i;
   bool do_write = true;
@@ -686,8 +686,8 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                          void *data, bool single_precision) {
-  _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims, REALNUM_H5T,
-               data);
+  _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
+               single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
@@ -731,7 +731,6 @@ void h5file::write(const char *dataname, const char *data) {
     remove_data(dataname); // HDF5 gives error if we H5Dcreate existing dataset
 
     type_id = H5Tcopy(H5T_C_S1);
-    ;
     H5Tset_size(type_id, strlen(data) + 1);
     space_id = H5Screate(H5S_SCALAR);
 
@@ -817,7 +816,8 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                         void *data, bool single_precision) {
-  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, REALNUM_H5T, data);
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
+              single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,

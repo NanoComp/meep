@@ -36,11 +36,11 @@ typedef struct {
   h5file *file;
   ivec min_corner, max_corner;
   int num_chunks;
-  realnum *buf;
+  double *buf;
   size_t bufsz;
   int rank;
   direction ds[3];
-
+  bool single_precision;
   int reim; // whether to output the real or imaginary part
 
   // the function to output and related info (offsets for averaging, etc.)
@@ -218,7 +218,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
 
   //-----------------------------------------------------------------------//
 
-  data->file->write_chunk(data->rank, start, count, data->buf);
+  data->file->write_chunk(data->rank, start, count, data->buf, data->single_precision);
 }
 
 void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
@@ -261,8 +261,8 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
 
   file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
 
-  data.buf = new realnum[data.bufsz];
-
+  data.buf = new double[data.bufsz];
+  data.single_precision = single_precision;
   data.num_fields = num_fields;
   data.components = components;
   data.cS = new component[num_fields];
