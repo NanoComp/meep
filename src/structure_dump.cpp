@@ -57,10 +57,10 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 void structure::dump_chunk_layout(const char *filename) {
   // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
   size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
+  double *origins = new double[sz];
   size_t *nums = new size_t[sz];
   memset(nums, 0, sizeof(size_t) * sz);
-  memset(origins, 0, sizeof(realnum) * sz);
+  memset(origins, 0, sizeof(double) * sz);
   for (int i = 0; i < num_chunks; ++i) {
     int idx = i * 3;
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
@@ -72,7 +72,7 @@ void structure::dump_chunk_layout(const char *filename) {
   file.create_data("gv_origins", 1, &sz);
   if (am_master()) {
     size_t gv_origins_start = 0;
-    file.write_chunk(1, &gv_origins_start, &sz, origins);
+    file.write_chunk(1, &gv_origins_start, &sz, origins, false /* single_precision */);
   }
   file.create_data("gv_nums", 1, &sz);
   if (am_master()) {
@@ -122,7 +122,8 @@ void structure::dump(const char *filename) {
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
         for (int d = 0; d < 5; ++d)
           if (chunks[i]->chi1inv[c][d]) {
-            file.write_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d]);
+            file.write_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d],
+                             sizeof(realnum) == sizeof(float) /* single_precision */);
             my_start += ntot;
           }
     }
@@ -280,7 +281,8 @@ void structure::dump(const char *filename) {
             size_t start = 0;
             while (sus) {
               size_t count = chunks[i]->gv.ntot();
-              file.write_chunk(1, &start, &count, sus->sigma[c][d]);
+              file.write_chunk(1, &start, &count, sus->sigma[c][d],
+                               sizeof(realnum) == sizeof(float) /* single_precision */);
               sus = sus->next;
               start += count;
             }
@@ -310,15 +312,16 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
   while (start < dims[0]) {
     size_t num_params_dims[3] = {1, 0, 0};
     realnum num_params;
-    file->read_chunk(rank, &start, num_params_dims, &num_params);
+    file->read_chunk(rank, &start, num_params_dims, &num_params,
+                     sizeof(realnum) == sizeof(float) /* single_precision */);
     start += num_params_dims[0];
-
     if (num_params == 4) {
       // This is a lorentzian_susceptibility and the next 4 values in the dataset
       // are id, omega_0, gamma, and no_omega_0_denominator.
       size_t lorentzian_dims[3] = {4, 0, 0};
       realnum lorentzian_params[4];
-      file->read_chunk(rank, &start, lorentzian_dims, lorentzian_params);
+      file->read_chunk(rank, &start, lorentzian_dims, lorentzian_params,
+                       sizeof(realnum) == sizeof(float) /* single_precision */);
       start += lorentzian_dims[0];
 
       int id = (int)lorentzian_params[0];
@@ -343,7 +346,8 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       // are id, noise_amp, omega_0, gamma, and no_omega_0_denominator.
       size_t noisy_lorentzian_dims[3] = {5, 0, 0};
       realnum noisy_lorentzian_params[5];
-      file->read_chunk(rank, &start, noisy_lorentzian_dims, noisy_lorentzian_params);
+      file->read_chunk(rank, &start, noisy_lorentzian_dims, noisy_lorentzian_params,
+                       sizeof(realnum) == sizeof(float) /* single_precision */);
       start += noisy_lorentzian_dims[0];
 
       int id = (int)noisy_lorentzian_params[0];
@@ -371,7 +375,8 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       // are id, bias.x, bias.y, bias.z, omega_0, gamma, alpha, and model.
       size_t gyro_susc_dims[3] = {8, 0, 0};
       realnum gyro_susc_params[8];
-      file->read_chunk(rank, &start, gyro_susc_dims, gyro_susc_params);
+      file->read_chunk(rank, &start, gyro_susc_dims, gyro_susc_params,
+                       sizeof(realnum) == sizeof(float) /* single_precision */);
       start += gyro_susc_dims[0];
 
       int id = (int)gyro_susc_params[0];
@@ -467,8 +472,8 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   // Load chunk grid_volumes from a file
   h5file file(filename, h5file::READONLY, true);
   size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
-  memset(origins, 0, sizeof(realnum) * sz);
+  double *origins = new double[sz];
+  memset(origins, 0, sizeof(double) * sz);
   size_t *nums = new size_t[sz];
   memset(nums, 0, sizeof(size_t) * sz);
 
@@ -478,7 +483,8 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   if (origins_rank != 1 || origins_dims != sz) { abort("chunk mismatch in structure::load"); }
   if (am_master()) {
     size_t gv_origins_start = 0;
-    file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
+    file.read_chunk(1, &gv_origins_start, &origins_dims, origins,
+                    false /* single_precision */);
   }
   file.prevent_deadlock();
   broadcast(0, origins, sz);
@@ -583,7 +589,8 @@ void structure::load(const char *filename) {
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
         for (int d = 0; d < 5; ++d)
           if (chunks[i]->chi1inv[c][d]) {
-            file.read_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d]);
+            file.read_chunk(1, &my_start, &ntot, chunks[i]->chi1inv[c][d],
+                            sizeof(realnum) == sizeof(float) /* single_precision */);
             my_start += ntot;
           }
     }
@@ -707,7 +714,8 @@ void structure::load(const char *filename) {
                 if (sus->sigma[c][d]) { delete[] sus->sigma[c][d]; }
                 sus->sigma[c][d] = new realnum[count];
                 sus->trivial_sigma[c][d] = false;
-                file.read_chunk(rank, &start, &count, sus->sigma[c][d]);
+                file.read_chunk(rank, &start, &count, sus->sigma[c][d],
+                                sizeof(realnum) == sizeof(float) /* single_precision */);
                 sus = sus->next;
                 start += count;
               }

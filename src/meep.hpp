@@ -35,7 +35,7 @@ namespace meep {
    However, we will default to using double-precision for large
    arrays, as the factor of two in memory and the moderate increase
    in speed currently don't seem worth the loss of precision. */
-#define MEEP_SINGLE 1 // 1 for single precision, 0 for double
+#define MEEP_SINGLE 0 // 1 for single precision, 0 for double
 #if MEEP_SINGLE
 typedef float realnum;
 #else
@@ -2123,9 +2123,6 @@ make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
                    double Tfft = 0);
 
 std::complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
-
-void broadcast(int from, float *data, int size);
-void broadcast(int from, double *data, int size);
 
 // random number generation: random.cpp
 void set_random_seed(unsigned long seed);

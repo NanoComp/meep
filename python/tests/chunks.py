@@ -62,7 +62,7 @@ class TestChunks(unittest.TestCase):
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-5))
 
-        self.assertAlmostEqual(86.90826609300862, mp.get_fluxes(tot_flux)[0])
+        self.assertAlmostEqual(86.90826609300862, mp.get_fluxes(tot_flux)[0], places=6)
 
 
 if __name__ == '__main__':

@@ -300,7 +300,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, false, /* single_precision */);
+    file->write_chunk(1, &istart, &Nchunk, (void *)cur->dft, false /* single_precision */);
     istart += Nchunk;
   }
   file->done_writing_chunks();
