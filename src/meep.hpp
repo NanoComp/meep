@@ -1292,8 +1292,8 @@ public:
   std::vector<double> freq;
 
 private:
-  std::complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values
-  std::complex<realnum> *Jdft; // Nomega array of J(t) DFT values
+  std::complex<double> *Fdft;  // Nomega array of field * J*(x) DFT values
+  std::complex<double> *Jdft;  // Nomega array of J(t) DFT values
   double Jsum;                 // sum of |J| over all points
 };
 

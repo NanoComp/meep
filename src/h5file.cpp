@@ -282,10 +282,8 @@ static herr_t find_dataset(hid_t group_id, const char *name, void *d) {
 #endif
 
 #ifdef HAVE_HDF5
-#define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
 #define SIZE_T_H5T (sizeof(size_t) == 4 ? H5T_NATIVE_UINT32 : H5T_NATIVE_UINT64)
 #else
-#define REALNUM_H5T 0
 #define SIZE_T_H5T 0
 #endif
 

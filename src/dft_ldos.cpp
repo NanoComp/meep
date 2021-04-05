@@ -24,8 +24,8 @@ namespace meep {
 
 dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
   freq = meep::linspace(freq_min, freq_max, Nfreq);
-  Fdft = new complex<realnum>[Nfreq];
-  Jdft = new complex<realnum>[Nfreq];
+  Fdft = new complex<double>[Nfreq];
+  Jdft = new complex<double>[Nfreq];
   for (int i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
@@ -34,8 +34,8 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
 dft_ldos::dft_ldos(const std::vector<double> freq_) {
   const size_t Nfreq = freq_.size();
   freq = freq_;
-  Fdft = new complex<realnum>[Nfreq];
-  Jdft = new complex<realnum>[Nfreq];
+  Fdft = new complex<double>[Nfreq];
+  Jdft = new complex<double>[Nfreq];
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
@@ -44,8 +44,8 @@ dft_ldos::dft_ldos(const std::vector<double> freq_) {
 dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
   for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
-  Fdft = new complex<realnum>[Nfreq];
-  Jdft = new complex<realnum>[Nfreq];
+  Fdft = new complex<double>[Nfreq];
+  Jdft = new complex<double>[Nfreq];
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
