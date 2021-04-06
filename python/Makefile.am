@@ -100,7 +100,7 @@ TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 # the low-level interface between python codes and the libmeep C++ library
 ######################################################################
 BUILT_SOURCES = meep-python.cxx __init__.py meep.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp materials.py examples tests
+EXTRA_DIST = $(BUILT_SOURCES) meep.i meep-python.hpp typemap_utils.cpp materials.py examples tests
 CLEANFILES = .coverage
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)
 
@@ -158,7 +158,8 @@ HPPFILES=                                    \
  $(top_srcdir)/src/meep/mympi.hpp            \
  $(top_srcdir)/src/meepgeom.hpp              \
  $(top_srcdir)/src/material_data.hpp         \
- $(top_srcdir)/src/adjust_verbosity.hpp
+ $(top_srcdir)/src/adjust_verbosity.hpp      \
+ meep-python.hpp
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i

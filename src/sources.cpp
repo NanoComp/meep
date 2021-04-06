@@ -145,7 +145,7 @@ bool custom_src_time::is_equal(const src_time &t) const {
   const custom_src_time *tp = dynamic_cast<const custom_src_time *>(&t);
   if (tp)
     return (tp->start_time == start_time && tp->end_time == end_time && tp->func == func &&
-            tp->data == data);
+            tp->data == data && tp->freq == freq);
   else
     return 0;
 }
