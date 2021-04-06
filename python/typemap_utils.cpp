@@ -58,6 +58,13 @@ static char *py2_string_as_utf8(PyObject *po) {
 }
 #endif
 
+static PyObject *get_meep_mod() {
+  // Return value: Borrowed reference
+  static PyObject *meep_mod = NULL;
+  if (meep_mod == NULL) { meep_mod = PyImport_ImportModule("meep"); }
+  return meep_mod;
+}
+
 static PyObject *get_geom_mod() {
   // Return value: Borrowed reference
   static PyObject *geom_mod = NULL;
@@ -99,8 +106,8 @@ static PyObject *py_volume_object() {
   // Return value: Borrowed reference
   static PyObject *volume_object = NULL;
   if (volume_object == NULL) {
-    PyObject *geom_mod = get_geom_mod();
-    volume_object = PyObject_GetAttrString(PyImport_ImportModule("meep"), "Volume");
+    PyObject *meep_mod = get_meep_mod();
+    volume_object = PyObject_GetAttrString(meep_mod, "Volume");
   }
   return volume_object;
 }
@@ -456,7 +463,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     case 1: md->material_grid_kinds = material_data::U_PROD; break;
     case 2: md->material_grid_kinds = material_data::U_MEAN; break;
     case 3: md->material_grid_kinds = material_data::U_DEFAULT; break;
-    default: meep::abort("Invalid material grid enumeration code: %d.\n", gt_enum);
+    default: meep::abort("Invalid material grid enumeration code: %d.\n", (int) gt_enum);
   }
 
   // initialize grid size
@@ -1058,13 +1065,6 @@ static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
     Py_XDECREF(left);
     Py_XDECREF(right);
     return bp;
-}
-
-static PyObject *get_meep_mod() {
-  // Return value: Borrowed reference
-  static PyObject *meep_mod = NULL;
-  if (meep_mod == NULL) { meep_mod = PyImport_ImportModule("meep"); }
-  return meep_mod;
 }
 
 static PyObject *py_binary_partition_object() {

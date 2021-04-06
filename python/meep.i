@@ -33,6 +33,7 @@
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
+#include "meep-python.hpp"
 
 namespace meep {
     size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
@@ -158,18 +159,6 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);
-    return ret;
-}
-
-static std::complex<double> py_src_func_wrap(double t, void *f) {
-    PyObject *py_t = PyFloat_FromDouble(t);
-    PyObject *pyres = PyObject_CallFunctionObjArgs((PyObject *)f, py_t, NULL);
-    double real = PyComplex_RealAsDouble(pyres);
-    double imag = PyComplex_ImagAsDouble(pyres);
-    std::complex<double> ret(real, imag);
-    Py_DECREF(py_t);
-    Py_DECREF(pyres);
-
     return ret;
 }
 
@@ -1418,17 +1407,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
 
-// Typemap suite for custom_src_time
-
-%typecheck(SWIG_TYPECHECK_POINTER) (std::complex<double> (*func)(double t, void *), void *data) {
-    $1 = PyFunction_Check($input);
-}
-
-%typemap(in) (std::complex<double> (*func)(double t, void *), void *data) {
-  $1 = py_src_func_wrap;
-  $2 = (void *)$input;
-}
-
 // Typemap suite for kpoint_func
 
 %typecheck(SWIG_TYPECHECK_POINTER) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
@@ -1565,6 +1543,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+%include "meep-python.hpp"
 
 %include "typemaps.i"
 %template(near_src_data) std::vector<meep::sourcedata>;

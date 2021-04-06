@@ -302,7 +302,7 @@ class CustomSource(SourceTime):
         self.start_time = start_time
         self.end_time = end_time
         self.center_frequency = center_frequency
-        self.swigobj = mp.custom_src_time(src_func, start_time, end_time, center_frequency)
+        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time, center_frequency)
         self.swigobj.is_integrated = self.is_integrated
 
 
