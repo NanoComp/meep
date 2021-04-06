@@ -31,7 +31,7 @@ namespace meep {
 
 // this function is necessary to make equality commutative ... ugh
 bool src_times_equal(const src_time &t1, const src_time &t2) {
-  return t1.is_equal(t2) && t2.is_equal(t1);
+  return t1.is_equal(t2) && t2.is_equal(t1) && t1.is_integrated == t2.is_integrated;
 }
 
 src_time *src_time::add_to(src_time *others, src_time **added) const {
