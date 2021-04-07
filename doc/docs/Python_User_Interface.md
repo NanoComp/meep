@@ -2019,8 +2019,7 @@ def get_farfield(self, near2far, x):
 Given a `Vector3` point `x` which can lie anywhere outside the near-field surface,
 including outside the cell and a `near2far` object, returns the computed
 (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
-of fields
-(E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...)
+of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
 for the frequencies 1,2,…,`nfreq`.
 
 </div>
@@ -2818,7 +2817,7 @@ def output_poynting(sim):
 
 <div class="function_docstring" markdown="1">
 
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
+Output the Poynting flux $\Re [\mathbf{E}^* \times \mathbf{H}]$. Note that you
 might want to wrap this step function in `synchronized_magnetic` to compute it more
 accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
@@ -4238,12 +4237,12 @@ defining a *discontinuous* function from otherwise continuously varying (via the
 The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
 can be specified using the `Simulation` constructor.
 
-Grids which are symmetric (e.g., mirror, rotation) must be explicitly defined. One way to implement this is by overlapping
-a given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping `MaterialGrid`
-objects (with no intervening objects), any overlapping points are computed using the method `grid_type` which is one of
-`"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product), `"U_MEAN"` (mean), `"U_DEFAULT"`
-(topmost material grid). In general, these `"U_*"` options allow you to combine any material grids that overlap
-in space with no intervening objects.
+It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
+(e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of
+itself. In the case of spatially overlapping `MaterialGrid` objects (with no intervening objects), any overlapping points are
+computed using the method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product),
+`"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options allow you to combine any material
+grids that overlap in space with no intervening objects.
 
 </div>
 
@@ -6087,7 +6086,7 @@ def __init__(self,
 
 Construct an `EigenModeSource`.
 
-+ **`eig_band` [`integer` or `DiffractedPlanewave`]** — Either the index *n* (1,2,3,...) of the desired band
++ **`eig_band` [`integer` or `DiffractedPlanewave` class]** — Either the index *n* (1,2,3,...) of the desired band
   ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
   band at a given **k** point, and so on, or alternatively a diffracted planewave in homogeneous media.
 
@@ -7770,7 +7769,7 @@ def output_poynting(sim):
 
 <div class="function_docstring" markdown="1">
 
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
+Output the Poynting flux $\Re [\mathbf{E}^* \times \mathbf{H}]$. Note that you
 might want to wrap this step function in `synchronized_magnetic` to compute it more
 accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
