@@ -75,6 +75,7 @@ public:
   void add_amplitudes_from(const src_vol &other);
 
   const component c; // field component the source applies to
+  bool needs_boundary_fix; // whether fix_boundary_sources needs calling
 private:
   src_time *src_t;                        // Not owned by us.
   std::vector<ptrdiff_t> index;           // locations of sources in grid (indices)
