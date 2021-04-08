@@ -683,9 +683,15 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
-                         void *data, bool single_precision) {
+                         float *data) {
   _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
-               single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE, data);
+               H5T_NATIVE_FLOAT, data);
+}
+
+void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+                         double *data) {
+  _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
+               H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
@@ -712,7 +718,12 @@ void h5file::write(const char *dataname, int rank, const size_t *dims, void *dat
     for (int i = 0; i < rank; i++)
       start[i] = 0;
     create_data(dataname, rank, dims, false, single_precision);
-    if (am_master()) write_chunk(rank, start, dims, data, single_precision);
+    if (am_master()) {
+      if (single_precision)
+        write_chunk(rank, start, dims, (float *)data);
+      else
+        write_chunk(rank, start, dims, (double *)data);
+    }
     done_writing_chunks();
     unset_cur();
     delete[] start;
@@ -813,9 +824,15 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
-                        void *data, bool single_precision) {
+                        float *data) {
   _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
-              single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE, data);
+              H5T_NATIVE_FLOAT, data);
+}
+
+void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+                        double *data) {
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
+              H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,

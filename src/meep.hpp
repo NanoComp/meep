@@ -398,14 +398,14 @@ public:
   void extend_data(const char *dataname, int rank, const size_t *dims);
   void create_or_extend_data(const char *dataname, int rank, const size_t *dims, bool append_data,
                              bool single_precision = true);
-  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
-                   bool single_precision = true);
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, float *data);
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, double *data);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
   void done_writing_chunks();
 
   void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
-  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
-                  bool single_precision = true);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, float *data);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, double *data);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
 
   void remove();
