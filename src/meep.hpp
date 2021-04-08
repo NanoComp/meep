@@ -294,18 +294,18 @@ typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } g
 /* gyrotropic susceptibility */
 class gyrotropic_susceptibility : public susceptibility {
 public:
-  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma, double alpha = 0.0,
+  gyrotropic_susceptibility(const vec &bias, realnum omega_0, realnum gamma, realnum alpha = 0.0,
                             gyrotropy_model model = GYROTROPIC_LORENTZIAN);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
   virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
@@ -323,8 +323,8 @@ public:
   }
 
 protected:
-  double gyro_tensor[3][3];
-  double omega_0, gamma, alpha;
+  realnum gyro_tensor[3][3];
+  realnum omega_0, gamma, alpha;
   gyrotropy_model model;
 };
 
@@ -500,7 +500,7 @@ public:
   /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume v
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
-  virtual void eff_chi1inv_row(component c, realnum chi1inv_row[3], const volume &v,
+  virtual void eff_chi1inv_row(component c, double chi1inv_row[3], const volume &v,
                                double tol = DEFAULT_SUBPIXEL_TOL,
                                int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
 

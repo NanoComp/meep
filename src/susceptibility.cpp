@@ -347,13 +347,13 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   *start += num_params;
 }
 
-gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
-                                                     double alpha, gyrotropy_model model)
+gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, realnum omega_0, realnum gamma,
+                                                     realnum alpha, gyrotropy_model model)
     : omega_0(omega_0), gamma(gamma), alpha(alpha), model(model) {
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
   // Ignore |b| for Landau-Lifshitz-Gilbert gyrotropy model.
   const vec b = (model == GYROTROPIC_SATURATED) ? bias / abs(bias) : bias;
-  memset(gyro_tensor, 0, 9 * sizeof(double));
+  memset(gyro_tensor, 0, 9 * sizeof(realnum));
   gyro_tensor[X][Y] = b.z();
   gyro_tensor[Y][X] = -b.z();
   gyro_tensor[Y][Z] = b.x();
@@ -365,7 +365,7 @@ gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double ome
 /* To implement gyrotropic susceptibilities, we track three
    polarization components (e.g. Px, Py, Pz) on EACH of the Yee cell's
    three driving field positions (e.g., Ex, Ey, and Ez), i.e. 9
-   numbers per cell.  This takes 3x the memory and runtime compared to
+   numbers per cell.  This takes 3X the memory and runtime compared to
    Lorentzian susceptibility.  The advantage is that during update_P,
    we can directly access the value of P at each update point without
    averaging.  */
@@ -391,7 +391,7 @@ void *gyrotropic_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   return (void *)d;
 }
 
-void gyrotropic_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+void gyrotropic_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                    const grid_volume &gv, void *data) const {
   (void)dt; // unused
   gyrotropy_data *d = (gyrotropy_data *)data;
@@ -442,33 +442,33 @@ bool gyrotropic_susceptibility::needs_P(component c, int cmp,
 #define OFFDIAGW(g, sx, s) (0.25 * (g[i] + g[i - sx] + g[i + s] + g[i + s - sx]))
 
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                          const grid_volume &gv, void *P_internal_data) const {
   gyrotropy_data *d = (gyrotropy_data *)P_internal_data;
-  const double omega2pidt = 2 * pi * omega_0 * dt;
-  const double g2pidt = 2 * pi * gamma * dt;
+  const realnum omega2pidt = 2 * pi * omega_0 * dt;
+  const realnum g2pidt = 2 * pi * gamma * dt;
   (void)W_prev; // unused;
 
   switch (model) {
     case GYROTROPIC_LORENTZIAN:
     case GYROTROPIC_DRUDE: {
-      const double omega0dtsqr = omega2pidt * omega2pidt;
-      const double gamma1 = (1 - g2pidt / 2);
-      const double diag = 2 - (model == GYROTROPIC_DRUDE ? 0 : omega0dtsqr);
-      const double pt = pi * dt;
+      const realnum omega0dtsqr = omega2pidt * omega2pidt;
+      const realnum gamma1 = (1 - g2pidt / 2);
+      const realnum diag = 2 - (model == GYROTROPIC_DRUDE ? 0 : omega0dtsqr);
+      const realnum pt = pi * dt;
 
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
-      const double gd = (1 + g2pidt / 2);
-      const double gx = pt * gyro_tensor[Y][Z];
-      const double gy = pt * gyro_tensor[Z][X];
-      const double gz = pt * gyro_tensor[X][Y];
-      const double invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
-      const double inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
-                                 invdet * (gx * gz - gd * gy)},
-                                {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
-                                 invdet * (gy * gz + gd * gx)},
-                                {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
-                                 invdet * (gd * gd + gz * gz)}};
+      const realnum gd = (1 + g2pidt / 2);
+      const realnum gx = pt * gyro_tensor[Y][Z];
+      const realnum gy = pt * gyro_tensor[Z][X];
+      const realnum gz = pt * gyro_tensor[X][Y];
+      const realnum invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
+      const realnum inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
+                                  invdet * (gx * gz - gd * gy)},
+                                 {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
+                                  invdet * (gy * gz + gd * gx)},
+                                 {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
+                                  invdet * (gd * gd + gz * gz)}};
 
       FOR_COMPONENTS(c) DOCMP2 {
         if (d->P[c][cmp][0]) {
@@ -516,20 +516,20 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     } break;
 
     case GYROTROPIC_SATURATED: {
-      const double dt2pi = 2 * pi * dt;
+      const realnum dt2pi = 2 * pi * dt;
 
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
-      const double gd = 0.5;
-      const double gx = -0.5 * alpha * gyro_tensor[Y][Z];
-      const double gy = -0.5 * alpha * gyro_tensor[Z][X];
-      const double gz = -0.5 * alpha * gyro_tensor[X][Y];
-      const double invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
-      const double inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
-                                 invdet * (gx * gz - gd * gy)},
-                                {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
-                                 invdet * (gy * gz + gd * gx)},
-                                {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
-                                 invdet * (gd * gd + gz * gz)}};
+      const realnum gd = 0.5;
+      const realnum gx = -0.5 * alpha * gyro_tensor[Y][Z];
+      const realnum gy = -0.5 * alpha * gyro_tensor[Z][X];
+      const realnum gz = -0.5 * alpha * gyro_tensor[X][Y];
+      const realnum invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
+      const realnum inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
+                                  invdet * (gx * gz - gd * gy)},
+                                 {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
+                                  invdet * (gy * gz + gd * gx)},
+                                 {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
+                                  invdet * (gd * gd + gz * gz)}};
 
       FOR_COMPONENTS(c) DOCMP2 {
         if (d->P[c][cmp][0]) {
