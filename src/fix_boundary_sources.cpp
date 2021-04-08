@@ -45,28 +45,28 @@ void fields::fix_boundary_sources() {
   // they are actually supposed to be located, storing info in boundarysources.
   for (int i = 0; i < num_chunks; i++) {
     FOR_FIELD_TYPES(ft) {
-      for (src_vol *src = chunks[i]->sources[ft]; src; src = src->next)
-        if (src->needs_boundary_fix) {
-          for (size_t ipt = 0; ipt < src->npts; ++ipt) {
-            component c = src->c;
-            ivec here = chunks[i]->gv.iloc(c, src->index[ipt]);
-            if (!chunks[i]->gv.owns(here) && src->A[ipt] != 0.0) {
-              if (src->t->id == 0) abort("bug: fix_boundary_sources called for non-registered source");
+      for (src_vol &src : chunks[i]->sources[ft])
+        if (src.needs_boundary_fix) {
+          for (size_t ipt = 0; ipt < src.num_points(); ++ipt) {
+            component c = src.c;
+            ivec here = chunks[i]->gv.iloc(c, src.index_at(ipt));
+            if (!chunks[i]->gv.owns(here) && src.amplitude(ipt) != 0.0) {
+              if (src.t()->id == 0) abort("bug: fix_boundary_sources called for non-registered source");
 
               // find the chunk that owns this point, similar to logic in boundaries.cpp
               std::complex<double> thephase;
               if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here)) {
                 for (int j = 0; j < num_chunks; j++)
                   if (chunks[j]->gv.owns(here)) {
-                    srcpt_info s = { src->A[ipt]*conj(thephase), chunks[j]->gv.index(c, here),  src->t->id, chunks[j]->chunk_idx, c };
+                    srcpt_info s = { src.amplitude(ipt)*conj(thephase), chunks[j]->gv.index(c, here),  src.t()->id, chunks[j]->chunk_idx, c };
                     boundarysources.push_back(s);
                     break;
                   }
               }
-              src->A[ipt] = 0.0; // will no longer be needed
+              src.set_amplitude(ipt, 0.0); // will no longer be needed
             }
           }
-          src->needs_boundary_fix = false;
+          src.needs_boundary_fix = false;
         }
     }
   }
@@ -141,7 +141,7 @@ for (int psrc = 0; psrc < P; ++psrc)
           sourcedata srcdata = { (component) c, idx_arr, chunk_idx, amp_arr };
           src_time *srctime = lookup_src_time(src_time_id);
           if (srctime == NULL) abort("bug: unknown src_time_id (missing registration?)");
-          add_srcdata(srcdata, srctime);
+          add_srcdata(srcdata, srctime, size_t(0), NULL, false);
           if (idx < N) {
             chunk_idx = srcpts[idx].chunk_idx;
             src_time_id = srcpts[idx].src_time_id;
