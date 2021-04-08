@@ -685,9 +685,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc, double Rasymp
       if (!sig[dd]) {
         int spml = (dd == d) ? (2 * gv.num_direction(d) + 2) : 1;
         sigsize[dd] = spml;
-        sig[dd] = new double[spml];
-        kap[dd] = new double[spml];
-        siginv[dd] = new double[spml];
+        sig[dd] = new realnum[spml];
+        kap[dd] = new realnum[spml];
+        siginv[dd] = new realnum[spml];
         for (int i = 0; i < spml; ++i) {
           sig[dd][i] = 0.0;
           kap[dd][i] = 1.0;
@@ -806,9 +806,9 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   // Copy over the PML conductivity arrays:
   if (is_mine()) FOR_DIRECTIONS(d) {
       if (o->sig[d]) {
-        sig[d] = new double[2 * gv.num_direction(d) + 1];
-        kap[d] = new double[2 * gv.num_direction(d) + 1];
-        siginv[d] = new double[2 * gv.num_direction(d) + 1];
+        sig[d] = new realnum[2 * gv.num_direction(d) + 1];
+        kap[d] = new realnum[2 * gv.num_direction(d) + 1];
+        siginv[d] = new realnum[2 * gv.num_direction(d) + 1];
         sigsize[d] = o->sigsize[d];
         for (int i = 0; i < 2 * gv.num_direction(d) + 1; i++) {
           sig[d][i] = o->sig[d][i];

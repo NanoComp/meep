@@ -682,7 +682,7 @@ complex<double> *fields::get_complex_array_slice(const volume &where, std::vecto
                                                  field_function fun, void *fun_data, complex<double> *slice,
                                                  double frequency, bool snap) {
   return (complex<double> *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
-                                       frequency, snap);
+                                               frequency, snap);
 }
 
 double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency,

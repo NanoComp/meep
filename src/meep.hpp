@@ -568,14 +568,14 @@ class structure;
 
 class structure_chunk {
 public:
-  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant num., and timestep dt=Courant/a
   realnum *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   realnum *chi1inv[NUM_FIELD_COMPONENTS][5];
   bool trivial_chi1inv[NUM_FIELD_COMPONENTS][5];
   realnum *conductivity[NUM_FIELD_COMPONENTS][5];
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale;                        // true if condinv needs to be recomputed
-  double *sig[6], *kap[6], *siginv[6];       // conductivity array for uPML
+  realnum *sig[6], *kap[6], *siginv[6];      // conductivity array for uPML
   int sigsize[6];                            // conductivity array size
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
@@ -717,7 +717,7 @@ public:
   int num_chunks;
   bool shared_chunks; // whether modifications to chunks will be visible to fields objects
   grid_volume gv, user_volume;
-  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant num., and timestep dt=Courant/a
   volume v;
   symmetry S;
   const char *outdir;
@@ -1359,7 +1359,7 @@ public:
   int npol[NUM_FIELD_TYPES];                // only E_stuff and H_stuff are used
   polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
 
-  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant num., and timestep dt=Courant/a
   grid_volume gv;
   volume v;
   double m;                        // angular dependence in cyl. coords
