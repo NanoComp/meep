@@ -44,7 +44,8 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 
   // Write params
   size_t params_start = 0;
-  file->create_data(dname, 1, &params_ntotal);
+  file->create_data(dname, 1, &params_ntotal, false /* append_data */,
+                    sizeof(realnum) == sizeof(float) /* single_precision */);
   if (am_master()) {
     susceptibility *sus = chunks[0]->chiP[EorH];
     while (sus) {
@@ -69,7 +70,7 @@ void structure::dump_chunk_layout(const char *filename) {
     }
   }
   h5file file(filename, h5file::WRITE, true);
-  file.create_data("gv_origins", 1, &sz);
+  file.create_data("gv_origins", 1, &sz, false /* append_data */, false /* single_precision */);
   if (am_master()) {
     size_t gv_origins_start = 0;
     file.write_chunk(1, &gv_origins_start, &sz, origins, false /* single_precision */);
@@ -115,7 +116,7 @@ void structure::dump(const char *filename) {
   delete[] num_chi1inv;
 
   // write the data
-  file.create_data("chi1inv", 1, &ntotal);
+  file.create_data("chi1inv", 1, &ntotal, false /* append_data */, false /* single_precision */);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();

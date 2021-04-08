@@ -988,8 +988,6 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   else if (pfield_array)
     *pfield_array = field_array = (array_size ? new complex<double>[array_size] : 0);
 
-  bool append_data = false;
-  bool single_precision = false;
   complex<double> overlap = 0.0;
   for (int reim = 0; reim <= reim_max; reim++) {
     h5file *file = 0;
@@ -998,7 +996,8 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
       *first_component = false;
       char dataname[100];
       snprintf(dataname, 100, "%s_%i.%c", component_name(c), num_freq, reim ? 'i' : 'r');
-      file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
+      file->create_or_extend_data(dataname, rank, dims, false /* append_data */,
+                                  false /* single_precision */);
     }
 
     for (int ncl = 0; ncl < num_chunklists; ncl++)
@@ -1153,8 +1152,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
             char dataname[100], filename[100];
             snprintf(dataname, 100, "%s_%i.%c", component_name(c), num_freq, reim ? 'i' : 'r');
             snprintf(filename, 100, "%s%s", HDF5FileName, strstr(".h5", HDF5FileName) ? "" : ".h5");
-            bool single_precision = false;
-            file->write(dataname, rank, dims, real_array, single_precision);
+            file->write(dataname, rank, dims, real_array, false /* single_precision */);
           }
           delete[] real_array;
         }

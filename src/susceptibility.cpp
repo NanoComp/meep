@@ -55,10 +55,10 @@ susceptibility *susceptibility::clone() const {
 }
 
 // generic base class definition.
-std::complex<double> susceptibility::chi1(double freq, double sigma) {
+std::complex<realnum> susceptibility::chi1(realnum freq, realnum sigma) {
   (void)freq;
   (void)sigma;
-  return std::complex<double>(0, 0);
+  return std::complex<realnum>(0, 0);
 }
 
 void susceptibility::delete_internal_data(void *data) const { free(data); }
@@ -118,7 +118,7 @@ void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   return (void *)d;
 }
 
-void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                    const grid_volume &gv, void *data) const {
   (void)dt; // unused
   lorentzian_data *d = (lorentzian_data *)data;
@@ -166,10 +166,10 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
    algebra from this to get the condition for a root with |z| > 1.
 
    FIXME: this test seems to be too conservative (issue #12) */
-static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
-  double w = 2 * pi * omega_0, g = 2 * pi * gamma;
-  double g2 = g * dt / 2, w2 = (w * dt) * (w * dt);
-  double b = (1 - w2 / 2) / (1 + g2), c = (1 - g2) / (1 + g2);
+static bool lorentzian_unstable(realnum omega_0, realnum gamma, realnum dt) {
+  realnum w = 2 * pi * omega_0, g = 2 * pi * gamma;
+  realnum g2 = g * dt / 2, w2 = (w * dt) * (w * dt);
+  realnum b = (1 - w2 / 2) / (1 + g2), c = (1 - g2) / (1 + g2);
   return b * b > c && 2 * b * b - c + 2 * fabs(b) * sqrt(b * b - c) > 1;
 }
 #endif
@@ -186,13 +186,13 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   (0.25 * ((g[i] + g[i - sx]) * u[i] + (g[i + s] + g[(i + s) - sx]) * u[i + s]))
 
 void lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                          const grid_volume &gv, void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
-  const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
-  const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
-  const double gamma1inv = 1 / (1 + g2pi * dt / 2), gamma1 = (1 - g2pi * dt / 2);
-  const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
+  const realnum omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
+  const realnum omega0dtsqr = omega2pi * omega2pi * dt * dt;
+  const realnum gamma1inv = 1 / (1 + g2pi * dt / 2), gamma1 = (1 - g2pi * dt / 2);
+  const realnum omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
   (void)W_prev; // unused;
 
   // TODO: add back lorentzian_unstable(omega_0, gamma, dt) if we can improve the stability test
@@ -294,15 +294,15 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(int inotowned, compon
   return d->P[c][cmp] + n;
 }
 
-std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) {
+std::complex<realnum> lorentzian_susceptibility::chi1(realnum freq, realnum sigma) {
   if (no_omega_0_denominator) {
     // Drude model
-    return sigma * omega_0 * omega_0 / std::complex<double>(-freq * freq, -gamma * freq);
+    return sigma * omega_0 * omega_0 / std::complex<realnum>(-freq * freq, -gamma * freq);
   }
   else {
     // Standard Lorentzian model
     return sigma * omega_0 * omega_0 /
-           std::complex<double>(omega_0 * omega_0 - freq * freq, -gamma * freq);
+           std::complex<realnum>(omega_0 * omega_0 - freq * freq, -gamma * freq);
   }
 }
 
@@ -315,14 +315,14 @@ void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
 }
 
 void noisy_lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                               realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                               realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                const grid_volume &gv, void *P_internal_data) const {
   lorentzian_susceptibility::update_P(W, W_prev, dt, gv, P_internal_data);
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
 
-  const double g2pi = gamma * 2 * pi;
-  const double w2pi = omega_0 * 2 * pi;
-  const double amp = w2pi * noise_amp * sqrt(g2pi) * dt * dt / (1 + g2pi * dt / 2);
+  const realnum g2pi = gamma * 2 * pi;
+  const realnum w2pi = omega_0 * 2 * pi;
+  const realnum amp = w2pi * noise_amp * sqrt(g2pi) * dt * dt / (1 + g2pi * dt / 2);
   /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
 
   FOR_COMPONENTS(c) DOCMP2 {

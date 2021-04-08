@@ -99,12 +99,12 @@ public:
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
   // Returns the 1st order nonlinear susceptibility (generic)
-  virtual std::complex<double> chi1(double freq, double sigma = 1);
+  virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
 
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const {
     (void)P;
     (void)W;
@@ -147,7 +147,7 @@ public:
     return 0;
   }
   virtual void delete_internal_data(void *data) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const {
     (void)W;
     (void)dt;
@@ -236,23 +236,23 @@ private:
   denominator to obtain a Drude model. */
 class lorentzian_susceptibility : public susceptibility {
 public:
-  lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false)
+  lorentzian_susceptibility(realnum omega_0, realnum gamma, bool no_omega_0_denominator = false)
       : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
 
   // Returns the 1st order nonlinear susceptibility
-  virtual std::complex<double> chi1(double freq, double sigma = 1);
+  virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
@@ -264,7 +264,7 @@ public:
   virtual int get_num_params() { return 4; }
 
 protected:
-  double omega_0, gamma;
+  realnum omega_0, gamma;
   bool no_omega_0_denominator;
 };
 
@@ -272,21 +272,21 @@ protected:
    includes white noise with a specified amplitude */
 class noisy_lorentzian_susceptibility : public lorentzian_susceptibility {
 public:
-  noisy_lorentzian_susceptibility(double noise_amp, double omega_0, double gamma,
+  noisy_lorentzian_susceptibility(realnum noise_amp, realnum omega_0, realnum gamma,
                                   bool no_omega_0_denominator = false)
       : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), noise_amp(noise_amp) {}
 
   virtual susceptibility *clone() const { return new noisy_lorentzian_susceptibility(*this); }
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 5; }
 
 protected:
-  double noise_amp;
+  realnum noise_amp;
 };
 
 typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } gyrotropy_model;
@@ -339,14 +339,14 @@ public:
   virtual ~multilevel_susceptibility();
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
   virtual void delete_internal_data(void *data) const;
@@ -387,25 +387,25 @@ public:
   bool ok();
 
   void *read(const char *dataname, int *rank, size_t *dims, int maxrank,
-             bool single_precision = false);
+             bool single_precision = true);
   void write(const char *dataname, int rank, const size_t *dims, void *data,
-             bool single_precision = false);
+             bool single_precision = true);
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
 
   void create_data(const char *dataname, int rank, const size_t *dims, bool append_data = false,
-                   bool single_precision = false);
+                   bool single_precision = true);
   void extend_data(const char *dataname, int rank, const size_t *dims);
   void create_or_extend_data(const char *dataname, int rank, const size_t *dims, bool append_data,
-                             bool single_precision = false);
+                             bool single_precision = true);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
-                   bool single_precision = false);
+                   bool single_precision = true);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
   void done_writing_chunks();
 
   void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, void *data,
-                  bool single_precision = false);
+                  bool single_precision = true);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
 
   void remove();
@@ -500,7 +500,7 @@ public:
   /* Return c'th row of effective 1/(1+chi1) tensor in the given grid_volume v
      ... virtual so that e.g. libctl can override with more-efficient
      libctlgeom-based routines.  maxeval == 0 if no averaging desired. */
-  virtual void eff_chi1inv_row(component c, double chi1inv_row[3], const volume &v,
+  virtual void eff_chi1inv_row(component c, realnum chi1inv_row[3], const volume &v,
                                double tol = DEFAULT_SUBPIXEL_TOL,
                                int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
 
