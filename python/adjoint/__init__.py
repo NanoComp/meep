@@ -16,4 +16,4 @@ from .filter_source import FilteredSource
 
 from .filters import *
 
-from .Connectivity import *
+from .connectivity import *
