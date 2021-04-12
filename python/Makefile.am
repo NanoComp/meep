@@ -215,6 +215,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/basis.py                 \
                   $(srcdir)/adjoint/objective.py             \
                   $(srcdir)/adjoint/optimization_problem.py  \
+									$(srcdir)/adjoint/connectivity.py  \
                   $(srcdir)/adjoint/filters.py               \
                   $(srcdir)/adjoint/filter_source.py
 
