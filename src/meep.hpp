@@ -568,7 +568,7 @@ class structure;
 
 class structure_chunk {
 public:
-  double a, Courant, dt; // resolution a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   realnum *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   realnum *chi1inv[NUM_FIELD_COMPONENTS][5];
   bool trivial_chi1inv[NUM_FIELD_COMPONENTS][5];
@@ -717,7 +717,7 @@ public:
   int num_chunks;
   bool shared_chunks; // whether modifications to chunks will be visible to fields objects
   grid_volume gv, user_volume;
-  double a, Courant, dt; // resolution a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   volume v;
   symmetry S;
   const char *outdir;
@@ -1359,7 +1359,7 @@ public:
   int npol[NUM_FIELD_TYPES];                // only E_stuff and H_stuff are used
   polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
 
-  double a, Courant, dt; // resolution a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   grid_volume gv;
   volume v;
   double m;                        // angular dependence in cyl. coords

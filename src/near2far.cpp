@@ -399,7 +399,7 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
 }
 
 double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                                           double resolution) {
+                                          double resolution) {
   /* compute output grid size etc. */
   double dx[3] = {0, 0, 0};
   direction dirs[3] = {X, Y, Z};
