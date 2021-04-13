@@ -721,7 +721,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   // d_from_H actually computes -frequency*D (see mpb/src/maxwell/maxwell_op.c),
   // so we need to divide the E-field amplitudes by -frequency; we also take this
   // opportunity to rescale the overall E and H amplitudes to yield unit power flux.
-  double scale = -1.0 / frequency, factor = 2.0 / sqrt(vgrp);
+  double scale = -1.0 / frequency, factor = 2.0 / sqrt(fabs(vgrp));
   cdouble *efield = (cdouble *)fft_data_E, *hfield = (cdouble *)(mdata->fft_data);
   for (int n = 0; n < NFFT; ++n) {
     efield[n] *= factor * scale;
