@@ -28,13 +28,12 @@
 
 namespace meep {
 
-/* We use the type realnum for large arrays, e.g. the fields.
-   For local variables and small arrays, we use double precision,
-   but for things like the fields we can often get away with
-   single precision (since the errors are not dominated by roundoff).
-   However, we will default to using double-precision for large
-   arrays, as the factor of two in memory and the moderate increase
-   in speed currently don't seem worth the loss of precision. */
+/* The (time-domain) fields arrays of the fields_chunk class as well
+   as the material arrays of the structure_chunk class chi1inv,
+   chi3, sigma, etc. can be stored using single-precision floating
+   point rather than double precision (the default). The reduced
+   precision can provide for up to a factor of 2X improvement in the
+   time-stepping rate with generally negligible loss in accuracy. */
 #define MEEP_SINGLE 0 // 1 for single precision, 0 for double
 #if MEEP_SINGLE
 typedef float realnum;
