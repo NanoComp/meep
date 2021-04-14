@@ -44,7 +44,8 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 
   // Write params
   size_t params_start = 0;
-  file->create_data(dname, 1, &params_ntotal);
+  file->create_data(dname, 1, &params_ntotal, false /* append_data */,
+                    sizeof(realnum) == sizeof(float) /* single_precision */);
   if (am_master()) {
     susceptibility *sus = chunks[0]->chiP[EorH];
     while (sus) {
@@ -57,10 +58,10 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 void structure::dump_chunk_layout(const char *filename) {
   // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
   size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
+  double *origins = new double[sz];
   size_t *nums = new size_t[sz];
   memset(nums, 0, sizeof(size_t) * sz);
-  memset(origins, 0, sizeof(realnum) * sz);
+  memset(origins, 0, sizeof(double) * sz);
   for (int i = 0; i < num_chunks; ++i) {
     int idx = i * 3;
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
@@ -69,7 +70,7 @@ void structure::dump_chunk_layout(const char *filename) {
     }
   }
   h5file file(filename, h5file::WRITE, true);
-  file.create_data("gv_origins", 1, &sz);
+  file.create_data("gv_origins", 1, &sz, false /* append_data */, false /* single_precision */);
   if (am_master()) {
     size_t gv_origins_start = 0;
     file.write_chunk(1, &gv_origins_start, &sz, origins);
@@ -115,7 +116,7 @@ void structure::dump(const char *filename) {
   delete[] num_chi1inv;
 
   // write the data
-  file.create_data("chi1inv", 1, &ntotal);
+  file.create_data("chi1inv", 1, &ntotal, false /* append_data */, false /* single_precision */);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
@@ -312,7 +313,6 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
     realnum num_params;
     file->read_chunk(rank, &start, num_params_dims, &num_params);
     start += num_params_dims[0];
-
     if (num_params == 4) {
       // This is a lorentzian_susceptibility and the next 4 values in the dataset
       // are id, omega_0, gamma, and no_omega_0_denominator.
@@ -467,8 +467,8 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   // Load chunk grid_volumes from a file
   h5file file(filename, h5file::READONLY, true);
   size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
-  memset(origins, 0, sizeof(realnum) * sz);
+  double *origins = new double[sz];
+  memset(origins, 0, sizeof(double) * sz);
   size_t *nums = new size_t[sz];
   memset(nums, 0, sizeof(size_t) * sz);
 

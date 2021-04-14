@@ -141,7 +141,7 @@ void *multilevel_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   return (void *)d;
 }
 
-void multilevel_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+void multilevel_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                    const grid_volume &gv, void *data) const {
   multilevel_data *d = (multilevel_data *)data;
   size_t sz_data = d->sz_data;
@@ -237,10 +237,10 @@ realnum *multilevel_susceptibility::cinternal_notowned_ptr(int inotowned, compon
 }
 
 void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                          const grid_volume &gv, void *P_internal_data) const {
   multilevel_data *d = (multilevel_data *)P_internal_data;
-  double dt2 = 0.5 * dt;
+  realnum dt2 = 0.5 * dt;
 
   // field directions and offsets for E * dP dot product.
   component cdot[3] = {Dielectric, Dielectric, Dielectric};
@@ -269,7 +269,7 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     }
 
     // compute E*8 at point i
-    double E8[3][2] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
+    realnum E8[3][2] = {{0.0, 0.0}, {0.0, 0.0}, {0.0, 0.0}};
     for (idot = 0; idot < 3 && cdot[idot] != Dielectric; ++idot) {
       realnum *w = W[cdot[idot]][0], *wp = W_prev[cdot[idot]][0];
       E8[idot][0] = w[i] + w[i + o1[idot]] + w[i + o2[idot]] + w[i + o1[idot] + o2[idot]] + wp[i] +
@@ -287,9 +287,9 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     // Ntmp = Ntmp + alpha * E * dP
     for (int t = 0; t < T; ++t) {
       // compute 32 * E * dP and 64 * E * P at point i
-      double EdP32 = 0;
-      double EPave64 = 0;
-      double gperpdt = gamma[t] * pi * dt;
+      realnum EdP32 = 0;
+      realnum EPave64 = 0;
+      realnum gperpdt = gamma[t] * pi * dt;
       for (idot = 0; idot < 3 && cdot[idot] != Dielectric; ++idot) {
         realnum *p = d->P[cdot[idot]][0][t], *pp = d->P_prev[cdot[idot]][0][t];
         realnum dP = p[i] + p[i + o1[idot]] + p[i + o2[idot]] + p[i + o1[idot] + o2[idot]] -
@@ -325,10 +325,10 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
 
   // each P is updated as a damped harmonic oscillator
   for (int t = 0; t < T; ++t) {
-    const double omega2pi = 2 * pi * omega[t], g2pi = gamma[t] * 2 * pi, gperp = gamma[t] * pi;
-    const double omega0dtsqrCorrected = omega2pi * omega2pi * dt * dt + gperp * gperp * dt * dt;
-    const double gamma1inv = 1 / (1 + g2pi * dt2), gamma1 = (1 - g2pi * dt2);
-    const double dtsqr = dt * dt;
+    const realnum omega2pi = 2 * pi * omega[t], g2pi = gamma[t] * 2 * pi, gperp = gamma[t] * pi;
+    const realnum omega0dtsqrCorrected = omega2pi * omega2pi * dt * dt + gperp * gperp * dt * dt;
+    const realnum gamma1inv = 1 / (1 + g2pi * dt2), gamma1 = (1 - g2pi * dt2);
+    const realnum dtsqr = dt * dt;
     // note that gamma[t]*2*pi = 2*gamma_perp as one would usually write it in SALT. -- AWC
 
     // figure out which levels this transition couples
@@ -342,7 +342,7 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     FOR_COMPONENTS(c) DOCMP2 {
       if (d->P[c][cmp]) {
         const realnum *w = W[c][cmp], *s = sigma[c][component_direction(c)];
-        const double st = sigmat[5 * t + component_direction(c)];
+        const realnum st = sigmat[5 * t + component_direction(c)];
         if (w && s) {
           realnum *p = d->P[c][cmp][t], *pp = d->P_prev[c][cmp][t];
 
@@ -369,8 +369,8 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
               realnum pcur = p[i];
               const realnum *Ni = N + i * L;
               // dNi is population inversion for this transition
-              double dNi = 0.25 * (Ni[lp] + Ni[lp + o1] + Ni[lp + o2] + Ni[lp + o1 + o2] - Ni[lm] -
-                                   Ni[lm + o1] - Ni[lm + o2] - Ni[lm + o1 + o2]);
+              realnum dNi = 0.25 * (Ni[lp] + Ni[lp + o1] + Ni[lp + o2] + Ni[lp + o1 + o2] - Ni[lm] -
+                                    Ni[lm + o1] - Ni[lm + o2] - Ni[lm + o1 + o2]);
               p[i] = gamma1inv * (pcur * (2 - omega0dtsqrCorrected) - gamma1 * pp[i] -
                                   dtsqr * (st * s[i] * w[i]) * dNi);
               pp[i] = pcur;

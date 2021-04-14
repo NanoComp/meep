@@ -19,8 +19,6 @@
 
 using namespace meep;
 
-typedef std::complex<double> cdouble;
-
 vector3 v3(double x, double y = 0.0, double z = 0.0) {
   vector3 v;
   v.x = x;
@@ -30,7 +28,7 @@ vector3 v3(double x, double y = 0.0, double z = 0.0) {
 }
 
 // passthrough field function
-cdouble default_field_function(const cdouble *fields, const vec &loc, void *data_) {
+std::complex<double> default_field_function(const std::complex<double> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return fields[0];
@@ -40,7 +38,7 @@ cdouble default_field_function(const cdouble *fields, const vec &loc, void *data
 /***************************************************************/
 /***************************************************************/
 #define RELTOL 1.0e-6
-double Compare(double *d1, double *d2, int N, const char *Name) {
+double Compare(realnum *d1, realnum *d2, int N, const char *Name) {
   double Norm1 = 0.0, Norm2 = 0.0, NormDelta = 0.0;
   for (int n = 0; n < N; n++) {
     Norm1 += d1[n] * d1[n];
@@ -55,7 +53,7 @@ double Compare(double *d1, double *d2, int N, const char *Name) {
   return RelErr;
 }
 
-double Compare(cdouble *d1, cdouble *d2, int N, const char *Name) {
+double Compare(std::complex<realnum> *d1, std::complex<realnum> *d2, int N, const char *Name) {
   double Norm1 = 0.0, Norm2 = 0.0, NormDelta = 0.0;
   for (int n = 0; n < N; n++) {
     Norm1 += norm(d1[n]);
@@ -182,8 +180,8 @@ int main(int argc, char *argv[]) {
   int rank;
   size_t dims1D[1], dims2D[2];
   direction dirs1D[1], dirs2D[2];
-  cdouble *file_slice1d = 0;
-  double *file_slice2d = 0;
+  std::complex<realnum> *file_slice1d = 0;
+  realnum *file_slice2d = 0;
 
 #define H5FILENAME DATADIR "array-slice-ll-ref"
 #define NX 126
@@ -201,19 +199,19 @@ int main(int argc, char *argv[]) {
     // read 1D and 2D array-slice data from HDF5 file
     //
     h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
-    double *rdata = file->read("hz.r", &rank, dims1D, 1);
+    realnum *rdata = (realnum *)file->read("hz.r", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
     if (rank != 1 || dims1D[0] != NX)
       abort("failed to read 1D data(hz.r) from file %s.h5", H5FILENAME);
-    double *idata = file->read("hz.i", &rank, dims1D, 1);
+    realnum *idata = (realnum *)file->read("hz.i", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
     if (rank != 1 || dims1D[0] != NX)
       abort("failed to read 1D data(hz.i) from file %s.h5", H5FILENAME);
-    file_slice1d = new cdouble[dims1D[0]];
+    file_slice1d = new std::complex<realnum>[dims1D[0]];
     for (size_t n = 0; n < dims1D[0]; n++)
-      file_slice1d[n] = cdouble(rdata[n], idata[n]);
+      file_slice1d[n] = std::complex<realnum>(rdata[n], idata[n]);
     delete[] rdata;
     delete[] idata;
 
-    file_slice2d = file->read("sy", &rank, dims2D, 2);
+    file_slice2d = (realnum *)file->read("sy", &rank, dims2D, 2, sizeof(realnum) == sizeof(float));
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY)
       abort("failed to read 2D reference data from file %s.h5", H5FILENAME);
     delete file;
@@ -224,14 +222,20 @@ int main(int argc, char *argv[]) {
     //
     rank = f.get_array_slice_dimensions(v1d, dims1D, dirs1D, true, false);
     if (rank != 1 || dims1D[0] != NX) abort("incorrect dimensions for 1D slice");
-    cdouble *slice1d = f.get_complex_array_slice(v1d, Hz, 0, 0, true);
-    double RelErr1D = Compare(slice1d, file_slice1d, NX, "Hz_1d");
+    std::complex<double> *slice1d = f.get_complex_array_slice(v1d, Hz, 0, 0, true);
+    std::complex<realnum> *slice1d_realnum = new std::complex<realnum>[NX];
+    for (int i = 0; i < NX; ++i)
+      slice1d_realnum[i] = std::complex<realnum>(slice1d[i]);
+    double RelErr1D = Compare(slice1d_realnum, file_slice1d, NX, "Hz_1d");
     master_printf("1D: rel error %e\n", RelErr1D);
 
     rank = f.get_array_slice_dimensions(v2d, dims2D, dirs2D, true, false);
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) abort("incorrect dimensions for 2D slice");
     double *slice2d = f.get_array_slice(v2d, Sy, 0, 0, true);
-    double RelErr2D = Compare(slice2d, file_slice2d, NX * NY, "Sy_2d");
+    realnum *slice2d_realnum = new realnum[NX*NY];
+    for (int i = 0; i < NX*NY; ++i)
+      slice2d_realnum[i] = realnum(slice2d[i]);
+    double RelErr2D = Compare(slice2d_realnum, file_slice2d, NX * NY, "Sy_2d");
     master_printf("2D: rel error %e\n", RelErr2D);
 
   }; // if (write_files) ... else ...

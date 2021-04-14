@@ -690,11 +690,11 @@ static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? 
 /* Linearly interpolate a given point in a 3d grid of data.  The point
    coordinates should be in the range [0,1], or at the very least [-1,2]
    ... anything outside [0,1] is *mirror* reflected into [0,1] */
-realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, int nx, int ny,
-                           int nz, int stride) {
+double linear_interpolate(double rx, double ry, double rz, double *data,
+                          int nx, int ny, int nz, int stride) {
 
   int x, y, z, x2, y2, z2;
-  realnum dx, dy, dz;
+  double dx, dy, dz;
 
   /* mirror boundary conditions for r just beyond the boundary */
   rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);

@@ -79,41 +79,41 @@ symmetry r_to_minus_r_symmetry(int m);
 
 // functions in step_generic.cpp:
 
-void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2, ptrdiff_t s1,
-               ptrdiff_t s2, // strides for g1/g2 shift
-               const grid_volume &gv, double dtdx, direction dsig, const double *sig,
-               const double *kap, const double *siginv, realnum *fu, direction dsigu,
-               const double *sigu, const double *kapu, const double *siginvu, double dt,
+void step_curl(realnum *f, component c, const realnum *g1, const realnum *g2,
+               ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
+               const grid_volume &gv, realnum dtdx, direction dsig, const realnum *sig,
+               const realnum *kap, const realnum *siginv, realnum *fu, direction dsigu,
+               const realnum *sigu, const realnum *kapu, const realnum *siginvu, realnum dt,
                const realnum *cnd, const realnum *cndinv, realnum *fcnd);
 
 void step_update_EDHB(realnum *f, component fc, const grid_volume &gv, const realnum *g,
                       const realnum *g1, const realnum *g2, const realnum *u, const realnum *u1,
                       const realnum *u2, ptrdiff_t s, ptrdiff_t s1, ptrdiff_t s2,
                       const realnum *chi2, const realnum *chi3, realnum *fw, direction dsigw,
-                      const double *sigw, const double *kapw);
+                      const realnum *sigw, const realnum *kapw);
 
-void step_beta(realnum *f, component c, const realnum *g, const grid_volume &gv, double betadt,
-               direction dsig, const double *siginv, realnum *fu, direction dsigu,
-               const double *siginvu, const realnum *cndinv, realnum *fcnd);
+void step_beta(realnum *f, component c, const realnum *g, const grid_volume &gv, realnum betadt,
+               direction dsig, const realnum *siginv, realnum *fu, direction dsigu,
+               const realnum *siginvu, const realnum *cndinv, realnum *fcnd);
 
 // functions in step_generic_stride1.cpp, generated from step_generic.cpp:
 
-void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum *g2, ptrdiff_t s1,
-                       ptrdiff_t s2, // strides for g1/g2 shift
-                       const grid_volume &gv, double dtdx, direction dsig, const double *sig,
-                       const double *kap, const double *siginv, realnum *fu, direction dsigu,
-                       const double *sigu, const double *kapu, const double *siginvu, double dt,
+void step_curl_stride1(realnum *f, component c, const realnum *g1, const realnum *g2,
+                       ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
+                       const grid_volume &gv, realnum dtdx, direction dsig, const realnum *sig,
+                       const realnum *kap, const realnum *siginv, realnum *fu, direction dsigu,
+                       const realnum *sigu, const realnum *kapu, const realnum *siginvu, realnum dt,
                        const realnum *cnd, const realnum *cndinv, realnum *fcnd);
 
 void step_update_EDHB_stride1(realnum *f, component fc, const grid_volume &gv, const realnum *g,
                               const realnum *g1, const realnum *g2, const realnum *u,
                               const realnum *u1, const realnum *u2, ptrdiff_t s, ptrdiff_t s1,
                               ptrdiff_t s2, const realnum *chi2, const realnum *chi3, realnum *fw,
-                              direction dsigw, const double *sigw, const double *kapw);
+                              direction dsigw, const realnum *sigw, const realnum *kapw);
 
 void step_beta_stride1(realnum *f, component c, const realnum *g, const grid_volume &gv,
-                       double betadt, direction dsig, const double *siginv, realnum *fu,
-                       direction dsigu, const double *siginvu, const realnum *cndinv,
+                       realnum betadt, direction dsig, const realnum *siginv, realnum *fu,
+                       direction dsigu, const realnum *siginvu, const realnum *cndinv,
                        realnum *fcnd);
 
 /* macro wrappers around time-stepping functions: for performance reasons,
