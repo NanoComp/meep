@@ -66,7 +66,7 @@ class TestRingCyl(unittest.TestCase):
         m = h.modes[0]
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
-        np.testing.assert_allclose(expected, res)
+        np.testing.assert_allclose(expected, res, rtol=1e-5)
 
 
 if __name__ == '__main__':

@@ -70,7 +70,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
         m = h.modes[0]
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
-        np.testing.assert_allclose(expected, res)
+        np.testing.assert_allclose(expected, res, rtol=1e-5)
 
     def test_transmission_spectrum(self):
         expected = [
@@ -142,7 +142,7 @@ class TestHoleyWvgCavity(unittest.TestCase):
         res = zip(mp.get_flux_freqs(trans), mp.get_fluxes(trans))
 
         for e, r in zip(expected, res):
-            np.testing.assert_allclose(e, r)
+            np.testing.assert_allclose(e, r, rtol=1e-4)
 
 
 if __name__ == '__main__':

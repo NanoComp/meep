@@ -139,7 +139,7 @@ int main(int argc, char **argv) {
     master_printf("err. imag: %g\n", fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7);
 
     ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4 &&
-         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.2;
+         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.3;
   }
   end_divide_parallel();
   return !and_to_all(ok);

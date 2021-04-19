@@ -121,7 +121,7 @@ class TestReflAngular(unittest.TestCase):
             (2.4999999999999987, -4.3484671364929225e-6),
         ]
 
-        np.testing.assert_allclose(expected, list(zip(freqs, refl_flux)), rtol=1e-6)
+        np.testing.assert_allclose(expected, list(zip(freqs, refl_flux)), rtol=1e-4)
 
 
 if __name__ == '__main__':

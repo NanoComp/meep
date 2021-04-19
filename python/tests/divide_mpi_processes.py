@@ -48,7 +48,7 @@ class TestDivideParallelProcesses(unittest.TestCase):
         self.assertEqual(fcens[0],1)
         self.assertEqual(fcens[1],0.5)
         self.assertAlmostEqual(tot_fluxes[0], 9.8628728533)
-        self.assertAlmostEqual(tot_fluxes[1], 19.6537275387)
+        self.assertAlmostEqual(tot_fluxes[1], 19.6537275387, places=6)
         
 if __name__ == '__main__':
     unittest.main()

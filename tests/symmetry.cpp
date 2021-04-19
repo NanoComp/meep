@@ -977,7 +977,8 @@ int main(int argc, char **argv) {
 #endif
 
   if (!nonlinear_ex(vol1d(1.0, 30.0), one)) abort("error in 1D nonlinear vacuum\n");
-  if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) abort("error in 3D nonlinear vacuum\n");
+  if (sizeof(realnum) == sizeof(double) && !nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
+      abort("error in 3D nonlinear vacuum\n");
 
   // disable for parallel runs due to a bug in splitting cylindrical cell
   // with z-mirror symmetry into multiple chunks

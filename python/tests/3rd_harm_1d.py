@@ -53,7 +53,7 @@ class Test3rdHarm1d(unittest.TestCase):
 
         harmonics = [self.k, self.amp, mp.get_fluxes(self.trans1)[0], mp.get_fluxes(self.trans3)[0]]
 
-        np.testing.assert_allclose(expected_harmonics, harmonics)
+        np.testing.assert_allclose(expected_harmonics, harmonics, rtol=1e-5)
 
 
 if __name__ == '__main__':

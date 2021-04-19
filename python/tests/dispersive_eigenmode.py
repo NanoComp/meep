@@ -36,7 +36,7 @@ class TestDispersiveEigenmode(unittest.TestCase):
 
         n_actual = np.real(np.sqrt(material.epsilon(frequency).astype(np.complex128)))
         
-        np.testing.assert_allclose(n,n_actual)
+        np.testing.assert_allclose(n,n_actual,rtol=1e-6)
 
     @classmethod
     def setUpClass(cls):

@@ -66,8 +66,8 @@ class TestHoleyWvgBands(unittest.TestCase):
 
         self.assertTrue(h.modes)
         for (r, i), m in zip(expected, h.modes):
-            self.assertAlmostEqual(m.freq, r)
-            self.assertAlmostEqual(m.decay, i)
+            self.assertAlmostEqual(m.freq, r, places=5)
+            self.assertAlmostEqual(m.decay, i, places=5)
 
 
 if __name__ == '__main__':

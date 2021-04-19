@@ -59,7 +59,7 @@ class TestUserMaterials(unittest.TestCase):
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
-        self.assertAlmostEqual(fp, 4.816403627871773e-4 + 0j)
+        self.assertAlmostEqual(fp, 4.816403627871773e-4 + 0j, places=6)
 
     def test_epsilon_func(self):
         sim = mp.Simulation(cell_size=self.cell,
@@ -86,7 +86,7 @@ class TestUserMaterials(unittest.TestCase):
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
-        self.assertAlmostEqual(fp, 4.816403627871773e-4 + 0j)
+        self.assertAlmostEqual(fp, 4.816403627871773e-4 + 0j, places=6)
 
     def test_geometric_obj_with_epsilon_func(self):
         geometry = [mp.Cylinder(5, epsilon_func=my_epsilon_func)]

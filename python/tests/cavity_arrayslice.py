@@ -60,27 +60,27 @@ class TestCavityArraySlice(unittest.TestCase):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
         hl_slice1d = self.sim.get_array(mp.Hz, vol)
-        np.testing.assert_allclose(self.expected_1d, hl_slice1d)
+        np.testing.assert_allclose(self.expected_1d, hl_slice1d, rtol=1e-4)
 
     def test_2d_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
         hl_slice2d = self.sim.get_array(mp.Hz, vol)
-        np.testing.assert_allclose(self.expected_2d, hl_slice2d)
+        np.testing.assert_allclose(self.expected_2d, hl_slice2d, rtol=1e-2)
 
     def test_1d_slice_user_array(self):
         self.sim.run(until_after_sources=0)
         arr = np.zeros(126, dtype=np.float64)
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
         self.sim.get_array(mp.Hz, vol, arr=arr)
-        np.testing.assert_allclose(self.expected_1d, arr)
+        np.testing.assert_allclose(self.expected_1d, arr, rtol=1e-4)
 
     def test_2d_slice_user_array(self):
         self.sim.run(until_after_sources=0)
         arr = np.zeros((126, 38), dtype=np.float64)
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
         self.sim.get_array(mp.Hz, vol, arr=arr)
-        np.testing.assert_allclose(self.expected_2d, arr)
+        np.testing.assert_allclose(self.expected_2d, arr, rtol=1e-2)
 
     def test_illegal_user_array(self):
         self.sim.run(until_after_sources=0)

@@ -31,10 +31,13 @@ namespace meep {
 /* The (time-domain) fields arrays of the fields_chunk class as well
    as the material arrays of the structure_chunk class chi1inv,
    chi3, sigma, etc. can be stored using single-precision floating
-   point rather than double precision (the default). The reduced
+   point (the default) rather than double precision. The reduced
    precision can provide for up to a factor of 2X improvement in the
-   time-stepping rate with generally negligible loss in accuracy. */
-#define MEEP_SINGLE 0 // 1 for single precision, 0 for double
+   time-stepping rate with generally negligible loss in accuracy
+   since discretization errors due to discontinuous material interfaces
+   almost ways dominate round-off errors due to floating-point arithmetic.
+*/
+#define MEEP_SINGLE 1 // 1 for single precision, 0 for double
 #if MEEP_SINGLE
 typedef float realnum;
 #else

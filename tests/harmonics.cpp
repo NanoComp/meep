@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
   double a2, a3, a2_2, a3_2;
 
-  double thresh = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-5;
+  double thresh = sizeof(realnum) == sizeof(float) ? 0.005 : 1e-5;
   harmonics(freq, 0.27e-4, 1e-4, 1.0, a2, a3);
   if (different(a2, 9.80330e-07, thresh, "2nd harmonic mismatches known val")) return 1;
   if (different(a3, 9.97747e-07, thresh, "3rd harmonic mismatches known val")) return 1;
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
   }
 
   harmonics(freq, 0.0, 1e-4, 1.0, a2_2, a3_2);
-  if (different(a3, a3_2, 1e-3, "chi2 has too big effect on 3rd harmonic")) return 1;
+  if (different(a3, a3_2, 1e-2, "chi2 has too big effect on 3rd harmonic")) return 1;
   if (a2_2 / a2 > 1e-5) {
     master_printf("error: too much 2nd harmonic without chi3\n");
     return 1;

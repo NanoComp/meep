@@ -71,12 +71,12 @@ class TestCavityFarfield(unittest.TestCase):
             ref_hy = mp.complexarray(f['hy.r'][()], f['hy.i'][()])
             ref_hz = mp.complexarray(f['hz.r'][()], f['hz.i'][()])
 
-            np.testing.assert_allclose(ref_ex, result['Ex'])
-            np.testing.assert_allclose(ref_ey, result['Ey'])
-            np.testing.assert_allclose(ref_ez, result['Ez'])
-            np.testing.assert_allclose(ref_hx, result['Hx'])
-            np.testing.assert_allclose(ref_hy, result['Hy'])
-            np.testing.assert_allclose(ref_hz, result['Hz'])
+            np.testing.assert_allclose(ref_ex, result['Ex'], rtol=1e-5)
+            np.testing.assert_allclose(ref_ey, result['Ey'], rtol=1e-5)
+            np.testing.assert_allclose(ref_ez, result['Ez'], rtol=1e-5)
+            np.testing.assert_allclose(ref_hx, result['Hx'], rtol=1e-5)
+            np.testing.assert_allclose(ref_hy, result['Hy'], rtol=1e-5)
+            np.testing.assert_allclose(ref_hz, result['Hz'], rtol=1e-5)
 
     def test_cavity_farfield(self):
         self.run_test(nfreqs=1)

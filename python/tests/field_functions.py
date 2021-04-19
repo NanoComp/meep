@@ -95,7 +95,7 @@ class TestFieldFunctions(unittest.TestCase):
         sim.run(until_after_sources=10)
 
         res1 = sim.integrate2_field_function(fields2, [mp.Ez], [mp.Ez], f2)
-        self.assertAlmostEqual(res1, 0.17158099566244897)
+        self.assertAlmostEqual(res1, 0.17158099566244897, places=6)
 
     def test_max_abs_field_function(self):
         sim = self.init()

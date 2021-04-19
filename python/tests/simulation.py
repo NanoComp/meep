@@ -209,7 +209,7 @@ class TestSimulation(unittest.TestCase):
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
-        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j, places=6)
 
         # Test unicode file name for Python 2
         if sys.version_info[0] == 2:
@@ -229,7 +229,7 @@ class TestSimulation(unittest.TestCase):
 
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
-        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j, places=6)
 
     def test_set_materials(self):
 
@@ -514,7 +514,7 @@ class TestSimulation(unittest.TestCase):
         sim = self.init_simple_simulation(geometry=geom)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            sim.run(until=5)
+            sim.run(until=0)
             self.assertGreater(len(w), 0)
             self.assertIn("Epsilon", str(w[0].message))
 
@@ -523,7 +523,7 @@ class TestSimulation(unittest.TestCase):
         sim = self.init_simple_simulation(geometry=geom)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
-            sim.run(until=5)
+            sim.run(until=0)
             self.assertEqual(len(w), 1)
             self.assertNotIn("Epsilon", str(w[0].message))
 

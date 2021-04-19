@@ -44,7 +44,7 @@ int check_cyl(double sr, double sz, double a) {
   continuous_src_time src(w);
   vec x0 = veccyl(0.5 * sr, 0);
   f.add_point_source(c0, src, x0);
-  f.solve_cw(1e-6);
+  f.solve_cw(1e-6, 10000, 10);
 
   component c = Ep;
   const int N = 20;
