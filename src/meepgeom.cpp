@@ -368,17 +368,24 @@ meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree
     }
 /* define a macro to give us data(x,y,z) on the grid, in row-major order: */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
-    // only average regions where epsilon is non-uniform
-    if ((fabs(D(x1,y1,0) - D(x1,y2,0)) > 1e-8) &&
-        (fabs(D(x1,y2,0) - D(x2,y1,0)) > 1e-8) &&
-        (fabs(D(x2,y1,0) - D(x2,y2,0)) > 1e-8)) {
-      double du_dx = (signflip_dx ? -1.0 : 1.0) *
-        (dy*(-D(x1,y2,0)+D(x2,y2,0))+(1-dy)*(-D(x1,y1,0)+D(x2,y1,0)));
-      gradient.set_direction(meep::X, du_dx);
-      double du_dy = (signflip_dy ? -1.0 : 1.0) *
-        (dx*(-D(x2,y1,0)+D(x2,y2,0))+(1-dx)*(-D(x1,y1,0)+D(x1,y2,0)));
-      gradient.set_direction(meep::Y, du_dy);
-    }
+    double du_dx = (signflip_dx ? -1.0 : 1.0) *
+      (((-D(x1, y1, z1) + D(x2, y1, z1)) * (1.0 - dy) +
+        (-D(x1, y2, z1) + D(x2, y2, z1)) * dy) * (1.0 - dz) +
+       ((-D(x1, y1, z2) + D(x2, y1, z2)) * (1.0 - dy) +
+        (-D(x1, y2, z2) + D(x2, y2, z2)) * dy) * dz);
+    double du_dy = (signflip_dy ? -1.0 : 1.0) *
+      ((-(D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) +
+        (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx)) * (1.0 - dz) +
+       (-(D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) +
+        (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx)) * dz);
+    double du_dz = (signflip_dz ? -1.0 : 1.0) *
+      (-((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
+         (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) +
+       ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
+        (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy));
+    gradient.set_direction(meep::X, du_dx);
+    gradient.set_direction(meep::Y, du_dy);
+    gradient.set_direction(meep::Z, du_dz);
 #undef D
   }
   return (abs(gradient) < 1e-8) ? zero_vec(v.dim) : gradient/abs(gradient);
