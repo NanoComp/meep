@@ -314,18 +314,18 @@ meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree
   meep::vec gradient(zero_vec(v.dim));
   vector3 pc = vec_to_vector3(v.center());
   int x1, y1, z1, x2, y2, z2;
-  meep::realnum dx, dy, dz;
+  double dx, dy, dz;
 
   // assume there is only a single MATERIAL_GRID (i.e., no overlapping grids)
   if (tp) {
     vector3 p = to_geom_box_coords(pc, &tp->objects[oi]);
     material_data *md = (material_data *)tp->objects[oi].o->material;
 
-    meep::realnum rx = p.x;
-    meep::realnum ry = p.y;
-    meep::realnum rz = p.z;
+    double rx = p.x;
+    double ry = p.y;
+    double rz = p.z;
 
-    meep::realnum *data = md->weights;
+    double *data = md->weights;
 
     int nx = md->grid_size.x;
     int ny = md->grid_size.y;
@@ -353,22 +353,35 @@ meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree
     z2 = mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
 
     /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
-    dx = fabs(dx);
-    dy = fabs(dy);
-    dz = fabs(dz);
-
+    bool signflip_dx = false, signflip_dy = false, signflip_dz = false;
+    if (dx != fabs(dx)) {
+      dx = fabs(dx);
+      signflip_dx = true;
+    }
+    if (dy != fabs(dy)) {
+      dy = fabs(dy);
+      signflip_dy = true;
+    }
+    if (dz != fabs(dz)) {
+      dz = fabs(dz);
+      signflip_dz = true;
+    }
 /* define a macro to give us data(x,y,z) on the grid, in row-major order: */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
-
-    meep::realnum du_dx = (1-dy)*(-D(x1,y2,0)+D(x2,y2,0))+dy*(-D(x1,y1,0)+D(x2,y1,0));
-    gradient.set_direction(meep::X, du_dx);
-    meep::realnum du_dy = (1-dx)*(-D(x2,y1,0)+D(x2,y2,0))+dx*(-D(x1,y1,0)+D(x1,y2,0));
-    gradient.set_direction(meep::Y, du_dy);
-
+    // only average regions where epsilon is non-uniform
+    if ((fabs(D(x1,y1,0) - D(x1,y2,0)) > 1e-8) &&
+        (fabs(D(x1,y2,0) - D(x2,y1,0)) > 1e-8) &&
+        (fabs(D(x2,y1,0) - D(x2,y2,0)) > 1e-8)) {
+      double du_dx = (signflip_dx ? -1.0 : 1.0) *
+        (dy*(-D(x1,y2,0)+D(x2,y2,0))+(1-dy)*(-D(x1,y1,0)+D(x2,y1,0)));
+      gradient.set_direction(meep::X, du_dx);
+      double du_dy = (signflip_dy ? -1.0 : 1.0) *
+        (dx*(-D(x2,y1,0)+D(x2,y2,0))+(1-dx)*(-D(x1,y1,0)+D(x1,y2,0)));
+      gradient.set_direction(meep::Y, du_dy);
+    }
 #undef D
   }
-
-  return gradient/abs(gradient);
+  return (abs(gradient) < 1e-8) ? zero_vec(v.dim) : gradient/abs(gradient);
 }
 
 double material_grid_val(vector3 p, material_data *md) {
