@@ -64,7 +64,7 @@ class TestMaterialGrid(unittest.TestCase):
 
     def test_material_grid(self):
         ## reference frequency computed using MaterialGrid at resolution = 300
-        freq_ref = 0.3068839373003908
+        freq_ref = 0.306877757638932
 
         res = [25, 50]
         freq_matgrid = []
@@ -76,7 +76,8 @@ class TestMaterialGrid(unittest.TestCase):
 
         ## verify that the relative error is decreasing with increasing resolution
         ## and is better than linear convergence because of subpixel smoothing
-        self.assertLess(abs(freq_matgrid[1]-freq_ref)*(res[1]**2)/2,abs(freq_matgrid[0]-freq_ref)*(res[0]**2))
+        self.assertLess(abs(freq_matgrid[1]-freq_ref)*(res[1]/res[0]),
+                        abs(freq_matgrid[0]-freq_ref))
 
 if __name__ == '__main__':
     unittest.main()
