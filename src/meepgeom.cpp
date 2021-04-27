@@ -1842,11 +1842,11 @@ static int geom_boxes_intersect(const geom_box *b1, const geom_box *b2) {
   /* true if the x, y, and z ranges all intersect. */
   return (
       (BETWEEN(b1->low.x, b2->low.x, b2->high.x) || BETWEEN(b1->high.x, b2->low.x, b2->high.x) ||
-       BETWEEN(b2->low.x, b1->low.x, b1->high.x)) &&
+       BETWEEN(b2->low.x, b1->low.x, b1->high.x) || BETWEEN(b2->high.x, b1->low.x, b1->high.x)) &&
       (BETWEEN(b1->low.y, b2->low.y, b2->high.y) || BETWEEN(b1->high.y, b2->low.y, b2->high.y) ||
-       BETWEEN(b2->low.y, b1->low.y, b1->high.y)) &&
+       BETWEEN(b2->low.y, b1->low.y, b1->high.y) || BETWEEN(b2->high.y, b1->low.y, b1->high.y)) &&
       (BETWEEN(b1->low.z, b2->low.z, b2->high.z) || BETWEEN(b1->high.z, b2->low.z, b2->high.z) ||
-       BETWEEN(b2->low.z, b1->low.z, b1->high.z)));
+       BETWEEN(b2->low.z, b1->low.z, b1->high.z) || BETWEEN(b2->high.z, b1->low.z, b1->high.z)));
 }
 
 /******************************************************************************/
