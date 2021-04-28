@@ -59,13 +59,11 @@ class TestMultiLevelAtom(unittest.TestCase):
 
         def check_field(sim):
             fp = sim.get_field_point(mp.Ex, mp.Vector3(z=(-0.5 * sz) + Lcav + (0.5 * dpad))).real
-            ## NOTE: test is disabled because instantaneous fields depend
-            ##       on choice of floating-point precision.
-            # self.assertAlmostEqual(fp, -2.7110969214986387)
+            self.assertAlmostEqual(fp, -0.0030657011084258556)
 
         sim.init_sim()
         sim.initialize_field(mp.Ex, field_func)
-        sim.run(mp.at_end(check_field), until=7000)
+        sim.run(mp.at_end(check_field), until=100.0/resolution)
 
 
 if __name__ == '__main__':

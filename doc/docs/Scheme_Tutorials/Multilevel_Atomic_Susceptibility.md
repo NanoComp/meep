@@ -4,6 +4,7 @@
 
 This tutorial demonstrates Meep's ability to model saturable gain and absorption via multilevel atomic susceptibility. This is based on a generalization of the [Maxwell-Bloch equations](https://en.wikipedia.org/wiki/Maxwell-Bloch_equations) which involve the interaction of a quantized system having an arbitrary number of levels with the electromagnetic fields. The theory is described in [Materials/Saturable Gain and Absorption](../Materials.md#saturable-gain-and-absorption). This example involves computing the lasing thresholds of a two-level, multimode cavity in 1d similar to the structure described in Figure 2 of [Optics Express, Vol. 20, pp. 474-88, 2012](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-20-1-474).
 
+**Note:** in order to mitigate the accumulation of roundoff error due to the long simulation time, Meep must be compiled with double-precision floating point for the fields and materials arrays.
 
 First, the cavity consists of a high-index medium ($n = 1.5$) with a perfect-metallic mirror on one end and an abrupt termination in air on the other.
 ```scm
