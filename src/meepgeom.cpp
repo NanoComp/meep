@@ -16,6 +16,7 @@
 
 #include <vector>
 #include "meepgeom.hpp"
+#include "meep_internals.hpp"
 
 namespace meep_geom {
 
@@ -307,9 +308,6 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
-/* implement mirror boundary conditions for i outside 0..n-1: */
-static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
-
 meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree tp, int oi) {
   meep::vec gradient(zero_vec(v.dim));
   vector3 pc = vec_to_vector3(v.center());
@@ -338,9 +336,9 @@ meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree
     rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
 
     /* get the point corresponding to r in the epsilon array grid: */
-    x1 = mirrorindex(int(rx * nx), nx);
-    y1 = mirrorindex(int(ry * ny), ny);
-    z1 = mirrorindex(int(rz * nz), nz);
+    x1 = meep::mirrorindex(int(rx * nx), nx);
+    y1 = meep::mirrorindex(int(ry * ny), ny);
+    z1 = meep::mirrorindex(int(rz * nz), nz);
 
     /* get the difference between (x1,y1,z1) and the actual point */
     dx = rx * nx - x1 - 0.5;
@@ -348,9 +346,9 @@ meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree
     dz = rz * nz - z1 - 0.5;
 
     /* get the other closest point in the grid, with mirror boundaries: */
-    x2 = mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
-    y2 = mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
-    z2 = mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
+    x2 = meep::mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
+    y2 = meep::mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
+    z2 = meep::mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
 
     /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
     bool signflip_dx = false, signflip_dy = false, signflip_dz = false;
@@ -2489,9 +2487,9 @@ void add_interpolate_weights(double rx, double ry, double rz,
   rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = mirrorindex(int(rx * nx), nx);
-  y = mirrorindex(int(ry * ny), ny);
-  z = mirrorindex(int(rz * nz), nz);
+  x = meep::mirrorindex(int(rx * nx), nx);
+  y = meep::mirrorindex(int(ry * ny), ny);
+  z = meep::mirrorindex(int(rz * nz), nz);
 
   /* get the difference between (x,y,z) and the actual point */
   dx = rx * nx - x - 0.5;
@@ -2499,9 +2497,9 @@ void add_interpolate_weights(double rx, double ry, double rz,
   dz = rz * nz - z - 0.5;
 
   /* get the other closest point in the grid, with mirror boundaries: */
-  x2 = mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);
-  y2 = mirrorindex(dy >= 0.0 ? y + 1 : y - 1, ny);
-  z2 = mirrorindex(dz >= 0.0 ? z + 1 : z - 1, nz);
+  x2 = meep::mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);
+  y2 = meep::mirrorindex(dy >= 0.0 ? y + 1 : y - 1, ny);
+  z2 = meep::mirrorindex(dz >= 0.0 ? z + 1 : z - 1, nz);
 
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
   dx = fabs(dx);

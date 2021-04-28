@@ -34,6 +34,9 @@ static inline double abs(double a) { return fabs(a); }
 // note that C99 has a round() function, but I don't want to rely on it
 static inline int my_round(double x) { return int(floor(fabs(x) + 0.5) * (x < 0 ? -1 : 1)); }
 
+/* implement mirror boundary conditions for i outside 0..n-1: */
+int mirrorindex(int i, int n);
+
 inline int small_r_metal(int m) { return m - 1; }
 
 inline int rmin_bulk(int m) {
