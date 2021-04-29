@@ -314,7 +314,6 @@ meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree
   int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz;
 
-  // assume there is only a single MATERIAL_GRID (i.e., no overlapping grids)
   if (tp) {
     vector3 p = to_geom_box_coords(pc, &tp->objects[oi]);
     material_data *md = (material_data *)tp->objects[oi].o->material;
@@ -1197,10 +1196,49 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   meep::vec gradient(zero_vec(v.dim));
 
   if (md->which_subclass == material_data::MATERIAL_GRID) {
-    int oi;
     geom_box_tree tp;
+    int oi, ois;
+    material_data *mg, *mg_sum;
+    int kind;
+    double scalegrad = 1.0;
     tp = geom_tree_search(p, restricted_tree, &oi);
-    gradient = matgrid_grad(meep::type(c), v, tp, oi);
+
+    if (tp &&
+        ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
+      mg = (material_data *)tp->objects[oi].o->material;
+    else if (!tp && ((material_type)default_material)->which_subclass == material_data::MATERIAL_GRID)
+      mg = (material_data *)default_material;
+    else
+      meep::abort("unable to find a MATERIAL_GRID in the geometry tree.\n");
+
+    // Calculate the number of material grids if there are overlapping grids
+    if ((tp) && (kind = mg->material_grid_kinds == material_data::U_MEAN)) {
+      int matgrid_val_count = 0;
+      geom_box_tree tp_sum;
+      tp_sum = geom_tree_search(p, restricted_tree, &ois);
+      mg_sum = (material_data *)tp_sum->objects[ois].o->material;
+      do {
+        tp_sum = geom_tree_search_next(p, tp_sum, &ois);
+        ++matgrid_val_count;
+        if (tp_sum) mg_sum = (material_data *)tp_sum->objects[ois].o->material;
+      } while (tp_sum && is_material_grid(mg_sum));
+      scalegrad /= matgrid_val_count;
+    }
+    else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||
+                      (mg->material_grid_kinds == material_data::U_PROD))) {
+      meep::abort("subpixel smoothing is not supported for overlapping MaterialGrids with U_MIN or U_PROD.\n");
+    }
+
+    if (tp) {
+      do {
+        gradient += matgrid_grad(meep::type(c), v, tp, oi);
+        if (kind == material_data::U_DEFAULT) break;
+        tp = geom_tree_search_next(p, tp, &oi);
+      } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
+    }
+
+    if (kind == material_data::U_MEAN)
+      gradient = gradient * scalegrad;
   }
   else {
     gradient = normal_vector(meep::type(c), v);
@@ -2565,6 +2603,10 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
       if (tp_sum) mg_sum = (material_data *)tp_sum->objects[ois].o->material;
     } while (tp_sum && is_material_grid(mg_sum));
     scalegrad /= matgrid_val_count;
+  }
+  else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||
+                    (mg->material_grid_kinds == material_data::U_PROD))) {
+    meep::abort("material_gradient is not supported for overlapping MaterialGrids with U_MIN or U_PROD.\n");
   }
 
   // Iterate through grids and add weights as needed
