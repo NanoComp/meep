@@ -371,6 +371,15 @@ meep::vec material_grid_grad(vector3 p, material_data *md) {
   return (abs(gradient) < 1e-8) ? zero_vec(dim) : gradient/abs(gradient);
 }
 
+void map_lattice_coordinates(double &px, double &py, double &pz) {
+  px = geometry_lattice.size.x == 0 ? 0
+    : 0.5 + (px - geometry_center.x) / geometry_lattice.size.x;
+  py = geometry_lattice.size.y == 0 ? 0
+    : 0.5 + (py - geometry_center.y) / geometry_lattice.size.y;
+  pz = geometry_lattice.size.z == 0 ? 0
+    : 0.5 + (pz - geometry_center.z) / geometry_lattice.size.z;
+}
+
 meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   meep::vec gradient(zero_vec(dim));
   int matgrid_val_count = 0;
@@ -391,12 +400,7 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   }
   // perhaps there is no object tree and the default material is a material grid
   if (!tp && is_material_grid(&default_material)) {
-    p.x = geometry_lattice.size.x == 0 ? 0
-                                       : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
-    p.y = geometry_lattice.size.y == 0 ? 0
-                                       : 0.5 + (p.y - geometry_center.y) / geometry_lattice.size.y;
-    p.z = geometry_lattice.size.z == 0 ? 0
-                                       : 0.5 + (p.z - geometry_center.z) / geometry_lattice.size.z;
+    map_lattice_coordinates(p.x,p.y,p.z);
     gradient = material_grid_grad(p, (material_data *)default_material);
     ++matgrid_val_count;
   }
@@ -425,7 +429,10 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
     do {
       u = material_grid_val(to_geom_box_coords(p, &tp->objects[oi]),
                             (material_data *)tp->objects[oi].o->material);
-      if (matgrid_val_count == 0) udefault = u;
+      if (md->material_grid_kinds == material_data::U_DEFAULT) {
+        udefault = u;
+        break;
+      }
       if (u < umin) umin = u;
       uprod *= u;
       usum += u;
@@ -435,12 +442,7 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   }
   // perhaps there is no object tree and the default material is a material grid
   if (!tp && is_material_grid(&default_material)) {
-    p.x = geometry_lattice.size.x == 0 ? 0
-                                       : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
-    p.y = geometry_lattice.size.y == 0 ? 0
-                                       : 0.5 + (p.y - geometry_center.y) / geometry_lattice.size.y;
-    p.z = geometry_lattice.size.z == 0 ? 0
-                                       : 0.5 + (p.z - geometry_center.z) / geometry_lattice.size.z;
+    map_lattice_coordinates(p.x,p.y,p.z);
     u = material_grid_val(p, (material_data *)default_material);
     if (matgrid_val_count == 0) udefault = u;
     if (u < umin) umin = u;
