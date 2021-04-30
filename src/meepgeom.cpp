@@ -308,84 +308,119 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
-meep::vec matgrid_grad(meep::field_type ft, const meep::volume &v, geom_box_tree tp, int oi) {
-  meep::vec gradient(zero_vec(v.dim));
-  vector3 pc = vec_to_vector3(v.center());
+meep::vec material_grid_grad(vector3 p, material_data *md) {
+  if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
+
+  meep::vec gradient(zero_vec(dim));
+  double *data = md->weights;
+  int nx = md->grid_size.x;
+  int ny = md->grid_size.y;
+  int nz = md->grid_size.z;
+  double rx = p.x;
+  double ry = p.y;
+  double rz = p.z;
+  int stride = 1;
   int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz;
 
-  if (tp) {
-    vector3 p = to_geom_box_coords(pc, &tp->objects[oi]);
-    material_data *md = (material_data *)tp->objects[oi].o->material;
+  /* mirror boundary conditions for r just beyond the boundary */
+  rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
+  ry = ry < 0.0 ? -ry : (ry > 1.0 ? 1.0 - ry : ry);
+  rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
 
-    double rx = p.x;
-    double ry = p.y;
-    double rz = p.z;
+  /* get the point corresponding to r in the epsilon array grid: */
+  x1 = meep::mirrorindex(int(rx * nx), nx);
+  y1 = meep::mirrorindex(int(ry * ny), ny);
+  z1 = meep::mirrorindex(int(rz * nz), nz);
 
-    double *data = md->weights;
+  /* get the difference between (x1,y1,z1) and the actual point */
+  dx = rx * nx - x1 - 0.5;
+  dy = ry * ny - y1 - 0.5;
+  dz = rz * nz - z1 - 0.5;
 
-    int nx = md->grid_size.x;
-    int ny = md->grid_size.y;
-    int nz = md->grid_size.z;
-    int stride = 1;
+  /* get the other closest point in the grid, with mirror boundaries: */
+  x2 = meep::mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
+  y2 = meep::mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
+  z2 = meep::mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
 
-    /* mirror boundary conditions for r just beyond the boundary */
-    rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
-    ry = ry < 0.0 ? -ry : (ry > 1.0 ? 1.0 - ry : ry);
-    rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
-
-    /* get the point corresponding to r in the epsilon array grid: */
-    x1 = meep::mirrorindex(int(rx * nx), nx);
-    y1 = meep::mirrorindex(int(ry * ny), ny);
-    z1 = meep::mirrorindex(int(rz * nz), nz);
-
-    /* get the difference between (x1,y1,z1) and the actual point */
-    dx = rx * nx - x1 - 0.5;
-    dy = ry * ny - y1 - 0.5;
-    dz = rz * nz - z1 - 0.5;
-
-    /* get the other closest point in the grid, with mirror boundaries: */
-    x2 = meep::mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
-    y2 = meep::mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
-    z2 = meep::mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
-
-    /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
-    bool signflip_dx = false, signflip_dy = false, signflip_dz = false;
-    if (dx != fabs(dx)) {
-      dx = fabs(dx);
-      signflip_dx = true;
-    }
-    if (dy != fabs(dy)) {
-      dy = fabs(dy);
-      signflip_dy = true;
-    }
-    if (dz != fabs(dz)) {
-      dz = fabs(dz);
-      signflip_dz = true;
-    }
-/* define a macro to give us data(x,y,z) on the grid, in row-major order: */
-#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
-    double du_dx = (signflip_dx ? -1.0 : 1.0) *
-      (((-D(x1, y1, z1) + D(x2, y1, z1)) * (1.0 - dy) +
-        (-D(x1, y2, z1) + D(x2, y2, z1)) * dy) * (1.0 - dz) +
-       ((-D(x1, y1, z2) + D(x2, y1, z2)) * (1.0 - dy) +
-        (-D(x1, y2, z2) + D(x2, y2, z2)) * dy) * dz);
-    double du_dy = (signflip_dy ? -1.0 : 1.0) *
-      ((-(D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) +
-        (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx)) * (1.0 - dz) +
-       (-(D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) +
-        (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx)) * dz);
-    double du_dz = (signflip_dz ? -1.0 : 1.0) *
-      (-((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
-         (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) +
-       ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
-        (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy));
-    gradient.set_direction(meep::X, du_dx);
-    gradient.set_direction(meep::Y, du_dy);
-    gradient.set_direction(meep::Z, du_dz);
-#undef D
+  /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
+  bool signflip_dx = false, signflip_dy = false, signflip_dz = false;
+  if (dx != fabs(dx)) {
+    dx = fabs(dx);
+    signflip_dx = true;
   }
-  return (abs(gradient) < 1e-8) ? zero_vec(v.dim) : gradient/abs(gradient);
+  if (dy != fabs(dy)) {
+    dy = fabs(dy);
+    signflip_dy = true;
+  }
+  if (dz != fabs(dz)) {
+    dz = fabs(dz);
+    signflip_dz = true;
+  }
+
+  /* define a macro to give us data(x,y,z) on the grid, 
+     in row-major order: */
+#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
+
+  double du_dx = (signflip_dx ? -1.0 : 1.0) *
+    (((-D(x1, y1, z1) + D(x2, y1, z1)) * (1.0 - dy) +
+      (-D(x1, y2, z1) + D(x2, y2, z1)) * dy) * (1.0 - dz) +
+     ((-D(x1, y1, z2) + D(x2, y1, z2)) * (1.0 - dy) +
+      (-D(x1, y2, z2) + D(x2, y2, z2)) * dy) * dz);
+  double du_dy = (signflip_dy ? -1.0 : 1.0) *
+    ((-(D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) +
+      (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx)) * (1.0 - dz) +
+     (-(D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) +
+      (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx)) * dz);
+  double du_dz = (signflip_dz ? -1.0 : 1.0) *
+    (-((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
+       (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) +
+     ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
+      (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy));
+
+#undef D
+
+  gradient.set_direction(meep::X, du_dx);
+  gradient.set_direction(meep::Y, du_dy);
+  gradient.set_direction(meep::Z, du_dz);
+
+  return (abs(gradient) < 1e-8) ? zero_vec(dim) : gradient/abs(gradient);
+}
+
+meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
+  meep::vec gradient(zero_vec(dim));
+  int matgrid_val_count = 0;
+
+  if (md->material_grid_kinds == material_data::U_MIN ||
+      md->material_grid_kinds == material_data::U_PROD)
+    meep::abort("%s:%i:matgrid_grad does not support overlapping grids with U_MIN or U_PROD\n",__FILE__,__LINE__);
+
+  // iterate through object tree at current point
+  if (tp) {
+    do {
+      gradient += material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
+                                     (material_data *)tp->objects[oi].o->material);
+      if (md->material_grid_kinds == material_data::U_DEFAULT) break;
+      ++matgrid_val_count;
+      tp = geom_tree_search_next(p, tp, &oi);
+    } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
+  }
+  // perhaps there is no object tree and the default material is a material grid
+  if (!tp && is_material_grid(&default_material)) {
+    p.x = geometry_lattice.size.x == 0 ? 0
+                                       : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
+    p.y = geometry_lattice.size.y == 0 ? 0
+                                       : 0.5 + (p.y - geometry_center.y) / geometry_lattice.size.y;
+    p.z = geometry_lattice.size.z == 0 ? 0
+                                       : 0.5 + (p.z - geometry_center.z) / geometry_lattice.size.z;
+    gradient = material_grid_grad(p, (material_data *)default_material);
+    ++matgrid_val_count;
+  }
+
+  if (md->material_grid_kinds == material_data::U_MEAN)
+    gradient = gradient * 1.0/matgrid_val_count;
+
+  return gradient;
 }
 
 double material_grid_val(vector3 p, material_data *md) {
@@ -414,7 +449,7 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
       tp = geom_tree_search_next(p, tp, &oi);
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
-  // perhaps there is not object tree and the default material is a material grid
+  // perhaps there is no object tree and the default material is a material grid
   if (!tp && is_material_grid(&default_material)) {
     p.x = geometry_lattice.size.x == 0 ? 0
                                        : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
@@ -1197,48 +1232,9 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
 
   if (md->which_subclass == material_data::MATERIAL_GRID) {
     geom_box_tree tp;
-    int oi, ois;
-    material_data *mg, *mg_sum;
-    int kind;
-    double scalegrad = 1.0;
+    int oi;
     tp = geom_tree_search(p, restricted_tree, &oi);
-
-    if (tp &&
-        ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
-      mg = (material_data *)tp->objects[oi].o->material;
-    else if (!tp && ((material_type)default_material)->which_subclass == material_data::MATERIAL_GRID)
-      mg = (material_data *)default_material;
-    else
-      meep::abort("unable to find a MATERIAL_GRID in the geometry tree.\n");
-
-    // Calculate the number of material grids if there are overlapping grids
-    if ((tp) && (kind = mg->material_grid_kinds == material_data::U_MEAN)) {
-      int matgrid_val_count = 0;
-      geom_box_tree tp_sum;
-      tp_sum = geom_tree_search(p, restricted_tree, &ois);
-      mg_sum = (material_data *)tp_sum->objects[ois].o->material;
-      do {
-        tp_sum = geom_tree_search_next(p, tp_sum, &ois);
-        ++matgrid_val_count;
-        if (tp_sum) mg_sum = (material_data *)tp_sum->objects[ois].o->material;
-      } while (tp_sum && is_material_grid(mg_sum));
-      scalegrad /= matgrid_val_count;
-    }
-    else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||
-                      (mg->material_grid_kinds == material_data::U_PROD))) {
-      meep::abort("subpixel smoothing is not supported for overlapping MaterialGrids with U_MIN or U_PROD.\n");
-    }
-
-    if (tp) {
-      do {
-        gradient += matgrid_grad(meep::type(c), v, tp, oi);
-        if (kind == material_data::U_DEFAULT) break;
-        tp = geom_tree_search_next(p, tp, &oi);
-      } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
-    }
-
-    if (kind == material_data::U_MEAN)
-      gradient = gradient * scalegrad;
+    gradient = matgrid_grad(p, tp, oi, md);
   }
   else {
     gradient = normal_vector(meep::type(c), v);
@@ -2606,7 +2602,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
   }
   else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||
                     (mg->material_grid_kinds == material_data::U_PROD))) {
-    meep::abort("material_gradient is not supported for overlapping MaterialGrids with U_MIN or U_PROD.\n");
+    meep::abort("%s:%i:material_grids_addgradient_point does not support overlapping MATERIAL_GRIDs with U_MIN or U_PROD.\n",__FILE__,__LINE__);
   }
 
   // Iterate through grids and add weights as needed
