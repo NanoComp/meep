@@ -322,29 +322,13 @@ meep::vec material_grid_grad(vector3 p, material_data *md) {
   int stride = 1;
   int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz;
-
-  /* mirror boundary conditions for r just beyond the boundary */
-  rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
-  ry = ry < 0.0 ? -ry : (ry > 1.0 ? 1.0 - ry : ry);
-  rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
-
-  /* get the point corresponding to r in the epsilon array grid: */
-  x1 = meep::mirrorindex(int(rx * nx), nx);
-  y1 = meep::mirrorindex(int(ry * ny), ny);
-  z1 = meep::mirrorindex(int(rz * nz), nz);
-
-  /* get the difference between (x1,y1,z1) and the actual point */
-  dx = rx * nx - x1 - 0.5;
-  dy = ry * ny - y1 - 0.5;
-  dz = rz * nz - z1 - 0.5;
-
-  /* get the other closest point in the grid, with mirror boundaries: */
-  x2 = meep::mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
-  y2 = meep::mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
-  z2 = meep::mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
-
-  /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
   bool signflip_dx = false, signflip_dy = false, signflip_dz = false;
+
+  meep::map_coordinates(rx, ry, rz, nx, ny, nz,
+                        x1, y1, z1, x2, y2, z2,
+                        dx, dy, dz,
+                        false /* do_fabs */);
+
   if (dx != fabs(dx)) {
     dx = fabs(dx);
     signflip_dx = true;
@@ -2512,56 +2496,35 @@ double get_material_gradient(
 void add_interpolate_weights(double rx, double ry, double rz,
                              double *data, int nx, int ny, int nz, int stride,
                              double scaleby, const double *udata, int ukind, double uval) {
-  int x, y, z, x2, y2, z2;
+  int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz, u;
 
-  /* mirror boundary conditions for r just beyond the boundary */
-  rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
-  ry = ry < 0.0 ? -ry : (ry > 1.0 ? 1.0 - ry : ry);
-  rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
-
-  /* get the point corresponding to r in the epsilon array grid: */
-  x = meep::mirrorindex(int(rx * nx), nx);
-  y = meep::mirrorindex(int(ry * ny), ny);
-  z = meep::mirrorindex(int(rz * nz), nz);
-
-  /* get the difference between (x,y,z) and the actual point */
-  dx = rx * nx - x - 0.5;
-  dy = ry * ny - y - 0.5;
-  dz = rz * nz - z - 0.5;
-
-  /* get the other closest point in the grid, with mirror boundaries: */
-  x2 = meep::mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);
-  y2 = meep::mirrorindex(dy >= 0.0 ? y + 1 : y - 1, ny);
-  z2 = meep::mirrorindex(dz >= 0.0 ? z + 1 : z - 1, nz);
-
-  /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
-  dx = fabs(dx);
-  dy = fabs(dy);
-  dz = fabs(dz);
+  meep::map_coordinates(rx, ry, rz, nx, ny, nz,
+                        x1, y1, z1, x2, y2, z2,
+                        dx, dy, dz);
 
 /* define a macro to give us data(x,y,z) on the grid,
 in row-major order (the order used by HDF5): */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 #define U(x, y, z) (udata[(((x)*ny + (y)) * nz + (z)) * stride])
 
-  u = (((U(x, y, z) * (1.0 - dx) + U(x2, y, z) * dx) * (1.0 - dy) +
-        (U(x, y2, z) * (1.0 - dx) + U(x2, y2, z) * dx) * dy) *
+  u = (((U(x1, y1, z1) * (1.0 - dx) + U(x2, y1, z1) * dx) * (1.0 - dy) +
+        (U(x1, y2, z1) * (1.0 - dx) + U(x2, y2, z1) * dx) * dy) *
            (1.0 - dz) +
-       ((U(x, y, z2) * (1.0 - dx) + U(x2, y, z2) * dx) * (1.0 - dy) +
-        (U(x, y2, z2) * (1.0 - dx) + U(x2, y2, z2) * dx) * dy) *
+       ((U(x1, y1, z2) * (1.0 - dx) + U(x2, y1, z2) * dx) * (1.0 - dy) +
+        (U(x1, y2, z2) * (1.0 - dx) + U(x2, y2, z2) * dx) * dy) *
            dz);
 
   if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
   if (ukind == material_data::U_PROD) scaleby *= uval / u;
 
-  D(x, y, z) += (1.0 - dx) * (1.0 - dy) * (1.0 - dz) * scaleby;
-  D(x2, y, z) += dx * (1.0 - dy) * (1.0 - dz) * scaleby;
-  D(x, y2, z) += (1.0 - dx) * dy * (1.0 - dz) * scaleby;
-  D(x2, y2, z) += dx * dy * (1.0 - dz) * scaleby;
-  D(x, y, z2) += (1.0 - dx) * (1.0 - dy) * dz * scaleby;
-  D(x2, y, z2) += dx * (1.0 - dy) * dz * scaleby;
-  D(x, y2, z2) += (1.0 - dx) * dy * dz * scaleby;
+  D(x1, y1, z1) += (1.0 - dx) * (1.0 - dy) * (1.0 - dz) * scaleby;
+  D(x2, y1, z1) += dx * (1.0 - dy) * (1.0 - dz) * scaleby;
+  D(x1, y2, z1) += (1.0 - dx) * dy * (1.0 - dz) * scaleby;
+  D(x2, y2, z1) += dx * dy * (1.0 - dz) * scaleby;
+  D(x1, y1, z2) += (1.0 - dx) * (1.0 - dy) * dz * scaleby;
+  D(x2, y1, z2) += dx * (1.0 - dy) * dz * scaleby;
+  D(x1, y2, z2) += (1.0 - dx) * dy * dz * scaleby;
   D(x2, y2, z2) += dx * dy * dz * scaleby;
 
 #undef D
