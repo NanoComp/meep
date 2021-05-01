@@ -399,7 +399,7 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
   // perhaps there is no object tree and the default material is a material grid
-  if (!tp && is_material_grid(&default_material)) {
+  if (!tp && is_material_grid(default_material)) {
     map_lattice_coordinates(p.x,p.y,p.z);
     gradient = material_grid_grad(p, (material_data *)default_material);
     ++matgrid_val_count;
@@ -441,7 +441,7 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
   // perhaps there is no object tree and the default material is a material grid
-  if (!tp && is_material_grid(&default_material)) {
+  if (!tp && is_material_grid(default_material)) {
     map_lattice_coordinates(p.x,p.y,p.z);
     u = material_grid_val(p, (material_data *)default_material);
     if (matgrid_val_count == 0) udefault = u;
@@ -2598,7 +2598,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
   // no object tree -- the whole domain is the material grid
-  if (!tp && is_material_grid(&default_material)) {
+  if (!tp && is_material_grid(default_material)) {
     vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
     vector3 sz = mg->grid_size;
     double *vcur = v, *ucur;
