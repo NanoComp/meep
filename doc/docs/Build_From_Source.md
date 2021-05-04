@@ -244,6 +244,31 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 —
 This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
 
+### Floating-Point Precision of the Fields and Materials Arrays
+
+By default, the time-domain fields ($\mathbf{E}$, $\mathbf{D}$, $\mathbf{H}$) and materials ($\varepsilon$) arrays used in Meep are defined using [double-precision floating point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Updating the fields arrays generally dominates the cost of the simulation because it occurs at every voxel in the computational cell and at every timestep. Because discretization error from the discontinuous material interfaces (as described in [Subpixel Smoothing](Subpixel_Smoothing.md)) typically dominates the [floating-point roundoff error](https://en.wikipedia.org/wiki/Round-off_error), the fields/materials arrays can be defined using [single-precision floating point](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) to provide a significant speedup (by reducing the [memory bandwidth](https://en.wikipedia.org/wiki/Memory_bandwidth)) often without *any loss* in simulation accuracy.
+
+This feature requires manually setting the [macro `MEEP_SINGLE` in the source file `meep.hpp`](https://github.com/NanoComp/meep/blob/master/src/meep.hpp#L37) to `1` before compiling:
+
+```cpp
+/* The (time-domain) fields arrays of the fields_chunk class as well
+   as the material arrays of the structure_chunk class chi1inv,
+   chi3, sigma, etc. can be stored using single-precision floating
+   point rather than double precision (the default). The reduced
+   precision can provide for up to a factor of 2X improvement in the
+   time-stepping rate with generally negligible loss in accuracy. */
+#define MEEP_SINGLE 1 // 1 for single precision, 0 for double
+#if MEEP_SINGLE
+typedef float realnum;
+#else
+typedef double realnum;
+#endif
+```
+
+As an example demonstration of the improvement in runtime performance, for an experiment involving [computing the light-extraction efficiency of an OLED](http://www.simpetus.com/projects.html#meep_oled) which includes PMLs, DFT flux monitors, and Lorentzian susceptibilities, the timestepping rate (s/step) for the single-precision case using 20 MPI processes was ~50% that of double precision.
+
+The DFT fields, however, are always defined using double-precision floating point. This is intended to mitigate the accumulation of round-off error for simulations with a large number of timesteps.
+
 ### Separating Build and Source Paths
 
 Meep supports ["VPATH" builds](https://www.gnu.org/software/automake/manual/html_node/VPATH-Builds.html), where you compile in a separate directory from the source directory.  This is helpful if you want to keep the source directory in a pristine state, or if you want to build multiple binaries simultaneously from the same source tree.   Just create a build directory and execute the `configure` script by supplying its path, for example
