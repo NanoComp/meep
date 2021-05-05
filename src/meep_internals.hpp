@@ -34,6 +34,17 @@ static inline double abs(double a) { return fabs(a); }
 // note that C99 has a round() function, but I don't want to rely on it
 static inline int my_round(double x) { return int(floor(fabs(x) + 0.5) * (x < 0 ? -1 : 1)); }
 
+/* implement mirror boundary conditions for i outside 0..n-1: */
+int mirrorindex(int i, int n);
+
+/* map the cell coordinates into the range [0,1] */
+void map_coordinates(double rx, double ry, double rz,
+                     int nx, int ny, int nz,
+                     int &x1, int &y1, int &z1,
+                     int &x2, int &y2, int &z2,
+                     double &dx, double &dy, double &dz,
+                     bool do_fabs = true);
+
 inline int small_r_metal(int m) { return m - 1; }
 
 inline int rmin_bulk(int m) {
