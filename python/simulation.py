@@ -3224,7 +3224,7 @@ class Simulation(object):
 
         + `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
-          `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
+          `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
         """
         if hasattr(dft_obj, 'swigobj'):
             dft_swigobj = dft_obj.swigobj
