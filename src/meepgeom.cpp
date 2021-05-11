@@ -1144,6 +1144,78 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
 
 static int eps_ever_negative = 0;
 static meep::field_type func_ft = meep::E_stuff;
+static double voxel_rad = 0;
+static vector3 voxel_cen;
+
+#ifdef CTL_HAS_COMPLEX_INTEGRATION
+static cnumber matgrid_ceps_func(int n, number *x, void *geomeps_) {
+  geom_epsilon *geomeps = (geom_epsilon *)geomeps_;
+  vector3 p = {0, 0, 0};
+  p.x = x[0];
+  p.y = n > 1 ? x[1] : 0;
+  p.z = n > 2 ? x[2] : 0;
+  double s = 1;
+  if (dim == meep::Dcyl) {
+    double py = p.y;
+    p.y = p.z;
+    p.z = py;
+    s = p.x;
+  }
+  cnumber ret;
+  double r2 = voxel_rad*voxel_rad;
+  double z2 = sqr(p.x-voxel_cen.x) + sqr(p.y-voxel_cen.y);
+  double w = 2*sqrt(r2 - z2)/(meep::pi*r2);
+  double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
+  if (ep < 0) eps_ever_negative = 1;
+  ret.re = ep * s;
+  ret.im = s / ep;
+  master_printf("matgrid_ceps_func:, (%0.5f,%0.5f), %0.5f, %0.5f\n",p.x,p.y,ret.re,ret.im);
+  return ret * w;
+}
+#else
+static number matgrid_eps_func(int n, number *x, void *geomeps_) {
+  geom_epsilon *geomeps = (geom_epsilon *)geomeps_;
+  vector3 p = {0, 0, 0};
+  double s = 1;
+  p.x = x[0];
+  p.y = n > 1 ? x[1] : 0;
+  p.z = n > 2 ? x[2] : 0;
+  if (dim == meep::Dcyl) {
+    double py = p.y;
+    p.y = p.z;
+    p.z = py;
+    s = p.x;
+  }
+  double r2 = voxel_rad*voxel_rad;
+  double z2 = (p.x-voxel_cen.x)*(p.x-voxel_cen.x) + (p.y-voxel_cen.y)*(p.y-voxel_cen.y);
+  double w = 2*sqrt(r2 - z2)/(meep::pi*r2);
+  double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
+  if (ep < 0) eps_ever_negative = 1;
+  master_printf("matgrid_eps_func:, (%0.5f,%0.5f), (%0.5f,%0.5f), %0.6f, %0.6f, %d\n",p.x,p.y,voxel_cen.x,voxel_cen.y,r2,z2,r2 < z2 ? 1 : 0);
+  return (ep * s) * w;
+}
+static number matgrid_inveps_func(int n, number *x, void *geomeps_) {
+  geom_epsilon *geomeps = (geom_epsilon *)geomeps_;
+  vector3 p = {0, 0, 0};
+  double s = 1;
+  p.x = x[0];
+  p.y = n > 1 ? x[1] : 0;
+  p.z = n > 2 ? x[2] : 0;
+  if (dim == meep::Dcyl) {
+    double py = p.y;
+    p.y = p.z;
+    p.z = py;
+    s = p.x;
+  }
+  double r2 = voxel_rad*voxel_rad;
+  double z2 = (p.x-voxel_cen.x)*(p.x-voxel_cen.x) + (p.y-voxel_cen.y)*(p.y-voxel_cen.y);
+  double w = 2*sqrt(r2 - z2)/(meep::pi*r2);
+  double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
+  if (ep < 0) eps_ever_negative = 1;
+  master_printf("matgrid_inveps_func:, (%0.5f,%0.5f), (%0.5f,%0.5f), %0.6f, %0.6f, %d\n",p.x,p.y,voxel_cen.x,voxel_cen.y,r2,z2,r2 < z2 ? 1 : 0);
+  return (s / ep) * w;
+}
+#endif
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber ceps_func(int n, number *x, void *geomeps_) {
@@ -1253,47 +1325,87 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   number esterr;
   integer errflag, n;
   number xmin[3], xmax[3];
-  vector3 gvmin, gvmax;
-  gvmin = vec_to_vector3(v.get_min_corner());
-  gvmax = vec_to_vector3(v.get_max_corner());
-  xmin[0] = gvmin.x;
-  xmax[0] = gvmax.x;
-  if (dim == meep::Dcyl) {
-    xmin[1] = gvmin.z;
-    xmin[2] = gvmin.y;
-    xmax[1] = gvmax.z;
-    xmax[2] = gvmax.y;
+  double vol = 1;
+  if (md->which_subclass == material_data::MATERIAL_GRID) {
+    // integrate along a line in the direction of the normal vector through the center of a circular voxel
+    // for a normal vector at an oblique angle, start with a horizontal line through (-D/2,0) and (+D/2,0)
+    // and apply counter clockwise rotation through the z-axis using the direction angle of the normal vector
+    double theta = atan(gradient.y()/gradient.x());
+    voxel_rad = v.diameter()/2;
+    voxel_cen = p;
+    if (theta == 0) {
+      xmin[0] = -voxel_rad;
+      xmin[1] = 0;
+      xmin[2] = 0;
+      xmax[0] = voxel_rad;
+      xmax[1] = 0;
+      xmax[2] = 0;
+    }
+    else if (fabs(theta) == meep::pi/2) {
+      xmin[0] = 0;
+      xmin[1] = -voxel_rad;
+      xmin[2] = 0;
+      xmax[0] = 0;
+      xmax[1] = voxel_rad;
+      xmax[2] = 0;
+    }
+    else {
+      xmin[0] = -cos(theta)*voxel_rad + p.x;
+      xmin[1] = -sin(theta)*voxel_rad + p.y;
+      xmin[2] = 0;
+      xmax[0] = cos(theta)*voxel_rad + p.x;
+      xmax[1] = sin(theta)*voxel_rad + p.y;
+      xmax[2] = 0;
+    }
+    n = 2;
+    vol = 2*voxel_rad;
   }
   else {
-    xmin[1] = gvmin.y;
-    xmin[2] = gvmin.z;
-    xmax[1] = gvmax.y;
-    xmax[2] = gvmax.z;
+    // quadrature over entire voxel from one corner of cube to the other
+    vector3 gvmin, gvmax;
+    gvmin = vec_to_vector3(v.get_min_corner());
+    gvmax = vec_to_vector3(v.get_max_corner());
+    xmin[0] = gvmin.x;
+    xmax[0] = gvmax.x;
+    if (dim == meep::Dcyl) {
+      xmin[1] = gvmin.z;
+      xmin[2] = gvmin.y;
+      xmax[1] = gvmax.z;
+      xmax[2] = gvmax.y;
+    }
+    else {
+      xmin[1] = gvmin.y;
+      xmin[2] = gvmin.z;
+      xmax[1] = gvmax.y;
+      xmax[2] = gvmax.z;
+    }
+    if (xmin[2] == xmax[2])
+      n = xmin[1] == xmax[1] ? 1 : 2;
+    else
+      n = 3;
+    for (int i = 0; i < n; ++i)
+      vol *= xmax[i] - xmin[i];
+    if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
   }
-  if (xmin[2] == xmax[2])
-    n = xmin[1] == xmax[1] ? 1 : 2;
-  else
-    n = 3;
-  double vol = 1;
-  for (int i = 0; i < n; ++i)
-    vol *= xmax[i] - xmin[i];
-  if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
+
   eps_ever_negative = 0;
   func_ft = meep::type(c);
   double meps, minveps;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
-  cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval,
+  cnumber ret = cadaptive_integration((md->which_subclass == material_data::MATERIAL_GRID) ? matgrid_ceps_func: ceps_func,
+                                      xmin, xmax, n, (void *)this, 0, tol, maxeval,
                                       &esterr, &errflag);
   meps = ret.re / vol;
   minveps = ret.im / vol;
 #else
-  meps = adaptive_integration(eps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
+  meps = adaptive_integration((md->which_subclass == material_data::MATERIAL_GRID) ? matgrid_eps_func : eps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
                               &errflag) /
-         vol;
-  minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
+    vol;
+  minveps = adaptive_integration((md->which_subclass == material_data::MATERIAL_GRID) ? matgrid_inveps_func : inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
                                  &errflag) /
-            vol;
+    vol;
 #endif
+
   if (eps_ever_negative) // averaging negative eps causes instability
     minveps = 1.0 / (meps = eps(v.center()));
 
