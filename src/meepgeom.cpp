@@ -1163,13 +1163,12 @@ static cnumber matgrid_ceps_func(int n, number *x, void *geomeps_) {
   }
   cnumber ret;
   double r2 = voxel_rad*voxel_rad;
-  double z2 = sqr(p.x-voxel_cen.x) + sqr(p.y-voxel_cen.y);
+  double z2 = (p.x-voxel_cen.x)*(p.x-voxel_cen.x) + (p.y-voxel_cen.y)*(p.y-voxel_cen.y);
   double w = 2*sqrt(r2 - z2)/(meep::pi*r2);
   double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
   if (ep < 0) eps_ever_negative = 1;
   ret.re = ep * s;
   ret.im = s / ep;
-  master_printf("matgrid_ceps_func:, (%0.5f,%0.5f), %0.5f, %0.5f\n",p.x,p.y,ret.re,ret.im);
   return ret * w;
 }
 #else
@@ -1191,7 +1190,6 @@ static number matgrid_eps_func(int n, number *x, void *geomeps_) {
   double w = 2*sqrt(r2 - z2)/(meep::pi*r2);
   double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
   if (ep < 0) eps_ever_negative = 1;
-  master_printf("matgrid_eps_func:, (%0.5f,%0.5f), (%0.5f,%0.5f), %0.6f, %0.6f, %d\n",p.x,p.y,voxel_cen.x,voxel_cen.y,r2,z2,r2 < z2 ? 1 : 0);
   return (ep * s) * w;
 }
 static number matgrid_inveps_func(int n, number *x, void *geomeps_) {
@@ -1212,7 +1210,6 @@ static number matgrid_inveps_func(int n, number *x, void *geomeps_) {
   double w = 2*sqrt(r2 - z2)/(meep::pi*r2);
   double ep = geomeps->chi1p1(func_ft, vector3_to_vec(p));
   if (ep < 0) eps_ever_negative = 1;
-  master_printf("matgrid_inveps_func:, (%0.5f,%0.5f), (%0.5f,%0.5f), %0.6f, %0.6f, %d\n",p.x,p.y,voxel_cen.x,voxel_cen.y,r2,z2,r2 < z2 ? 1 : 0);
   return (s / ep) * w;
 }
 #endif
@@ -1333,30 +1330,12 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     double theta = atan(gradient.y()/gradient.x());
     voxel_rad = v.diameter()/2;
     voxel_cen = p;
-    if (theta == 0) {
-      xmin[0] = -voxel_rad;
-      xmin[1] = 0;
-      xmin[2] = 0;
-      xmax[0] = voxel_rad;
-      xmax[1] = 0;
-      xmax[2] = 0;
-    }
-    else if (fabs(theta) == meep::pi/2) {
-      xmin[0] = 0;
-      xmin[1] = -voxel_rad;
-      xmin[2] = 0;
-      xmax[0] = 0;
-      xmax[1] = voxel_rad;
-      xmax[2] = 0;
-    }
-    else {
-      xmin[0] = -cos(theta)*voxel_rad + p.x;
-      xmin[1] = -sin(theta)*voxel_rad + p.y;
-      xmin[2] = 0;
-      xmax[0] = cos(theta)*voxel_rad + p.x;
-      xmax[1] = sin(theta)*voxel_rad + p.y;
-      xmax[2] = 0;
-    }
+    xmin[0] = -cos(theta)*voxel_rad + p.x;
+    xmin[1] = -sin(theta)*voxel_rad + p.y;
+    xmin[2] = 0;
+    xmax[0] = cos(theta)*voxel_rad + p.x;
+    xmax[1] = sin(theta)*voxel_rad + p.y;
+    xmax[2] = 0;
     n = 2;
     vol = 2*voxel_rad;
   }
