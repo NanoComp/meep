@@ -2127,7 +2127,7 @@ void fragment_stats::compute_stats() {
 
   for (int i = 0; i < geom.num_items; ++i) {
     geometric_object *go = &geom.items[i];
-    double overlap = box_overlap_with_object(box, *go, tol, maxeval);
+    double overlap = box_overlap_with_object(box, *go, 0.05, 1000);
 
     bool anisotropic_pixels_already_added = false;
     if (eps_averaging) {
