@@ -36,7 +36,7 @@ mpirun -np 4 meep foo.ctl > foo.out
 
 There is one important requirement: every MPI process must be able to read the `foo.py`/`foo.ctl` input file or whatever your script file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something. This requirement also applies to HDF5 files used for input (i.e., via `epsilon_input_file`) or output (i.e., `output_epsilon()`, `output_efield()`, etc.). Any disruptions to the network or disk failures on individual machines which affect the [network file system](https://en.wikipedia.org/wiki/Network_File_System) may cause Meep to freeze/hang.
 
-For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep), you can try setting [`split_chunks_evenly=False`](Python_User_Interface.md#the-simulation-class) in the `Simulation` constructor. For a technical description of the load balancing features in Meep as well as some performance metrics, see [arXiv:2003.04287](https://arxiv.org/abs/2003.04287).
+For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep), you can try setting [`split_chunks_evenly=False`](Python_User_Interface.md#the-simulation-class) in the `Simulation` constructor. For a technical description of the load-balancing features in Meep as well as some performance metrics from actual experiments, see [arXiv:2003.04287](https://arxiv.org/abs/2003.04287).
 
 In general, you cannot run Meep interactively on multiple processors.
 
@@ -150,7 +150,7 @@ As shown in the first figure below, the runtime reaches a minimum at 77 processo
 ![](images/parallel_benchmark_commcomp_vs_nprocs.png)
 </center>
 
-These results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the $x$ axis to along the $y$ axis) which significantly affects the runtime performance.
+These results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the $x$ axis to along the $y$ axis) which significantly affects the runtime performance. Also, in general, benchmarking studies involving MPI jobs are challenging because there are [a number of factors which can affect the results](https://www.open-mpi.org/faq/?category=tuning#running-perf-numbers).
 
 For a given cluster, we can also analyze the time spent by each processor on time-stepping, MPI/synchronization, and DFT. This is shown in the next figure for the case of a cluster with 35 processors (5 nodes). Because the simulation is not properly load balanced due to the equal-sized chunks, there is a large variation in the timings for different processors particularly for the DFT where there are several idle processors (i.e., chunks which do not contain any DFT pixels).
 
