@@ -55,7 +55,7 @@ import meep as mp
 import meep.adjoint as mpa
 import numpy as onp
 
-import utils
+from . import utils
 
 # The frequency axis in the array returned by `mp._get_gradient()`
 _GRADIENT_FREQ_AXIS = 1
@@ -160,7 +160,7 @@ class MeepJaxWrapper:
                                                                   self.frequencies)
 
     self.simulation.init_sim()
-    sim_run_args = {'until_after_sources' if self.until_after_sources else 'until': self._callback}
+    sim_run_args = {'until_after_sources' if self.until_after_sources else 'until': self._simulation_run_callback}
     self._reset_convergence_measurement(design_region_monitors)
     self.simulation.run(**sim_run_args)
 
@@ -195,14 +195,14 @@ class MeepJaxWrapper:
 
     self.simulation.init_sim()
     sim_run_args = {
-      'until_after_sources' if self.until_after_sources else 'until': self._callback
+      'until_after_sources' if self.until_after_sources else 'until': self._simulation_run_callback
     }
     self._reset_convergence_measurement(design_region_monitors)
     self.simulation.run(**sim_run_args)
 
     return utils.gather_design_region_fields(self.simulation, design_region_monitors, self.frequencies)
 
-  def _calculate_vjps(self, fwd_fields, adj_fields, design_variable_shapes):
+  def _calculate_vjps(self, fwd_fields, adj_fields, design_variable_shapes, sum_freq_partials=True):
     """Calculates the VJP for a given set of forward and adjoint fields."""
     vjps = [
       design_region.get_gradient(
@@ -212,16 +212,16 @@ class MeepJaxWrapper:
         self.frequencies,
       ) for i, design_region in enumerate(self.design_regions)
     ]
-    # This interface returns the *total* gradient, thus we sum over the frequency axis (if
-    # there is one)
-    vjps = [
-      onp.sum(vjp, axis=_GRADIENT_FREQ_AXIS)
-      if vjp.ndim == 2 else vjp for vjp in vjps
-    ]
-    vjps = [
-      onp.reshape(vjp, shape)
-      for vjp, shape in zip(vjps, design_variable_shapes)
-    ]
+    if sum_freq_partials:
+      vjps = [
+        onp.sum(vjp, axis=_GRADIENT_FREQ_AXIS).reshape(shape)
+        for vjp, shape in zip(vjps, design_variable_shapes)
+      ]
+    else:
+      vjps = [
+        vjp.reshape(shape + (-1,))
+        for vjp, shape in zip(vjps, design_variable_shapes)
+      ]
     return vjps
 
   def _initialize_callable(self) -> Callable[[List[jnp.ndarray]], jnp.ndarray]:
@@ -290,7 +290,7 @@ class MeepJaxWrapper:
             f'the DFT fields is {relative_change:.2e}.')
     return relative_change < self.dft_threshold
 
-  def _callback(self, sim: mp.Simulation) -> bool:
+  def _simulation_run_callback(self, sim: mp.Simulation) -> bool:
     """A callback function returning `True` when the simulation should stop.
 
     This is a step function that gets called at each time step of the Meep
