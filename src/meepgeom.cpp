@@ -420,6 +420,14 @@ double material_grid_val(vector3 p, material_data *md) {
 
 }
 
+static double tanh_projection(double u, double beta, double eta) {
+  double u_proj = 0;
+  double tanh_beta_eta = tanh(beta*eta);
+  u_proj = (tanh_beta_eta + tanh(beta*(u-eta))) /
+    (tanh_beta_eta + tanh(beta*(1-eta)));
+  return u_proj;
+}
+
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   double uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
   int matgrid_val_count = 0;
@@ -458,15 +466,7 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
                         : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
                            : udefault)));
 
-  // project interpolated grid point
-  double u_proj;
-  if (md->beta != 0) {
-    double tanh_beta_eta = tanh(md->beta*md->eta);
-    u_proj = (tanh_beta_eta + tanh(md->beta*(u_interp-md->eta))) /
-      (tanh_beta_eta + tanh(md->beta*(1-md->eta)));
-  }
-
-  return (md->beta != 0) ? u_proj : u_interp;
+  return (md->beta != 0) ? tanh_projection(u_interp, md->beta, md->eta) : u_interp;
 }
 static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2,
                             cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out,
@@ -2584,8 +2584,8 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
     fashion. Since we aren't checking if each design grid is unique, however,
     it's up to the user to only have one unique design grid in this volume.*/
     vector3 sz = mg->grid_size;
-    double *vcur = v, *ucur;
-    ucur = mg->weights;
+    double *vcur = v;
+    double *ucur = mg->weights;
     uval = matgrid_val(p, tp, oi, mg);
     do {
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
@@ -2599,16 +2599,16 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
   }
   // no object tree -- the whole domain is the material grid
   if (!tp && is_material_grid(default_material)) {
-    vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
+    map_lattice_coordinates(p.x,p.y,p.z);
     vector3 sz = mg->grid_size;
-    double *vcur = v, *ucur;
-    ucur = mg->weights;
-    uval = matgrid_val(p, tp, oi, mg);
-    add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
+    double *vcur = v;
+    double *ucur = mg->weights;
+    uval = material_grid_val(p, mg);
+    if (mg->beta != 0) uval = tanh_projection(uval, mg->beta, mg->eta);
+    add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
                             get_material_gradient(uval, fields_a, fields_f, freq, mg, field_dir) *
                                 scalegrad,
                             ucur, kind, uval);
-    tp = geom_tree_search_next(p, tp, &oi);
   }
 }
 
