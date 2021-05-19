@@ -34,7 +34,10 @@ namespace meep {
    point rather than double precision (the default). The reduced
    precision can provide for up to a factor of 2X improvement in the
    time-stepping rate with generally negligible loss in accuracy. */
+#ifndef MEEP_SINGLE
 #define MEEP_SINGLE 0 // 1 for single precision, 0 for double
+#endif
+
 #if MEEP_SINGLE
 typedef float realnum;
 #else
