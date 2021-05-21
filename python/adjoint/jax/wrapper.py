@@ -159,9 +159,10 @@ class MeepJaxWrapper:
       self.frequencies,
     )
     self.simulation.init_sim()
-    sim_run_args = {'until_after_sources' if self.until_after_sources else 'until': self._callback}
+    sim_run_args = {'until_after_sources' if self.until_after_sources else 'until': self._simulation_run_callback}
     self._reset_convergence_measurement(design_region_monitors)
     self.simulation.run(**sim_run_args)
+
     monitor_values = utils.gather_monitor_values(self.monitors)
     fwd_fields = utils.gather_design_region_fields(
       self.simulation,
@@ -188,10 +189,11 @@ class MeepJaxWrapper:
     )
     self.simulation.init_sim()
     sim_run_args = {
-      'until_after_sources' if self.until_after_sources else 'until': self._callback
+      'until_after_sources' if self.until_after_sources else 'until': self._simulation_run_callback
     }
     self._reset_convergence_measurement(design_region_monitors)
     self.simulation.run(**sim_run_args)
+
     return utils.gather_design_region_fields(self.simulation, design_region_monitors, self.frequencies)
 
   def _calculate_vjps(self, fwd_fields, adj_fields, design_variable_shapes, sum_freq_partials=True):
@@ -266,7 +268,7 @@ class MeepJaxWrapper:
             f'the DFT fields is {relative_change:.2e}.')
     return relative_change < self.dft_threshold
 
-  def _callback(self, sim: mp.Simulation) -> bool:
+  def _simulation_run_callback(self, sim: mp.Simulation) -> bool:
     """A callback function returning `True` when the simulation should stop.
 
     This is a step function that gets called at each time step of the Meep
