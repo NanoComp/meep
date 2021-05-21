@@ -7,10 +7,38 @@ import numpy as onp
 # Meep field components used to compute adjoint sensitivities
 _ADJOINT_FIELD_COMPONENTS = [mp.Ex, mp.Ey, mp.Ez]
 
+# The frequency axis in the array returned by `mp._get_gradient()`
+_GRADIENT_FREQ_AXIS = 1
+
 
 def _make_at_least_nd(x: onp.ndarray, dims: int = 3) -> onp.ndarray:
   """Makes an array have at least the specified number of dimensions."""
   return onp.reshape(x, x.shape + onp.maximum(dims - x.ndim, 0) * (1,))
+
+
+def calculate_vjps(
+  simulation: mp.Simulation,
+  design_regions,
+  frequencies,
+  fwd_fields,
+  adj_fields,
+  design_variable_shapes,
+  sum_freq_partials=True,
+):
+  """Calculates the VJP for a given set of forward and adjoint fields."""
+  vjps = [
+    design_region.get_gradient(
+      simulation,
+      adj_fields[i],
+      fwd_fields[i],
+      frequencies,
+    ) for i, design_region in enumerate(design_regions)
+  ]
+  if sum_freq_partials:
+    vjps = [onp.sum(vjp, axis=_GRADIENT_FREQ_AXIS).reshape(shape) for vjp, shape in zip(vjps, design_variable_shapes)]
+  else:
+    vjps = [vjp.reshape(shape + (-1,)) for vjp, shape in zip(vjps, design_variable_shapes)]
+  return vjps
 
 
 def register_monitors(
@@ -124,3 +152,23 @@ def validate_and_update_design(design_regions: List[mpa.DesignRegion], design_va
     design_variable = onp.asarray(design_variable, dtype=onp.float64)
     # Update the design variable in Meep
     design_region.update_design_parameters(design_variable.flatten())
+
+def create_adjoint_sources(monitors, monitor_values_grad):
+  monitor_values_grad = onp.asarray(monitor_values_grad, dtype=onp.complex128)
+  if not onp.any(monitor_values_grad):
+    raise RuntimeError('The gradient of all monitor values is zero, which '
+                       'means that no adjoint sources can be placed to set '
+                       'up an adjoint simulation in Meep. Possible causes '
+                       'could be:\n\n'
+                       ' * the forward simulation was not run for long enough '
+                       'to allow the input pulse(s) to reach the monitors'
+                       ' * the monitor values are disconnected from the '
+                       'objective function output.')
+  adjoint_sources = []
+  for monitor_idx, monitor in enumerate(monitors):
+    # `dj` for each monitor will have a shape of (num frequencies,)
+    dj = onp.asarray(monitor_values_grad[monitor_idx], dtype=onp.complex128)
+    if onp.any(dj):
+      adjoint_sources += monitor.place_adjoint_source(dj)
+  assert adjoint_sources
+  return adjoint_sources

@@ -55,10 +55,7 @@ import meep as mp
 import meep.adjoint as mpa
 import numpy as onp
 
-import utils
-
-# The frequency axis in the array returned by `mp._get_gradient()`
-_GRADIENT_FREQ_AXIS = 1
+from . import utils
 
 _log_fn = print
 _norm_fn = onp.linalg.norm
@@ -156,17 +153,21 @@ class MeepJaxWrapper:
     self.simulation.reset_meep()
     self.simulation.change_sources(self.sources)
     utils.register_monitors(self.monitors, self.frequencies)
-    design_region_monitors = utils.install_design_region_monitors(self.simulation, self.design_regions,
-                                                                  self.frequencies)
-
+    design_region_monitors = utils.install_design_region_monitors(
+      self.simulation,
+      self.design_regions,
+      self.frequencies,
+    )
     self.simulation.init_sim()
     sim_run_args = {'until_after_sources' if self.until_after_sources else 'until': self._callback}
     self._reset_convergence_measurement(design_region_monitors)
     self.simulation.run(**sim_run_args)
-
     monitor_values = utils.gather_monitor_values(self.monitors)
-    fwd_fields = utils.gather_design_region_fields(self.simulation, design_region_monitors, self.frequencies)
-
+    fwd_fields = utils.gather_design_region_fields(
+      self.simulation,
+      design_region_monitors,
+      self.frequencies,
+    )
     return (
       jnp.asarray(monitor_values),
       jax.tree_map(jnp.asarray, fwd_fields)
@@ -174,55 +175,36 @@ class MeepJaxWrapper:
 
   def _run_adjoint_simulation(self, monitor_values_grad):
     """Runs adjoint simulation, returning design region fields."""
-    adjoint_sources = []
-    for monitor_idx, monitor in enumerate(self.monitors):
-      # `dj` for each monitor will have a shape of (num frequencies,)
-      dj = onp.asarray(monitor_values_grad[monitor_idx], dtype=onp.complex128)
-      if onp.any(dj):
-        adjoint_sources += monitor.place_adjoint_source(dj)
-    if not adjoint_sources:
-      raise RuntimeError('The gradient of all monitor values is zero, which '
-                         'means that no adjoint sources can be placed to set '
-                         'up an adjoint simulation in Meep. This could be due '
-                         'to the forward simulation not running for long '
-                         'enough to allow the input pulse(s) to reach the '
-                         'monitors. Additionally, the monitor values could be '
-                         'disconnected from the objective function output.')
+    if not self.design_regions:
+      raise RuntimeError('An adjoint simulation was attempted when no design '
+                         'regions are present.')
     self.simulation.reset_meep()
+    adjoint_sources = utils.create_adjoint_sources(self.monitors, monitor_values_grad)
     self.simulation.change_sources(adjoint_sources)
-    design_region_monitors = utils.install_design_region_monitors(self.simulation, self.design_regions,
-                                                                  self.frequencies, )
-
+    design_region_monitors = utils.install_design_region_monitors(
+      self.simulation,
+      self.design_regions,
+      self.frequencies,
+    )
     self.simulation.init_sim()
     sim_run_args = {
       'until_after_sources' if self.until_after_sources else 'until': self._callback
     }
     self._reset_convergence_measurement(design_region_monitors)
     self.simulation.run(**sim_run_args)
-
     return utils.gather_design_region_fields(self.simulation, design_region_monitors, self.frequencies)
 
-  def _calculate_vjps(self, fwd_fields, adj_fields, design_variable_shapes):
+  def _calculate_vjps(self, fwd_fields, adj_fields, design_variable_shapes, sum_freq_partials=True):
     """Calculates the VJP for a given set of forward and adjoint fields."""
-    vjps = [
-      design_region.get_gradient(
-        self.simulation,
-        adj_fields[i],
-        fwd_fields[i],
-        self.frequencies,
-      ) for i, design_region in enumerate(self.design_regions)
-    ]
-    # This interface returns the *total* gradient, thus we sum over the frequency axis (if
-    # there is one)
-    vjps = [
-      onp.sum(vjp, axis=_GRADIENT_FREQ_AXIS)
-      if vjp.ndim == 2 else vjp for vjp in vjps
-    ]
-    vjps = [
-      onp.reshape(vjp, shape)
-      for vjp, shape in zip(vjps, design_variable_shapes)
-    ]
-    return vjps
+    return utils.calculate_vjps(
+      self.simulation,
+      self.design_regions,
+      self.frequencies,
+      fwd_fields,
+      adj_fields,
+      design_variable_shapes,
+      sum_freq_partials=sum_freq_partials,
+    )
 
   def _initialize_callable(self) -> Callable[[List[jnp.ndarray]], jnp.ndarray]:
     """Initializes the callable JAX function and registers its VJP."""
@@ -240,13 +222,7 @@ class MeepJaxWrapper:
 
     def _simulate_rev(res, monitor_values_grad):
       """Runs adjoint simulation, returning VJP of design wrt monitor values."""
-      if not self.design_regions:
-        raise RuntimeError('An adjoint simulation was attempted when no design '
-                           'regions are present.')
-      fwd_fields = jax.tree_map(
-        lambda x: onp.asarray(x, dtype=onp.complex128),
-        res[0],
-      )
+      fwd_fields = jax.tree_map(lambda x: onp.asarray(x, dtype=onp.complex128), res[0])
       design_variable_shapes = res[1]
       adj_fields = self._run_adjoint_simulation(monitor_values_grad)
       vjps = self._calculate_vjps(fwd_fields, adj_fields, design_variable_shapes)
