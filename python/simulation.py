@@ -1693,15 +1693,16 @@ class Simulation(object):
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False if self.chunk_layout else True,
+            False if not isinstance(self.chunk_layout,mp.BinaryPartition) else True,
             None,
-            True if self._output_stats is not None else False
+            True if self._output_stats is not None else False,
+            self.chunk_layout if isinstance(self.chunk_layout,mp.BinaryPartition) else None
         )
 
         if self._output_stats is not None:
             sys.exit(0)
 
-        if self.chunk_layout:
+        if self.chunk_layout and not isinstance(self.chunk_layout,mp.BinaryPartition):
             self.load_chunk_layout(br, self.chunk_layout)
             self.set_materials()
 
@@ -1846,7 +1847,8 @@ class Simulation(object):
             self.split_chunks_evenly,
             True,
             self.structure,
-            False
+            False,
+            None
         )
 
     def dump_structure(self, fname):
@@ -1883,7 +1885,7 @@ class Simulation(object):
             ids = source.structure.get_chunk_owners()
             self.structure.load_chunk_layout(vols, [int(f) for f in ids], br)
         else:
-            ## source is either filename (string) or BinaryPartition class object
+            ## source is either filename (string)
             self.structure.load_chunk_layout(source, br)
 
     def init_sim(self):
