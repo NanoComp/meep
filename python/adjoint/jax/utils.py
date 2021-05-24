@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import List, Iterable, Tuple
 
 import meep as mp
 import meep.adjoint as mpa
@@ -18,13 +18,13 @@ def _make_at_least_nd(x: onp.ndarray, dims: int = 3) -> onp.ndarray:
 
 def calculate_vjps(
   simulation: mp.Simulation,
-  design_regions,
-  frequencies,
-  fwd_fields,
-  adj_fields,
-  design_variable_shapes,
-  sum_freq_partials=True,
-):
+  design_regions: List[mpa.DesignRegion],
+  frequencies: List[float],
+  fwd_fields: List[List[onp.ndarray]],
+  adj_fields: List[List[onp.ndarray]],
+  design_variable_shapes: List[Tuple[int, ...]],
+  sum_freq_partials: bool = True,
+) -> List[onp.ndarray]:
   """Calculates the VJP for a given set of forward and adjoint fields."""
   vjps = [
     design_region.get_gradient(
@@ -42,7 +42,7 @@ def calculate_vjps(
 
 
 def register_monitors(
-  monitors: List[mpa.EigenmodeCoefficient],
+  monitors: List[mpa.ObjectiveQuantitiy],
   frequencies: List[float],
 ) -> None:
   """Registers a list of monitors."""
@@ -67,7 +67,7 @@ def install_design_region_monitors(
   return design_region_monitors
 
 
-def gather_monitor_values(monitors: List[mpa.EigenmodeCoefficient]) -> onp.ndarray:
+def gather_monitor_values(monitors: List[mpa.ObjectiveQuantitiy]) -> onp.ndarray:
   """Gathers the mode monitor overlap values as a rank 2 ndarray.
 
   Args:
@@ -122,7 +122,7 @@ def gather_design_region_fields(
   return fwd_fields
 
 
-def validate_and_update_design(design_regions: List[mpa.DesignRegion], design_variables: Iterable[onp.ndarray]):
+def validate_and_update_design(design_regions: List[mpa.DesignRegion], design_variables: Iterable[onp.ndarray]) -> None:
   """Validate the design regions and variables.
 
   In particular the design variable should be 1,2,3-D and the design region
@@ -153,7 +153,8 @@ def validate_and_update_design(design_regions: List[mpa.DesignRegion], design_va
     # Update the design variable in Meep
     design_region.update_design_parameters(design_variable.flatten())
 
-def create_adjoint_sources(monitors, monitor_values_grad):
+
+def create_adjoint_sources(monitors: mpa.ObjectiveQuantitiy, monitor_values_grad: onp.ndarray) -> List[mp.Source]:
   monitor_values_grad = onp.asarray(monitor_values_grad, dtype=onp.complex128)
   if not onp.any(monitor_values_grad):
     raise RuntimeError('The gradient of all monitor values is zero, which '

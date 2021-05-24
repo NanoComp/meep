@@ -1,10 +1,12 @@
 import unittest
 import parameterized
 
+from . import utils
+
 import jax
 import jax.numpy as jnp
 import meep as mp
-import meep.adjoint as mpa
+import adjoint as mpa
 import numpy as onp
 
 # The calculation of finite difference gradients requires that JAX be operated with double precision
@@ -13,8 +15,8 @@ jax.config.update('jax_enable_x64', True)
 # The step size for the finite difference gradient calculation
 _FD_STEP = 1e-4
 
-# The relative tolerance for the adjoing and finitie difference gradient comparison
-_RTOL = 5e-2
+# The tolerance for the adjoint and finite difference gradient comparison
+_TOL = 1e-2
 
 mp.verbosity(0)
 
@@ -164,15 +166,12 @@ class UtilsTest(unittest.TestCase):
       self.assertEqual(value.dtype, onp.complex128)
 
 
-class WrapperTest(unittest.TestCase):
+class WrapperTest(utils.VectorComparisonMixin, unittest.TestCase):
 
   @parameterized.parameterized.expand([
-    ('1550_1600bw_01relative_gaussian_10fill', onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.1, 1.0),
-    ('1500_1600bw_02relative_gaussian_10fill', onp.linspace(1 / 1.55, 1 / 1.60, 4).tolist(), 0.2, 1.0),
-    ('1600_1680bw_03relative_gaussian_10fill', onp.linspace(1 / 1.60, 1 / 1.68, 5).tolist(), 0.3, 1.0),
-    ('1550_1600bw_01relative_gaussian_05fill', onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.1, 0.5),
-    ('1500_1600bw_02relative_gaussian_05fill', onp.linspace(1 / 1.55, 1 / 1.60, 4).tolist(), 0.2, 0.5),
-    ('1600_1680bw_03relative_gaussian_05fill', onp.linspace(1 / 1.60, 1 / 1.68, 5).tolist(), 0.3, 0.5),
+    ('1550_1600bw_01relative_gaussian', onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 1.0),
+    ('1500_1600bw_02relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.60, 3).tolist(), 0.25, 1.0),
+    ('1600_1700bw_03relative_gaussian', onp.linspace(1 / 1.60, 1 / 1.70, 4).tolist(), 0.1, 1.0),
   ])
   def test_wrapper_gradients(self, _, frequencies, gaussian_rel_width, design_variable_fill_value):
     """Tests gradient from the JAX-Meep wrapper against finite differences."""
@@ -210,26 +209,38 @@ class WrapperTest(unittest.TestCase):
 
     value, adjoint_grad = jax.value_and_grad(loss_fn)(x)
 
-    # Create dp
-    random_perturbation_vector = _FD_STEP * onp.random.random(x.shape)
+    projection = []
+    fd_projection = []
 
-    # Calculate p + dp
-    x_perturbed = x + random_perturbation_vector
+    # Project along 5 random directions in the design parameter space.
+    for seed in range(5):
+      # Create dp
+      random_perturbation_vector = _FD_STEP * jax.random.normal(
+        jax.random.PRNGKey(seed),
+        x.shape,
+      )
 
-    # Calculate T(p + dp)
-    value_perturbed = loss_fn(x_perturbed)
+      # Calculate p + dp
+      x_perturbed = x + random_perturbation_vector
+
+      # Calculate T(p + dp)
+      value_perturbed = loss_fn(x_perturbed)
+
+      projection.append(
+        onp.dot(
+          random_perturbation_vector.ravel(),
+          adjoint_grad.ravel(),
+        ))
+      fd_projection.append(value_perturbed - value)
+
+    projection = onp.stack(projection)
+    fd_projection = onp.stack(fd_projection)
 
     # Check that dp . ∇T ~ T(p + dp) - T(p)
-    onp.testing.assert_allclose(
-      onp.dot(
-        random_perturbation_vector.ravel(),
-        adjoint_grad.ravel(),
-      ),
-      value_perturbed - value,
-      rtol=_RTOL,
-      err_msg='The projection of the gradient computed via the adjoint simulation into a '
-              'random direction of the design parameter space does not agree with a finite '
-              'difference approximation of that same projection to the specified tolerance.'
+    self.assertVectorsClose(
+      projection,
+      fd_projection,
+      epsilon=_TOL,
     )
 
 

@@ -57,7 +57,6 @@ import numpy as onp
 
 from . import utils
 
-_log_fn = print
 _norm_fn = onp.linalg.norm
 _reduce_fn = onp.max
 
@@ -91,6 +90,7 @@ class MeepJaxWrapper:
         https://meep.readthedocs.io/en/latest/Python_User_Interface/#Simulation
           for more information. The default is true.
   """
+  _log_fn = print
 
   def __init__(self,
                simulation: mp.Simulation,
@@ -179,8 +179,8 @@ class MeepJaxWrapper:
     if not self.design_regions:
       raise RuntimeError('An adjoint simulation was attempted when no design '
                          'regions are present.')
-    self.simulation.reset_meep()
     adjoint_sources = utils.create_adjoint_sources(self.monitors, monitor_values_grad)
+    self.simulation.reset_meep()
     self.simulation.change_sources(adjoint_sources)
     design_region_monitors = utils.install_design_region_monitors(
       self.simulation,
@@ -290,11 +290,11 @@ class MeepJaxWrapper:
     if current_meep_time <= self.minimum_run_time:
       if mp.am_master() and mp.verbosity > 0:
         remaining_time = self.minimum_run_time - sim.round_time()
-        _log_fn(f'{remaining_time:.2f} to go until the minimum simulation runtime is reached.')
+        self._log_fn(f'{remaining_time:.2f} to go until the minimum simulation runtime is reached.')
       return False
     if current_meep_time >= self.maximum_run_time:
       if mp.am_master() and mp.verbosity > 0:
-        _log_fn(f'Stopping the simulation because the maximum simulation run '
+        self._log_fn(f'Stopping the simulation because the maximum simulation run '
                 f'time of {self.maximum_run_time:.2f} has been reached.')
       return True
     self._last_measurement_meep_time = current_meep_time
