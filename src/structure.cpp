@@ -187,7 +187,7 @@ std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &
     v = gv.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d = 0; d < 3; d++)
-      if (break_this[d]) gv = gv.pad((direction)d);
+      if (break_this[d]) gv.pad_self((direction)d);
   }
 
   int proc_id = 0;

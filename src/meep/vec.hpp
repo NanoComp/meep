@@ -53,7 +53,7 @@ enum component {
   Permeability,
   NO_COMPONENT
 };
-#define Centered Dielectric // better name for centered "dielectric" grid
+const component Centered = Dielectric; // better name for centered "dielectric" grid
 enum derived_component {
   Sx = 100,
   Sy,
@@ -1095,6 +1095,7 @@ public:
   }
 
   ivec little_owned_corner(component c) const;
+  ivec big_owned_corner(component c) const { return big_corner() - iyee_shift(c); }
   bool owns(const ivec &) const;
   volume surroundings() const;
   volume interior() const;
@@ -1119,6 +1120,8 @@ public:
     gv.pad_self(d);
     return gv;
   }
+  grid_volume unpad() const;
+  grid_volume unpad(const grid_volume &gv0) const;
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
@@ -1166,6 +1169,7 @@ private:
   }
   int num[3];
   ptrdiff_t the_stride[5];
+  bool is_padded[5];
   size_t the_ntot;
 };
 
