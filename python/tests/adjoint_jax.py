@@ -6,7 +6,7 @@ from . import utils
 import jax
 import jax.numpy as jnp
 import meep as mp
-import adjoint as mpa
+import meep.adjoint as mpa
 import numpy as onp
 
 # The calculation of finite difference gradients requires that JAX be operated with double precision
@@ -16,7 +16,7 @@ jax.config.update('jax_enable_x64', True)
 _FD_STEP = 1e-4
 
 # The tolerance for the adjoint and finite difference gradient comparison
-_TOL = 1e-2
+_TOL = 2e-2
 
 mp.verbosity(0)
 
@@ -29,7 +29,7 @@ def build_straight_wg_simulation(
   source_to_pml=0.5,
   source_to_monitor=0.1,
   frequencies=[1 / 1.55],
-  gaussian_rel_width=0.4,
+  gaussian_rel_width=0.2,
   sim_resolution=20,
   design_region_resolution=20,
 ):
@@ -169,9 +169,9 @@ class UtilsTest(unittest.TestCase):
 class WrapperTest(utils.VectorComparisonMixin, unittest.TestCase):
 
   @parameterized.parameterized.expand([
-    ('1550_1600bw_01relative_gaussian', onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 1.0),
-    ('1500_1600bw_02relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.60, 3).tolist(), 0.25, 1.0),
-    ('1600_1700bw_03relative_gaussian', onp.linspace(1 / 1.60, 1 / 1.70, 4).tolist(), 0.1, 1.0),
+    ('1500_1550bw_01relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0),
+    ('1550_1600bw_02relative_gaussian', onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 1.0),
+    ('1500_1600bw_03relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.60, 4).tolist(), 0.3, 1.0),
   ])
   def test_wrapper_gradients(self, _, frequencies, gaussian_rel_width, design_variable_fill_value):
     """Tests gradient from the JAX-Meep wrapper against finite differences."""
