@@ -375,8 +375,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
     component cS = S.transform(cgrid, -sn);
     ivec iyee_cS(S.transform_unshifted(iyee_c, -sn));
-
     volume gvS = S.transform(gv.surroundings(), sn);
+
     vec L(gv.dim);
     ivec iL(gv.dim);
 
@@ -418,25 +418,16 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
       for (int i = 0; i < num_chunks; ++i) {
         if (!chunks[i]->is_mine()) continue;
-        // Chunk looping boundaries:
-        volume vS(gv.dim);
+        // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
+        grid_volume gvu(chunks[i]->gv.unpad(gv));
+        ivec _iscoS(S.transform(gvu.little_owned_corner(Centered), sn));
+        ivec _iecoS(S.transform(gvu.big_owned_corner(Centered), sn));
+        ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
 
-        if (use_symmetry)
-          vS = S.transform(chunks[i]->v, sn);
-        else {
-          /* If we're not using symmetry, it's because (as in src_vol)
-             we don't care about correctly counting the points in the
-             grid_volume.  Rather, we just want to make sure to get *all*
-             of the chunk points that intersect where.  Hence, add a little
-             padding to make sure we don't miss any points due to rounding. */
-          vec pad(one_ivec(gv.dim) * gv.inva * 1e-3);
-          vS = volume(chunks[i]->gv.loc(Centered, 0) - pad,
-                      chunks[i]->gv.loc(Centered, chunks[i]->gv.ntot() - 1) + pad);
-        }
-
-        ivec iscS(max(is - shifti, vec2diel_ceil(vS.get_min_corner(), gv.a, one_ivec(gv.dim) * 2)));
-        ivec iecS(min(ie - shifti, vec2diel_floor(vS.get_max_corner(), gv.a, zero_ivec(gv.dim))));
-        if (iscS <= iecS) {
+        // intersect the chunk points with is and ie volume (shifted):
+        ivec iscS(max(is - shifti, iscoS));
+        ivec iecS(min(ie - shifti, iecoS));
+        if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
           ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
           vec s0c(gv.dim, 1.0), s1c(gv.dim, 1.0), e0c(gv.dim, 1.0), e1c(gv.dim, 1.0);
