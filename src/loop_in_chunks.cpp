@@ -420,8 +420,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         if (!chunks[i]->is_mine()) continue;
         // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
         grid_volume gvu(chunks[i]->gv.unpad(gv));
-        ivec _iscoS(S.transform(gvu.little_owned_corner(Centered), sn));
-        ivec _iecoS(S.transform(gvu.big_owned_corner(Centered), sn));
+        ivec _iscoS(S.transform(gvu.little_owned_corner(cS) + iyee_cS, sn));
+        ivec _iecoS(S.transform(gvu.big_owned_corner(cS) + iyee_cS, sn));
         ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
 
         // intersect the chunk points with is and ie volume (shifted):
