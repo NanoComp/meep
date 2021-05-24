@@ -381,12 +381,12 @@ void map_lattice_coordinates(double &px, double &py, double &pz) {
 }
 
 meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
-  meep::vec gradient(zero_vec(dim));
-  int matgrid_val_count = 0;
-
   if (md->material_grid_kinds == material_data::U_MIN ||
       md->material_grid_kinds == material_data::U_PROD)
     meep::abort("%s:%i:matgrid_grad does not support overlapping grids with U_MIN or U_PROD\n",__FILE__,__LINE__);
+
+  meep::vec gradient(zero_vec(dim));
+  int matgrid_val_count = 0;
 
   // iterate through object tree at current point
   if (tp) {
@@ -417,7 +417,6 @@ double material_grid_val(vector3 p, material_data *md) {
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
   return meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
                                   md->grid_size.y, md->grid_size.z, 1);
-
 }
 
 static double tanh_projection(double u, double beta, double eta) {
@@ -1159,11 +1158,8 @@ struct matgrid_volavg {
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double z = x[0];
-  double u = mgva->uval + mgva->ugrad_abs*z;
-  double tanh_beta_eta = tanh(mgva->beta*mgva->eta);
-  double u_proj = (tanh_beta_eta + tanh(mgva->beta*(u-mgva->eta))) /
-    (tanh_beta_eta + tanh(mgva->beta*(1-mgva->eta)));
+  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0],
+                                  mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1175,19 +1171,16 @@ static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
   else if (mgva->dim == meep::D2)
-    w = 2*sqrt(mgva->rad*mgva->rad - z*z)/(meep::pi * mgva->rad*mgva->rad);
+    w = 2*sqrt(mgva->rad*mgva->rad - x[0]*x[0])/(meep::pi * mgva->rad*mgva->rad);
   else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - z*z)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
+    w = meep::pi*(mgva->rad*mgva->rad - x[0]*x[0])/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
   return ret * w;
 }
 #else
 static number matgrid_eps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double z = x[0];
-  double u = mgva->uval + mgva->ugrad_abs*z;
-  double tanh_beta_eta = tanh(mgva->beta*mgva->eta);
-  double u_proj = (tanh_beta_eta + tanh(mgva->beta*(u-mgva->eta))) /
-    (tanh_beta_eta + tanh(mgva->beta*(1-mgva->eta)));
+  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0],
+                                  mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1197,18 +1190,15 @@ static number matgrid_eps_func(int n, number *x, void *mgva_) {
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
   else if (mgva->dim == meep::D2)
-    w = 2*sqrt(mgva->rad*mgva->rad - z*z)/(meep::pi * mgva->rad*mgva->rad);
+    w = 2*sqrt(mgva->rad*mgva->rad - x[0]*x[0])/(meep::pi * mgva->rad*mgva->rad);
   else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - z*z)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
+    w = meep::pi*(mgva->rad*mgva->rad - x[0]*x[0])/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
   return eps_interp * w;
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double z = x[0];
-  double u = mgva->uval + mgva->ugrad_abs*z;
-  double tanh_beta_eta = tanh(mgva->beta*mgva->eta);
-  double u_proj = (tanh_beta_eta + tanh(mgva->beta*(u-mgva->eta))) /
-    (tanh_beta_eta + tanh(mgva->beta*(1-mgva->eta)));
+  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0],
+                                  mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1218,15 +1208,15 @@ static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
   else if (mgva->dim == meep::D2)
-    w = 2*sqrt(mgva->rad*mgva->rad - z*z)/(meep::pi * mgva->rad*mgva->rad);
+    w = 2*sqrt(mgva->rad*mgva->rad - x[0]*x[0])/(meep::pi * mgva->rad*mgva->rad);
   else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - z*z)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
+    w = meep::pi*(mgva->rad*mgva->rad - x[0]*x[0])/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
   return epsinv_interp * w;
 }
 #endif
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
-static cnumber ceps_func(int n, number *x, void *mgva_) {
+static cnumber ceps_func(int n, number *x, void *geomeps_) {
   geom_epsilon *geomeps = (geom_epsilon *)geomeps_;
   vector3 p = {0, 0, 0};
   p.x = x[0];
@@ -1295,12 +1285,15 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
       (material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
   material_data *md = material;
   meep::vec gradient(zero_vec(v.dim));
+  double uval = 0;
 
   if (md->which_subclass == material_data::MATERIAL_GRID) {
     geom_box_tree tp;
     int oi;
     tp = geom_tree_search(p, restricted_tree, &oi);
     gradient = matgrid_grad(p, tp, oi, md);
+    uval = material_grid_val(to_geom_box_coords(p, &tp->objects[oi]),
+                             (material_data *)tp->objects[oi].o->material);
   }
   else {
     gradient = normal_vector(meep::type(c), v);
@@ -1336,26 +1329,30 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   double meps, minveps;
 
   if (md->which_subclass == material_data::MATERIAL_GRID) {
-    matgrid_volavg *mgva;
-    mgva->dim = v.dim;
-    mgva->ugrad_abs = meep::abs(gradient);
-    mgva->uval = material_grid_val(p, md);
-    mgva->rad = v.diameter()/2;
-    mgva->beta = md->beta;
-    mgva->eta = md->eta;
-    mgva->med1_eps_diag = md->medium_1.epsilon_diag;
-    mgva->med2_eps_diag = md->medium_2.epsilon_diag;
-    xmin[0] = -v.diameter()/2; xmin[1] = 0; xmin[2] = 0;
-    xmax[0] = v.diameter()/2; xmax[1] = 0; xmax[2] = 0;
+    matgrid_volavg mgva;
+    mgva.dim = v.dim;
+    mgva.ugrad_abs = meep::abs(gradient);
+    mgva.uval = uval;
+    mgva.rad = v.diameter()/2;
+    mgva.beta = md->beta;
+    mgva.eta = md->eta;
+    mgva.med1_eps_diag = md->medium_1.epsilon_diag;
+    mgva.med2_eps_diag = md->medium_2.epsilon_diag;
+    xmin[0] = -v.diameter()/2;
+    xmin[1] = 0;
+    xmin[2] = 0;
+    xmax[0] = v.diameter()/2;
+    xmax[1] = 0;
+    xmax[2] = 0;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
-    cnumber ret = cadaptive_integration(matgrid_ceps_func, xmin, xmax, 1, (void *)mgva, 0, tol, maxeval,
+    cnumber ret = cadaptive_integration(matgrid_ceps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval,
                                         &esterr, &errflag);
     meps = ret.re;
     minveps = ret.im;
 #else
-    meps = adaptive_integration(matgrid_eps_func, xmin, xmax, 1, (void *)mgva, 0, tol, maxeval, &esterr,
+    meps = adaptive_integration(matgrid_eps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval, &esterr,
                                 &errflag);
-    minveps = adaptive_integration(matgrid_inveps_func, xmin, xmax, 1, (void *)mgva, 0, tol, maxeval, &esterr,
+    minveps = adaptive_integration(matgrid_inveps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval, &esterr,
                                    &errflag);
 #endif
   }
