@@ -16,4 +16,7 @@ from .filter_source import FilteredSource
 
 from .filters import *
 
-from . import jax
+try:
+  from . import jax
+except ImportError as error:
+  print('Unable to import JAX.')
