@@ -181,7 +181,7 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
     v = gv.surroundings();
     // Pad the little cell in any direction that we've shrunk:
     for (int d = 0; d < 3; d++)
-      if (break_this[d]) gv = gv.pad((direction)d);
+      if (break_this[d]) gv.pad_self((direction)d);
   }
 
   // Finally, create the chunks:

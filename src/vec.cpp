@@ -310,6 +310,7 @@ grid_volume::grid_volume(ndim td, double ta, int na, int nb, int nc) {
   num[0] = na;
   num[1] = nb;
   num[2] = nc;
+  FOR_DIRECTIONS(d) is_padded[d] = false;
   num_changed();
   set_origin(zero_vec(dim));
 }
@@ -863,7 +864,7 @@ ivec grid_volume::iloc(component c, ptrdiff_t ind) const {
 size_t grid_volume::surface_area() const {
   switch(dim) {
     case Dcyl: return 2*(nr()+nz());
-    case D1: 2;
+    case D1: return 2;
     case D2: return 2*(nx()+ny());
     case D3: return 2*(nx()*ny()+nx()*nz()+ny()*nz());
   }
@@ -1072,6 +1073,40 @@ void grid_volume::pad_self(direction d) {
   num[d % 3] += 2; // Pad in both directions by one grid point.
   num_changed();
   shift_origin(d, -2);
+  is_padded[d] = true;
+}
+
+// undoes all padding
+grid_volume grid_volume::unpad() const {
+  grid_volume gv(*this);
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    if (is_padded[d]) { // inverse of pad_self above
+      gv.num[d % 3] -= 2;
+      gv.shift_origin(d, +2);
+      gv.is_padded[d] = false;
+    }
+  }
+  gv.num_changed();
+  return gv;
+}
+
+// undoes padding in *this according when edges match padded sides of gv0
+grid_volume grid_volume::unpad(const grid_volume &gv0) const {
+  grid_volume gv(*this);
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    if (gv0.is_padded[d]) {
+      if (little_corner().in_direction(d) == gv0.little_corner().in_direction(d)) {
+        gv.num[d % 3] -= 1;
+        gv.shift_origin(d, +2);
+      }
+      if (big_corner().in_direction(d) == gv0.big_corner().in_direction(d)) {
+        gv.num[d % 3] -= 1;
+      }
+      gv.is_padded[d] = false;
+    }
+  }
+  gv.num_changed();
+  return gv;
 }
 
 ivec grid_volume::icenter() const {
