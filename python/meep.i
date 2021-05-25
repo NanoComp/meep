@@ -1456,9 +1456,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %typemap(in) meep::binary_partition * {
     $1 = py_bp_to_bp($input);
-    if(!$1) {
-        SWIG_fail;
-    }
 }
 
 %typemap(arginit) meep::binary_partition * {

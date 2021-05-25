@@ -1693,10 +1693,10 @@ class Simulation(object):
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False if not isinstance(self.chunk_layout,mp.BinaryPartition) else True,
+            False if self.chunk_layout and not isinstance(self.chunk_layout,mp.BinaryPartition) else True,
             None,
             True if self._output_stats is not None else False,
-            self.chunk_layout if isinstance(self.chunk_layout,mp.BinaryPartition) else None
+            self.chunk_layout if self.chunk_layout and isinstance(self.chunk_layout,mp.BinaryPartition) else None
         )
 
         if self._output_stats is not None:
