@@ -1185,7 +1185,7 @@ static number matgrid_eps_func(int n, number *x, void *mgva_) {
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
   double eps2 = (med2_eps_diag.x + med2_eps_diag.y + med2_eps_diag.z)/3;
-  double eps_interp = u_proj*eps1 + (1-u_proj)*eps2;
+  double eps_interp = (1-u_proj)*eps1 + u_proj*eps2;
   double w = 0;
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
@@ -1203,7 +1203,7 @@ static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
   double eps2 = (med2_eps_diag.x + med2_eps_diag.y + med2_eps_diag.z)/3;
-  double epsinv_interp = u_proj/eps1 + (1-u_proj)/eps2;
+  double epsinv_interp = (1-u_proj)/eps1 + u_proj/eps2;
   double w = 0;
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
@@ -1322,7 +1322,6 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     }
     return;
   }
-
   number esterr;
   integer errflag;
   number xmin[3], xmax[3];
@@ -1399,7 +1398,6 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     if (eps_ever_negative) // averaging negative eps causes instability
       minveps = 1.0 / (meps = eps(v.center()));
   }
-
   {
     double n[3] = {0, 0, 0};
     double nabsinv = 1.0 / meep::abs(gradient);
