@@ -320,10 +320,12 @@ Python. `Vector3` is a `meep` class.
   `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
   Structure](#load-and-dump-structure) for more information.
 
-+ **`chunk_layout` [`string` or `Simulation` instance]** — This will cause the
-  `Simulation` to use the chunk layout described by either an h5 file (created by
-  `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump
-  Structure](#load-and-dump-structure) for more information.
++ **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
+  This will cause the `Simulation` to use the chunk layout described by either
+  (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
+  `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
+  For more information, see [Load and Dump Structure](#load-and-dump-structure) and
+  [Parallel Meep/User-Specified Cell Partition](Parallel_Meep.md#user-specified-cell-partition).
 
 The following require a bit more understanding of the inner workings of Meep to
 use. See also [SWIG Wrappers](#swig-wrappers).
@@ -338,9 +340,9 @@ use. See also [SWIG Wrappers](#swig-wrappers).
   initialized by `init_sim()` which is called automatically by any of the [run
   functions](#run-functions).
 
-+ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subarrays) to divide
-  the structure/fields into (default 0). Actual number is determined by number of
-  processors, PML layers, etcetera. Mainly useful for debugging.
++ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
+  the structure/fields into. Overrides the default value determined by
+  the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
 + **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
   [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
@@ -431,12 +433,12 @@ def use_output_directory(self, dname=''):
 
 <div class="method_docstring" markdown="1">
 
-Put output in a subdirectory, which is created if necessary. If the optional
-argument `dname` is specified, that is the name of the directory. If the `dname`
-is omitted, the directory name is the current Python file name (if `filename_prefix`
-is `None`) with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
-`"test-out"`. Also resets `filename_prefix` to `None`. Otherwise the directory name
-is set to `filename_prefix`.
+Output all files into a subdirectory, which is created if necessary. If the optional
+argument `dname` is specified, that is the name of the directory. If `dname`
+is omitted and `filename_prefix` is `None`, the directory name is the current Python
+filename with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
+`"test-out"`. If `dname` is omitted and `filename_prefix` has been set, the directory
+name is set to `filename_prefix` + "-out" and `filename_prefix` is then reset to `None`.
 
 </div>
 
@@ -633,7 +635,7 @@ returns the value of that component at that point.
 <div class="class_members" markdown="1">
 
 ```python
-def get_epsilon_point(self, pt, frequency=0, omega=0):
+def get_epsilon_point(self, pt, frequency=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -652,7 +654,7 @@ frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 <div class="class_members" markdown="1">
 
 ```python
-def get_mu_point(self, pt, frequency=0, omega=0):
+def get_mu_point(self, pt, frequency=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -661,6 +663,29 @@ Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenval
 of the permeability tensor at that location and frequency. If `frequency` is
 non-zero, the result is complex valued; otherwise it is the real,
 frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
+
+</div>
+
+</div>
+
+<a id="Simulation.get_epsilon_grid"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None):
+```
+
+<div class="method_docstring" markdown="1">
+
+Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
+grid anywhere within the cell volume, compute the trace of the $\varepsilon$ tensor from the `geometry`
+exactly at each grid point. (For [`MaterialGrid`](#materialgrid)s, the $\varepsilon$ at each grid
+point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly also
+projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
+$\varepsilon$ by bilinearly interpolating from the nearest Yee grid points. This function is useful for
+sampling the material geometry to any arbitrary resolution. The return value is a NumPy array with shape
+equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
 
 </div>
 
@@ -1994,8 +2019,7 @@ def get_farfield(self, near2far, x):
 Given a `Vector3` point `x` which can lie anywhere outside the near-field surface,
 including outside the cell and a `near2far` object, returns the computed
 (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
-of fields
-(E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...)
+of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
 for the frequencies 1,2,…,`nfreq`.
 
 </div>
@@ -2793,7 +2817,7 @@ def output_poynting(sim):
 
 <div class="function_docstring" markdown="1">
 
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
+Output the Poynting flux $\Re [\mathbf{E}^* \times \mathbf{H}]$. Note that you
 might want to wrap this step function in `synchronized_magnetic` to compute it more
 accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
@@ -3441,7 +3465,7 @@ Returns the Fourier-transformed fields as a NumPy array.
 
 + `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
   where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
-  `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
+  `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
 
 </div>
 
@@ -4195,30 +4219,30 @@ def __init__(self,
 
 Creates a `MaterialGrid` object.
 
-The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on the Cartesian grid points
+The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on a Cartesian grid
 by the NumPy array `weights` of size `grid_size` (a 3-tuple or `Vector3` of integers). Elements of the `weights` array must be in the
-range [0,1] where 0 is `medium1` and 1 is `medium2`. Currently, only two material types are supported: (1) frequency-independent
+range [0,1] where 0 is `medium1` and 1 is `medium2`. Two material types are supported: (1) frequency-independent
 isotropic $\varepsilon$ or $\mu$ and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-materials are bilinearly interpolated from the Cartesian grid points to Meep's [Yee grid](Yee_Lattice.md).
+materials are bilinearly interpolated from the Cartesian grid to Meep's [Yee grid](Yee_Lattice.md).
 
 For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`.
 If you want to use a material grid to define a (nearly) discontinuous, piecewise-constant material that is *either* `medium1`
 or `medium2` almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta`
 to a positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a [level-set
 function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
-$\beta$ where $\beta=\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
+$\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
 +\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
 ($\beta$: "smoothness" of the turn on) and `eta` ($\eta$: erosion/dilation). The level set provides a general approach for
 defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
 The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
 can be specified using the `Simulation` constructor.
 
-Grids which are symmetric (e.g., mirror, rotation) must be explicitly defined. One way to implement this is by overlapping
-a given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping `MaterialGrid`
-objects (with no intervening objects), any overlapping points are computed using the method `grid_type` which is one of
-`"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product), `"U_MEAN"` (mean), `"U_DEFAULT"`
-(topmost material grid). In general, these `"U_*"` options allow you to combine any material grids that overlap
-in space with no intervening objects.
+It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
+(e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of
+itself. In the case of spatially overlapping `MaterialGrid` objects (with no intervening objects), any overlapping points are
+computed using the method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product),
+`"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options allow you to combine any material
+grids that overlap in space with no intervening objects.
 
 </div>
 
@@ -6062,7 +6086,7 @@ def __init__(self,
 
 Construct an `EigenModeSource`.
 
-+ **`eig_band` [`integer` or `DiffractedPlanewave`]** — Either the index *n* (1,2,3,...) of the desired band
++ **`eig_band` [`integer` or `DiffractedPlanewave` class]** — Either the index *n* (1,2,3,...) of the desired band
   ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
   band at a given **k** point, and so on, or alternatively a diffracted planewave in homogeneous media.
 
@@ -7288,27 +7312,56 @@ former value.
 
 </div>
 
+---
+<a id="BinaryPartition"></a>
+
+### BinaryPartition
+
+```python
+class BinaryPartition(object):
+```
+
+<div class="class_docstring" markdown="1">
+
+Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
+`chunk_layout` parameter of the `Simulation` class object.
+
+</div>
+
+
+
+<a id="BinaryPartition.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(self,
+             data=None,
+             split_dir=None,
+             split_pos=None,
+             left=None,
+             right=None,
+             proc_id=None):
+```
+
+<div class="method_docstring" markdown="1">
+
+The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
+list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
+and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
+`-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
+or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
+- 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
+`proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
+process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
+of processes.
+
+</div>
+
+</div>
 
 Miscellaneous Functions Reference
 ---------------------------------
-
-
-<a id="quiet"></a>
-
-```python
-def quiet(quietval=True):
-```
-
-<div class="function_docstring" markdown="1">
-
-Meep ordinarily prints various diagnostic and progress information to standard output.
-This output can be suppressed by calling this function with `True` (the default). The
-output can be enabled again by passing `False`. This sets a global variable, so the
-value will persist across runs within the same script.
-
-This function is deprecated, please use the [Verbosity](#verbosity) class instead.
-
-</div>
 
 
 <a id="interpolate"></a>
@@ -7319,7 +7372,7 @@ def interpolate(n, nums):
 
 <div class="function_docstring" markdown="1">
 
-Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to
+Given a list of numbers or `Vector3`s as `nums`, linearly interpolates between them to
 add `n` new evenly-spaced values between each pair of consecutive values in the
 original list.
 
@@ -7716,7 +7769,7 @@ def output_poynting(sim):
 
 <div class="function_docstring" markdown="1">
 
-Output the Poynting flux $\mathrm{Re}\{\mathbf{E}^*\times\mathbf{H}\}$. Note that you
+Output the Poynting flux $\Re [\mathbf{E}^* \times \mathbf{H}]$. Note that you
 might want to wrap this step function in `synchronized_magnetic` to compute it more
 accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).

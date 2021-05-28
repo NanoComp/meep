@@ -91,7 +91,7 @@ If you are not the system administrator of your machine, and/or want to install 
 
 ### Python
 
-If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+ and the [adjoint solver](Python_Tutorials/AdjointSolver.md) requires [autograd](https://github.com/HIPS/autograd).
+If you have Python on your system, then the Meep compilation scripts automatically build and install the `meep` Python module, which works with both the serial and parallel (MPI) versions of Meep. Note: Meep's [visualization module](Python_User_Interface.md#data-visualization) includes animation routines which require [matplotlib](https://matplotlib.org/) version `3.1`+ and the [adjoint solver](Python_Tutorials/Adjoint_Solver.md) requires [autograd](https://github.com/HIPS/autograd).
 
 By default, Meep's Python module is installed for the program `python` on your system.  If you want to install using a different Python program, e.g. `python3`, pass `PYTHON=python3` (or similar) to the Meep `configure` script. An Anaconda (`conda`) [package for Meep](Installation.md#conda-packages) is also available on some systems.
 
@@ -243,6 +243,25 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 **`--with-openmp`**
 —
 This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
+
+### Floating-Point Precision of the Fields and Materials Arrays
+
+By default, the C/C++ arrays used in Meep to store the time-domain fields ($\mathbf{E}$, $\mathbf{D}$, $\mathbf{H}$) and materials ($\varepsilon$) are defined using [double-precision floating point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Updating the fields arrays generally dominates the computational cost of the simulation because it occurs at every voxel in the cell and at every timestep. Because [discretization errors](https://en.wikipedia.org/wiki/Discretization_error) which include the discontinuous material interfaces (as described in [Subpixel Smoothing](Subpixel_Smoothing.md)) as well as the [numerical dispersion](https://en.wikipedia.org/wiki/Numerical_dispersion) of the Yee grid typically dominates the [floating-point roundoff error](https://en.wikipedia.org/wiki/Round-off_error), the fields/materials arrays can be defined using [single-precision floating point](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) to provide a significant speedup (by reducing the [memory bandwidth](https://en.wikipedia.org/wiki/Memory_bandwidth)) often without *any loss* in simulation accuracy.
+
+This feature requires manually setting the [macro `MEEP_SINGLE` in the source file `meep.hpp`](https://github.com/NanoComp/meep/blob/master/src/meep.hpp#L37) to `1` before compiling:
+
+```cpp
+#define MEEP_SINGLE 1 // 1 for single precision, 0 for double
+#if MEEP_SINGLE
+typedef float realnum;
+#else
+typedef double realnum;
+#endif
+```
+
+As a demonstration of the potential improvement in runtime performance, for an experiment involving [computing the light-extraction efficiency of an OLED](http://www.simpetus.com/projects.html#meep_oled) which includes PMLs, DFT flux monitors, and Lorentzian susceptibilities, the timestepping rate (s/step) for the single-precision case using 20 MPI processes was ~50% that of double precision.
+
+The DFT fields, however, are always defined using double-precision floating point. This is intended to mitigate the accumulation of round-off error for simulations with a large number of timesteps.
 
 ### Separating Build and Source Paths
 

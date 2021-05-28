@@ -685,16 +685,16 @@ void fields::unset_solve_cw_omega() {
 }
 
 /* implement mirror boundary conditions for i outside 0..n-1: */
-static int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
+int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
 
-/* Linearly interpolate a given point in a 3d grid of data.  The point
-   coordinates should be in the range [0,1], or at the very least [-1,2]
-   ... anything outside [0,1] is *mirror* reflected into [0,1] */
-realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, int nx, int ny,
-                           int nz, int stride) {
-
-  int x, y, z, x2, y2, z2;
-  realnum dx, dy, dz;
+/* map the cell coordinates into the range [0,1].
+   anything outside [0,1] is *mirror* reflected into [0,1] */
+void map_coordinates(double rx, double ry, double rz,
+                     int nx, int ny, int nz,
+                     int &x1, int &y1, int &z1,
+                     int &x2, int &y2, int &z2,
+                     double &dx, double &dy, double &dz,
+                     bool do_fabs) {
 
   /* mirror boundary conditions for r just beyond the boundary */
   rx = rx < 0.0 ? -rx : (rx > 1.0 ? 1.0 - rx : rx);
@@ -702,34 +702,49 @@ realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, in
   rz = rz < 0.0 ? -rz : (rz > 1.0 ? 1.0 - rz : rz);
 
   /* get the point corresponding to r in the epsilon array grid: */
-  x = mirrorindex(int(rx * nx), nx);
-  y = mirrorindex(int(ry * ny), ny);
-  z = mirrorindex(int(rz * nz), nz);
+  x1 = mirrorindex(int(rx * nx), nx);
+  y1 = mirrorindex(int(ry * ny), ny);
+  z1 = mirrorindex(int(rz * nz), nz);
 
   /* get the difference between (x,y,z) and the actual point */
-  dx = rx * nx - x - 0.5;
-  dy = ry * ny - y - 0.5;
-  dz = rz * nz - z - 0.5;
+  dx = rx * nx - x1 - 0.5;
+  dy = ry * ny - y1 - 0.5;
+  dz = rz * nz - z1 - 0.5;
 
   /* get the other closest point in the grid, with mirror boundaries: */
-  x2 = mirrorindex(dx >= 0.0 ? x + 1 : x - 1, nx);
-  y2 = mirrorindex(dy >= 0.0 ? y + 1 : y - 1, ny);
-  z2 = mirrorindex(dz >= 0.0 ? z + 1 : z - 1, nz);
+  x2 = mirrorindex(dx >= 0.0 ? x1 + 1 : x1 - 1, nx);
+  y2 = mirrorindex(dy >= 0.0 ? y1 + 1 : y1 - 1, ny);
+  z2 = mirrorindex(dz >= 0.0 ? z1 + 1 : z1 - 1, nz);
 
   /* take abs(d{xyz}) to get weights for {xyz} and {xyz}2: */
-  dx = fabs(dx);
-  dy = fabs(dy);
-  dz = fabs(dz);
+  if (do_fabs) {
+    dx = fabs(dx);
+    dy = fabs(dy);
+    dz = fabs(dz);
+  }
+
+}
+
+/* linearly interpolate a given point in a 3d grid of data. */
+double linear_interpolate(double rx, double ry, double rz, double *data,
+                          int nx, int ny, int nz, int stride) {
+
+  int x1, y1, z1, x2, y2, z2;
+  double dx, dy, dz;
+
+  map_coordinates(rx, ry, rz, nx, ny, nz,
+                  x1, y1, z1, x2, y2, z2,
+                  dx, dy, dz);
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by HDF5): */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 
-  return (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
-           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
+  return (((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
+           (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) *
               (1.0 - dz) +
-          ((D(x, y, z2) * (1.0 - dx) + D(x2, y, z2) * dx) * (1.0 - dy) +
-           (D(x, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
+          ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
+           (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
               dz);
 
 #undef D

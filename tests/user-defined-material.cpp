@@ -54,13 +54,13 @@ bool compare_hdf5_datasets(const char *file1, const char *name1, const char *fil
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
   size_t *dims1 = new size_t[expected_rank];
-  double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
+  realnum *data1 = (realnum *)f1.read(name1, &rank1, dims1, expected_rank, sizeof(realnum) == sizeof(float));
   if (!data1) return false;
 
   h5file f2(file2, h5file::READONLY, false);
   int rank2;
   size_t *dims2 = new size_t[expected_rank];
-  double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
+  realnum *data2 = (realnum *)f2.read(name2, &rank2, dims2, expected_rank, sizeof(realnum) == sizeof(float));
   if (!data2) return false;
 
   if (rank1 != expected_rank || rank2 != expected_rank) return false;

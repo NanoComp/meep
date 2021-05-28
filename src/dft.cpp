@@ -26,8 +26,6 @@
 
 using namespace std;
 
-typedef complex<double> cdouble;
-
 namespace meep {
 
 std::vector<double> linspace(double freq_min, double freq_max, size_t Nfreq) {
@@ -56,7 +54,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
 
 dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_,
                      double dV0_, double dV1_, component c_, bool use_centered_grid,
-                     cdouble phase_factor, ivec shift_, const symmetry &S_, int sn_,
+                     complex<double> phase_factor, ivec shift_, const symmetry &S_, int sn_,
                      const void *data_) {
   dft_chunk_data *data = (dft_chunk_data *)data_;
   if (!fc_->f[c_][0]) abort("invalid fields_chunk/component combination in dft_chunk");
@@ -97,11 +95,11 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 
   const int Nomega = data->omega.size();
   omega = data->omega;
-  dft_phase = new complex<realnum>[Nomega];
+  dft_phase = new complex<double>[Nomega];
 
   N = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d) { N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
-  dft = new complex<realnum>[N * Nomega];
+  dft = new complex<double>[N * Nomega];
   for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
   for (int i = 0; i < 5; ++i)
@@ -195,7 +193,7 @@ dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> f
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) abort("derived_component invalid for dft");
-    cdouble stored_weight = where->weight;
+    complex<double> stored_weight = where->weight;
     chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
                      stored_weight, chunks);
     where = where->next;
@@ -248,12 +246,12 @@ void dft_chunk::update_dft(double time) {
         f[cmp] = w * fc->f[c][cmp][idx];
 
     if (numcmp == 2) {
-      complex<realnum> fc(f[0], f[1]);
+      complex<double> fc(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
     }
     else {
-      realnum fr = f[0];
+      double fr = f[0];
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
     }
@@ -302,7 +300,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->write_chunk(1, &istart, &Nchunk, (double *)cur->dft);
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -330,7 +328,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->read_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->read_chunk(1, &istart, &Nchunk, (double *)cur->dft);
     istart += Nchunk;
   }
 }
@@ -712,7 +710,7 @@ dft_fields::dft_fields(dft_chunk *chunks_, const double *freq_, size_t Nfreq, co
     freq[i] = freq_[i];
 }
 
-void dft_fields::scale_dfts(cdouble scale) { chunks->scale_dft(scale); }
+void dft_fields::scale_dfts(complex<double> scale) { chunks->scale_dft(scale); }
 
 void dft_fields::remove() {
   while (chunks) {
@@ -727,7 +725,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
-  cdouble stored_weight = 1.0;
+  complex<double> stored_weight = 1.0;
   dft_chunk *chunks = 0;
   for (int nc = 0; nc < num_components; nc++)
     chunks =
@@ -740,11 +738,11 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 /***************************************************************/
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
-cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
-                                         int num_freq, h5file *file, double *buffer, int reim,
-                                         cdouble *field_array, void *mode1_data, void *mode2_data,
-                                         int ic_conjugate, bool retain_interp_weights,
-                                         fields *parent) {
+complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
+                                                 int num_freq, h5file *file, double *buffer, int reim,
+                                                 complex<double> *field_array, void *mode1_data, void *mode2_data,
+                                                 int ic_conjugate, bool retain_interp_weights,
+                                                 fields *parent) {
 
   if ((num_freq < 0) || (num_freq > omega.size()-1))
     abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
@@ -804,7 +802,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
   /***************************************************************/
   vec rshift(shift * (0.5 * fc->gv.inva));
   int chunk_idx = 0;
-  cdouble integral = 0.0;
+  complex<double> integral = 0.0;
   component c_conjugate = (component)(ic_conjugate >= 0 ? ic_conjugate : -ic_conjugate);
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     IVEC_LOOP_LOC(fc->gv, loc);
@@ -812,7 +810,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
     double w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
     double interp_w = retain_interp_weights ? IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) : 1.0;
 
-    cdouble dft_val =
+    complex<double> dft_val =
         (c_conjugate == NO_COMPONENT
              ? w
              : c_conjugate == Dielectric
@@ -822,7 +820,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
                          : dft[omega.size() * (chunk_idx++) + num_freq] / stored_weight);
     if (include_dV_and_interp_weights) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
-    cdouble mode1val = 0.0, mode2val = 0.0;
+    complex<double> mode1val = 0.0, mode2val = 0.0;
     if (mode1_data) mode1val = eigenmode_amplitude(mode1_data, loc, S.transform(c_conjugate, sn));
     if (mode2_data) mode2val = eigenmode_amplitude(mode2_data, loc, S.transform(c, sn));
 
@@ -833,7 +831,7 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
 
       dft_val *= interp_w;
 
-      cdouble val = (mode1_data ? mode1val : dft_val);
+      complex<double> val = (mode1_data ? mode1val : dft_val);
       buffer[idx2] = reim ? imag(val) : real(val);
     }
     else if (field_array) {
@@ -906,11 +904,11 @@ cdouble dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corne
 /* if where is non-null, only field components inside *where   */
 /* are processed.                                              */
 /***************************************************************/
-cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
-                                      component c, const char *HDF5FileName, cdouble **pfield_array,
-                                      int *array_rank, size_t *array_dims, direction *array_dirs,
-                                      void *mode1_data, void *mode2_data, component c_conjugate,
-                                      bool *first_component, bool retain_interp_weights) {
+complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
+                                              component c, const char *HDF5FileName, complex<double> **pfield_array,
+                                              int *array_rank, size_t *array_dims, direction *array_dirs,
+                                              void *mode1_data, void *mode2_data, component c_conjugate,
+                                              bool *first_component, bool retain_interp_weights) {
 
   /***************************************************************/
   /***************************************************************/
@@ -980,19 +978,17 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
   /* buffer for process-local contributions to HDF5 output files,*/
   /* like h5_output_data::buf in h5fields.cpp                    */
   /***************************************************************/
-  realnum *buffer = 0;
-  cdouble *field_array = 0;
+  double *buffer = 0;
+  complex<double> *field_array = 0;
   int reim_max = 0;
   if (HDF5FileName) {
-    buffer = new realnum[bufsz];
+    buffer = new double[bufsz];
     reim_max = 1;
   }
   else if (pfield_array)
-    *pfield_array = field_array = (array_size ? new cdouble[array_size] : 0);
+    *pfield_array = field_array = (array_size ? new complex<double>[array_size] : 0);
 
-  bool append_data = false;
-  bool single_precision = false;
-  cdouble overlap = 0.0;
+  complex<double> overlap = 0.0;
   for (int reim = 0; reim <= reim_max; reim++) {
     h5file *file = 0;
     if (HDF5FileName) {
@@ -1000,7 +996,8 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
       *first_component = false;
       char dataname[100];
       snprintf(dataname, 100, "%s_%i.%c", component_name(c), num_freq, reim ? 'i' : 'r');
-      file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
+      file->create_or_extend_data(dataname, rank, dims, false /* append_data */,
+                                  false /* single_precision */);
     }
 
     for (int ncl = 0; ncl < num_chunklists; ncl++)
@@ -1021,7 +1018,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
 /* on all cores                                                */
 /***************************************************************/
 #define BUFSIZE 1 << 16 // use 64k buffer
-      cdouble *buf = new cdouble[BUFSIZE];
+      complex<double> *buf = new complex<double>[BUFSIZE];
       ptrdiff_t offset = 0;
       size_t remaining = array_size;
       while (remaining != 0) {
@@ -1029,7 +1026,7 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
         am_now_working_on(MpiAllTime);
         sum_to_all(field_array + offset, buf, size);
         finished_working();
-        memcpy(field_array + offset, buf, size * sizeof(cdouble));
+        memcpy(field_array + offset, buf, size * sizeof(complex<double>));
         remaining -= size;
         offset += size;
       }
@@ -1051,46 +1048,46 @@ cdouble fields::process_dft_component(dft_chunk **chunklists, int num_chunklists
 /***************************************************************/
 /* routines for fetching arrays of dft fields                  */
 /***************************************************************/
-cdouble *collapse_array(cdouble *array, int *rank, size_t dims[3], direction dirs[3], volume where);
+complex<double> *collapse_array(complex<double> *array, int *rank, size_t dims[3], direction dirs[3], volume where);
 
-cdouble *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+complex<double> *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
+                                       size_t dims[3]) {
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  cdouble *array;
+  complex<double> *array;
   direction dirs[3];
   process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, flux.where);
 }
 
-cdouble *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+complex<double> *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank,
+                                       size_t dims[3]) {
   dft_chunk *chunklists[3];
   chunklists[0] = force.offdiag1;
   chunklists[1] = force.offdiag2;
   chunklists[2] = force.diag;
-  cdouble *array;
+  complex<double> *array;
   direction dirs[3];
   process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, force.where);
 }
 
-cdouble *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+complex<double> *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
+                                       size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
-  cdouble *array;
+  complex<double> *array;
   direction dirs[3];
   process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, n2f.where);
 }
 
-cdouble *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
-                               size_t dims[3]) {
+complex<double> *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
+                                       size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
-  cdouble *array;
+  complex<double> *array;
   direction dirs[3];
   process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, fdft.where);
@@ -1137,7 +1134,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
                               0, Ex, &first_component);
       }
       else {
-        cdouble *array = 0;
+        complex<double> *array = 0;
         int rank;
         size_t dims[3];
         direction dirs[3];
@@ -1155,8 +1152,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
             char dataname[100], filename[100];
             snprintf(dataname, 100, "%s_%i.%c", component_name(c), num_freq, reim ? 'i' : 'r');
             snprintf(filename, 100, "%s%s", HDF5FileName, strstr(".h5", HDF5FileName) ? "" : ".h5");
-            bool single_precision = false;
-            file->write(dataname, rank, dims, real_array, single_precision);
+            file->write(dataname, rank, dims, real_array, false /* single_precision */);
           }
           delete[] real_array;
         }
@@ -1197,7 +1193,7 @@ void fields::output_dft(dft_fields fdft, const char *HDF5FileName) {
 /***************************************************************/
 /***************************************************************/
 void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int num_freq,
-                         cdouble overlaps[2]) {
+                         complex<double> overlaps[2]) {
   component cE[2], cH[2];
   switch (flux.normal_direction) {
     case X:
@@ -1236,14 +1232,14 @@ void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int 
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  cdouble ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cH[0]);
-  cdouble EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cH[1]);
-  cdouble HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cE[0]);
-  cdouble HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, 0, mode1_data,
-                                       mode2_data, cE[1]);
+  complex<double> ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, 0, mode1_data,
+                                               mode2_data, cH[0]);
+  complex<double> EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, 0, mode1_data,
+                                               mode2_data, cH[1]);
+  complex<double> HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, 0, mode1_data,
+                                               mode2_data, cE[0]);
+  complex<double> HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, 0, mode1_data,
+                                               mode2_data, cE[1]);
   overlaps[0] = ExHy - EyHx;
   overlaps[1] = HyEx - HxEy;
 }

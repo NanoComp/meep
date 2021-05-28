@@ -114,7 +114,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
     snprintf(dataname, 256, "%s%s", component_name(file_c),
              reim ? ".i" : (real_fields ? "" : ".r"));
 
-    realnum *h5data = file->read(dataname, &rank, dims, 2);
+    realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
     if (!h5data) abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
@@ -223,7 +223,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
     snprintf(dataname, 256, "%s%s", component_name(file_c),
              reim ? ".i" : (real_fields ? "" : ".r"));
 
-    realnum *h5data = file->read(dataname, &rank, dims, 3);
+    realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 3, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
     if (!h5data) abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
@@ -330,7 +330,7 @@ bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc 
     snprintf(dataname, 256, "%s%s", component_name(file_c),
              reim ? ".i" : (real_fields ? "" : ".r"));
 
-    realnum *h5data = file->read(dataname, &rank, dims, 2);
+    realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
     if (!h5data) abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
     if (rank != 1) abort("monitor-point data is not one-dimensional");

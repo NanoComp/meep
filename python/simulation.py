@@ -1162,10 +1162,12 @@ class Simulation(object):
           `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
           Structure](#load-and-dump-structure) for more information.
 
-        + **`chunk_layout` [`string` or `Simulation` instance]** — This will cause the
-          `Simulation` to use the chunk layout described by either an h5 file (created by
-          `Simulation.dump_chunk_layout`) or another `Simulation`. See [Load and Dump
-          Structure](#load-and-dump-structure) for more information.
+        + **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
+          This will cause the `Simulation` to use the chunk layout described by either
+          (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
+          `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
+          For more information, see [Load and Dump Structure](#load-and-dump-structure) and
+          [Parallel Meep/User-Specified Cell Partition](Parallel_Meep.md#user-specified-cell-partition).
 
         The following require a bit more understanding of the inner workings of Meep to
         use. See also [SWIG Wrappers](#swig-wrappers).
@@ -1180,9 +1182,9 @@ class Simulation(object):
           initialized by `init_sim()` which is called automatically by any of the [run
           functions](#run-functions).
 
-        + **`num_chunks` [`integer`]** — Minimum number of "chunks" (subarrays) to divide
-          the structure/fields into (default 0). Actual number is determined by number of
-          processors, PML layers, etcetera. Mainly useful for debugging.
+        + **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
+          the structure/fields into. Overrides the default value determined by
+          the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
         + **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
           [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
@@ -1207,7 +1209,7 @@ class Simulation(object):
         self.extra_materials = extra_materials
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
-        self.num_chunks = num_chunks
+        self.num_chunks = chunk_layout.numchunks() if isinstance(chunk_layout,mp.BinaryPartition) else num_chunks
         self.Courant = Courant
         self.global_d_conductivity = 0
         self.global_b_conductivity = 0
@@ -1691,15 +1693,16 @@ class Simulation(object):
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False if self.chunk_layout else True,
+            False if self.chunk_layout and not isinstance(self.chunk_layout,mp.BinaryPartition) else True,
             None,
-            True if self._output_stats is not None else False
+            True if self._output_stats is not None else False,
+            self.chunk_layout if self.chunk_layout and isinstance(self.chunk_layout,mp.BinaryPartition) else None
         )
 
         if self._output_stats is not None:
             sys.exit(0)
 
-        if self.chunk_layout:
+        if self.chunk_layout and not isinstance(self.chunk_layout,mp.BinaryPartition):
             self.load_chunk_layout(br, self.chunk_layout)
             self.set_materials()
 
@@ -1844,7 +1847,8 @@ class Simulation(object):
             self.split_chunks_evenly,
             True,
             self.structure,
-            False
+            False,
+            None
         )
 
     def dump_structure(self, fname):
@@ -1878,8 +1882,10 @@ class Simulation(object):
 
         if isinstance(source, Simulation):
             vols = source.structure.get_chunk_volumes()
-            self.structure.load_chunk_layout(vols, br)
+            ids = source.structure.get_chunk_owners()
+            self.structure.load_chunk_layout(vols, [int(f) for f in ids], br)
         else:
+            ## source is either filename (string)
             self.structure.load_chunk_layout(source, br)
 
     def init_sim(self):
@@ -1936,10 +1942,6 @@ class Simulation(object):
             hook()
 
         self._is_initialized = True
-
-    def init_fields(self):
-        warnings.warn('init_fields is deprecated. Please use init_sim instead', DeprecationWarning)
-        self.init_sim()
 
     def initialize_field(self, cmpnt, amp_func):
         """
@@ -2064,7 +2066,7 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt, frequency=0, omega=0):
+    def get_epsilon_point(self, pt, frequency=0):
         """
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permittivity tensor at that location and frequency. If `frequency` is
@@ -2072,12 +2074,9 @@ class Simulation(object):
         frequency-independent part of $\\varepsilon$ (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        if omega != 0:
-            frequency = omega
-            warnings.warn("get_epsilon_point: omega has been deprecated; use frequency instead", RuntimeWarning)
         return self.fields.get_eps(v3,frequency)
 
-    def get_mu_point(self, pt, frequency=0, omega=0):
+    def get_mu_point(self, pt, frequency=0):
         """
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permeability tensor at that location and frequency. If `frequency` is
@@ -2085,10 +2084,32 @@ class Simulation(object):
         frequency-independent part of $\\mu$ (the $\\omega\\to\\infty$ limit).
         """
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
-        if omega != 0:
-            frequency = omega
-            warnings.warn("get_mu_point: omega has been deprecated; use frequency instead", RuntimeWarning)
         return self.fields.get_mu(v3,frequency)
+
+    def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None):
+        """
+        Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
+        grid anywhere within the cell volume, compute the trace of the $\\varepsilon$ tensor from the `geometry`
+        exactly at each grid point. (For [`MaterialGrid`](#materialgrid)s, the $\\varepsilon$ at each grid
+        point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly also
+        projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
+        $\\varepsilon$ by bilinearly interpolating from the nearest Yee grid points. This function is useful for
+        sampling the material geometry to any arbitrary resolution. The return value is a NumPy array with shape
+        equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
+        """
+        grid_vals = np.squeeze(np.empty((len(xtics), len(ytics), len(ztics))))
+        gv = self._create_grid_volume(False)
+        mp._get_epsilon_grid(self.geometry,
+                             self.extra_materials,
+                             self.default_material,
+                             self.ensure_periodicity and not not self.k_point,
+                             gv,
+                             self.cell_size, self.geometry_center,
+                             len(xtics), xtics,
+                             len(ytics), ytics,
+                             len(ztics), ztics,
+                             grid_vals)
+        return grid_vals
 
     def get_filename_prefix(self):
         """
@@ -2115,12 +2136,12 @@ class Simulation(object):
 
     def use_output_directory(self, dname=''):
         """
-        Put output in a subdirectory, which is created if necessary. If the optional
-        argument `dname` is specified, that is the name of the directory. If the `dname`
-        is omitted, the directory name is the current Python file name (if `filename_prefix`
-        is `None`) with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
-        `"test-out"`. Also resets `filename_prefix` to `None`. Otherwise the directory name
-        is set to `filename_prefix`.
+        Output all files into a subdirectory, which is created if necessary. If the optional
+        argument `dname` is specified, that is the name of the directory. If `dname`
+        is omitted and `filename_prefix` is `None`, the directory name is the current Python
+        filename with `".py"` replaced by `"-out"`: e.g. `test.py` implies a directory of
+        `"test-out"`. If `dname` is omitted and `filename_prefix` has been set, the directory
+        name is set to `filename_prefix` + "-out" and `filename_prefix` is then reset to `None`.
         """
         if not dname:
             dname = self.get_filename_prefix() + '-out'
@@ -2557,8 +2578,7 @@ class Simulation(object):
         Given a `Vector3` point `x` which can lie anywhere outside the near-field surface,
         including outside the cell and a `near2far` object, returns the computed
         (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
-        of fields
-        (E<sub>x</sub><sup>1</sup>,E<sub>y</sub><sup>1</sup>,E<sub>z</sub><sup>1</sup>,H<sub>x</sub><sup>1</sup>,H<sub>y</sub><sup>1</sup>,H<sub>z</sub><sup>1</sup>,E<sub>x</sub><sup>2</sup>,E<sub>y</sub><sup>2</sup>,E<sub>z</sub><sup>2</sup>,H<sub>x</sub><sup>2</sup>,H<sub>y</sub><sup>2</sup>,H<sub>z</sub><sup>2</sup>,...)
+        of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
         for the frequencies 1,2,…,`nfreq`.
         """
         return mp._get_farfield(near2far.swigobj, py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical))
@@ -2825,10 +2845,6 @@ class Simulation(object):
 
         return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
 
-    def add_eigenmode(self, *args):
-        warnings.warn('add_eigenmode is deprecated. Please use add_mode_monitor instead.', DeprecationWarning)
-        return self.add_mode_monitor(args)
-
     def display_fluxes(self, *fluxes):
         """
         Given a number of flux objects, this displays a comma-separated table of
@@ -3059,17 +3075,13 @@ class Simulation(object):
 
         return stuff
 
-    def output_component(self, c, h5file=None, frequency=0, omega=0):
+    def output_component(self, c, h5file=None, frequency=0):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before calling output_component")
 
         vol = self.fields.total_volume() if self.output_volume is None else self.output_volume
         h5 = self.output_append_h5 if h5file is None else h5file
         append = h5file is None and self.output_append_h5 is not None
-
-        if omega != 0:
-            frequency = omega
-            warnings.warn("output_component: omega has been deprecated; use frequency instead", RuntimeWarning)
 
         self.fields.output_hdf5(c, vol, h5, append, self.output_single_precision,self.get_filename_prefix(), frequency)
 
@@ -3214,7 +3226,7 @@ class Simulation(object):
 
         + `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
-          `nfreq` parameter to `add_dft_fields`, `add_dft_flux`, etc.
+          `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
         """
         if hasattr(dft_obj, 'swigobj'):
             dft_swigobj = dft_obj.swigobj
@@ -4465,10 +4477,6 @@ def output_epsilon(sim=None,*step_func_args,**kwargs):
         return lambda sim: mp.output_epsilon(sim, *step_func_args, **kwargs)
 
     frequency = kwargs.pop('frequency', 0.0)
-    omega = kwargs.pop('omega', 0.0)
-    if omega != 0:
-        frequency = omega
-        warnings.warn("output_epsilon: omega has been deprecated; use frequency instead", RuntimeWarning)
     sim.output_component(mp.Dielectric,frequency=frequency)
 
 
@@ -4487,10 +4495,6 @@ def output_mu(sim=None,*step_func_args,**kwargs):
         return lambda sim: mp.output_mu(sim, *step_func_args, **kwargs)
 
     frequency = kwargs.pop('frequency', 0.0)
-    omega = kwargs.pop('omega', 0.0)
-    if omega != 0:
-        frequency = omega
-        warnings.warn("output_mu: omega has been deprecated; use frequency instead", RuntimeWarning)
     sim.output_component(mp.Permeability,frequency=frequency)
 
 
@@ -4742,7 +4746,7 @@ def output_dfield_p(sim):
 # MPB compatibility
 def output_poynting(sim):
     """
-    Output the Poynting flux $\\mathrm{Re}\\{\\mathbf{E}^*\\times\\mathbf{H}\\}$. Note that you
+    Output the Poynting flux $\\Re [\\mathbf{E}^* \\times \\mathbf{H}]$. Note that you
     might want to wrap this step function in `synchronized_magnetic` to compute it more
     accurately. See [Synchronizing the Magnetic and Electric
     Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
@@ -4994,7 +4998,7 @@ def get_total_energy(f):
 
 def interpolate(n, nums):
     """
-    Given a list of numbers or `Vector3`s `nums`, linearly interpolates between them to
+    Given a list of numbers or `Vector3`s as `nums`, linearly interpolates between them to
     add `n` new evenly-spaced values between each pair of consecutive values in the
     original list.
     """
@@ -5087,7 +5091,6 @@ def complexarray(re, im):
     z += re
     return z
 
-
 def quiet(quietval=True):
     """
     Meep ordinarily prints various diagnostic and progress information to standard output.
@@ -5098,6 +5101,7 @@ def quiet(quietval=True):
     This function is deprecated, please use the [Verbosity](#verbosity) class instead.
     """
     verbosity(int(not quietval))
+    warnings.warn("quiet has been deprecated; use the Verbosity class instead", RuntimeWarning)
 
 
 def get_num_groups():
@@ -5171,3 +5175,54 @@ def merge_subgroup_data(data):
     comm.Alltoallv(smsg, rmsg)
 
     return output
+
+class BinaryPartition(object):
+    """
+    Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
+    `chunk_layout` parameter of the `Simulation` class object.
+    """
+    def __init__(self, data=None, split_dir=None, split_pos=None, left=None, right=None, proc_id=None):
+        """
+        The constructor accepts three separate groups of arguments: (1) `data`: a list of lists where each
+        list entry is either (a) a node defined as `[ (split_dir,split_pos), left, right ]` for which `split_dir`
+        and `split_pos` define the splitting direction (i.e., `mp.X`, `mp.Y`, `mp.Z`) and position (e.g., `3.5`,
+        `-4.2`, etc.) and `left` and `right` are the two branches (themselves `BinaryPartition` objects)
+        or (b) a leaf with integer value for the process ID `proc_id` in the range between 0 and number of processes
+        - 1 (inclusive), (2) a node defined using `split_dir`, `split_pos`, `left`, and `right`, or (3) a leaf with
+        `proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
+        process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
+        of processes.
+        """
+        self.split_dir = None
+        self.split_pos = None
+        self.proc_id = None
+        self.left = None
+        self.right = None
+        if data is not None:
+            if isinstance(data,list) and len(data) == 3:
+                if isinstance(data[0],tuple) and len(data[0]) == 2:
+                    self.split_dir = data[0][0]
+                    self.split_pos = data[0][1]
+                else:
+                    raise ValueError("expecting 2-tuple (split_dir,split_pos) but got {}".format(data[0]))
+                self.left = BinaryPartition(data=data[1])
+                self.right = BinaryPartition(data=data[2])
+            elif isinstance(data,int):
+                self.proc_id = data
+            else:
+                raise ValueError("expecting list [(split_dir,split_pos), left, right] or int (proc_id) but got {}".format(data))
+        elif split_dir is not None:
+            self.split_dir = split_dir
+            self.split_pos = split_pos
+            self.left = left
+            self.right = right
+        else:
+            self.proc_id = proc_id
+
+    def _numchunks(self,bp):
+        if bp is None:
+            return 0
+        return max(self._numchunks(bp.left)+self._numchunks(bp.right), 1)
+
+    def numchunks(self):
+        return self._numchunks(self)

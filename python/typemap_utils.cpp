@@ -58,6 +58,13 @@ static char *py2_string_as_utf8(PyObject *po) {
 }
 #endif
 
+static PyObject *get_meep_mod() {
+  // Return value: Borrowed reference
+  static PyObject *meep_mod = NULL;
+  if (meep_mod == NULL) { meep_mod = PyImport_ImportModule("meep"); }
+  return meep_mod;
+}
+
 static PyObject *get_geom_mod() {
   // Return value: Borrowed reference
   static PyObject *geom_mod = NULL;
@@ -99,8 +106,8 @@ static PyObject *py_volume_object() {
   // Return value: Borrowed reference
   static PyObject *volume_object = NULL;
   if (volume_object == NULL) {
-    PyObject *geom_mod = get_geom_mod();
-    volume_object = PyObject_GetAttrString(PyImport_ImportModule("meep"), "Volume");
+    PyObject *meep_mod = get_meep_mod();
+    volume_object = PyObject_GetAttrString(meep_mod, "Volume");
   }
   return volume_object;
 }
@@ -456,7 +463,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     case 1: md->material_grid_kinds = material_data::U_PROD; break;
     case 2: md->material_grid_kinds = material_data::U_MEAN; break;
     case 3: md->material_grid_kinds = material_data::U_DEFAULT; break;
-    default: meep::abort("Invalid material grid enumeration code: %d.\n", gt_enum);
+    default: meep::abort("Invalid material grid enumeration code: %d.\n", (int) gt_enum);
   }
 
   // initialize grid size
@@ -481,8 +488,8 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   if (!PyArray_ISCARRAY(pao)) {
     meep::abort("Numpy array weights must be C-style contiguous.");
   }
-  md->weights = new realnum[PyArray_SIZE(pao)];
-  memcpy(md->weights, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
+  md->weights = new double[PyArray_SIZE(pao)];
+  memcpy(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
 
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");
@@ -560,8 +567,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     md = new material_data();
     md->which_subclass = material_data::MATERIAL_FILE;
     md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
-    md->epsilon_data = new realnum[PyArray_SIZE(pao)];
-    memcpy(md->epsilon_data, (realnum *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(realnum));
+    md->epsilon_data = new double[PyArray_SIZE(pao)];
+    memcpy(md->epsilon_data, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
 
     for (int i = 0; i < PyArray_NDIM(pao); ++i) {
       md->epsilon_dims[i] = (size_t)PyArray_DIMS(pao)[i];
@@ -1028,4 +1035,43 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
   free(objs->items);
 
   return py_res;
+}
+
+static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
+    meep::binary_partition *bp = NULL;
+    if (pybp == Py_None) return bp;
+
+    PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
+    PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
+    PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
+    PyObject *left = PyObject_GetAttrString(pybp, "left");
+    PyObject *right = PyObject_GetAttrString(pybp, "right");
+
+    if (!id || !split_dir || !split_pos || !left || !right) {
+      meep::abort("BinaryPartition class object is incorrectly defined.");
+    }
+
+    if (PyLong_Check(id)) {
+         bp = new meep::binary_partition(PyLong_AsLong(id));
+    } else {
+         bp = new meep::binary_partition(direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos));
+         bp->left = py_bp_to_bp(left);
+         bp->right = py_bp_to_bp(right);
+    }
+
+    Py_XDECREF(id);
+    Py_XDECREF(split_dir);
+    Py_XDECREF(split_pos);
+    Py_XDECREF(left);
+    Py_XDECREF(right);
+    return bp;
+}
+
+static PyObject *py_binary_partition_object() {
+  // Return value: Borrowed reference
+  static PyObject *bp_type = NULL;
+  if (bp_type == NULL) {
+    bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition");
+  }
+  return bp_type;
 }

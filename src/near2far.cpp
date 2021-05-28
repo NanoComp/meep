@@ -122,7 +122,7 @@ void dft_near2far::scale_dfts(complex<double> scale) {
 }
 
 typedef void (*greenfunc)(std::complex<double> *EH, const vec &x, double freq, double eps,
-                          double mu, const vec &x0, component c0, std::complex<double>);
+                          double mu, const vec &x0, component c0, std::complex<double> f0);
 
 /* Given the field f0 correponding to current-source component c0 at
    x0, compute the E/H fields EH[6] (6 components) at x for a frequency
@@ -151,7 +151,8 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
   vec p = zero_vec(rhat.dim);
   p.set_direction(component_direction(c0), 1);
   double pdotrhat = p & rhat;
-  vec rhatcrossp = vec(rhat.y() * p.z() - rhat.z() * p.y(), rhat.z() * p.x() - rhat.x() * p.z(),
+  vec rhatcrossp = vec(rhat.y() * p.z() - rhat.z() * p.y(),
+                       rhat.z() * p.x() - rhat.x() * p.z(),
                        rhat.x() * p.y() - rhat.y() * p.x());
 
   /* compute the various scalar quantities in the point source formulae */
@@ -397,8 +398,8 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
   return EH;
 }
 
-realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                                           double resolution) {
+double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
+                                          double resolution) {
   /* compute output grid size etc. */
   double dx[3] = {0, 0, 0};
   direction dirs[3] = {X, Y, Z};
@@ -421,8 +422,8 @@ realnum *dft_near2far::get_farfields_array(const volume &where, int &rank, size_
   if (N * Nfreq < 1) return NULL; /* nothing to output */
 
   /* 6 x 2 x N x Nfreq array of fields in row-major order */
-  realnum *EH = new realnum[6 * 2 * N * Nfreq];
-  realnum *EH_ = new realnum[6 * 2 * N * Nfreq]; // temp array for sum_to_all
+  double *EH = new double[6 * 2 * N * Nfreq];
+  double *EH_ = new double[6 * 2 * N * Nfreq]; // temp array for sum_to_all
 
   /* fields for farfield_lowlevel for a single output point x */
   std::complex<double> *EH1 = new std::complex<double>[6 * Nfreq];
@@ -477,7 +478,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   int rank = 0;
   size_t N = 1;
 
-  realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
+  double *EH = get_farfields_array(where, rank, dims, N, resolution);
   if (!EH) return; /* nothing to output */
 
   const size_t Nfreq = freq.size();
@@ -511,12 +512,12 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
   int rank = 0;
   size_t N = 1;
 
-  realnum *EH = get_farfields_array(where, rank, dims, N, resolution);
+  double *EH = get_farfields_array(where, rank, dims, N, resolution);
 
   const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];
-  std::complex<realnum> ff_EH[6];
-  std::complex<realnum> cE[2], cH[2];
+  std::complex<double> ff_EH[6];
+  std::complex<double> cE[2], cH[2];
 
   for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
@@ -524,8 +525,8 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
   for (size_t idx = 0; idx < N; ++idx) {
     for (size_t i = 0; i < Nfreq; ++i) {
       for (int k = 0; k < 6; ++k)
-        ff_EH[k] = std::complex<realnum>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i),
-                                         *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
+        ff_EH[k] = std::complex<double>(*(EH + ((k * 2 + 0) * N + idx) * Nfreq + i),
+                                        *(EH + ((k * 2 + 1) * N + idx) * Nfreq + i));
       switch (df) {
         case X: cE[0] = ff_EH[1], cE[1] = ff_EH[2], cH[0] = ff_EH[5], cH[1] = ff_EH[4]; break;
         case Y: cE[0] = ff_EH[2], cE[1] = ff_EH[0], cH[0] = ff_EH[3], cH[1] = ff_EH[5]; break;
@@ -660,6 +661,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
       sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
 
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+        IVEC_LOOP_ILOC(f->fc->gv, ix0);
         IVEC_LOOP_LOC(f->fc->gv, x0);
         x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
@@ -692,6 +694,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
         idx_dft++;
         if (is_electric(temp_struct.near_fd_comp))
           EH0 *= -1;
+        EH0 /= f->S.multiplicity(ix0);
         temp_struct.amp_arr.push_back(EH0);
       }
     }

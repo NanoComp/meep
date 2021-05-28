@@ -28,10 +28,6 @@
 
 namespace meep_geom {
 
-#ifndef cdouble
-typedef std::complex<double> cdouble;
-#endif
-
 // constants from meep-ctl-const.hpp
 #define CYLINDRICAL -2
 
@@ -77,9 +73,6 @@ struct fragment_stats {
   static bool eps_averaging;
 
   static bool has_non_medium_material();
-  static void init_libctl(meep_geom::material_type default_mat, bool ensure_per,
-                          meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
-                          geometric_object_list *geom_list);
 
   size_t num_anisotropic_eps_pixels;
   size_t num_anisotropic_mu_pixels;
@@ -179,7 +172,7 @@ material_type make_material_grid(bool do_averaging, double beta, double eta);
 vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
-void epsilon_material_grid(material_data *md, meep::realnum u);
+void epsilon_material_grid(material_data *md, double u);
 void epsilon_file_material(material_data *md, vector3 p);
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2);
@@ -197,29 +190,45 @@ bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
 void check_offdiag(medium_struct *m);
 geom_box gv2box(const meep::volume &v);
+void get_epsilon_grid(geometric_object_list gobj_list,
+                      material_type_list mlist,
+                      material_type _default_material,
+                      bool _ensure_periodicity,
+                      meep::grid_volume gv,
+                      vector3 cell_size,
+                      vector3 cell_center,
+                      int nx, const double *x,
+                      int ny, const double *y,
+                      int nz, const double *z,
+                      double *grid_vals);
+void init_libctl(material_type default_mat, bool ensure_per,
+                 meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
+                 geometric_object_list *geom_list);
 
 /***************************************************************/
 // material grid functions
 /***************************************************************/
 void update_weights(material_type matgrid, double *weights);
-meep::realnum matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
-meep::realnum material_grid_val(vector3 p, material_data *md);
+meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md);
+meep::vec material_grid_grad(vector3 p, material_data *md);
+double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
+double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
-void get_material_tensor(const medium_struct *mm, meep::realnum freq, std::complex<double> *tensor);
-meep::realnum get_material_gradient(meep::realnum u, std::complex<double> fields_a,
-                                    std::complex<double> fields_f, meep::realnum freq,
-                                    material_data *md, meep::component field_dir,
-                                    meep::realnum du = 1.0e-3);
-void add_interpolate_weights(meep::realnum rx, meep::realnum ry, meep::realnum rz,
-                             meep::realnum *data, int nx, int ny, int nz, int stride,
-                             double scaleby, const meep::realnum *udata, int ukind, double uval);
-void material_grids_addgradient_point(meep::realnum *v, std::complex<double> fields_a,
+void get_material_tensor(const medium_struct *mm, double freq, std::complex<double> *tensor);
+double get_material_gradient(double u, std::complex<double> fields_a,
+                             std::complex<double> fields_f, double freq,
+                             material_data *md, meep::component field_dir,
+                             double du = 1.0e-3);
+void add_interpolate_weights(double rx, double ry, double rz,
+                             double *data, int nx, int ny, int nz, int stride,
+                             double scaleby, const double *udata, int ukind, double uval);
+void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
                                       std::complex<double> fields_f, meep::component field_dir,
-                                      vector3 p, meep::realnum scalegrad, meep::realnum freq,
+                                      vector3 p, double scalegrad, double freq,
                                       geom_box_tree geometry_tree);
-void material_grids_addgradient(meep::realnum *v, size_t ng, std::complex<double> *fields_a,
-                                std::complex<double> *fields_f, meep::realnum *frequencies,
-                                size_t nf, meep::realnum scalegrad, const meep::volume &where,
+void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
+                                std::complex<double> *fields_f, double *frequencies,
+                                size_t nf, double scalegrad, const meep::volume &where,
                                 geom_box_tree geometry_tree, meep::fields *f);
 
 /***************************************************************/

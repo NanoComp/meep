@@ -44,7 +44,8 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 
   // Write params
   size_t params_start = 0;
-  file->create_data(dname, 1, &params_ntotal);
+  file->create_data(dname, 1, &params_ntotal, false /* append_data */,
+                    sizeof(realnum) == sizeof(float) /* single_precision */);
   if (am_master()) {
     susceptibility *sus = chunks[0]->chiP[EorH];
     while (sus) {
@@ -57,10 +58,10 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
 void structure::dump_chunk_layout(const char *filename) {
   // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
   size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
+  double *origins = new double[sz];
   size_t *nums = new size_t[sz];
   memset(nums, 0, sizeof(size_t) * sz);
-  memset(origins, 0, sizeof(realnum) * sz);
+  memset(origins, 0, sizeof(double) * sz);
   for (int i = 0; i < num_chunks; ++i) {
     int idx = i * 3;
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
@@ -69,7 +70,7 @@ void structure::dump_chunk_layout(const char *filename) {
     }
   }
   h5file file(filename, h5file::WRITE, true);
-  file.create_data("gv_origins", 1, &sz);
+  file.create_data("gv_origins", 1, &sz, false /* append_data */, false /* single_precision */);
   if (am_master()) {
     size_t gv_origins_start = 0;
     file.write_chunk(1, &gv_origins_start, &sz, origins);
@@ -115,7 +116,7 @@ void structure::dump(const char *filename) {
   delete[] num_chi1inv;
 
   // write the data
-  file.create_data("chi1inv", 1, &ntotal);
+  file.create_data("chi1inv", 1, &ntotal, false /* append_data */, false /* single_precision */);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
@@ -312,7 +313,6 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
     realnum num_params;
     file->read_chunk(rank, &start, num_params_dims, &num_params);
     start += num_params_dims[0];
-
     if (num_params == 4) {
       // This is a lorentzian_susceptibility and the next 4 values in the dataset
       // are id, omega_0, gamma, and no_omega_0_denominator.
@@ -414,12 +414,54 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
+binary_partition::binary_partition(int _proc_id) {
+  proc_id = _proc_id;
+  split_dir = NO_DIRECTION;
+  split_pos = 0.0;
+  left = NULL;
+  right = NULL;
+}
+
+binary_partition::binary_partition(direction _split_dir, double _split_pos) {
+  split_dir = _split_dir;
+  split_pos = _split_pos;
+  proc_id = -1;
+  left = NULL;
+  right = NULL;
+}
+
+void split_by_binarytree(grid_volume gvol,
+                         std::vector<grid_volume> &result_gvs,
+                         std::vector<int> &result_ids,
+                         const binary_partition *bp) {
+  // reached a leaf
+  if ((bp->left == NULL) && (bp->right == NULL)) {
+    result_gvs.push_back(gvol);
+    result_ids.push_back(bp->proc_id);
+    return;
+  }
+
+  int split_point = (size_t)((bp->split_pos - gvol.surroundings().in_direction_min(bp->split_dir)) /
+                             gvol.surroundings().in_direction(bp->split_dir) *
+                             gvol.num_direction(bp->split_dir) + 0.5);
+  // traverse left branch
+  if (bp->left != NULL) {
+    grid_volume left_gvol = gvol.split_at_fraction(false, split_point, bp->split_dir);
+    split_by_binarytree(left_gvol, result_gvs, result_ids, bp->left);
+  }
+  // traverse right branch
+  if (bp->right != NULL) {
+    grid_volume right_gvol = gvol.split_at_fraction(true, split_point, bp->split_dir);
+    split_by_binarytree(right_gvol, result_gvs, result_ids, bp->right);
+  }
+}
+
 void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   // Load chunk grid_volumes from a file
   h5file file(filename, h5file::READONLY, true);
   size_t sz = num_chunks * 3;
-  realnum *origins = new realnum[sz];
-  memset(origins, 0, sizeof(realnum) * sz);
+  double *origins = new double[sz];
+  memset(origins, 0, sizeof(double) * sz);
   size_t *nums = new size_t[sz];
   memset(nums, 0, sizeof(size_t) * sz);
 
@@ -446,6 +488,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   broadcast(0, nums, sz);
 
   std::vector<grid_volume> gvs;
+  std::vector<int> ids;
   // Populate a vector with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     int idx = i * 3;
@@ -457,20 +500,23 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
     }
     new_gv.set_origin(new_origin);
     gvs.push_back(new_gv);
+    ids.push_back(i * count_processors() / num_chunks);
   }
 
-  load_chunk_layout(gvs, br);
+  load_chunk_layout(gvs, ids, br);
 
   delete[] origins;
   delete[] nums;
 }
 
-void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br) {
+void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
+                                  const std::vector<int> &ids,
+                                  boundary_region &br) {
+  if (gvs.size() != num_chunks) abort("load_chunk_layout: wrong number of chunks.");
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
-    int proc = i * count_processors() / num_chunks;
-    chunks[i] = new structure_chunk(gvs[i], v, Courant, proc);
+    chunks[i] = new structure_chunk(gvs[i], v, Courant, ids[i] % count_processors());
     br.apply(this, chunks[i]);
   }
   check_chunks();
