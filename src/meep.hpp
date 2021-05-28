@@ -729,11 +729,13 @@ public:
   structure(const grid_volume &gv, material_function &eps,
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
-            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
+            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+            const binary_partition *bp = NULL);
   structure(const grid_volume &gv, double eps(const vec &),
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
-            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
+            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+            const binary_partition *bp = NULL);
   structure(const structure *);
   structure(const structure &);
 
@@ -776,7 +778,6 @@ public:
   void dump_chunk_layout(const char *filename);
   void load(const char *filename);
   void load_chunk_layout(const char *filename, boundary_region &br);
-  void load_chunk_layout(const binary_partition *bp, boundary_region &br);
   void load_chunk_layout(const std::vector<grid_volume> &gvs,
                          const std::vector<int> &ids,
                          boundary_region &br);
@@ -805,7 +806,7 @@ private:
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region &br,
-                            const symmetry &s);
+                            const symmetry &s, const binary_partition *bp);
   void check_chunks();
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
@@ -814,11 +815,16 @@ private:
 };
 
 // defined in structure.cpp
-std::vector<grid_volume> choose_chunkdivision(grid_volume &gv,
-                                              volume &v,
-                                              int num_chunks,
-                                              const symmetry &s);
+binary_partition *choose_chunkdivision(grid_volume &gv,
+                                       volume &v,
+                                       int num_chunks,
+                                       const symmetry &s);
 
+// defined in structure_dump.cpp
+void split_by_binarytree(grid_volume gvol,
+                         std::vector<grid_volume> &result_gvs,
+                         std::vector<int> &result_ids,
+                         const binary_partition *bp);
 class src_vol;
 class fields;
 class fields_chunk;

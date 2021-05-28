@@ -430,10 +430,10 @@ binary_partition::binary_partition(direction _split_dir, double _split_pos) {
   right = NULL;
 }
 
-static void split_by_binarytree(grid_volume gvol,
-                                std::vector<grid_volume> &result_gvs,
-                                std::vector<int> &result_ids,
-                                const binary_partition *bp) {
+void split_by_binarytree(grid_volume gvol,
+                         std::vector<grid_volume> &result_gvs,
+                         std::vector<int> &result_ids,
+                         const binary_partition *bp) {
   // reached a leaf
   if ((bp->left == NULL) && (bp->right == NULL)) {
     result_gvs.push_back(gvol);
@@ -454,13 +454,6 @@ static void split_by_binarytree(grid_volume gvol,
     grid_volume right_gvol = gvol.split_at_fraction(true, split_point, bp->split_dir);
     split_by_binarytree(right_gvol, result_gvs, result_ids, bp->right);
   }
-}
-
-void structure::load_chunk_layout(const binary_partition *bp, boundary_region &br) {
-  std::vector<grid_volume> gvs;
-  std::vector<int> ids;
-  split_by_binarytree(gv, gvs, ids, bp);
-  load_chunk_layout(gvs, ids, br);
 }
 
 void structure::load_chunk_layout(const char *filename, boundary_region &br) {

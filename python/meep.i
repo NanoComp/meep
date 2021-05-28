@@ -1456,9 +1456,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %typemap(in) meep::binary_partition * {
     $1 = py_bp_to_bp($input);
-    if(!$1) {
-        SWIG_fail;
-    }
 }
 
 %typemap(arginit) meep::binary_partition * {
@@ -1891,7 +1888,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     bool split_chunks_evenly,
                                                     bool set_materials,
                                                     meep::structure *existing_s,
-                                                    bool output_chunk_costs) {
+                                                    bool output_chunk_costs,
+                                                    meep::binary_partition *my_bp) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1909,7 +1907,11 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     if (output_chunk_costs) {
          meep::volume thev = gv.surroundings();
-         std::vector<grid_volume> chunk_vols = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
+         meep::binary_partition *bp = NULL;
+         if (!my_bp) bp = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
+         std::vector<grid_volume> chunk_vols;
+         std::vector<int> ids;
+         meep::split_by_binarytree(gv, chunk_vols, ids, (!my_bp) ? bp : my_bp);
          for (size_t i = 0; i < chunk_vols.size(); ++i)
               master_printf("CHUNK:, %2zu, %f, %zu\n",i,chunk_vols[i].get_cost(),chunk_vols[i].surface_area());
          return NULL;
@@ -1921,7 +1923,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     }
     else {
       s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
-                              use_anisotropic_averaging, tol, maxeval);
+                              use_anisotropic_averaging, tol, maxeval, my_bp);
     }
     s->shared_chunks = true;
 
