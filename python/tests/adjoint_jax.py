@@ -22,7 +22,7 @@ mp.verbosity(0)
 
 
 def build_straight_wg_simulation(
-  wg_width=0.7,
+  wg_width=0.5,
   wg_padding=1.0,
   wg_length=1.0,
   pml_width=1.0,

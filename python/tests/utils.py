@@ -20,8 +20,8 @@ class VectorComparisonMixin(unittest.TestCase):
 
     def assertVectorsClose(self, x, y, epsilon = 1e-2, msg = ''):
         """Asserts that two values or vectors satisfy ‖x-y‖ ≤ ε * max(‖x‖, ‖y‖)."""
-        x = np.atleast_1d(x)
-        y = np.atleast_1d(y)
+        x = np.atleast_1d(x).ravel()
+        y = np.atleast_1d(y).ravel()
         x_norm = np.linalg.norm(x, ord=np.inf)
         y_norm = np.linalg.norm(y, ord=np.inf)
         diff_norm = np.linalg.norm(x - y, ord=np.inf)

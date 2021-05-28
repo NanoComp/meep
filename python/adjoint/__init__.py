@@ -19,4 +19,4 @@ from .filters import *
 try:
   from . import jax
 except ImportError as error:
-  print('Unable to import JAX.')
+  pass
