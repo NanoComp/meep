@@ -417,6 +417,7 @@ double material_grid_val(vector3 p, material_data *md) {
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
   return meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
                                   md->grid_size.y, md->grid_size.z, 1);
+
 }
 
 static double tanh_projection(double u, double beta, double eta) {
@@ -458,14 +459,12 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
     ++matgrid_val_count;
   }
 
-  double u_interp = (md->material_grid_kinds == material_data::U_MIN
-                     ? umin
-                     : (md->material_grid_kinds == material_data::U_PROD
-                        ? uprod
-                        : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
-                           : udefault)));
-
-  return (md->beta != 0) ? tanh_projection(u_interp, md->beta, md->eta) : u_interp;
+  return (md->material_grid_kinds == material_data::U_MIN
+          ? umin
+          : (md->material_grid_kinds == material_data::U_PROD
+             ? uprod
+             : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
+                : udefault)));
 }
 static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2,
                             cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out,
@@ -808,6 +807,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
       tp = geom_tree_search(p, restricted_tree, &oi);
       // interpolate and (possibly) project onto material grid
       u = matgrid_val(p, tp, oi, md);
+      if (md->beta != 0) u = tanh_projection(u, md->beta, md->eta);
       // interpolate material from material grid point
       epsilon_material_grid(md, u);
 
@@ -1165,8 +1165,8 @@ static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
   double eps2 = (med2_eps_diag.x + med2_eps_diag.y + med2_eps_diag.z)/3;
   cnumber ret;
-  ret.re = u_proj*eps1 + (1-u_proj)*eps2;
-  ret.im = u_proj/eps1 + (1-u_proj)/eps2;
+  ret.re = (1-u_proj)*eps1 + u_proj*eps2;
+  ret.im = (1-u_proj)/eps1 + u_proj/eps2;
   double w = 0;
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
@@ -1292,8 +1292,7 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     int oi;
     tp = geom_tree_search(p, restricted_tree, &oi);
     gradient = matgrid_grad(p, tp, oi, md);
-    uval = material_grid_val(to_geom_box_coords(p, &tp->objects[oi]),
-                             (material_data *)tp->objects[oi].o->material);
+    uval = matgrid_val(p, tp, oi, md);
   }
   else {
     gradient = normal_vector(meep::type(c), v);
@@ -1633,6 +1632,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
 
     tp = geom_tree_search(p, restricted_tree, &oi);
     u = matgrid_val(p, tp, oi, mat); // interpolate onto material grid
+    if (mat->beta != 0) tanh_projection(u, mat->beta, mat->eta);
     epsilon_material_grid(mat, u);   // interpolate material from material grid point
     check_offdiag(&mat->medium);
   }
