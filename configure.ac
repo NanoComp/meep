@@ -24,7 +24,7 @@ AC_ENABLE_SHARED
 AC_ARG_ENABLE(single,
               [AC_HELP_STRING([--enable-single],[compile in single precision])],
 	            enable_single=$enableval, enable_single=no)
-if test "x$enable_single" = "yes"; then
+if test "x$enable_single" = "xyes"; then
     MEEP_SINGLE=1
 else
     MEEP_SINGLE=0
