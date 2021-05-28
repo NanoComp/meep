@@ -15,3 +15,8 @@ from .optimization_problem import (OptimizationProblem, Grid, DesignRegion)
 from .filter_source import FilteredSource
 
 from .filters import *
+
+try:
+  from . import jax
+except ImportError as error:
+  pass
