@@ -65,6 +65,7 @@ build/
 src/sphere-quad.h
 src/sphere_quad
 src/step_generic_stride1.cpp
+src/meep/meep-config.h
 python/meep/
 python/meep-python.cxx
 python/meep.py

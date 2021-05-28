@@ -23,6 +23,7 @@
 
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
+#include "meep/meep-config.h"
 
 #include <vector>
 
@@ -34,8 +35,7 @@ namespace meep {
    point rather than double precision (the default). The reduced
    precision can provide for up to a factor of 2X improvement in the
    time-stepping rate with generally negligible loss in accuracy. */
-#define MEEP_SINGLE 0 // 1 for single precision, 0 for double
-#if MEEP_SINGLE
+#if MEEP_SINGLE // set to 1 via configure --enable-single
 typedef float realnum;
 #else
 typedef double realnum;
