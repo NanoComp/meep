@@ -1,10 +1,10 @@
 lib_LTLIBRARIES = libmeep.la
 include_HEADERS = meep.hpp
-pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp meepgeom.hpp material_data.hpp adjust_verbosity.hpp
+pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp meep/meep-config.h meepgeom.hpp material_data.hpp adjust_verbosity.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
-BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp
+BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp meep/meep-config.h
 
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
 bicgstab.hpp meepgeom.hpp material_data.hpp adjust_verbosity.hpp

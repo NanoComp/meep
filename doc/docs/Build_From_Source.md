@@ -248,16 +248,8 @@ This flag enables some experimental support for [OpenMP](https://en.wikipedia.or
 
 By default, the C/C++ arrays used in Meep to store the time-domain fields ($\mathbf{E}$, $\mathbf{D}$, $\mathbf{H}$) and materials ($\varepsilon$) are defined using [double-precision floating point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Updating the fields arrays generally dominates the computational cost of the simulation because it occurs at every voxel in the cell and at every timestep. Because [discretization errors](https://en.wikipedia.org/wiki/Discretization_error) which include the discontinuous material interfaces (as described in [Subpixel Smoothing](Subpixel_Smoothing.md)) as well as the [numerical dispersion](https://en.wikipedia.org/wiki/Numerical_dispersion) of the Yee grid typically dominates the [floating-point roundoff error](https://en.wikipedia.org/wiki/Round-off_error), the fields/materials arrays can be defined using [single-precision floating point](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) to provide a significant speedup (by reducing the [memory bandwidth](https://en.wikipedia.org/wiki/Memory_bandwidth)) often without *any loss* in simulation accuracy.
 
-This feature requires manually setting the [macro `MEEP_SINGLE` in the source file `meep.hpp`](https://github.com/NanoComp/meep/blob/master/src/meep.hpp#L37) to `1` before compiling:
-
-```cpp
-#define MEEP_SINGLE 1 // 1 for single precision, 0 for double
-#if MEEP_SINGLE
-typedef float realnum;
-#else
-typedef double realnum;
-#endif
-```
+This feature requires one to pass the `--enable-single` flag to
+the Meep `configure` script before compiling.
 
 As a demonstration of the potential improvement in runtime performance, for an experiment involving [computing the light-extraction efficiency of an OLED](http://www.simpetus.com/projects.html#meep_oled) which includes PMLs, DFT flux monitors, and Lorentzian susceptibilities, the timestepping rate (s/step) for the single-precision case using 20 MPI processes was ~50% that of double precision.
 
