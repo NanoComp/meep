@@ -28,6 +28,20 @@ namespace meep_geom {
 material_data vacuum_material_data;
 material_type vacuum = &vacuum_material_data;
 
+static void set_default_material(material_type _default_material) {
+  if (default_material != NULL) {
+    material_free((material_type)default_material);
+    delete (material_type)default_material;
+    default_material = NULL;
+  }
+
+  if (_default_material != NULL) {
+    material_type new_material = new material_data();
+    new_material->copy_from(*_default_material);
+    default_material = (void *)new_material;
+  }
+}
+
 void check_offdiag(medium_struct *m) {
   if (m->epsilon_offdiag.x.im != 0 || m->epsilon_offdiag.y.im != 0 ||
       m->epsilon_offdiag.z.im != 0 || m->mu_offdiag.x.im != 0 || m->mu_offdiag.y.im != 0 ||
@@ -103,6 +117,25 @@ void material_gc(material_type m) {
   susceptibility_list_gc(&(m->medium_1.H_susceptibilities));
   susceptibility_list_gc(&(m->medium_2.E_susceptibilities));
   susceptibility_list_gc(&(m->medium_2.H_susceptibilities));
+}
+
+void material_free(material_type m) {
+  if (!m) return;
+
+  susceptibility_list_gc(&(m->medium.E_susceptibilities));
+  susceptibility_list_gc(&(m->medium.H_susceptibilities));
+  susceptibility_list_gc(&(m->medium_1.E_susceptibilities));
+  susceptibility_list_gc(&(m->medium_1.H_susceptibilities));
+  susceptibility_list_gc(&(m->medium_2.E_susceptibilities));
+  susceptibility_list_gc(&(m->medium_2.H_susceptibilities));
+
+  // NOTE: We do not delete the user_data field here since it is an opaque/void
+  // object so will assume that the caller keeps track of its lifetime.
+  delete[] m->epsilon_data;
+  m->epsilon_data = NULL;
+
+  delete[] m->weights;
+  m->weights = NULL;
 }
 
 bool material_type_equal(const material_type m1, const material_type m2) {
@@ -554,7 +587,7 @@ void epsilon_material_grid(material_data *md, double u) {
 
 // return material of the point p from the file (assumed already read)
 void epsilon_file_material(material_data *md, vector3 p) {
-  default_material = (void *)md;
+  set_default_material(md);
 
   if (md->which_subclass != material_data::MATERIAL_FILE)
     meep::abort("epsilon-input-file only works with a type=file default-material");
@@ -1806,7 +1839,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
       _default_material->which_subclass != material_data::PERFECT_METAL) {
     check_offdiag(&_default_material->medium);
   }
-  default_material = _default_material;
+  set_default_material(_default_material);
   ensure_periodicity = _ensure_periodicity;
   meep::grid_volume gv = s->gv;
   double resolution = gv.a;
@@ -2061,7 +2094,7 @@ void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *
                  vector3 cell_size, vector3 cell_center,
                  geometric_object_list *geom_) {
   geom_initialize();
-  default_material = default_mat;
+  set_default_material(default_mat);
   ensure_periodicity = ensure_per;
   geometry_center = cell_center;
   dimensions = meep::number_of_directions(gv->dim);

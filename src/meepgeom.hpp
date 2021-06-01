@@ -178,6 +178,7 @@ bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2);
 bool medium_struct_equal(const medium_struct *m1, const medium_struct *m2);
 void material_gc(material_type m);
+void material_free(material_type m);
 bool material_type_equal(const material_type m1, const material_type m2);
 bool is_material_grid(material_type mt);
 bool is_material_grid(void *md);
