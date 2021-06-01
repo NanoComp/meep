@@ -222,7 +222,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/filter_source.py         \
                   $(srcdir)/adjoint/jax/__init__.py          \
                   $(srcdir)/adjoint/jax/wrapper.py           \
-                  $(srcdir)/adjoint/jax/utils.py             \
+                  $(srcdir)/adjoint/jax/utils.py
 
 ######################################################################
 # finally, specification of what gets installed in the meep python
