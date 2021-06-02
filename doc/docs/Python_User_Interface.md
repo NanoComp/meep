@@ -4232,8 +4232,8 @@ to a positive value. When the projection feature is enabled, the weights $u(x)$ 
 function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
 $\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
 +\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
-($\beta$: "smoothness" of the turn on) and `eta` ($\eta$: erosion/dilation). The level set provides a general approach for
-defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
+($\beta$: bias or "smoothness" of the turn on) and `eta` ($\eta$: offset for erosion/dilation). The level set provides a general
+approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
 The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
 can be specified using the `Simulation` constructor.
 
