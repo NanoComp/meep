@@ -2127,7 +2127,9 @@ void fragment_stats::compute_stats() {
 
   for (int i = 0; i < geom.num_items; ++i) {
     geometric_object *go = &geom.items[i];
-    double overlap = box_overlap_with_object(box, *go, 0.05, 1000);
+    // tolerance and max number of function evaluations of numerical quadrature are increased and decreased
+    // from default values of 0.0001 and 100000, respectively, to obtain fast, approximate result
+    double overlap = box_overlap_with_object(box, *go, 0.05 /* tol */, 1000 /* maxeval */);
 
     bool anisotropic_pixels_already_added = false;
     if (eps_averaging) {
