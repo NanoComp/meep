@@ -52,10 +52,10 @@ from typing import Callable, List, Tuple
 import jax
 import jax.numpy as jnp
 import meep as mp
-import meep.adjoint as mpa
 import numpy as onp
 
 from . import utils
+from . import DesignRegion, EigenmodeCoefficient
 
 _norm_fn = onp.linalg.norm
 _reduce_fn = onp.max
@@ -95,8 +95,8 @@ class MeepJaxWrapper:
   def __init__(self,
                simulation: mp.Simulation,
                sources: List[mp.Source],
-               monitors: List[mpa.EigenmodeCoefficient],
-               design_regions: List[mpa.DesignRegion],
+               monitors: List[EigenmodeCoefficient],
+               design_regions: List[DesignRegion],
                frequencies: List[float],
                measurement_interval: float = 50.0,
                dft_field_components: Tuple[int, ...] = (mp.Ez,),

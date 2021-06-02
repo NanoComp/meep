@@ -1,8 +1,9 @@
 from typing import List, Iterable, Tuple
 
 import meep as mp
-import meep.adjoint as mpa
 import numpy as onp
+
+from . import ObjectiveQuantitiy, DesignRegion
 
 # Meep field components used to compute adjoint sensitivities
 _ADJOINT_FIELD_COMPONENTS = [mp.Ex, mp.Ey, mp.Ez]
@@ -18,7 +19,7 @@ def _make_at_least_nd(x: onp.ndarray, dims: int = 3) -> onp.ndarray:
 
 def calculate_vjps(
   simulation: mp.Simulation,
-  design_regions: List[mpa.DesignRegion],
+  design_regions: List[DesignRegion],
   frequencies: List[float],
   fwd_fields: List[List[onp.ndarray]],
   adj_fields: List[List[onp.ndarray]],
@@ -42,7 +43,7 @@ def calculate_vjps(
 
 
 def register_monitors(
-  monitors: List[mpa.ObjectiveQuantitiy],
+  monitors: List[ObjectiveQuantitiy],
   frequencies: List[float],
 ) -> None:
   """Registers a list of monitors."""
@@ -52,7 +53,7 @@ def register_monitors(
 
 def install_design_region_monitors(
   simulation: mp.Simulation,
-  design_regions: List[mpa.DesignRegion],
+  design_regions: List[DesignRegion],
   frequencies: List[float],
 ) -> List[mp.DftFields]:
   """Installs DFT field monitors at the design regions of the simulation."""
@@ -67,7 +68,7 @@ def install_design_region_monitors(
   return design_region_monitors
 
 
-def gather_monitor_values(monitors: List[mpa.ObjectiveQuantitiy]) -> onp.ndarray:
+def gather_monitor_values(monitors: List[ObjectiveQuantitiy]) -> onp.ndarray:
   """Gathers the mode monitor overlap values as a rank 2 ndarray.
 
   Args:
@@ -122,7 +123,7 @@ def gather_design_region_fields(
   return fwd_fields
 
 
-def validate_and_update_design(design_regions: List[mpa.DesignRegion], design_variables: Iterable[onp.ndarray]) -> None:
+def validate_and_update_design(design_regions: List[DesignRegion], design_variables: Iterable[onp.ndarray]) -> None:
   """Validate the design regions and variables.
 
   In particular the design variable should be 1,2,3-D and the design region
@@ -154,7 +155,7 @@ def validate_and_update_design(design_regions: List[mpa.DesignRegion], design_va
     design_region.update_design_parameters(design_variable.flatten())
 
 
-def create_adjoint_sources(monitors: mpa.ObjectiveQuantitiy, monitor_values_grad: onp.ndarray) -> List[mp.Source]:
+def create_adjoint_sources(monitors: ObjectiveQuantitiy, monitor_values_grad: onp.ndarray) -> List[mp.Source]:
   monitor_values_grad = onp.asarray(monitor_values_grad, dtype=onp.complex128)
   if not onp.any(monitor_values_grad):
     raise RuntimeError('The gradient of all monitor values is zero, which '

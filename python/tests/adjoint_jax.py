@@ -1,7 +1,7 @@
 import unittest
 import parameterized
 
-from . import utils
+from utils import VectorComparisonMixin
 
 import jax
 import jax.numpy as jnp
@@ -134,21 +134,21 @@ class UtilsTest(unittest.TestCase):
     ) = build_straight_wg_simulation()
 
   def test_mode_monitor_helpers(self):
-    mpa.jax.utils.register_monitors(self.monitors, self.frequencies)
+    mpa.utils.register_monitors(self.monitors, self.frequencies)
     self.simulation.run(until=100)
-    monitor_values = mpa.jax.utils.gather_monitor_values(self.monitors)
+    monitor_values = mpa.utils.gather_monitor_values(self.monitors)
     self.assertEqual(monitor_values.dtype, onp.complex128)
     self.assertEqual(monitor_values.shape,
                      (len(self.monitors), len(self.frequencies)))
 
   def test_design_region_monitor_helpers(self):
-    design_region_monitors = mpa.jax.utils.install_design_region_monitors(
+    design_region_monitors = mpa.utils.install_design_region_monitors(
       self.simulation,
       self.design_regions,
       self.frequencies,
     )
     self.simulation.run(until=100)
-    design_region_fields = mpa.jax.utils.gather_design_region_fields(
+    design_region_fields = mpa.utils.gather_design_region_fields(
       self.simulation,
       design_region_monitors,
       self.frequencies,
@@ -158,7 +158,7 @@ class UtilsTest(unittest.TestCase):
     self.assertEqual(len(design_region_fields), len(self.design_regions))
 
     self.assertIsInstance(design_region_fields[0], list)
-    self.assertEqual(len(design_region_fields[0]), len(mpa.jax.utils._ADJOINT_FIELD_COMPONENTS))
+    self.assertEqual(len(design_region_fields[0]), len(mpa.utils._ADJOINT_FIELD_COMPONENTS))
 
     for value in design_region_fields[0]:
       self.assertIsInstance(value, onp.ndarray)
@@ -166,7 +166,7 @@ class UtilsTest(unittest.TestCase):
       self.assertEqual(value.dtype, onp.complex128)
 
 
-class WrapperTest(utils.VectorComparisonMixin, unittest.TestCase):
+class WrapperTest(VectorComparisonMixin, unittest.TestCase):
 
   @parameterized.parameterized.expand([
     ('1500_1550bw_01relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0),
@@ -183,7 +183,7 @@ class WrapperTest(utils.VectorComparisonMixin, unittest.TestCase):
       frequencies,
     ) = build_straight_wg_simulation(frequencies=frequencies, gaussian_rel_width=gaussian_rel_width)
 
-    wrapped_meep = mpa.jax.MeepJaxWrapper(
+    wrapped_meep = mpa.MeepJaxWrapper(
       simulation,
       sources,
       monitors,
