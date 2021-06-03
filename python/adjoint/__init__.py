@@ -1,10 +1,7 @@
 """
 Adjoint-based sensitivity-analysis module for pymeep.
-Authors: Homer Reid <homer@homerreid.com>, Alec Hammond <alec.hammond@gatech.edu>
+Authors: Homer Reid <homer@homerreid.com>, Alec Hammond <alec.hammond@gatech.edu>, Ian Williamson <iwill@google.com>
 """
-import sys
-
-import meep as mp
 
 from .objective import *
 
@@ -16,7 +13,9 @@ from .filter_source import FilteredSource
 
 from .filters import *
 
+from . import utils
+
 try:
-  from . import jax
-except ImportError as error:
+  from .wrapper import MeepJaxWrapper
+except ModuleNotFoundError as _:
   pass
