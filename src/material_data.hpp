@@ -57,7 +57,7 @@ struct transition {
 
   // NOTE: We could add a copy constructor but that requires a lot more
   // code cleanup!
-  void copy_from(transition& from) {
+  void copy_from(const transition& from) {
     from_level = from.from_level;
     to_level = from.to_level;
     transition_rate = from.transition_rate;
@@ -82,7 +82,7 @@ typedef struct susceptibility_struct {
   std::vector<transition> transitions;
   std::vector<double> initial_populations;
 
-  void copy_from(susceptibility_struct& from) {
+  void copy_from(const susceptibility_struct& from) {
     sigma_offdiag = from.sigma_offdiag;
     sigma_diag = from.sigma_diag;
     bias = from.bias;
@@ -110,7 +110,7 @@ struct susceptibility_list {
 
   susceptibility_list() : num_items(0), items(NULL) {}
 
-  void copy_from(susceptibility_list& from) {
+  void copy_from(const susceptibility_list& from) {
     num_items = from.num_items;
     items = new susceptibility[num_items];
     for (int i = 0; i < num_items; ++i) {
@@ -181,7 +181,7 @@ struct medium_struct {
     B_conductivity_diag.z = 0;
   }
 
-  void copy_from(medium_struct& from) {
+  void copy_from(const medium_struct& from) {
     epsilon_diag = from.epsilon_diag;
     epsilon_offdiag = from.epsilon_offdiag;
     mu_diag = from.mu_diag;
@@ -287,7 +287,7 @@ struct material_data {
     material_grid_kinds = U_DEFAULT;
   }
 
-  void copy_from(material_data& from) {
+  void copy_from(const material_data& from) {
     which_subclass = from.which_subclass;
     medium.copy_from(from.medium);
 
