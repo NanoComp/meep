@@ -1,10 +1,6 @@
 import meep as mp
 import numpy as np
 from scipy import sparse
-#from autograd import grad, jacobian, vector_jacobian_product
-import autograd.numpy as npa
-from autograd import grad, jacobian
-#invoke python's 'abstract base class' formalism in a version-agnostic way
 from abc import ABCMeta, abstractmethod
 
 ABC = ABCMeta('ABC', (object, ), {'__slots__':

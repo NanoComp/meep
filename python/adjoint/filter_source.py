@@ -1,4 +1,3 @@
-import meep as mp
 import numpy as np
 from scipy import signal, linalg
 from meep import CustomSource
@@ -85,7 +84,6 @@ class FilteredSource(CustomSource):
 
     def rect(self, t, f0):
         n = np.rint((t) / self.dt)
-        return np.exp(-1j * 2 * np.pi * f0 * t)
         return np.where(n.any() < 0.0 or n.any() > self.N, 0,
                         np.exp(-1j * 2 * np.pi * f0 * t))
 

@@ -1,6 +1,5 @@
 import meep as mp
 import numpy as np
-import autograd.numpy as npa
 from autograd import grad, jacobian
 from collections import namedtuple
 
