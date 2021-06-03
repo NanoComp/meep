@@ -357,7 +357,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   volume wherec(where + yee_c);
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
+<<<<<<< HEAD
   //printf("is (%i, %i, %i), ie (%i, %i, %i), component %s \n",is.x(),is.y(),is.z(), ie.x(),ie.y(),ie.z(),component_name(cgrid));
+=======
+>>>>>>> rm hack to loop over centered grid
 
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
