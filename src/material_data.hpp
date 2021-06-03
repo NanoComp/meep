@@ -54,6 +54,18 @@ struct transition {
   }
 
   bool operator!=(const transition &other) const { return !(*this == other); }
+
+  // NOTE: We could add a copy constructor but that requires a lot more
+  // code cleanup!
+  void copy_from(const transition& from) {
+    from_level = from.from_level;
+    to_level = from.to_level;
+    transition_rate = from.transition_rate;
+    frequency = from.frequency;
+    sigma_diag = from.sigma_diag;
+    gamma = from.gamma;
+    pumping_rate = from.pumping_rate;
+  }
 };
 
 typedef struct susceptibility_struct {
@@ -69,6 +81,27 @@ typedef struct susceptibility_struct {
   bool is_file;
   std::vector<transition> transitions;
   std::vector<double> initial_populations;
+
+  void copy_from(const susceptibility_struct& from) {
+    sigma_offdiag = from.sigma_offdiag;
+    sigma_diag = from.sigma_diag;
+    bias = from.bias;
+    frequency = from.frequency;
+    gamma = from.gamma;
+    alpha = from.alpha;
+    noise_amp = from.noise_amp;
+    drude = from.drude;
+    saturated_gyrotropy = from.saturated_gyrotropy;
+    is_file = from.is_file;
+
+    transitions.resize(from.transitions.size());
+    for (int i = 0; i < transitions.size(); ++i) {
+      transitions[i].copy_from(from.transitions[i]);
+    }
+    initial_populations.assign(from.initial_populations.begin(),
+                               from.initial_populations.end());
+  }
+
 } susceptibility;
 
 struct susceptibility_list {
@@ -76,6 +109,14 @@ struct susceptibility_list {
   susceptibility *items;
 
   susceptibility_list() : num_items(0), items(NULL) {}
+
+  void copy_from(const susceptibility_list& from) {
+    num_items = from.num_items;
+    items = new susceptibility[num_items];
+    for (int i = 0; i < num_items; ++i) {
+      items[i].copy_from(from.items[i]);
+    }
+  }
 };
 
 struct medium_struct {
@@ -138,6 +179,23 @@ struct medium_struct {
     B_conductivity_diag.x = 0;
     B_conductivity_diag.y = 0;
     B_conductivity_diag.z = 0;
+  }
+
+  void copy_from(const medium_struct& from) {
+    epsilon_diag = from.epsilon_diag;
+    epsilon_offdiag = from.epsilon_offdiag;
+    mu_diag = from.mu_diag;
+    mu_offdiag = from.mu_offdiag;
+
+    E_susceptibilities.copy_from(from.E_susceptibilities);
+    H_susceptibilities.copy_from(from.H_susceptibilities);
+
+    E_chi2_diag = from.E_chi2_diag;
+    E_chi3_diag = from.E_chi3_diag;
+    H_chi2_diag = from.H_chi2_diag;
+    H_chi3_diag = from.H_chi3_diag;
+    D_conductivity_diag = from.D_conductivity_diag;
+    B_conductivity_diag = from.B_conductivity_diag;
   }
 };
 
@@ -217,7 +275,8 @@ struct material_data {
   enum { U_MIN = 0, U_PROD = 1, U_MEAN = 2, U_DEFAULT = 3 } material_grid_kinds;
 
   material_data()
-      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL),
+      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL),
+        do_averaging(false), epsilon_data(NULL),
         weights(NULL), medium_1(), medium_2() {
     epsilon_dims[0] = 0;
     epsilon_dims[1] = 0;
@@ -226,6 +285,35 @@ struct material_data {
     grid_size.y = 0;
     grid_size.z = 0;
     material_grid_kinds = U_DEFAULT;
+  }
+
+  void copy_from(const material_data& from) {
+    which_subclass = from.which_subclass;
+    medium.copy_from(from.medium);
+
+    user_func = from.user_func;
+    // NOTE: the user_data field here opaque/void - so this is the best we can do.
+    user_data = from.user_data;
+    do_averaging = from.do_averaging;
+
+    memcpy(epsilon_dims, from.epsilon_dims, 3 * sizeof(size_t));
+    if (from.epsilon_data) {
+      size_t N = from.epsilon_dims[0] * from.epsilon_dims[1] * from.epsilon_dims[2];
+      epsilon_data = new double[N];
+      memcpy(epsilon_data, from.epsilon_data, N * sizeof(double));
+    }
+
+    grid_size = from.grid_size;
+    if (from.weights) {
+      size_t N = from.grid_size.x * from.grid_size.y * from.grid_size.z;
+      weights = new double[N];
+      memcpy(weights, from.weights, N * sizeof(double));
+    }
+
+    medium_1.copy_from(medium_1);
+    medium_2.copy_from(medium_2);
+    beta = from.beta;
+    eta = from.eta;
   }
 };
 
