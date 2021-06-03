@@ -16,6 +16,6 @@ from .filters import *
 from . import utils
 
 try:
-  from .wrapper import MeepJaxWrapper
+    from .wrapper import MeepJaxWrapper
 except ModuleNotFoundError as _:
-  pass
+    pass

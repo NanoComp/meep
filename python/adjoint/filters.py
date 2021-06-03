@@ -7,6 +7,7 @@ from autograd import numpy as npa
 import meep as mp
 from scipy import special
 
+
 def _centered(arr, newshape):
     '''Helper function that reformats the padded array of the fft filter operation.
 
@@ -21,51 +22,55 @@ def _centered(arr, newshape):
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
     return arr[tuple(myslice)]
 
+
 def _edge_pad(arr, pad):
-    
+
     # fill sides
-    left = npa.tile(arr[0,:],(pad[0][0],1)) # left side
-    right = npa.tile(arr[-1,:],(pad[0][1],1)) # right side
-    top = npa.tile(arr[:,0],(pad[1][0],1)).transpose() # top side
-    bottom = npa.tile(arr[:,-1],(pad[1][1],1)).transpose() # bottom side)
-    
+    left = npa.tile(arr[0, :], (pad[0][0], 1))  # left side
+    right = npa.tile(arr[-1, :], (pad[0][1], 1))  # right side
+    top = npa.tile(arr[:, 0], (pad[1][0], 1)).transpose()  # top side
+    bottom = npa.tile(arr[:, -1], (pad[1][1], 1)).transpose()  # bottom side)
+
     # fill corners
-    top_left = npa.tile(arr[0,0], (pad[0][0],pad[1][0])) # top left
-    top_right = npa.tile(arr[-1,0], (pad[0][1],pad[1][0])) # top right
-    bottom_left = npa.tile(arr[0,-1], (pad[0][0],pad[1][1])) # bottom left
-    bottom_right = npa.tile(arr[-1,-1], (pad[0][1],pad[1][1])) # bottom right
-    
-    out = npa.concatenate((
-        npa.concatenate((top_left,top,top_right)),
-        npa.concatenate((left,arr,right)),
-        npa.concatenate((bottom_left,bottom,bottom_right))    
-    ),axis=1)
-    
+    top_left = npa.tile(arr[0, 0], (pad[0][0], pad[1][0]))  # top left
+    top_right = npa.tile(arr[-1, 0], (pad[0][1], pad[1][0]))  # top right
+    bottom_left = npa.tile(arr[0, -1], (pad[0][0], pad[1][1]))  # bottom left
+    bottom_right = npa.tile(arr[-1, -1],
+                            (pad[0][1], pad[1][1]))  # bottom right
+
+    out = npa.concatenate((npa.concatenate(
+        (top_left, top, top_right)), npa.concatenate((left, arr, right)),
+                           npa.concatenate(
+                               (bottom_left, bottom, bottom_right))),
+                          axis=1)
+
     return out
+
 
 def _zero_pad(arr, pad):
-    
+
     # fill sides
-    left = npa.tile(0,(pad[0][0],arr.shape[1])) # left side
-    right = npa.tile(0,(pad[0][1],arr.shape[1])) # right side
-    top = npa.tile(0,(arr.shape[0],pad[1][0])) # top side
-    bottom = npa.tile(0,(arr.shape[0],pad[1][1])) # bottom side
-    
+    left = npa.tile(0, (pad[0][0], arr.shape[1]))  # left side
+    right = npa.tile(0, (pad[0][1], arr.shape[1]))  # right side
+    top = npa.tile(0, (arr.shape[0], pad[1][0]))  # top side
+    bottom = npa.tile(0, (arr.shape[0], pad[1][1]))  # bottom side
+
     # fill corners
-    top_left = npa.tile(0, (pad[0][0],pad[1][0])) # top left
-    top_right = npa.tile(0, (pad[0][1],pad[1][0])) # top right
-    bottom_left = npa.tile(0, (pad[0][0],pad[1][1])) # bottom left
-    bottom_right = npa.tile(0, (pad[0][1],pad[1][1])) # bottom right
-    
-    out = npa.concatenate((
-        npa.concatenate((top_left,top,top_right)),
-        npa.concatenate((left,arr,right)),
-        npa.concatenate((bottom_left,bottom,bottom_right))    
-    ),axis=1)
-    
+    top_left = npa.tile(0, (pad[0][0], pad[1][0]))  # top left
+    top_right = npa.tile(0, (pad[0][1], pad[1][0]))  # top right
+    bottom_left = npa.tile(0, (pad[0][0], pad[1][1]))  # bottom left
+    bottom_right = npa.tile(0, (pad[0][1], pad[1][1]))  # bottom right
+
+    out = npa.concatenate((npa.concatenate(
+        (top_left, top, top_right)), npa.concatenate((left, arr, right)),
+                           npa.concatenate(
+                               (bottom_left, bottom, bottom_right))),
+                          axis=1)
+
     return out
 
-def simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries=[]):
+
+def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
     """A simple 2d filter algorithm that is differentiable with autograd.
     Uses a 2D fft approach since it is typically faster and preserves the shape
     of the input and output arrays.
@@ -93,58 +98,59 @@ def simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries=[]):
         The output of the 2d convolution.
     """
     # Get 2d parameter space shape
-    Nx = int(Lx*resolution)
-    Ny = int(Ly*resolution)
-    (kx,ky) = kernel.shape
-    
+    Nx = int(Lx * resolution)
+    Ny = int(Ly * resolution)
+    (kx, ky) = kernel.shape
+
     # Adjust parameter space shape for symmetries
     if mp.X in symmetries:
-        Nx = int(Nx/2)
+        Nx = int(Nx / 2)
     if mp.Y in symmetries:
-        Ny = int(Ny/2)
-    
+        Ny = int(Ny / 2)
+
     # Ensure the input is 2D
-    x = x.reshape(Nx,Ny)
-    
+    x = x.reshape(Nx, Ny)
+
     # Perform the required reflections for symmetries
     if mp.X in symmetries:
         if kx % 2 == 1:
-            x = npa.concatenate((x,x[-1,:][None,:],x[::-1,:]), axis=0)
+            x = npa.concatenate((x, x[-1, :][None, :], x[::-1, :]), axis=0)
         else:
-            x = npa.concatenate((x,x[::-1,:]), axis=0)
+            x = npa.concatenate((x, x[::-1, :]), axis=0)
     if mp.Y in symmetries:
         if ky % 2 == 1:
-            x = npa.concatenate((x[:,::-1],x[:,-1][:,None],x), axis=1)
+            x = npa.concatenate((x[:, ::-1], x[:, -1][:, None], x), axis=1)
         else:
-            x = npa.concatenate((x[:,::-1],x), axis=1)
-    
+            x = npa.concatenate((x[:, ::-1], x), axis=1)
+
     # pad the kernel and input to avoid circular convolution and
     # to ensure boundary conditions are met.
-    kernel = _zero_pad(kernel,((kx,kx),(ky,ky)))
-    x = _edge_pad(x,((kx,kx),(ky,ky)))
-    
+    kernel = _zero_pad(kernel, ((kx, kx), (ky, ky)))
+    x = _edge_pad(x, ((kx, kx), (ky, ky)))
+
     # Transform to frequency domain for fast convolution
     H = npa.fft.fft2(kernel)
     X = npa.fft.fft2(x)
-    
+
     # Convolution (multiplication in frequency domain)
     Y = H * X
-    
+
     # We need to fftshift since we padded both sides if each dimension of our input and kernel.
     y = npa.fft.fftshift(npa.real(npa.fft.ifft2(Y)))
-    
+
     # Remove all the extra padding
-    y = _centered(y,(kx,ky))
-    
+    y = _centered(y, (kx, ky))
+
     # Remove the added symmetry domains
     if mp.X in symmetries:
-        y = y[0:Nx,:]
+        y = y[0:Nx, :]
     if mp.Y in symmetries:
-        y = y[:,-Ny:]
-    
-    return y 
+        y = y[:, -Ny:]
 
-def cylindrical_filter(x,radius,Lx,Ly,resolution,symmetries=[]):
+    return y
+
+
+def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     '''A uniform cylindrical filter [1]. Typically allows for sharper transitions. 
     
     Parameters
@@ -171,26 +177,30 @@ def cylindrical_filter(x,radius,Lx,Ly,resolution,symmetries=[]):
     ----------
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
-    '''    
+    '''
     # Get 2d parameter space shape
-    Nx = int(Lx*resolution)
-    Ny = int(Ly*resolution)
-    
+    Nx = int(Lx * resolution)
+    Ny = int(Ly * resolution)
+
     # Formulate grid over entire design region
-    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True, indexing='ij')
-    
+    xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
+                         np.linspace(-Ly / 2, Ly / 2, Ny),
+                         sparse=True,
+                         indexing='ij')
+
     # Calculate kernel
-    kernel = np.where(np.abs(xv ** 2 + yv ** 2) <= radius**2,1,0).T
-    
+    kernel = np.where(np.abs(xv**2 + yv**2) <= radius**2, 1, 0).T
+
     # Normalize kernel
-    kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
-    
+    kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
+
     # Filter the response
-    y = simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
-    
+    y = simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries)
+
     return y
 
-def conic_filter(x,radius,Lx,Ly,resolution,symmetries=[]):
+
+def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     '''A linear conic filter, also known as a "Hat" filter in the literature [1].
     
     Parameters
@@ -219,25 +229,30 @@ def conic_filter(x,radius,Lx,Ly,resolution,symmetries=[]):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx*resolution)
-    Ny = int(Ly*resolution)
-    
+    Nx = int(Lx * resolution)
+    Ny = int(Ly * resolution)
+
     # Formulate grid over entire design region
-    xv, yv = np.meshgrid(np.linspace(-Lx/2,Lx/2,Nx), np.linspace(-Ly/2,Ly/2,Ny), sparse=True, indexing='ij')
-    
+    xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
+                         np.linspace(-Ly / 2, Ly / 2, Ny),
+                         sparse=True,
+                         indexing='ij')
+
     # Calculate kernel
-    kernel = np.where(np.abs(xv ** 2 + yv ** 2) <= radius**2,(1-np.sqrt(abs(xv ** 2 + yv ** 2))/radius),0)
-    
+    kernel = np.where(
+        np.abs(xv**2 + yv**2) <= radius**2,
+        (1 - np.sqrt(abs(xv**2 + yv**2)) / radius), 0)
+
     # Normalize kernel
-    kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
-    
+    kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
+
     # Filter the response
-    y = simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
-    
+    y = simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries)
+
     return y
 
 
-def gaussian_filter(x,sigma,Lx,Ly,resolution,symmetries=[]):
+def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
     '''A simple gaussian filter of the form exp(-x **2 / sigma ** 2) [1].
     
     Parameters
@@ -264,32 +279,35 @@ def gaussian_filter(x,sigma,Lx,Ly,resolution,symmetries=[]):
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx*resolution)
-    Ny = int(Ly*resolution)
+    Nx = int(Lx * resolution)
+    Ny = int(Ly * resolution)
 
-    gaussian = lambda x,sigma: np.exp(-x**2/sigma**2)
-    
+    gaussian = lambda x, sigma: np.exp(-x**2 / sigma**2)
+
     # Formulate grid over entire design region
-    xv = np.linspace(-Lx/2,Lx/2,Nx)
-    yv = np.linspace(-Ly/2,Ly/2,Ny)
-    
+    xv = np.linspace(-Lx / 2, Lx / 2, Nx)
+    yv = np.linspace(-Ly / 2, Ly / 2, Ny)
+
     # Calculate kernel
-    kernel = np.outer(gaussian(xv, sigma), gaussian(yv, sigma)) # Gaussian filter kernel
-    
+    kernel = np.outer(gaussian(xv, sigma),
+                      gaussian(yv, sigma))  # Gaussian filter kernel
+
     # Normalize kernel
-    kernel = kernel / np.sum(kernel.flatten()) # Normalize the filter
-    
+    kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
+
     # Filter the response
-    y = simple_2d_filter(x,kernel,Lx,Ly,resolution,symmetries)
-    
+    y = simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries)
+
     return y
+
 
 '''
 # ------------------------------------------------------------------------------------ #
 Erosion and dilation operators
 '''
-    
-def exponential_erosion(x,radius,beta,Lx,Ly,resolution):
+
+
+def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
     ''' Performs and exponential erosion operation.
     
     Parameters
@@ -320,11 +338,13 @@ def exponential_erosion(x,radius,beta,Lx,Ly,resolution):
     morphological close-open and open-close filters for topology optimization. Structural 
     and Multidisciplinary Optimization, 54(1), 15-21.
     '''
-    
-    x_hat = npa.exp(beta*(1-x))
-    return 1 - npa.log(cylindrical_filter(x_hat,radius,Lx,Ly,resolution).flatten()) / beta
 
-def exponential_dilation(x,radius,beta,Lx,Ly,resolution):
+    x_hat = npa.exp(beta * (1 - x))
+    return 1 - npa.log(
+        cylindrical_filter(x_hat, radius, Lx, Ly, resolution).flatten()) / beta
+
+
+def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
     ''' Performs a exponential dilation operation.
     
     Parameters
@@ -355,11 +375,13 @@ def exponential_dilation(x,radius,beta,Lx,Ly,resolution):
     morphological close-open and open-close filters for topology optimization. Structural 
     and Multidisciplinary Optimization, 54(1), 15-21.
     '''
-    
-    x_hat = npa.exp(beta*x)
-    return npa.log(cylindrical_filter(x_hat,radius,Lx,Ly,resolution).flatten()) / beta
 
-def heaviside_erosion(x,radius,beta,Lx,Ly,resolution):
+    x_hat = npa.exp(beta * x)
+    return npa.log(
+        cylindrical_filter(x_hat, radius, Lx, Ly, resolution).flatten()) / beta
+
+
+def heaviside_erosion(x, radius, beta, Lx, Ly, resolution):
     ''' Performs a heaviside erosion operation.
     
     Parameters
@@ -388,11 +410,12 @@ def heaviside_erosion(x,radius,beta,Lx,Ly,resolution):
     optimization using nodal design variables and projection functions. International journal for 
     numerical methods in engineering, 61(2), 238-254.
     '''
-    
-    x_hat = cylindrical_filter(x,radius,Lx,Ly,resolution).flatten()
-    return npa.exp(-beta*(1-x_hat)) + npa.exp(-beta)*(1-x_hat)
 
-def heaviside_dilation(x,radius,beta,Lx,Ly,resolution):
+    x_hat = cylindrical_filter(x, radius, Lx, Ly, resolution).flatten()
+    return npa.exp(-beta * (1 - x_hat)) + npa.exp(-beta) * (1 - x_hat)
+
+
+def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
     ''' Performs a heaviside dilation operation.
     
     Parameters
@@ -421,11 +444,12 @@ def heaviside_dilation(x,radius,beta,Lx,Ly,resolution):
     optimization using nodal design variables and projection functions. International journal for 
     numerical methods in engineering, 61(2), 238-254.
     '''
-    
-    x_hat = cylindrical_filter(x,radius,Lx,Ly,resolution).flatten()
-    return 1 - npa.exp(-beta*x_hat) + npa.exp(-beta)*x_hat
 
-def geometric_erosion(x,radius,alpha,Lx,Ly,resolution):
+    x_hat = cylindrical_filter(x, radius, Lx, Ly, resolution).flatten()
+    return 1 - npa.exp(-beta * x_hat) + npa.exp(-beta) * x_hat
+
+
+def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a geometric erosion operation.
     
     Parameters
@@ -454,9 +478,11 @@ def geometric_erosion(x,radius,alpha,Lx,Ly,resolution):
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
     x_hat = npa.log(x + alpha)
-    return npa.exp(cylindrical_filter(x_hat,radius,Lx,Ly,resolution)).flatten() - alpha
+    return npa.exp(cylindrical_filter(x_hat, radius, Lx, Ly,
+                                      resolution)).flatten() - alpha
 
-def geometric_dilation(x,radius,alpha,Lx,Ly,resolution):
+
+def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a geometric dilation operation.
     
     Parameters
@@ -486,9 +512,11 @@ def geometric_dilation(x,radius,alpha,Lx,Ly,resolution):
     '''
 
     x_hat = npa.log(1 - x + alpha)
-    return -npa.exp(cylindrical_filter(x_hat,radius,Lx,Ly,resolution)).flatten() + alpha + 1
+    return -npa.exp(cylindrical_filter(x_hat, radius, Lx, Ly,
+                                       resolution)).flatten() + alpha + 1
 
-def harmonic_erosion(x,radius,alpha,Lx,Ly,resolution):
+
+def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a harmonic erosion operation.
     
     Parameters
@@ -516,11 +544,13 @@ def harmonic_erosion(x,radius,alpha,Lx,Ly,resolution):
     [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the 
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
-    
-    x_hat = 1 / (x + alpha)
-    return 1 / cylindrical_filter(x_hat,radius,Lx,Ly,resolution).flatten() - alpha
 
-def harmonic_dilation(x,radius,alpha,Lx,Ly,resolution):
+    x_hat = 1 / (x + alpha)
+    return 1 / cylindrical_filter(x_hat, radius, Lx, Ly,
+                                  resolution).flatten() - alpha
+
+
+def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a harmonic dilation operation.
     
     Parameters
@@ -548,16 +578,19 @@ def harmonic_dilation(x,radius,alpha,Lx,Ly,resolution):
     [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the 
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
-    
+
     x_hat = 1 / (1 - x + alpha)
-    return 1 - 1 / cylindrical_filter(x_hat,radius,Lx,Ly,resolution).flatten() + alpha
+    return 1 - 1 / cylindrical_filter(x_hat, radius, Lx, Ly,
+                                      resolution).flatten() + alpha
+
 
 '''
 # ------------------------------------------------------------------------------------ #
 Projection filters
 '''
 
-def tanh_projection(x,beta,eta):
+
+def tanh_projection(x, beta, eta):
     '''Projection filter that thresholds the input parameters between 0 and 1. Typically
     the "strongest" projection.
 
@@ -579,8 +612,12 @@ def tanh_projection(x,beta,eta):
     [1] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and robust 
     formulations in topology optimization. Structural and Multidisciplinary Optimization, 43(6), 767-784.
     '''
-    
-    return (npa.tanh(beta*eta) + npa.tanh(beta*(x-eta))) / (npa.tanh(beta*eta) + npa.tanh(beta*(1-eta)))
+
+    return (npa.tanh(beta * eta) +
+            npa.tanh(beta *
+                     (x - eta))) / (npa.tanh(beta * eta) + npa.tanh(beta *
+                                                                    (1 - eta)))
+
 
 def heaviside_projection(x, beta, eta):
     '''Projection filter that thresholds the input parameters between 0 and 1.
@@ -604,17 +641,20 @@ def heaviside_projection(x, beta, eta):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    
-    case1 = eta*npa.exp(-beta*(eta-x)/eta) - (eta-x)*npa.exp(-beta)
-    case2 = 1 - (1-eta)*npa.exp(-beta*(x-eta)/(1-eta)) - (eta-x)*npa.exp(-beta)
-    return npa.where(x < eta,case1,case2)
+
+    case1 = eta * npa.exp(-beta * (eta - x) / eta) - (eta - x) * npa.exp(-beta)
+    case2 = 1 - (1 - eta) * npa.exp(-beta * (x - eta) /
+                                    (1 - eta)) - (eta - x) * npa.exp(-beta)
+    return npa.where(x < eta, case1, case2)
+
 
 '''
 # ------------------------------------------------------------------------------------ #
 Length scale operations
 '''
 
-def get_threshold_wang(delta,sigma):
+
+def get_threshold_wang(delta, sigma):
     '''Calculates the threshold point according to the gaussian filter radius (`sigma`) and
     the perturbation parameter (`sigma`) needed to ensure the proper length
     scale and morphological transformation according to Wang et. al. [2].
@@ -638,10 +678,11 @@ def get_threshold_wang(delta,sigma):
     [2] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of 
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
-    
-    return 0.5 - special.erf(delta/sigma)
 
-def get_eta_from_conic(b,R):
+    return 0.5 - special.erf(delta / sigma)
+
+
+def get_eta_from_conic(b, R):
     ''' Extracts the eroded threshold point (`eta_e`) for a conic filter given the desired
     minimum length (`b`) and the filter radius (`R`). This only works for conic filters.
     
@@ -672,19 +713,20 @@ def get_eta_from_conic(b,R):
     [3] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    
-    norm_length = b/R
+
+    norm_length = b / R
     if norm_length < 0:
         eta_e = 0
     elif norm_length < 1:
-        eta_e = 0.25 * norm_length ** 2 + 0.5
+        eta_e = 0.25 * norm_length**2 + 0.5
     elif norm_length < 2:
-        eta_e = -0.25 * norm_length ** 2 + norm_length
+        eta_e = -0.25 * norm_length**2 + norm_length
     else:
         eta_e = 1
     return eta_e
 
-def get_conic_radius_from_eta_e(b,eta_e):
+
+def get_conic_radius_from_eta_e(b, eta_e):
     """Calculates the corresponding filter radius given the minimum length scale (b)
     and the desired eroded threshold point (eta_e).
     
@@ -712,13 +754,15 @@ def get_conic_radius_from_eta_e(b,eta_e):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
     if (eta_e >= 0.5) and (eta_e < 0.75):
-        return b / (2*np.sqrt(eta_e-0.5))
+        return b / (2 * np.sqrt(eta_e - 0.5))
     elif (eta_e >= 0.75) and (eta_e <= 1):
-        return b / (2-2*np.sqrt(1-eta_e))
+        return b / (2 - 2 * np.sqrt(1 - eta_e))
     else:
-        raise ValueError("The erosion threshold point (eta_e) must be between 0.5 and 1.")
+        raise ValueError(
+            "The erosion threshold point (eta_e) must be between 0.5 and 1.")
 
-def indicator_solid(x,c,filter_f,threshold_f,resolution):
+
+def indicator_solid(x, c, filter_f, threshold_f, resolution):
     '''Calculates the indicator function for the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -744,17 +788,21 @@ def indicator_solid(x,c,filter_f,threshold_f,resolution):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
-    
+
     filtered_field = filter_f(x)
     design_field = threshold_f(filtered_field)
     gradient_filtered_field = npa.gradient(filtered_field)
-    grad_mag = (gradient_filtered_field[0]*resolution) ** 2 + (gradient_filtered_field[1]*resolution) ** 2
+    grad_mag = (gradient_filtered_field[0] *
+                resolution)**2 + (gradient_filtered_field[1] * resolution)**2
     if grad_mag.ndim != 2:
-        raise ValueError("The gradient fields must be 2 dimensional. Check input array and filter functions.")
+        raise ValueError(
+            "The gradient fields must be 2 dimensional. Check input array and filter functions."
+        )
     I_s = design_field * npa.exp(-c * grad_mag)
     return I_s
 
-def constraint_solid(x,c,eta_e,filter_f,threshold_f,resolution):
+
+def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
     '''Calculates the constraint function of the solid phase needed for minimum length optimization [1].
     
     Parameters
@@ -785,12 +833,14 @@ def constraint_solid(x,c,eta_e,filter_f,threshold_f,resolution):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
-    
-    filtered_field = filter_f(x)
-    I_s = indicator_solid(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten()
-    return npa.mean(I_s * npa.minimum(filtered_field.flatten()-eta_e,0)**2)
 
-def indicator_void(x,c,filter_f,threshold_f,resolution):
+    filtered_field = filter_f(x)
+    I_s = indicator_solid(x.reshape(filtered_field.shape), c, filter_f,
+                          threshold_f, resolution).flatten()
+    return npa.mean(I_s * npa.minimum(filtered_field.flatten() - eta_e, 0)**2)
+
+
+def indicator_void(x, c, filter_f, threshold_f, resolution):
     '''Calculates the indicator function for the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -816,16 +866,20 @@ def indicator_void(x,c,filter_f,threshold_f,resolution):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
-    
+
     filtered_field = filter_f(x).reshape(x.shape)
     design_field = threshold_f(filtered_field)
     gradient_filtered_field = npa.gradient(filtered_field)
-    grad_mag = (gradient_filtered_field[0]*resolution) ** 2 + (gradient_filtered_field[1]*resolution) ** 2
+    grad_mag = (gradient_filtered_field[0] *
+                resolution)**2 + (gradient_filtered_field[1] * resolution)**2
     if grad_mag.ndim != 2:
-        raise ValueError("The gradient fields must be 2 dimensional. Check input array and filter functions.")
+        raise ValueError(
+            "The gradient fields must be 2 dimensional. Check input array and filter functions."
+        )
     return (1 - design_field) * npa.exp(-c * grad_mag)
 
-def constraint_void(x,c,eta_d,filter_f,threshold_f,resolution):
+
+def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
     '''Calculates the constraint function of the void phase needed for minimum length optimization [1].
     
     Parameters
@@ -856,10 +910,12 @@ def constraint_void(x,c,eta_d,filter_f,threshold_f,resolution):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
-    
+
     filtered_field = filter_f(x)
-    I_v = indicator_void(x.reshape(filtered_field.shape),c,filter_f,threshold_f,resolution).flatten()
-    return npa.mean(I_v * npa.minimum(eta_d-filtered_field.flatten(),0)**2)
+    I_v = indicator_void(x.reshape(filtered_field.shape), c, filter_f,
+                         threshold_f, resolution).flatten()
+    return npa.mean(I_v * npa.minimum(eta_d - filtered_field.flatten(), 0)**2)
+
 
 def gray_indicator(x):
     '''Calculates a measure of "grayness" according to [1].
@@ -881,6 +937,4 @@ def gray_indicator(x):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    return npa.mean(4 * x.flatten() * (1-x.flatten())) * 100
-
-
+    return npa.mean(4 * x.flatten() * (1 - x.flatten())) * 100
