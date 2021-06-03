@@ -1969,7 +1969,7 @@ material_type make_material_grid(bool do_averaging, double beta, double eta) {
 }
 
 void update_weights(material_type matgrid, double *weights) {
-  int N = matgrid->grid_size.x * matgrid->grid_size.y * matgrid->grid_size.z;
+  size_t N = matgrid->grid_size.x * matgrid->grid_size.y * matgrid->grid_size.z;
   memcpy(matgrid->weights, weights, N * sizeof(double));
 }
 

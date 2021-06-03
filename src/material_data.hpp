@@ -298,14 +298,14 @@ struct material_data {
 
     memcpy(epsilon_dims, from.epsilon_dims, 3 * sizeof(size_t));
     if (from.epsilon_data) {
-      int N = from.epsilon_dims[0] * from.epsilon_dims[1] * from.epsilon_dims[2];
+      size_t N = from.epsilon_dims[0] * from.epsilon_dims[1] * from.epsilon_dims[2];
       epsilon_data = new double[N];
       memcpy(epsilon_data, from.epsilon_data, N * sizeof(double));
     }
 
     grid_size = from.grid_size;
     if (from.weights) {
-      int N = from.grid_size.x * from.grid_size.y * from.grid_size.z;
+      size_t N = from.grid_size.x * from.grid_size.y * from.grid_size.z;
       weights = new double[N];
       memcpy(weights, from.weights, N * sizeof(double));
     }
