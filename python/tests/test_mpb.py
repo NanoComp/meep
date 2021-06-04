@@ -16,6 +16,7 @@ import meep as mp
 from meep import mpb
 from utils import compare_arrays
 
+@unittest.skipIf(os.getenv('MEEP_SKIP_LARGE_TESTS', False), 'skipping large tests')
 class TestModeSolver(unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
