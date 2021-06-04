@@ -140,7 +140,7 @@ def validate_and_update_design(
 
     Args:
       design_regions: List of mpa.DesignRegion,
-      design_variables: Iterable with numpy arrays represending design variables.
+      design_variables: Iterable with numpy arrays representing design variables.
 
     Raises:
       ValueError if the validation of dimensions fails.
@@ -168,7 +168,7 @@ def validate_and_update_design(
 
 
 def create_adjoint_sources(
-        monitors: ObjectiveQuantity,
+        monitors: Iterable[ObjectiveQuantity],
         monitor_values_grad: onp.ndarray) -> List[mp.Source]:
     monitor_values_grad = onp.asarray(monitor_values_grad,
                                       dtype=onp.complex128)
