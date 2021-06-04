@@ -37,7 +37,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self.sim = sim
         self.volume = volume
         self.mode = mode
-        self.forward = 0 if forward else 1
+        self.forward = forward
         self.normal_direction = None
         self.kpoint_func = kpoint_func
         self.eval = None
@@ -56,7 +56,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
     def place_adjoint_source(self, dJ):
         dJ = np.atleast_1d(dJ)
         dt = self.sim.fields.dt
-        direction_scalar = 1 if self.forward else -1
+        direction_scalar = -1 if self.forward else 1
         if self.kpoint_func is None:
             if self.normal_direction == 0:
                 k0 = direction_scalar * mp.Vector3(x=1)
@@ -112,7 +112,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             **self.EigenMode_kwargs,
         )
         # record eigenmode coefficients for scaling
-        self.eval = np.squeeze(ob.alpha[:, :, self.forward])
+        self.eval = np.squeeze(ob.alpha[:, :, int(not self.forward)])
         self.cscale = ob.cscale  # pull scaling factor
         return self.eval
 
