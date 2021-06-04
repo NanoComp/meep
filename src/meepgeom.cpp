@@ -29,13 +29,13 @@ material_data vacuum_material_data;
 material_type vacuum = &vacuum_material_data;
 
 static void set_default_material(material_type _default_material) {
-  if (default_material != NULL) {
+  if ((default_material != NULL) && (default_material != _default_material)) {
     material_free((material_type)default_material);
     delete (material_type)default_material;
     default_material = NULL;
   }
 
-  if (_default_material != NULL) {
+  if ((_default_material != NULL) && (_default_material != default_material)) {
     material_type new_material = new material_data();
     new_material->copy_from(*_default_material);
     default_material = (void *)new_material;
