@@ -310,8 +310,8 @@ struct material_data {
       memcpy(weights, from.weights, N * sizeof(double));
     }
 
-    medium_1.copy_from(medium_1);
-    medium_2.copy_from(medium_2);
+    medium_1.copy_from(from.medium_1);
+    medium_2.copy_from(from.medium_2);
     beta = from.beta;
     eta = from.eta;
   }

@@ -30,6 +30,7 @@ material_type vacuum = &vacuum_material_data;
 
 static void set_default_material(material_type _default_material) {
   if (default_material != NULL) {
+    if (default_material == _default_material) return;
     material_free((material_type)default_material);
     delete (material_type)default_material;
     default_material = NULL;
