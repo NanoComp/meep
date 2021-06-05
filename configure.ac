@@ -219,24 +219,34 @@ AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
 # Check for HDF5 library
 AC_ARG_WITH(hdf5, [AC_HELP_STRING([--without-hdf5],[do not allow HDF5 output])], ok=$withval, ok=yes)
 if test "$ok" = "yes"; then
-	AC_CHECK_LIB(z,deflate, [],[AC_MSG_WARN([zlib is required for HDF5!])])
+    AC_CHECK_LIB(z,deflate, [],[AC_MSG_WARN([zlib is required for HDF5!])])
 
-	save_CC=$CC
-	if test "x$with_mpi" = "xyes"; then
-	   CC=$MPICXX
-	fi
-	save_LIBS_0="$LIBS" # save, to check later if we found any library
-	AC_CHECK_LIB(hdf5, H5Pcreate, [
-		AC_CHECK_HEADERS(hdf5.h, [LIBS="-lhdf5 $LIBS"
-                     AC_DEFINE(HAVE_HDF5,1,[Define if we have & link HDF5])])])
-	if test x"$save_LIBS_0" = x"$LIBS"; then
-		AC_MSG_WARN([Couldn't find the HDF5 library!!  Switching to --without-hdf5.])
-	fi
-	CC=$save_CC
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
 
-        if test "x$with_mpi" = "xyes"; then
-		AC_CHECK_FUNCS(H5Pset_mpi H5Pset_fapl_mpio)
-	fi
+    # Check whether linking with "-lhdf5" just works (installation in default
+    # location or due to user-provided flags). If not, try to locate HDF5 via
+    # pkg-config.  Optimistically update LIBS and CPPFLAGS. Revert if any
+    # AC_CHECKs fail.
+    AC_CHECK_LIB(hdf5, H5Pcreate, [], [
+        PKG_CHECK_MODULES(HDF5, hdf5, [
+            CPPFLAGS="$CPPFLAGS $HDF5_CFLAGS"
+            LIBS="$HDF5_LIBS $LIBS"
+        ], [])
+    ])
+
+    AC_CHECK_FUNC(H5Pcreate, [
+        AC_CHECK_HEADER(hdf5.h, [
+            AC_DEFINE(HAVE_HDF5,1,[Define if we have & link HDF5])
+            AC_CHECK_FUNCS(H5Pset_mpi H5Pset_fapl_mpio)
+        ])
+    ])
+
+    if test "x$ac_cv_header_hdf5_h" != "xyes"; then
+        AC_MSG_WARN([Couldn't find the HDF5 header or library!!  Switching to --without-hdf5.])
+        CPPFLAGS="$save_CPPFLAGS"
+        LIBS="$save_LIBS"
+    fi
 fi
 
 ##############################################################################
