@@ -364,11 +364,15 @@ meep::vec material_grid_grad(vector3 p, material_data *md) {
 
 #undef D
 
-  gradient.set_direction(meep::X, du_dx);
-  gradient.set_direction(meep::Y, du_dy);
-  gradient.set_direction(meep::Z, du_dz);
+  // to obtain the gradient with respect to the rx,ry,rz
+  // coordinates rather than dx,dy,dz we use the chain
+  // rule which therefore ends up multiplying each
+  // component by nx,ny,nz respectively (see map_coordinates)
+  gradient.set_direction(meep::X, du_dx * nx);
+  gradient.set_direction(meep::Y, du_dy * ny);
+  gradient.set_direction(meep::Z, du_dz * ny);
 
-  return (abs(gradient) < 1e-8) ? zero_vec(dim) : gradient;
+  return gradient;
 }
 
 void map_lattice_coordinates(double &px, double &py, double &pz) {
@@ -1158,8 +1162,8 @@ struct matgrid_volavg {
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0],
-                                  mgva->beta, mgva->eta);
+  double u_proj = mgva->uval + mgva->ugrad_abs*x[0];
+  if (mgva->beta != 0) u_proj = tanh_projection(u_proj, mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1179,8 +1183,8 @@ static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
 #else
 static number matgrid_eps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0],
-                                  mgva->beta, mgva->eta);
+  double u_proj = mgva->uval + mgva->ugrad_abs*x[0];
+  if (mgva->beta != 0) u_proj = tanh_projection(u_proj, mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1197,8 +1201,8 @@ static number matgrid_eps_func(int n, number *x, void *mgva_) {
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0],
-                                  mgva->beta, mgva->eta);
+  double u_proj = mgva->uval + mgva->ugrad_abs*x[0];
+  if (mgva->beta != 0) u_proj = tanh_projection(u_proj, mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1323,10 +1327,10 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   }
   number esterr;
   integer errflag;
-  number xmin[3], xmax[3];
   double meps, minveps;
 
   if (md->which_subclass == material_data::MATERIAL_GRID) {
+    number xmin[1], xmax[1];
     matgrid_volavg mgva;
     mgva.dim = v.dim;
     mgva.ugrad_abs = meep::abs(gradient);
@@ -1337,11 +1341,7 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     mgva.med1_eps_diag = md->medium_1.epsilon_diag;
     mgva.med2_eps_diag = md->medium_2.epsilon_diag;
     xmin[0] = -v.diameter()/2;
-    xmin[1] = 0;
-    xmin[2] = 0;
     xmax[0] = v.diameter()/2;
-    xmax[1] = 0;
-    xmax[2] = 0;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
     cnumber ret = cadaptive_integration(matgrid_ceps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval,
                                         &esterr, &errflag);
@@ -1356,6 +1356,7 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   }
   else {
     integer n;
+    number xmin[3], xmax[3];
     vector3 gvmin, gvmax;
     gvmin = vec_to_vector3(v.get_min_corner());
     gvmax = vec_to_vector3(v.get_max_corner());
