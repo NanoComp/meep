@@ -425,11 +425,10 @@ double material_grid_val(vector3 p, material_data *md) {
 }
 
 static double tanh_projection(double u, double beta, double eta) {
-  double u_proj = 0;
+  if (beta == 0) return u;
   double tanh_beta_eta = tanh(beta*eta);
-  u_proj = (tanh_beta_eta + tanh(beta*(u-eta))) /
+  return (tanh_beta_eta + tanh(beta*(u-eta))) /
     (tanh_beta_eta + tanh(beta*(1-eta)));
-  return u_proj;
 }
 
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
@@ -809,9 +808,8 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
       geom_box_tree tp;
 
       tp = geom_tree_search(p, restricted_tree, &oi);
-      // interpolate and (possibly) project onto material grid
-      u = matgrid_val(p, tp, oi, md);
-      if (md->beta != 0) u = tanh_projection(u, md->beta, md->eta);
+      // interpolate and project onto material grid
+      u = tanh_projection(matgrid_val(p, tp, oi, md), md->beta, md->eta);
       // interpolate material from material grid point
       epsilon_material_grid(md, u);
 
@@ -1162,8 +1160,8 @@ struct matgrid_volavg {
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double u_proj = mgva->uval + mgva->ugrad_abs*x[0];
-  if (mgva->beta != 0) u_proj = tanh_projection(u_proj, mgva->beta, mgva->eta);
+  // use a linear approximation for the material grid weights around the Yee grid point
+  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0], mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1183,8 +1181,8 @@ static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
 #else
 static number matgrid_eps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double u_proj = mgva->uval + mgva->ugrad_abs*x[0];
-  if (mgva->beta != 0) u_proj = tanh_projection(u_proj, mgva->beta, mgva->eta);
+  // use a linear approximation for the material grid weights around the Yee grid point
+  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0], mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1201,8 +1199,8 @@ static number matgrid_eps_func(int n, number *x, void *mgva_) {
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double u_proj = mgva->uval + mgva->ugrad_abs*x[0];
-  if (mgva->beta != 0) u_proj = tanh_projection(u_proj, mgva->beta, mgva->eta);
+  // use a linear approximation for the material grid weights around the Yee grid point
+  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0], mgva->beta, mgva->eta);
   vector3 med1_eps_diag = mgva->med1_eps_diag;
   vector3 med2_eps_diag = mgva->med2_eps_diag;
   double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
@@ -1632,8 +1630,8 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     geom_box_tree tp;
 
     tp = geom_tree_search(p, restricted_tree, &oi);
-    u = matgrid_val(p, tp, oi, mat); // interpolate onto material grid
-    if (mat->beta != 0) tanh_projection(u, mat->beta, mat->eta);
+    // interpolate and project onto material grid
+    u = tanh_projection(matgrid_val(p, tp, oi, mat), mat->beta, mat->eta);
     epsilon_material_grid(mat, u);   // interpolate material from material grid point
     check_offdiag(&mat->medium);
   }
@@ -2705,8 +2703,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
     vector3 sz = mg->grid_size;
     double *vcur = v;
     double *ucur = mg->weights;
-    uval = material_grid_val(p, mg);
-    if (mg->beta != 0) uval = tanh_projection(uval, mg->beta, mg->eta);
+    uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
     add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
                             get_material_gradient(uval, fields_a, fields_f, freq, mg, field_dir) *
                                 scalegrad,
