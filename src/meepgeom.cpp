@@ -370,7 +370,7 @@ meep::vec material_grid_grad(vector3 p, material_data *md) {
   // component by nx,ny,nz respectively (see map_coordinates)
   gradient.set_direction(meep::X, du_dx * nx);
   gradient.set_direction(meep::Y, du_dy * ny);
-  gradient.set_direction(meep::Z, du_dz * ny);
+  gradient.set_direction(meep::Z, du_dz * nz);
 
   return gradient;
 }
@@ -1395,9 +1395,9 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
                                    &errflag) / vol;
 #endif
-    if (eps_ever_negative) // averaging negative eps causes instability
-      minveps = 1.0 / (meps = eps(v.center()));
   }
+  if (eps_ever_negative) // averaging negative eps causes instability
+    minveps = 1.0 / (meps = eps(v.center()));
   {
     double n[3] = {0, 0, 0};
     double nabsinv = 1.0 / meep::abs(gradient);
