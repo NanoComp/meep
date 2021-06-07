@@ -4482,9 +4482,9 @@ def output_epsilon(sim=None,*step_func_args,**kwargs):
 
 def output_mu(sim=None,*step_func_args,**kwargs):
     """
-    Given a frequency `frequency`, (provided as a keyword argument) output $\mu$ (relative
-    permeability); for an anisotropic $\mu$ tensor the output is the [harmonic
-    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\mu$ eigenvalues. If
+    Given a frequency `frequency`, (provided as a keyword argument) output $\\mu$ (relative
+    permeability); for an anisotropic $\\mu$ tensor the output is the [harmonic
+    mean](https://en.wikipedia.org/wiki/Harmonic_mean) of the $\\mu$ eigenvalues. If
     `frequency` is non-zero, the output is complex; otherwise it is the real,
     frequency-independent part of $\\mu$ (the $\\omega\\to\\infty$ limit).
     When called as part of a [step function](Python_User_Interface.md#controlling-when-a-step-function-executes),
