@@ -1,6 +1,6 @@
 """Handling of objective functions and objective quantities."""
 
-from abc import ABC, abstractmethod
+import abc
 import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
@@ -8,29 +8,25 @@ from .optimization_problem import Grid
 from meep.simulation import py_v3_to_vec
 
 
-class ObjectiveQuantitiy(ABC):
-    @abstractmethod
-    def __init__(self):
-        return
-
-    @abstractmethod
-    def register_monitors(self):
-        return
-
-    @abstractmethod
-    def place_adjoint_source(self):
-        return
-
-    @abstractmethod
+class ObjectiveQuantity(abc.ABC):
+    @abc.abstractmethod
     def __call__(self):
-        return
+        """Evaluates the objective quantity."""
 
-    @abstractmethod
+    @abc.abstractmethod
+    def register_monitors(self, frequencies):
+        """Registers monitors in the forward simulation."""
+
+    @abc.abstractmethod
+    def place_adjoint_source(self, dJ):
+        """Places appropriate sources for the adjoint simulation."""
+
+    @abc.abstractmethod
     def get_evaluation(self):
-        return
+        """Evaluates the objective quantity."""
 
 
-class EigenmodeCoefficient(ObjectiveQuantitiy):
+class EigenmodeCoefficient(ObjectiveQuantity):
     def __init__(self,
                  sim,
                  volume,
@@ -38,44 +34,36 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                  forward=True,
                  kpoint_func=None,
                  **kwargs):
-        '''
-        '''
         self.sim = sim
         self.volume = volume
         self.mode = mode
-        self.forward = 0 if forward else 1
+        self.forward = forward
         self.normal_direction = None
         self.kpoint_func = kpoint_func
         self.eval = None
         self.EigenMode_kwargs = kwargs
-        return
 
     def register_monitors(self, frequencies):
         self.frequencies = np.asarray(frequencies)
-        self.monitor = self.sim.add_mode_monitor(frequencies,
-                                                 mp.ModeRegion(
-                                                     center=self.volume.center,
-                                                     size=self.volume.size),
-                                                 yee_grid=True)
+        self.monitor = self.sim.add_mode_monitor(
+            frequencies,
+            mp.ModeRegion(center=self.volume.center, size=self.volume.size),
+            yee_grid=True,
+        )
         self.normal_direction = self.monitor.normal_direction
         return self.monitor
 
     def place_adjoint_source(self, dJ):
-        '''Places an equivalent eigenmode monitor facing the opposite direction. Calculates the
-        correct scaling/time profile.
-        dJ ........ the user needs to pass the dJ/dMonitor evaluation
-        '''
         dJ = np.atleast_1d(dJ)
-        dt = self.sim.fields.dt  # the timestep size from sim.fields.dt of the forward sim
-        # determine starting kpoint for reverse mode eigenmode source
-        direction_scalar = 1 if self.forward else -1
+        dt = self.sim.fields.dt
+        direction_scalar = -1 if self.forward else 1
         if self.kpoint_func is None:
             if self.normal_direction == 0:
                 k0 = direction_scalar * mp.Vector3(x=1)
             elif self.normal_direction == 1:
                 k0 = direction_scalar * mp.Vector3(y=1)
             elif self.normal_direction == 2:
-                k0 == direction_scalar * mp.Vector3(z=1)
+                k0 = direction_scalar * mp.Vector3(z=1)
         else:
             k0 = direction_scalar * self.kpoint_func(self.time_src.frequency,
                                                      1)
@@ -86,21 +74,18 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
         scale = adj_src_scale(self, dt)
 
         if self.frequencies.size == 1:
-            # Single frequency simulations. We need to drive it with a time profile.
-            amp = da_dE * dJ * scale  # final scale factor
+            amp = da_dE * dJ * scale
             src = self.time_src
         else:
-            # multi frequency simulations
             scale = da_dE * dJ * scale
             src = FilteredSource(
                 self.time_src.frequency,
                 self.frequencies,
                 scale,
                 dt,
-            )  # generate source from broadband response
+            )
             amp = 1
 
-        # generate source object
         self.source = [
             mp.EigenModeSource(
                 src,
@@ -114,11 +99,9 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
                 **self.EigenMode_kwargs,
             )
         ]
-
         return self.source
 
     def __call__(self):
-        # Eigenmode data
         self.time_src = create_time_profile(self)
         direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
         ob = self.sim.get_eigenmode_coefficients(
@@ -128,15 +111,12 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             kpoint_func=self.kpoint_func,
             **self.EigenMode_kwargs,
         )
-        self.eval = np.squeeze(ob.alpha[:, :, self.forward]
-                               )  # record eigenmode coefficients for scaling
+        # record eigenmode coefficients for scaling
+        self.eval = np.squeeze(ob.alpha[:, :, int(not self.forward)])
         self.cscale = ob.cscale  # pull scaling factor
-
         return self.eval
 
     def get_evaluation(self):
-        '''Returns the requested eigenmode coefficient.
-        '''
         try:
             return self.eval
         except AttributeError:
@@ -145,13 +125,12 @@ class EigenmodeCoefficient(ObjectiveQuantitiy):
             )
 
 
-class FourierFields(ObjectiveQuantitiy):
+class FourierFields(ObjectiveQuantity):
     def __init__(self, sim, volume, component):
         self.sim = sim
         self.volume = volume
         self.eval = None
         self.component = component
-        return
 
     def register_monitors(self, frequencies):
         self.frequencies = np.asarray(frequencies)
@@ -254,14 +233,13 @@ class FourierFields(ObjectiveQuantitiy):
             raise RuntimeError("You must first run a forward simulation.")
 
 
-class Near2FarFields(ObjectiveQuantitiy):
+class Near2FarFields(ObjectiveQuantity):
     def __init__(self, sim, Near2FarRegions, far_pts):
         self.sim = sim
         self.Near2FarRegions = Near2FarRegions
         self.eval = None
         self.far_pts = far_pts  #list of far pts
         self.nfar_pts = len(far_pts)
-        return
 
     def register_monitors(self, frequencies):
         self.frequencies = np.asarray(frequencies)

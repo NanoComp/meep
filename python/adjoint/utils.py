@@ -3,7 +3,7 @@ from typing import List, Iterable, Tuple
 import meep as mp
 import numpy as onp
 
-from . import ObjectiveQuantitiy, DesignRegion
+from . import ObjectiveQuantity, DesignRegion
 
 # Meep field components used to compute adjoint sensitivities
 _ADJOINT_FIELD_COMPONENTS = [mp.Ex, mp.Ey, mp.Ez]
@@ -49,7 +49,7 @@ def calculate_vjps(
 
 
 def register_monitors(
-    monitors: List[ObjectiveQuantitiy],
+    monitors: List[ObjectiveQuantity],
     frequencies: List[float],
 ) -> None:
     """Registers a list of monitors."""
@@ -74,7 +74,7 @@ def install_design_region_monitors(
     return design_region_monitors
 
 
-def gather_monitor_values(monitors: List[ObjectiveQuantitiy]) -> onp.ndarray:
+def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
     """Gathers the mode monitor overlap values as a rank 2 ndarray.
 
     Args:
@@ -140,7 +140,7 @@ def validate_and_update_design(
 
     Args:
       design_regions: List of mpa.DesignRegion,
-      design_variables: Iterable with numpy arrays represending design variables.
+      design_variables: Iterable with numpy arrays representing design variables.
 
     Raises:
       ValueError if the validation of dimensions fails.
@@ -168,7 +168,7 @@ def validate_and_update_design(
 
 
 def create_adjoint_sources(
-        monitors: ObjectiveQuantitiy,
+        monitors: Iterable[ObjectiveQuantity],
         monitor_values_grad: onp.ndarray) -> List[mp.Source]:
     monitor_values_grad = onp.asarray(monitor_values_grad,
                                       dtype=onp.complex128)
