@@ -67,7 +67,8 @@ class TestDispersiveEigenmode(unittest.TestCase):
         self.assertAlmostEqual(n,n_slice, places=4)
 
         # Check to make sure h5 output is working with frequency
-        filename = os.path.join(self.temp_dir, 'dispersive_eigenmode-eps-000000.00.h5')
+        filename = os.path.join(self.temp_dir,
+                                sim.get_filename_prefix() + '-eps-000000.00.h5')
         mp.output_epsilon(sim,frequency=frequency)
         n_h5 = 0
         mp.all_wait()
