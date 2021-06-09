@@ -200,9 +200,9 @@ class GaussianSource(SourceTime):
         Construct a `GaussianSource`.
 
         + **`frequency` [`number`]** — The center frequency $f$ in units of $c$/distance
-          (or $\omega$ in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep).
+          (or $\\omega$ in units of $2\\pi c$/distance). See [Units](Introduction.md#units-in-meep).
           No default value. You can instead specify `wavelength=x` or `period=x`, which
-          are both a synonym for `frequency=1/x`; i.e. $1/\omega$ in these units is the vacuum
+          are both a synonym for `frequency=1/x`; i.e. $1/\\omega$ in these units is the vacuum
           wavelength or the temporal period.
 
         + **`width` [`number`]** — The width $w$ used in the Gaussian. No default value.
@@ -227,7 +227,7 @@ class GaussianSource(SourceTime):
           Default is `False`.
 
         + **`fourier_transform(f)`** — Returns the Fourier transform of the current
-          evaluated at frequency `f` ($\omega=2\pi f$) given by:
+          evaluated at frequency `f` ($\\omega=2\\pi f$) given by:
           $$
           \\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}}
           \\int e^{i\\omega t}G(t)\\,dt \\equiv
