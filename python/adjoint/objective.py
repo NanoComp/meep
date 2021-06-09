@@ -47,7 +47,7 @@ class ObjectiveQuantity(abc.ABC):
             return self._eval
         else:
             raise RuntimeError(
-                'You must first run a forward simulation before resquesting the evaluation of an `ObjectiveQuantity`.'
+                'You must first run a forward simulation before requesting the evaluation of an objective quantity.'
             )
 
     def _adj_src_scale(self, include_resolution=True):
@@ -57,9 +57,7 @@ class ObjectiveQuantity(abc.ABC):
         src = self._create_time_profile()
 
         if include_resolution:
-            num_dims = ((self.sim.cell_size.x != 0) +
-                        (self.sim.cell_size.y != 0) +
-                        (self.sim.cell_size.z != 0))
+            num_dims = self.sim._infer_dimensions(self.sim.k_point)
             dV = 1 / self.sim.resolution**num_dims
         else:
             dV = 1
