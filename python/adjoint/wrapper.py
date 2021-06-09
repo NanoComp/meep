@@ -291,8 +291,8 @@ class MeepJaxWrapper:
         self._previous_fields = current_fields
         if mp.am_master() and mp.verbosity > 0:
             print(
-                f'At simulation time {sim.meep_time():.2f} the relative change in '
-                f'the DFT fields is {relative_change:.2e}.')
+                'At simulation time %.2f the relative change in the DFT fields is %.2e.'
+                % (sim.meep_time(), relative_change))
         return relative_change < self.dft_threshold
 
     def _simulation_run_callback(self, sim: mp.Simulation) -> bool:
@@ -318,14 +318,15 @@ class MeepJaxWrapper:
             if mp.am_master() and mp.verbosity > 0:
                 remaining_time = self.minimum_run_time - sim.round_time()
                 self._log_fn(
-                    f'{remaining_time:.2f} to go until the minimum simulation runtime is reached.'
-                )
+                    '%.2f to go until the minimum simulation runtime is reached.'
+                    % (remaining_time, ))
             return False
         if current_meep_time >= self.maximum_run_time:
             if mp.am_master() and mp.verbosity > 0:
                 self._log_fn(
-                    f'Stopping the simulation because the maximum simulation run '
-                    f'time of {self.maximum_run_time:.2f} has been reached.')
+                    'Stopping the simulation because the maximum simulation run '
+                    'time of %.2f has been reached.' %
+                    (self.maximum_run_time, ))
             return True
         self._last_measurement_meep_time = current_meep_time
         return self._are_dfts_converged(sim)
