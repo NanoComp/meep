@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "Test ${{ matrix.name-prefix }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name-prefix: "C++ without MPI"
+            enable-mpi: false
+            configure-options: "--without-python"
+            python-version: "none"
+          - name-prefix: "C++ with MPI"
+            enable-mpi: true
+            configure-options: "--without-python --with-mpi"
+            python-version: "none"
+          - name-prefix: "Python 3.6"
+            enable-mpi: false
+            configure-options: "--with-python --enable-maintainer-mode"
+            python-version: "3.6"
+          - name-prefix: "Python 3.9"
+            enable-mpi: false
+            configure-options: "--with-python --enable-maintainer-mode"
+            python-version: "3.9"
+
+    steps:
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y autoconf automake libaec-dev libctl-dev libfftw3-dev libgdsii-dev libgsl-dev libharminv-dev libhdf5-dev libtool mpb mpb-dev swig
+    - name: Install MPI
+      if: matrix.enable-mpi
+      run: |
+        sudo apt-get install libhdf5-openmpi-dev libopenmpi-dev
+        sudo update-alternatives --set hdf5.pc /usr/lib/x86_64-linux-gnu/pkgconfig/hdf5-openmpi.pc
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Set up Python (version ${{ matrix.python-version }})
+      if: ${{ matrix.python-version != 'none' }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Python dependencies
+      if: ${{ matrix.python-version != 'none' }}
+      run: pip install autograd h5py jax jaxlib matplotlib mpi4py numpy parameterized pytest scipy
+    - name: Autoreconf
+      run: autoreconf -if
+    - name: configure
+      run: ./configure --with-hdf5 --without-scheme --enable-shared ${{ matrix.configure-options }}
+    - name: make
+      run: make
+    - name: Run Python tests
+      if: ${{ matrix.python-version != 'none' }}
+      env:
+        MEEP_SKIP_LARGE_TESTS: 1
+      run: |
+        export PYTHONPATH="${PWD}/python:${PYTHONPATH}"
+        pytest python/tests
+    - name: Run C++ tests
+      if: ${{ matrix.python-version == 'none' }}
+      run: make check

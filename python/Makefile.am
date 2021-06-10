@@ -232,8 +232,9 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
 PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
 
 meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
-	mkdir -p meep
+	mkdir -p meep/adjoint
 	cp $(PY_PKG_FILES) meep
+	cp $(adjoint_PYTHON) meep/adjoint
 if WITH_MPB
 	mkdir -p meep/mpb
 	cp .libs/_mpb.so meep/mpb
