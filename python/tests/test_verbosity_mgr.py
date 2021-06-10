@@ -1,6 +1,12 @@
 import unittest
 from meep.verbosity_mgr import Verbosity
 
+
+class VerbosityForTest(Verbosity):
+  """Allows for testing of Verbosity without interfering with the singleton."""
+  _instance = None
+
+
 class MyCvar:
     def __init__(self): self.verbosity = 1
 
@@ -8,9 +14,9 @@ class MyCvar:
 class TestVerbosity(unittest.TestCase):
 
     def setUp(self):
-        Verbosity.reset()
-        self.v1 = Verbosity(name='foo')
-        self.v2 = Verbosity(MyCvar(), 'bar')
+        VerbosityForTest.reset()
+        self.v1 = VerbosityForTest(name='foo')
+        self.v2 = VerbosityForTest(MyCvar(), 'bar')
 
 
     def test_identity(self):
