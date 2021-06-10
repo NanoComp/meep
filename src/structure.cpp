@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <memory>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -112,13 +113,13 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   a = gv.a;
   dt = Courant / a;
 
-  binary_partition *my_bp = NULL;
-  if (!bp) my_bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+  std::unique_ptr<binary_partition> my_bp;
+  if (!bp) my_bp.reset(meep::choose_chunkdivision(gv, v, desired_num_chunks, s));
 
   // create the chunks:
   std::vector<grid_volume> chunk_volumes;
   std::vector<int> ids;
-  split_by_binarytree(gv, chunk_volumes, ids, (!bp) ? my_bp : bp);
+  split_by_binarytree(gv, chunk_volumes, ids, (!bp) ? my_bp.get() : bp);
 
   // initialize effort volumes
   num_effort_volumes = 1;
