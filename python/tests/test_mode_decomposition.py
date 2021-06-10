@@ -1,6 +1,6 @@
 import unittest
+import numpy as np
 import meep as mp
-
 
 class TestModeDecomposition(unittest.TestCase):
 
@@ -83,6 +83,50 @@ class TestModeDecomposition(unittest.TestCase):
         self.assertAlmostEqual(abs(coeffs[0, 0, 1])**2 / abs(incident_coeffs[0, 0, 0])**2,
                                -taper_flux[0] / incident_flux[0], places=4)
 
+    def test_oblique_waveguide_backward_mode(self):
+        sxy = 12.0
+        cell_size = mp.Vector3(sxy,sxy,0)
+
+        dpml = 0.6
+        pml_layers = [mp.PML(thickness=dpml)]
+
+        fcen = 1/1.55
+        rot_angle = np.radians(35.0)
+        kpoint = mp.Vector3(1,0,0).rotate(mp.Vector3(0,0,1), rot_angle) * -1.0
+        sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=0.1),
+                                      center=mp.Vector3(0.5*sxy-3.4,0,0),
+                                      size=mp.Vector3(0,sxy,0),
+                                      direction=mp.NO_DIRECTION,
+                                      eig_kpoint=kpoint,
+                                      eig_band=1,
+                                      eig_parity=mp.ODD_Z,
+                                      eig_match_freq=True)]
+
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(mp.inf,1,mp.inf),
+                             e1 = mp.Vector3(1,0,0).rotate(mp.Vector3(0,0,1), rot_angle),
+                             e2 = mp.Vector3(0,1,0).rotate(mp.Vector3(0,0,1), rot_angle),
+                             material=mp.Medium(index=3.5))]
+
+        sim = mp.Simulation(cell_size=cell_size,
+                            resolution=40,
+                            boundary_layers=pml_layers,
+                            sources=sources,
+                            geometry=geometry)
+
+        mode = sim.add_mode_monitor(fcen, 0, 1,
+                                    mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0,0),
+                                                  size=mp.Vector3(0,sxy,0)))
+
+        sim.run(until_after_sources=30)
+
+        flux = mp.get_fluxes(mode)[0]
+        coeff = sim.get_eigenmode_coefficients(mode,[1],
+                                               direction=mp.NO_DIRECTION,
+                                               kpoint_func=lambda f,n: kpoint).alpha[0,0,0]
+
+        print("oblique-waveguide-flux:, {:.6f}, {:.6f}".format(-flux, abs(coeff)**2))
+        self.assertAlmostEqual(-flux, abs(coeff)**2, places=1)
 
 if __name__ == '__main__':
     unittest.main()
