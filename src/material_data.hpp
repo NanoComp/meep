@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <algorithm>
 
 #include <meep.hpp>
 #include <ctlgeom.h>
@@ -54,18 +55,6 @@ struct transition {
   }
 
   bool operator!=(const transition &other) const { return !(*this == other); }
-
-  // NOTE: We could add a copy constructor but that requires a lot more
-  // code cleanup!
-  void copy_from(const transition& from) {
-    from_level = from.from_level;
-    to_level = from.to_level;
-    transition_rate = from.transition_rate;
-    frequency = from.frequency;
-    sigma_diag = from.sigma_diag;
-    gamma = from.gamma;
-    pumping_rate = from.pumping_rate;
-  }
 };
 
 typedef struct susceptibility_struct {
@@ -81,27 +70,6 @@ typedef struct susceptibility_struct {
   bool is_file;
   std::vector<transition> transitions;
   std::vector<double> initial_populations;
-
-  void copy_from(const susceptibility_struct& from) {
-    sigma_offdiag = from.sigma_offdiag;
-    sigma_diag = from.sigma_diag;
-    bias = from.bias;
-    frequency = from.frequency;
-    gamma = from.gamma;
-    alpha = from.alpha;
-    noise_amp = from.noise_amp;
-    drude = from.drude;
-    saturated_gyrotropy = from.saturated_gyrotropy;
-    is_file = from.is_file;
-
-    transitions.resize(from.transitions.size());
-    for (int i = 0; i < transitions.size(); ++i) {
-      transitions[i].copy_from(from.transitions[i]);
-    }
-    initial_populations.assign(from.initial_populations.begin(),
-                               from.initial_populations.end());
-  }
-
 } susceptibility;
 
 struct susceptibility_list {
@@ -113,9 +81,7 @@ struct susceptibility_list {
   void copy_from(const susceptibility_list& from) {
     num_items = from.num_items;
     items = new susceptibility[num_items];
-    for (int i = 0; i < num_items; ++i) {
-      items[i].copy_from(from.items[i]);
-    }
+    std::copy_n(from.items, num_items, items);
   }
 };
 
