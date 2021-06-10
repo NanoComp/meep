@@ -38,6 +38,9 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_LANG([C++])
 
+# make sure we enable C++11 support if possible
+AX_CXX_COMPILE_STDCXX([11], [], [optional])
+
 # Check for MPI library
 
 AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
