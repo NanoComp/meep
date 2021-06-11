@@ -72,18 +72,7 @@ typedef struct susceptibility_struct {
   std::vector<double> initial_populations;
 } susceptibility;
 
-struct susceptibility_list {
-  int num_items;
-  susceptibility *items;
-
-  susceptibility_list() : num_items(0), items(NULL) {}
-
-  void copy_from(const susceptibility_list& from) {
-    num_items = from.num_items;
-    items = new susceptibility[num_items];
-    std::copy_n(from.items, num_items, items);
-  }
-};
+using susceptibility_list = std::vector<susceptibility>;
 
 struct medium_struct {
   vector3 epsilon_diag;
@@ -153,8 +142,8 @@ struct medium_struct {
     mu_diag = from.mu_diag;
     mu_offdiag = from.mu_offdiag;
 
-    E_susceptibilities.copy_from(from.E_susceptibilities);
-    H_susceptibilities.copy_from(from.H_susceptibilities);
+    E_susceptibilities = from.E_susceptibilities;
+    H_susceptibilities = from.H_susceptibilities;
 
     E_chi2_diag = from.E_chi2_diag;
     E_chi3_diag = from.E_chi3_diag;

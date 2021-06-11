@@ -14,6 +14,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <algorithm>
 #include <vector>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
@@ -61,9 +62,10 @@ bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2) {
 }
 
 bool susceptibility_list_equal(const susceptibility_list &s1, const susceptibility_list &s2) {
-  if (s1.num_items != s2.num_items) return false;
-  for (int i = 0; i < s1.num_items; ++i)
-    if (!susceptibility_equal(s1.items[i], s2.items[i])) return false;
+  if (s1.size() != s2.size()) return false;
+  for (size_t i = 0; i < s1.size(); ++i) {
+    if (!susceptibility_equal(s1[i], s2[i])) return false;
+  }
   return true;
 }
 
@@ -95,40 +97,28 @@ bool material_grid_equal(const material_data *m1, const material_data *m2) {
           medium_struct_equal(&(m1->medium_2), &(m2->medium_2)));
 }
 
-// garbage collection for susceptibility_list structures.
-// Assumes that the 'items' field, if non-empty, was allocated using new[];
-// this is automatically the case for python code but is not checked
-// for c++ code and will yield runtime errors if a user's user_material_func
-// uses e.g. malloc() instead.
-static void susceptibility_list_gc(susceptibility_list *sl) {
-  if (!sl || !(sl->num_items)) return;
-  delete[] sl->items;
-  sl->items = NULL;
-  sl->num_items = 0;
-}
-
 // garbage collection for material structures: called to deallocate memory
 // allocated for susceptibilities in user-defined materials.
 // TODO
 void material_gc(material_type m) {
   if (!m || m->which_subclass != material_data::MATERIAL_USER) return;
-  susceptibility_list_gc(&(m->medium.E_susceptibilities));
-  susceptibility_list_gc(&(m->medium.H_susceptibilities));
-  susceptibility_list_gc(&(m->medium_1.E_susceptibilities));
-  susceptibility_list_gc(&(m->medium_1.H_susceptibilities));
-  susceptibility_list_gc(&(m->medium_2.E_susceptibilities));
-  susceptibility_list_gc(&(m->medium_2.H_susceptibilities));
+  m->medium.E_susceptibilities.clear();
+  m->medium.H_susceptibilities.clear();
+  m->medium_1.E_susceptibilities.clear();
+  m->medium_1.H_susceptibilities.clear();
+  m->medium_2.E_susceptibilities.clear();
+  m->medium_2.H_susceptibilities.clear();
 }
 
 void material_free(material_type m) {
   if (!m) return;
 
-  susceptibility_list_gc(&(m->medium.E_susceptibilities));
-  susceptibility_list_gc(&(m->medium.H_susceptibilities));
-  susceptibility_list_gc(&(m->medium_1.E_susceptibilities));
-  susceptibility_list_gc(&(m->medium_1.H_susceptibilities));
-  susceptibility_list_gc(&(m->medium_2.E_susceptibilities));
-  susceptibility_list_gc(&(m->medium_2.H_susceptibilities));
+  m->medium.E_susceptibilities.clear();
+  m->medium.H_susceptibilities.clear();
+  m->medium_1.E_susceptibilities.clear();
+  m->medium_1.H_susceptibilities.clear();
+  m->medium_2.E_susceptibilities.clear();
+  m->medium_2.H_susceptibilities.clear();
 
   // NOTE: We do not delete the user_data field here since it is an opaque/void
   // object so will assume that the caller keeps track of its lifetime.
@@ -545,20 +535,20 @@ void epsilon_material_grid(material_data *md, double u) {
   // Interpolate resonant strength from d.p.
   vector3 zero_vec;
   zero_vec.x = zero_vec.y = zero_vec.z = 0;
-  for (int i = 0; i < m1->E_susceptibilities.num_items; i++) {
+  for (size_t i = 0; i < m1->E_susceptibilities.size(); i++) {
     // iterate through medium1 sus list first
-    interp_tensors(zero_vec, zero_vec, m1->E_susceptibilities.items[i].sigma_diag,
-                   m1->E_susceptibilities.items[i].sigma_offdiag,
-                   &mm->E_susceptibilities.items[i].sigma_diag,
-                   &mm->E_susceptibilities.items[i].sigma_offdiag, (1 - u));
+    interp_tensors(zero_vec, zero_vec, m1->E_susceptibilities[i].sigma_diag,
+                   m1->E_susceptibilities[i].sigma_offdiag,
+                   &mm->E_susceptibilities[i].sigma_diag,
+                   &mm->E_susceptibilities[i].sigma_offdiag, (1 - u));
   }
-  for (int i = 0; i < m2->E_susceptibilities.num_items; i++) {
+  for (size_t i = 0; i < m2->E_susceptibilities.size(); i++) {
     // iterate through medium2 sus list next
-    int j = i + m1->E_susceptibilities.num_items;
-    interp_tensors(zero_vec, zero_vec, m2->E_susceptibilities.items[i].sigma_diag,
-                   m2->E_susceptibilities.items[i].sigma_offdiag,
-                   &mm->E_susceptibilities.items[j].sigma_diag,
-                   &mm->E_susceptibilities.items[j].sigma_offdiag, u);
+    size_t j = i + m1->E_susceptibilities.size();
+    interp_tensors(zero_vec, zero_vec, m2->E_susceptibilities[i].sigma_diag,
+                   m2->E_susceptibilities[i].sigma_offdiag,
+                   &mm->E_susceptibilities[j].sigma_diag,
+                   &mm->E_susceptibilities[j].sigma_offdiag, u);
   }
 
   // Linearly interpolate electric conductivity
@@ -568,16 +558,16 @@ void epsilon_material_grid(material_data *md, double u) {
 
   // Add damping factor if we have dispersion.
   // This prevents instabilities when interpolating between sus. profiles.
-  if ((m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items) > 0.0) {
+  if ((m1->E_susceptibilities.size() + m2->E_susceptibilities.size()) > 0.0) {
     // calculate mean harmonic frequency
     double omega_mean = 0;
-    for (int i = 0; i < m1->E_susceptibilities.num_items; i++) {
-      omega_mean += m1->E_susceptibilities.items[i].frequency;
+    for (const susceptibility &m1_sus : m1->E_susceptibilities) {
+      omega_mean += m1_sus.frequency;
     }
-    for (int i = 0; i < m2->E_susceptibilities.num_items; i++) {
-      omega_mean += m2->E_susceptibilities.items[i].frequency;
+    for (const susceptibility &m2_sus : m2->E_susceptibilities) {
+      omega_mean += m2_sus.frequency;
     }
-    omega_mean = omega_mean / (m1->E_susceptibilities.num_items + m2->E_susceptibilities.num_items);
+    omega_mean = omega_mean / (m1->E_susceptibilities.size() + m2->E_susceptibilities.size());
 
     // assign interpolated, nondimensionalized conductivity term
     // TODO: dampen the lorentzians to improve stability
@@ -1529,20 +1519,20 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
 /* like susceptibility_equal in ctl-io.cpp, but ignores sigma and id
    (must be updated manually, re-copying from ctl-io.cpp), if we
    add new susceptibility subclasses) */
-static bool susceptibility_equiv(const susceptibility *o0, const susceptibility *o) {
-  if (!vector3_equal(o0->bias, o->bias)) return 0;
-  if (o0->frequency != o->frequency) return 0;
-  if (o0->gamma != o->gamma) return 0;
-  if (o0->alpha != o->alpha) return 0;
-  if (o0->noise_amp != o->noise_amp) return 0;
-  if (o0->drude != o->drude) return 0;
-  if (o0->saturated_gyrotropy != o->saturated_gyrotropy) return 0;
-  if (o0->is_file != o->is_file) return 0;
+static bool susceptibility_equiv(const susceptibility &o0, const susceptibility &o) {
+  if (!vector3_equal(o0.bias, o.bias)) return false;
+  if (o0.frequency != o.frequency) return false;
+  if (o0.gamma != o.gamma) return false;
+  if (o0.alpha != o.alpha) return false;
+  if (o0.noise_amp != o.noise_amp) return false;
+  if (o0.drude != o.drude) return false;
+  if (o0.saturated_gyrotropy != o.saturated_gyrotropy) return false;
+  if (o0.is_file != o.is_file) return false;
 
-  if (o0->transitions != o->transitions) return 0;
-  if (o0->initial_populations != o->initial_populations) return 0;
+  if (o0.transitions != o.transitions) return false;
+  if (o0.initial_populations != o.initial_populations) return false;
 
-  return 1;
+  return true;
 }
 
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::vec &r) {
@@ -1576,26 +1566,26 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
       mat->which_subclass == material_data::MATERIAL_GRID ||
       mat->which_subclass == material_data::MEDIUM) {
 
-    susceptibility_list slist =
+    const susceptibility_list &slist =
         type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
-    for (int j = 0; j < slist.num_items; ++j) {
-      if (susceptibility_equiv(&slist.items[j], &current_pol->user_s)) {
+    for (const susceptibility &susc : slist) {
+      if (susceptibility_equiv(susc, current_pol->user_s)) {
         int ic = meep::component_index(c);
         switch (ic) { // which row of the sigma tensor to return
           case 0:
-            sigrow[0] = slist.items[j].sigma_diag.x;
-            sigrow[1] = slist.items[j].sigma_offdiag.x;
-            sigrow[2] = slist.items[j].sigma_offdiag.y;
+            sigrow[0] = susc.sigma_diag.x;
+            sigrow[1] = susc.sigma_offdiag.x;
+            sigrow[2] = susc.sigma_offdiag.y;
             break;
           case 1:
-            sigrow[0] = slist.items[j].sigma_offdiag.x;
-            sigrow[1] = slist.items[j].sigma_diag.y;
-            sigrow[2] = slist.items[j].sigma_offdiag.z;
+            sigrow[0] = susc.sigma_offdiag.x;
+            sigrow[1] = susc.sigma_diag.y;
+            sigrow[2] = susc.sigma_offdiag.z;
             break;
           default: // case 2:
-            sigrow[0] = slist.items[j].sigma_offdiag.y;
-            sigrow[1] = slist.items[j].sigma_offdiag.z;
-            sigrow[2] = slist.items[j].sigma_diag.z;
+            sigrow[0] = susc.sigma_offdiag.y;
+            sigrow[1] = susc.sigma_offdiag.z;
+            sigrow[2] = susc.sigma_diag.z;
             break;
         }
         break;
@@ -1686,22 +1676,23 @@ static meep::susceptibility *make_multilevel_sus(const susceptibility_struct *d)
 }
 
 // add a polarization to the list if it is not already there
-static pol *add_pol(pol *pols, const susceptibility *user_s) {
+static pol *add_pol(pol *pols, const susceptibility &user_s) {
   struct pol *p = pols;
-  while (p && !susceptibility_equiv(user_s, &p->user_s))
+  while (p && !susceptibility_equiv(user_s, p->user_s))
     p = p->next;
   if (!p) {
     p = new pol;
-    p->user_s = *user_s;
+    p->user_s = user_s;
     p->next = pols;
     pols = p;
   }
   return pols;
 }
 
-static pol *add_pols(pol *pols, const susceptibility_list slist) {
-  for (int j = 0; j < slist.num_items; ++j)
-    pols = add_pol(pols, &slist.items[j]);
+static pol *add_pols(pol *pols, const susceptibility_list &slist) {
+  for (const susceptibility &susc : slist) {
+    pols = add_pol(pols, susc);
+  }
   return pols;
 }
 
@@ -2234,9 +2225,9 @@ bool fragment_stats::count_nonlinear_pixels(medium_struct *med, size_t pixels) {
 }
 
 bool fragment_stats::count_susceptibility_pixels(medium_struct *med, size_t pixels) {
-  num_susceptibility_pixels += med->E_susceptibilities.num_items * pixels;
-  num_susceptibility_pixels += med->H_susceptibilities.num_items * pixels;
-  return (med->E_susceptibilities.num_items != 0) || (med->H_susceptibilities.num_items != 0);
+  num_susceptibility_pixels += med->E_susceptibilities.size() * pixels;
+  num_susceptibility_pixels += med->H_susceptibilities.size() * pixels;
+  return (med->E_susceptibilities.size() != 0) || (med->H_susceptibilities.size() != 0);
 }
 
 bool fragment_stats::count_nonzero_conductivity_pixels(medium_struct *med, size_t pixels) {
@@ -2454,12 +2445,10 @@ void get_material_tensor(const medium_struct *mm, double freq,
 
     // compute lorentzian component
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
-    for (int nl = 0; nl < mm->E_susceptibilities.num_items; ++nl) {
+    for (const auto &mm_susc: mm->E_susceptibilities) {
       meep::lorentzian_susceptibility sus = meep::lorentzian_susceptibility(
-          mm->E_susceptibilities.items[nl].frequency, mm->E_susceptibilities.items[nl].gamma,
-          mm->E_susceptibilities.items[nl].drude);
-      double sigma = vec_to_value(mm->E_susceptibilities.items[nl].sigma_diag,
-                                  mm->E_susceptibilities.items[nl].sigma_offdiag, i);
+          mm_susc.frequency, mm_susc.gamma, mm_susc.drude);
+      double sigma = vec_to_value(mm_susc.sigma_diag, mm_susc.sigma_offdiag, i);
       b += sus.chi1(freq, sigma);
     }
 
@@ -2487,7 +2476,7 @@ double get_material_gradient(
   const medium_struct *m2 = &(md->medium_2);
 
   // trivial case
-  if ((mm->E_susceptibilities.num_items == 0) && mm->D_conductivity_diag.x == 0 &&
+  if ((mm->E_susceptibilities.size() == 0) && mm->D_conductivity_diag.x == 0 &&
       mm->D_conductivity_diag.y == 0 && mm->D_conductivity_diag.z == 0){
         switch (field_dir){
           case meep::Ex: return 2 * (m2->epsilon_diag.x - m1->epsilon_diag.x) * (fields_a * fields_f).real();
