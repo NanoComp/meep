@@ -38,8 +38,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_LANG([C++])
 
-# make sure we enable C++11 support if possible
-AX_CXX_COMPILE_STDCXX([11], [], [optional])
+# Require C++11 support
+AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
 
 # Check for MPI library
 
