@@ -88,70 +88,19 @@ struct medium_struct {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 
-  medium_struct(double epsilon = 1) : E_susceptibilities(), H_susceptibilities() {
-    epsilon_diag.x = epsilon;
-    epsilon_diag.y = epsilon;
-    epsilon_diag.z = epsilon;
-
-    mu_diag.x = 1;
-    mu_diag.y = 1;
-    mu_diag.z = 1;
-
-    epsilon_offdiag.x.re = 0;
-    epsilon_offdiag.x.im = 0;
-    epsilon_offdiag.y.re = 0;
-    epsilon_offdiag.y.im = 0;
-    epsilon_offdiag.z.re = 0;
-    epsilon_offdiag.z.im = 0;
-
-    mu_offdiag.x.re = 0;
-    mu_offdiag.x.im = 0;
-    mu_offdiag.y.re = 0;
-    mu_offdiag.y.im = 0;
-    mu_offdiag.z.re = 0;
-    mu_offdiag.z.im = 0;
-
-    E_chi2_diag.x = 0;
-    E_chi2_diag.y = 0;
-    E_chi2_diag.z = 0;
-
-    E_chi3_diag.x = 0;
-    E_chi3_diag.y = 0;
-    E_chi3_diag.z = 0;
-
-    H_chi2_diag.x = 0;
-    H_chi2_diag.y = 0;
-    H_chi2_diag.z = 0;
-
-    H_chi3_diag.x = 0;
-    H_chi3_diag.y = 0;
-    H_chi3_diag.z = 0;
-
-    D_conductivity_diag.x = 0;
-    D_conductivity_diag.y = 0;
-    D_conductivity_diag.z = 0;
-
-    B_conductivity_diag.x = 0;
-    B_conductivity_diag.y = 0;
-    B_conductivity_diag.z = 0;
-  }
-
-  void copy_from(const medium_struct& from) {
-    epsilon_diag = from.epsilon_diag;
-    epsilon_offdiag = from.epsilon_offdiag;
-    mu_diag = from.mu_diag;
-    mu_offdiag = from.mu_offdiag;
-
-    E_susceptibilities = from.E_susceptibilities;
-    H_susceptibilities = from.H_susceptibilities;
-
-    E_chi2_diag = from.E_chi2_diag;
-    E_chi3_diag = from.E_chi3_diag;
-    H_chi2_diag = from.H_chi2_diag;
-    H_chi3_diag = from.H_chi3_diag;
-    D_conductivity_diag = from.D_conductivity_diag;
-    B_conductivity_diag = from.B_conductivity_diag;
-  }
+  medium_struct(double epsilon = 1) :
+      epsilon_diag{epsilon, epsilon, epsilon},
+      epsilon_offdiag{},
+      mu_diag{1, 1, 1},
+      mu_offdiag{},
+      E_susceptibilities(), H_susceptibilities(),
+      E_chi2_diag{},
+      E_chi3_diag{},
+      H_chi2_diag{},
+      H_chi3_diag{},
+      D_conductivity_diag{},
+      B_conductivity_diag{}
+    {}
 };
 
 // prototype for user-defined material function,
@@ -244,7 +193,7 @@ struct material_data {
 
   void copy_from(const material_data& from) {
     which_subclass = from.which_subclass;
-    medium.copy_from(from.medium);
+    medium = from.medium;
 
     user_func = from.user_func;
     // NOTE: the user_data field here opaque/void - so this is the best we can do.
@@ -265,8 +214,8 @@ struct material_data {
       memcpy(weights, from.weights, N * sizeof(double));
     }
 
-    medium_1.copy_from(from.medium_1);
-    medium_2.copy_from(from.medium_2);
+    medium_1 = from.medium_1;
+    medium_2 = from.medium_2;
     beta = from.beta;
     eta = from.eta;
   }
