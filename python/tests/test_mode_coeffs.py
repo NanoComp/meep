@@ -7,7 +7,7 @@ import meep as mp
 
 class TestModeCoeffs(unittest.TestCase):
 
-    def run_mode_coeffs(self, mode_num, kpoint_func, nf=1, resolution=15):
+    def run_mode_coeffs(self, mode_num, kpoint_func, nf=1, resolution=25):
 
         w = 1   # width of waveguide
         L = 10  # length of waveguide
@@ -76,12 +76,12 @@ class TestModeCoeffs(unittest.TestCase):
         modes_to_check = [1, 2]  # indices of modes for which to compute expansion coefficients
         res = sim.get_eigenmode_coefficients(mflux, modes_to_check, kpoint_func=kpoint_func)
 
-        self.assertTrue(res.kpoints[0].close(mp.Vector3(0.604301, 0, 0)))
-        self.assertTrue(res.kpoints[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
-        self.assertTrue(res.kdom[0].close(mp.Vector3(0.604301, 0, 0)))
-        self.assertTrue(res.kdom[1].close(mp.Vector3(0.494353, 0, 0), tol=1e-2))
-        self.assertAlmostEqual(res.cscale[0],0.50000977,places=5)
-        self.assertAlmostEqual(res.cscale[1],0.50096888,places=2)
+        self.assertTrue(res.kpoints[0].close(mp.Vector3(0.6056758, 0, 0), tol=1e-2))
+        self.assertTrue(res.kpoints[1].close(mp.Vector3(0.4995093, 0, 0), tol=1e-2))
+        self.assertTrue(res.kdom[0].close(mp.Vector3(0.6056758, 0, 0), tol=1e-2))
+        self.assertTrue(res.kdom[1].close(mp.Vector3(0.4995093, 0, 0), tol=1e-2))
+        self.assertAlmostEqual(res.cscale[0],0.5000020,places=2)
+        self.assertAlmostEqual(res.cscale[1],0.5003438,places=2)
         mode_power = mp.get_fluxes(mode_flux)[0]
 
         TestPassed = True
@@ -117,8 +117,8 @@ class TestModeCoeffs(unittest.TestCase):
         eval_point = mp.Vector3(0.7, -0.2, 0.3)
         ex_at_eval_point = emdata.amplitude(eval_point, mp.Ex)
         hz_at_eval_point = emdata.amplitude(eval_point, mp.Hz)
-        self.assertAlmostEqual(ex_at_eval_point, 0.4887779638178009+0.48424014532428294j)
-        self.assertAlmostEqual(hz_at_eval_point, 3.4249236584603495-3.455974863884166j)
+        self.assertAlmostEqual(ex_at_eval_point, 0.5360627614248279+0.4004029756259545j, places=4)
+        self.assertAlmostEqual(hz_at_eval_point, 2.904704413025583-3.8885361484090213j, places=4)
 
     def test_kpoint_func(self):
 
