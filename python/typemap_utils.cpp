@@ -326,7 +326,7 @@ static int get_attr_material(PyObject *po, material_type *m) {
 
   Py_XDECREF(py_material);
 
-  return 1;
+  return rval;
 }
 
 static int pytransition_to_transition(PyObject *py_trans, transition *trans) {
@@ -674,7 +674,7 @@ static PyObject *susceptibility_list_to_py_list(const susceptibility_list *sl) {
   // Return value: New reference
   PyObject *res = PyList_New(sl->size());
 
-  for (Py_ssize_t i = 0; i < sl->size(); ++i) {
+  for (Py_ssize_t i = 0; i < static_cast<Py_ssize_t>(sl->size()); ++i) {
     PyList_SetItem(res, i, susceptibility_to_py_obj(&sl->at(i)));
   }
 

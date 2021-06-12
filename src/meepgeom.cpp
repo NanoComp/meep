@@ -2345,15 +2345,6 @@ geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g) {
   return geometry_tree;
 }
 
-static void print_tensor(std::complex<double> *in) {
-  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n", in[0].real(), in[0].imag(), in[1].real(),
-                in[1].imag(), in[2].real(), in[2].imag());
-  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n", in[3].real(), in[3].imag(), in[4].real(),
-                in[4].imag(), in[5].real(), in[5].imag());
-  master_printf("(%g, %g)  (%g, %g)  (%g, %g)\n", in[6].real(), in[6].imag(), in[7].real(),
-                in[7].imag(), in[8].real(), in[8].imag());
-}
-
 /* convenience routine to get element of material tensors */
 static std::complex<double> cvec_to_value(vector3 diag, cvector3 offdiag, int idx) {
   std::complex<double> val = std::complex<double>(0, 0);
