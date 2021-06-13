@@ -435,14 +435,10 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
   if (!PyList_Check(po)) { abort_with_stack_trace(); }
 
   int length = PyList_Size(po);
-  sl->num_items = length;
-  if (length > 0) { sl->items = new susceptibility_struct[length]; }
-  else {
-    sl->items = NULL;
-  }
+  sl->resize(length);
 
   for (int i = 0; i < length; i++) {
-    if (!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &sl->items[i])) { return 0; }
+    if (!py_susceptibility_to_susceptibility(PyList_GetItem(po, i), &sl->at(i))) { return 0; }
   }
 
   return 1;
@@ -586,7 +582,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   return 1;
 }
 
-template <class T> static void set_v3_on_pyobj(PyObject *py_obj, T *v3, const char *attr) {
+template <class T> static void set_v3_on_pyobj(PyObject *py_obj, const T *v3, const char *attr) {
   PyObject *v3_class = py_vector3_object();
   PyObject *v3_args = Py_BuildValue("(d,d,d)", v3->x, v3->y, v3->z);
   PyObject *pyv3 = PyObject_Call(v3_class, v3_args, NULL);
@@ -596,7 +592,7 @@ template <class T> static void set_v3_on_pyobj(PyObject *py_obj, T *v3, const ch
   Py_DECREF(pyv3);
 }
 
-static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
+static PyObject *susceptibility_to_py_obj(const susceptibility_struct *s) {
   // Return value: New reference
   PyObject *geom_mod = get_geom_mod();
 
@@ -674,12 +670,12 @@ static PyObject *susceptibility_to_py_obj(susceptibility_struct *s) {
   return res;
 }
 
-static PyObject *susceptibility_list_to_py_list(susceptibility_list *sl) {
+static PyObject *susceptibility_list_to_py_list(const susceptibility_list *sl) {
   // Return value: New reference
-  PyObject *res = PyList_New(sl->num_items);
+  PyObject *res = PyList_New(sl->size());
 
-  for (Py_ssize_t i = 0; i < sl->num_items; ++i) {
-    PyList_SetItem(res, i, susceptibility_to_py_obj(&sl->items[i]));
+  for (Py_ssize_t i = 0; i < sl->size(); ++i) {
+    PyList_SetItem(res, i, susceptibility_to_py_obj(&sl->at(i)));
   }
 
   return res;
