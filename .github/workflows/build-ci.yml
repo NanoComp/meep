@@ -41,7 +41,7 @@ jobs:
     - name: Install Common Dependencies
       run: |
         sudo apt-get -y update
-        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev libharminv-dev libpng-dev swig
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev libharminv-dev libpng-dev libtool swig
         mkdir -p ~/install
         cd ~/install
         git clone https://github.com/NanoComp/libctl.git
