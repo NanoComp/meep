@@ -728,8 +728,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if ($1.material) {
-        delete[] ((material_data *)$1.material)->weights;
-        delete[] ((material_data *)$1.material)->epsilon_data;
+        material_free((material_data *)$1.material);
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -761,19 +760,24 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(in) geometric_object_list* (geometric_object_list temp){
+    if(!py_list_to_gobj_list($input, &temp)) {
+        SWIG_fail;
+    }
+    $1 = &temp;
+}
+
 %typemap(arginit) geometric_object_list {
     $1.num_items = 0;
     $1.items = NULL;
 }
 
 %typemap(freearg) geometric_object_list {
-    for(int i = 0; i < $1.num_items; i++) {
-        delete[] ((material_data *)$1.items[i].material)->epsilon_data;
-        delete[] ((material_data *)$1.items[i].material)->weights;
-        delete (material_data *)$1.items[i].material;
-        geometric_object_destroy($1.items[i]);
-    }
-    delete[] $1.items;
+    gobj_list_freearg(&$1);
+}
+
+%typemap(freearg) geometric_object_list* {
+    gobj_list_freearg($1);
 }
 
 %typemap(out) geometric_object_list {
@@ -957,8 +961,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %typemap(freearg) material_type {
     if ($1) {
-        delete[] $1->weights;
-        delete[] $1->epsilon_data;
+        material_free($1);
         delete $1;
     }
 }
@@ -1362,8 +1365,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->weights;
-            delete[] $1.items[i]->epsilon_data;
+            material_free($1.items[i]);
         }
     }
     delete[] $1.items;
