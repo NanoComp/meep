@@ -18,31 +18,71 @@ jobs:
         include:
           - name-prefix: "C++ without MPI"
             enable-mpi: false
+            enable-mpb: false
             configure-options: "--without-python"
             python-version: "none"
           - name-prefix: "C++ with MPI"
             enable-mpi: true
+            enable-mpb: false
             configure-options: "--without-python --with-mpi"
             python-version: "none"
           - name-prefix: "Python 3.6"
             enable-mpi: false
-            configure-options: "--with-python --enable-maintainer-mode"
+            enable-mpb: true
+            configure-options: "--enable-maintainer-mode"
             python-version: "3.6"
           - name-prefix: "Python 3.9"
             enable-mpi: false
-            configure-options: "--with-python --enable-maintainer-mode"
+            enable-mpb: true
+            configure-options: "--enable-maintainer-mode"
             python-version: "3.9"
 
     steps:
-    - name: Install Dependencies
+    - name: Install Common Dependencies
       run: |
-        sudo apt-get update -y
-        sudo apt-get install -y autoconf automake libaec-dev libctl-dev libfftw3-dev libgdsii-dev libgsl-dev libharminv-dev libhdf5-dev libtool mpb mpb-dev swig
+        sudo apt-get -y update
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev libharminv-dev libpng-dev libtool swig
+        mkdir -p ~/install
+        cd ~/install
+        git clone https://github.com/NanoComp/libctl.git
+        cd libctl/
+        sh autogen.sh --enable-shared
+        make && sudo make install
+        cd ~/install
+        git clone https://github.com/HomerReid/libGDSII.git
+        cd libGDSII/
+        make && sudo make install
+    - name: Install Serial
+      if: ${{ matrix.enable-mpi == false }}
+      run: |
+        export RPATH_FLAGS="-Wl,-rpath,/usr/local/lib"
+        export MY_LDFLAGS="-L/usr/local/lib ${RPATH_FLAGS}"
+        export MY_CPPFLAGS="-I/usr/local/include"
+        export MY_CC="cc"
+        sudo apt-get -y install libhdf5-dev hdf5-tools
     - name: Install MPI
       if: matrix.enable-mpi
       run: |
-        sudo apt-get install libhdf5-openmpi-dev libopenmpi-dev
-        sudo update-alternatives --set hdf5.pc /usr/lib/x86_64-linux-gnu/pkgconfig/hdf5-openmpi.pc
+        export RPATH_FLAGS="-Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+        export MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+        export MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
+        export MY_CC="mpicc"
+        sudo apt-get -y install libhdf5-openmpi-dev libopenmpi-dev hdf5-tools
+    - name: Install Other Dependencies
+      run: |
+        cd ~/install
+        git clone https://github.com/NanoComp/h5utils.git
+        cd h5utils/
+        sh autogen.sh CC=${MY_CC} LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
+        make && sudo make install
+    - name: Install MPB
+      if: matrix.enable-mpb
+      run: |
+        cd ~/install
+        git clone https://github.com/NanoComp/mpb.git
+        cd mpb/
+        sh autogen.sh --enable-shared CC=${MY_CC} LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
+        make && sudo make install
     - name: Check out repository
       uses: actions/checkout@v2
     - name: Set up Python (version ${{ matrix.python-version }})
@@ -53,10 +93,9 @@ jobs:
     - name: Install Python dependencies
       if: ${{ matrix.python-version != 'none' }}
       run: pip install autograd h5py jax jaxlib matplotlib mpi4py numpy parameterized pytest scipy
-    - name: Autoreconf
-      run: autoreconf -if
     - name: configure
-      run: ./configure --with-hdf5 --without-scheme --enable-shared ${{ matrix.configure-options }}
+      run: |
+        sh autogen.sh --without-scheme --enable-shared CC=${MY_CC} LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" ${{ matrix.configure-options }}
     - name: make
       run: make
     - name: Run Python tests
