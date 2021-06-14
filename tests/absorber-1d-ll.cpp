@@ -49,8 +49,8 @@ int main(int argc, char *argv[]) {
   if (verbose) master_printf("Using %s.\n", use_pml ? "pml" : "absorber");
 
   double resolution = 20.0;
-  geometry_lattice.size.x = TINY;
-  geometry_lattice.size.y = TINY;
+  geometry_lattice.size.x = meep_geom::TINY;
+  geometry_lattice.size.y = meep_geom::TINY;
   geometry_lattice.size.z = 10.0;
   grid_volume gv = volone(10.0, resolution);
   gv.center_origin();
