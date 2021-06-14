@@ -22,16 +22,16 @@ jobs:
             python-version: "3.6"
             MPICONF: "--without-mpi"
             MKCHECKFLAGS: "-j 2"
-            CPPFLAGS: "${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
-            LDFLAGS: "${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+            CPPFLAGS: "${{env.HDF5_SERIAL_CPPFLAGS}} ${{env.CPPFLAGS}}"
+            LDFLAGS: "${{env.HDF5_SERIAL_LDFLAGS}} ${{env.LDFLAGS}}"
           - name-prefix: "Python 3.9 without MPI"
             enable-mpi: false
             configure-options: "--without-mpi"
             python-version: "3.9"
             MPICONF: "--without-mpi"
             MKCHECKFLAGS: "-j 2"
-            CPPFLAGS: "${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
-            LDFLAGS: "${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+            CPPFLAGS: "${{env.HDF5_SERIAL_CPPFLAGS}} ${{env.CPPFLAGS}}"
+            LDFLAGS: "${{env.HDF5_SERIAL_LDFLAGS}} ${{env.LDFLAGS}}"
           - name-prefix: "Python 3.6 with MPI"
             enable-mpi: true
             configure-options: "--with-mpi"
@@ -41,8 +41,8 @@ jobs:
             HDF5_MPI: "ON"
             CC: mpicc
             CXX: mpic++
-            CPPFLAGS: "${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
-            LDFLAGS: "${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+            CPPFLAGS: "${{env.HDF5_PARALLEL_CPPFLAGS}} ${{env.CPPFLAGS}}"
+            LDFLAGS: "${{env.HDF5_PARALLEL_LDFLAGS}} ${{env.LDFLAGS}}"
           - name-prefix: "Python 3.9 with MPI"
             enable-mpi: true
             configure-options: "--with-mpi"
@@ -52,19 +52,19 @@ jobs:
             HDF5_MPI: "ON"
             CC: mpicc
             CXX: mpic++
-            CPPFLAGS: "${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
-            LDFLAGS: "${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+            CPPFLAGS: "${{env.HDF5_PARALLEL_CPPFLAGS}} ${{env.CPPFLAGS}}"
+            LDFLAGS: "${{env.HDF5_PARALLEL_LDFLAGS}} ${{env.LDFLAGS}}"
 
     env:
-      CPPFLAGS: "-I${HOME}/local/include"
-      LDFLAGS: "-L${HOME}/local/lib"
+      CPPFLAGS: "-I${{env.HOME}}/local/include"
+      LDFLAGS: "-L${{env.HOME}}/local/lib"
       HDF5_BASE_CPPFLAGS: "-I/usr/include/hdf5"
-      HDF5_SERIAL_CPPFLAGS: "${HDF5_BASE_CPPFLAGS}/serial"
-      HDF5_PARALLEL_CPPFLAGS: "${HDF5_BASE_CPPFLAGS}/openmpi"
+      HDF5_SERIAL_CPPFLAGS: "${{env.HDF5_BASE_CPPFLAGS}}/serial"
+      HDF5_PARALLEL_CPPFLAGS: "${{env.HDF5_BASE_CPPFLAGS}}/openmpi"
       HDF5_BASE_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu/hdf5"
-      HDF5_SERIAL_LDFLAGS: "${HDF5_BASE_LDFLAGS}/serial"
-      HDF5_PARALLEL_LDFLAGS: "${HDF5_BASE_LDFLAGS}/openmpi"
-      GEN_CTL_IO: "${HOME}/local/bin/gen-ctl-io"
+      HDF5_SERIAL_LDFLAGS: "${{env.HDF5_BASE_LDFLAGS}}/serial"
+      HDF5_PARALLEL_LDFLAGS: "${{env.HDF5_BASE_LDFLAGS}}/openmpi"
+      GEN_CTL_IO: "${{env.HOME}}/local/bin/gen-ctl-io"
 
     steps:
     - name: Install common dependencies
@@ -72,13 +72,13 @@ jobs:
         sudo apt-get -y update
         sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
         git clone https://github.com/NanoComp/libctl.git libctl-src
-        (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
+        (cd libctl-src && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j 2 && make install)
         git clone https://github.com/NanoComp/harminv.git
-        (cd harminv && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
+        (cd harminv && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j 2 && make install)
         git clone https://github.com/NanoComp/mpb.git
-        (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
+        (cd mpb && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
         git clone https://github.com/HomerReid/libGDSII.git
-        (cd libGDSII && git checkout master && sh autogen.sh --prefix=$HOME/local && make install)
+        (cd libGDSII && git checkout master && sh autogen.sh --prefix=${HOME}/local && make install)
 
     - name: Install serial dependencies
       if: ${{ matrix.enable-mpi == false }}
@@ -103,7 +103,7 @@ jobs:
       run: |
         autoreconf --verbose --install --symlink --force
         mkdir -p build && pushd build
-        ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: make
       run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
