@@ -23,31 +23,30 @@
 #include <math.h>
 #include <vector>
 
-#include "meep.hpp"
 #include "material_data.hpp"
 
 namespace meep_geom {
 
 // constants from meep-ctl-const.hpp
-#define CYLINDRICAL -2
+const int CYLINDRICAL = -2;
 
 /* should be the same as meep::direction enum */
-#define X_DIR 0
-#define Y_DIR 1
-#define Z_DIR 2
-#define R_DIR 4
-#define PHI_DIR 5
+const int X_DIR = 0;
+const int Y_DIR = 1;
+const int Z_DIR = 2;
+const int R_DIR = 4;
+const int PHI_DIR = 5;
 
 // constant used in meep.scm
-#define ALL_SIDES -1
-#define ALL_DIRECTIONS -1
+const int ALL_SIDES = -1;
+const int ALL_DIRECTIONS = -1;
 
+// FIXME: we should really purge these ancient hacks and just use Inf and 0.0.
 // large (but not strictly inf!) floating-point number for
 // effectively infinite lengths
-#define ENORMOUS 1e20
-
+const double ENORMOUS = 1e20;
 // tiny floating-point number for effectively zero lengths
-#define TINY 1e-20
+const double TINY = 1e-20;
 
 struct dft_data {
   int num_freqs;
