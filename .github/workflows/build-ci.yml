@@ -16,96 +16,104 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name-prefix: "C++ without MPI"
+          - name-prefix: "Python 3.6 without MPI"
             enable-mpi: false
-            enable-mpb: false
-            configure-options: "--without-python"
-            python-version: "none"
-          - name-prefix: "C++ with MPI"
-            enable-mpi: true
-            enable-mpb: false
-            configure-options: "--without-python --with-mpi"
-            python-version: "none"
-          - name-prefix: "Python 3.6"
-            enable-mpi: false
-            enable-mpb: true
-            configure-options: "--enable-maintainer-mode"
+            configure-options: "--without-mpi"
             python-version: "3.6"
-          - name-prefix: "Python 3.9"
+            MPICONF: "--without-mpi"
+            MKCHECKFLAGS: "-j 2"
+            CPPFLAGS: "${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+            LDFLAGS: "${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+          - name-prefix: "Python 3.9 without MPI"
             enable-mpi: false
-            enable-mpb: true
-            configure-options: "--enable-maintainer-mode"
+            configure-options: "--without-mpi"
             python-version: "3.9"
+            MPICONF: "--without-mpi"
+            MKCHECKFLAGS: "-j 2"
+            CPPFLAGS: "${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}"
+            LDFLAGS: "${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}"
+          - name-prefix: "Python 3.6 with MPI"
+            enable-mpi: true
+            configure-options: "--with-mpi"
+            python-version: "3.6"
+            MPICONF: "--with-mpi"
+            MKCHECKFLAGS: ""
+            HDF5_MPI: "ON"
+            CC: mpicc
+            CXX: mpic++
+            CPPFLAGS: "${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
+            LDFLAGS: "${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+          - name-prefix: "Python 3.9 with MPI"
+            enable-mpi: true
+            configure-options: "--with-mpi"
+            python-version: "3.9"
+            MPICONF: "--with-mpi"
+            MKCHECKFLAGS: ""
+            HDF5_MPI: "ON"
+            CC: mpicc
+            CXX: mpic++
+            CPPFLAGS: "${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}"
+            LDFLAGS: "${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}"
+
+    env:
+      CPPFLAGS: "-I${HOME}/local/include"
+      LDFLAGS: "-L${HOME}/local/lib"
+      HDF5_BASE_CPPFLAGS: "-I/usr/include/hdf5"
+      HDF5_SERIAL_CPPFLAGS: "${HDF5_BASE_CPPFLAGS}/serial"
+      HDF5_PARALLEL_CPPFLAGS: "${HDF5_BASE_CPPFLAGS}/openmpi"
+      HDF5_BASE_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu/hdf5"
+      HDF5_SERIAL_LDFLAGS: "${HDF5_BASE_LDFLAGS}/serial"
+      HDF5_PARALLEL_LDFLAGS: "${HDF5_BASE_LDFLAGS}/openmpi"
+      GEN_CTL_IO: "${HOME}/local/bin/gen-ctl-io"
 
     steps:
-    - name: Install Common Dependencies
+    - name: Install common dependencies
       run: |
         sudo apt-get -y update
-        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev libharminv-dev libpng-dev libtool swig
-        mkdir -p ~/install
-        cd ~/install
-        git clone https://github.com/NanoComp/libctl.git
-        cd libctl/
-        sh autogen.sh --enable-shared
-        make && sudo make install
-        cd ~/install
-        git clone https://github.com/HomerReid/libGDSII.git
-        cd libGDSII/
-        sh autogen.sh
-        make && sudo make install
-    - name: Install Serial
-      if: ${{ matrix.enable-mpi == false }}
-      run: |
-        export RPATH_FLAGS="-Wl,-rpath,/usr/local/lib"
-        export MY_LDFLAGS="-L/usr/local/lib ${RPATH_FLAGS}"
-        export MY_CPPFLAGS="-I/usr/local/include"
-        export MY_CC="cc"
-        sudo apt-get -y install libhdf5-dev hdf5-tools
-    - name: Install MPI
-      if: matrix.enable-mpi
-      run: |
-        export RPATH_FLAGS="-Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-        export MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-        export MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
-        export MY_CC="mpicc"
-        sudo apt-get -y install libhdf5-openmpi-dev libopenmpi-dev hdf5-tools
-    - name: Install Other Dependencies
-      run: |
-        cd ~/install
-        git clone https://github.com/NanoComp/h5utils.git
-        cd h5utils/
-        sh autogen.sh CC=${MY_CC} LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
-        make && sudo make install
-    - name: Install MPB
-      if: matrix.enable-mpb
-      run: |
-        cd ~/install
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
+        git clone https://github.com/NanoComp/libctl.git libctl-src
+        (cd libctl-src && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
+        git clone https://github.com/NanoComp/harminv.git
+        (cd harminv && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared && make -j 2 && make install)
         git clone https://github.com/NanoComp/mpb.git
-        cd mpb/
-        sh autogen.sh --enable-shared CC=${MY_CC} LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
-        make && sudo make install
+        (cd mpb && git checkout master && sh autogen.sh --prefix=$HOME/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
+        git clone https://github.com/HomerReid/libGDSII.git
+        (cd libGDSII && git checkout master && sh autogen.sh --prefix=$HOME/local && make install)
+
+    - name: Install serial dependencies
+      if: ${{ matrix.enable-mpi == false }}
+      run: sudo apt-get -y install libhdf5-serial-dev
+
+    - name: Install MPI dependencies
+      if: matrix.enable-mpi
+      run: sudo apt-get -y install libopenmpi-dev mpi-default-bin openmpi-bin libhdf5-openmpi-dev
+
     - name: Check out repository
       uses: actions/checkout@v2
+
     - name: Set up Python (version ${{ matrix.python-version }})
-      if: ${{ matrix.python-version != 'none' }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+
     - name: Install Python dependencies
-      if: ${{ matrix.python-version != 'none' }}
       run: pip install autograd h5py jax jaxlib matplotlib mpi4py numpy parameterized pytest scipy
+
     - name: configure
       run: |
-        sh autogen.sh --without-scheme --enable-shared CC=${MY_CC} LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" ${{ matrix.configure-options }}
+        autoreconf --verbose --install --symlink --force
+        mkdir -p build && pushd build
+        ../configure --enable-maintainer-mode --prefix=$HOME/local --with-libctl=$HOME/local/share/libctl ${MPICONF}
+
     - name: make
-      run: make
+      run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+
+    - name: Run C++ tests
+      run: pushd tests && make ${MKCHECKFLAGS} check && popd
+
     - name: Run Python tests
-      if: ${{ matrix.python-version != 'none' }}
       env:
         MEEP_SKIP_LARGE_TESTS: 1
       run: |
         export PYTHONPATH="${PWD}/python:${PYTHONPATH}"
         pytest python/tests
-    - name: Run C++ tests
-      if: ${{ matrix.python-version == 'none' }}
-      run: make check
