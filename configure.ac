@@ -519,7 +519,6 @@ AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
 
 ##############################################################################
 # check for restrict keyword in C++
-AC_PREREQ([2.71]) dnl for ac_c_restrict
 AC_C_RESTRICT
 
 # check for C99 _Pragma support, so that we can emit pragmas in macros
