@@ -7,10 +7,23 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+env:
+  CPPFLAGS: "-I/home/runner/local/include"
+  LDFLAGS: "-L/home/runner/local/lib"
+  HDF5_BASE_CPPFLAGS: "-I/usr/include/hdf5"
+  HDF5_BASE_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu/hdf5"
+  GEN_CTL_IO: "/home/runner/local/bin/gen-ctl-io"
+
 jobs:
   build:
     name: "Test ${{ matrix.name-prefix }}"
     runs-on: ubuntu-latest
+
+    env:
+      HDF5_SERIAL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/serial"
+      HDF5_PARALLEL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/openmpi"
+      HDF5_SERIAL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/serial"
+      HDF5_PARALLEL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/openmpi"
 
     strategy:
       fail-fast: false
@@ -54,17 +67,6 @@ jobs:
             CXX: mpic++
             CPPFLAGS: "${{ env.HDF5_PARALLEL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
             LDFLAGS: "${{ env.HDF5_PARALLEL_LDFLAGS }} ${{ env.LDFLAGS }}"
-
-    env:
-      CPPFLAGS: "-I${{ env.HOME }}/local/include"
-      LDFLAGS: "-L${{ env.HOME }}/local/lib"
-      HDF5_BASE_CPPFLAGS: "-I/usr/include/hdf5"
-      HDF5_SERIAL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/serial"
-      HDF5_PARALLEL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/openmpi"
-      HDF5_BASE_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu/hdf5"
-      HDF5_SERIAL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/serial"
-      HDF5_PARALLEL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/openmpi"
-      GEN_CTL_IO: "${{ env.HOME }}/local/bin/gen-ctl-io"
 
     steps:
     - name: Install common dependencies
