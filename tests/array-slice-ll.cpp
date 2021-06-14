@@ -140,10 +140,10 @@ int main(int argc, char *argv[]) {
   vector3 xhat = v3(1.0, 0.0, 0.0);
   vector3 yhat = v3(0.0, 1.0, 0.0);
   vector3 zhat = v3(0.0, 0.0, 1.0);
-  vector3 size = v3(ENORMOUS, w, ENORMOUS);
+  vector3 size = v3(meep_geom::ENORMOUS, w, meep_geom::ENORMOUS);
   double x0 = 0.5 * d;
   double deltax = 1.0;
-  double height = ENORMOUS;
+  double height = meep_geom::ENORMOUS;
   objects[0] = make_block(dielectric, origin, xhat, yhat, zhat, size);
   int no = 1;
   for (int n = 0; n < N; n++) {
