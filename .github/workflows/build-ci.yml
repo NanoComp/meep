@@ -22,16 +22,16 @@ jobs:
             python-version: "3.6"
             MPICONF: "--without-mpi"
             MKCHECKFLAGS: "-j 2"
-            CPPFLAGS: "${{env.HDF5_SERIAL_CPPFLAGS}} ${{env.CPPFLAGS}}"
-            LDFLAGS: "${{env.HDF5_SERIAL_LDFLAGS}} ${{env.LDFLAGS}}"
+            CPPFLAGS: "${{ env.HDF5_SERIAL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
+            LDFLAGS: "${{ env.HDF5_SERIAL_LDFLAGS }} ${{ env.LDFLAGS }}"
           - name-prefix: "Python 3.9 without MPI"
             enable-mpi: false
             configure-options: "--without-mpi"
             python-version: "3.9"
             MPICONF: "--without-mpi"
             MKCHECKFLAGS: "-j 2"
-            CPPFLAGS: "${{env.HDF5_SERIAL_CPPFLAGS}} ${{env.CPPFLAGS}}"
-            LDFLAGS: "${{env.HDF5_SERIAL_LDFLAGS}} ${{env.LDFLAGS}}"
+            CPPFLAGS: "${{ env.HDF5_SERIAL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
+            LDFLAGS: "${{ env.HDF5_SERIAL_LDFLAGS }} ${{ env.LDFLAGS }}"
           - name-prefix: "Python 3.6 with MPI"
             enable-mpi: true
             configure-options: "--with-mpi"
@@ -41,8 +41,8 @@ jobs:
             HDF5_MPI: "ON"
             CC: mpicc
             CXX: mpic++
-            CPPFLAGS: "${{env.HDF5_PARALLEL_CPPFLAGS}} ${{env.CPPFLAGS}}"
-            LDFLAGS: "${{env.HDF5_PARALLEL_LDFLAGS}} ${{env.LDFLAGS}}"
+            CPPFLAGS: "${{ env.HDF5_PARALLEL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
+            LDFLAGS: "${{ env.HDF5_PARALLEL_LDFLAGS }} ${{ env.LDFLAGS }}"
           - name-prefix: "Python 3.9 with MPI"
             enable-mpi: true
             configure-options: "--with-mpi"
@@ -52,19 +52,19 @@ jobs:
             HDF5_MPI: "ON"
             CC: mpicc
             CXX: mpic++
-            CPPFLAGS: "${{env.HDF5_PARALLEL_CPPFLAGS}} ${{env.CPPFLAGS}}"
-            LDFLAGS: "${{env.HDF5_PARALLEL_LDFLAGS}} ${{env.LDFLAGS}}"
+            CPPFLAGS: "${{ env.HDF5_PARALLEL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
+            LDFLAGS: "${{ env.HDF5_PARALLEL_LDFLAGS }} ${{ env.LDFLAGS }}"
 
     env:
-      CPPFLAGS: "-I${{env.HOME}}/local/include"
-      LDFLAGS: "-L${{env.HOME}}/local/lib"
+      CPPFLAGS: "-I${{ env.HOME }}/local/include"
+      LDFLAGS: "-L${{ env.HOME }}/local/lib"
       HDF5_BASE_CPPFLAGS: "-I/usr/include/hdf5"
-      HDF5_SERIAL_CPPFLAGS: "${{env.HDF5_BASE_CPPFLAGS}}/serial"
-      HDF5_PARALLEL_CPPFLAGS: "${{env.HDF5_BASE_CPPFLAGS}}/openmpi"
+      HDF5_SERIAL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/serial"
+      HDF5_PARALLEL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/openmpi"
       HDF5_BASE_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu/hdf5"
-      HDF5_SERIAL_LDFLAGS: "${{env.HDF5_BASE_LDFLAGS}}/serial"
-      HDF5_PARALLEL_LDFLAGS: "${{env.HDF5_BASE_LDFLAGS}}/openmpi"
-      GEN_CTL_IO: "${{env.HOME}}/local/bin/gen-ctl-io"
+      HDF5_SERIAL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/serial"
+      HDF5_PARALLEL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/openmpi"
+      GEN_CTL_IO: "${{ env.HOME }}/local/bin/gen-ctl-io"
 
     steps:
     - name: Install common dependencies
