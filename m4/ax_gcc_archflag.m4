@@ -34,7 +34,7 @@ AC_DEFUN([AX_GCC_ARCHFLAG],
 [AC_REQUIRE([AC_PROG_CC])
 AC_REQUIRE([AC_CANONICAL_HOST])
 
-AC_ARG_WITH(gcc-arch, [AC_HELP_STRING([--with-gcc-arch=<arch>], [use architecture <arch> for gcc -march/-mtune, instead of guessing])], 
+AC_ARG_WITH(gcc-arch, [AS_HELP_STRING([--with-gcc-arch=<arch>], [use architecture <arch> for gcc -march/-mtune, instead of guessing])],
 	ax_gcc_arch=$withval, ax_gcc_arch=yes)
 
 AC_MSG_CHECKING([for gcc architecture flag])
@@ -81,7 +81,7 @@ case $host_cpu in
 	    *6[[12]]?:*:*:*) ax_gcc_arch="athlon k7" ;;
 	    *6[[34]]?:*:*:*) ax_gcc_arch="athlon-tbird k7" ;;
 	    *67?:*:*:*) ax_gcc_arch="athlon-4 athlon k7" ;;
-	    *6[[68a]]?:*:*:*) 
+	    *6[[68a]]?:*:*:*)
 	       AX_GCC_X86_CPUID(0x80000006) # L2 cache size
 	       case $ax_cv_gcc_x86_cpuid_0x80000006 in
                  *:*:*[[1-9a-f]]??????:*) # (L2 = ecx >> 16) >= 256
@@ -107,7 +107,7 @@ case $host_cpu in
 	  i686*) ax_gcc_arch="native pentiumpro" ;;
           x86_64*|amd64*) ax_gcc_arch="native" ;;
         esac
-     fi 
+     fi
      ;;
 
   sparc*)
