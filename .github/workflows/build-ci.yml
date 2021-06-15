@@ -65,7 +65,6 @@ jobs:
     - name: Define environment variables for serial build
       if: ${{ matrix.enable-mpi == false }}
       run: |
-        echo "MPICONF=\"--without-mpi\"" >> $GITHUB_ENV
         echo "MKCHECKFLAGS=\"-j 2\"" >> $GITHUB_ENV
         echo "CPPFLAGS=\"${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}\"" >> $GITHUB_ENV
         echo "LDFLAGS=\"${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}\"" >> $GITHUB_ENV
@@ -73,7 +72,6 @@ jobs:
     - name: Define environment variables for MPI build
       if: matrix.enable-mpi
       run: |
-        echo "MPICONF=\"--with-mpi\"" >> $GITHUB_ENV
         echo "MKCHECKFLAGS=" >> $GITHUB_ENV
         echo "CPPFLAGS=\"${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}\"" >> $GITHUB_ENV
         echo "LDFLAGS=\"${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}\"" >> $GITHUB_ENV
@@ -104,14 +102,16 @@ jobs:
       if: matrix.enable-mpi
       run: pip install mpi4py
 
+    - name: autoreconf
+      run: autoreconf --verbose --install --symlink --force
+
     - name: configure
       run: |
-        autoreconf --verbose --install --symlink --force
         mkdir -p build && pushd build
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}
 
     - name: make
-      run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" ${matrix.configure-options}
+      run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl
 
     - name: Run C++ tests
       run: pushd tests && make ${MKCHECKFLAGS} check && popd
