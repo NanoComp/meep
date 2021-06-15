@@ -34,19 +34,6 @@ jobs:
             python-version: "3.9"
 
     steps:
-    - name: Install common dependencies
-      run: |
-        sudo apt-get -y update
-        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
-        git clone https://github.com/NanoComp/libctl.git libctl-src
-        (cd libctl-src && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j 2 && make install)
-        git clone https://github.com/NanoComp/harminv.git
-        (cd harminv && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j 2 && make install)
-        git clone https://github.com/NanoComp/mpb.git
-        (cd mpb && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
-        git clone https://github.com/HomerReid/libGDSII.git
-        (cd libGDSII && git checkout master && sh autogen.sh --prefix=${HOME}/local && make install)
-
     - name: Define common environment variables
       run: |
         echo "CPPFLAGS=-I${HOME}/local/include" >> $GITHUB_ENV
@@ -61,6 +48,19 @@ jobs:
         echo "HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi" >> $GITHUB_ENV
         echo "HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial" >> $GITHUB_ENV
         echo "HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi" >> $GITHUB_ENV
+
+    - name: Install common dependencies
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
+        git clone https://github.com/NanoComp/libctl.git libctl-src
+        (cd libctl-src && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j 2 && make install)
+        git clone https://github.com/NanoComp/harminv.git
+        (cd harminv && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j 2 && make install)
+        git clone https://github.com/NanoComp/mpb.git
+        (cd mpb && git checkout master && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j 2 && make install)
+        git clone https://github.com/HomerReid/libGDSII.git
+        (cd libGDSII && git checkout master && sh autogen.sh --prefix=${HOME}/local && make install)
 
     - name: Define environment variables for serial build
       if: ${{ matrix.enable-mpi == false }}
