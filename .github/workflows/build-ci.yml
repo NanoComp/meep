@@ -52,18 +52,18 @@ jobs:
     - name: Define environment variables for serial build
       if: ${{ matrix.enable-mpi == false }}
       run: |
-        echo "MPICONF=--without-mpi" >> $GITHUB_ENV
-        echo "MKCHECKFLAGS=-j 2" >> $GITHUB_ENV
-        echo "CPPFLAGS=${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
-        echo "LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "MPICONF=\"--without-mpi\"" >> $GITHUB_ENV
+        echo "MKCHECKFLAGS=\"-j 2\"" >> $GITHUB_ENV
+        echo "CPPFLAGS=\"${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}\"" >> $GITHUB_ENV
+        echo "LDFLAGS=\"${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}\"" >> $GITHUB_ENV
 
     - name: Define environment variables for MPI build
       if: matrix.enable-mpi
       run: |
-        echo "MPICONF=--with-mpi" >> $GITHUB_ENV
+        echo "MPICONF=\"--with-mpi\"" >> $GITHUB_ENV
         echo "MKCHECKFLAGS=" >> $GITHUB_ENV
-        echo "CPPFLAGS=${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
-        echo "LDFLAGS=${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "CPPFLAGS=\"${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}\"" >> $GITHUB_ENV
+        echo "LDFLAGS=\"${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}\"" >> $GITHUB_ENV
         echo "CC=mpicc" >> $GITHUB_ENV
         echo "CXX=mpic++" >> $GITHUB_ENV
         echo "HDF5_MPI=ON" >> $GITHUB_ENV
