@@ -65,16 +65,16 @@ jobs:
     - name: Define environment variables for serial build
       if: ${{ matrix.enable-mpi == false }}
       run: |
-        echo "MKCHECKFLAGS=\"-j 2\"" >> $GITHUB_ENV
-        echo "CPPFLAGS=\"${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}\"" >> $GITHUB_ENV
-        echo "LDFLAGS=\"${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}\"" >> $GITHUB_ENV
+        echo "MKCHECKFLAGS=-j 2" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
 
     - name: Define environment variables for MPI build
       if: matrix.enable-mpi
       run: |
         echo "MKCHECKFLAGS=" >> $GITHUB_ENV
-        echo "CPPFLAGS=\"${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}\"" >> $GITHUB_ENV
-        echo "LDFLAGS=\"${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}\"" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
         echo "CC=mpicc" >> $GITHUB_ENV
         echo "CXX=mpic++" >> $GITHUB_ENV
         echo "HDF5_MPI=ON" >> $GITHUB_ENV
@@ -103,20 +103,38 @@ jobs:
       run: pip install mpi4py
 
     - name: autoreconf
-      run: autoreconf --verbose --install --symlink --force
+      run: |
+        autoreconf --verbose --install --symlink --force
+        MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
+        echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
     - name: configure
-      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}
+      run: |
+        mkdir -p build && pushd build
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}
 
-    - name: make
-      run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl
-
-    - name: Run C++ tests
-      run: pushd tests && make ${MKCHECKFLAGS} check && popd
+    - name: make distcheck
+      run: |
+        pushd build && make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}" && MAKE_DISTCHECK_EXIT_CODE=0
+        echo "MAKE_DISTCHECK_EXIT_CODE=${MAKE_DISTCHECK_EXIT_CODE}" >> $GITHUB_ENV
 
     - name: Run Python tests
       env:
         MEEP_SKIP_LARGE_TESTS: 1
       run: |
         export PYTHONPATH="${PWD}/python:${PYTHONPATH}"
-        pytest python/tests
+        if [[ "${MAKE_DISTCHECK_EXIT_CODE}" = "0" ]]; then
+           pushd build &&
+           make ${MKCHECKFLAGS} &&
+           pushd python &&
+           pytest tests &&
+           popd;
+        fi
+
+    - name: Output logs
+      run: |
+        - BUILD_PREFIX=${GITHUB_WORKSPACE}/build/meep-${MEEP_VERSION}/_build/sub
+        - MEEP_LOG=${BUILD_PREFIX}/tests/test-suite.log
+        - if [[ -e ${MEEP_LOG} ]]; then cat ${MEEP_LOG}; fi
+        - PYTHON_LOG=${BUILD_PREFIX}/python/test-suite.log
+        - if [[ -e ${PYTHON_LOG} ]]; then cat ${PYTHON_LOG}; fi
