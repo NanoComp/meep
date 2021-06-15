@@ -7,23 +7,10 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
-env:
-  CPPFLAGS: "-I/home/runner/local/include"
-  LDFLAGS: "-L/home/runner/local/lib"
-  HDF5_BASE_CPPFLAGS: "-I/usr/include/hdf5"
-  HDF5_BASE_LDFLAGS: "-L/usr/lib/x86_64-linux-gnu/hdf5"
-  GEN_CTL_IO: "/home/runner/local/bin/gen-ctl-io"
-
 jobs:
   build:
     name: "Test ${{ matrix.name-prefix }}"
     runs-on: ubuntu-latest
-
-    env:
-      HDF5_SERIAL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/serial"
-      HDF5_PARALLEL_CPPFLAGS: "${{ env.HDF5_BASE_CPPFLAGS }}/openmpi"
-      HDF5_SERIAL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/serial"
-      HDF5_PARALLEL_LDFLAGS: "${{ env.HDF5_BASE_LDFLAGS }}/openmpi"
 
     strategy:
       fail-fast: false
@@ -33,42 +20,54 @@ jobs:
             enable-mpi: false
             configure-options: "--without-mpi"
             python-version: "3.6"
-            MPICONF: "--without-mpi"
-            MKCHECKFLAGS: "-j 2"
-            CPPFLAGS: "${{ env.HDF5_SERIAL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
-            LDFLAGS: "${{ env.HDF5_SERIAL_LDFLAGS }} ${{ env.LDFLAGS }}"
           - name-prefix: "Python 3.9 without MPI"
             enable-mpi: false
             configure-options: "--without-mpi"
             python-version: "3.9"
-            MPICONF: "--without-mpi"
-            MKCHECKFLAGS: "-j 2"
-            CPPFLAGS: "${{ env.HDF5_SERIAL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
-            LDFLAGS: "${{ env.HDF5_SERIAL_LDFLAGS }} ${{ env.LDFLAGS }}"
           - name-prefix: "Python 3.6 with MPI"
             enable-mpi: true
             configure-options: "--with-mpi"
             python-version: "3.6"
-            MPICONF: "--with-mpi"
-            MKCHECKFLAGS: ""
-            HDF5_MPI: "ON"
-            CC: mpicc
-            CXX: mpic++
-            CPPFLAGS: "${{ env.HDF5_PARALLEL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
-            LDFLAGS: "${{ env.HDF5_PARALLEL_LDFLAGS }} ${{ env.LDFLAGS }}"
           - name-prefix: "Python 3.9 with MPI"
             enable-mpi: true
             configure-options: "--with-mpi"
             python-version: "3.9"
-            MPICONF: "--with-mpi"
-            MKCHECKFLAGS: ""
-            HDF5_MPI: "ON"
-            CC: mpicc
-            CXX: mpic++
-            CPPFLAGS: "${{ env.HDF5_PARALLEL_CPPFLAGS }} ${{ env.CPPFLAGS }}"
-            LDFLAGS: "${{ env.HDF5_PARALLEL_LDFLAGS }} ${{ env.LDFLAGS }}"
 
     steps:
+    - name: Define common environment variables
+      run: |
+        echo "CPPFLAGS=-I${HOME}/local/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L${HOME}/local/lib" >> $GITHUB_ENV
+        echo "HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5" >> $GITHUB_ENV
+        echo "HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5" >> $GITHUB_ENV
+        echo "GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io" >> $GITHUB_ENV
+
+    - name: Define more common environment variables
+      run: |
+        echo "HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial" >> $GITHUB_ENV
+        echo "HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi" >> $GITHUB_ENV
+        echo "HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial" >> $GITHUB_ENV
+        echo "HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi" >> $GITHUB_ENV
+
+    - name: Define environment variables for serial build
+      if: ${{ matrix.enable-mpi == false }}
+      run: |
+        echo "MPICONF=--without-mpi" >> $GITHUB_ENV
+        echo "MKCHECKFLAGS=-j 2" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS="${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+
+    - name: Define environment variables for MPI build
+      if: matrix.enable-mpi
+      run: |
+        echo "MPICONF=--with-mpi" >> $GITHUB_ENV
+        echo "MKCHECKFLAGS=" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "CXX=mpic++" >> $GITHUB_ENV
+        echo "HDF5_MPI=ON" >> $GITHUB_ENV
+
     - name: Install common dependencies
       run: |
         sudo apt-get -y update
@@ -108,7 +107,7 @@ jobs:
         ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: make
-      run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+      run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" ${matrix.configure-options}
 
     - name: Run C++ tests
       run: pushd tests && make ${MKCHECKFLAGS} check && popd
