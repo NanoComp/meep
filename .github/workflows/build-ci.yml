@@ -106,9 +106,7 @@ jobs:
       run: autoreconf --verbose --install --symlink --force
 
     - name: configure
-      run: |
-        mkdir -p build && pushd build
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}
+      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}
 
     - name: make
       run: make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl
