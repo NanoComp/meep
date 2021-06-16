@@ -67,7 +67,7 @@ jobs:
     - name: Checkout libGDSII repository
       uses: actions/checkout@v2
       with:
-        repository: NanoComp/libGDSII
+        repository: HomerReid/libGDSII
         path: libGDSII-src
 
     - name: Build and install libGDSII
