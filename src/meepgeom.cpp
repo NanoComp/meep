@@ -366,7 +366,7 @@ meep::vec material_grid_grad(vector3 p, material_data *md) {
     signflip_dz = true;
   }
 
-  /* define a macro to give us data(x,y,z) on the grid, 
+  /* define a macro to give us data(x,y,z) on the grid,
      in row-major order: */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 
@@ -2664,7 +2664,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
     c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
     s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
 
-    for (int i1 = 0; i1 < nf; ++i1) {       // freq
+    for (size_t i1 = 0; i1 < nf; ++i1) {       // freq
       for (int i2 = 0; i2 < n2; ++i2) {     // x
         for (int i3 = 0; i3 < n3; ++i3) {   // y
           for (int i4 = 0; i4 < n4; ++i4) { // z
