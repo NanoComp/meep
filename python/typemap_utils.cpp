@@ -1028,7 +1028,7 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
     geometric_object_destroy(objs->items[i]);
   }
 
-  free(objs->items);
+  delete[] objs->items;
 
   return py_res;
 }
