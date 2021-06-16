@@ -126,6 +126,7 @@ class TestModeDecomposition(unittest.TestCase):
                                                kpoint_func=lambda f,n: kpoint).alpha[0,0,0]
 
         print("oblique-waveguide-flux:, {:.6f}, {:.6f}".format(-flux, abs(coeff)**2))
+        ## the magnitude of |flux| is 100.008731 and so we check three significant digits of accuracy
         self.assertAlmostEqual(-flux, abs(coeff)**2, places=1)
 
 if __name__ == '__main__':
