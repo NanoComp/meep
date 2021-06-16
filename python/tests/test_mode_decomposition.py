@@ -109,7 +109,7 @@ class TestModeDecomposition(unittest.TestCase):
                              material=mp.Medium(index=3.5))]
 
         sim = mp.Simulation(cell_size=cell_size,
-                            resolution=40,
+                            resolution=20,
                             boundary_layers=pml_layers,
                             sources=sources,
                             geometry=geometry)
@@ -126,8 +126,8 @@ class TestModeDecomposition(unittest.TestCase):
                                                kpoint_func=lambda f,n: kpoint).alpha[0,0,0]
 
         print("oblique-waveguide-flux:, {:.6f}, {:.6f}".format(-flux, abs(coeff)**2))
-        ## the magnitude of |flux| is 100.008731 and so we check three significant digits of accuracy
-        self.assertAlmostEqual(-flux, abs(coeff)**2, places=1)
+        ## the magnitude of |flux| is 100.008731 and so we check two significant digits of accuracy
+        self.assertAlmostEqual(-1,abs(coeff)**2/flux,places=2)
 
 if __name__ == '__main__':
     unittest.main()
