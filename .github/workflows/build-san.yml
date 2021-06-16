@@ -2,7 +2,7 @@ name: Sanitizers
 
 on:
   schedule:
-    - cron:  "24 10,22 * * *"
+    - cron:  "24 10 * * *"
   workflow_dispatch:
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
         ./configure \
           --with-hdf5 --without-mpi --without-python --without-scheme \
           --enable-shared --enable-maintainer-mode \
-          CPPFLAGS="-fsanitize=${{ matrix.sanitizer }} ${{ matrix.debug-options }}" \
+          CXXFLAGS="-fsanitize=${{ matrix.sanitizer }} ${{ matrix.debug-options }}" \
           LDFLAGS="-fsanitize=${{ matrix.sanitizer }}" \
           ${{ matrix.configure-options }}
     - name: make
