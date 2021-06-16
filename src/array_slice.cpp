@@ -753,7 +753,7 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2]; // extremal points in subgrid
-  int rank = get_array_slice_dimensions(where, dims, dirs, true, false, min_max_loc);
+  get_array_slice_dimensions(where, dims, dirs, true, false, min_max_loc);
 
   double *weights = get_array_slice(where, NO_COMPONENT);
 

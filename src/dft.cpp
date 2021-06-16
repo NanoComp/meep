@@ -744,7 +744,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
                                                  int ic_conjugate, bool retain_interp_weights,
                                                  fields *parent) {
 
-  if ((num_freq < 0) || (num_freq > omega.size()-1))
+  if ((num_freq < 0) || (num_freq > static_cast<int>(omega.size())-1))
     abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
 
   /*****************************************************************/

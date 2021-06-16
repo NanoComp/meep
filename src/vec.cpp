@@ -172,9 +172,6 @@ volume::volume(const vec &pt) {
   max_corner = pt;
 }
 
-volume::volume(const volume &vol)
-    : dim(vol.dim), min_corner(vol.min_corner), max_corner(vol.max_corner) {}
-
 double volume::computational_volume() const {
   double vol = 1.0;
   LOOP_OVER_DIRECTIONS(dim, d) { vol *= in_direction(d); }
@@ -863,7 +860,7 @@ ivec grid_volume::iloc(component c, ptrdiff_t ind) const {
 size_t grid_volume::surface_area() const {
   switch(dim) {
     case Dcyl: return 2*(nr()+nz());
-    case D1: 2;
+    case D1: return 2;
     case D2: return 2*(nx()+ny());
     case D3: return 2*(nx()*ny()+nx()*nz()+ny()*nz());
   }

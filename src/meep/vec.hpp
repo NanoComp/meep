@@ -78,16 +78,11 @@ enum field_type {
 enum boundary_side { High = 0, Low };
 enum direction { X = 0, Y, Z, R, P, NO_DIRECTION };
 struct signed_direction {
-  signed_direction(direction dd = X, bool f = false, std::complex<double> ph = 1.0) {
+  explicit signed_direction(direction dd = X, bool f = false, std::complex<double> ph = 1.0) {
     d = dd;
     flipped = f;
     phase = ph;
   };
-  signed_direction(const signed_direction &sd) {
-    d = sd.d;
-    flipped = sd.flipped;
-    phase = sd.phase;
-  }
   signed_direction operator*(std::complex<double> ph);
   bool operator==(const signed_direction &sd) const {
     return (d == sd.d && flipped == sd.flipped && phase == sd.phase);
@@ -305,7 +300,11 @@ inline bool coordinate_mismatch(ndim dim, direction d) {
 
 bool is_tm(component c);
 
+#ifdef SWIG
 extern void abort(const char *, ...); // mympi.cpp
+#else
+[[noreturn]] extern void abort(const char *, ...); // mympi.cpp
+#endif
 
 inline bool is_electric(component c) { return c < Hx; }
 inline bool is_magnetic(component c) { return c >= Hx && c < Dx; }
@@ -826,7 +825,6 @@ public:
   };
   volume(const vec &vec1, const vec &vec2);
   volume(const vec &pt);
-  volume(const volume &vol);
   void set_direction_min(direction d, double val) { min_corner.set_direction(d, val); };
   void set_direction_max(direction d, double val) { max_corner.set_direction(d, val); };
   double in_direction_min(direction d) const { return min_corner.in_direction(d); };

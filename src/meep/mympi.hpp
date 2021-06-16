@@ -46,7 +46,11 @@ private:
 #define PRINTF_ATTR(f, a)
 #endif
 
+#ifdef SWIG
 void abort(const char *fmt, ...) PRINTF_ATTR(1, 2);
+#else
+[[noreturn]] void abort(const char *fmt, ...) PRINTF_ATTR(1, 2);
+#endif
 void all_wait();
 int count_processors();
 int my_rank();

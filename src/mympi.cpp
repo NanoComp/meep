@@ -15,9 +15,9 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <cstdlib>
 #include <stdarg.h>
 #include <string.h>
-#include <stdlib.h>
 
 #include "meep.hpp"
 #include "config.h"
@@ -113,7 +113,7 @@ double wall_time(void) {
 #endif
 }
 
-void abort(const char *fmt, ...) {
+[[noreturn]] void abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   char *s;
@@ -127,6 +127,7 @@ void abort(const char *fmt, ...) {
   fprintf(stderr, "meep: %s", error_msg.c_str());
   if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
   MPI_Abort(MPI_COMM_WORLD, 1);
+  std::abort();  // Unreachable but MPI_Abort does not have the noreturn attribute.
 #else
   throw runtime_error("meep: " + error_msg);
 #endif

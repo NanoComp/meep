@@ -513,12 +513,13 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num, local_N, N_start, alloc_N);
   /* initialize H to pseudorandom values on the master process; on other
      processes we get the value via broadcast() below */
-  if (am_master())
+  if (am_master()) {
     set_random_seed(314159);
     for (int i = 0; i < H.n * H.p; ++i) {
       ASSIGN_SCALAR(H.data[i], uniform_random(-1,1), uniform_random(-1,1));
     }
     restore_random_seed();
+  }
 
   mpb_real *eigvals = new mpb_real[band_num];
   int num_iters;
