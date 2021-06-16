@@ -115,11 +115,3 @@ jobs:
 
     - name: Run make distcheck
       run: pushd build && make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${{ matrix.configure-options }}"
-
-    - name: Output logs
-      run: |
-        BUILD_PREFIX="${{ github.workspace }}/build/meep-${MEEP_VERSION}/_build/sub"
-        CPP_LOG="${BUILD_PREFIX}/tests/test-suite.log"
-        [ -f ${CPP_LOG} ] && cat ${CPP_LOG};
-        PYTHON_LOG="${BUILD_PREFIX}/python/test-suite.log"
-        [ -f ${PYTHON_LOG} ] && cat ${PYTHON_LOG};
