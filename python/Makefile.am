@@ -167,7 +167,7 @@ meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
-mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp $(top_srcdir)/src/meepgeom.hpp $(top_srcdir)/src/material_data.hpp
+mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp $(top_srcdir)/src/meepgeom.hpp $(top_srcdir)/src/material_data.hpp $(top_srcdir)/src/material_data.cpp
 	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/mpb.i
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
