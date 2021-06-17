@@ -88,19 +88,10 @@ struct medium_struct {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 
-  medium_struct(double epsilon = 1) :
-      epsilon_diag{epsilon, epsilon, epsilon},
-      epsilon_offdiag{},
-      mu_diag{1, 1, 1},
-      mu_offdiag{},
-      E_susceptibilities(), H_susceptibilities(),
-      E_chi2_diag{},
-      E_chi3_diag{},
-      H_chi2_diag{},
-      H_chi3_diag{},
-      D_conductivity_diag{},
-      B_conductivity_diag{}
-    {}
+  explicit medium_struct(double epsilon = 1);
+
+  // Aborts Meep if a non-zero imaginary part of an offdiagonal mu or epsilon entry is found.
+  void check_offdiag_im_zero_or_abort() const;
 };
 
 // prototype for user-defined material function,

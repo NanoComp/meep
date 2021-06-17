@@ -230,7 +230,7 @@ mode_solver::mode_solver(int num_bands, double resolution[3], lattice lat, doubl
 
 #ifndef WITH_HERMITIAN_EPSILON
   meep_geom::medium_struct *m;
-  if (meep_geom::is_medium(_default_material, &m)) { meep_geom::check_offdiag(m); }
+  if (meep_geom::is_medium(_default_material, &m)) { m->check_offdiag_im_zero_or_abort(); }
 #else
   (void)_default_material;
 #endif
@@ -534,7 +534,7 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
 #ifndef WITH_HERMITIAN_EPSILON
   if (md->which_subclass == meep_geom::material_data::MATERIAL_USER ||
       md->which_subclass == meep_geom::material_data::MATERIAL_FILE) {
-    meep_geom::check_offdiag(&md->medium);
+    md->medium.check_offdiag_im_zero_or_abort();
   }
 #endif
 
@@ -852,7 +852,7 @@ void mode_solver::init_epsilon(geometric_object_list *geometry) {
 
 #ifndef WITH_HERMITIAN_EPSILON
       meep_geom::medium_struct *mm;
-      if (meep_geom::is_medium(geometry->items[i].material, &mm)) { meep_geom::check_offdiag(mm); }
+      if (meep_geom::is_medium(geometry->items[i].material, &mm)) { mm->check_offdiag_im_zero_or_abort(); }
 #endif
 
       display_geometric_object_info(5, geometry->items[i]);
