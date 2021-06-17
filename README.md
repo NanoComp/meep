@@ -1,9 +1,9 @@
 ![](doc/docs/images/Meep-banner.png)
 
+[![CI](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml)
+[![Sanitizers](https://github.com/NanoComp/meep/actions/workflows/build-san.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-san.yml)
 [![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
-[![Build Status](https://travis-ci.org/NanoComp/meep.svg?branch=master)](https://travis-ci.org/NanoComp/meep)
-[![Coverage Status](https://coveralls.io/repos/github/stevengj/meep/badge.svg?branch=master)](https://coveralls.io/github/stevengj/meep?branch=master)
-![Python versions 2.7–3.6](https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5%2C%203.6-brightgreen.svg)
+![Python versions 3.6–3.9](https://img.shields.io/badge/python-3.6%2C%203.7%2C%203.8%2C%203.9-brightgreen.svg)
 
 **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method spanning a broad range of applications.
 
