@@ -801,10 +801,8 @@ void mode_solver::init_epsilon(geometric_object_list *geometry_in) {
   // Persist geometry data and move it out of the input argument.
   clear_geometry_list();
   if (geometry_in->num_items && geometry_in->items) {
-    geometry_list.items = new geometric_object[geometry_in->num_items];
-    std::copy_n(geometry_in->items, geometry_in->num_items, geometry_list.items);
+    geometry_list.items = geometry_in->items;
     geometry_list.num_items = geometry_in->num_items;
-    delete [] geometry_in->items;
     geometry_in->items = NULL;
     geometry_in->num_items = 0;
   }
