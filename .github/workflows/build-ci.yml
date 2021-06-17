@@ -123,8 +123,27 @@ jobs:
 
     - name: Run configure
       run: |
-        mkdir -p build && pushd build
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+        mkdir -p build &&
+        pushd build &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
+        popd
 
     - name: Run make distcheck
-      run: pushd build && make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}"
+      run: |
+        pushd build &&
+        make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
+        popd
+
+    - name: Archive C++ test logs
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
+        path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
+
+    - name: Archive Python test logs
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
+        path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log
