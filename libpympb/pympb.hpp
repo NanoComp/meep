@@ -1,6 +1,7 @@
 #ifndef PYMPB_H
 #define PYMPB_H
 
+#include <string>
 #include <vector>
 
 #include "ctlgeom.h"
@@ -32,15 +33,14 @@ typedef mpb_real (*field_integral_energy_func)(mpb_real, mpb_real, vector3, void
 typedef cnumber (*field_integral_func)(cvector3, mpb_real, vector3, void *);
 
 struct mode_solver {
-  static const int MAX_NWORK = 10;
-  static const char epsilon_CURFIELD_TYPE = 'n';
-  static const char mu_CURFIELD_TYPE = 'm';
-  static const int NUM_FFT_BANDS = 20;
+  static constexpr int MAX_NWORK = 10;
+  static constexpr char epsilon_CURFIELD_TYPE = 'n';
+  static constexpr char mu_CURFIELD_TYPE = 'm';
+  static constexpr int NUM_FFT_BANDS = 20;
 
   int num_bands;
   double resolution[3];
   double target_freq;
-  lattice lat;
   double tolerance;
   int mesh_size;
   bool negative_epsilon_ok;
@@ -65,6 +65,7 @@ struct mode_solver {
   int iterations;
   double eigensolver_flops;
 
+  geometric_object_list geometry_list;
   geom_box_tree geometry_tree;
 
   mpb_real vol;
@@ -100,7 +101,9 @@ struct mode_solver {
 
   ~mode_solver();
 
-  void init(int p, bool reset_fields, geometric_object_list geometry,
+  // Initializes the mode_solver. Geometric objects are moved out of `geometry`
+  // and deallocated upon destruction of the mode_solver.
+  void init(int p, bool reset_fields, geometric_object_list *geometry,
             meep_geom::material_data *_default_material);
   void solve_kpoint(vector3 kpoint);
   bool using_mu();
@@ -118,7 +121,7 @@ struct mode_solver {
                    mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3]);
 
   void randomize_fields();
-  void init_epsilon(geometric_object_list *geometry);
+  void init_epsilon(geometric_object_list *geometry_in);
   void reset_epsilon(geometric_object_list *geometry);
   bool has_mu(geometric_object_list *geometry);
   bool material_has_mu(void *mt);
@@ -199,6 +202,7 @@ private:
   bool eps;
 
   double compute_field_energy_internal(mpb_real comp_sum[6]);
+  void clear_geometry_list();
 };
 } // namespace py_mpb
 #endif

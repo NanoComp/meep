@@ -1033,6 +1033,15 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
   return py_res;
 }
 
+void gobj_list_freearg(geometric_object_list* objs) {
+    for(int i = 0; i < objs->num_items; ++i) {
+        material_free((material_data *)objs->items[i].material);
+        delete (material_data *)objs->items[i].material;
+        geometric_object_destroy(objs->items[i]);
+    }
+    delete[] objs->items;
+}
+
 static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
     meep::binary_partition *bp = NULL;
     if (pybp == Py_None) return bp;
