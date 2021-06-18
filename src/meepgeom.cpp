@@ -308,7 +308,33 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
-meep::vec material_grid_grad(vector3 p, material_data *md) {
+// computes the vector-Jacobian product of the gradient of the matgrid_val function v
+// with the Jacobian of the to_geom_box_coords function for geometric_object o
+vector3 to_geom_object_coords_VJP(vector3 v, const geometric_object *o) {
+  switch (o->which_subclass) {
+    default: {
+      vector3 po = {0, 0, 0};
+      return po;
+    }
+    case geometric_object::SPHERE: {
+      number radius = o->subclass.sphere_data->radius;
+      return vector3_scale(0.5 / radius, v);
+    }
+    /* case geometric_object::CYLINDER:
+       NOT YET IMPLEMENTED */
+    case geometric_object::BLOCK: {
+      vector3 size = o->subclass.block_data->size;
+      if (size.x != 0.0) v.x /= size.x;
+      if (size.y != 0.0) v.y /= size.y;
+      if (size.z != 0.0) v.z /= size.z;
+      return matrix3x3_transpose_vector3_mult(o->subclass.block_data->projection_matrix, v);
+    }
+    /* case geometric_object::PRISM:
+       NOT YET IMPLEMENTED */
+  }
+}
+
+meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_object *o) {
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
 
   meep::vec gradient(zero_vec(dim));
@@ -364,13 +390,26 @@ meep::vec material_grid_grad(vector3 p, material_data *md) {
 
 #undef D
 
-  // to obtain the gradient with respect to the rx,ry,rz
-  // coordinates rather than dx,dy,dz we use the chain
-  // rule which therefore ends up multiplying each
-  // component by nx,ny,nz respectively (see map_coordinates)
-  gradient.set_direction(meep::X, du_dx * nx);
-  gradient.set_direction(meep::Y, du_dy * ny);
-  gradient.set_direction(meep::Z, du_dz * nz);
+  // [du_dx,du_dy,du_dz] is the gradient ∇u with respect to the transformed coordinate
+  // r1 of the matgrid_val function but what we want is the gradient of u(g(r2)) with 
+  // respect to r2 where g(r2) is the to_geom_object_coords function. computing this
+  // quantity involves using the chain rule and the vector-Jacobian product ∇u J
+  // where J is the Jacobian matrix of g.
+  vector3 grad_u;
+  grad_u.x = du_dx * nx;
+  grad_u.y = du_dy * ny;
+  grad_u.z = du_dz * nz;
+  if (o != NULL) {
+    vector3 grad_u_J = to_geom_object_coords_VJP(grad_u, o);
+    gradient.set_direction(meep::X, grad_u_J.x);
+    gradient.set_direction(meep::Y, grad_u_J.y);
+    gradient.set_direction(meep::Z, grad_u_J.z);
+  }
+  else {
+    gradient.set_direction(meep::X, grad_u.x);
+    gradient.set_direction(meep::Y, grad_u.y);
+    gradient.set_direction(meep::Z, grad_u.z);
+  }
 
   return gradient;
 }
@@ -396,7 +435,8 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   if (tp) {
     do {
       gradient += material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
-                                     (material_data *)tp->objects[oi].o->material);
+                                     (material_data *)tp->objects[oi].o->material,
+                                     tp->objects[oi].o);
       if (md->material_grid_kinds == material_data::U_DEFAULT) break;
       ++matgrid_val_count;
       tp = geom_tree_search_next(p, tp, &oi);
@@ -405,7 +445,7 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   // perhaps there is no object tree and the default material is a material grid
   if (!tp && is_material_grid(default_material)) {
     map_lattice_coordinates(p.x,p.y,p.z);
-    gradient = material_grid_grad(p, (material_data *)default_material);
+    gradient = material_grid_grad(p, (material_data *)default_material, NULL /* geometric_object *o */);
     ++matgrid_val_count;
   }
 
