@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
   geometric_object objects[2];
   vector3 v3zero = {0.0, 0.0, 0.0};
   vector3 zaxis = {0.0, 0.0, 1.0};
-  objects[0] = make_cylinder(dielectric, v3zero, r + w, ENORMOUS, zaxis);
-  objects[1] = make_cylinder(meep_geom::vacuum, v3zero, r, ENORMOUS, zaxis);
+  objects[0] = make_cylinder(dielectric, v3zero, r + w, meep_geom::ENORMOUS, zaxis);
+  objects[1] = make_cylinder(meep_geom::vacuum, v3zero, r, meep_geom::ENORMOUS, zaxis);
   geometric_object_list g = {2, objects};
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);

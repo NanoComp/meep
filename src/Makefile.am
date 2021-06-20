@@ -1,10 +1,10 @@
 lib_LTLIBRARIES = libmeep.la
 include_HEADERS = meep.hpp
-pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp meepgeom.hpp material_data.hpp adjust_verbosity.hpp
+pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp meep/meep-config.h meepgeom.hpp material_data.hpp adjust_verbosity.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
-BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp
+BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp meep/meep-config.h
 
 HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
 bicgstab.hpp meepgeom.hpp material_data.hpp adjust_verbosity.hpp
@@ -13,7 +13,7 @@ libmeep_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
 bands.cpp boundaries.cpp bicgstab.cpp casimir.cpp 	\
 cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
 fields.cpp loop_in_chunks.cpp h5fields.cpp h5file.cpp 	\
-initialize.cpp integrate.cpp integrate2.cpp monitor.cpp mympi.cpp 	\
+initialize.cpp integrate.cpp integrate2.cpp material_data.cpp monitor.cpp mympi.cpp 	\
 multilevel-atom.cpp near2far.cpp output_directory.cpp random.cpp 	\
 sources.cpp step.cpp step_db.cpp stress.cpp structure.cpp structure_dump.cpp		\
 susceptibility.cpp time.cpp update_eh.cpp mpb.cpp update_pols.cpp 	\

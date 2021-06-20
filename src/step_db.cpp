@@ -92,12 +92,12 @@ bool fields_chunk::step_db(field_type ft) {
                the derivative and integral are replaced by differences
                and sums, but you get the idea). */
             if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
-            double ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(c_p).in_direction(R);
+            realnum ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(c_p).in_direction(R);
             for (int iz = 0; iz <= gv.nz(); ++iz)
               f_rderiv_int[iz] = 0;
             int sr = gv.nz() + 1;
             for (int ir = 1; ir <= gv.nr(); ++ir) {
-              double rinv = 1.0 / ((ir + ir0) - 0.5);
+              realnum rinv = 1.0 / ((ir + ir0) - 0.5);
               for (int iz = 0; iz <= gv.nz(); ++iz) {
                 ptrdiff_t idx = ir * sr + iz;
                 f_rderiv_int[idx] =
@@ -140,7 +140,7 @@ bool fields_chunk::step_db(field_type ft) {
       const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
       const direction dsigu0 = cycle_direction(gv.dim, d_c, 2);
       const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
-      const double betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1) *
+      const realnum betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1) *
                             (f[c_g][1 - cmp] ? (ft == D_stuff ? -1 : +1) * (2 * cmp - 1) : 1);
       STEP_BETA(the_f, cc, g, gv, betadt, dsig, s->siginv[dsig], f_u[cc][cmp], dsigu,
                 s->siginv[dsigu], s->condinv[cc][d_c], f_cond[cc][cmp]);
@@ -157,14 +157,14 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *fcnd = f_cond[cc][cmp];
         realnum *fu = f_u[cc][cmp];
         const direction dsig = cycle_direction(gv.dim, d_c, 1);
-        const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+        const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
         const int dk = gv.iyee_shift(cc).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
-        const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+        const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
-        const double the_m =
+        const realnum the_m =
             m * (1 - 2 * cmp) * (1 - 2 * (ft == B_stuff)) * (1 - 2 * (d_c == R)) * Courant;
-        const double ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(cc).in_direction(R);
+        const realnum ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(cc).in_direction(R);
         int sr = gv.nz() + 1;
 
         // 8 special cases of the same loop (sigh):
@@ -173,12 +173,12 @@ bool fields_chunk::step_db(field_type ft) {
             if (cndinv)  // PML + fu + conductivity
               //////////////////// MOST GENERAL CASE //////////////////////
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   int k = dk + 2 * (dsig == Z ? iz : ir);
                   int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  double df, dfcnd = rinv * g[idx] * cndinv[idx];
+                  realnum df, dfcnd = rinv * g[idx] * cndinv[idx];
                   fcnd[idx] += dfcnd;
                   fu[idx] += (df = dfcnd * siginv[k]);
                   the_f[idx] += siginvu[ku] * df;
@@ -187,12 +187,12 @@ bool fields_chunk::step_db(field_type ft) {
             /////////////////////////////////////////////////////////////
             else // PML + fu - conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   int k = dk + 2 * (dsig == Z ? iz : ir);
                   int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  double df, dfcnd = rinv * g[idx];
+                  realnum df, dfcnd = rinv * g[idx];
                   fu[idx] += (df = dfcnd * siginv[k]);
                   the_f[idx] += siginvu[ku] * df;
                 }
@@ -201,22 +201,22 @@ bool fields_chunk::step_db(field_type ft) {
           else {        // PML - fu
             if (cndinv) // PML - fu + conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   int k = dk + 2 * (dsig == Z ? iz : ir);
-                  double dfcnd = rinv * g[idx] * cndinv[idx];
+                  realnum dfcnd = rinv * g[idx] * cndinv[idx];
                   fcnd[idx] += dfcnd;
                   the_f[idx] += dfcnd * siginv[k];
                 }
               }
             else // PML - fu - conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   int k = dk + 2 * (dsig == Z ? iz : ir);
-                  double dfcnd = rinv * g[idx];
+                  realnum dfcnd = rinv * g[idx];
                   the_f[idx] += dfcnd * siginv[k];
                 }
               }
@@ -226,22 +226,22 @@ bool fields_chunk::step_db(field_type ft) {
           if (siginvu) { // no PML + fu
             if (cndinv)  // no PML + fu + conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  double df = rinv * g[idx] * cndinv[idx];
+                  realnum df = rinv * g[idx] * cndinv[idx];
                   fu[idx] += df;
                   the_f[idx] += siginvu[ku] * df;
                 }
               }
             else // no PML + fu - conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  double df = rinv * g[idx];
+                  realnum df = rinv * g[idx];
                   fu[idx] += df;
                   the_f[idx] += siginvu[ku] * df;
                 }
@@ -250,7 +250,7 @@ bool fields_chunk::step_db(field_type ft) {
           else {        // no PML - fu
             if (cndinv) // no PML - fu + conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   the_f[idx] += rinv * g[idx] * cndinv[idx];
@@ -258,7 +258,7 @@ bool fields_chunk::step_db(field_type ft) {
               }
             else // no PML - fu - conductivity
               for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                double rinv = the_m / (ir + ir0);
+                realnum rinv = the_m / (ir + ir0);
                 for (int iz = 0; iz <= gv.nz(); ++iz) {
                   ptrdiff_t idx = ir * sr + iz;
                   the_f[idx] += rinv * g[idx];
@@ -280,16 +280,16 @@ bool fields_chunk::step_db(field_type ft) {
         const realnum *cndinv = s->condinv[Dz][Z];
         realnum *fcnd = f_cond[Dz][cmp];
         const direction dsig = cycle_direction(gv.dim, Z, 1);
-        const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+        const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
         const int dk = gv.iyee_shift(Dz).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, Z, 2);
-        const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+        const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
         const int dku = gv.iyee_shift(Dz).in_direction(dsigu);
         realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
         realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
         for (int iz = 0; iz < nz; ++iz) {
           // Note: old code (prior to Meep 0.2) was missing factor of 4??
-          double df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
+          realnum df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
           if (fcnd) fcnd[iz] += dfcnd;
           the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
           if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
@@ -314,19 +314,19 @@ bool fields_chunk::step_db(field_type ft) {
         const realnum *cndinv = s->condinv[cc][d_c];
         realnum *fcnd = f_cond[cc][cmp];
         const direction dsig = cycle_direction(gv.dim, d_c, 1);
-        const double *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+        const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
         const int dk = gv.iyee_shift(cc).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
-        const double *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+        const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
         int sd = ft == D_stuff ? +1 : -1;
-        double f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp);
+        realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp);
 
         for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
-          double df;
-          double dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
+          realnum df;
+          realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
                          (cndinv ? cndinv[iz] : 1);
           if (fcnd) fcnd[iz] += dfcnd;
           the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));

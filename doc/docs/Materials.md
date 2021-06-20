@@ -145,7 +145,7 @@ In principle, there are a few different ways to alter the effective strength of 
 
 It is possible to use saturable non-linear media to effectively implement linear gain and loss in a simulation, and treat it as a frequency-dependent linear susceptibility.
 
-If the saturable medium only has two atomic levels (i.e. only a single non-linear polarization field) and the system is operated in the steady-state regime with only a single frequency component of the electric field, one can write the the susceptibility of the non-linear saturable medium as
+If the saturable medium only has two atomic levels (i.e. only a single non-linear polarization field) and the system is operated in the steady-state regime with only a single frequency component of the electric field, one can write the susceptibility of the non-linear saturable medium as
 $$ \chi_{1}(\mathbf{x}, \omega) = \frac{\sigma_1}{2 \omega_1} \left( \frac{ \Delta N(\mathbf{x})}{\omega - \omega_1 + i \gamma_1/2}\right) \left( \frac{1}{1 + \frac{4 \sigma_1}{\omega_1 \hbar \Gamma_{\parallel} \gamma_1} \left( \frac{\gamma_1^2}{\gamma_1^2 + 4(\omega - \omega_1)^2} \right) |\mathbf{E}(\mathbf{x},\omega)|^2} \right) $$
 For this two-level gain medium, $\Gamma_\parallel = \Gamma_{12} + \Gamma_{21}$, and we are assuming that the coupling matrix is proportional to the identity matrix, $\bar{\sigma}_1 = \sigma_1 \bar{I}$. Thus, if
 $$ \frac{4 \sigma_1}{\omega_1 \hbar \Gamma_{\parallel} \gamma_1} \left( \frac{\gamma_1^2}{\gamma_1^2 + 4(\omega - \omega_1)^2} \right) |\mathbf{E}(\mathbf{x},\omega)|^2 \ll 1 $$
@@ -158,10 +158,7 @@ However, there are some important considerations to keep in mind when trying to 
 Analytically, what this means is that the resonances that are present in the system must still be below the real axis in the complex plane, i.e. possess non-zero decay rates. If any added gain is sufficiently strong to move these resonances to the real axis (i.e. have a decay rate equal to zero), that is the definition of the laser threshold, and the non-linear medium is guaranteed to saturate.
 
 ### Verification of the Oscillator Model Equations
-<details>
-	<summary>Numerical verification with other FDTD implementations.</summary>  
-	&nbsp;  
-	
+
 Although Meep is using an oscillator model equation for the atomic polarization and level populations, instead of the Bloch equations, Meep retains the two terms usually approximated to zero when deriving the oscillator model equations from the Bloch equations, and so these equations are exactly equivalent to the Bloch equations. For more details, see [arXiv:2007.09329](https://arxiv.org/abs/2007.09329) and Section 6.4.1 of [Nonlinear Optics (third edition)](https://www.amazon.com/Nonlinear-Optics-Third-Robert-Boyd/dp/0123694701) by R. W. Boyd. To verify this equivalence between the different equations for modeling the polarization, as well as confirm that saturable media have been properly implemented in Meep, we compare the results of Meep with an independent FDTD solver using the Bloch equations and the frequency domain steady-state ab initio laser theory (SALT), in a 1d, one-sided, Fabry-Perot cavity containing a two-level gain medium that exhibits steady-state, multi-mode lasing. The cavity has a length of $a = 1$, a background index of $n = 1.5$, an atomic transition frequency of $\omega_n = 40/(2\pi)$, with width $\gamma_n = 8/(2\pi)$, the decay rate from level $2$ to $1$ is $\Gamma_{21} = 0.005$, the pumping rate from $1$ to $2$ is $\Gamma_{12} = 0.0051$, and the total atomic density, $N_0$, of the system was varied to produce different amounts of gain. These plots are given in terms of the equilibrium inversion, $D_0$, which is the inversion of the saturable gain medium in the absence of an electric field, i.e. the value of $\Delta N$ when $\mathbf{E} = 0$. There is agreement among the three methods close to the initial as well as past the third lasing threshold as shown in the following two figures.
 
 <center>
@@ -179,9 +176,8 @@ Similar relationships can be found for systems with more than two atomic levels 
 </details>
 
 ### Natural Units for Saturable Media
-<details>
-	<summary>A conversion chart for different choices of parameter nomenclature for the saturable medium.</summary>  
-	&nbsp;  
+
+A conversion chart for different choices of parameter nomenclature for the saturable medium.
 	
 There is no standard convention in the literature on lasers and saturable gain media for defining the various constants in the equations above. The following are the relationships among these constants for the three different groups of work discussed in this section:
 

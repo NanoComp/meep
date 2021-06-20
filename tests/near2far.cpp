@@ -256,7 +256,7 @@ int main(int argc, char **argv) {
 
   // NOTE: see hack above -- we require sources to be odd in Z and even in X or vice-versa
   if (!check_2d_3d(D3, 4, a3d, Ez, Hx, false)) return 1;
-#ifdef HAVE_LIBGSL
+#if defined(HAVE_JN) || defined(HAVE_LIBGSL) // required for Hankel functions in 2d near2far
   if (!check_2d_3d(D2, 8, a2d, Ez, Hx, false)) return 1;
   if (!check_2d_3d(D2, 8, a2d, Ex, Hz, true)) return 1;
 #endif

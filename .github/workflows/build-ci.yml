@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "Test Python ${{ matrix.python-version }} with MPI (${{ matrix.enable-mpi }})"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.6, 3.9]
+        enable-mpi: [false, true]
+
+    steps:
+    - name: Define common environment variables
+      run: |
+        echo "CPPFLAGS=-I${HOME}/local/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L${HOME}/local/lib" >> $GITHUB_ENV
+        echo "HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5" >> $GITHUB_ENV
+        echo "HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5" >> $GITHUB_ENV
+        echo "GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io" >> $GITHUB_ENV
+    - run: |
+        echo "HDF5_SERIAL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial" >> $GITHUB_ENV
+        echo "HDF5_PARALLEL_CPPFLAGS=${HDF5_BASE_CPPFLAGS}/openmpi" >> $GITHUB_ENV
+        echo "HDF5_SERIAL_LDFLAGS=${HDF5_BASE_LDFLAGS}/serial" >> $GITHUB_ENV
+        echo "HDF5_PARALLEL_LDFLAGS=${HDF5_BASE_LDFLAGS}/openmpi" >> $GITHUB_ENV
+
+    - name: Install pre-compiled dependencies
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
+
+    - name: Checkout libctl repository
+      uses: actions/checkout@v2
+      with:
+        repository: NanoComp/libctl
+        path: libctl-src
+
+    - name: Build and install libctl
+      run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Checkout harminv repository
+      uses: actions/checkout@v2
+      with:
+        repository: NanoComp/harminv
+        path: harminv-src
+
+    - name: Build and install harminv
+      run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Checkout MPB repository
+      uses: actions/checkout@v2
+      with:
+        repository: NanoComp/mpb
+        path: mpb-src
+
+    - name: Build and install MPB
+      run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
+
+    - name: Checkout libGDSII repository
+      uses: actions/checkout@v2
+      with:
+        repository: HomerReid/libGDSII
+        path: libGDSII-src
+
+    - name: Build and install libGDSII
+      run: cd libGDSII-src && sh autogen.sh --prefix=${HOME}/local && make install
+
+    - name: Define environment variables for serial build
+      if: ${{ matrix.enable-mpi == false }}
+      run: |
+        echo "MKCHECKFLAGS=-j $(nproc)" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_SERIAL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_SERIAL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "MPICONF=--without-mpi" >> $GITHUB_ENV
+
+    - name: Define environment variables for MPI build
+      if: matrix.enable-mpi
+      run: |
+        echo "MKCHECKFLAGS=" >> $GITHUB_ENV
+        echo "CPPFLAGS=${HDF5_PARALLEL_CPPFLAGS} ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_PARALLEL_LDFLAGS} ${LDFLAGS}" >> $GITHUB_ENV
+        echo "CC=mpicc" >> $GITHUB_ENV
+        echo "CXX=mpic++" >> $GITHUB_ENV
+        echo "HDF5_MPI=ON" >> $GITHUB_ENV
+        echo "MPICONF=--with-mpi" >> $GITHUB_ENV
+
+    - name: Install serial dependencies
+      if: ${{ matrix.enable-mpi == false }}
+      run: sudo apt-get -y install libhdf5-serial-dev
+
+    - name: Install MPI dependencies
+      if: matrix.enable-mpi
+      run: sudo apt-get -y install libopenmpi-dev mpi-default-bin openmpi-bin libhdf5-openmpi-dev libaec-dev
+
+    - name: Checkout Meep repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python (version ${{ matrix.python-version }})
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Python dependencies
+      run: pip install autograd h5py jax jaxlib matplotlib numpy parameterized pytest scipy
+
+    - name: Install mpi4py
+      if: matrix.enable-mpi
+      run: pip install mpi4py
+
+    - name: Run autoreconf
+      run: |
+        autoreconf --verbose --install --symlink --force
+        MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
+        echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
+
+    - name: Run configure
+      run: |
+        mkdir -p build &&
+        pushd build &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
+        popd
+
+    - name: Run make distcheck
+      run: |
+        pushd build &&
+        make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
+        popd
+
+    - name: Archive C++ test logs
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
+        path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
+
+    - name: Archive Python test logs
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
+        path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log

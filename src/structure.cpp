@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <memory>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -46,28 +47,28 @@ typedef structure_chunk *structure_chunk_ptr;
 
 structure::structure(const grid_volume &thegv, material_function &eps, const boundary_region &br,
                      const symmetry &s, int num, double Courant, bool use_anisotropic_averaging,
-                     double tol, int maxeval)
+                     double tol, int maxeval, const binary_partition *bp)
     : Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
-  choose_chunkdivision(thegv, num, br, s);
+  choose_chunkdivision(thegv, num, br, s, bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
 structure::structure(const grid_volume &thegv, double eps(const vec &), const boundary_region &br,
                      const symmetry &s, int num, double Courant, bool use_anisotropic_averaging,
-                     double tol, int maxeval)
+                     double tol, int maxeval, const binary_partition *bp)
     : Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
-  choose_chunkdivision(thegv, num, br, s);
+  choose_chunkdivision(thegv, num, br, s, bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   if (eps) {
     simple_material_function epsilon(eps);
@@ -75,30 +76,33 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   }
 }
 
-static void split_by_cost(int n, grid_volume gvol,
-                          std::vector<grid_volume> &result,
-                          bool fragment_cost) {
+static binary_partition *split_by_cost(int n, grid_volume gvol, bool fragment_cost) {
   if (n == 1) {
-    result.push_back(gvol);
-    return;
+    binary_partition *bp_leaf = new binary_partition(-1);
+    return bp_leaf;
   }
   else {
     int best_split_point;
     direction best_split_direction;
+    double best_split_position;
     double left_effort_fraction;
     gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction, left_effort_fraction);
-    int num_in_split_dir = gvol.num_direction(best_split_direction);
-    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction, num_in_split_dir);
+    best_split_position = gvol.surroundings().get_min_corner().in_direction(best_split_direction) +
+      (gvol.surroundings().in_direction(best_split_direction) * best_split_point) /
+      gvol.num_direction(best_split_direction);
+    binary_partition *bp_split = new binary_partition(best_split_direction, best_split_position);
+    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
     const int num_left = (size_t)(left_effort_fraction * n + 0.5);
-    split_by_cost(num_left, left_gvol, result, fragment_cost);
-    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction, num_in_split_dir);
-    split_by_cost(n - num_left, right_gvol, result, fragment_cost);
-    return;
+    bp_split->left = split_by_cost(num_left, left_gvol, fragment_cost);
+    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
+    bp_split->right = split_by_cost(n - num_left, right_gvol, fragment_cost);
+    return bp_split;
   }
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
-                                     const boundary_region &br, const symmetry &s) {
+                                     const boundary_region &br, const symmetry &s,
+                                     const binary_partition *bp) {
 
   if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) abort("r < 0 origins are not supported");
 
@@ -109,10 +113,13 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   a = gv.a;
   dt = Courant / a;
 
-  // create the chunks:
-  std::vector<grid_volume> chunk_volumes = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+  std::unique_ptr<binary_partition> my_bp;
+  if (!bp) my_bp.reset(meep::choose_chunkdivision(gv, v, desired_num_chunks, s));
 
-  int my_num_chunks = chunk_volumes.size();
+  // create the chunks:
+  std::vector<grid_volume> chunk_volumes;
+  std::vector<int> ids;
+  split_by_binarytree(gv, chunk_volumes, ids, (!bp) ? my_bp.get() : bp);
 
   // initialize effort volumes
   num_effort_volumes = 1;
@@ -126,9 +133,9 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
   // Break off PML regions into their own chunks
   num_chunks = 0;
-  chunks = new structure_chunk_ptr[my_num_chunks * num_effort_volumes];
+  chunks = new structure_chunk_ptr[chunk_volumes.size() * num_effort_volumes];
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = i * count_processors() / my_num_chunks;
+    const int proc = (!bp) ? i * count_processors() / chunk_volumes.size() : ids[i] % count_processors();
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
@@ -139,7 +146,6 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   }
 
   check_chunks();
-
   if (meep_geom::fragment_stats::resolution != 0) {
     // Save cost of each chunk's grid_volume
     for (int i = 0; i < num_chunks; ++i) {
@@ -149,8 +155,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
 }
 
-std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
-                                              const symmetry &S) {
+binary_partition *choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
+                                       const symmetry &S) {
 
   if (desired_num_chunks == 0) desired_num_chunks = count_processors();
   if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
@@ -187,22 +193,18 @@ std::vector<grid_volume> choose_chunkdivision(grid_volume &gv, volume &v, int de
       if (break_this[d]) gv = gv.pad((direction)d);
   }
 
-  // Finally, create the chunks:
-  std::vector<grid_volume> chunk_volumes;
-
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by voxels\n", desired_num_chunks);
-    split_by_cost(desired_num_chunks, gv, chunk_volumes, false);
+    return split_by_cost(desired_num_chunks, gv, false);
   }
   else {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
-    split_by_cost(desired_num_chunks, gv, chunk_volumes, true);
+    return split_by_cost(desired_num_chunks, gv, true);
   }
 
-  return chunk_volumes;
 }
 
 double structure::estimated_cost(int process) {
@@ -688,9 +690,9 @@ void structure_chunk::use_pml(direction d, double dx, double bloc, double Rasymp
       if (!sig[dd]) {
         int spml = (dd == d) ? (2 * gv.num_direction(d) + 2) : 1;
         sigsize[dd] = spml;
-        sig[dd] = new double[spml];
-        kap[dd] = new double[spml];
-        siginv[dd] = new double[spml];
+        sig[dd] = new realnum[spml];
+        kap[dd] = new realnum[spml];
+        siginv[dd] = new realnum[spml];
         for (int i = 0; i < spml; ++i) {
           sig[dd][i] = 0.0;
           kap[dd][i] = 1.0;
@@ -809,9 +811,9 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   // Copy over the PML conductivity arrays:
   if (is_mine()) FOR_DIRECTIONS(d) {
       if (o->sig[d]) {
-        sig[d] = new double[2 * gv.num_direction(d) + 1];
-        kap[d] = new double[2 * gv.num_direction(d) + 1];
-        siginv[d] = new double[2 * gv.num_direction(d) + 1];
+        sig[d] = new realnum[2 * gv.num_direction(d) + 1];
+        kap[d] = new realnum[2 * gv.num_direction(d) + 1];
+        siginv[d] = new realnum[2 * gv.num_direction(d) + 1];
         sigsize[d] = o->sigsize[d];
         for (int i = 0; i < 2 * gv.num_direction(d) + 1; i++) {
           sig[d][i] = o->sig[d][i];

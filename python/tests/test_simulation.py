@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import unittest
 import warnings
@@ -14,7 +15,8 @@ except NameError:
 
 class TestSimulation(unittest.TestCase):
 
-    fname = 'simulation-ez-000200.00.h5'
+    fname_base = re.sub(r'\.py$', '', os.path.split(sys.argv[0])[1])
+    fname = fname_base + '-ez-000200.00.h5'
 
     def setUp(self):
         print("Running {}".format(self._testMethodName))
@@ -138,7 +140,8 @@ class TestSimulation(unittest.TestCase):
         sim.use_output_directory(self.temp_dir)
         sim.run(mp.at_time(100, mp.output_efield_z), until=200)
 
-        fname = os.path.join(self.temp_dir, 'simulation-ez-000100.00.h5')
+        fname = os.path.join(self.temp_dir,
+                             sim.get_filename_prefix() +  '-ez-000100.00.h5')
         self.assertTrue(os.path.exists(fname))
 
     def test_after_sources_and_time(self):
@@ -158,7 +161,8 @@ class TestSimulation(unittest.TestCase):
         sim.use_output_directory(self.temp_dir)
         sim.run(mp.with_prefix('test_prefix-', mp.at_end(mp.output_efield_z)), until=200)
 
-        fname = os.path.join(self.temp_dir, 'test_prefix-simulation-ez-000200.00.h5')
+        fname = os.path.join(self.temp_dir, 'test_prefix-' + sim.get_filename_prefix() +
+                             '-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fname))
 
     def test_extra_materials(self):
@@ -529,7 +533,7 @@ class TestSimulation(unittest.TestCase):
 
     def test_get_filename_prefix(self):
         sim = self.init_simple_simulation()
-        self.assertEqual(sim.get_filename_prefix(), "simulation")
+        self.assertEqual(sim.get_filename_prefix(), self.fname_base)
         sim.filename_prefix = ''
         self.assertEqual(sim.get_filename_prefix(), "")
         sim.filename_prefix = False

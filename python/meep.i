@@ -33,6 +33,7 @@
 #include "ctl-math.h"
 #include "ctlgeom.h"
 #include "meepgeom.hpp"
+#include "meep-python.hpp"
 
 namespace meep {
     size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start);
@@ -158,18 +159,6 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);
-    return ret;
-}
-
-static std::complex<double> py_src_func_wrap(double t, void *f) {
-    PyObject *py_t = PyFloat_FromDouble(t);
-    PyObject *pyres = PyObject_CallFunctionObjArgs((PyObject *)f, py_t, NULL);
-    double real = PyComplex_RealAsDouble(pyres);
-    double imag = PyComplex_ImagAsDouble(pyres);
-    std::complex<double> ret(real, imag);
-    Py_DECREF(py_t);
-    Py_DECREF(pyres);
-
     return ret;
 }
 
@@ -333,17 +322,14 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 }
 
 // Wrapper around meep::dft_near2far::get_farfields_array
- PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
-                                double resolution) {
+PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
+                               double resolution) {
     // Return value: New reference
     size_t dims[4] = {1, 1, 1, 1};
     int rank = 0;
     size_t N = 1;
 
-    // TODO: Support single precision?
-    if (sizeof(realnum) == sizeof(float)) abort("Single precision not supported for get_farfields");
-
-    meep::realnum *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
+    double *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
 
     if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
@@ -359,7 +345,7 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
     }
 
     PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_DOUBLE);
-    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(meep::realnum) * 2 * N * 6 * n2f->freq.size());
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), EH, sizeof(double) * 2 * N * 6 * n2f->freq.size());
 
     delete[] arr_dims;
     delete[] EH;
@@ -466,7 +452,7 @@ size_t _get_dft_data_size(meep::dft_chunk *dc) {
     return meep::dft_chunks_Ntotal(dc, &istart) / 2;
 }
 
-void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
+void _get_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart) / 2;
     istart /= 2;
@@ -484,7 +470,7 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int 
     }
 }
 
-void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size) {
+void _load_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size) {
     size_t istart;
     size_t n = meep::dft_chunks_Ntotal(dc, &istart) / 2;
     istart /= 2;
@@ -608,10 +594,10 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 #endif
 %}
 
-%numpy_typemaps(std::complex<meep::realnum>, NPY_CDOUBLE, int);
+%numpy_typemaps(std::complex<double>, NPY_CDOUBLE, int);
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, size_t);
 
-%apply (std::complex<meep::realnum> *INPLACE_ARRAY1, int DIM1) {(std::complex<meep::realnum> *cdata, int size)};
+%apply (std::complex<double> *INPLACE_ARRAY1, int DIM1) {(std::complex<double> *cdata, int size)};
 
 // add_volume_source
 %apply (std::complex<double> *INPLACE_ARRAY3, size_t DIM1, size_t DIM2, size_t DIM3) {
@@ -641,8 +627,8 @@ PyObject *_dft_ldos_J(meep::dft_ldos *f);
 template<typename dft_type>
 PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int num_freq);
 size_t _get_dft_data_size(meep::dft_chunk *dc);
-void _get_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size);
-void _load_dft_data(meep::dft_chunk *dc, std::complex<meep::realnum> *cdata, int size);
+void _get_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size);
+void _load_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -742,14 +728,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if ($1.material) {
-        if (((material_data *)$1.material)->medium.E_susceptibilities.items) {
-            delete[] ((material_data *)$1.material)->medium.E_susceptibilities.items;
-        }
-        if (((material_data *)$1.material)->medium.H_susceptibilities.items) {
-            delete[] ((material_data *)$1.material)->medium.H_susceptibilities.items;
-        }
-        delete[] ((material_data *)$1.material)->weights;
-        delete[] ((material_data *)$1.material)->epsilon_data;
+        material_free((material_data *)$1.material);
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -781,25 +760,24 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(in) geometric_object_list* (geometric_object_list temp){
+    if(!py_list_to_gobj_list($input, &temp)) {
+        SWIG_fail;
+    }
+    $1 = &temp;
+}
+
 %typemap(arginit) geometric_object_list {
     $1.num_items = 0;
     $1.items = NULL;
 }
 
 %typemap(freearg) geometric_object_list {
-    for(int i = 0; i < $1.num_items; i++) {
-        if (((material_data *)$1.items[i].material)->medium.E_susceptibilities.items) {
-            delete[] ((material_data *)$1.items[i].material)->medium.E_susceptibilities.items;
-        }
-        if (((material_data *)$1.items[i].material)->medium.H_susceptibilities.items) {
-            delete[] ((material_data *)$1.items[i].material)->medium.H_susceptibilities.items;
-        }
-        delete[] ((material_data *)$1.items[i].material)->epsilon_data;
-        delete[] ((material_data *)$1.items[i].material)->weights;
-        delete (material_data *)$1.items[i].material;
-        geometric_object_destroy($1.items[i]);
-    }
-    delete[] $1.items;
+    gobj_list_freearg(&$1);
+}
+
+%typemap(freearg) geometric_object_list* {
+    gobj_list_freearg($1);
 }
 
 %typemap(out) geometric_object_list {
@@ -822,14 +800,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
-%typemap(arginit) susceptibility_list {
-    $1.num_items = 0;
-    $1.items = NULL;
-}
-
-%typemap(freearg) susceptibility_list {
-    delete[] $1.items;
-}
 
 //--------------------------------------------------
 // typemaps needed for material grid
@@ -842,7 +812,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
     if (PyArray_NDIM(pao_grad) !=2) {meep::abort("Numpy grad array must have 2 dimensions.");}
-    meep::realnum * grad_c = (meep::realnum *)PyArray_DATA(pao_grad);
+    double *grad_c = (double *)PyArray_DATA(pao_grad);
     int ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
     // clean the adjoint fields array
@@ -850,14 +820,14 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
-    std::complex<double> * fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
+    std::complex<double> *fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
 
     // clean the forward fields array
     PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
     if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
-    std::complex<double> * fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
+    std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
 
     // scalegrad not currently used
     double scalegrad = 1.0;
@@ -866,19 +836,19 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     void* where;
 
     PyObject *swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
-    SWIG_ConvertPtr(swigobj,&where,NULL,NULL);
+    SWIG_ConvertPtr(swigobj,&where,0,NULL);
     const meep::volume* where_vol = (const meep::volume*)where;
 
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
     if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
-    meep::realnum* frequencies_c = (meep::realnum *)PyArray_DATA(pao_freqs);
+    double *frequencies_c = (double *)PyArray_DATA(pao_freqs);
     int nf = PyArray_DIMS(pao_freqs)[0];
-    if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %d frequencies; it should be allocated for %d.",PyArray_DIMS(pao_grad)[0],nf);
+    if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
     // prepare a geometry_tree
-    //TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
+    // TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
     geometric_object_list *l;
     l = new geometric_object_list();
     if (!py_list_to_gobj_list(py_geom_list,l)) meep::abort("Unable to convert geometry tree.");
@@ -991,14 +961,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %typemap(freearg) material_type {
     if ($1) {
-        if ($1->medium.E_susceptibilities.items) {
-            delete[] $1->medium.E_susceptibilities.items;
-        }
-        if ($1->medium.H_susceptibilities.items) {
-            delete[] $1->medium.H_susceptibilities.items;
-        }
-        delete[] $1->weights;
-        delete[] $1->epsilon_data;
+        material_free($1);
         delete $1;
     }
 }
@@ -1086,6 +1049,40 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
+
+// typemaps for meep_geom::get_epsilon_grid
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* xtics {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* ytics {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* ztics {
+    $1 = (double *)array_data($input);
+}
+
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* grid_vals {
+    $1 = is_array($input);
+}
+
+%typemap(in, fragment="NumPy_Macros") double* grid_vals {
+    $1 = (double *)array_data($input);
+}
 
 // typemap for solve_cw:
 
@@ -1368,14 +1365,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            if ($1.items[i]->medium.E_susceptibilities.items) {
-                delete[] $1.items[i]->medium.E_susceptibilities.items;
-            }
-            if ($1.items[i]->medium.H_susceptibilities.items) {
-                delete[] $1.items[i]->medium.H_susceptibilities.items;
-            }
-            delete[] $1.items[i]->weights;
-            delete[] $1.items[i]->epsilon_data;
+            material_free($1.items[i]);
         }
     }
     delete[] $1.items;
@@ -1383,17 +1373,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
-
-// Typemap suite for custom_src_time
-
-%typecheck(SWIG_TYPECHECK_POINTER) (std::complex<double> (*func)(double t, void *), void *data) {
-    $1 = PyFunction_Check($input);
-}
-
-%typemap(in) (std::complex<double> (*func)(double t, void *), void *data) {
-  $1 = py_src_func_wrap;
-  $2 = (void *)$input;
-}
 
 // Typemap suite for kpoint_func
 
@@ -1437,6 +1416,24 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     PyErr_SetString(PyExc_RuntimeError, e.what());
     SWIG_fail;
   }
+}
+
+// typemaps for binary_partition
+
+%typecheck (SWIG_TYPECHECK_POINTER) meep::binary_partition * {
+    $1 = PyObject_IsInstance($input, py_binary_partition_object());
+}
+
+%typemap(in) meep::binary_partition * {
+    $1 = py_bp_to_bp($input);
+}
+
+%typemap(arginit) meep::binary_partition * {
+    $1 = NULL;
+}
+
+%typemap(freearg) meep::binary_partition * {
+    delete $1;
 }
 
 // Tells Python to take ownership of the h5file* this function returns so that
@@ -1510,6 +1507,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %include "meep.hpp"
 %include "meep/mympi.hpp"
 %include "meepgeom.hpp"
+%include "meep-python.hpp"
 
 %include "typemaps.i"
 %template(near_src_data) std::vector<meep::sourcedata>;
@@ -1659,6 +1657,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     )
     from .simulation import (
         Absorber,
+        BinaryPartition,
         Ldos,
         EnergyRegion,
         FluxRegion,
@@ -1859,7 +1858,8 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     bool split_chunks_evenly,
                                                     bool set_materials,
                                                     meep::structure *existing_s,
-                                                    bool output_chunk_costs) {
+                                                    bool output_chunk_costs,
+                                                    meep::binary_partition *my_bp) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1872,12 +1872,16 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::resolution = gv.a;
     meep_geom::fragment_stats::dims = gv.dim;
     meep_geom::fragment_stats::split_chunks_evenly = split_chunks_evenly;
-    meep_geom::fragment_stats::init_libctl(_default_material, _ensure_periodicity,
-                                           &gv, cell_size, center, &gobj_list);
+    meep_geom::init_libctl(_default_material, _ensure_periodicity,
+                           &gv, cell_size, center, &gobj_list);
 
     if (output_chunk_costs) {
          meep::volume thev = gv.surroundings();
-         std::vector<grid_volume> chunk_vols = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
+         meep::binary_partition *bp = NULL;
+         if (!my_bp) bp = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
+         std::vector<grid_volume> chunk_vols;
+         std::vector<int> ids;
+         meep::split_by_binarytree(gv, chunk_vols, ids, (!my_bp) ? bp : my_bp);
          for (size_t i = 0; i < chunk_vols.size(); ++i)
               master_printf("CHUNK:, %2zu, %f, %zu\n",i,chunk_vols[i].get_cost(),chunk_vols[i].surface_area());
          return NULL;
@@ -1889,7 +1893,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     }
     else {
       s = new meep::structure(gv, NULL, br, sym, num_chunks, Courant,
-                              use_anisotropic_averaging, tol, maxeval);
+                              use_anisotropic_averaging, tol, maxeval, my_bp);
     }
     s->shared_chunks = true;
 
@@ -1927,4 +1931,29 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     return s;
 }
+
+void _get_epsilon_grid(geometric_object_list gobj_list,
+                       meep_geom::material_type_list mlist,
+                       meep_geom::material_type _default_material,
+                       bool _ensure_periodicity,
+                       meep::grid_volume gv,
+                       vector3 cell_size,
+                       vector3 cell_center,
+                       int nx, double *xtics,
+                       int ny, double *ytics,
+                       int nz, double *ztics,
+                       double *grid_vals) {
+     meep_geom::get_epsilon_grid(gobj_list,
+                                 mlist,
+                                 _default_material,
+                                 _ensure_periodicity,
+                                 gv,
+                                 cell_size,
+                                 cell_center,
+                                 nx, xtics,
+                                 ny, ytics,
+                                 nz, ztics,
+                                 grid_vals);
+}
+
 %}

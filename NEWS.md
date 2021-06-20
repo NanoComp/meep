@@ -1,5 +1,19 @@
 # Meep Release Notes
 
+## Meep 1.18.0
+
+3/26/2021
+
+* New `get_epsilon_grid` function for evaluating ε on user-specified grid with arbitrary resolution ([#1522]).
+
+* Support for user-specified chunk layouts for manual control over load-balancing ([#1528]).
+
+* `MaterialGrid` `design_parameters` is renamed to `weights` and `U_SUM` is renamed to `U_MEAN` ([#1512]).
+
+* Performance improvement in chunk division ([#1499]).
+
+* Various bugfixes ([#1487], [#1515], [#1519], [#1521], [#1527]), additional documentation, and tests.
+
 ## Meep 1.17.1
 
 1/8/2021
@@ -10,108 +24,108 @@
 
 1/4/2021
 
-* `get_array_slice` now does continuous interpolation as the slice position is moved (#1456).
+* `get_array_slice` now does continuous interpolation as the slice position is moved ([#1456]).
 
-* New `contour` option for contour-plotting in `plot2D` (#1437).
+* New `contour` option for contour-plotting in `plot2D` ([#1437]).
 
-* Adjoint optimization of `near2far` transformations (#1417).
+* Adjoint optimization of `near2far` transformations ([#1417]).
 
-* `get_array_metadata` is now consistent between array slices and DFT slices (#1456), no longer leaks memory (#1447), and returns numpy arrays rather than tuples (#1458).
+* `get_array_metadata` is now consistent between array slices and DFT slices ([#1456]), no longer leaks memory ([#1447]), and returns numpy arrays rather than tuples ([#1458]).
 
-* Bugfixes in adjoint-optimization filters (#1427).
+* Bugfixes in adjoint-optimization filters ([#1427]).
 
 ## Meep 1.16.1
 
 10/20/2020
 
-* Bugfix in adjoint code (#1403).
+* Bugfix in adjoint code ([#1403]).
 
 ## Meep 1.16.0
 
 10/6/2020
 
-* Gaussian beam source feature (#1303 and #1310).
+* Gaussian beam source feature ([#1303] and [#1310]).
 
 * New API for specifying planewave diffraction orders for eigenmode sources
-  and coefficients (#1316).
+  and coefficients ([#1316]).
 
-* More accurate gradients in adjoint code (#1285).
+* More accurate gradients in adjoint code ([#1285]).
 
-* Simpler Python API for outputting ε or μ at a given frequency (#1374).
+* Simpler Python API for outputting ε or μ at a given frequency ([#1374]).
 
-* `--with-libctl-dir` option of `configure` now accepts simply the installation `prefix` in addition to `prefix/share/libctl` (#1286).
+* `--with-libctl-dir` option of `configure` now accepts simply the installation `prefix` in addition to `prefix/share/libctl` ([#1286]).
 
-* Less verbose mode-solver output from MPB (#1302, #1388), and new
-  `meep.verbosity` option in Python (#1349).
+* Less verbose mode-solver output from MPB ([#1302], [#1388]), and new
+  `meep.verbosity` option in Python ([#1349]).
 
-* Bug fix for single-point DFT monitor (#1333).
+* Bug fix for single-point DFT monitor ([#1333]).
 
 ## Meep 1.15.0
 
 7/8/2020
 
-* Minimum-lengthscale filters for adjoint optimization (#1205).
+* Minimum-lengthscale filters for adjoint optimization ([#1205]).
 
-* Python API documentation in docstrings (#1240).
+* Python API documentation in docstrings ([#1240]).
 
 * `MaterialGrid` material type in Python to interpolate an array of material
-  values as the "material" of an object, especially for topology optimization (#1242).
+  values as the "material" of an object, especially for topology optimization ([#1242]).
 
 * `merge_subgroup_data` Python function for coordinating parallel
-  computations (#1192).
+  computations ([#1192]).
 
 * Eigenmode sources now ensure that the source has the same
-  frequency as the mode (#1218).
+  frequency as the mode ([#1218]).
 
-* Performance improvements to eigenmode sources (#1233, #1244, #1257).
+* Performance improvements to eigenmode sources ([#1233], [#1244], [#1257]).
 
 ## Meep 1.14.0
 
 4/17/2020
 
 * New adjoint solver for density-based topology optimization, including
-  filtering, automatic differentiation, and other frequencies (#1167).
+  filtering, automatic differentiation, and other frequencies ([#1167]).
 
 * DFT functions now allow you to pass an arbitrary array of frequencies, instead
-  of being limited to equally spaced frequencies (#1154 and #1156).
+  of being limited to equally spaced frequencies ([#1154] and [#1156]).
 
-* Experimental shift-and-invert frequency-domain eigensolver (#1158).
+* Experimental shift-and-invert frequency-domain eigensolver ([#1158]).
 
 * Renamed `omega` parameter to `frequency` at some places in the Python API,
-  for consistency (#1171), and `dft_fields` object now takes `fcen` and `df` instead
+  for consistency ([#1171]), and `dft_fields` object now takes `fcen` and `df` instead
   of `freq_min` and `freq_max` in Python.
 
-* Support for SWIG 4.0 (#1159), and various other minor fixes.
+* Support for SWIG 4.0 ([#1159]), and various other minor fixes.
 
 ## Meep 1.13.1
 
 2/25/2020
 
-* Avoid writing to source directory in remaining tests (#1132).
+* Avoid writing to source directory in remaining tests ([#1132]).
 
 ## Meep 1.13.0
 
 2/19/2020
 
 * Optional parameter `omega` for `output-epsilon` and similar functions,
-  allowing the complex ε and μ at a given frequency to be outputted (#1112, following #919).
+  allowing the complex ε and μ at a given frequency to be outputted ([#1112], following [#919]).
 
-* `near2far` computation now supports cylindrical coordinates (#1090).
+* `near2far` computation now supports cylindrical coordinates ([#1090]).
 
 * Experimental support for slanted prisms (requires libctl 4.5)
-  via `sidewall_angle` parameter to prism objects (#1129).
+  via `sidewall_angle` parameter to prism objects ([#1129]).
 
 * New `yee_grid=False` optional argument to `add_dft_fields`; by passing `True`
-  one can compute the fields on the original Yee grid (#1095).
+  one can compute the fields on the original Yee grid ([#1095]).
 
 * New function `meep::make_output_directory()` to make a temporary
   directory (in `TMPDIR` or similar) and `meep::delete_directory(path)`
   to perform recursive deletion (like `rm -rf`).  These are now
-  used in tests to avoid writing to the source directory (#1121, #1122 and #1126).
+  used in tests to avoid writing to the source directory ([#1121], [#1122] and [#1126]).
 
-* Jupyter notebooks now show a graphical progress bar during simulations (#1078).
+* Jupyter notebooks now show a graphical progress bar during simulations ([#1078]).
 
-* `kz-2d` option in Scheme, mirroring Python `kz_2d` (#1062).
+* `kz-2d` option in Scheme, mirroring Python `kz_2d` ([#1062]).
 
 * Various bugfixes, documentation supplements, and other minor improvements.
 
@@ -119,31 +133,31 @@
 
 11/12/19
 
-  * Faster 2d simulations with nonzero `kz` via the `kz_2d` option (#1047).
+  * Faster 2d simulations with nonzero `kz` via the `kz_2d` option ([#1047]).
 
-  * New Meep `verbosity` option superseding `quiet` and `verbose` flags (#994).
+  * New Meep `verbosity` option superseding `quiet` and `verbose` flags ([#994]).
 
-  * Output now only shows ≤ 10 geometric objects by default (#1002).
+  * Output now only shows ≤ 10 geometric objects by default ([#1002]).
 
   * Performance improvements for `split_chunks_evenly=False`.
 
-  * Fixed memory leaks (#1041, #1042).
+  * Fixed memory leaks ([#1041], [#1042]).
 
 ## Meep 1.11.0
 
 7/29/19
 
-  * Experimental support for gyrotropic media including magneto-optical effects (#863).
+  * Experimental support for gyrotropic media including magneto-optical effects ([#863]).
 
-  * Mode decomposition for oblique waveguides (#940, #945) and dispersive materials (#919).
+  * Mode decomposition for oblique waveguides ([#940], [#945]) and dispersive materials ([#919]).
 
-  * Accept tuples in place of Vector3 arguments (#960).
+  * Accept tuples in place of Vector3 arguments ([#960]).
 
-  * Capture C++ error messages in Python notebooks (#953).
+  * Capture C++ error messages in Python notebooks ([#953]).
 
-  * Automatically abort simulation if the fields blow up (#922).
+  * Automatically abort simulation if the fields blow up ([#922]).
 
-  * Print additional timing statistics (#927, #952).
+  * Print additional timing statistics ([#927], [#952]).
 
   * Various small bugfixes and documentation improvements.
 
@@ -151,19 +165,19 @@
 
 6/5/19
 
-  * New Python functions for simple visualization of the simulation domain (#872).
+  * New Python functions for simple visualization of the simulation domain ([#872]).
 
-  * Capture Meep and MPB output in Python notebooks (#891, #894)
+  * Capture Meep and MPB output in Python notebooks ([#891], [#894])
 
-  * Add optional `meep.quiet()` parameter to the Python interface (#876).
+  * Add optional `meep.quiet()` parameter to the Python interface ([#876]).
 
-  * Python evaluation of materials ε(ω) and μ(ω) (#862).
+  * Python evaluation of materials ε(ω) and μ(ω) ([#862]).
 
-  * Experimental multithreading support for near2far calculation (#868) and other speedups (#869).
+  * Experimental multithreading support for near2far calculation ([#868]) and other speedups ([#869]).
 
-  * Add `stop_after_walltime` and `stop_on_interrupt` in Python (#860).
+  * Add `stop_after_walltime` and `stop_on_interrupt` in Python ([#860]).
 
-  * GDSII file introspection (#817).
+  * GDSII file introspection ([#817]).
 
   * Various small bugfixes and documentation improvements.
 
@@ -172,23 +186,23 @@
 
 4/17/19
 
-  * Adjoint solver to compute sensitivity of solution to material perturbations (#795).
+  * Adjoint solver to compute sensitivity of solution to material perturbations ([#795]).
 
-  * Experimental `do_averaging` feature for user-defined material functions (#771, #791).
+  * Experimental `do_averaging` feature for user-defined material functions ([#771], [#791]).
 
-  * Periodic boundaries support in `near2far` via `nperiods` option (#769, #789).
+  * Periodic boundaries support in `near2far` via `nperiods` option ([#769], [#789]).
 
-  * Capture more output in Python notebooks (#785, #807).
+  * Capture more output in Python notebooks ([#785], [#807]).
 
-  * `dft-energy` feature (#744, #747).
+  * `dft-energy` feature ([#744], [#747]).
 
-  * Eigenmode sources are normalized to unit power (#728).
+  * Eigenmode sources are normalized to unit power ([#728]).
 
-  * Fix interpolation of DFT slice output (#787).
+  * Fix interpolation of DFT slice output ([#787]).
 
-  * Bug fix in `run-k-points` (#779).
+  * Bug fix in `run-k-points` ([#779]).
 
-  * Eigenmode sources for negative angles (#752).
+  * Eigenmode sources for negative angles ([#752]).
 
   * Various other minor bugfixes, build fixes, documentation improvements, tutorials, etcetera.
 
@@ -198,31 +212,31 @@
 
   * libctl 4.2 is required
 
-  * Add `--without-scheme` flag to `./configure` (#705)
+  * Add `--without-scheme` flag to `./configure` ([#705])
 
-  * Improve error messages in Python interface (#699)
+  * Improve error messages in Python interface ([#699])
 
-  * Allow `kguess` to specify MPB lattice vector for launching oblique waveguide modes (#675)
+  * Allow `kguess` to specify MPB lattice vector for launching oblique waveguide modes ([#675])
 
-  * Allow user materials when checking for conductivity (#689)
+  * Allow user materials when checking for conductivity ([#689])
 
-  * Add `split_chunks_evenly` flag to `Simulation` constructor. Setting to `False` will improve parallel simulation performance by dividing chunks based on work instead of size (#681)
+  * Add `split_chunks_evenly` flag to `Simulation` constructor. Setting to `False` will improve parallel simulation performance by dividing chunks based on work instead of size ([#681])
 
-  * Added `Simulation.visualize_chunks()` to visualize the chunk layout (#671)
+  * Added `Simulation.visualize_chunks()` to visualize the chunk layout ([#671])
 
-  * Improved stability of lorentzian susceptibility (#666)
+  * Improved stability of lorentzian susceptibility ([#666])
 
-  * Get array metadata for `get_array` and `get_dft_array` (#655)
+  * Get array metadata for `get_array` and `get_dft_array` ([#655])
 
-  * Add ability to get a source slice as a numpy array (#652)
+  * Add ability to get a source slice as a numpy array ([#652])
 
-  * Fixed performance issues in ModeSolver.find_k (#644)
+  * Fixed performance issues in ModeSolver.find_k ([#644])
 
-  * Add `force_all_components` flag to `Simulation` constructor (#631)
+  * Add `force_all_components` flag to `Simulation` constructor ([#631])
 
-  * libmeepgeom was merged into libmeep (#630)
+  * libmeepgeom was merged into libmeep ([#630])
 
-  * Expose `run_k_point` to access more Harminv data (#626)
+  * Expose `run_k_point` to access more Harminv data ([#626])
 
   * Various other bug fixes, documentation improvements, etc.
 
@@ -230,35 +244,35 @@
 
 11/16/18
 
- * Add `transform` method to `meep.Medium` (#603).
+ * Add `transform` method to `meep.Medium` ([#603]).
 
- * Read epsilon input from a numpy array when passed to a `Simulation` as `default_material`(#593).
+ * Read epsilon input from a numpy array when passed to a `Simulation` as `default_material`([#593]).
 
- * Support `geometry_center` in Python (#599).
+ * Support `geometry_center` in Python ([#599]).
 
- * Add Python `Ldos` class (#581).
+ * Add Python `Ldos` class ([#581]).
 
- * Compute Fourier-transformed fields (e.g. fluxes) in `solve_cw` (#570).
+ * Compute Fourier-transformed fields (e.g. fluxes) in `solve_cw` ([#570]).
 
- * Enable builds without MPB (#558).
+ * Enable builds without MPB ([#558]).
 
- * Add birefringent materials to materials library (#559).
+ * Add birefringent materials to materials library ([#559]).
 
- * Print dominant planewave in `get_eigenmode` (#531).
+ * Print dominant planewave in `get_eigenmode` ([#531]).
 
- * Python API for GDSII regions (#518)
+ * Python API for GDSII regions ([#518])
 
- * Multilevel atom susceptibilities for Python and Scheme (#500).
+ * Multilevel atom susceptibilities for Python and Scheme ([#500]).
 
- * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz (#602).
+ * Fix bug in `get_eigenmode_coefficients` for 2d cell with non-zero kz ([#602]).
 
- * Fix sync of eigenmode calculation when no mode is found (#596).
+ * Fix sync of eigenmode calculation when no mode is found ([#596]).
 
- * Fix memory leak in `get_dft_array` (#577).
+ * Fix memory leak in `get_dft_array` ([#577]).
 
- * Use same MPB phase on all processes, fixing bug with eigenmodes and multiprocessing (#578).
+ * Use same MPB phase on all processes, fixing bug with eigenmodes and multiprocessing ([#578]).
 
- * Fix memory leaks in `get_eigenmode` (#558).
+ * Fix memory leaks in `get_eigenmode` ([#558]).
 
  * Various other bug fixes, documentation improvements, etc.
 
@@ -266,33 +280,33 @@
 
 9/7/2018
 
- * Python interface to import GDSII files (#392).
+ * Python interface to import GDSII files ([#392]).
 
- * New binary grating tutorial (#376).
+ * New binary grating tutorial ([#376]).
 
- * Get source amplitude from HDF5 file (#388).
+ * Get source amplitude from HDF5 file ([#388]).
 
- * get_eigenmode_coefficients now returns group velocity and kpoints (#396).
+ * get_eigenmode_coefficients now returns group velocity and kpoints ([#396]).
 
- * New tutorial for visualizing 3d structures (#416).
+ * New tutorial for visualizing 3d structures ([#416]).
 
- * Mode decomposition feature supports symmetries (#417).
+ * Mode decomposition feature supports symmetries ([#417]).
 
- * Support for Guile >= 2.0.12 (#419). Merged upstream to SWIG repo (#1288).
+ * Support for Guile >= 2.0.12 ([#419]). Merged upstream to SWIG repo ([#1288]).
 
- * Python get_eigenmode function and EigenmodeData class (#422)
+ * Python get_eigenmode function and EigenmodeData class ([#422])
 
- * Symmetry support in dft arrays (#427).
+ * Symmetry support in dft arrays ([#427]).
 
- * Python 3.7 support (#456).
+ * Python 3.7 support ([#456]).
 
- * get-eigenmode-coefficients added to Scheme API (#477).
+ * get-eigenmode-coefficients added to Scheme API ([#477]).
 
- * materials_library.py now part of Python package (e.g., from meep.materials import Al) (#479).
+ * materials_library.py now part of Python package (e.g., from meep.materials import Al) ([#479]).
 
- * materials-library.scm automatically available in Meep scripts (#483).
+ * materials-library.scm automatically available in Meep scripts ([#483]).
 
- * Structure dump/load feature now supports dispersive materials (#454).
+ * Structure dump/load feature now supports dispersive materials ([#454]).
 
  * Various bug fixes, documentation improvements, etc.
 
@@ -300,25 +314,25 @@
 
 6/7/2018
 
- * Python interface to MPB (#191 etc.).
+ * Python interface to MPB ([#191] etc.).
 
  * Mode decomposition: given a DFT flux plane, decompose the fields
    at each frequency into the power in each mode of a waveguide
-   or similar (#192, #248, etc.).
+   or similar ([#192], [#248], etc.).
 
  * DFT slices: output Fourier-transformed fields in any given
-   region of space (#259).
+   region of space ([#259]).
 
- * New `prism` geometric-object type for polygonal prisms (#341, #345)
-   for upcoming GDSII import (#357).  Libctl 4.1.0 is required.
+ * New `prism` geometric-object type for polygonal prisms ([#341], [#345])
+   for upcoming GDSII import ([#357]).  Libctl 4.1.0 is required.
 
  * Structure dump/load feature to rapidly load in a geometry
-   from a previous calculation (#261, #266).
+   from a previous calculation ([#261], [#266]).
 
  * Susceptibilities are now supported in user-defined materials
-   in Python (#203, #305).
+   in Python ([#203], [#305]).
 
- * 64-bit support for extremely large computations (#193).
+ * 64-bit support for extremely large computations ([#193]).
 
  * Various bug fixes, documentation improvements, etc.
 
@@ -326,13 +340,13 @@
 
 2/1/2018
 
- * Allow `meep` Python module to be imported without setting `PYTHONPATH` (#189).
+ * Allow `meep` Python module to be imported without setting `PYTHONPATH` ([#189]).
 
 ## Meep 1.4.2
 
 1/26/2018
 
-  * Build fix for Python due to missing file (#184).
+  * Build fix for Python due to missing file ([#184]).
 
 ## Meep 1.4.1
 
@@ -346,20 +360,20 @@
 
   * Full-featured Python interface.
 
-  * Migrated documentation to github/markdown/readthedocs (#55).
+  * Migrated documentation to github/markdown/readthedocs ([#55]).
 
-  * New feature to get slice as array in C++ and Python APIs (#96, #105).
+  * New feature to get slice as array in C++ and Python APIs ([#96], [#105]).
 
   * `libmeepgeom` library to allow C++ users to access geometric-object
-    API (#56).
+    API ([#56]).
 
   * Removed overly conservative stability check for Lorentzian
-    susceptibilities (#150).
+    susceptibilities ([#150]).
 
-  * Corrected small error in frequency interval for `dft-ldos` (#40).
+  * Corrected small error in frequency interval for `dft-ldos` ([#40]).
 
-  * Bug fixes in near-to-farfield spectra (#21), eigenmode source (#20),
-    and LDOS (#40).
+  * Bug fixes in near-to-farfield spectra ([#21]), eigenmode source ([#20]),
+    and LDOS ([#40]).
 
 ## Meep 1.3
 
@@ -369,14 +383,14 @@
     automatically computes the Fourier-transformed field in any
     desired grid of "far-field" points arbitrarily far away.
 
-  * Compatibility with Harminv 1.4 (fixes issue #13: ppc64 portability).
+  * Compatibility with Harminv 1.4 (fixes issue [#13]: ppc64 portability).
 
   * Fix compilation with latest C++ standard (e.g. on OS X 10.9).
 
   * Bug fix in CW solver convergence test; thanks to
     Wu Chuanren and @FilipDominec for the bug report.
 
-  * Build fix for Fedora 21 (thanks to Dean Brettle) (issue #14).
+  * Build fix for Fedora 21 (thanks to Dean Brettle) (issue [#14]).
 
 ## Meep 1.2.1
 
@@ -392,7 +406,7 @@
 
   * Bug fixes in LDOS computation.
 
-  * Work around gcc bug #54498, which caused a spurious PML test
+  * Work around gcc bug [#54498], which caused a spurious PML test
     failure with gcc 4.7 and 4.7.1; thanks to Brahmanand Jogai and
     Thorsten Alteholz for the bug reports.
 
@@ -519,7 +533,7 @@ Meep 1.0.1
   * Fix failure in flux test under gcc 4.3.1 in some cases; thanks
     to Alex Prengel for the bug report.
 
-  * Fix compilation problem with gcc 4.4, correcting Debian bug #505002.
+  * Fix compilation problem with gcc 4.4, correcting Debian bug [#505002].
 
 ## Meep 1.0
 
@@ -745,3 +759,170 @@ Meep 1.0.1
 1 Apr. 2006.
 
   * Initial public release.
+
+<!--- generated links: -->
+[#1464]: https://github.com/NanoComp/meep/issues/1464
+[#1487]: https://github.com/NanoComp/meep/issues/1487
+[#1499]: https://github.com/NanoComp/meep/issues/1499
+[#1512]: https://github.com/NanoComp/meep/issues/1512
+[#1515]: https://github.com/NanoComp/meep/issues/1515
+[#1519]: https://github.com/NanoComp/meep/issues/1519
+[#1521]: https://github.com/NanoComp/meep/issues/1521
+[#1522]: https://github.com/NanoComp/meep/issues/1522
+[#1527]: https://github.com/NanoComp/meep/issues/1527
+[#1528]: https://github.com/NanoComp/meep/issues/1528
+[#13]: https://github.com/NanoComp/meep/issues/13
+[#14]: https://github.com/NanoComp/meep/issues/14
+[#20]: https://github.com/NanoComp/meep/issues/20
+[#21]: https://github.com/NanoComp/meep/issues/21
+[#40]: https://github.com/NanoComp/meep/issues/40
+[#55]: https://github.com/NanoComp/meep/issues/55
+[#56]: https://github.com/NanoComp/meep/issues/56
+[#96]: https://github.com/NanoComp/meep/issues/96
+[#105]: https://github.com/NanoComp/meep/issues/105
+[#150]: https://github.com/NanoComp/meep/issues/150
+[#184]: https://github.com/NanoComp/meep/issues/184
+[#189]: https://github.com/NanoComp/meep/issues/189
+[#191]: https://github.com/NanoComp/meep/issues/191
+[#192]: https://github.com/NanoComp/meep/issues/192
+[#193]: https://github.com/NanoComp/meep/issues/193
+[#203]: https://github.com/NanoComp/meep/issues/203
+[#248]: https://github.com/NanoComp/meep/issues/248
+[#259]: https://github.com/NanoComp/meep/issues/259
+[#261]: https://github.com/NanoComp/meep/issues/261
+[#266]: https://github.com/NanoComp/meep/issues/266
+[#305]: https://github.com/NanoComp/meep/issues/305
+[#341]: https://github.com/NanoComp/meep/issues/341
+[#345]: https://github.com/NanoComp/meep/issues/345
+[#357]: https://github.com/NanoComp/meep/issues/357
+[#376]: https://github.com/NanoComp/meep/issues/376
+[#388]: https://github.com/NanoComp/meep/issues/388
+[#392]: https://github.com/NanoComp/meep/issues/392
+[#396]: https://github.com/NanoComp/meep/issues/396
+[#416]: https://github.com/NanoComp/meep/issues/416
+[#417]: https://github.com/NanoComp/meep/issues/417
+[#419]: https://github.com/NanoComp/meep/issues/419
+[#422]: https://github.com/NanoComp/meep/issues/422
+[#427]: https://github.com/NanoComp/meep/issues/427
+[#454]: https://github.com/NanoComp/meep/issues/454
+[#456]: https://github.com/NanoComp/meep/issues/456
+[#477]: https://github.com/NanoComp/meep/issues/477
+[#479]: https://github.com/NanoComp/meep/issues/479
+[#483]: https://github.com/NanoComp/meep/issues/483
+[#500]: https://github.com/NanoComp/meep/issues/500
+[#518]: https://github.com/NanoComp/meep/issues/518
+[#531]: https://github.com/NanoComp/meep/issues/531
+[#558]: https://github.com/NanoComp/meep/issues/558
+[#559]: https://github.com/NanoComp/meep/issues/559
+[#570]: https://github.com/NanoComp/meep/issues/570
+[#577]: https://github.com/NanoComp/meep/issues/577
+[#578]: https://github.com/NanoComp/meep/issues/578
+[#581]: https://github.com/NanoComp/meep/issues/581
+[#593]: https://github.com/NanoComp/meep/issues/593
+[#596]: https://github.com/NanoComp/meep/issues/596
+[#599]: https://github.com/NanoComp/meep/issues/599
+[#602]: https://github.com/NanoComp/meep/issues/602
+[#603]: https://github.com/NanoComp/meep/issues/603
+[#626]: https://github.com/NanoComp/meep/issues/626
+[#630]: https://github.com/NanoComp/meep/issues/630
+[#631]: https://github.com/NanoComp/meep/issues/631
+[#644]: https://github.com/NanoComp/meep/issues/644
+[#652]: https://github.com/NanoComp/meep/issues/652
+[#655]: https://github.com/NanoComp/meep/issues/655
+[#666]: https://github.com/NanoComp/meep/issues/666
+[#671]: https://github.com/NanoComp/meep/issues/671
+[#675]: https://github.com/NanoComp/meep/issues/675
+[#681]: https://github.com/NanoComp/meep/issues/681
+[#689]: https://github.com/NanoComp/meep/issues/689
+[#699]: https://github.com/NanoComp/meep/issues/699
+[#705]: https://github.com/NanoComp/meep/issues/705
+[#728]: https://github.com/NanoComp/meep/issues/728
+[#744]: https://github.com/NanoComp/meep/issues/744
+[#747]: https://github.com/NanoComp/meep/issues/747
+[#752]: https://github.com/NanoComp/meep/issues/752
+[#769]: https://github.com/NanoComp/meep/issues/769
+[#771]: https://github.com/NanoComp/meep/issues/771
+[#779]: https://github.com/NanoComp/meep/issues/779
+[#785]: https://github.com/NanoComp/meep/issues/785
+[#787]: https://github.com/NanoComp/meep/issues/787
+[#789]: https://github.com/NanoComp/meep/issues/789
+[#791]: https://github.com/NanoComp/meep/issues/791
+[#795]: https://github.com/NanoComp/meep/issues/795
+[#807]: https://github.com/NanoComp/meep/issues/807
+[#817]: https://github.com/NanoComp/meep/issues/817
+[#860]: https://github.com/NanoComp/meep/issues/860
+[#862]: https://github.com/NanoComp/meep/issues/862
+[#863]: https://github.com/NanoComp/meep/issues/863
+[#868]: https://github.com/NanoComp/meep/issues/868
+[#869]: https://github.com/NanoComp/meep/issues/869
+[#872]: https://github.com/NanoComp/meep/issues/872
+[#876]: https://github.com/NanoComp/meep/issues/876
+[#891]: https://github.com/NanoComp/meep/issues/891
+[#894]: https://github.com/NanoComp/meep/issues/894
+[#919]: https://github.com/NanoComp/meep/issues/919
+[#922]: https://github.com/NanoComp/meep/issues/922
+[#927]: https://github.com/NanoComp/meep/issues/927
+[#940]: https://github.com/NanoComp/meep/issues/940
+[#945]: https://github.com/NanoComp/meep/issues/945
+[#952]: https://github.com/NanoComp/meep/issues/952
+[#953]: https://github.com/NanoComp/meep/issues/953
+[#960]: https://github.com/NanoComp/meep/issues/960
+[#994]: https://github.com/NanoComp/meep/issues/994
+[#1002]: https://github.com/NanoComp/meep/issues/1002
+[#1041]: https://github.com/NanoComp/meep/issues/1041
+[#1042]: https://github.com/NanoComp/meep/issues/1042
+[#1047]: https://github.com/NanoComp/meep/issues/1047
+[#1062]: https://github.com/NanoComp/meep/issues/1062
+[#1078]: https://github.com/NanoComp/meep/issues/1078
+[#1090]: https://github.com/NanoComp/meep/issues/1090
+[#1095]: https://github.com/NanoComp/meep/issues/1095
+[#1112]: https://github.com/NanoComp/meep/issues/1112
+[#1121]: https://github.com/NanoComp/meep/issues/1121
+[#1122]: https://github.com/NanoComp/meep/issues/1122
+[#1126]: https://github.com/NanoComp/meep/issues/1126
+[#1129]: https://github.com/NanoComp/meep/issues/1129
+[#1132]: https://github.com/NanoComp/meep/issues/1132
+[#1154]: https://github.com/NanoComp/meep/issues/1154
+[#1156]: https://github.com/NanoComp/meep/issues/1156
+[#1158]: https://github.com/NanoComp/meep/issues/1158
+[#1159]: https://github.com/NanoComp/meep/issues/1159
+[#1167]: https://github.com/NanoComp/meep/issues/1167
+[#1171]: https://github.com/NanoComp/meep/issues/1171
+[#1192]: https://github.com/NanoComp/meep/issues/1192
+[#1205]: https://github.com/NanoComp/meep/issues/1205
+[#1218]: https://github.com/NanoComp/meep/issues/1218
+[#1233]: https://github.com/NanoComp/meep/issues/1233
+[#1240]: https://github.com/NanoComp/meep/issues/1240
+[#1242]: https://github.com/NanoComp/meep/issues/1242
+[#1244]: https://github.com/NanoComp/meep/issues/1244
+[#1257]: https://github.com/NanoComp/meep/issues/1257
+[#1285]: https://github.com/NanoComp/meep/issues/1285
+[#1286]: https://github.com/NanoComp/meep/issues/1286
+[#1288]: https://github.com/NanoComp/meep/issues/1288
+[#1302]: https://github.com/NanoComp/meep/issues/1302
+[#1303]: https://github.com/NanoComp/meep/issues/1303
+[#1310]: https://github.com/NanoComp/meep/issues/1310
+[#1316]: https://github.com/NanoComp/meep/issues/1316
+[#1333]: https://github.com/NanoComp/meep/issues/1333
+[#1349]: https://github.com/NanoComp/meep/issues/1349
+[#1374]: https://github.com/NanoComp/meep/issues/1374
+[#1388]: https://github.com/NanoComp/meep/issues/1388
+[#1403]: https://github.com/NanoComp/meep/issues/1403
+[#1417]: https://github.com/NanoComp/meep/issues/1417
+[#1427]: https://github.com/NanoComp/meep/issues/1427
+[#1437]: https://github.com/NanoComp/meep/issues/1437
+[#1447]: https://github.com/NanoComp/meep/issues/1447
+[#1456]: https://github.com/NanoComp/meep/issues/1456
+[#1458]: https://github.com/NanoComp/meep/issues/1458
+[#1464]: https://github.com/NanoComp/meep/issues/1464
+[#1487]: https://github.com/NanoComp/meep/issues/1487
+[#1499]: https://github.com/NanoComp/meep/issues/1499
+[#1512]: https://github.com/NanoComp/meep/issues/1512
+[#1515]: https://github.com/NanoComp/meep/issues/1515
+[#1519]: https://github.com/NanoComp/meep/issues/1519
+[#1521]: https://github.com/NanoComp/meep/issues/1521
+[#1522]: https://github.com/NanoComp/meep/issues/1522
+[#1527]: https://github.com/NanoComp/meep/issues/1527
+[#1528]: https://github.com/NanoComp/meep/issues/1528
+[#54498]: https://github.com/NanoComp/meep/issues/54498
+[#505002]: https://github.com/NanoComp/meep/issues/505002

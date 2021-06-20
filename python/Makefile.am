@@ -8,22 +8,22 @@ if WITH_MPI
   MDPYTEST=
   MPBPYTEST=
 else
-  MDPYTEST=$(TEST_DIR)/material_dispersion.py
+  MDPYTEST=$(TEST_DIR)/test_material_dispersion.py
 if WITH_MPB
-  MPBPYTEST=$(TEST_DIR)/mpb.py
+  MPBPYTEST=$(TEST_DIR)/test_mpb.py
 else
   MPBPYTEST=
 endif # WITH_MPB
 endif # WITH_MPI
 
 if WITH_MPB
-  BINARY_GRATING_TEST = $(TEST_DIR)/binary_grating.py
-  DIFFRACTED_PLANEWAVE_TEST = $(TEST_DIR)/diffracted_planewave.py
-  DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/dispersive_eigenmode.py
-  KDOM_TEST = $(TEST_DIR)/kdom.py
-  MODE_COEFFS_TEST = $(TEST_DIR)/mode_coeffs.py
-  MODE_DECOMPOSITION_TEST = $(TEST_DIR)/mode_decomposition.py
-  WVG_SRC_TEST = $(TEST_DIR)/wvg_src.py
+  BINARY_GRATING_TEST = $(TEST_DIR)/test_binary_grating.py
+  DIFFRACTED_PLANEWAVE_TEST = $(TEST_DIR)/test_diffracted_planewave.py
+  DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/test_dispersive_eigenmode.py
+  KDOM_TEST = $(TEST_DIR)/test_kdom.py
+  MODE_COEFFS_TEST = $(TEST_DIR)/test_mode_coeffs.py
+  MODE_DECOMPOSITION_TEST = $(TEST_DIR)/test_mode_decomposition.py
+  WVG_SRC_TEST = $(TEST_DIR)/test_wvg_src.py
 else
   BINARY_GRATING_TEST =
   DIFFRACTED_PLANEWAVE_TEST =
@@ -35,54 +35,56 @@ else
 endif
 
 TESTS =                                   \
-    $(TEST_DIR)/3rd_harm_1d.py            \
-    $(TEST_DIR)/absorber_1d.py            \
-    $(TEST_DIR)/adjoint_solver.py         \
-    $(TEST_DIR)/antenna_radiation.py      \
-    $(TEST_DIR)/array_metadata.py         \
-    $(TEST_DIR)/bend_flux.py              \
+    $(TEST_DIR)/test_3rd_harm_1d.py            \
+    $(TEST_DIR)/test_absorber_1d.py            \
+    $(TEST_DIR)/test_adjoint_solver.py         \
+    $(TEST_DIR)/test_adjoint_jax.py            \
+    $(TEST_DIR)/test_antenna_radiation.py      \
+    $(TEST_DIR)/test_array_metadata.py         \
+    $(TEST_DIR)/test_bend_flux.py              \
     $(BINARY_GRATING_TEST)                \
-    $(TEST_DIR)/cavity_arrayslice.py      \
-    $(TEST_DIR)/cavity_farfield.py        \
-    $(TEST_DIR)/chunks.py                 \
-    $(TEST_DIR)/cyl_ellipsoid.py          \
-    $(TEST_DIR)/dft_energy.py             \
-    $(TEST_DIR)/dft_fields.py             \
+    $(TEST_DIR)/test_cavity_arrayslice.py      \
+    $(TEST_DIR)/test_cavity_farfield.py        \
+    $(TEST_DIR)/test_chunk_layout.py           \
+    $(TEST_DIR)/test_chunks.py                 \
+    $(TEST_DIR)/test_cyl_ellipsoid.py          \
+    $(TEST_DIR)/test_dft_energy.py             \
+    $(TEST_DIR)/test_dft_fields.py             \
     ${DIFFRACTED_PLANEWAVE_TEST}          \
     ${DISPERSIVE_EIGENMODE_TEST}          \
-    $(TEST_DIR)/divide_mpi_processes.py   \
-    $(TEST_DIR)/eigfreq.py                \
-    $(TEST_DIR)/faraday_rotation.py       \
-    $(TEST_DIR)/field_functions.py        \
-    $(TEST_DIR)/force.py                  \
-    $(TEST_DIR)/fragment_stats.py         \
-    $(TEST_DIR)/gaussianbeam.py           \
-    $(TEST_DIR)/geom.py                   \
-    $(TEST_DIR)/get_point.py              \
-    $(TEST_DIR)/holey_wvg_bands.py        \
-    $(TEST_DIR)/holey_wvg_cavity.py       \
+    $(TEST_DIR)/test_divide_mpi_processes.py   \
+    $(TEST_DIR)/test_eigfreq.py                \
+    $(TEST_DIR)/test_faraday_rotation.py       \
+    $(TEST_DIR)/test_field_functions.py        \
+    $(TEST_DIR)/test_force.py                  \
+    $(TEST_DIR)/test_fragment_stats.py         \
+    $(TEST_DIR)/test_gaussianbeam.py           \
+    $(TEST_DIR)/test_geom.py                   \
+    $(TEST_DIR)/test_get_point.py              \
+    $(TEST_DIR)/test_holey_wvg_bands.py        \
+    $(TEST_DIR)/test_holey_wvg_cavity.py       \
     $(KDOM_TEST)                          \
-    $(TEST_DIR)/ldos.py                   \
+    $(TEST_DIR)/test_ldos.py                   \
     $(MDPYTEST)                           \
-    $(TEST_DIR)/material_grid.py          \
-    $(TEST_DIR)/medium_evaluations.py     \
+    $(TEST_DIR)/test_material_grid.py          \
+    $(TEST_DIR)/test_medium_evaluations.py     \
     $(MPBPYTEST)                          \
     $(MODE_COEFFS_TEST)                   \
     $(MODE_DECOMPOSITION_TEST)            \
-    $(TEST_DIR)/multilevel_atom.py        \
-    $(TEST_DIR)/n2f_periodic.py           \
-    $(TEST_DIR)/oblique_source.py         \
-    $(TEST_DIR)/physical.py               \
-    $(TEST_DIR)/prism.py                  \
-    $(TEST_DIR)/pw_source.py              \
-    $(TEST_DIR)/refl_angular.py           \
-    $(TEST_DIR)/ring.py                   \
-    $(TEST_DIR)/ring_cyl.py               \
-    $(TEST_DIR)/simulation.py             \
-    $(TEST_DIR)/special_kz.py             \
-    $(TEST_DIR)/source.py                 \
-    $(TEST_DIR)/user_defined_material.py  \
-    $(TEST_DIR)/visualization.py          \
+    $(TEST_DIR)/test_multilevel_atom.py        \
+    $(TEST_DIR)/test_n2f_periodic.py           \
+    $(TEST_DIR)/test_oblique_source.py         \
+    $(TEST_DIR)/test_physical.py               \
+    $(TEST_DIR)/test_prism.py                  \
+    $(TEST_DIR)/test_pw_source.py              \
+    $(TEST_DIR)/test_refl_angular.py           \
+    $(TEST_DIR)/test_ring.py                   \
+    $(TEST_DIR)/test_ring_cyl.py               \
+    $(TEST_DIR)/test_simulation.py             \
+    $(TEST_DIR)/test_special_kz.py             \
+    $(TEST_DIR)/test_source.py                 \
+    $(TEST_DIR)/test_user_defined_material.py  \
+    $(TEST_DIR)/test_visualization.py          \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
@@ -99,7 +101,7 @@ TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 # the low-level interface between python codes and the libmeep C++ library
 ######################################################################
 BUILT_SOURCES = meep-python.cxx __init__.py meep.py
-EXTRA_DIST = $(BUILT_SOURCES) typemap_utils.cpp materials.py examples tests
+EXTRA_DIST = $(BUILT_SOURCES) meep.i meep-python.hpp typemap_utils.cpp materials.py examples tests
 CLEANFILES = .coverage
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)
 
@@ -157,14 +159,15 @@ HPPFILES=                                    \
  $(top_srcdir)/src/meep/mympi.hpp            \
  $(top_srcdir)/src/meepgeom.hpp              \
  $(top_srcdir)/src/material_data.hpp         \
- $(top_srcdir)/src/adjust_verbosity.hpp
+ $(top_srcdir)/src/adjust_verbosity.hpp      \
+ meep-python.hpp
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
 	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
-mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp $(top_srcdir)/src/meepgeom.hpp
+mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp $(top_srcdir)/src/meepgeom.hpp $(top_srcdir)/src/material_data.hpp $(top_srcdir)/src/material_data.cpp
 	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/mpb.i
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
@@ -216,7 +219,9 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/objective.py             \
                   $(srcdir)/adjoint/optimization_problem.py  \
                   $(srcdir)/adjoint/filters.py               \
-                  $(srcdir)/adjoint/filter_source.py
+                  $(srcdir)/adjoint/filter_source.py         \
+                  $(srcdir)/adjoint/wrapper.py               \
+                  $(srcdir)/adjoint/utils.py
 
 ######################################################################
 # finally, specification of what gets installed in the meep python
@@ -227,8 +232,9 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
 PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
 
 meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
-	mkdir -p meep
+	mkdir -p meep/adjoint
 	cp $(PY_PKG_FILES) meep
+	cp $(adjoint_PYTHON) meep/adjoint
 if WITH_MPB
 	mkdir -p meep/mpb
 	cp .libs/_mpb.so meep/mpb

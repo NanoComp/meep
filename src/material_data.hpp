@@ -21,10 +21,7 @@
 /* the void *data field in geometric_object_struct points to   */
 /* a material_data structure, defined below.                   */
 /***************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include <vector>
 
 #include <meep.hpp>
 #include <ctlgeom.h>
@@ -46,14 +43,8 @@ struct transition {
   double gamma;
   double pumping_rate;
 
-  bool operator==(const transition &other) const {
-    return (from_level == other.from_level && to_level == other.to_level &&
-            transition_rate == other.transition_rate && frequency == other.frequency &&
-            vector3_equal(sigma_diag, other.sigma_diag) && gamma == other.gamma &&
-            pumping_rate == other.pumping_rate);
-  }
-
-  bool operator!=(const transition &other) const { return !(*this == other); }
+  bool operator==(const transition &other) const;
+  bool operator!=(const transition &other) const;
 };
 
 typedef struct susceptibility_struct {
@@ -71,12 +62,7 @@ typedef struct susceptibility_struct {
   std::vector<double> initial_populations;
 } susceptibility;
 
-struct susceptibility_list {
-  int num_items;
-  susceptibility *items;
-
-  susceptibility_list() : num_items(0), items(NULL) {}
-};
+using susceptibility_list = std::vector<susceptibility>;
 
 struct medium_struct {
   vector3 epsilon_diag;
@@ -92,53 +78,10 @@ struct medium_struct {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 
-  medium_struct(double epsilon = 1) : E_susceptibilities(), H_susceptibilities() {
-    epsilon_diag.x = epsilon;
-    epsilon_diag.y = epsilon;
-    epsilon_diag.z = epsilon;
+  explicit medium_struct(double epsilon = 1);
 
-    mu_diag.x = 1;
-    mu_diag.y = 1;
-    mu_diag.z = 1;
-
-    epsilon_offdiag.x.re = 0;
-    epsilon_offdiag.x.im = 0;
-    epsilon_offdiag.y.re = 0;
-    epsilon_offdiag.y.im = 0;
-    epsilon_offdiag.z.re = 0;
-    epsilon_offdiag.z.im = 0;
-
-    mu_offdiag.x.re = 0;
-    mu_offdiag.x.im = 0;
-    mu_offdiag.y.re = 0;
-    mu_offdiag.y.im = 0;
-    mu_offdiag.z.re = 0;
-    mu_offdiag.z.im = 0;
-
-    E_chi2_diag.x = 0;
-    E_chi2_diag.y = 0;
-    E_chi2_diag.z = 0;
-
-    E_chi3_diag.x = 0;
-    E_chi3_diag.y = 0;
-    E_chi3_diag.z = 0;
-
-    H_chi2_diag.x = 0;
-    H_chi2_diag.y = 0;
-    H_chi2_diag.z = 0;
-
-    H_chi3_diag.x = 0;
-    H_chi3_diag.y = 0;
-    H_chi3_diag.z = 0;
-
-    D_conductivity_diag.x = 0;
-    D_conductivity_diag.y = 0;
-    D_conductivity_diag.z = 0;
-
-    B_conductivity_diag.x = 0;
-    B_conductivity_diag.y = 0;
-    B_conductivity_diag.z = 0;
-  }
+  // Aborts Meep if a non-zero imaginary part of an offdiagonal mu or epsilon entry is found.
+  void check_offdiag_im_zero_or_abort() const;
 };
 
 // prototype for user-defined material function,
@@ -182,16 +125,16 @@ struct material_data {
   bool do_averaging;
 
   // these fields used only if which_subclass==MATERIAL_FILE
-  meep::realnum *epsilon_data;
+  double *epsilon_data;
   size_t epsilon_dims[3];
 
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
-  meep::realnum *weights;
+  double *weights;
   medium_struct medium_1;
   medium_struct medium_2;
-  meep::realnum beta;
-  meep::realnum eta;
+  double beta;
+  double eta;
   /*
   There are several possible scenarios when material grids overlap -- these
   different scenarios enable different applications.
@@ -216,17 +159,9 @@ struct material_data {
   */
   enum { U_MIN = 0, U_PROD = 1, U_MEAN = 2, U_DEFAULT = 3 } material_grid_kinds;
 
-  material_data()
-      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL), epsilon_data(NULL),
-        weights(NULL), medium_1(), medium_2() {
-    epsilon_dims[0] = 0;
-    epsilon_dims[1] = 0;
-    epsilon_dims[2] = 0;
-    grid_size.x = 0;
-    grid_size.y = 0;
-    grid_size.z = 0;
-    material_grid_kinds = U_DEFAULT;
-  }
+  material_data();
+
+  void copy_from(const material_data& from);
 };
 
 typedef material_data *material_type;
@@ -235,7 +170,7 @@ struct material_type_list {
   material_type *items;
   int num_items;
 
-  material_type_list() : items(NULL), num_items(0) {}
+  material_type_list();
 };
 
 // global variables

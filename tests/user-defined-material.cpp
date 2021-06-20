@@ -54,13 +54,13 @@ bool compare_hdf5_datasets(const char *file1, const char *name1, const char *fil
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
   size_t *dims1 = new size_t[expected_rank];
-  double *data1 = f1.read(name1, &rank1, dims1, expected_rank);
+  realnum *data1 = (realnum *)f1.read(name1, &rank1, dims1, expected_rank, sizeof(realnum) == sizeof(float));
   if (!data1) return false;
 
   h5file f2(file2, h5file::READONLY, false);
   int rank2;
   size_t *dims2 = new size_t[expected_rank];
-  double *data2 = f2.read(name2, &rank2, dims2, expected_rank);
+  realnum *data2 = (realnum *)f2.read(name2, &rank2, dims2, expected_rank, sizeof(realnum) == sizeof(float));
   if (!data2) return false;
 
   if (rank1 != expected_rank || rank2 != expected_rank) return false;
@@ -122,32 +122,31 @@ void my_material_func(vector3 p, void *user_data, meep_geom::medium_struct *m) {
 
   // add susceptibilities (two-oscillator model for Ag)
   if (in_middle && data->with_susceptibility) {
-    m->E_susceptibilities.num_items = 2;
-    m->E_susceptibilities.items = new meep_geom::susceptibility[2];
+    m->E_susceptibilities.resize(2);
 
-    m->E_susceptibilities.items[0].sigma_offdiag.x = 0.0;
-    m->E_susceptibilities.items[0].sigma_offdiag.y = 0.0;
-    m->E_susceptibilities.items[0].sigma_offdiag.z = 0.0;
-    m->E_susceptibilities.items[0].sigma_diag.x = AG_SIG0;
-    m->E_susceptibilities.items[0].sigma_diag.y = AG_SIG0;
-    m->E_susceptibilities.items[0].sigma_diag.z = AG_SIG0;
-    m->E_susceptibilities.items[0].frequency = AG_FRQ0;
-    m->E_susceptibilities.items[0].gamma = AG_GAM0;
-    m->E_susceptibilities.items[0].noise_amp = 0.0;
-    m->E_susceptibilities.items[0].drude = true;
-    m->E_susceptibilities.items[0].is_file = false;
+    m->E_susceptibilities[0].sigma_offdiag.x = 0.0;
+    m->E_susceptibilities[0].sigma_offdiag.y = 0.0;
+    m->E_susceptibilities[0].sigma_offdiag.z = 0.0;
+    m->E_susceptibilities[0].sigma_diag.x = AG_SIG0;
+    m->E_susceptibilities[0].sigma_diag.y = AG_SIG0;
+    m->E_susceptibilities[0].sigma_diag.z = AG_SIG0;
+    m->E_susceptibilities[0].frequency = AG_FRQ0;
+    m->E_susceptibilities[0].gamma = AG_GAM0;
+    m->E_susceptibilities[0].noise_amp = 0.0;
+    m->E_susceptibilities[0].drude = true;
+    m->E_susceptibilities[0].is_file = false;
 
-    m->E_susceptibilities.items[1].sigma_offdiag.x = 0.0;
-    m->E_susceptibilities.items[1].sigma_offdiag.y = 0.0;
-    m->E_susceptibilities.items[1].sigma_offdiag.z = 0.0;
-    m->E_susceptibilities.items[1].sigma_diag.x = AG_SIG1;
-    m->E_susceptibilities.items[1].sigma_diag.y = AG_SIG1;
-    m->E_susceptibilities.items[1].sigma_diag.z = AG_SIG1;
-    m->E_susceptibilities.items[1].frequency = AG_FRQ1;
-    m->E_susceptibilities.items[1].gamma = AG_GAM1;
-    m->E_susceptibilities.items[1].noise_amp = 0.0;
-    m->E_susceptibilities.items[1].drude = true;
-    m->E_susceptibilities.items[1].is_file = false;
+    m->E_susceptibilities[1].sigma_offdiag.x = 0.0;
+    m->E_susceptibilities[1].sigma_offdiag.y = 0.0;
+    m->E_susceptibilities[1].sigma_offdiag.z = 0.0;
+    m->E_susceptibilities[1].sigma_diag.x = AG_SIG1;
+    m->E_susceptibilities[1].sigma_diag.y = AG_SIG1;
+    m->E_susceptibilities[1].sigma_diag.z = AG_SIG1;
+    m->E_susceptibilities[1].frequency = AG_FRQ1;
+    m->E_susceptibilities[1].gamma = AG_GAM1;
+    m->E_susceptibilities[1].noise_amp = 0.0;
+    m->E_susceptibilities[1].drude = true;
+    m->E_susceptibilities[1].is_file = false;
   }
 }
 

@@ -36,7 +36,7 @@ mpirun -np 4 meep foo.ctl > foo.out
 
 There is one important requirement: every MPI process must be able to read the `foo.py`/`foo.ctl` input file or whatever your script file is called. On most systems, this is no problem, but if for some reason your MPI processes don't all have access to the local filesystem then you may need to make copies of your input file or something. This requirement also applies to HDF5 files used for input (i.e., via `epsilon_input_file`) or output (i.e., `output_epsilon()`, `output_efield()`, etc.). Any disruptions to the network or disk failures on individual machines which affect the [network file system](https://en.wikipedia.org/wiki/Network_File_System) may cause Meep to freeze/hang.
 
-For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep), you can try setting [`split_chunks_evenly=False`](Python_User_Interface.md#the-simulation-class) in the `Simulation` constructor. For a technical description of the load balancing features in Meep as well as some performance metrics, see [arXiv:2003.04287](https://arxiv.org/abs/2003.04287).
+For a potential improvement in [load balancing](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep), you can try setting [`split_chunks_evenly=False`](Python_User_Interface.md#the-simulation-class) in the `Simulation` constructor. For a technical description of the load-balancing features in Meep as well as some performance metrics from actual experiments, see [arXiv:2003.04287](https://arxiv.org/abs/2003.04287).
 
 In general, you cannot run Meep interactively on multiple processors.
 
@@ -57,18 +57,49 @@ Meep also supports [thread-level parallelism](https://en.wikipedia.org/wiki/Task
 
 ### Optimization Studies of Parallel Simulations
 
-When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/AdjointSolver.md)), in order to keep all processes synchronized *every* process runs the same optimization algorithm on the same optimization variables. The overhead of duplicating the computational cost of the optimization algorithm and storage of the design variables across all processes is negligible compared to those of the Meep simulation.
+When running Meep simulations as part of an optimization study (e.g., via the [adjoint solver](Python_Tutorials/Adjoint_Solver.md)), in order to keep all processes synchronized *every* process runs the same optimization algorithm on the same optimization variables. The overhead of duplicating the computational cost of the optimization algorithm and storage of the design variables across all processes is negligible compared to those of the Meep simulation.
 
 For comparison, consider the scenario where the optimization runs on just a single master process. That would mean that during each iteration of the optimization after the Meep simulation has computed the objective function (and its gradient), only the master process uses this information to update the optimization parameters (i.e., the design region). The master process would then need to send the updated design region to the other processes so that they could all begin the next Meep simulation. As a result, additional bookkeeping is required to synchronize the processes.
 
 Note: for optimization studies involving *random* initial conditions, the seed of the random number generator must be specified otherwise each process will have a different initial condition which will cause a crash. For example, if you are initializing the design variables with `numpy.random.rand`, then you should call `numpy.random.seed(...)` to set the same `numpy.random` seed on every process.
+
+### User-Specified Cell Partition
+
+An alternative to having Meep automatically partition the cell at runtime into chunks based on the number of MPI processes is to manually specify the cell partition via the `chunk_layout` parameter of the `Simulation` constructor as a [`BinaryPartition`](Python_User_Interface.md#binarypartition) class object. This is based on representing an arbitrary cell partition as a [binary tree](https://en.wikipedia.org/wiki/Binary_tree) for which the nodes define "cuts" at a given point (e.g., -4.5, 6.3) along a given cell direction and the leaves define an integer-valued process ID (equivalent to the rank of the MPI process for that chunk). Note also that the same process ID can be assigned to as many chunks as you want, which just means that one process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number of MPI processes. If you use more MPI processes than there are chunks, then those MPI processes that are not assigned to chunks will just remain idle. Finally, any absorbing boundary layers (i.e., PMLs) surrounding the cell will automatically be defined as separate chunks and assigned the same process ID as the original chunk from which they were split off from.
+
+As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the cell center is partitioned into five chunks numbered one through five.
+
+<center>
+![](images/chunk_division_binary_tree.png)
+</center>
+
+This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a process ID. Based on these specifications, the cell partition from above can be set up as follows:
+
+```py
+import meep as mp
+import matplotlib.pyplot as plt
+
+chunk_layout = mp.BinaryPartition(data=[ (mp.X,-2.0), 0, [ (mp.Y,1.5),
+                                         [ (mp.X,3.0), 1, [ (mp.Y,-0.5), 4, 3 ] ], 2 ] ])
+
+cell_size = mp.Vector3(10.0,5.0,0)
+
+sim = mp.Simulation(cell_size=cell_size,
+                    resolution=10,
+                    chunk_layout=chunk_layout)
+
+sim.visualize_chunks()
+plt.savefig('chunk_layout.png',dpi=150,bbox_inches='tight')
+```
+
+For improved performance, we recommend ordering the process IDs in [depth-first order](https://en.wikipedia.org/wiki/Depth-first_search) of the tree, which will tend to give spatially adjacent chunks nearby process IDs.  This increases the chance that adjacent chunks are on the same MPI node, improving communication speeds.
 
 Technical Details
 -----------------
 
 When you run Meep under MPI, the following is a brief description of what is happening behind the scenes. For the most part, you shouldn't need to know this stuff. Just use the same Python/Scheme script file exactly as you would for a uniprocessor simulation.
 
-First, every MPI process executes the Python/Scheme file in parallel. The processes communicate however, to only perform one simulation in sync with one another. In particular, the cell is divided into "chunks", one per process, to roughly equally divide the work and the memory. For additional details, see [Chunks and Symmetry](Chunks_and_Symmetry.md) as well as Section 2.2 ("Grid chunks and owned points") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
+First, every MPI process executes the Python/Scheme file in parallel. The processes communicate however, to only perform one simulation in sync with one another. In particular, the cell is divided into "chunks," one per process, to roughly equally divide the work and the memory. For additional details, see [Chunks and Symmetry](Chunks_and_Symmetry.md) as well as Section 2.2 ("Grid chunks and owned points") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
 
 When you time-step via Python's `meep.Simulation.run(until=...)` or Scheme's `run-until`, etc., the chunks are time-stepped in parallel, communicating the values of the pixels on their boundaries with one another. In general, any Meep function that performs some collective operation over the whole cell or a large portion thereof is parallelized, including: time-stepping, HDF5 I/O, accumulation of flux spectra, and field integration via `integrate_field_function` (Python) or `integrate-field-function` (Scheme), although the *results* are communicated to all processes.
 
@@ -107,7 +138,7 @@ For large multicore jobs with I/O, it may be necessary to have `(meep-all-wait)`
 Runtime Scaling on MPI Clusters
 -------------------------------
 
-The following are benchmarking results of the total runtime vs. number of processors for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for [MPICH](https://www.mpich.org/) clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances (8 single-threaded cores) on the [Google Cloud Platform](https://cloud.google.com/) (GCP). One slot on each node is reserved for kernel tasks leaving 7 slots per node. The software stack includes Ubuntu 16.04, the Meep [nightly build Conda package](Installation.md#nightly-builds), [elasticluster](https://elasticluster.readthedocs.io/en/latest/) for the cluster management, and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. In order to reduce [cache contention](https://en.wikipedia.org/wiki/Resource_contention), process affinity is used via the `mpirun` option `-bind-to core`. Meep's simulation domain is split into equal-sized [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (`split_chunks_evenly=True`). There are 13 clusters ranging in size from 2 to 14 nodes (14 to 98 processors).
+The following are benchmarking results of the total runtime vs. number of processors for a 3d [OLED](http://www.simpetus.com/projects.html#meep_oled) simulation involving [Lorentzian susceptibility](Python_User_Interface.md#lorentziansusceptibility), [Absorber](Python_User_Interface.md#absorber), 1d [PML](Python_User_Interface.md#pml), and [DFT flux monitors](Python_User_Interface.md#flux-spectra) for [MPICH](https://www.mpich.org/) clusters of [n1-standard-16](https://cloud.google.com/compute/docs/machine-types#n1_machine_type) instances (8 single-threaded cores) on the [Google Cloud Platform](https://cloud.google.com/) (GCP). One slot on each node is reserved for kernel tasks leaving 7 slots per node. The software stack includes Ubuntu 16.04, the Meep [nightly build Conda package](Installation.md#nightly-builds), [elasticluster](https://elasticluster.readthedocs.io/en/latest/) for the cluster management, and [grid engine](https://en.wikipedia.org/wiki/Oracle_Grid_Engine) for the job scheduler. In order to reduce [cache contention](https://en.wikipedia.org/wiki/Resource_contention), process affinity is used via the `mpirun` option `-bind-to core`. Meep's simulation domain is split into equal-sized [chunks](Chunks_and_Symmetry.md#chunks-and-symmetry) (`split_chunks_evenly=True`). There are 13 clusters ranging in size from 2 to 14 nodes (14 to 98 processors). For reference, there are some [useful guidelines for benchmarking MPI jobs](https://www.open-mpi.org/faq/?category=tuning#running-perf-numbers).
 
 As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the mean time spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). (Timing metrics were obtained using [`Simulation.mean_time_spent_on`](Python_User_Interface.md#simulation-time).) This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one — the regime in which the simulation is constrained by the network bandwidth rather than the CPU clock speed — corresponds well to the minimum runtime of the first figure.
 
@@ -119,7 +150,7 @@ As shown in the first figure below, the runtime reaches a minimum at 77 processo
 ![](images/parallel_benchmark_commcomp_vs_nprocs.png)
 </center>
 
-These results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the $x$ axis to along the $y$ axis) which significantly affects the runtime performance.
+These results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the $x$ axis to along the $y$ axis) which significantly affects the runtime performance. Also, in general, benchmarking studies involving MPI jobs are challenging because there are [a number of factors which can affect the results](https://www.open-mpi.org/faq/?category=tuning#running-perf-numbers).
 
 For a given cluster, we can also analyze the time spent by each processor on time-stepping, MPI/synchronization, and DFT. This is shown in the next figure for the case of a cluster with 35 processors (5 nodes). Because the simulation is not properly load balanced due to the equal-sized chunks, there is a large variation in the timings for different processors particularly for the DFT where there are several idle processors (i.e., chunks which do not contain any DFT pixels).
 

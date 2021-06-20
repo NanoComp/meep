@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(meep, m4_esyscmd([./version.sh 1.17.2 alpha]))
+AC_INIT([meep],[m4_esyscmd(./version.sh 1.18.0)])
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
@@ -11,12 +11,25 @@ SHARED_VERSION_INFO="23:1:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
-AM_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 AM_MAINTAINER_MODE
 AC_SUBST(SHARED_VERSION_INFO)
 # need shared libraries for python interfaces
 AC_ENABLE_SHARED
+
+##############################################################################
+# build in single precision
+
+AC_ARG_ENABLE(single,
+              [AS_HELP_STRING([--enable-single],[compile in single precision])],
+	            enable_single=$enableval, enable_single=no)
+if test "x$enable_single" = "xyes"; then
+    MEEP_SINGLE=1
+else
+    MEEP_SINGLE=0
+fi
+AC_SUBST(MEEP_SINGLE)
 
 ##############################################################################
 
@@ -25,13 +38,16 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_LANG([C++])
 
+# make sure we enable C++11 support if possible
+AX_CXX_COMPILE_STDCXX([11], [], [optional])
+
 # Check for MPI library
 
-AC_ARG_WITH(mpi, [AC_HELP_STRING([--with-mpi],[enable MPI parallelization])],
+AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[enable MPI parallelization])],
                   with_mpi=$withval, with_mpi=no)
 
 if test "x$with_mpi" = "xyes"; then
-  ACX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
+  AX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
   CXX=$MPICXX
 
   # Detect stupid MPICH problem with SEEK_SET conflicting between
@@ -42,21 +58,19 @@ if test "x$with_mpi" = "xyes"; then
     if test "x$flag" = xunknown; then break; fi
     save_CPPFLAGS=$CPPFLAGS
     if test "x$flag" != xnone; then CPPFLAGS="$CPPFLAGS $flag"; fi
-    AC_TRY_COMPILE([#include <stdio.h>
-#include <mpi.h>], [], [break], [])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
+#include <mpi.h>]], [[]])],[break],[])
     CPPFLAGS=$save_CPPFLAGS
   done
   AC_MSG_RESULT($flag)
   if test "x$flag" = xunknown; then
     AC_MSG_CHECKING([if we can combine stdio.h and mpi.h by undef'ing SEEK_*])
-    AC_TRY_COMPILE([#include <stdio.h>
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
 #undef SEEK_SET
 #undef SEEK_END
 #undef SEEK_CUR
-#include <mpi.h>], [],
-	 [AC_MSG_RESULT(yes)
-          AC_DEFINE([NEED_UNDEF_SEEK_FOR_MPI], 1, [Define if mpi.h needs SEEK macros to be undefined])],
-	 [AC_MSG_RESULT(no)
+#include <mpi.h>]], [[]])],[AC_MSG_RESULT(yes)
+          AC_DEFINE([NEED_UNDEF_SEEK_FOR_MPI], 1, [Define if mpi.h needs SEEK macros to be undefined])],[AC_MSG_RESULT(no)
           AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])])
   fi
 fi
@@ -68,7 +82,7 @@ fi
 AX_CXX_MAXOPT
 
 AC_ARG_ENABLE(debug,
-              [AC_HELP_STRING([--enable-debug],[compile for debugging])],
+              [AS_HELP_STRING([--enable-debug],[compile for debugging])],
 	      enable_debug=$enableval, enable_debug=no)
 if test "$enable_debug" = "yes"; then
 	CFLAGS="-g"
@@ -95,7 +109,7 @@ for flg in $CXXFLAGS; do
 done
 AC_SUBST(ARCHFLAG)
 
-AC_ARG_WITH(openmp, [AC_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, with_openmp=no)
+AC_ARG_WITH(openmp, [AS_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, with_openmp=no)
 if test x"$with_openmp" = "xyes"; then
    AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
    AX_OPENMP([CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"], [AC_MSG_ERROR([don't know how to enable OpenMP])])
@@ -104,7 +118,7 @@ fi
 ##############################################################################
 # More checks
 
-AC_PROG_LIBTOOL
+LT_INIT
 
 AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
 if test -z "$LATEX2HTML"; then
@@ -126,8 +140,8 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 AC_PROG_F77
 AC_F77_WRAPPERS
 if test "x$with_lapack" != xno -o "x$with_blas" != xno; then
-   ACX_BLAS
-   ACX_LAPACK
+   AX_BLAS
+   AX_LAPACK
    LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
 fi
 
@@ -145,16 +159,16 @@ PKG_CHECK_MODULES(HARMINV, harminv >= 1.1, [CFLAGS="$CFLAGS $HARMINV_CFLAGS"; LI
 
 # As a fallback, check manually for BLAS/LAPACK and harminv libraries:
 if test $have_harminv = no; then
-        if test "x$acx_lapack_ok" = x; then
-	   ACX_BLAS
-	   ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
-	   LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
-	elif test "x$acx_lapack_ok" = xno; then
-	   AC_MSG_WARN([BLAS/LAPACK needed for harminv])
-	fi
+  if test "x$ax_lapack_ok" = x; then
+    AX_BLAS
+    AX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for harminv])])
+    LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
+  elif test "x$ax_lapack_ok" = xno; then
+    AC_MSG_WARN([BLAS/LAPACK needed for harminv])
+  fi
 
-        save_CC=$CC
-	CC=$CXX # harminv test must use $CXX since harminv may be a C++ lib
+  save_CC=$CC
+  CC=$CXX # harminv test must use $CXX since harminv may be a C++ lib
 
 	# just use lapack/blas in default libs since we always need them
 	AC_CHECK_LIB(harminv, harminv_get_freq_error, [have_harminv=yes; LIBS="-lharminv $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([harminv support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])
@@ -172,18 +186,18 @@ fi
 AC_CHECK_HEADER(mpb.h, [have_mpb=maybe], [have_mpb=no])
 
 if test $have_mpb = maybe; then
-  if test "x$acx_lapack_ok" = x -a "x$have_harminv" = xno; then
-	ACX_BLAS
-	ACX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for MPB])])
-        LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
-  elif test "x$acx_lapack_ok" = xno; then
-       AC_MSG_WARN([BLAS/LAPACK needed for MPB])
+  if test "x$ax_lapack_ok" = x -a "x$have_harminv" = xno; then
+    AX_BLAS
+    AX_LAPACK([], [AC_MSG_WARN([BLAS/LAPACK needed for MPB])])
+          LIBS="$LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"
+  elif test "x$ax_lapack_ok" = xno; then
+    AC_MSG_WARN([BLAS/LAPACK needed for MPB])
   fi
   AC_CHECK_LIB(mpb, maxwell_target_operator1, [have_mpb=yes; LIBS="-lmpb $LIBS"],
                [AC_CHECK_LIB(mpb, maxwell_target_operator1,
                    [have_mpb=yes; LIBS="-lmpb $LAPACK_LIBS $BLAS_LIBS $LIBS $FLIBS"], [AC_MSG_WARN([MPB support is disabled])], [$LAPACK_LIBS $BLAS_LIBS $FLIBS])])
   if test $have_mpb = yes; then
-     AC_DEFINE([HAVE_MPB], [1], [Define if you have libmpb])
+    AC_DEFINE([HAVE_MPB], [1], [Define if you have libmpb])
   fi
 fi
 
@@ -204,26 +218,36 @@ AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
 
 ##############################################################################
 # Check for HDF5 library
-AC_ARG_WITH(hdf5, [AC_HELP_STRING([--without-hdf5],[do not allow HDF5 output])], ok=$withval, ok=yes)
+AC_ARG_WITH(hdf5, [AS_HELP_STRING([--without-hdf5],[do not allow HDF5 output])], ok=$withval, ok=yes)
 if test "$ok" = "yes"; then
-	AC_CHECK_LIB(z,deflate, [],[AC_MSG_WARN([zlib is required for HDF5!])])
+    AC_CHECK_LIB(z,deflate, [],[AC_MSG_WARN([zlib is required for HDF5!])])
 
-	save_CC=$CC
-	if test "x$with_mpi" = "xyes"; then
-	   CC=$MPICXX
-	fi
-	save_LIBS_0="$LIBS" # save, to check later if we found any library
-	AC_CHECK_LIB(hdf5, H5Pcreate, [
-		AC_CHECK_HEADERS(hdf5.h, [LIBS="-lhdf5 $LIBS"
-                     AC_DEFINE(HAVE_HDF5,1,[Define if we have & link HDF5])])])
-	if test x"$save_LIBS_0" = x"$LIBS"; then
-		AC_MSG_WARN([Couldn't find the HDF5 library!!  Switching to --without-hdf5.])
-	fi
-	CC=$save_CC
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
 
-        if test "x$with_mpi" = "xyes"; then
-		AC_CHECK_FUNCS(H5Pset_mpi H5Pset_fapl_mpio)
-	fi
+    # Check whether linking with "-lhdf5" just works (installation in default
+    # location or due to user-provided flags). If not, try to locate HDF5 via
+    # pkg-config.  Optimistically update LIBS and CPPFLAGS. Revert if any
+    # AC_CHECKs fail.
+    AC_CHECK_LIB(hdf5, H5Pcreate, [], [
+        PKG_CHECK_MODULES(HDF5, hdf5, [
+            CPPFLAGS="$CPPFLAGS $HDF5_CFLAGS"
+            LIBS="$HDF5_LIBS $LIBS"
+        ], [])
+    ])
+
+    AC_CHECK_FUNC(H5Pcreate, [
+        AC_CHECK_HEADER(hdf5.h, [
+            AC_DEFINE(HAVE_HDF5,1,[Define if we have & link HDF5])
+            AC_CHECK_FUNCS(H5Pset_mpi H5Pset_fapl_mpio)
+        ])
+    ])
+
+    if test "x$ac_cv_header_hdf5_h" != "xyes"; then
+        AC_MSG_WARN([Couldn't find the HDF5 header or library!!  Switching to --without-hdf5.])
+        CPPFLAGS="$save_CPPFLAGS"
+        LIBS="$save_LIBS"
+    fi
 fi
 
 ##############################################################################
@@ -249,7 +273,7 @@ AC_SUBST(MEEPLIBS)
 
 ##############################################################################
 
-AC_ARG_WITH(libctl, [AC_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=yes)
+AC_ARG_WITH(libctl, [AS_HELP_STRING([--with-libctl=<dir>],[specify libctl directory])], with_libctl=$withval, with_libctl=yes)
 if test "x$with_libctl" = "xno"; then
         :
 elif test "x$with_libctl" != "xyes"; then
@@ -258,7 +282,7 @@ fi
 
 AM_CONDITIONAL(WITH_LIBCTL, test "x$with_libctl" != xno)
 
-AC_ARG_WITH(scheme, [AC_HELP_STRING([--without-scheme], [compile without Scheme interface])],
+AC_ARG_WITH(scheme, [AS_HELP_STRING([--without-scheme],[compile without Scheme interface])],
             with_scheme=$withval, with_scheme=yes)
 AM_CONDITIONAL(WITH_SCHEME, test x"$with_scheme" = "xyes")
 
@@ -297,28 +321,22 @@ AC_CHECK_HEADERS([libguile.h guile/gh.h])
 
 AC_CHECK_FUNCS(scm_make_smob_type)
 AC_MSG_CHECKING([for SCM_SMOB_PREDICATE])
-AC_TRY_LINK([#include <guile/gh.h>
-#include <libguile/smob.h>],
-                    [int x; SCM_SMOB_PREDICATE(1,x);],
-                    ok=yes, ok=no)
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <guile/gh.h>
+#include <libguile/smob.h>]], [[int x; SCM_SMOB_PREDICATE(1,x);]])],[ok=yes],[ok=no])
 AC_MSG_RESULT($ok)
 if test $ok = yes; then
 	AC_DEFINE(HAVE_SCM_SMOB_PREDICATE, 1, [define if we have SCM_SMOB_PREDICATE])
 fi
 AC_MSG_CHECKING([for SCM_SMOB_DATA])
-AC_TRY_LINK([#include <guile/gh.h>
-#include <libguile/smob.h>],
-                    [int x; SCM_SMOB_DATA(x);],
-                    ok=yes, ok=no)
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <guile/gh.h>
+#include <libguile/smob.h>]], [[int x; SCM_SMOB_DATA(x);]])],[ok=yes],[ok=no])
 AC_MSG_RESULT($ok)
 if test $ok = yes; then
 	AC_DEFINE(HAVE_SCM_SMOB_DATA, 1, [define if we have SCM_SMOB_DATA])
 fi
 AC_MSG_CHECKING([for SCM_NEWSMOB])
-AC_TRY_LINK([#include <guile/gh.h>
-#include <libguile/smob.h>],
-                    [int x; SCM_NEWSMOB(x,1,0);],
-                    ok=yes, ok=no)
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <guile/gh.h>
+#include <libguile/smob.h>]], [[int x; SCM_NEWSMOB(x,1,0);]])],[ok=yes],[ok=no])
 AC_MSG_RESULT($ok)
 if test $ok = yes; then
 	AC_DEFINE(HAVE_SCM_NEWSMOB, 1, [define if we have SCM_NEWSMOB])
@@ -470,17 +488,15 @@ fi
 # affect whether it is declared, as it is a GNU extension).
 # We need to #include <stdio.h> because that somehow affects whether
 # the function is declared with older gcc versions.  We need
-# to use AC_TRY_COMPILE because the test in AC_HAVE_DECL seems
+# to use AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[],[]) because the test in AC_HAVE_DECL seems
 # to be optimized out.
 
 AC_CHECK_FUNCS(feenableexcept) dnl GNU libc fp exception control function
 AC_MSG_CHECKING([whether feenableexcept declaration is usable])
 feenableexcept_decl_ok=yes
-AC_TRY_COMPILE([#include <stdio.h>
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
 #define _GNU_SOURCE 1
-#include <fenv.h>], [feenableexcept(0);],
-[AC_DEFINE([HAVE_DECL_FEENABLEEXCEPT],[1],[Define if fenv.h declares this.])],
-[feenableexcept_decl_ok=no])
+#include <fenv.h>]], [[feenableexcept(0);]])],[AC_DEFINE([HAVE_DECL_FEENABLEEXCEPT],[1],[Define if fenv.h declares this.])],[feenableexcept_decl_ok=no])
 AC_MSG_RESULT($feenableexcept_decl_ok)
 
 ##############################################################################
@@ -498,18 +514,15 @@ fi
 
 ##############################################################################
 # Miscellaneous function and header checks
-
-AC_HEADER_TIME
 AC_CHECK_HEADERS([sys/time.h])
 AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
 
 ##############################################################################
 # check for restrict keyword in C++
-AC_PREREQ(2.58) dnl for ac_c_restrict
 AC_C_RESTRICT
 
 # check for C99 _Pragma support, so that we can emit pragmas in macros
-AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to nothing if C99 _Pragma is not supported])])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[_Pragma("ivdep")]])],[],[AC_DEFINE([_Pragma],[],[define to nothing if C99 _Pragma is not supported])])
 
 ##############################################################################
 
@@ -517,7 +530,7 @@ AC_TRY_COMPILE([], [_Pragma("ivdep")], [], [AC_DEFINE([_Pragma],[],[define to no
 ##############################################################################
 
 AC_ARG_WITH(python,
-	[AC_HELP_STRING([--without-python], [compile without Python interface])],
+	[AS_HELP_STRING([--without-python],[compile without Python interface])],
         with_python=$withval,with_python=yes)
 
 AC_CHECK_PROG(SWIG, swig, swig, echo)
@@ -597,6 +610,7 @@ AC_CONFIG_FILES([
 	src/Makefile
 	src/support/Makefile
 	tests/Makefile
+  src/meep/meep-config.h
 ])
 
 AC_OUTPUT

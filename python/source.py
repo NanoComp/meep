@@ -200,9 +200,9 @@ class GaussianSource(SourceTime):
         Construct a `GaussianSource`.
 
         + **`frequency` [`number`]** — The center frequency $f$ in units of $c$/distance
-          (or $\omega$ in units of $2\pi c$/distance). See [Units](Introduction.md#units-in-meep).
+          (or $\\omega$ in units of $2\\pi c$/distance). See [Units](Introduction.md#units-in-meep).
           No default value. You can instead specify `wavelength=x` or `period=x`, which
-          are both a synonym for `frequency=1/x`; i.e. $1/\omega$ in these units is the vacuum
+          are both a synonym for `frequency=1/x`; i.e. $1/\\omega$ in these units is the vacuum
           wavelength or the temporal period.
 
         + **`width` [`number`]** — The width $w$ used in the Gaussian. No default value.
@@ -227,7 +227,7 @@ class GaussianSource(SourceTime):
           Default is `False`.
 
         + **`fourier_transform(f)`** — Returns the Fourier transform of the current
-          evaluated at frequency `f` ($\omega=2\pi f$) given by:
+          evaluated at frequency `f` ($\\omega=2\\pi f$) given by:
           $$
           \\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}}
           \\int e^{i\\omega t}G(t)\\,dt \\equiv
@@ -302,7 +302,7 @@ class CustomSource(SourceTime):
         self.start_time = start_time
         self.end_time = end_time
         self.center_frequency = center_frequency
-        self.swigobj = mp.custom_src_time(src_func, start_time, end_time, center_frequency)
+        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time, center_frequency)
         self.swigobj.is_integrated = self.is_integrated
 
 
@@ -376,7 +376,7 @@ class EigenModeSource(Source):
         """
         Construct an `EigenModeSource`.
 
-        + **`eig_band` [`integer` or `DiffractedPlanewave`]** — Either the index *n* (1,2,3,...) of the desired band
+        + **`eig_band` [`integer` or `DiffractedPlanewave` class]** — Either the index *n* (1,2,3,...) of the desired band
           ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
           band at a given **k** point, and so on, or alternatively a diffracted planewave in homogeneous media.
 

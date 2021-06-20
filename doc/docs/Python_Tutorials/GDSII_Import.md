@@ -217,6 +217,9 @@ In the limit of infinite resolution, the discretization error is removed and the
 In the directional coupler example above, individual layers of the GDS file were imported by specifying a single number in the `get_GDSII_prisms` routine (i.e., 1, 2, 31, 32, etc.). However, there are certain GDS files in which the layers are referenced using a 2-tuple (e.g., (37,4)). Since `get_GDSII_prisms` which is based on [`libGDSII`](https://github.com/HomerReid/libGDSII) does not support this feature, you will need to use [`gdspy`](https://gdspy.readthedocs.io/) as demonstrated in the following example.
 
 ```py
+import meep as mp
+import gdspy
+
 ## load the GDS file
 gds = gdspy.GdsLibrary(infile=gds_file)
 

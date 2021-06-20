@@ -46,7 +46,11 @@ private:
 #define PRINTF_ATTR(f, a)
 #endif
 
+#ifdef SWIG
 void abort(const char *fmt, ...) PRINTF_ATTR(1, 2);
+#else
+[[noreturn]] void abort(const char *fmt, ...) PRINTF_ATTR(1, 2);
+#endif
 void all_wait();
 int count_processors();
 int my_rank();
@@ -55,6 +59,7 @@ inline int am_master() { return my_rank() == 0; }
 bool with_mpi();
 
 void send(int from, int to, double *data, int size = 1);
+void broadcast(int from, float *data, int size);
 void broadcast(int from, double *data, int size);
 void broadcast(int from, char *data, int size);
 void broadcast(int from, int *data, int size);

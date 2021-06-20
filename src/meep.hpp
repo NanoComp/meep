@@ -23,20 +23,19 @@
 
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
+#include "meep/meep-config.h"
 
 #include <vector>
 
 namespace meep {
 
-/* We use the type realnum for large arrays, e.g. the fields.
-   For local variables and small arrays, we use double precision,
-   but for things like the fields we can often get away with
-   single precision (since the errors are not dominated by roundoff).
-   However, we will default to using double-precision for large
-   arrays, as the factor of two in memory and the moderate increase
-   in speed currently don't seem worth the loss of precision. */
-#define MEEP_SINGLE 0 // 1 for single precision, 0 for double
-#if MEEP_SINGLE
+/* The (time-domain) fields arrays of the fields_chunk class as well
+   as the material arrays of the structure_chunk class chi1inv,
+   chi3, sigma, etc. can be stored using single-precision floating
+   point rather than double precision (the default). The reduced
+   precision can provide for up to a factor of 2X improvement in the
+   time-stepping rate with generally negligible loss in accuracy. */
+#if MEEP_SINGLE // set to 1 via configure --enable-single
 typedef float realnum;
 #else
 typedef double realnum;
@@ -99,12 +98,12 @@ public:
   bool operator==(const susceptibility &s) const { return id == s.id; };
 
   // Returns the 1st order nonlinear susceptibility (generic)
-  virtual std::complex<double> chi1(double freq, double sigma = 1);
+  virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
 
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const {
     (void)P;
     (void)W;
@@ -147,7 +146,7 @@ public:
     return 0;
   }
   virtual void delete_internal_data(void *data) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const {
     (void)W;
     (void)dt;
@@ -236,23 +235,23 @@ private:
   denominator to obtain a Drude model. */
 class lorentzian_susceptibility : public susceptibility {
 public:
-  lorentzian_susceptibility(double omega_0, double gamma, bool no_omega_0_denominator = false)
+  lorentzian_susceptibility(realnum omega_0, realnum gamma, bool no_omega_0_denominator = false)
       : omega_0(omega_0), gamma(gamma), no_omega_0_denominator(no_omega_0_denominator) {}
   virtual susceptibility *clone() const { return new lorentzian_susceptibility(*this); }
   virtual ~lorentzian_susceptibility() {}
 
   // Returns the 1st order nonlinear susceptibility
-  virtual std::complex<double> chi1(double freq, double sigma = 1);
+  virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
@@ -264,7 +263,7 @@ public:
   virtual int get_num_params() { return 4; }
 
 protected:
-  double omega_0, gamma;
+  realnum omega_0, gamma;
   bool no_omega_0_denominator;
 };
 
@@ -272,21 +271,21 @@ protected:
    includes white noise with a specified amplitude */
 class noisy_lorentzian_susceptibility : public lorentzian_susceptibility {
 public:
-  noisy_lorentzian_susceptibility(double noise_amp, double omega_0, double gamma,
+  noisy_lorentzian_susceptibility(realnum noise_amp, realnum omega_0, realnum gamma,
                                   bool no_omega_0_denominator = false)
       : lorentzian_susceptibility(omega_0, gamma, no_omega_0_denominator), noise_amp(noise_amp) {}
 
   virtual susceptibility *clone() const { return new noisy_lorentzian_susceptibility(*this); }
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void dump_params(h5file *h5f, size_t *start);
   virtual int get_num_params() { return 5; }
 
 protected:
-  double noise_amp;
+  realnum noise_amp;
 };
 
 typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } gyrotropy_model;
@@ -294,18 +293,18 @@ typedef enum { GYROTROPIC_LORENTZIAN, GYROTROPIC_DRUDE, GYROTROPIC_SATURATED } g
 /* gyrotropic susceptibility */
 class gyrotropic_susceptibility : public susceptibility {
 public:
-  gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma, double alpha = 0.0,
+  gyrotropic_susceptibility(const vec &bias, realnum omega_0, realnum gamma, realnum alpha = 0.0,
                             gyrotropy_model model = GYROTROPIC_LORENTZIAN);
   virtual susceptibility *clone() const { return new gyrotropic_susceptibility(*this); }
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
 
   virtual bool needs_P(component c, int cmp, realnum *W[NUM_FIELD_COMPONENTS][2]) const;
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
@@ -323,8 +322,8 @@ public:
   }
 
 protected:
-  double gyro_tensor[3][3];
-  double omega_0, gamma, alpha;
+  realnum gyro_tensor[3][3];
+  realnum omega_0, gamma, alpha;
   gyrotropy_model model;
 };
 
@@ -339,14 +338,14 @@ public:
   virtual ~multilevel_susceptibility();
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt, const grid_volume &gv,
+                        realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
                         void *P_internal_data) const;
 
   virtual void subtract_P(field_type ft, realnum *f_minus_p[NUM_FIELD_COMPONENTS][2],
                           void *P_internal_data) const;
 
   virtual void *new_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], const grid_volume &gv) const;
-  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+  virtual void init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                   const grid_volume &gv, void *data) const;
   virtual void *copy_internal_data(void *data) const;
   virtual void delete_internal_data(void *data) const;
@@ -386,10 +385,10 @@ public:
 
   bool ok();
 
-  realnum *read(const char *dataname, int *rank, size_t *dims, int maxrank);
-  void write(const char *dataname, int rank, const size_t *dims, realnum *data,
+  void *read(const char *dataname, int *rank, size_t *dims, int maxrank,
              bool single_precision = true);
-
+  void write(const char *dataname, int rank, const size_t *dims, void *data,
+             bool single_precision = true);
   char *read(const char *dataname);
   void write(const char *dataname, const char *data);
 
@@ -397,13 +396,15 @@ public:
                    bool single_precision = true);
   void extend_data(const char *dataname, int rank, const size_t *dims);
   void create_or_extend_data(const char *dataname, int rank, const size_t *dims, bool append_data,
-                             bool single_precision);
-  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, realnum *data);
+                             bool single_precision = true);
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, float *data);
+  void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, double *data);
   void write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
   void done_writing_chunks();
 
   void read_size(const char *dataname, int *rank, size_t *dims, int maxrank);
-  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, realnum *data);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, float *data);
+  void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, double *data);
   void read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims, size_t *data);
 
   void remove();
@@ -566,14 +567,14 @@ class structure;
 
 class structure_chunk {
 public:
-  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   realnum *chi3[NUM_FIELD_COMPONENTS], *chi2[NUM_FIELD_COMPONENTS];
   realnum *chi1inv[NUM_FIELD_COMPONENTS][5];
   bool trivial_chi1inv[NUM_FIELD_COMPONENTS][5];
   realnum *conductivity[NUM_FIELD_COMPONENTS][5];
   realnum *condinv[NUM_FIELD_COMPONENTS][5]; // cache of 1/(1+conduct*dt/2)
   bool condinv_stale;                        // true if condinv needs to be recomputed
-  double *sig[6], *kap[6], *siginv[6];       // conductivity array for uPML
+  realnum *sig[6], *kap[6], *siginv[6];      // conductivity array for uPML
   int sigsize[6];                            // conductivity array size
   grid_volume gv; // integer grid_volume that could be bigger than non-overlapping v below
   volume v;
@@ -707,13 +708,15 @@ boundary_region pml(double thickness, direction d, double Rasymptotic = 1e-15,
 boundary_region pml(double thickness, double Rasymptotic = 1e-15, double mean_stretch = 1.0);
 #define no_pml() boundary_region()
 
+class binary_partition;
+
 class structure {
 public:
   structure_chunk **chunks;
   int num_chunks;
   bool shared_chunks; // whether modifications to chunks will be visible to fields objects
   grid_volume gv, user_volume;
-  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   volume v;
   symmetry S;
   const char *outdir;
@@ -726,11 +729,13 @@ public:
   structure(const grid_volume &gv, material_function &eps,
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
-            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
+            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+            const binary_partition *bp = NULL);
   structure(const grid_volume &gv, double eps(const vec &),
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
-            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
+            double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+            const binary_partition *bp = NULL);
   structure(const structure *);
   structure(const structure &);
 
@@ -773,7 +778,9 @@ public:
   void dump_chunk_layout(const char *filename);
   void load(const char *filename);
   void load_chunk_layout(const char *filename, boundary_region &br);
-  void load_chunk_layout(const std::vector<grid_volume> &gvs, boundary_region &br);
+  void load_chunk_layout(const std::vector<grid_volume> &gvs,
+                         const std::vector<int> &ids,
+                         boundary_region &br);
 
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
@@ -799,7 +806,7 @@ private:
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region &br,
-                            const symmetry &s);
+                            const symmetry &s, const binary_partition *bp);
   void check_chunks();
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
@@ -808,11 +815,16 @@ private:
 };
 
 // defined in structure.cpp
-std::vector<grid_volume> choose_chunkdivision(grid_volume &gv,
-                                              volume &v,
-                                              int num_chunks,
-                                              const symmetry &s);
+binary_partition *choose_chunkdivision(grid_volume &gv,
+                                       volume &v,
+                                       int num_chunks,
+                                       const symmetry &s);
 
+// defined in structure_dump.cpp
+void split_by_binarytree(grid_volume gvol,
+                         std::vector<grid_volume> &result_gvs,
+                         std::vector<int> &result_ids,
+                         const binary_partition *bp);
 class src_vol;
 class fields;
 class fields_chunk;
@@ -1025,7 +1037,7 @@ public:
   component c; // component to DFT (possibly transformed by symmetry)
 
   size_t N;                   // number of spatial points (on epsilon grid)
-  std::complex<realnum> *dft; // N x Nomega array of DFT values.
+  std::complex<double> *dft; // N x Nomega array of DFT values.
 
   class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   class dft_chunk *next_in_dft;   // next for this particular DFT vol./component
@@ -1076,7 +1088,7 @@ public:
   int sn;
 
   // cache of exp(iwt) * scale, of length Nomega
-  std::complex<realnum> *dft_phase;
+  std::complex<double> *dft_phase;
 
   ptrdiff_t avg1, avg2; // index offsets for average to get epsilon grid
 
@@ -1195,7 +1207,7 @@ public:
 };
 
 
-struct sourcedata{
+struct sourcedata {
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
   int fc_idx;
@@ -1229,8 +1241,8 @@ public:
   void farfield_lowlevel(std::complex<double> *F, const vec &x);
 
   /* Return a newly allocated array with all far fields */
-  realnum *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                               double resolution);
+  double *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
+                              double resolution);
 
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix, const volume &where,
@@ -1285,8 +1297,8 @@ public:
   std::vector<double> freq;
 
 private:
-  std::complex<realnum> *Fdft; // Nomega array of field * J*(x) DFT values
-  std::complex<realnum> *Jdft; // Nomega array of J(t) DFT values
+  std::complex<double> *Fdft;  // Nomega array of field * J*(x) DFT values
+  std::complex<double> *Jdft;  // Nomega array of J(t) DFT values
   double Jsum;                 // sum of |J| over all points
 };
 
@@ -1352,7 +1364,7 @@ public:
   int npol[NUM_FIELD_TYPES];                // only E_stuff and H_stuff are used
   polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
 
-  double a, Courant, dt; // res. a, Courant num., and timestep dt=Courant/a
+  double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   grid_volume gv;
   volume v;
   double m;                        // angular dependence in cyl. coords
@@ -2117,11 +2129,6 @@ make_casimir_gfunc(double T, double dt, double sigma, field_type ft,
 
 std::complex<double> *make_casimir_gfunc_kz(double T, double dt, double sigma, field_type ft);
 
-#if MEEP_SINGLE
-// in mympi.cpp ... must be here in order to use realnum type
-void broadcast(int from, realnum *data, int size);
-#endif
-
 // random number generation: random.cpp
 void set_random_seed(unsigned long seed);
 void restore_random_seed();
@@ -2147,8 +2154,19 @@ std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);
 
-realnum linear_interpolate(realnum rx, realnum ry, realnum rz, realnum *data, int nx, int ny,
-                           int nz, int stride);
+double linear_interpolate(double rx, double ry, double rz, double *data,
+                          int nx, int ny, int nz, int stride);
+
+// binary tree class for importing layout of chunk partition
+class binary_partition {
+public:
+  binary_partition(int _id);
+  binary_partition(direction _split_dir, double _split_pos);
+  direction split_dir;
+  double split_pos;
+  int proc_id;
+  binary_partition *left, *right;
+};
 
 } /* namespace meep */
 

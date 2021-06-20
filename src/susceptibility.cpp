@@ -55,10 +55,10 @@ susceptibility *susceptibility::clone() const {
 }
 
 // generic base class definition.
-std::complex<double> susceptibility::chi1(double freq, double sigma) {
+std::complex<realnum> susceptibility::chi1(realnum freq, realnum sigma) {
   (void)freq;
   (void)sigma;
-  return std::complex<double>(0, 0);
+  return std::complex<realnum>(0, 0);
 }
 
 void susceptibility::delete_internal_data(void *data) const { free(data); }
@@ -118,7 +118,7 @@ void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   return (void *)d;
 }
 
-void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+void lorentzian_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                    const grid_volume &gv, void *data) const {
   (void)dt; // unused
   lorentzian_data *d = (lorentzian_data *)data;
@@ -166,10 +166,10 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
    algebra from this to get the condition for a root with |z| > 1.
 
    FIXME: this test seems to be too conservative (issue #12) */
-static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
-  double w = 2 * pi * omega_0, g = 2 * pi * gamma;
-  double g2 = g * dt / 2, w2 = (w * dt) * (w * dt);
-  double b = (1 - w2 / 2) / (1 + g2), c = (1 - g2) / (1 + g2);
+static bool lorentzian_unstable(realnum omega_0, realnum gamma, realnum dt) {
+  realnum w = 2 * pi * omega_0, g = 2 * pi * gamma;
+  realnum g2 = g * dt / 2, w2 = (w * dt) * (w * dt);
+  realnum b = (1 - w2 / 2) / (1 + g2), c = (1 - g2) / (1 + g2);
   return b * b > c && 2 * b * b - c + 2 * fabs(b) * sqrt(b * b - c) > 1;
 }
 #endif
@@ -186,13 +186,13 @@ static bool lorentzian_unstable(double omega_0, double gamma, double dt) {
   (0.25 * ((g[i] + g[i - sx]) * u[i] + (g[i + s] + g[(i + s) - sx]) * u[i + s]))
 
 void lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                          const grid_volume &gv, void *P_internal_data) const {
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
-  const double omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
-  const double omega0dtsqr = omega2pi * omega2pi * dt * dt;
-  const double gamma1inv = 1 / (1 + g2pi * dt / 2), gamma1 = (1 - g2pi * dt / 2);
-  const double omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
+  const realnum omega2pi = 2 * pi * omega_0, g2pi = gamma * 2 * pi;
+  const realnum omega0dtsqr = omega2pi * omega2pi * dt * dt;
+  const realnum gamma1inv = 1 / (1 + g2pi * dt / 2), gamma1 = (1 - g2pi * dt / 2);
+  const realnum omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
   (void)W_prev; // unused;
 
   // TODO: add back lorentzian_unstable(omega_0, gamma, dt) if we can improve the stability test
@@ -294,35 +294,35 @@ realnum *lorentzian_susceptibility::cinternal_notowned_ptr(int inotowned, compon
   return d->P[c][cmp] + n;
 }
 
-std::complex<double> lorentzian_susceptibility::chi1(double freq, double sigma) {
+std::complex<realnum> lorentzian_susceptibility::chi1(realnum freq, realnum sigma) {
   if (no_omega_0_denominator) {
     // Drude model
-    return sigma * omega_0 * omega_0 / std::complex<double>(-freq * freq, -gamma * freq);
+    return sigma * omega_0 * omega_0 / std::complex<realnum>(-freq * freq, -gamma * freq);
   }
   else {
     // Standard Lorentzian model
     return sigma * omega_0 * omega_0 /
-           std::complex<double>(omega_0 * omega_0 - freq * freq, -gamma * freq);
+           std::complex<realnum>(omega_0 * omega_0 - freq * freq, -gamma * freq);
   }
 }
 
 void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 5;
   size_t params_dims[1] = {num_params};
-  double params_data[] = {4, (double)get_id(), omega_0, gamma, (double)no_omega_0_denominator};
+  realnum params_data[] = {4, (realnum)get_id(), omega_0, gamma, (realnum)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
 
 void noisy_lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                               realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                               realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                const grid_volume &gv, void *P_internal_data) const {
   lorentzian_susceptibility::update_P(W, W_prev, dt, gv, P_internal_data);
   lorentzian_data *d = (lorentzian_data *)P_internal_data;
 
-  const double g2pi = gamma * 2 * pi;
-  const double w2pi = omega_0 * 2 * pi;
-  const double amp = w2pi * noise_amp * sqrt(g2pi) * dt * dt / (1 + g2pi * dt / 2);
+  const realnum g2pi = gamma * 2 * pi;
+  const realnum w2pi = omega_0 * 2 * pi;
+  const realnum amp = w2pi * noise_amp * sqrt(g2pi) * dt * dt / (1 + g2pi * dt / 2);
   /* for uniform random numbers in [-amp,amp] below, multiply amp by sqrt(3) */
 
   FOR_COMPONENTS(c) DOCMP2 {
@@ -341,19 +341,19 @@ void noisy_lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][
 void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 6;
   size_t params_dims[1] = {num_params};
-  double params_data[] = {
-      5, (double)get_id(), noise_amp, omega_0, gamma, (double)no_omega_0_denominator};
+  realnum params_data[] = {
+      5, (realnum)get_id(), noise_amp, omega_0, gamma, (realnum)no_omega_0_denominator};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }
 
-gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double omega_0, double gamma,
-                                                     double alpha, gyrotropy_model model)
+gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, realnum omega_0, realnum gamma,
+                                                     realnum alpha, gyrotropy_model model)
     : omega_0(omega_0), gamma(gamma), alpha(alpha), model(model) {
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
   // Ignore |b| for Landau-Lifshitz-Gilbert gyrotropy model.
   const vec b = (model == GYROTROPIC_SATURATED) ? bias / abs(bias) : bias;
-  memset(gyro_tensor, 0, 9 * sizeof(double));
+  memset(gyro_tensor, 0, 9 * sizeof(realnum));
   gyro_tensor[X][Y] = b.z();
   gyro_tensor[Y][X] = -b.z();
   gyro_tensor[Y][Z] = b.x();
@@ -365,7 +365,7 @@ gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, double ome
 /* To implement gyrotropic susceptibilities, we track three
    polarization components (e.g. Px, Py, Pz) on EACH of the Yee cell's
    three driving field positions (e.g., Ex, Ey, and Ez), i.e. 9
-   numbers per cell.  This takes 3x the memory and runtime compared to
+   numbers per cell.  This takes 3X the memory and runtime compared to
    Lorentzian susceptibility.  The advantage is that during update_P,
    we can directly access the value of P at each update point without
    averaging.  */
@@ -391,7 +391,7 @@ void *gyrotropic_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   return (void *)d;
 }
 
-void gyrotropic_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], double dt,
+void gyrotropic_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONENTS][2], realnum dt,
                                                    const grid_volume &gv, void *data) const {
   (void)dt; // unused
   gyrotropy_data *d = (gyrotropy_data *)data;
@@ -442,33 +442,33 @@ bool gyrotropic_susceptibility::needs_P(component c, int cmp,
 #define OFFDIAGW(g, sx, s) (0.25 * (g[i] + g[i - sx] + g[i + s] + g[i + s - sx]))
 
 void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
-                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], double dt,
+                                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt,
                                          const grid_volume &gv, void *P_internal_data) const {
   gyrotropy_data *d = (gyrotropy_data *)P_internal_data;
-  const double omega2pidt = 2 * pi * omega_0 * dt;
-  const double g2pidt = 2 * pi * gamma * dt;
+  const realnum omega2pidt = 2 * pi * omega_0 * dt;
+  const realnum g2pidt = 2 * pi * gamma * dt;
   (void)W_prev; // unused;
 
   switch (model) {
     case GYROTROPIC_LORENTZIAN:
     case GYROTROPIC_DRUDE: {
-      const double omega0dtsqr = omega2pidt * omega2pidt;
-      const double gamma1 = (1 - g2pidt / 2);
-      const double diag = 2 - (model == GYROTROPIC_DRUDE ? 0 : omega0dtsqr);
-      const double pt = pi * dt;
+      const realnum omega0dtsqr = omega2pidt * omega2pidt;
+      const realnum gamma1 = (1 - g2pidt / 2);
+      const realnum diag = 2 - (model == GYROTROPIC_DRUDE ? 0 : omega0dtsqr);
+      const realnum pt = pi * dt;
 
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
-      const double gd = (1 + g2pidt / 2);
-      const double gx = pt * gyro_tensor[Y][Z];
-      const double gy = pt * gyro_tensor[Z][X];
-      const double gz = pt * gyro_tensor[X][Y];
-      const double invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
-      const double inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
-                                 invdet * (gx * gz - gd * gy)},
-                                {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
-                                 invdet * (gy * gz + gd * gx)},
-                                {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
-                                 invdet * (gd * gd + gz * gz)}};
+      const realnum gd = (1 + g2pidt / 2);
+      const realnum gx = pt * gyro_tensor[Y][Z];
+      const realnum gy = pt * gyro_tensor[Z][X];
+      const realnum gz = pt * gyro_tensor[X][Y];
+      const realnum invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
+      const realnum inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
+                                  invdet * (gx * gz - gd * gy)},
+                                 {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
+                                  invdet * (gy * gz + gd * gx)},
+                                 {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
+                                  invdet * (gd * gd + gz * gz)}};
 
       FOR_COMPONENTS(c) DOCMP2 {
         if (d->P[c][cmp][0]) {
@@ -516,20 +516,20 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
     } break;
 
     case GYROTROPIC_SATURATED: {
-      const double dt2pi = 2 * pi * dt;
+      const realnum dt2pi = 2 * pi * dt;
 
       // Precalculate 3x3 matrix inverse, exploiting skew symmetry
-      const double gd = 0.5;
-      const double gx = -0.5 * alpha * gyro_tensor[Y][Z];
-      const double gy = -0.5 * alpha * gyro_tensor[Z][X];
-      const double gz = -0.5 * alpha * gyro_tensor[X][Y];
-      const double invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
-      const double inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
-                                 invdet * (gx * gz - gd * gy)},
-                                {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
-                                 invdet * (gy * gz + gd * gx)},
-                                {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
-                                 invdet * (gd * gd + gz * gz)}};
+      const realnum gd = 0.5;
+      const realnum gx = -0.5 * alpha * gyro_tensor[Y][Z];
+      const realnum gy = -0.5 * alpha * gyro_tensor[Z][X];
+      const realnum gz = -0.5 * alpha * gyro_tensor[X][Y];
+      const realnum invdet = 1.0 / gd / (gd * gd + gx * gx + gy * gy + gz * gz);
+      const realnum inv[3][3] = {{invdet * (gd * gd + gx * gx), invdet * (gx * gy + gd * gz),
+                                  invdet * (gx * gz - gd * gy)},
+                                 {invdet * (gy * gx - gd * gz), invdet * (gd * gd + gy * gy),
+                                  invdet * (gy * gz + gd * gx)},
+                                 {invdet * (gz * gx + gd * gy), invdet * (gz * gy - gd * gx),
+                                  invdet * (gd * gd + gz * gz)}};
 
       FOR_COMPONENTS(c) DOCMP2 {
         if (d->P[c][cmp][0]) {
@@ -618,9 +618,9 @@ realnum *gyrotropic_susceptibility::cinternal_notowned_ptr(int inotowned, compon
 void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 9;
   size_t params_dims[1] = {num_params};
-  double bias[] = {gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y]};
-  double params_data[] = {8,     (double)get_id(), bias[X], bias[Y], bias[Z], omega_0, gamma,
-                          alpha, (double)model};
+  realnum bias[] = {gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y]};
+  realnum params_data[] = {8, (realnum)get_id(), bias[X], bias[Y], bias[Z], omega_0, gamma,
+                          alpha, (realnum)model};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }

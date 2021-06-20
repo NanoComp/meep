@@ -282,16 +282,15 @@ static herr_t find_dataset(hid_t group_id, const char *name, void *d) {
 #endif
 
 #ifdef HAVE_HDF5
-#define REALNUM_H5T (sizeof(realnum) == sizeof(double) ? H5T_NATIVE_DOUBLE : H5T_NATIVE_FLOAT)
 #define SIZE_T_H5T (sizeof(size_t) == 4 ? H5T_NATIVE_UINT32 : H5T_NATIVE_UINT64)
 #else
-#define REALNUM_H5T 0
 #define SIZE_T_H5T 0
 #endif
 
-realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank) {
+void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
+                   bool single_precision) {
 #ifdef HAVE_HDF5
-  realnum *data = 0;
+  void *data = 0;
   if (parallel || am_master()) {
     int i, N;
     hid_t file_id = HID(get_id()), space_id, data_id;
@@ -336,8 +335,12 @@ realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank
     delete[] dims_copy;
     H5Sclose(space_id);
 
-    data = new realnum[N];
-    H5Dread(data_id, REALNUM_H5T, H5S_ALL, H5S_ALL, H5P_DEFAULT, (void *)data);
+    if (single_precision)
+      data = new float[N];
+    else
+      data = new double[N];
+    H5Dread(data_id, single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE,
+            H5S_ALL, H5S_ALL, H5P_DEFAULT, (void *)data);
 
     if (close_data_id) H5Dclose(data_id);
   }
@@ -348,8 +351,16 @@ realnum *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank
     size_t N = 1;
     for (int i = 0; i < *rank; ++i)
       N *= dims[i];
-    if (!am_master()) data = new realnum[N];
-    broadcast(0, data, N);
+    if (!am_master()) {
+      if (single_precision)
+        data = new float[N];
+      else
+        data = new double[N];
+    }
+    if (single_precision)
+      broadcast(0, (float *)data, N);
+    else
+      broadcast(0, (double *)data, N);
   }
 
   if (*rank == 1 && dims[0] == 1) *rank = 0;
@@ -487,7 +498,7 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims, boo
 
     delete[] dims_copy;
 
-    hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : REALNUM_H5T;
+    hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE;
 
     data_id = H5Dcreate(file_id, dataname, type_id, space_id, prop_id);
     if (data_id < 0) abort("Error creating dataset");
@@ -601,8 +612,8 @@ void h5file::create_or_extend_data(const char *dataname, int rank, const size_t 
    that have no data can be skipped).
 */
 static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
-                         const size_t *chunk_start, const size_t *chunk_dims, hid_t datatype,
-                         void *data) {
+                         const size_t *chunk_start, const size_t *chunk_dims,
+                         hid_t datatype, void *data) {
 #ifdef HAVE_HDF5
   int i;
   bool do_write = true;
@@ -672,9 +683,15 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
-                         realnum *data) {
-  _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims, REALNUM_H5T,
-               (void *)data);
+                         float *data) {
+  _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
+               H5T_NATIVE_FLOAT, data);
+}
+
+void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+                         double *data) {
+  _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
+               H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
@@ -694,14 +711,19 @@ void h5file::done_writing_chunks() {
   if (parallel && cur_dataname && get_extending(cur_dataname)) prevent_deadlock(); // closes id
 }
 
-void h5file::write(const char *dataname, int rank, const size_t *dims, realnum *data,
+void h5file::write(const char *dataname, int rank, const size_t *dims, void *data,
                    bool single_precision) {
   if (parallel || am_master()) {
     size_t *start = new size_t[rank + 1];
     for (int i = 0; i < rank; i++)
       start[i] = 0;
     create_data(dataname, rank, dims, false, single_precision);
-    if (am_master()) write_chunk(rank, start, dims, data);
+    if (am_master()) {
+      if (single_precision)
+        write_chunk(rank, start, dims, (float *)data);
+      else
+        write_chunk(rank, start, dims, (double *)data);
+    }
     done_writing_chunks();
     unset_cur();
     delete[] start;
@@ -718,7 +740,6 @@ void h5file::write(const char *dataname, const char *data) {
     remove_data(dataname); // HDF5 gives error if we H5Dcreate existing dataset
 
     type_id = H5Tcopy(H5T_C_S1);
-    ;
     H5Tset_size(type_id, strlen(data) + 1);
     space_id = H5Screate(H5S_SCALAR);
 
@@ -803,8 +824,15 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
-                        realnum *data) {
-  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, REALNUM_H5T, (void *)data);
+                        float *data) {
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
+              H5T_NATIVE_FLOAT, data);
+}
+
+void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
+                        double *data) {
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
+              H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,

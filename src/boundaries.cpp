@@ -69,9 +69,9 @@ ivec fields::ilattice_vector(direction d) const {
       switch (d) {
         case X: return ivec(user_volume.nx() * 2, 0);
         case Y: return ivec(0, user_volume.ny() * 2);
-        case Z:
-        case R:
-        case P:
+        case Z:  // fall-thru
+        case R:  // fall-thru
+        case P:  // fall-thru
         case NO_DIRECTION: break;
       }
     case D3:
@@ -79,8 +79,8 @@ ivec fields::ilattice_vector(direction d) const {
         case X: return ivec(user_volume.nx() * 2, 0, 0);
         case Y: return ivec(0, user_volume.ny() * 2, 0);
         case Z: return ivec(0, 0, user_volume.nz() * 2);
-        case R:
-        case P:
+        case R:  // fall-thru
+        case P:  // fall-thru
         case NO_DIRECTION: break;
       }
   }

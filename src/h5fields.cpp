@@ -36,7 +36,7 @@ typedef struct {
   h5file *file;
   ivec min_corner, max_corner;
   int num_chunks;
-  realnum *buf;
+  double *buf;
   size_t bufsz;
   int rank;
   direction ds[3];
@@ -261,7 +261,7 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
 
   file->create_or_extend_data(dataname, rank, dims, append_data, single_precision);
 
-  data.buf = new realnum[data.bufsz];
+  data.buf = new double[data.bufsz];
 
   data.num_fields = num_fields;
   data.components = components;

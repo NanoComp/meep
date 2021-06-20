@@ -1,0 +1,5 @@
+/* compile-time configuration of meep that affects user linkage */
+
+#ifndef MEEP_SINGLE
+#define MEEP_SINGLE @MEEP_SINGLE@
+#endif

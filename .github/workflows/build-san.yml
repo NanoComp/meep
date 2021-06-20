@@ -1,0 +1,58 @@
+name: Sanitizers
+
+on:
+  schedule:
+    - cron:  "24 10 * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "Test C++ with ${{ matrix.name-suffix }}"
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name-suffix: "ASAN"
+            sanitizer: "address"
+            configure-options: ""
+            debug-options: "-g1"
+          - name-suffix: "MSAN"
+            sanitizer: "memory"
+            configure-options: "CC=clang CXX=clang++ LD=clang++"
+            debug-options: "-gmlt"
+          - name-suffix: "UBSAN"
+            sanitizer: "undefined"
+            configure-options: "CC=clang CXX=clang++ LD=clang++"
+            debug-options: "-gmlt"
+
+    steps:
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y autoconf automake clang libaec-dev libctl-dev \
+          libfftw3-dev libgdsii-dev libgsl-dev libharminv-dev libhdf5-dev \
+          libtool mpb mpb-dev
+    - name: Check out repository
+      uses: actions/checkout@v2
+    - name: Autoreconf
+      run: autoreconf -if
+    - name: configure
+      run: |
+        ./configure \
+          --with-hdf5 --without-mpi --without-python --without-scheme \
+          --enable-shared --enable-maintainer-mode \
+          CXXFLAGS="-fsanitize=${{ matrix.sanitizer }} ${{ matrix.debug-options }}" \
+          LDFLAGS="-fsanitize=${{ matrix.sanitizer }}" \
+          ${{ matrix.configure-options }}
+    - name: make
+      run: make -j$(nproc)
+    - name: Run sanitizer
+      run: make -j$(nproc) check
+    - name: Archive test logs
+      uses: actions/upload-artifact@v2
+      if: failure()
+      with:
+        name: ${{ matrix.name-suffix }}-log
+        path: tests/test-suite.log

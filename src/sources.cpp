@@ -31,7 +31,7 @@ namespace meep {
 
 // this function is necessary to make equality commutative ... ugh
 bool src_times_equal(const src_time &t1, const src_time &t2) {
-  return t1.is_equal(t2) && t2.is_equal(t1);
+  return t1.is_equal(t2) && t2.is_equal(t1) && t1.is_integrated == t2.is_integrated;
 }
 
 src_time *src_time::add_to(src_time *others, src_time **added) const {
@@ -145,7 +145,7 @@ bool custom_src_time::is_equal(const src_time &t) const {
   const custom_src_time *tp = dynamic_cast<const custom_src_time *>(&t);
   if (tp)
     return (tp->start_time == start_time && tp->end_time == end_time && tp->func == func &&
-            tp->data == data);
+            tp->data == data && tp->freq == freq);
   else
     return 0;
 }
@@ -325,8 +325,8 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, st
   //     after all add_srcdata calls are complete.
 }
 
-static realnum *amp_func_data_re = NULL;
-static realnum *amp_func_data_im = NULL;
+static double *amp_func_data_re = NULL;
+static double *amp_func_data_im = NULL;
 static const volume *amp_func_vol = NULL;
 static size_t amp_file_dims[3];
 
@@ -398,13 +398,13 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   std::string dataset_im = std::string(dataset) + ".im";
 
   size_t re_dims[] = {1, 1, 1};
-  double *real_data = eps_file.read(dataset_re.c_str(), &rank, re_dims, 3);
+  realnum *real_data = (realnum *)eps_file.read(dataset_re.c_str(), &rank, re_dims, 3, sizeof(realnum) == sizeof(float));
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", re_dims[0], re_dims[1],
                   re_dims[2], filename, dataset_re.c_str());
 
   size_t im_dims[] = {1, 1, 1};
-  double *imag_data = eps_file.read(dataset_im.c_str(), &rank, im_dims, 3);
+  realnum *imag_data = (realnum *)eps_file.read(dataset_im.c_str(), &rank, im_dims, 3, sizeof(realnum) == sizeof(float));
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", im_dims[0], im_dims[1],
                   im_dims[2], filename, dataset_im.c_str());
