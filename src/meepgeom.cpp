@@ -311,6 +311,8 @@ bool is_metal(meep::field_type ft, const material_type *material) {
 // computes the vector-Jacobian product of the gradient of the matgrid_val function v
 // with the Jacobian of the to_geom_box_coords function for geometric_object o
 vector3 to_geom_object_coords_VJP(vector3 v, const geometric_object *o) {
+  if (!o) { meep::abort("must pass a geometric_object to to_geom_object_coords_VJP.\n"); }
+
   switch (o->which_subclass) {
     default: {
       vector3 po = {0, 0, 0};
@@ -392,9 +394,9 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 
   // [du_dx,du_dy,du_dz] is the gradient ∇u with respect to the transformed coordinate
   // r1 of the matgrid_val function but what we want is the gradient of u(g(r2)) with 
-  // respect to r2 where g(r2) is the to_geom_object_coords function. computing this
-  // quantity involves using the chain rule and the vector-Jacobian product ∇u J
-  // where J is the Jacobian matrix of g.
+  // respect to r2 where g(r2) is the to_geom_object_coords function (in libctl/utils/geom.c).
+  // computing this quantity involves using the chain rule and thus the vector-Jacobian product
+  // ∇u J where J is the Jacobian matrix of g.
   vector3 grad_u;
   grad_u.x = du_dx * nx;
   grad_u.y = du_dy * ny;
