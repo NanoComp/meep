@@ -123,6 +123,10 @@ struct material_data {
   user_material_func user_func;
   void *user_data;
 
+  // used for any variable material (USER, FILE, or GRID):
+  // indicates whether we should use the fallback subpixel averaging via quadrature
+  bool do_averaging;
+
   // these fields used only if which_subclass==MATERIAL_FILE
   double *epsilon_data;
   size_t epsilon_dims[3];
@@ -157,10 +161,6 @@ struct material_data {
   Specifically, that means that u = the top material grid value at that point.
   */
   enum { U_MIN = 0, U_PROD = 1, U_MEAN = 2, U_DEFAULT = 3 } material_grid_kinds;
-
-  // used for any variable material (USER, FILE, or GRID):
-  // indicates whether we should use the fallback subpixel averaging via quadrature
-  bool do_averaging;
 
   material_data();
 
