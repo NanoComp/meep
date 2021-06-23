@@ -1199,48 +1199,39 @@ struct matgrid_volavg {
   double eps2;           // trace of epsilon tensor from medium 2
 };
 
-static void get_uproj_w(const void *mgva_, double x0, double &uproj_, double &w_) {
-  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
+static void get_uproj_w(const matgrid_volavg *mgva, double x0, double &u_proj, double &w) {
   // use a linear approximation for the material grid weights around the Yee grid point
-  uproj_ = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
+  u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
   if (mgva->dim == meep::D1)
-    w_ = 1/(2*mgva->rad);
-  else if (mgva->dim == meep::D2)
-    w_ = 2*sqrt(mgva->rad*mgva->rad - x0*x0)/(meep::pi * mgva->rad*mgva->rad);
+    w = 1/(2*mgva->rad);
+  else if (mgva->dim == meep::D2 || mgva->dim == meep::Dcyl)
+    w = 2*sqrt(mgva->rad*mgva->rad - x0*x0)/(meep::pi * mgva->rad*mgva->rad);
   else if (mgva->dim == meep::D3)
-    w_ = meep::pi*(mgva->rad*mgva->rad - x0*x0)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
+    w = meep::pi*(mgva->rad*mgva->rad - x0*x0)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
 }
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   double u_proj = 0, w = 0;
-  get_uproj_w(mgva_, x[0], u_proj, w);
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double eps1 = mgva->eps1;
-  double eps2 = mgva->eps2;
+  get_uproj_w(mgva, x[0], u_proj, w);
   cnumber ret;
-  ret.re = (1-u_proj)*eps1 + u_proj*eps2;
-  ret.im = (1-u_proj)/eps1 + u_proj/eps2;
+  ret.re = (1-u_proj)*mgva->eps1 + u_proj*mgva->eps2;
+  ret.im = (1-u_proj)/mgva->eps1 + u_proj/mgva->eps2;
   return ret * w;
 }
 #else
 static number matgrid_eps_func(int n, number *x, void *mgva_) {
   double u_proj = 0, w = 0;
-  get_uproj_w(mgva_, x[0], u_proj, w);
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double eps1 = mgva->eps1;
-  double eps2 = mgva->eps2;
-  double eps_interp = (1-u_proj)*eps1 + u_proj*eps2;
-  return eps_interp * w;
+  get_uproj_w(mgva, x[0], u_proj, w);
+  return w * ((1-u_proj)*mgva->eps1 + u_proj*mgva->eps2);
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   double u_proj = 0, w = 0;
-  get_uproj_w(mgva_, x[0], u_proj, w);
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  double eps1 = mgva->eps1;
-  double eps2 = mgva->eps2;
-  double epsinv_interp = (1-u_proj)/eps1 + u_proj/eps2;
-  return epsinv_interp * w;
+  get_uproj_w(mgva, x[0], u_proj, w);
+  return w * ((1-u_proj)/mgva->eps1 + u_proj/mgva->eps2);
 }
 #endif
 
