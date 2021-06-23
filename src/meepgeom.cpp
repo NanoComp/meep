@@ -1195,66 +1195,50 @@ struct matgrid_volavg {
   double ugrad_abs;      // magnitude of gradient of uval
   double beta;           // thresholding bias
   double eta;            // thresholding erosion/dilation
-  vector3 med1_eps_diag; // diagonal of epsilon tensor from medium 1
-  vector3 med2_eps_diag; // diagonal of epsilon tensor from medium 2
+  double eps1;           // trace of epsilon tensor from medium 1
+  double eps2;           // trace of epsilon tensor from medium 2
 };
+
+static void get_uproj_w(const void *mgva_, double x0, double &uproj_, double &w_) {
+  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
+  // use a linear approximation for the material grid weights around the Yee grid point
+  uproj_ = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
+  if (mgva->dim == meep::D1)
+    w_ = 1/(2*mgva->rad);
+  else if (mgva->dim == meep::D2)
+    w_ = 2*sqrt(mgva->rad*mgva->rad - x0*x0)/(meep::pi * mgva->rad*mgva->rad);
+  else if (mgva->dim == meep::D3)
+    w_ = meep::pi*(mgva->rad*mgva->rad - x0*x0)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
+}
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
-  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  // use a linear approximation for the material grid weights around the Yee grid point
-  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0], mgva->beta, mgva->eta);
-  vector3 med1_eps_diag = mgva->med1_eps_diag;
-  vector3 med2_eps_diag = mgva->med2_eps_diag;
-  double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
-  double eps2 = (med2_eps_diag.x + med2_eps_diag.y + med2_eps_diag.z)/3;
+  double u_proj = 0, w = 0;
+  get_uproj_w(mgva_, x[0], u_proj, w);
+  double eps1 = mgva->eps1;
+  double eps2 = mgva->eps2;
   cnumber ret;
   ret.re = (1-u_proj)*eps1 + u_proj*eps2;
   ret.im = (1-u_proj)/eps1 + u_proj/eps2;
-  double w = 0;
-  if (mgva->dim == meep::D1)
-    w = 1/(2*mgva->rad);
-  else if (mgva->dim == meep::D2)
-    w = 2*sqrt(mgva->rad*mgva->rad - x[0]*x[0])/(meep::pi * mgva->rad*mgva->rad);
-  else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - x[0]*x[0])/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
   return ret * w;
 }
 #else
 static number matgrid_eps_func(int n, number *x, void *mgva_) {
+  double u_proj = 0, w = 0;
+  get_uproj_w(mgva_, x[0], u_proj, w);
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  // use a linear approximation for the material grid weights around the Yee grid point
-  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0], mgva->beta, mgva->eta);
-  vector3 med1_eps_diag = mgva->med1_eps_diag;
-  vector3 med2_eps_diag = mgva->med2_eps_diag;
-  double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
-  double eps2 = (med2_eps_diag.x + med2_eps_diag.y + med2_eps_diag.z)/3;
+  double eps1 = mgva->eps1;
+  double eps2 = mgva->eps2;
   double eps_interp = (1-u_proj)*eps1 + u_proj*eps2;
-  double w = 0;
-  if (mgva->dim == meep::D1)
-    w = 1/(2*mgva->rad);
-  else if (mgva->dim == meep::D2)
-    w = 2*sqrt(mgva->rad*mgva->rad - x[0]*x[0])/(meep::pi * mgva->rad*mgva->rad);
-  else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - x[0]*x[0])/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
   return eps_interp * w;
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
+  double u_proj = 0, w = 0;
+  get_uproj_w(mgva_, x[0], u_proj, w);
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  // use a linear approximation for the material grid weights around the Yee grid point
-  double u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x[0], mgva->beta, mgva->eta);
-  vector3 med1_eps_diag = mgva->med1_eps_diag;
-  vector3 med2_eps_diag = mgva->med2_eps_diag;
-  double eps1 = (med1_eps_diag.x + med1_eps_diag.y + med1_eps_diag.z)/3;
-  double eps2 = (med2_eps_diag.x + med2_eps_diag.y + med2_eps_diag.z)/3;
+  double eps1 = mgva->eps1;
+  double eps2 = mgva->eps2;
   double epsinv_interp = (1-u_proj)/eps1 + u_proj/eps2;
-  double w = 0;
-  if (mgva->dim == meep::D1)
-    w = 1/(2*mgva->rad);
-  else if (mgva->dim == meep::D2)
-    w = 2*sqrt(mgva->rad*mgva->rad - x[0]*x[0])/(meep::pi * mgva->rad*mgva->rad);
-  else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - x[0]*x[0])/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
   return epsinv_interp * w;
 }
 #endif
@@ -1378,8 +1362,8 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     mgva.rad = v.diameter()/2;
     mgva.beta = md->beta;
     mgva.eta = md->eta;
-    mgva.med1_eps_diag = md->medium_1.epsilon_diag;
-    mgva.med2_eps_diag = md->medium_2.epsilon_diag;
+    mgva.eps1 = (md->medium_1.epsilon_diag.x+md->medium_1.epsilon_diag.y+md->medium_1.epsilon_diag.z)/3;
+    mgva.eps2 = (md->medium_2.epsilon_diag.x+md->medium_2.epsilon_diag.y+md->medium_2.epsilon_diag.z)/3;
     xmin[0] = -v.diameter()/2;
     xmax[0] = v.diameter()/2;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
