@@ -408,9 +408,9 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
     gradient.set_direction(meep::Z, grad_u_J.z);
   }
   else {
-    gradient.set_direction(meep::X, grad_u.x);
-    gradient.set_direction(meep::Y, grad_u.y);
-    gradient.set_direction(meep::Z, grad_u.z);
+    gradient.set_direction(meep::X, geometry_lattice.size.x == 0 ? 0 : grad_u.x / geometry_lattice.size.x);
+    gradient.set_direction(meep::Y, geometry_lattice.size.y == 0 ? 0 : grad_u.y / geometry_lattice.size.y);
+    gradient.set_direction(meep::Z, geometry_lattice.size.z == 0 ? 0 : grad_u.z / geometry_lattice.size.z);
   }
 
   return gradient;
