@@ -1215,6 +1215,7 @@ static void get_uproj_w(const void *mgva_, double x0, double &uproj_, double &w_
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   double u_proj = 0, w = 0;
   get_uproj_w(mgva_, x[0], u_proj, w);
+  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   double eps1 = mgva->eps1;
   double eps2 = mgva->eps2;
   cnumber ret;
