@@ -184,7 +184,14 @@ void set_zero_subnormals(bool iszero)
 
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
+#ifdef _OPENMP
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  if (provided < MPI_THREAD_FUNNELED && omp_get_num_threads() > 1)
+      abort("MPI does not support multi-threaded execution");
+#else
   MPI_Init(&argc, &argv);
+#endif
   int major, minor;
   MPI_Get_version(&major, &minor);
   if (verbosity > 0)
