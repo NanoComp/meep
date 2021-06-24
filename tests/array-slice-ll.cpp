@@ -83,7 +83,6 @@ void usage(char *progname) {
   master_printf("options: \n");
   master_printf(" --use-symmetry    use geometric symmetries\n");
   master_printf(" --write-files     write reference data files\n");
-  meep::abort();
 }
 
 /***************************************************************/
@@ -108,8 +107,9 @@ int main(int argc, char *argv[]) {
       master_printf("writing HDF5 data files");
     }
     else {
-      master_printf("unknown command-line option %s (aborting)", argv[narg]);
+      master_printf("unknown command-line option %s", argv[narg]);
       usage(argv[0]);
+      exit(1);
     };
   };
 
