@@ -116,7 +116,7 @@ int check_cyl(double sr, double sz, double a) {
 int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c1 = NO_COMPONENT,
                 bool evenz = true) {
   const double dpml = 1;
-  if (dim != D2 && dim != D3) abort("2d or 3d required");
+  if (dim != D2 && dim != D3) meep::abort("2d or 3d required");
   grid_volume gv = dim == D2 ? vol2d(xmax + 2 * dpml, xmax + 2 * dpml, a)
                              : vol3d(xmax + 2 * dpml, xmax + 2 * dpml, xmax + 2 * dpml, a);
   gv.center_origin();

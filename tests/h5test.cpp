@@ -50,7 +50,7 @@ double compare(double a, double b, const char *nam, size_t i0, size_t i1, size_t
   if (fabs(a - b) > tol * tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a - b));
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
-    abort("Error in %s at (%zd,%zd,%zd)\n", nam, i0, i1, i2);
+    meep::abort("Error in %s at (%zd,%zd,%zd)\n", nam, i0, i1, i2);
   }
   return fabs(a - b);
 }
@@ -90,7 +90,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
   file = f.open_h5file(name, h5file::READONLY);
 
   char *str = file->read("stringtest");
-  if (strcmp(str, "Hello, world!\n")) abort("Failed to read back string test from %s...", name);
+  if (strcmp(str, "Hello, world!\n")) meep::abort("Failed to read back string test from %s...", name);
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
@@ -116,9 +116,9 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
 
     realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
-    if (!h5data) abort("failed to read dataset %s:%s\n", name, dataname);
+    if (!h5data) meep::abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
-      abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
+      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
     if (expected_rank == 1 && file_gv.in_direction_min(X) == file_gv.in_direction_max(X)) {
       dims[1] = dims[0];
       dims[0] = 1;
@@ -199,7 +199,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
   file = f.open_h5file(name, h5file::READONLY);
 
   char *str = file->read("stringtest");
-  if (strcmp(str, "Hello, world!\n")) abort("Failed to read back string test from %s...", name);
+  if (strcmp(str, "Hello, world!\n")) meep::abort("Failed to read back string test from %s...", name);
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
@@ -225,9 +225,9 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
 
     realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 3, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
-    if (!h5data) abort("failed to read dataset %s:%s\n", name, dataname);
+    if (!h5data) meep::abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
-      abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
+      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
     vec loc(loc0.dim);
     for (size_t i0 = 0; i0 < dims[0]; ++i0) {
       for (size_t i1 = 0; i1 < dims[1]; ++i1) {
@@ -332,9 +332,9 @@ bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc 
 
     realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
-    if (!h5data) abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
-    if (rank != 1) abort("monitor-point data is not one-dimensional");
-    if (dims[0] != size_t(f.t)) abort("incorrect size of monitor-point data");
+    if (!h5data) meep::abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
+    if (rank != 1) meep::abort("monitor-point data is not one-dimensional");
+    if (dims[0] != size_t(f.t)) meep::abort("incorrect size of monitor-point data");
 
     for (int i = 0; i < f.t; ++i) {
       double err = compare(h5data[i], get_reim(mon[i], reim), name, i, 0, 0);

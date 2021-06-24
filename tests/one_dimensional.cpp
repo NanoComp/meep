@@ -151,10 +151,10 @@ int main(int argc, char **argv) {
   master_printf("Testing one dimension under different splittings...\n");
 
   for (int s = 2; s < 7; s++)
-    if (!test_pattern(one, s)) abort("error in test_pattern\n");
+    if (!test_pattern(one, s)) meep::abort("error in test_pattern\n");
 
   for (int s = 2; s < 7; s++)
-    if (!test_simple_periodic(one, s)) abort("error in test_simple_periodic\n");
+    if (!test_simple_periodic(one, s)) meep::abort("error in test_simple_periodic\n");
 
   return 0;
 }

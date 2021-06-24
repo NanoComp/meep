@@ -25,7 +25,7 @@ using namespace std;
 namespace meep {
 
 void fields::update_eh(field_type ft, bool skip_w_components) {
-  if (ft != E_stuff && ft != H_stuff) abort("update_eh only works with E/H");
+  if (ft != E_stuff && ft != H_stuff) meep::abort("update_eh only works with E/H");
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->update_eh(ft, skip_w_components))
@@ -80,7 +80,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   const size_t ntot = s->gv.ntot();
 
   if (have_f_minus_p && doing_solve_cw)
-    abort("dispersive materials are not yet implemented for solve_cw");
+    meep::abort("dispersive materials are not yet implemented for solve_cw");
 
   //////////////////////////////////////////////////////////////////////////
   // First, initialize f_minus_p to D - P, if necessary
@@ -121,7 +121,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 
   DOCMP FOR_FT_COMPONENTS(ft, ec) {
     if (f[ec][cmp]) {
-      if (type(ec) != ft) abort("bug in FOR_FT_COMPONENTS");
+      if (type(ec) != ft) meep::abort("bug in FOR_FT_COMPONENTS");
       component dc = field_type_component(ft2, ec);
       const direction d_ec = component_direction(ec);
       const ptrdiff_t s_ec = gv.stride(d_ec) * (ft == H_stuff ? -1 : +1);

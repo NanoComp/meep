@@ -136,7 +136,7 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
   double r = abs(rhat);
   rhat = rhat / r;
 
-  if (rhat.dim != D3) abort("wrong dimensionality in green3d");
+  if (rhat.dim != D3) meep::abort("wrong dimensionality in green3d");
 
   double n = sqrt(eps * mu);
   double k = 2 * pi * freq * n;
@@ -184,7 +184,7 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
     EH[5] = expfac * (term1 * p.z() + term2 * rhat.z());
   }
   else
-    abort("unrecognized source type");
+    meep::abort("unrecognized source type");
 }
 
 // hankel function J + iY
@@ -201,7 +201,7 @@ static std::complex<double> hankel(int n, double x) {
 static std::complex<double> hankel(int n, double x) {
   (void)n;
   (void)x; // unused
-  abort("GNU GSL library is required for Hankel functions");
+  meep::abort("GNU GSL library is required for Hankel functions");
 }
 #endif /* !HAVE_LIBGSL */
 
@@ -212,7 +212,7 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
   double r = abs(rhat);
   rhat = rhat / r;
 
-  if (rhat.dim != D2) abort("wrong dimensionality in green2d");
+  if (rhat.dim != D2) meep::abort("wrong dimensionality in green2d");
 
   double omega = 2 * pi * freq;
   double k = omega * sqrt(eps * mu);
@@ -279,7 +279,7 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 //  in the near2far add_dft weight.)
 void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
               const vec &x0, component c0, std::complex<double> f0, double m, double tol) {
-  if (x0.dim != Dcyl) abort("wrong dimensionality in greencyl");
+  if (x0.dim != Dcyl) meep::abort("wrong dimensionality in greencyl");
   vec x_3d(x.dim == Dcyl ? x.r() : x.x(), x.y(), x.z());
   direction d = component_direction(c0);
   component cx = direction_component(c0, X), cy = direction_component(c0, Y);
@@ -340,7 +340,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
 
 void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
   if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
-    abort("only 2d or 3d or cylindrical far-field computation is supported");
+    meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
   const size_t Nfreq = freq.size();
@@ -506,7 +506,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
 
 double *dft_near2far::flux(direction df, const volume &where, double resolution) {
   if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
-    abort("cannot get flux for near2far: co-ordinate mismatch");
+    meep::abort("cannot get flux for near2far: co-ordinate mismatch");
 
   size_t dims[4] = {1, 1, 1, 1};
   int rank = 0;
@@ -533,7 +533,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
         case Z: cE[0] = ff_EH[0], cE[1] = ff_EH[1], cH[0] = ff_EH[4], cH[1] = ff_EH[3]; break;
         case R:
         case P:
-        case NO_DIRECTION: abort("invalid flux direction");
+        case NO_DIRECTION: meep::abort("invalid flux direction");
       }
       for (int j = 0; j < 2; ++j)
         F[i] += real(cE[j] * conj(cH[j])) * (1 - 2 * j);
@@ -570,13 +570,13 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
     everywhere = everywhere | where->v;
     direction nd = component_direction(w->c);
     if (nd == NO_DIRECTION) nd = normal_direction(w->v);
-    if (nd == NO_DIRECTION) abort("unknown dft_near2far normal");
+    if (nd == NO_DIRECTION) meep::abort("unknown dft_near2far normal");
     direction fd[2];
 
     double weps = real(get_eps(w->v.center()));
     double wmu = real(get_mu(w->v.center()));
     if (w != where && !(approxeq(eps, weps) && approxeq(mu, wmu)))
-      abort("dft_near2far requires surfaces in a homogeneous medium");
+      meep::abort("dft_near2far requires surfaces in a homogeneous medium");
     eps = weps;
     mu = wmu;
 
@@ -605,7 +605,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
         else
           fd[0] = X, fd[1] = Y;
         break;
-      default: abort("invalid normal direction in dft_near2far!");
+      default: meep::abort("invalid normal direction in dft_near2far!");
     }
 
     if (Nperiods > 1) {
@@ -643,7 +643,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
 //Modified from farfield_lowlevel
 std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ) {
   if (x_0.dim != D3 && x_0.dim != D2 && x_0.dim != Dcyl)
-    abort("only 2d or 3d or cylindrical far-field computation is supported");
+    meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x_0.dim == D2 ? green2d : green3d;
 
   const size_t Nfreq = freq.size();

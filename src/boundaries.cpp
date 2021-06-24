@@ -47,7 +47,7 @@ void fields::use_bloch(direction d, complex<double> kk) {
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
   if (is_real && kk != 0.0) // FIXME: allow real phases (c.f. CONNECT_PHASE)
-    abort("Can't use real fields with bloch boundary conditions!\n");
+    meep::abort("Can't use real fields with bloch boundary conditions!\n");
   chunk_connections_valid = false; // FIXME: we don't always need to invalidate
 }
 
@@ -55,7 +55,7 @@ void fields::use_bloch(const vec &k) {
   // Note that I allow a 1D k input when in cylindrical, since in that case
   // it is unambiguous.
   if (k.dim != gv.dim && !(k.dim == D1 && gv.dim == Dcyl))
-    abort("Aaaack, k has wrong dimensions!\n");
+    meep::abort("Aaaack, k has wrong dimensions!\n");
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (gv.has_boundary(Low, d) && d != R) use_bloch(d, k.in_direction(d));
   }
@@ -84,7 +84,7 @@ ivec fields::ilattice_vector(direction d) const {
         case NO_DIRECTION: break;
       }
   }
-  abort("Aaack in ilattice_vector.\n");
+  meep::abort("Aaack in ilattice_vector.\n");
   return ivec(0);
 }
 
@@ -563,7 +563,7 @@ void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip, in_or
   }
   typedef realnum *realnum_ptr;
   realnum **conn = new realnum_ptr[tot];
-  if (!conn) abort("Out of memory!\n");
+  if (!conn) meep::abort("Out of memory!\n");
   delete[] connections[f][ip][io];
   connections[f][ip][io] = conn;
   num_connections[f][ip][io] = tot;

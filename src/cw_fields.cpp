@@ -139,8 +139,8 @@ static complex<double> estimate_eigfreq(complex<realnum> *b, complex<realnum> *x
    or until the estimated eigenfreq stops changing by <= eigtol (relative). */
 bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L,
                       complex<double> *eigfreq, double eigtol, int eigiters) {
-  if (is_real) abort("solve_cw is incompatible with use_real_fields()");
-  if (L < 1) abort("solve_cw called with L = %d < 1", L);
+  if (is_real) meep::abort("solve_cw is incompatible with use_real_fields()");
+  if (L < 1) meep::abort("solve_cw called with L = %d < 1", L);
   int tsave = t; // save time (gets incremented by iterations)
   int iters;
 
@@ -196,7 +196,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
       if (babs > bmax) bmax = babs;
     }
     am_now_working_on(MpiAllTime);
-    if (max_to_all(bmax) == 0.0) abort("zero current amplitudes in solve_cw");
+    if (max_to_all(bmax) == 0.0) meep::abort("zero current amplitudes in solve_cw");
     finished_working();
   }
 
@@ -256,10 +256,10 @@ bool fields::solve_cw(double tol, int maxiters, int L, complex<double> *eigfreq,
   for (src_time *s = sources; s; s = s->next) {
     complex<double> sf = s->frequency();
     if (sf != freq && freq != 0.0 && sf != 0.0)
-      abort("must pass frequency to solve_cw if sources do not agree");
+      meep::abort("must pass frequency to solve_cw if sources do not agree");
     if (sf != 0.0) freq = sf;
   }
-  if (freq == 0.0) abort("must pass frequency to solve_cw if sources do not specify one");
+  if (freq == 0.0) meep::abort("must pass frequency to solve_cw if sources do not specify one");
   return solve_cw(tol, maxiters, freq, L, eigfreq, eigtol, eigiters);
 }
 

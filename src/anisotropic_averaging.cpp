@@ -31,7 +31,7 @@ static vec sphere_pt(const vec &cent, double R, int n, double &weight) {
       weight = sphere_quad[1][n][3];
       return cent + veccyl(sphere_quad[1][n][0], sphere_quad[1][n][1]) * R;
     }
-    default: abort("unknown dimensions in sphere_pt\n");
+    default: meep::abort("unknown dimensions in sphere_pt\n");
   }
 }
 
@@ -192,7 +192,7 @@ void structure_chunk::set_chi1inv(component c, material_function &medium,
                                   bool use_anisotropic_averaging, double tol, int maxeval) {
   if (!is_mine() || !gv.has_field(c)) return;
   field_type ft = type(c);
-  if (ft != E_stuff && ft != H_stuff) abort("only E or H can have chi");
+  if (ft != E_stuff && ft != H_stuff) meep::abort("only E or H can have chi");
   medium.set_volume(gv.pad().surroundings());
 
   if (!use_anisotropic_averaging) maxeval = 0;
@@ -213,7 +213,7 @@ breakout:
   FOR_FT_COMPONENTS(ft, c2) if (gv.has_field(c2)) {
     direction d = component_direction(c2);
     if (!chi1inv[c][d]) chi1inv[c][d] = new realnum[gv.ntot()];
-    if (!chi1inv[c][d]) abort("Memory allocation error.\n");
+    if (!chi1inv[c][d]) meep::abort("Memory allocation error.\n");
   }
   direction dc = component_direction(c);
   direction d0 = X, d1 = Y, d2 = Z;
@@ -276,7 +276,7 @@ breakout:
 
 void structure_chunk::add_susceptibility(material_function &sigma, field_type ft,
                                          const susceptibility &sus) {
-  if (ft != E_stuff && ft != H_stuff) abort("susceptibilities must be for E or H fields");
+  if (ft != E_stuff && ft != H_stuff) meep::abort("susceptibilities must be for E or H fields");
 
   sigma.set_volume(gv.pad().surroundings());
 
@@ -295,7 +295,7 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
       FOR_FT_COMPONENTS(ft, c2) if (gv.has_field(c2)) {
         direction d = component_direction(c2);
         if (!newsus->sigma[c][d]) newsus->sigma[c][d] = new realnum[gv.ntot()];
-        if (!newsus->sigma[c][d]) abort("Memory allocation error.\n");
+        if (!newsus->sigma[c][d]) meep::abort("Memory allocation error.\n");
       }
       bool trivial[3] = {true, true, true};
       direction dc = component_direction(c);

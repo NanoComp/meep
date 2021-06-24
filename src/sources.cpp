@@ -183,11 +183,11 @@ src_vol *src_vol::add_to(src_vol *others) {
   if (others) {
     if (*this == *others) {
       if (npts != others->npts)
-        abort("Cannot add grid_volume sources with different number of points\n");
+        meep::abort("Cannot add grid_volume sources with different number of points\n");
       /* Compare all of the indices...if this ever becomes too slow,
          we can just compare the first and last indices. */
       for (size_t j = 0; j < npts; j++) {
-        if (others->index[j] != index[j]) abort("Different indices\n");
+        if (others->index[j] != index[j]) meep::abort("Different indices\n");
         others->A[j] += A[j];
       }
     }
@@ -297,7 +297,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     index_array[idx_vol++] = idx;
   }
 
-  if (idx_vol > npts) abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
+  if (idx_vol > npts) meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
   src_vol *tmp = new src_vol(c, data->src, idx_vol, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
@@ -315,9 +315,9 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, st
   component c = cur_data.near_fd_comp;
   src_vol *tmp = new src_vol(c, src, n, index_arr, amp_arr_copy);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
-  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) abort("fields chunk index out of range");
+  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) meep::abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
-  if (!fc->is_mine()) abort("wrong fields chunk");
+  if (!fc->is_mine()) meep::abort("wrong fields chunk");
   fc->sources[ft] = tmp->add_to(fc->sources[ft]);
   // We can't do require_component(c) since that only works if all processes are adding
   // srcdata for the same components in the same order, which may not be true.
@@ -411,7 +411,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 
   for (int i = 0; i < 3; ++i) {
     if (re_dims[i] != im_dims[i]) {
-      abort("Imaginary and real datasets have different dimensions");
+      meep::abort("Imaginary and real datasets have different dimensions");
     }
   }
 
@@ -432,11 +432,11 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
                                complex<double> A(const vec &), complex<double> amp) {
   volume where(where_); // make a copy to adjust size if necessary
   if (gv.dim != where.dim)
-    abort("incorrect source grid_volume dimensionality in add_volume_source");
+    meep::abort("incorrect source grid_volume dimensionality in add_volume_source");
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w = user_volume.boundary_location(High, d) - user_volume.boundary_location(Low, d);
     if (where.in_direction(d) > w + gv.inva)
-      abort("Source width > cell width in %s direction!\n", direction_name(d));
+      meep::abort("Source width > cell width in %s direction!\n", direction_name(d));
     else if (where.in_direction(d) > w) { // difference is less than 1 pixel
       double dw = where.in_direction(d) - w;
       where.set_direction_min(d, where.in_direction_min(d) - dw * 0.5);
@@ -488,7 +488,7 @@ static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
   case Hx: return EH[3];
   case Hy: return EH[4];
   case Hz: return EH[5];
-  default: abort("invalid component in gaussianbeam_ampfunc");
+  default: meep::abort("invalid component in gaussianbeam_ampfunc");
   }
 }
 
@@ -502,7 +502,7 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
             ? 0
             : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
     if (n == -1)
-      abort(
+      meep::abort(
           "can't determine source direction for non-empty source volume with NO_DIRECTION source");
   }
   bool has_tm = abs(beam.get_E0(2)) > 0;
@@ -527,7 +527,7 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
 
 gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
                            double eps_, double mu_, std::complex<double> E0_[3]) {
-  if (x0_.dim == Dcyl) abort("wrong dimensionality in gaussianbeam");
+  if (x0_.dim == Dcyl) meep::abort("wrong dimensionality in gaussianbeam");
 
   x0 = x0_;
   kdir = kdir_;

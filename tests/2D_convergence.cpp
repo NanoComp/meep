@@ -85,17 +85,17 @@ void check_convergence(component c, double best_guess, double beta) {
                     0.5 * (freq + freq_shifted));
       master_printf("Unshifted freq error is %g/%g/%g\n", (freq - best_guess) * a * a, a, a);
       if (fabs(freq - best_guess) * a * a > 0.4)
-        abort("Frequency doesn't converge properly with a.\n");
+        meep::abort("Frequency doesn't converge properly with a.\n");
       master_printf("Shifted freq error is %g/%g/%g\n", (freq_shifted - best_guess) * a * a, a, a);
       if (fabs(freq_shifted - best_guess) * a * a > 0.4)
-        abort("Frequency doesn't converge properly with a.\n");
+        meep::abort("Frequency doesn't converge properly with a.\n");
     }
 
     // Check frequency difference...
     master_printf("Frequency difference with a of %g is %g/%g/%g\n", a,
                   (freq - freq_shifted) * a * a, a, a);
     if (fabs(freq - freq_shifted) * a * a > 0.4)
-      abort("Frequency difference = doesn't converge properly with a.\n");
+      meep::abort("Frequency difference = doesn't converge properly with a.\n");
   }
   master_printf("Passed 2D resolution convergence test for %s!\n", component_name(c));
 }

@@ -91,7 +91,7 @@ static bool invert(realnum *S, int p) {
   int info = 0;
   int *ipiv = new int[p];
   DGETRF(&p, &p, S, &p, ipiv, &info);
-  if (info < 0) abort("invalid argument %d in DGETRF", -info);
+  if (info < 0) meep::abort("invalid argument %d in DGETRF", -info);
   if (info > 0) {
     delete[] ipiv;
     return false;
@@ -100,17 +100,17 @@ static bool invert(realnum *S, int p) {
   int lwork = -1;
   realnum work1 = 0.0;
   DGETRI(&p, S, &p, ipiv, &work1, &lwork, &info);
-  if (info != 0) abort("error %d in DGETRI workspace query", info);
+  if (info != 0) meep::abort("error %d in DGETRI workspace query", info);
   lwork = int(work1);
   realnum *work = new realnum[lwork]();
   DGETRI(&p, S, &p, ipiv, work, &lwork, &info);
-  if (info < 0) abort("invalid argument %d in DGETRI", -info);
+  if (info < 0) meep::abort("invalid argument %d in DGETRI", -info);
 
   delete[] work;
   delete[] ipiv;
   return info == 0;
 #else /* !HAVE_LAPACK */
-  abort("LAPACK is needed for multilevel-atom support");
+  meep::abort("LAPACK is needed for multilevel-atom support");
   return false;
 #endif
 }
@@ -135,7 +135,7 @@ void *multilevel_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(multilevel_data) + sizeof(realnum) * (L * L + L + gv.ntot() * L + num * T - 1);
   multilevel_data *d = (multilevel_data *)malloc(sz);
-  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
+  if (d == NULL) meep::abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   memset(d, 0, sz);
   d->sz_data = sz;
   return (void *)d;
@@ -159,7 +159,7 @@ void multilevel_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONEN
   for (int i = 0; i < L; ++i)
     for (int j = 0; j < L; ++j)
       d->GammaInv[i * L + j] = (i == j) + Gamma[i * L + j] * dt / 2;
-  if (!invert(d->GammaInv, L)) abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
+  if (!invert(d->GammaInv, L)) meep::abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
 
   realnum *P = d->data + L * L;
   realnum *P_prev = P + ntot;
@@ -248,7 +248,7 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   int idot = 0;
   FOR_COMPONENTS(c) {
     if (d->P[c][0]) {
-      if (idot == 3) abort("bug in meep: too many polarization components");
+      if (idot == 3) meep::abort("bug in meep: too many polarization components");
       gv.yee2cent_offsets(c, o1[idot], o2[idot]);
       cdot[idot++] = c;
     }
@@ -337,7 +337,7 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
       if (alpha[l * T + t] > 0) lp = l;
       if (alpha[l * T + t] < 0) lm = l;
     }
-    if (lp < 0 || lm < 0) abort("invalid alpha array for transition %d", t);
+    if (lp < 0 || lm < 0) meep::abort("invalid alpha array for transition %d", t);
 
     FOR_COMPONENTS(c) DOCMP2 {
       if (d->P[c][cmp]) {
@@ -363,7 +363,7 @@ void multilevel_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const realnum *w2 = W[c2][cmp];
           const realnum *s2 = w2 ? sigma[c][d2] : NULL;
 
-          if (s1 || s2) { abort("nondiagonal saturable gain is not yet supported"); }
+          if (s1 || s2) { meep::abort("nondiagonal saturable gain is not yet supported"); }
           else { // isotropic
             LOOP_OVER_VOL_OWNED(gv, c, i) {
               realnum pcur = p[i];

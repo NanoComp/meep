@@ -230,16 +230,16 @@ int main(int argc, char **argv) {
   verbosity = 0;
   master_printf("Testing 3D...\n");
 
-  if (!test_pml(one)) abort("error in test_pml vacuum\n");
+  if (!test_pml(one)) meep::abort("error in test_pml vacuum\n");
 
   for (int s = 2; s < 7; s++)
-    if (!test_periodic(targets, s)) abort("error in test_periodic targets\n");
+    if (!test_periodic(targets, s)) meep::abort("error in test_periodic targets\n");
 
   for (int s = 2; s < 8; s++)
-    if (!test_metal(one, s)) abort("error in test_metal vacuum\n");
+    if (!test_metal(one, s)) meep::abort("error in test_metal vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml_splitting(one, s)) abort("error in test_pml_splitting vacuum\n");
+    if (!test_pml_splitting(one, s)) meep::abort("error in test_pml_splitting vacuum\n");
 
   return 0;
 }

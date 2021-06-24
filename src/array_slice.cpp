@@ -468,7 +468,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   int rank = 0;
   size_t slice_size = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (rank >= 3) abort("too many dimensions in array_slice");
+    if (rank >= 3) meep::abort("too many dimensions in array_slice");
     size_t n = (data->max_corner.in_direction(d) - data->min_corner.in_direction(d)) / 2 + 1;
     if (where.in_direction(d) == 0.0 && collapse_empty_dimensions) n = 1;
     if (n > 1) {
@@ -547,7 +547,7 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   size_t reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
   size_t reduced_array_size = data_size * reduced_grid_size;
   double *reduced_array = new double[reduced_array_size];
-  if (!reduced_array) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
+  if (!reduced_array) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
   memset(reduced_array, 0, reduced_array_size * sizeof(double));
 
   size_t n[3] = {0, 0, 0};
@@ -621,7 +621,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       break;
     }
   if (needs_dielectric) FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninveps == 3) abort("more than 3 field components??");
+      if (data.ninveps == 3) meep::abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
@@ -636,7 +636,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       break;
     }
   if (needs_permeability) FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninvmu == 3) abort("more than 3 field components??");
+      if (data.ninvmu == 3) meep::abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;
@@ -724,7 +724,7 @@ complex<double> *fields::get_source_slice(const volume &where, component source_
   data.slice_imin = gv.round_vec(min_max_loc[0]);
   data.slice_imax = gv.round_vec(min_max_loc[1]);
   data.slice = new complex<double>[slice_size];
-  if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
+  if (!data.slice) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
 

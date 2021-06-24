@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
   bool verbose = false;
   for (int narg = 1; narg < argc; narg++) {
     if (!strcasecmp(argv[narg], "--resolution")) {
-      if (narg + 1 >= argc) abort("--resolution requires an argument");
+      if (narg + 1 >= argc) meep::abort("--resolution requires an argument");
       sscanf(argv[narg + 1], "%le", &resolution);
       master_printf("Setting resolution=%e.\n", resolution);
       narg++;
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
     else if (!strcasecmp(argv[narg], "--verbose"))
       verbose = true;
     else
-      abort("unknown argument %s", argv[narg]);
+      meep::abort("unknown argument %s", argv[narg]);
   }
 
   cdouble *field_array = 0;

@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     if (status)
       master_printf("Dielectric output test successful.\n");
     else
-      abort("Dielectric output error in cyl-ellipsoid-ll");
+      meep::abort("Dielectric output error in cyl-ellipsoid-ll");
   };
 
   // (run-until 23 (at-beginning output-epsilon)
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     if (fabs(diff) <= RELTOL * fabs(ref_out_field))
       printf("Field component output test successful.");
     else
-      abort("field output error in cyl-ellipsoid-ll");
+      meep::abort("field output error in cyl-ellipsoid-ll");
   };
 
   return 0;
