@@ -209,7 +209,7 @@ void init_libctl(material_type default_mat, bool ensure_per,
 /***************************************************************/
 void update_weights(material_type matgrid, double *weights);
 meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md);
-meep::vec material_grid_grad(vector3 p, material_data *md);
+meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_object *o);
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
