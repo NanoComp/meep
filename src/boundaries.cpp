@@ -30,6 +30,8 @@ namespace meep {
 void fields::set_boundary(boundary_side b, direction d, boundary_condition cond) {
   if (boundaries[b][d] != cond) {
     boundaries[b][d] = cond;
+    // we don't need to call sync_chunk_connections() since set_boundary()
+    // should always be called on every process
     chunk_connections_valid = false;
   }
 }
@@ -120,11 +122,19 @@ void fields::disconnect_chunks() {
   }
 }
 
-void fields::connect_chunks() {
-  /* make sure all processes agree on chunk_connections_valid to avoid deadlocks */
+// this should be called by any code that might set chunk_connections_valid = false,
+// with the caveat that we need to be careful that we call it on all processes
+void fields::sync_chunk_connections() {
+  /* make sure all processes agree on chunk_connections_valid to avoid deadlocks
+     when we eventually call connect_chunks */
   am_now_working_on(MpiAllTime);
   chunk_connections_valid = and_to_all(chunk_connections_valid);
   finished_working();
+}
+
+void fields::connect_chunks() {
+  // might have invalidated connections in step_db, update_eh, or update_pols:
+  if (changed_materials) sync_chunk_connections();
 
   if (!chunk_connections_valid) {
     am_now_working_on(Connecting);

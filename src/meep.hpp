@@ -1743,7 +1743,7 @@ public:
   bool is_aniso2d();
   void require_source_components();
   void _require_component(component c, bool aniso2d);
-  void require_component(component c) { _require_component(c, is_aniso2d()); }
+  void require_component(component c) { _require_component(c, is_aniso2d()); sync_chunk_connections(); }
   void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr);
 
   // mpb.cpp
@@ -2040,9 +2040,11 @@ private:
   void figure_out_step_plan();
   // boundaries.cpp
   bool chunk_connections_valid;
+  bool changed_materials; // keep track of whether materials have changed (in case field chunk connections need sync'ing)
   void find_metals();
   void disconnect_chunks();
   void connect_chunks();
+  void sync_chunk_connections();
   void connect_the_chunks(); // Intended to be ultra-private...
   bool on_metal_boundary(const ivec &);
   ivec ilattice_vector(direction) const;
