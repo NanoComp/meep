@@ -81,7 +81,7 @@ struct medium_struct {
   explicit medium_struct(double epsilon = 1);
 
   // Aborts Meep if a non-zero imaginary part of an offdiagonal mu or epsilon entry is found.
-  void check_offdiag_im_zero_or_meep::abort() const;
+  void check_offdiag_im_zero_or_abort() const;
 };
 
 // prototype for user-defined material function,

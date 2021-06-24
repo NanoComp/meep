@@ -671,7 +671,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
 
       medium_struct *mm;
       if (is_medium(geometry.items[i].material, &mm)) {
-        mm->check_offdiag_im_zero_or_meep::abort();
+        mm->check_offdiag_im_zero_or_abort();
         if (i < num_print)
           master_printf("%*sdielectric constant epsilon diagonal "
                         "= (%g,%g,%g)\n",
@@ -844,7 +844,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
     case material_data::MATERIAL_USER:
       md->medium = medium_struct();
       md->user_func(p, md->user_data, &(md->medium));
-      md->medium.check_offdiag_im_zero_or_meep::abort();
+      md->medium.check_offdiag_im_zero_or_abort();
       return;
 
     // position-independent material or metal: there is nothing to do
@@ -1537,7 +1537,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
   if (mat->which_subclass == material_data::MATERIAL_USER) {
     mat->medium = medium_struct();
     mat->user_func(p, mat->user_data, &(mat->medium));
-    mat->medium.check_offdiag_im_zero_or_meep::abort();
+    mat->medium.check_offdiag_im_zero_or_abort();
   }
 
   if (mat->which_subclass == material_data::MATERIAL_GRID) {
@@ -1548,7 +1548,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     tp = geom_tree_search(p, restricted_tree, &oi);
     u = matgrid_val(p, tp, oi, mat); // interpolate onto material grid
     epsilon_material_grid(mat, u);   // interpolate material from material grid point
-    mat->medium.check_offdiag_im_zero_or_meep::abort();
+    mat->medium.check_offdiag_im_zero_or_abort();
   }
 
   sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
@@ -1820,7 +1820,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
 
   if (_default_material->which_subclass != material_data::MATERIAL_USER &&
       _default_material->which_subclass != material_data::PERFECT_METAL) {
-    _default_material->medium.check_offdiag_im_zero_or_meep::abort();
+    _default_material->medium.check_offdiag_im_zero_or_abort();
   }
   set_default_material(_default_material);
   ensure_periodicity = _ensure_periodicity;
