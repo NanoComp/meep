@@ -248,7 +248,7 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
   int rank = 0;
   size_t dims[3];
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (rank >= 3) abort("too many dimensions in output_hdf5");
+    if (rank >= 3) meep::abort("too many dimensions in output_hdf5");
     size_t n =
         std::max(0, (data.max_corner.in_direction(d) - data.min_corner.in_direction(d)) / 2 + 1);
 
@@ -281,7 +281,7 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
       break;
     }
   if (needs_dielectric) FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninveps == 3) abort("more than 3 field components??");
+      if (data.ninveps == 3) meep::abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
@@ -296,7 +296,7 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
       break;
     }
   if (needs_permeability) FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninvmu == 3) abort("more than 3 field components??");
+      if (data.ninvmu == 3) meep::abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;

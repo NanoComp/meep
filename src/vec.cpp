@@ -124,7 +124,7 @@ component first_field_component(field_type ft) {
     case H_stuff: return Hx;
     case D_stuff: return Dx;
     case B_stuff: return Bx;
-    default: abort("bug - only E/H/D/B stuff have components"); return NO_COMPONENT;
+    default: meep::abort("bug - only E/H/D/B stuff have components"); return NO_COMPONENT;
   }
 }
 
@@ -200,7 +200,7 @@ double volume::diameter() const {
 }
 
 volume volume::intersect_with(const volume &a) const {
-  if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
+  if (a.dim != dim) meep::abort("Can't intersect volumes of dissimilar dimensions.\n");
   volume result(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
     double minval = max(in_direction_min(d), a.in_direction_min(d));
@@ -213,7 +213,7 @@ volume volume::intersect_with(const volume &a) const {
 }
 
 bool volume::intersects(const volume &a) const {
-  if (a.dim != dim) abort("Can't intersect volumes of dissimilar dimensions.\n");
+  if (a.dim != dim) meep::abort("Can't intersect volumes of dissimilar dimensions.\n");
   LOOP_OVER_DIRECTIONS(dim, d) {
     double minval = max(in_direction_min(d), a.in_direction_min(d));
     double maxval = min(in_direction_max(d), a.in_direction_max(d));
@@ -318,7 +318,7 @@ component grid_volume::eps_component() const {
     case D3: return Dielectric;
     case Dcyl: return Hp;
   }
-  abort("Unsupported dimensionality eps.\n");
+  meep::abort("Unsupported dimensionality eps.\n");
   return Ex;
 }
 
@@ -334,7 +334,7 @@ void grid_volume::yee2cent_offsets(component c, ptrdiff_t &offset1, ptrdiff_t &o
   offset1 = offset2 = 0;
   LOOP_OVER_DIRECTIONS(dim, d) {
     if (!iyee_shift(c).in_direction(d)) {
-      if (offset2) abort("weird yee shift for component %s", component_name(c));
+      if (offset2) meep::abort("weird yee shift for component %s", component_name(c));
       if (offset1)
         offset2 = stride(d);
       else
@@ -461,7 +461,7 @@ bool grid_volume::owns(const ivec &p) const {
     return o.z() > 0 && o.z() <= nz() * 2;
   }
   else {
-    abort("Unsupported dimension in owns.\n");
+    meep::abort("Unsupported dimension in owns.\n");
     return false;
   }
 }
@@ -544,7 +544,7 @@ void grid_volume::interpolate(component c, const vec &p, ptrdiff_t indices[8],
     printf("Or in other words... %g %g\n", operator[](locs[0]).r(), operator[](locs[0]).z());
     printf("I %s own the interpolated point.\n", owns(locs[0]) ? "actually" : "don't");
     print();
-    abort("Error made in interpolation of %s--fix this bug!!!\n", component_name(c));
+    meep::abort("Error made in interpolation of %s--fix this bug!!!\n", component_name(c));
   }
   // Throw out out of range indices:
   for (int i = 0; i < 8 && weights[i]; i++)
@@ -555,7 +555,7 @@ void grid_volume::interpolate(component c, const vec &p, ptrdiff_t indices[8],
     printf("Error at point %g %g\n", p.r(), p.z());
     printf("Interpolated to point %d %d\n", locs[0].r(), locs[0].z());
     print();
-    abort("Error made in interpolation of %s--fix this bug!!!\n", component_name(c));
+    meep::abort("Error made in interpolation of %s--fix this bug!!!\n", component_name(c));
   }
 }
 
@@ -593,7 +593,7 @@ void grid_volume::interpolate(component c, const vec &pc, ivec locs[8], double w
   for (int i = 0; i < already_have; i++) {
     if (weights[i] < 0.0) {
       if (-weights[i] >= SMALL * 1e5)
-        abort("large negative interpolation weight[%d] = %e\n", i, weights[i]);
+        meep::abort("large negative interpolation weight[%d] = %e\n", i, weights[i]);
       weights[i] = 0.0;
     }
     else if (weights[i] < SMALL)
@@ -675,7 +675,7 @@ double grid_volume::zmin() const {
 double grid_volume::rmax() const {
   const double qinva = 0.25 * inva;
   if (dim == Dcyl) return origin.r() + nr() * inva + qinva;
-  abort("No rmax in these dimensions.\n");
+  meep::abort("No rmax in these dimensions.\n");
   return 0.0; // This is never reached.
 }
 
@@ -687,7 +687,7 @@ double grid_volume::rmin() const {
       return origin.r() + qinva;
     }
   }
-  abort("No rmin in these dimensions.\n");
+  meep::abort("No rmin in these dimensions.\n");
   return 0.0; // This is never reached.
 }
 
@@ -706,8 +706,8 @@ double grid_volume::boundary_location(boundary_side b, direction d) const {
           return loc(Ep, ntot() - 1).z();
         else
           return loc(Ex, ntot() - 1).z();
-      case P: abort("P has no boundary!\n");
-      case NO_DIRECTION: abort("NO_DIRECTION has no boundary!\n");
+      case P: meep::abort("P has no boundary!\n");
+      case NO_DIRECTION: meep::abort("NO_DIRECTION has no boundary!\n");
     }
   else
     switch (d) {
@@ -719,8 +719,8 @@ double grid_volume::boundary_location(boundary_side b, direction d) const {
           return loc(Ep, 0).z();
         else
           return loc(Ex, 0).z();
-      case P: abort("P has no boundary!\n");
-      case NO_DIRECTION: abort("NO_DIRECTION has no boundary!\n");
+      case P: meep::abort("P has no boundary!\n");
+      case NO_DIRECTION: meep::abort("NO_DIRECTION has no boundary!\n");
     }
   return 0.0;
 }
@@ -784,7 +784,7 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
         vol_containing.shift_origin(d, thick * 2);
         vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
         if (vol_containing.little_corner().in_direction(d) < vol_in.little_corner().in_direction(d))
-          abort("intersect_with: little corners differ by odd integer?");
+          meep::abort("intersect_with: little corners differ by odd integer?");
       }
       if (vol_containing.big_corner().in_direction(d) > vol_in.big_corner().in_direction(d)) {
         // shave off upper slice from vol_containing and add it to others
@@ -797,7 +797,7 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
         counter++;
         vol_containing.set_num_direction(d, vol_containing.num_direction(d) - thick);
         if (vol_containing.big_corner().in_direction(d) < vol_in.big_corner().in_direction(d))
-          abort("intersect_with: big corners differ by odd integer?");
+          meep::abort("intersect_with: big corners differ by odd integer?");
       }
     }
     *num_others = counter;
@@ -813,7 +813,7 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
       final_points += temp;
     }
     if (initial_points != final_points)
-      abort("intersect_with: initial_points != final_points,  %zd, %zd\n", initial_points,
+      meep::abort("intersect_with: initial_points != final_points,  %zd, %zd\n", initial_points,
             final_points);
   }
   return true;
@@ -872,7 +872,7 @@ vec grid_volume::dr() const {
     case Dcyl: return veccyl(inva, 0.0);
     case D1:
     case D2:
-    case D3: abort("Error in dr\n");
+    case D3: meep::abort("Error in dr\n");
   }
   return vec(0); // This is never reached.
 }
@@ -882,7 +882,7 @@ vec grid_volume::dx() const {
     case D3: return vec(inva, 0, 0);
     case D2: return vec(inva, 0);
     case D1:
-    case Dcyl: abort("Error in dx.\n");
+    case Dcyl: meep::abort("Error in dx.\n");
   }
   return vec(0); // This is never reached.
 }
@@ -892,7 +892,7 @@ vec grid_volume::dy() const {
     case D3: return vec(0, inva, 0);
     case D2: return vec(0, inva);
     case D1:
-    case Dcyl: abort("Error in dy.\n");
+    case Dcyl: meep::abort("Error in dy.\n");
   }
   return vec(0); // This is never reached.
 }
@@ -902,7 +902,7 @@ vec grid_volume::dz() const {
     case Dcyl: return veccyl(0.0, inva);
     case D3: return vec(0, 0, inva);
     case D1: return vec(inva);
-    case D2: abort("dz doesn't exist in 2D\n");
+    case D2: meep::abort("dz doesn't exist in 2D\n");
   }
   return vec(0); // This is never reached.
 }
@@ -983,7 +983,7 @@ void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
                                   direction &best_split_direction,
                                   double &left_effort_fraction) const {
   if (size_t(desired_chunks) > nowned_min()) {
-    abort("Cannot split %zd grid points into %d parts\n", nowned_min(), desired_chunks);
+    meep::abort("Cannot split %zd grid points into %d parts\n", nowned_min(), desired_chunks);
   }
 
   left_effort_fraction = 0;
@@ -1037,7 +1037,7 @@ grid_volume grid_volume::split_at_fraction(bool side_high, int split_pt, int spl
   grid_volume retval(dim, a, 1, 1, 1);
   for (int i = 0; i < 3; i++)
     retval.num[i] = num[i];
-  if (split_pt >= num[split_dir]) abort("Aaack bad bug in split_at_fraction.\n");
+  if (split_pt >= num[split_dir]) meep::abort("Aaack bad bug in split_at_fraction.\n");
   direction d = (direction)split_dir;
   if (dim == Dcyl && d == X) d = R;
   retval.set_origin(io);
@@ -1081,7 +1081,7 @@ ivec grid_volume::icenter() const {
     case D3: return io + ivec(nx(), ny(), nz()).round_up_to_even();
     case Dcyl: return io + iveccyl(0, nz()).round_up_to_even();
   }
-  abort("Can't do symmetry with these dimensions.\n");
+  meep::abort("Can't do symmetry with these dimensions.\n");
   return ivec(0); // This is never reached.
 }
 
@@ -1089,7 +1089,7 @@ vec grid_volume::center() const { return operator[](icenter()); }
 
 symmetry rotate4(direction axis, const grid_volume &gv) {
   symmetry s = identity();
-  if (axis > 2) abort("Can only rotate4 in 2D or 3D.\n");
+  if (axis > 2) meep::abort("Can only rotate4 in 2D or 3D.\n");
   s.g = 4;
   FOR_DIRECTIONS(d) {
     s.S[d].d = d;
@@ -1105,7 +1105,7 @@ symmetry rotate4(direction axis, const grid_volume &gv) {
 
 symmetry rotate2(direction axis, const grid_volume &gv) {
   symmetry s = identity();
-  if (axis > 2) abort("Can only rotate2 in 2D or 3D.\n");
+  if (axis > 2) meep::abort("Can only rotate2 in 2D or 3D.\n");
   s.g = 2;
   s.S[(axis + 1) % 3].flipped = true;
   s.S[(axis + 2) % 3].flipped = true;
@@ -1528,10 +1528,10 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
             cs[nfields++] = direction_component(Bx, component_direction(c0));
           }
         }
-      if (nfields > 12) abort("too many field components");
+      if (nfields > 12) meep::abort("too many field components");
       return energy_fun;
 
-    default: abort("unknown derived_component in derived_component_func");
+    default: meep::abort("unknown derived_component in derived_component_func");
   }
   return 0;
 }
@@ -1614,7 +1614,7 @@ const char *grid_volume::str(char *buffer, size_t buflen) {
 /********************************************************************/
 /********************************************************************/
 grid_volume grid_volume::subvolume(ivec is, ivec ie) {
-  if (!(contains(is) && contains(ie))) abort("invalid extents in subvolume");
+  if (!(contains(is) && contains(ie))) meep::abort("invalid extents in subvolume");
   grid_volume sub;
   sub.dim = dim;
   sub.a = a;

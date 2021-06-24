@@ -147,7 +147,7 @@ fields::~fields() {
 void fields::use_real_fields() {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (boundaries[High][d] == Periodic && k[d] != 0.0)
-      abort("Can't use real fields with bloch boundary conditions!\n");
+      meep::abort("Can't use real fields with bloch boundary conditions!\n");
   }
   is_real = 1;
   for (int i = 0; i < num_chunks; i++)
@@ -371,7 +371,7 @@ static inline bool cross_negative(direction a, direction b) {
 }
 
 static inline direction cross(direction a, direction b) {
-  if (a == b) abort("bug - cross expects different directions");
+  if (a == b) meep::abort("bug - cross expects different directions");
   bool dcyl = a >= R || b >= R;
   if (a >= R) a = direction(a - 3);
   if (b >= R) b = direction(b - 3);
@@ -510,15 +510,15 @@ bool fields::is_aniso2d() {
     finished_working();
   }
   else if (beta != 0)
-    abort("Nonzero beta unsupported in dimensions other than 2.");
+    meep::abort("Nonzero beta unsupported in dimensions other than 2.");
   if (aniso2d && beta != 0 && is_real)
-    abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
+    meep::abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
   return aniso2d || (beta != 0); // beta couples TE/TM
 }
 
 void fields::_require_component(component c, bool aniso2d) {
   if (!gv.has_field(c))
-    abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
+    meep::abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
 
   components_allocated = true;
 
@@ -631,7 +631,7 @@ void fields_chunk::use_real_fields() {
 
 int fields::phase_in_material(const structure *snew, double time) {
   if (snew->num_chunks != num_chunks)
-    abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks, num_chunks);
+    meep::abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks, num_chunks);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->phase_in_material(snew->chunks[i]);
   phasein_time = (int)(time / dt);

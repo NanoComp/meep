@@ -95,7 +95,7 @@ void fields::step() {
   }
 
   if (!std::isfinite(get_field(D_EnergyDensity, gv.center(), false)))
-    abort("simulation fields are NaN or Inf");
+    meep::abort("simulation fields are NaN or Inf");
 }
 
 void fields::phase_material() {
@@ -193,7 +193,7 @@ void fields::step_boundaries(field_type ft) {
 }
 
 void fields::step_source(field_type ft, bool including_integrated) {
-  if (ft != D_stuff && ft != B_stuff) abort("only step_source(D/B) is okay");
+  if (ft != D_stuff && ft != B_stuff) meep::abort("only step_source(D/B) is okay");
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->step_source(ft, including_integrated);
 }

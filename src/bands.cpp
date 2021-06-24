@@ -68,7 +68,7 @@ int do_harminv(complex<double> *data, int n, double dt, double fmin, double fmax
   (void)err_thresh;
   (void)rel_amp_thresh;
   (void)amp_thresh;
-  abort("compiled without Harminv library, required for do_harminv");
+  meep::abort("compiled without Harminv library, required for do_harminv");
   return 0;
 #else
   int numfreqs = int(fabs(fmax - fmin) * dt * n * spectral_density); // c.f. harminv

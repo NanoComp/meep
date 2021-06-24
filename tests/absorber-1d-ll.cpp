@@ -117,7 +117,7 @@ int main(int argc, char *argv[]) {
     master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n", f50, tFinal, fFinal);
     master_printf(" should be:\n");
     master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n", f50, tFinal, fFinal);
-    abort("Test failed.");
+    meep::abort("Test failed.");
   }
   else if (verbose)
     master_printf("Test successful.\n");

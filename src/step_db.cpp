@@ -38,7 +38,7 @@ void fields::step_db(field_type ft) {
 bool fields_chunk::step_db(field_type ft) {
   bool allocated_u = false;
 
-  if (ft != B_stuff && ft != D_stuff) abort("bug - step_db should only be called for B or D");
+  if (ft != B_stuff && ft != D_stuff) meep::abort("bug - step_db should only be called for B or D");
 
   DOCMP FOR_FT_COMPONENTS(ft, cc) {
     if (f[cc][cmp]) {
@@ -108,7 +108,7 @@ bool fields_chunk::step_db(field_type ft) {
             f_p = f_rderiv_int;
             break;
           }
-          default: abort("bug - non-cylindrical field component in Dcyl");
+          default: meep::abort("bug - non-cylindrical field component in Dcyl");
         }
 
       STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant, dsig, s->sig[dsig],

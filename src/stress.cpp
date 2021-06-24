@@ -158,10 +158,10 @@ dft_force fields::add_dft_force(const volume_list *where_, const double *freq, s
 
   for (; where; where = where->next) {
     direction nd = normal_direction(where->v);
-    if (nd == NO_DIRECTION) abort("cannot determine dft_force normal");
+    if (nd == NO_DIRECTION) meep::abort("cannot determine dft_force normal");
     direction fd = component_direction(where->c); // force direction
-    if (fd == NO_DIRECTION) abort("NO_DIRECTION dft_force is invalid");
-    if (coordinate_mismatch(gv.dim, fd)) abort("coordinate-type mismatch in add_dft_force");
+    if (fd == NO_DIRECTION) meep::abort("NO_DIRECTION dft_force is invalid");
+    if (coordinate_mismatch(gv.dim, fd)) meep::abort("coordinate-type mismatch in add_dft_force");
 
     if (fd != nd) { // off-diagaonal stress-tensor terms
       offdiag1 = add_dft(direction_component(Ex, fd), where->v, freq, Nfreq, true, where->weight,

@@ -322,7 +322,7 @@ inline field_type type(component c) {
     return D_stuff;
   else if (is_B(c))
     return B_stuff;
-  abort("Invalid field in type.\n");
+  meep::abort("Invalid field in type.\n");
   return E_stuff; // This is never reached.
 }
 const char *component_name(component c);
@@ -422,14 +422,14 @@ inline component direction_component(component c, direction d) {
   else if (d == NO_DIRECTION && component_direction(c) == d)
     return c;
   else
-    abort("unknown field component %d", c);
+    meep::abort("unknown field component %d", c);
   switch (d) {
     case X: return start_point;
     case Y: return (component)(start_point + 1);
     case Z: return (component)(start_point + 4);
     case R: return (component)(start_point + 2);
     case P: return (component)(start_point + 3);
-    case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
+    case NO_DIRECTION: meep::abort("vector %d component in NO_DIRECTION", c);
   }
   return Ex; // This is never reached.
 }
@@ -440,14 +440,14 @@ inline derived_component direction_component(derived_component c, direction d) {
   else if (is_energydensity(c) && d == NO_DIRECTION)
     return c;
   else
-    abort("unknown field component %d", c);
+    meep::abort("unknown field component %d", c);
   switch (d) {
     case X: return start_point;
     case Y: return (derived_component)(start_point + 1);
     case Z: return (derived_component)(start_point + 4);
     case R: return (derived_component)(start_point + 2);
     case P: return (derived_component)(start_point + 3);
-    case NO_DIRECTION: abort("vector %d derived_component in NO_DIRECTION", c);
+    case NO_DIRECTION: meep::abort("vector %d derived_component in NO_DIRECTION", c);
   }
   return Sx; // This is never reached.
 }

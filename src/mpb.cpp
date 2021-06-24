@@ -156,7 +156,7 @@ static int pmod(int n, int modulus) {
 /*******************************************************************/
 complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
-  if (!edata || !(edata->mdata)) abort("%s:%i: internal error", __FILE__, __LINE__);
+  if (!edata || !(edata->mdata)) meep::abort("%s:%i: internal error", __FILE__, __LINE__);
 
   int *n = edata->n;
   double *s = edata->s;
@@ -191,7 +191,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
       cdata = (complex<mpb_real> *)edata->fft_data_H;
       data = cdata + 2;
       break;
-    default: abort("invalid component in eigenmode_amplitude");
+    default: meep::abort("invalid component in eigenmode_amplitude");
   };
 
   int nx = n[0];
@@ -349,12 +349,12 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   double match_tol = eigensolver_tol * 10;
 
   if ((d == NO_DIRECTION && abs(_kpoint) == 0) || coordinate_mismatch(gv.dim, d))
-    abort("invalid direction in add_eigenmode_source");
+    meep::abort("invalid direction in add_eigenmode_source");
   if (where.dim != gv.dim || eig_vol.dim != gv.dim)
-    abort("invalid volume dimensionality in add_eigenmode_source");
+    meep::abort("invalid volume dimensionality in add_eigenmode_source");
 
   if (!eig_vol.contains(where))
-    abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
+    meep::abort("invalid grid_volume in add_eigenmode_source (WHERE must be in EIG_VOL)");
 
   switch (gv.dim) {
     case D3:
@@ -384,7 +384,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       kcart[2] = kpoint.in_direction(Z);
       empty_dim[0] = empty_dim[1] = true;
       break;
-    default: abort("unsupported dimensionality in add_eigenmode_source");
+    default: meep::abort("unsupported dimensionality in add_eigenmode_source");
   }
 
   double kcart_len = sqrt(dot_product(kcart, kcart));
@@ -420,7 +420,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   maxwell_data *mdata;
   if (!user_mdata || *user_mdata == NULL) {
     mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, band_num, band_num);
-    if (local_N != n[0] * n[1] * n[2]) abort("MPI version of MPB library not supported");
+    if (local_N != n[0] * n[1] * n[2]) meep::abort("MPI version of MPB library not supported");
 
     meep_mpb_eps_data eps_data;
     eps_data.s = s;
@@ -462,7 +462,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     alloc_N = mdata->alloc_N;
   }
 
-  if (check_maxwell_dielectric(mdata, 0)) abort("invalid dielectric function for MPB");
+  if (check_maxwell_dielectric(mdata, 0)) meep::abort("invalid dielectric function for MPB");
 
   double kmatch;
   if (d == NO_DIRECTION) {
@@ -507,7 +507,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     H.p = band_num;
     H.c = 2;
     band_num -= maxwell_zero_k_num_const_bands(H, mdata);
-    if (band_num == 0) abort("zero-frequency bands at k=0 are ill-defined");
+    if (band_num == 0) meep::abort("zero-frequency bands at k=0 are ill-defined");
   }
 
   evectmatrix H = create_evectmatrix(n[0] * n[1] * n[2], 2, band_num, local_N, N_start, alloc_N);
@@ -815,7 +815,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   global_eigenmode_data->center -= where.center();
 
   if (!global_eigenmode_data)
-    abort("eigenmode solver failed to find the requested mode; you may need to supply a better "
+    meep::abort("eigenmode solver failed to find the requested mode; you may need to supply a better "
           "guess for k");
 
   global_eigenmode_data->amp_func = A ? A : default_amp_func;
@@ -838,7 +838,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
             ? 0
             : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
     if (n == -1)
-      abort(
+      meep::abort(
           "can't determine source direction for non-empty source volume with NO_DIRECTION source");
   }
   int np1 = (n + 1) % 3;
@@ -891,7 +891,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
-    abort("flux regions for eigenmode projection with symmetry should be created by "
+    meep::abort("flux regions for eigenmode projection with symmetry should be created by "
           "add_mode_monitor()");
 
   vec kpoint(0.0, 0.0, 0.0); // default guess
@@ -981,7 +981,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   (void)kdom;
   (void)user_mdata;
   (void)dp;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode");
+  meep::abort("Meep must be configured/compiled with MPB for get_eigenmode");
 }
 
 void fields::add_eigenmode_source(component c0, const src_time &src, direction d,
@@ -1003,7 +1003,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   (void)amp;
   (void)A;
   (void)dp;
-  abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
+  meep::abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
 }
 
 void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands,
@@ -1028,7 +1028,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)cscale;
   (void)d;
   (void)dp;
-  abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
+  meep::abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
 
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {

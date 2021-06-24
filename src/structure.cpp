@@ -52,7 +52,7 @@ structure::structure(const grid_volume &thegv, material_function &eps, const bou
 {
   outdir = ".";
   shared_chunks = false;
-  if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  if (!br.check_ok(thegv)) meep::abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s, bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
@@ -66,7 +66,7 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
 {
   outdir = ".";
   shared_chunks = false;
-  if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  if (!br.check_ok(thegv)) meep::abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
   choose_chunkdivision(thegv, num, br, s, bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
@@ -104,7 +104,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
                                      const boundary_region &br, const symmetry &s,
                                      const binary_partition *bp) {
 
-  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
 
   user_volume = thegv;
   gv = thegv;
@@ -159,7 +159,7 @@ binary_partition *choose_chunkdivision(grid_volume &gv, volume &v, int desired_n
                                        const symmetry &S) {
 
   if (desired_num_chunks == 0) desired_num_chunks = count_processors();
-  if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+  if (gv.dim == Dcyl && gv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
 
   // First, reduce overall grid_volume gv by symmetries:
   if (S.multiplicity() > 1) {
@@ -221,7 +221,7 @@ void boundary_region::apply(structure *s) const {
     switch (kind) {
       case NOTHING_SPECIAL: break;
       case PML: s->use_pml(d, side, thickness); break;
-      default: abort("unknown boundary region kind");
+      default: meep::abort("unknown boundary region kind");
     }
   }
   if (next) next->apply(s);
@@ -237,7 +237,7 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
                     mean_stretch, pml_profile, pml_profile_data, pml_profile_integral,
                     pml_profile_integral_u);
         break;
-      default: abort("unknown boundary region kind");
+      default: meep::abort("unknown boundary region kind");
     }
   }
   if (next) next->apply(s, sc);
@@ -287,7 +287,7 @@ void structure::check_chunks() {
   for (int i = 0; i < num_chunks; i++)
     for (int j = i + 1; j < num_chunks; j++)
       if (chunks[i]->gv.intersect_with(chunks[j]->gv, &vol_intersection))
-        abort("chunks[%d] intersects with chunks[%d]\n", i, j);
+        meep::abort("chunks[%d] intersects with chunks[%d]\n", i, j);
   size_t sum = 0;
   for (int i = 0; i < num_chunks; i++) {
     size_t grid_points = 1;
@@ -296,7 +296,7 @@ void structure::check_chunks() {
   }
   size_t v_grid_points = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
-  if (sum != v_grid_points) abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
 }
 
 void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort) {
@@ -316,7 +316,7 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
         new_effort_volume.print();
         // NOTE: this may not be a bug if this function is used for
         // something other than PML.
-        abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
+        meep::abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
       }
       temp_effort[counter] = extra_effort + effort[j];
       temp_volumes[counter] = intersection;
@@ -583,7 +583,7 @@ bool structure_chunk::has_chi1inv(component c, direction d) const {
 
 void structure::mix_with(const structure *oth, double f) {
   if (num_chunks != oth->num_chunks)
-    abort("You can't phase materials with different chunk topologies...\n");
+    meep::abort("You can't phase materials with different chunk topologies...\n");
   changing_chunks();
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->mix_with(oth->chunks[i], f);
@@ -761,7 +761,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   FOR_COMPONENTS(c) {
     if (is_mine() && o->chi3[c]) {
       chi3[c] = new realnum[gv.ntot()];
-      if (chi3[c] == NULL) abort("Out of memory!\n");
+      if (chi3[c] == NULL) meep::abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi3[c][i] = o->chi3[c][i];
     }
@@ -770,7 +770,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
     }
     if (is_mine() && o->chi2[c]) {
       chi2[c] = new realnum[gv.ntot()];
-      if (chi2[c] == NULL) abort("Out of memory!\n");
+      if (chi2[c] == NULL) meep::abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi2[c][i] = o->chi2[c][i];
     }
@@ -826,7 +826,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
 
 void structure_chunk::set_chi3(component c, material_function &epsilon) {
   if (!is_mine() || !gv.has_field(c)) return;
-  if (!is_electric(c) && !is_magnetic(c)) abort("only E or H can have chi3");
+  if (!is_electric(c) && !is_magnetic(c)) meep::abort("only E or H can have chi3");
 
   epsilon.set_volume(gv.pad().surroundings());
 
@@ -862,7 +862,7 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
 
 void structure_chunk::set_chi2(component c, material_function &epsilon) {
   if (!is_mine() || !gv.has_field(c)) return;
-  if (!is_electric(c) && !is_magnetic(c)) abort("only E or H can have chi2");
+  if (!is_electric(c) && !is_magnetic(c)) meep::abort("only E or H can have chi2");
 
   epsilon.set_volume(gv.pad().surroundings());
 
@@ -902,14 +902,14 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
   C.set_volume(gv.pad().surroundings());
 
   if (!is_electric(c) && !is_magnetic(c) && !is_D(c) && !is_B(c))
-    abort("invalid component for conductivity");
+    meep::abort("invalid component for conductivity");
 
   direction c_d = component_direction(c);
   component c_C = is_electric(c) ? direction_component(Dx, c_d)
                                  : (is_magnetic(c) ? direction_component(Bx, c_d) : c);
   realnum *multby = is_electric(c) || is_magnetic(c) ? chi1inv[c][c_d] : 0;
   if (!conductivity[c_C][c_d]) conductivity[c_C][c_d] = new realnum[gv.ntot()];
-  if (!conductivity[c_C][c_d]) abort("Memory allocation error.\n");
+  if (!conductivity[c_C][c_d]) meep::abort("Memory allocation error.\n");
   bool trivial = true;
   realnum *cnd = conductivity[c_C][c_d];
   if (multby) {

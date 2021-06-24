@@ -67,7 +67,7 @@ static complex<double> do_ft(fields &f, component c, const vec &pt, double freq)
       f.step();
     }
     if (emaxcur < (sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-6) * emax) break;
-    if (T > 500 && emaxcur > 1e-2 * emax) abort("fields do not seem to be decaying");
+    if (T > 500 && emaxcur > 1e-2 * emax) meep::abort("fields do not seem to be decaying");
   } while (1);
   return ft;
 }
@@ -122,7 +122,7 @@ int check_pml2d(double eps(const vec &), component c, double conductivity, bool 
   double sxy2 = 4.0 + 2 * dpml * 2;
   double res_step = 6.0;
   vec fpt(0.5 * sxy - dpml - 0.1, 0);
-  if (c != Ez && c != Hz) abort("unimplemented component check");
+  if (c != Ez && c != Hz) meep::abort("unimplemented component check");
   double symsign = c == Ez ? 1.0 : -1.0;
   master_printf("Checking resolution convergence of 2d %s PML...\n", c == Ez ? "TM" : "TE");
   if (conductivity != 0) master_printf("...with conductivity %g...\n", conductivity);
@@ -320,23 +320,23 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
   master_printf("Running PML tests...\n");
-  // if (check_pml1d(one, 0)) abort("not a pml in 1d.");
-  if (check_pml1d(one, 10.0)) abort("not a pml in 1d + conductivity.");
+  // if (check_pml1d(one, 0)) meep::abort("not a pml in 1d.");
+  if (check_pml1d(one, 10.0)) meep::abort("not a pml in 1d + conductivity.");
   if (check_pml2d(one, Hz, 1, true, 0.5))
-    abort("not a pml in 2d TE + conduct. + dispersion + offdiag");
-  // if (check_pml2d(one, Ez, 0, false, 0)) abort("not a pml in 2d TM.");
-  // if (check_pml2d(one,Ez,1,false,0)) abort("not a pml in 2d TM + conduct.");
-  // if (check_pml2d(one,Hz,0,false,0)) abort("not a pml in 2d TE.");
-  // if (check_pml2d(one, Hz, 1, false, 0)) abort("not a pml in 2d TE + conduct.");
-  //  if (check_pml2d(one,Ez,0,true,0)) abort("not a pml in 2d TM + dispersion.");
-  // if (check_pml2d(one, Hz, 0, true, 0)) abort("not a pml in 2d TE + dispersion.");
-  // if (check_pml2d(one, Ez, 0, false, 0.5)) abort("not a pml in 2d TM + offdiag.");
-  // if (check_pml2d(one, Hz, 0, false, 0.5)) abort("not a pml in 2d TE + offdiag.");
-  // if (check_pmlcyl(one)) abort("not a pml in cylincrical co-ordinates.");
-  if (pml1d_scaling(one)) abort("pml doesn't scale properly with length.");
-  if (pmlcyl_scaling(one, 0)) abort("m=0 cylindrical pml doesn't scale properly with length.");
-  if (pmlcyl_scaling(one, 1)) abort("m=1 cylindrical pml doesn't scale properly with length.");
-  if (pmlcyl_scaling(one, 2)) abort("m=2 cylindrical pml doesn't scale properly with length.");
+    meep::abort("not a pml in 2d TE + conduct. + dispersion + offdiag");
+  // if (check_pml2d(one, Ez, 0, false, 0)) meep::abort("not a pml in 2d TM.");
+  // if (check_pml2d(one,Ez,1,false,0)) meep::abort("not a pml in 2d TM + conduct.");
+  // if (check_pml2d(one,Hz,0,false,0)) meep::abort("not a pml in 2d TE.");
+  // if (check_pml2d(one, Hz, 1, false, 0)) meep::abort("not a pml in 2d TE + conduct.");
+  //  if (check_pml2d(one,Ez,0,true,0)) meep::abort("not a pml in 2d TM + dispersion.");
+  // if (check_pml2d(one, Hz, 0, true, 0)) meep::abort("not a pml in 2d TE + dispersion.");
+  // if (check_pml2d(one, Ez, 0, false, 0.5)) meep::abort("not a pml in 2d TM + offdiag.");
+  // if (check_pml2d(one, Hz, 0, false, 0.5)) meep::abort("not a pml in 2d TE + offdiag.");
+  // if (check_pmlcyl(one)) meep::abort("not a pml in cylincrical co-ordinates.");
+  if (pml1d_scaling(one)) meep::abort("pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 0)) meep::abort("m=0 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 1)) meep::abort("m=1 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 2)) meep::abort("m=2 cylindrical pml doesn't scale properly with length.");
 
   return 0;
 }

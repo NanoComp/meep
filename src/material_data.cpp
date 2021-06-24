@@ -46,7 +46,7 @@ medium_struct::medium_struct(double epsilon) :
       B_conductivity_diag{}
     {}
 
-void medium_struct::check_offdiag_im_zero_or_abort() const {
+void medium_struct::check_offdiag_im_zero_or_meep::abort() const {
   if (epsilon_offdiag.x.im != 0 || epsilon_offdiag.y.im != 0 ||
       epsilon_offdiag.z.im != 0 || mu_offdiag.x.im != 0 || mu_offdiag.y.im != 0 ||
       mu_offdiag.z.im != 0) {

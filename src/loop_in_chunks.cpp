@@ -293,7 +293,7 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
       e1.set_direction(d, s0.in_direction(d));
     }
     else
-      abort("bug: impossible(?) looping boundaries");
+      meep::abort("bug: impossible(?) looping boundaries");
   }
 }
 
@@ -340,10 +340,10 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, const volume &where,
                             component cgrid, bool use_symmetry, bool snap_empty_dimensions) {
   if (coordinate_mismatch(gv.dim, cgrid))
-    abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n", component_name(cgrid),
+    meep::abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n", component_name(cgrid),
           dimension_name(gv.dim));
   if (where.dim != gv.dim)
-    abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
+    meep::abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
   if (cgrid == Permeability) cgrid = Centered;
 

@@ -139,14 +139,14 @@ int main(int argc, char *argv[]) {
   double ref_freq_im[3] = {-7.6133e-04, -2.1156e-04, -5.2215e-05};
   cdouble ref_amp[3] = {cdouble(-8.28e-04, -1.34e-03), cdouble(1.23e-03, -1.25e-02),
                         cdouble(2.83e-03, -6.52e-04)};
-  if (bands != 3) abort("harminv found only %i/%i bands\n", bands, ref_bands);
+  if (bands != 3) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
   for (int nb = 0; nb < bands; nb++)
     if (fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
         fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
         abs(amp[nb] - ref_amp[nb]) > 1.0e-2 * abs(ref_amp[nb])
 
     )
-      abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= "
+      meep::abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= "
             "{%e,%e,%e,%e}\n",
             nb, freq_re[nb], freq_im[nb], real(amp[nb]), imag(amp[nb]), ref_freq_re[nb],
             ref_freq_im[nb], real(ref_amp[nb]), imag(ref_amp[nb]));

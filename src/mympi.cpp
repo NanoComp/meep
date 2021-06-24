@@ -113,7 +113,7 @@ double wall_time(void) {
 #endif
 }
 
-[[noreturn]] void abort(const char *fmt, ...) {
+[[noreturn]] void meep::abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   char *s;
@@ -126,7 +126,7 @@ double wall_time(void) {
   if (count_processors() == 1) { throw runtime_error("meep: " + error_msg); }
   fprintf(stderr, "meep: %s", error_msg.c_str());
   if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
-  MPI_Abort(MPI_COMM_WORLD, 1);
+  MPI_meep::abort(MPI_COMM_WORLD, 1);
   std::abort();  // Unreachable but MPI_Abort does not have the noreturn attribute.
 #else
   throw runtime_error("meep: " + error_msg);
@@ -545,7 +545,7 @@ void fields::boundary_communications(field_type ft) {
       const size_t comm_size = comm_size_tot(ft, pair);
       if (comm_size > 0) {
         if (comm_size > 2147483647) // MPI uses int for size to send/recv
-          abort("communications size too big for MPI");
+          meep::abort("communications size too big for MPI");
         if (chunks[j]->is_mine() && !chunks[i]->is_mine())
           MPI_Isend(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[i]->n_proc(),
                     tagto[chunks[i]->n_proc()]++, mycomm, &reqs[reqnum++]);
@@ -555,7 +555,7 @@ void fields::boundary_communications(field_type ft) {
       }
     }
   delete[] tagto;
-  if (reqnum > maxreq) abort("Too many requests!!!\n");
+  if (reqnum > maxreq) meep::abort("Too many requests!!!\n");
   if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
   delete[] reqs;
   delete[] stats;
@@ -623,7 +623,7 @@ void debug_printf(const char *fmt, ...) {
     char temp[50];
     snprintf(temp, 50, "debug_out_%d", my_rank());
     debf = fopen(temp, "w");
-    if (!debf) abort("Unable to open debug output %s\n", temp);
+    if (!debf) meep::abort("Unable to open debug output %s\n", temp);
   }
   vfprintf(debf, fmt, ap);
   fflush(debf);
@@ -672,7 +672,7 @@ void begin_critical_section(int tag) {
     MPI_Status status;
     int recv_tag = tag - 1; /* initialize to wrong value */
     MPI_Recv(&recv_tag, 1, MPI_INT, process_rank - 1, tag, mycomm, &status);
-    if (recv_tag != tag) abort("invalid tag received in begin_critical_section");
+    if (recv_tag != tag) meep::abort("invalid tag received in begin_critical_section");
   }
 #else
   UNUSED(tag);
@@ -717,12 +717,12 @@ void end_critical_section(int tag) {
 int divide_parallel_processes(int numgroups) {
 #ifdef HAVE_MPI
   end_divide_parallel();
-  if (numgroups > count_processors()) abort("numgroups > count_processors");
+  if (numgroups > count_processors()) meep::abort("numgroups > count_processors");
   int mygroup = (my_rank() * numgroups) / count_processors();
   MPI_Comm_split(MPI_COMM_WORLD, mygroup, my_rank(), &mycomm);
   return mygroup;
 #else
-  if (numgroups != 1) abort("cannot divide processes in non-MPI mode");
+  if (numgroups != 1) meep::abort("cannot divide processes in non-MPI mode");
   return 0;
 #endif
 }

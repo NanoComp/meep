@@ -113,7 +113,7 @@ void *lorentzian_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(lorentzian_data) + sizeof(realnum) * (num - 1);
   lorentzian_data *d = (lorentzian_data *)malloc(sz);
-  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
+  if (d == NULL) meep::abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   d->sz_data = sz;
   return (void *)d;
 }
@@ -386,7 +386,7 @@ void *gyrotropic_susceptibility::new_internal_data(realnum *W[NUM_FIELD_COMPONEN
   }
   size_t sz = sizeof(gyrotropy_data) + sizeof(realnum) * (num - 1);
   gyrotropy_data *d = (gyrotropy_data *)malloc(sz);
-  if (d == NULL) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
+  if (d == NULL) meep::abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, sz);
   d->sz_data = sz;
   return (void *)d;
 }
@@ -476,7 +476,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
 
           if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
-            abort("gyrotropic media require 3D Cartesian fields\n");
+            meep::abort("gyrotropic media require 3D Cartesian fields\n");
 
           const direction d1 = cycle_direction(gv.dim, d0, 1);
           const direction d2 = cycle_direction(gv.dim, d0, 2);
@@ -490,9 +490,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
           realnum r0, r1, r2;
 
-          if (!pp1 || !pp2) abort("gyrotropic media require 3D Cartesian fields\n");
+          if (!pp1 || !pp2) meep::abort("gyrotropic media require 3D Cartesian fields\n");
           if (sigma[c][d1] || sigma[c][d2])
-            abort("gyrotropic media do not support anisotropic sigma\n");
+            meep::abort("gyrotropic media do not support anisotropic sigma\n");
 
           LOOP_OVER_VOL_OWNED(gv, c, i) {
             r0 = diag * p0[i] - gamma1 * pp0[i] + omega0dtsqr * s[i] * w0[i] -
@@ -537,7 +537,7 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const realnum *w0 = W[c][cmp], *s = sigma[c][d0];
 
           if (!w0 || !s || (d0 != X && d0 != Y && d0 != Z))
-            abort("gyrotropic media require 3D Cartesian fields\n");
+            meep::abort("gyrotropic media require 3D Cartesian fields\n");
 
           const direction d1 = cycle_direction(gv.dim, d0, 1);
           const direction d2 = cycle_direction(gv.dim, d0, 2);
@@ -551,9 +551,9 @@ void gyrotropic_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
           const ptrdiff_t is2 = gv.stride(d2) * (is_magnetic(c) ? -1 : +1);
           realnum r0, r1, r2, q0, q1, q2;
 
-          if (!pp1 || !pp2) abort("gyrotropic media require 3D Cartesian fields\n");
+          if (!pp1 || !pp2) meep::abort("gyrotropic media require 3D Cartesian fields\n");
           if (sigma[c][d1] || sigma[c][d2])
-            abort("gyrotropic media do not support anisotropic sigma\n");
+            meep::abort("gyrotropic media do not support anisotropic sigma\n");
 
           LOOP_OVER_VOL_OWNED(gv, c, i) {
             q0 = -omega2pidt * p0[i] + 0.5 * alpha * pp0[i] + dt2pi * s[i] * w0[i];

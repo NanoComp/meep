@@ -162,7 +162,7 @@ static volume random_gv(ndim dim) {
       v.set_direction_min(Z, urand(-100, 100));
       v.set_direction_max(Z, s[2] + v.in_direction_min(Z));
       break;
-    default: abort("unsupported dimensionality in integrate.cpp");
+    default: meep::abort("unsupported dimensionality in integrate.cpp");
   }
 
   return v;
@@ -190,7 +190,7 @@ void check_integral(fields &f, linear_integrand_data &d, const volume &v, compon
 
   double sum = real(f.integrate(0, 0, linear_integrand, (void *)&d, v));
   if (fabs(sum - correct_integral(v, d)) > 1e-9 * fabs(sum))
-    abort("FAILED: %0.16g instead of %0.16g\n", (double)sum, correct_integral(v, d));
+    meep::abort("FAILED: %0.16g instead of %0.16g\n", (double)sum, correct_integral(v, d));
   master_printf("...PASSED.\n");
 }
 
@@ -258,23 +258,23 @@ void check_loop_vol(const grid_volume &gv, component c) {
     IVEC_LOOP_LOC(gv, here);
     ivec ihere0(gv.iloc(c, i));
     vec here0(gv[ihere0]);
-    if (ihere0 != ihere) abort("FAILED: wrong LOOP_OVER_VOL iloc at i=%td\n", i);
+    if (ihere0 != ihere) meep::abort("FAILED: wrong LOOP_OVER_VOL iloc at i=%td\n", i);
     if (abs(here0 - here) > 1e-13)
-      abort("FAILED: wrong LOOP_OVER_VOL loc (err = %g) at i=%td\n", abs(here0 - here), i);
+      meep::abort("FAILED: wrong LOOP_OVER_VOL loc (err = %g) at i=%td\n", abs(here0 - here), i);
     ++count;
     if (i < min_i) min_i = i;
     if (i > max_i) max_i = i;
     if (gv.owns(ihere)) ++count_owned;
-    if (ihere < vmin || ihere > vmax) abort("FAILED: LOOP_OVER_VOL outside V at i=%td\n", i);
+    if (ihere < vmin || ihere > vmax) meep::abort("FAILED: LOOP_OVER_VOL outside V at i=%td\n", i);
   }
   if (count != gv.ntot())
-    abort("FAILED: LOOP_OVER_VOL has %zd iterations instead of ntot=%zd\n", count, gv.ntot());
+    meep::abort("FAILED: LOOP_OVER_VOL has %zd iterations instead of ntot=%zd\n", count, gv.ntot());
   if (count_owned != gv.nowned(c))
-    abort("FAILED: LOOP_OVER_VOL has %zd owned points instead of nowned=%zd\n", count_owned,
+    meep::abort("FAILED: LOOP_OVER_VOL has %zd owned points instead of nowned=%zd\n", count_owned,
           gv.nowned(c));
-  if (min_i != 0) abort("FAILED: LOOP_OVER_VOL has minimum index %td instead of 0\n", min_i);
+  if (min_i != 0) meep::abort("FAILED: LOOP_OVER_VOL has minimum index %td instead of 0\n", min_i);
   if (size_t(max_i) != gv.ntot() - 1)
-    abort("FAILED: LOOP_OVER_VOL has max index %td instead of ntot-1\n", max_i);
+    meep::abort("FAILED: LOOP_OVER_VOL has max index %td instead of ntot-1\n", max_i);
 
   count = 0;
   LOOP_OVER_VOL_OWNED(gv, c, i) {
@@ -282,14 +282,14 @@ void check_loop_vol(const grid_volume &gv, component c) {
     IVEC_LOOP_LOC(gv, here);
     ivec ihere0(gv.iloc(c, i));
     vec here0(gv[ihere0]);
-    if (ihere0 != ihere) abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%td\n", i);
+    if (ihere0 != ihere) meep::abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%td\n", i);
     if (abs(here0 - here) > 1e-13)
-      abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%td\n", abs(here0 - here), i);
-    if (!gv.owns(ihere)) abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%td\n", i);
+      meep::abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%td\n", abs(here0 - here), i);
+    if (!gv.owns(ihere)) meep::abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%td\n", i);
     ++count;
   }
   if (count != count_owned)
-    abort("FAILED: LOOP_OVER_VOL_OWNED has %zd iterations instead of %zd\n", count, count_owned);
+    meep::abort("FAILED: LOOP_OVER_VOL_OWNED has %zd iterations instead of %zd\n", count, count_owned);
 
   count = 0;
   LOOP_OVER_VOL_NOTOWNED(gv, c, i) {
@@ -297,16 +297,16 @@ void check_loop_vol(const grid_volume &gv, component c) {
     IVEC_LOOP_LOC(gv, here);
     ivec ihere0(gv.iloc(c, i));
     vec here0(gv[ihere0]);
-    if (ihere0 != ihere) abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%td\n", i);
+    if (ihere0 != ihere) meep::abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%td\n", i);
     if (abs(here0 - here) > 1e-13)
-      abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%td\n", abs(here0 - here), i);
-    if (gv.owns(ihere)) abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%td\n", i);
+      meep::abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%td\n", abs(here0 - here), i);
+    if (gv.owns(ihere)) meep::abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%td\n", i);
     if (ihere < vmin || ihere > vmax)
-      abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%td\n", i);
+      meep::abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%td\n", i);
     ++count;
   }
   if (count != gv.ntot() - count_owned)
-    abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %zd iterations instead of %zd\n", count,
+    meep::abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %zd iterations instead of %zd\n", count,
           gv.ntot() - count_owned);
 
   master_printf("...PASSED.\n");

@@ -38,9 +38,6 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_LANG([C++])
 
-# make sure we enable C++11 support if possible
-AX_CXX_COMPILE_STDCXX([11], [], [optional])
-
 # Check for MPI library
 
 AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[enable MPI parallelization])],
@@ -74,6 +71,9 @@ if test "x$with_mpi" = "xyes"; then
           AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])])
   fi
 fi
+
+# make sure we enable C++11 support if possible
+AX_CXX_COMPILE_STDCXX([11], [], [optional])
 
 ##############################################################################
 # Compiler flags

@@ -57,7 +57,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
                      complex<double> phase_factor, ivec shift_, const symmetry &S_, int sn_,
                      const void *data_) {
   dft_chunk_data *data = (dft_chunk_data *)data_;
-  if (!fc_->f[c_][0]) abort("invalid fields_chunk/component combination in dft_chunk");
+  if (!fc_->f[c_][0]) meep::abort("invalid fields_chunk/component combination in dft_chunk");
 
   fc = fc_;
   is = is_;
@@ -163,9 +163,9 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
      since no fields will be found.   This is almost certainly not
      what the user wants. */
   if (!components_allocated)
-    abort("allocate field components (by adding sources) before adding dft objects");
+    meep::abort("allocate field components (by adding sources) before adding dft objects");
   if (!include_dV_and_interp_weights && sqrt_dV_and_interp_weights)
-    abort("include_dV_and_interp_weights must be true for sqrt_dV_and_interp_weights=true in "
+    meep::abort("include_dV_and_interp_weights must be true for sqrt_dV_and_interp_weights=true in "
           "add_dft");
 
   dft_chunk_data data;
@@ -192,7 +192,7 @@ dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> f
                            bool include_dV_and_interp_weights) {
   dft_chunk *chunks = 0;
   while (where) {
-    if (is_derived(where->c)) abort("derived_component invalid for dft");
+    if (is_derived(where->c)) meep::abort("derived_component invalid for dft");
     complex<double> stored_weight = where->weight;
     chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
                      stored_weight, chunks);
@@ -267,13 +267,13 @@ void dft_chunk::scale_dft(complex<double> scale) {
 
 void dft_chunk::operator-=(const dft_chunk &chunk) {
   if (c != chunk.c || N * omega.size() != chunk.N * chunk.omega.size())
-    abort("Mismatched chunks in dft_chunk::operator-=");
+    meep::abort("Mismatched chunks in dft_chunk::operator-=");
 
   for (size_t i = 0; i < N * omega.size(); ++i)
     dft[i] -= chunk.dft[i];
 
   if (next_in_dft) {
-    if (!chunk.next_in_dft) abort("Mismatched chunk lists in dft_chunk::operator-=");
+    if (!chunk.next_in_dft) meep::abort("Mismatched chunk lists in dft_chunk::operator-=");
     *next_in_dft -= *chunk.next_in_dft;
   }
 }
@@ -323,7 +323,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   size_t file_dims;
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
-    abort("incorrect dataset size (%zd vs. %zd) in load_dft_hdf5 %s:%s", file_dims, n,
+    meep::abort("incorrect dataset size (%zd vs. %zd) in load_dft_hdf5 %s:%s", file_dims, n,
           file->file_name(), dataname);
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
@@ -436,7 +436,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
   while (where) {
     derived_component c = derived_component(where->c);
     if (coordinate_mismatch(gv.dim, component_direction(c)))
-      abort("coordinate-type mismatch in add_dft_flux");
+      meep::abort("coordinate-type mismatch in add_dft_flux");
 
     switch (c) {
       case Sx: cE[0] = Ey, cE[1] = Ez, cH[0] = Hz, cH[1] = Hy; break;
@@ -449,7 +449,7 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
         else
           cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx;
         break;
-      default: abort("invalid flux component!");
+      default: meep::abort("invalid flux component!");
     }
 
     for (int i = 0; i < 2; ++i) {
@@ -638,7 +638,7 @@ direction fields::normal_direction(const volume &where) const {
     if (d == NO_DIRECTION && gv.dim == D2 && beta != 0 && where_pad.in_direction(X) > 0 &&
         where_pad.in_direction(Y) > 0)
       d = Z;
-    if (d == NO_DIRECTION) abort("Could not determine normal direction for given grid_volume.");
+    if (d == NO_DIRECTION) meep::abort("Could not determine normal direction for given grid_volume.");
   }
   return d;
 }
@@ -745,7 +745,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
                                                  fields *parent) {
 
   if ((num_freq < 0) || (num_freq > static_cast<int>(omega.size())-1))
-    abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
+    meep::abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
 
   /*****************************************************************/
   /* compute the size of the chunk we own and its strides etc.     */
@@ -953,7 +953,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   direction ds[3];
   size_t array_size = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (rank >= 3) abort("too many dimensions in process_dft_component");
+    if (rank >= 3) meep::abort("too many dimensions in process_dft_component");
     size_t n = std::max(0, (max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1);
 
     if (n > 1) {
@@ -1142,10 +1142,10 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
                               dirs);
         if (rank > 0 && am_master()) {
           array = collapse_array(array, &rank, dims, dirs, dft_volume);
-          if (rank == 0) abort("%s:%i: internal error", __FILE__, __LINE__);
+          if (rank == 0) meep::abort("%s:%i: internal error", __FILE__, __LINE__);
           size_t array_size = dims[0] * (rank >= 2 ? dims[1] * (rank == 3 ? dims[2] : 1) : 1);
           double *real_array = new double[array_size];
-          if (!real_array) abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, array_size);
+          if (!real_array) meep::abort("%s:%i:out of memory(%lu)", __FILE__, __LINE__, array_size);
           for (int reim = 0; reim < 2; reim++) {
             for (size_t n = 0; n < array_size; n++)
               real_array[n] = (reim == 0 ? real(array[n]) : imag(array[n]));
@@ -1226,7 +1226,7 @@ void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int 
       else
         cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx;
       break;
-    default: abort("invalid normal_direction in get_overlap");
+    default: meep::abort("invalid normal_direction in get_overlap");
   };
 
   dft_chunk *chunklists[2];

@@ -49,7 +49,7 @@ double Compare(realnum *d1, realnum *d2, int N, const char *Name) {
   Norm2 = sqrt(Norm2);
   NormDelta = sqrt(NormDelta);
   double RelErr = NormDelta / (0.5 * (Norm1 + Norm2));
-  if (RelErr > RELTOL) abort("fail: rel error in %s data = %e\n", Name, RelErr);
+  if (RelErr > RELTOL) meep::abort("fail: rel error in %s data = %e\n", Name, RelErr);
   return RelErr;
 }
 
@@ -64,7 +64,7 @@ double Compare(std::complex<realnum> *d1, std::complex<realnum> *d2, int N, cons
   Norm2 = sqrt(Norm2);
   NormDelta = sqrt(NormDelta);
   double RelErr = NormDelta / (0.5 * (Norm1 + Norm2));
-  if (RelErr > RELTOL) abort("fail: rel error in %s data = %e\n", Name, RelErr);
+  if (RelErr > RELTOL) meep::abort("fail: rel error in %s data = %e\n", Name, RelErr);
   return RelErr;
 }
 
@@ -83,7 +83,7 @@ void usage(char *progname) {
   master_printf("options: \n");
   master_printf(" --use-symmetry    use geometric symmetries\n");
   master_printf(" --write-files     write reference data files\n");
-  abort();
+  meep::abort();
 }
 
 /***************************************************************/
@@ -201,10 +201,10 @@ int main(int argc, char *argv[]) {
     h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
     realnum *rdata = (realnum *)file->read("hz.r", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
     if (rank != 1 || dims1D[0] != NX)
-      abort("failed to read 1D data(hz.r) from file %s.h5", H5FILENAME);
+      meep::abort("failed to read 1D data(hz.r) from file %s.h5", H5FILENAME);
     realnum *idata = (realnum *)file->read("hz.i", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
     if (rank != 1 || dims1D[0] != NX)
-      abort("failed to read 1D data(hz.i) from file %s.h5", H5FILENAME);
+      meep::abort("failed to read 1D data(hz.i) from file %s.h5", H5FILENAME);
     file_slice1d = new std::complex<realnum>[dims1D[0]];
     for (size_t n = 0; n < dims1D[0]; n++)
       file_slice1d[n] = std::complex<realnum>(rdata[n], idata[n]);
@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
 
     file_slice2d = (realnum *)file->read("sy", &rank, dims2D, 2, sizeof(realnum) == sizeof(float));
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY)
-      abort("failed to read 2D reference data from file %s.h5", H5FILENAME);
+      meep::abort("failed to read 2D reference data from file %s.h5", H5FILENAME);
     delete file;
 
     //
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
     // data read from file
     //
     rank = f.get_array_slice_dimensions(v1d, dims1D, dirs1D, true, false);
-    if (rank != 1 || dims1D[0] != NX) abort("incorrect dimensions for 1D slice");
+    if (rank != 1 || dims1D[0] != NX) meep::abort("incorrect dimensions for 1D slice");
     std::complex<double> *slice1d = f.get_complex_array_slice(v1d, Hz, 0, 0, true);
     std::complex<realnum> *slice1d_realnum = new std::complex<realnum>[NX];
     for (int i = 0; i < NX; ++i)
@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
     master_printf("1D: rel error %e\n", RelErr1D);
 
     rank = f.get_array_slice_dimensions(v2d, dims2D, dirs2D, true, false);
-    if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) abort("incorrect dimensions for 2D slice");
+    if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) meep::abort("incorrect dimensions for 2D slice");
     double *slice2d = f.get_array_slice(v2d, Sy, 0, 0, true);
     realnum *slice2d_realnum = new realnum[NX*NY];
     for (int i = 0; i < NX*NY; ++i)

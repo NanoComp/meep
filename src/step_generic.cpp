@@ -435,7 +435,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
       }
     }
     else if (u2) { // 2x2 off-diagonal u
-      abort("bug - didn't swap off-diagonal terms!?");
+      meep::abort("bug - didn't swap off-diagonal terms!?");
     }
     else { // diagonal u
       if (chi3) {
@@ -465,7 +465,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           }
         }
         else if (g2) {
-          abort("bug - didn't swap off-diagonal terms!?");
+          meep::abort("bug - didn't swap off-diagonal terms!?");
         }
         else {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {
@@ -538,7 +538,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
       }
     }
     else if (u2) { // 2x2 off-diagonal u
-      abort("bug - didn't swap off-diagonal terms!?");
+      meep::abort("bug - didn't swap off-diagonal terms!?");
     }
     else { // diagonal u
       if (chi3) {
@@ -562,7 +562,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const RPR g, c
           }
         }
         else if (g2) {
-          abort("bug - didn't swap off-diagonal terms!?");
+          meep::abort("bug - didn't swap off-diagonal terms!?");
         }
         else {
           LOOP_OVER_VOL_OWNED(gv, fc, i) {

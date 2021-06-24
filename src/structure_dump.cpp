@@ -394,7 +394,7 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       if (sus->next) sus = sus->next;
     }
     else {
-      abort("Invalid number of susceptibility parameters in structure::load");
+      meep::abort("Invalid number of susceptibility parameters in structure::load");
     }
   }
   return res;
@@ -405,7 +405,7 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   size_t dims[3] = {0, 0, 0};
 
   file->read_size(dataset, &rank, dims, 1);
-  if (rank != 1) abort("inconsistent data size in structure::load");
+  if (rank != 1) meep::abort("inconsistent data size in structure::load");
 
   if (dims[0] != 0) {
     for (int i = 0; i < num_chunks; ++i) {
@@ -468,7 +468,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   int origins_rank;
   size_t origins_dims;
   file.read_size("gv_origins", &origins_rank, &origins_dims, 1);
-  if (origins_rank != 1 || origins_dims != sz) { abort("chunk mismatch in structure::load"); }
+  if (origins_rank != 1 || origins_dims != sz) { meep::abort("chunk mismatch in structure::load"); }
   if (am_master()) {
     size_t gv_origins_start = 0;
     file.read_chunk(1, &gv_origins_start, &origins_dims, origins);
@@ -479,7 +479,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   int nums_rank;
   size_t nums_dims;
   file.read_size("gv_nums", &nums_rank, &nums_dims, 1);
-  if (nums_rank != 1 || nums_dims != sz) { abort("chunk mismatch in structure::load"); }
+  if (nums_rank != 1 || nums_dims != sz) { meep::abort("chunk mismatch in structure::load"); }
   if (am_master()) {
     size_t gv_nums_start = 0;
     file.read_chunk(1, &gv_nums_start, &nums_dims, nums);
@@ -512,7 +512,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
 void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
                                   const std::vector<int> &ids,
                                   boundary_region &br) {
-  if (gvs.size() != size_t(num_chunks)) abort("load_chunk_layout: wrong number of chunks.");
+  if (gvs.size() != size_t(num_chunks)) meep::abort("load_chunk_layout: wrong number of chunks.");
   // Recreate the chunks with the new grid_volumes
   for (int i = 0; i < num_chunks; ++i) {
     if (chunks[i]->refcount-- <= 1) delete chunks[i];
@@ -535,7 +535,7 @@ void structure::load(const char *filename) {
   size_t start[3] = {0, 0, 0};
   file.read_size("num_chi1inv", &rank, dims, 3);
   if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])
-    abort("chunk mismatch in structure::load");
+    meep::abort("chunk mismatch in structure::load");
   if (am_master()) file.read_chunk(3, start, dims, num_chi1inv);
 
   file.prevent_deadlock();
@@ -556,7 +556,7 @@ void structure::load(const char *filename) {
             chunks[i]->chi1inv[c][d] = NULL;
           }
           else {
-            if (n != ntot) abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
+            if (n != ntot) meep::abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
             chunks[i]->chi1inv[c][d] = new realnum[ntot];
             my_ntot += ntot;
           }
@@ -569,7 +569,7 @@ void structure::load(const char *filename) {
 
   // read the data
   file.read_size("chi1inv", &rank, dims, 1);
-  if (rank != 1 || dims[0] != ntotal) abort("inconsistent data size in structure::load");
+  if (rank != 1 || dims[0] != ntotal) meep::abort("inconsistent data size in structure::load");
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
@@ -613,7 +613,7 @@ void structure::load(const char *filename) {
     int rank = 0;
     size_t dims[] = {0, 0, 0};
     file.read_size("num_sigmas", &rank, dims, 1);
-    if (dims[0] != (size_t)num_chunks * 2) { abort("inconsistent data size in structure::load"); }
+    if (dims[0] != (size_t)num_chunks * 2) { meep::abort("inconsistent data size in structure::load"); }
     if (am_master()) {
       size_t start = 0;
       size_t count = num_chunks;
@@ -647,7 +647,7 @@ void structure::load(const char *filename) {
     size_t dims[] = {0, 0, 0};
     file.read_size("sigma_cd", &rank, dims, 1);
     if (dims[0] != 2 * (nsig[E_stuff] + nsig[H_stuff])) {
-      abort("inconsistent data size in structure::load");
+      meep::abort("inconsistent data size in structure::load");
     }
 
     if (am_master()) {
