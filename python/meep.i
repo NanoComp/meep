@@ -813,7 +813,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
     if (PyArray_NDIM(pao_grad) !=2) {meep::abort("Numpy grad array must have 2 dimensions.");}
     double *grad_c = (double *)PyArray_DATA(pao_grad);
-    int ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
+    npy_intp ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
     // clean the adjoint fields array
     PyArrayObject *pao_fields_a = (PyArrayObject *)fields_a;
@@ -844,7 +844,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
     double *frequencies_c = (double *)PyArray_DATA(pao_freqs);
-    int nf = PyArray_DIMS(pao_freqs)[0];
+    npy_intp nf = PyArray_DIMS(pao_freqs)[0];
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
     // prepare a geometry_tree
