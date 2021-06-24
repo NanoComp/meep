@@ -113,7 +113,7 @@ double wall_time(void) {
 #endif
 }
 
-[[noreturn]] void meep::abort(const char *fmt, ...) {
+[[noreturn]] void abort(const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   char *s;
@@ -126,7 +126,7 @@ double wall_time(void) {
   if (count_processors() == 1) { throw runtime_error("meep: " + error_msg); }
   fprintf(stderr, "meep: %s", error_msg.c_str());
   if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
-  MPI_meep::abort(MPI_COMM_WORLD, 1);
+  MPI_Abort(MPI_COMM_WORLD, 1);
   std::abort();  // Unreachable but MPI_Abort does not have the noreturn attribute.
 #else
   throw runtime_error("meep: " + error_msg);
