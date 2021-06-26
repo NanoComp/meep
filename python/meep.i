@@ -1424,16 +1424,13 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     $1 = PyObject_IsInstance($input, py_binary_partition_object());
 }
 
-%typemap(in) meep::binary_partition * {
-    $1 = py_bp_to_bp($input);
+%typemap(in) meep::binary_partition * (std::unique_ptr<meep::binary_partition> temp){
+  temp = py_bp_to_bp($input);
+  $1 = temp.get();
 }
 
 %typemap(arginit) meep::binary_partition * {
     $1 = NULL;
-}
-
-%typemap(freearg) meep::binary_partition * {
-    delete $1;
 }
 
 // Tells Python to take ownership of the h5file* this function returns so that
@@ -1472,6 +1469,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;
+%ignore meep::choose_chunkdivision;
 %ignore meep::infinity;
 
 %ignore std::vector<meep::volume>::vector(size_type);
@@ -1859,7 +1857,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     bool set_materials,
                                                     meep::structure *existing_s,
                                                     bool output_chunk_costs,
-                                                    meep::binary_partition *my_bp) {
+                                                    const meep::binary_partition *my_bp) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1877,11 +1875,11 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     if (output_chunk_costs) {
          meep::volume thev = gv.surroundings();
-         meep::binary_partition *bp = NULL;
+         std::unique_ptr<meep::binary_partition> bp;
          if (!my_bp) bp = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
          std::vector<grid_volume> chunk_vols;
          std::vector<int> ids;
-         meep::split_by_binarytree(gv, chunk_vols, ids, (!my_bp) ? bp : my_bp);
+         meep::split_by_binarytree(gv, chunk_vols, ids, (!my_bp) ? bp.get() : my_bp);
          for (size_t i = 0; i < chunk_vols.size(); ++i)
               master_printf("CHUNK:, %2zu, %f, %zu\n",i,chunk_vols[i].get_cost(),chunk_vols[i].surface_area());
          return NULL;

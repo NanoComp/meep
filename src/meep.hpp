@@ -17,6 +17,7 @@
 #ifndef MEEP_H
 #define MEEP_H
 
+#include <memory>
 #include <stdio.h>
 #include <stddef.h>
 #include <math.h>
@@ -815,10 +816,8 @@ private:
 };
 
 // defined in structure.cpp
-binary_partition *choose_chunkdivision(grid_volume &gv,
-                                       volume &v,
-                                       int num_chunks,
-                                       const symmetry &s);
+std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &v, int num_chunks,
+                                                       const symmetry &s);
 
 // defined in structure_dump.cpp
 void split_by_binarytree(grid_volume gvol,
@@ -2157,15 +2156,39 @@ vec get_k(void *vedata);
 double linear_interpolate(double rx, double ry, double rz, double *data,
                           int nx, int ny, int nz, int stride);
 
+// Value class that combines split direction and position.
+struct split_plane {
+  direction dir;
+  double pos;
+};
+
 // binary tree class for importing layout of chunk partition
+// Moveable but not copyable.
 class binary_partition {
 public:
-  binary_partition(int _id);
-  binary_partition(direction _split_dir, double _split_pos);
-  direction split_dir;
-  double split_pos;
+  // Constructs a new leaf node with id `_id`.
+  explicit binary_partition(int _id);
+  // Constructs a new internal node with subvolumes `left_tree` and `right_tree`, separated by
+  // `_split_plane`. Required: (left_tree != nullptr && right_tree != nullptr) or Meep will abort.
+  // Takes ownership of `left_tree` and `right_tree`.
+  binary_partition(const split_plane &_split_plane, std::unique_ptr<binary_partition> &&left_tree,
+                   std::unique_ptr<binary_partition> &&right_tree);
+
+  bool is_leaf() const;
+  // Returns the leaf node ID iff is_leaf() == true.
+  int get_proc_id() const;
+  // Returns the split plane iff is_leaf() == false.
+  const split_plane& get_plane() const;
+  // Returns a pointer to the left subtree node iff is_leaf() == false.
+  const binary_partition* left_tree() const;
+  // Returns a pointer to the right subtree node iff is_leaf() == false.
+  const binary_partition* right_tree() const;
+
+private:
   int proc_id;
-  binary_partition *left, *right;
+  split_plane plane;
+  std::unique_ptr<binary_partition> left;
+  std::unique_ptr<binary_partition> right;
 };
 
 } /* namespace meep */

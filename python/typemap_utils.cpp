@@ -1042,34 +1042,34 @@ void gobj_list_freearg(geometric_object_list* objs) {
     delete[] objs->items;
 }
 
-static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
-    meep::binary_partition *bp = NULL;
-    if (pybp == Py_None) return bp;
+static std::unique_ptr<meep::binary_partition> py_bp_to_bp(PyObject *pybp) {
+  std::unique_ptr<meep::binary_partition> bp;
+  if (pybp == Py_None) return bp;
 
-    PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
-    PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
-    PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
-    PyObject *left = PyObject_GetAttrString(pybp, "left");
-    PyObject *right = PyObject_GetAttrString(pybp, "right");
+  PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
+  PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
+  PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
+  PyObject *left = PyObject_GetAttrString(pybp, "left");
+  PyObject *right = PyObject_GetAttrString(pybp, "right");
 
-    if (!id || !split_dir || !split_pos || !left || !right) {
-      meep::abort("BinaryPartition class object is incorrectly defined.");
-    }
+  if (!id || !split_dir || !split_pos || !left || !right) {
+    meep::abort("BinaryPartition class object is incorrectly defined.");
+  }
 
-    if (PyLong_Check(id)) {
-         bp = new meep::binary_partition(PyLong_AsLong(id));
-    } else {
-         bp = new meep::binary_partition(direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos));
-         bp->left = py_bp_to_bp(left);
-         bp->right = py_bp_to_bp(right);
-    }
+  if (PyLong_Check(id)) { bp.reset(new meep::binary_partition(PyLong_AsLong(id))); }
+  else {
+    bp.reset(new meep::binary_partition(
+        meep::split_plane{direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos)},
+        py_bp_to_bp(left),
+        py_bp_to_bp(right)));
+  }
 
-    Py_XDECREF(id);
-    Py_XDECREF(split_dir);
-    Py_XDECREF(split_pos);
-    Py_XDECREF(left);
-    Py_XDECREF(right);
-    return bp;
+  Py_XDECREF(id);
+  Py_XDECREF(split_dir);
+  Py_XDECREF(split_pos);
+  Py_XDECREF(left);
+  Py_XDECREF(right);
+  return bp;
 }
 
 static PyObject *py_binary_partition_object() {

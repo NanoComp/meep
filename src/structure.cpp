@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -76,28 +77,33 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   }
 }
 
-static binary_partition *split_by_cost(int n, grid_volume gvol, bool fragment_cost) {
-  if (n == 1) {
-    binary_partition *bp_leaf = new binary_partition(-1);
-    return bp_leaf;
+static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
+                                                       bool fragment_cost) {
+  if (n == 1) { return std::unique_ptr<binary_partition>(new binary_partition(-1)); }
+
+  int best_split_point;
+  direction best_split_direction;
+  double best_split_position;
+  double left_effort_fraction;
+  gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction,
+                       left_effort_fraction);
+
+  const int num_left = static_cast<int>(left_effort_fraction * n + 0.5);
+  if (num_left == 0 || num_left == n) {
+    return std::unique_ptr<binary_partition>(new binary_partition(-1));
   }
-  else {
-    int best_split_point;
-    direction best_split_direction;
-    double best_split_position;
-    double left_effort_fraction;
-    gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction, left_effort_fraction);
-    best_split_position = gvol.surroundings().get_min_corner().in_direction(best_split_direction) +
+
+  best_split_position =
+      gvol.surroundings().get_min_corner().in_direction(best_split_direction) +
       (gvol.surroundings().in_direction(best_split_direction) * best_split_point) /
-      gvol.num_direction(best_split_direction);
-    binary_partition *bp_split = new binary_partition(best_split_direction, best_split_position);
-    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
-    const int num_left = (size_t)(left_effort_fraction * n + 0.5);
-    bp_split->left = split_by_cost(num_left, left_gvol, fragment_cost);
-    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
-    bp_split->right = split_by_cost(n - num_left, right_gvol, fragment_cost);
-    return bp_split;
-  }
+          gvol.num_direction(best_split_direction);
+  split_plane optimal_plane{best_split_direction, best_split_position};
+  grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
+  grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
+  return std::unique_ptr<binary_partition>(
+      new binary_partition(optimal_plane,
+                           /*left=*/split_by_cost(num_left, left_gvol, fragment_cost),
+                           /*right=*/split_by_cost(n - num_left, right_gvol, fragment_cost)));
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
@@ -114,7 +120,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   dt = Courant / a;
 
   std::unique_ptr<binary_partition> my_bp;
-  if (!bp) my_bp.reset(meep::choose_chunkdivision(gv, v, desired_num_chunks, s));
+  if (!bp) my_bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
 
   // create the chunks:
   std::vector<grid_volume> chunk_volumes;
@@ -155,8 +161,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
 }
 
-binary_partition *choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
-                                       const symmetry &S) {
+std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &v,
+                                                       int desired_num_chunks, const symmetry &S) {
 
   if (desired_num_chunks == 0) desired_num_chunks = count_processors();
   if (gv.dim == Dcyl && gv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
@@ -204,7 +210,6 @@ binary_partition *choose_chunkdivision(grid_volume &gv, volume &v, int desired_n
       master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
     return split_by_cost(desired_num_chunks, gv, true);
   }
-
 }
 
 double structure::estimated_cost(int process) {
