@@ -18,6 +18,7 @@
 // Dump/load raw structure data to/from an HDF5 file.  Only
 // works if the number of processors/chunks is the same.
 
+#include <cassert>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -414,46 +415,58 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   }
 }
 
-binary_partition::binary_partition(int _proc_id) {
-  proc_id = _proc_id;
-  split_dir = NO_DIRECTION;
-  split_pos = 0.0;
-  left = NULL;
-  right = NULL;
+binary_partition::binary_partition(int _proc_id) : proc_id(_proc_id), plane{NO_DIRECTION, 0.0} {}
+
+binary_partition::binary_partition(const split_plane &_split_plane,
+                                   std::unique_ptr<binary_partition> &&left_tree,
+                                   std::unique_ptr<binary_partition> &&right_tree)
+    : proc_id(-1), plane(_split_plane), left(std::move(left_tree)), right(std::move(right_tree)) {
+  if (!left || !right) { meep::abort("Binary partition tree is required to be full"); }
 }
 
-binary_partition::binary_partition(direction _split_dir, double _split_pos) {
-  split_dir = _split_dir;
-  split_pos = _split_pos;
-  proc_id = -1;
-  left = NULL;
-  right = NULL;
+bool binary_partition::is_leaf() const { return !left && !right; }
+
+int binary_partition::get_proc_id() const {
+  assert(is_leaf());
+  return proc_id;
 }
 
-void split_by_binarytree(grid_volume gvol,
-                         std::vector<grid_volume> &result_gvs,
-                         std::vector<int> &result_ids,
-                         const binary_partition *bp) {
+const split_plane &binary_partition::get_plane() const {
+  assert(!is_leaf());
+  return plane;
+}
+
+const binary_partition *binary_partition::left_tree() const {
+  assert(!is_leaf());
+  return left.get();
+}
+
+const binary_partition *binary_partition::right_tree() const {
+  assert(!is_leaf());
+  return right.get();
+}
+
+void split_by_binarytree(grid_volume gvol, std::vector<grid_volume> &result_gvs,
+                         std::vector<int> &result_ids, const binary_partition *bp) {
   // reached a leaf
-  if ((bp->left == NULL) && (bp->right == NULL)) {
+  if (bp->is_leaf()) {
     result_gvs.push_back(gvol);
-    result_ids.push_back(bp->proc_id);
+    result_ids.push_back(bp->get_proc_id());
     return;
   }
 
-  int split_point = (size_t)((bp->split_pos - gvol.surroundings().in_direction_min(bp->split_dir)) /
-                             gvol.surroundings().in_direction(bp->split_dir) *
-                             gvol.num_direction(bp->split_dir) + 0.5);
+  const auto &plane = bp->get_plane();
+  int split_point = static_cast<int>(
+      (plane.pos - gvol.surroundings().in_direction_min(plane.dir)) /
+          gvol.surroundings().in_direction(plane.dir) * gvol.num_direction(plane.dir) +
+      0.5);
   // traverse left branch
-  if (bp->left != NULL) {
-    grid_volume left_gvol = gvol.split_at_fraction(false, split_point, bp->split_dir);
-    split_by_binarytree(left_gvol, result_gvs, result_ids, bp->left);
-  }
+  grid_volume left_gvol = gvol.split_at_fraction(false, split_point, plane.dir);
+  split_by_binarytree(left_gvol, result_gvs, result_ids, bp->left_tree());
+
   // traverse right branch
-  if (bp->right != NULL) {
-    grid_volume right_gvol = gvol.split_at_fraction(true, split_point, bp->split_dir);
-    split_by_binarytree(right_gvol, result_gvs, result_ids, bp->right);
-  }
+  grid_volume right_gvol = gvol.split_at_fraction(true, split_point, plane.dir);
+  split_by_binarytree(right_gvol, result_gvs, result_ids, bp->right_tree());
 }
 
 void structure::load_chunk_layout(const char *filename, boundary_region &br) {

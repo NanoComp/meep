@@ -280,6 +280,7 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 
 %warnfilter(302,325,451,503,509);
 
+%ignore meep::choose_chunkdivision;
 %ignore meep_geom::fragment_stats;
 
 %include "meep_renames.i"
@@ -298,3 +299,4 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 %}
 
 %include "meep-ctl-swig.hpp"
+
