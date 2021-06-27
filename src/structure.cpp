@@ -92,7 +92,7 @@ static binary_partition *split_by_cost(int n, grid_volume gvol, bool fragment_co
       gvol.num_direction(best_split_direction);
     binary_partition *bp_split = new binary_partition(best_split_direction, best_split_position);
     const int num_left = (size_t)(left_effort_fraction * n + 0.5);
-    if (num_left > 0) {
+    if (num_left > 0 && num_left < n) {
       grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
       bp_split->left = split_by_cost(num_left, left_gvol, fragment_cost);
       grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
