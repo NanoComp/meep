@@ -1470,6 +1470,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %ignore is_medium;
 %ignore is_metal;
 %ignore meep::choose_chunkdivision;
+%ignore meep::fields_chunk;
 %ignore meep::infinity;
 
 %ignore std::vector<meep::volume>::vector(size_type);

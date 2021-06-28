@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <cassert>
+#include <utility>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -152,52 +154,25 @@ bool custom_src_time::is_equal(const src_time &t) const {
 
 /*********************************************************************/
 
-src_vol::src_vol(component cc, src_time *st, size_t n, ptrdiff_t *ind, complex<double> *amps) {
-  c = cc;
-  if (is_D(c)) c = direction_component(Ex, component_direction(c));
-  if (is_B(c)) c = direction_component(Hx, component_direction(c));
-  t = st;
-  next = NULL;
-  npts = n;
-  index = ind;
-  A = amps;
+src_vol::src_vol(component cc, src_time *st, std::vector<ptrdiff_t> &&ind,
+                 std::vector<std::complex<double> > &&amps)
+    : c([](component c) -> component {
+        if (is_D(c)) c = direction_component(Ex, component_direction(c));
+        if (is_B(c)) c = direction_component(Hx, component_direction(c));
+        return c;
+      }(cc)),
+      src_t(st), index(std::move(ind)), amp(std::move(amps)) {
+  assert(index.size() == amp.size());
 }
 
-src_vol::src_vol(const src_vol &sv) {
-  c = sv.c;
-  t = sv.t;
-  npts = sv.npts;
-  index = new ptrdiff_t[npts];
-  A = new complex<double>[npts];
-  for (size_t j = 0; j < npts; j++) {
-    index[j] = sv.index[j];
-    A[j] = sv.A[j];
-  }
-  if (sv.next)
-    next = new src_vol(*sv.next);
-  else
-    next = NULL;
+bool src_vol::combinable(const src_vol &a, const src_vol &b) {
+  return (a.c == b.c) && (a.src_t == b.src_t) && (a.index == b.index);
 }
 
-src_vol *src_vol::add_to(src_vol *others) {
-  if (others) {
-    if (*this == *others) {
-      if (npts != others->npts)
-        meep::abort("Cannot add grid_volume sources with different number of points\n");
-      /* Compare all of the indices...if this ever becomes too slow,
-         we can just compare the first and last indices. */
-      for (size_t j = 0; j < npts; j++) {
-        if (others->index[j] != index[j]) meep::abort("Different indices\n");
-        others->A[j] += A[j];
-      }
-    }
-    else
-      others->next = add_to(others->next);
-    return others;
-  }
-  else {
-    next = others;
-    return this;
+void src_vol::add_amplitudes_from(const src_vol &other) {
+  assert(amp.size() == other.num_points());
+  for (size_t i = 0; i < amp.size(); ++i) {
+    amp[i] += other.amp[i];
   }
 }
 
@@ -267,8 +242,8 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
 
   size_t npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d) { npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
-  ptrdiff_t *index_array = new ptrdiff_t[npts];
-  complex<double> *amps_array = new complex<double>[npts];
+  std::vector<ptrdiff_t> index_array(npts);
+  std::vector<complex<double>> amps_array(npts);
 
   complex<double> amp = data->amp * conj(shift_phase);
 
@@ -299,26 +274,22 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
 
   if (idx_vol > npts) meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
-  src_vol *tmp = new src_vol(c, data->src, idx_vol, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
-  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+  fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array)));
 }
 
 void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr){
   sources = src->add_to(sources, &src);
-  ptrdiff_t* index_arr = new ptrdiff_t[n];
-  std::complex<double>* amp_arr_copy = new std::complex<double>[n];
-  for (size_t i = 0; i < n; i++){
-    index_arr[i] = cur_data.idx_arr[i];
-    amp_arr_copy[i] = amp_arr[i];
-  }
+  std::vector<ptrdiff_t> index_arr(cur_data.idx_arr);
+  std::vector<std::complex<double>> amplitudes(amp_arr, amp_arr+n);
   component c = cur_data.near_fd_comp;
-  src_vol *tmp = new src_vol(c, src, n, index_arr, amp_arr_copy);
+
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) meep::abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
   if (!fc->is_mine()) meep::abort("wrong fields chunk");
-  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+
+  fc->add_source(ft, src_vol(c, src, std::move(index_arr), std::move(amplitudes)));
   // We can't do require_component(c) since that only works if all processes are adding
   // srcdata for the same components in the same order, which may not be true.
   // ... instead, the caller should call fields::require_source_components()

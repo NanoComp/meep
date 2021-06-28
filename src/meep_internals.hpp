@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <vector>
 #include <string.h>
 #include "meep.hpp"
 
@@ -53,35 +54,37 @@ inline int rmin_bulk(int m) {
   return r;
 }
 
+// A source volume
+// Moveable and copyable
 class src_vol {
 public:
-  src_vol(component cc, src_time *st, size_t n, ptrdiff_t *ind, std::complex<double> *amps);
-  src_vol(const src_vol &sv);
-  ~src_vol() {
-    delete next;
-    delete[] index;
-    delete[] A;
-  }
+  // Constructs a new source volume. Takes ownership of `ind` and `amps`.
+  // Requirement: ind.size() == amps.size()
+  src_vol(component cc, src_time *st, std::vector<ptrdiff_t> &&ind,
+          std::vector<std::complex<double> > &&amps);
 
-  src_time *t;
-  ptrdiff_t *index;        // list of locations of sources in grid (indices)
-  size_t npts;             // number of points in list
-  component c;             // field component the source applies to
-  std::complex<double> *A; // list of amplitudes
+  // Checks whether `a` and `b` are combinable, i.e. have the same indices and point to the same
+  // `src_time` instance, but have potentially different amplitudes.
+  static bool combinable(const src_vol &a, const src_vol &b);
 
-  std::complex<double> dipole(size_t j) { return A[j] * t->dipole(); }
-  std::complex<double> current(size_t j) { return A[j] * t->current(); }
-  void update(double time, double dt) { t->update(time, dt); }
+  ptrdiff_t index_at(size_t pos) const { return index[pos]; }
+  const std::complex<double> &amplitude_at(size_t pos) const { return amp[pos]; }
+  size_t num_points() const { return index.size(); };
+  const src_time *t() const { return src_t; };
 
-  bool operator==(const src_vol &sv) const {
-    // note: don't compare sv.A, since this is used to see if we can just
-    // add one source's amplitudes to another in src_vol::add_to
-    return sv.npts == npts && sv.c == c && sv.t == t &&
-           memcmp(sv.index, index, npts * sizeof(ptrdiff_t)) == 0;
-  }
+  std::complex<double> dipole(size_t j) const { return amp[j] * src_t->dipole(); };
+  std::complex<double> current(size_t j) const { return amp[j] * src_t->current(); };
+  void update(double time, double dt) { src_t->update(time, dt); };
+  // Merges the amplitudes from volume source `other` into `this`.
+  // Requirement: other.num_points() == this->num_points().
+  // It is recommended to use `combinable` before calling this method.
+  void add_amplitudes_from(const src_vol &other);
 
-  src_vol *add_to(src_vol *others);
-  src_vol *next;
+  const component c; // field component the source applies to
+private:
+  src_time *src_t;                        // Not owned by us.
+  std::vector<ptrdiff_t> index;           // locations of sources in grid (indices)
+  std::vector<std::complex<double> > amp; // amplitudes
 };
 
 const int num_bandpts = 32;

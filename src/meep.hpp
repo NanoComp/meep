@@ -1370,7 +1370,7 @@ public:
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
   double beta;
   int is_real;
-  src_vol *sources[NUM_FIELD_TYPES];
+  std::vector<src_vol> sources[NUM_FIELD_TYPES];
   structure_chunk *new_s;
   structure_chunk *s;
   const char *outdir;
@@ -1398,6 +1398,10 @@ public:
 
   std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
                                    double frequency = 0) const;
+  // Returns the vector of sources volumes for field type `ft`.
+  const std::vector<src_vol> &get_sources(field_type ft) const { return sources[ft]; }
+  // Adds a source volume of field type `ft` and takes ownership of `src`.
+  void add_source(field_type ft, src_vol &&src);
 
   void backup_component(component c);
   void average_with_backup(component c);

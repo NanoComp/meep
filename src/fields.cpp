@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <algorithm>
+#include <utility>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -192,7 +194,6 @@ fields_chunk::~fields_chunk() {
     dft_chunks = nxt;
   }
   FOR_FIELD_TYPES(ft) {
-    delete sources[ft];
     delete[] zeroes[ft];
   }
   FOR_FIELD_TYPES(ft) {
@@ -241,7 +242,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   }
   doing_solve_cw = false;
   solve_cw_omega = 0.0;
-  FOR_FIELD_TYPES(ft) { sources[ft] = NULL; }
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
@@ -303,7 +303,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   }
   doing_solve_cw = thef.doing_solve_cw;
   solve_cw_omega = thef.solve_cw_omega;
-  FOR_FIELD_TYPES(ft) { sources[ft] = NULL; }
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
@@ -479,8 +478,9 @@ void fields::require_source_components() {
   memset(needed, 0, sizeof(needed));
   for (int i = 0; i < num_chunks; i++) {
     FOR_FIELD_TYPES(ft) {
-      for (src_vol *src = chunks[i]->sources[ft]; src; src = src->next)
-        needed[src->c] = 1;
+      for (const auto& src : chunks[i]->get_sources(ft)) {
+        needed[src.c] = 1;
+      }
     }
   }
   int allneeded[NUM_FIELD_COMPONENTS];
@@ -536,10 +536,22 @@ void fields::_require_component(component c, bool aniso2d) {
   }
 }
 
+void fields_chunk::add_source(field_type ft, src_vol &&src) {
+  auto it = std::find_if(sources[ft].begin(), sources[ft].end(), [&src](const src_vol &other) {
+    return src_vol::combinable(src, other);
+  });
+
+  if (it != sources[ft].end()) {
+    it->add_amplitudes_from(src);
+    return;
+  }
+
+  sources[ft].push_back(std::move(src));
+}
+
 void fields_chunk::remove_sources() {
   FOR_FIELD_TYPES(ft) {
-    delete sources[ft];
-    sources[ft] = NULL;
+    sources[ft].clear();
   }
 }
 
