@@ -1,6 +1,8 @@
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
+#include <memory>
+#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -134,7 +136,12 @@ int main(int argc, char *argv[]) {
   symmetry sym = use_symmetry ? -mirror(Y, gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
   meep_geom::material_type vacuum = meep_geom::vacuum;
-  meep_geom::material_type dielectric = meep_geom::make_dielectric(eps);
+  auto material_deleter = [](meep_geom::material_data *m) {
+    meep_geom::material_free(m);
+    delete m;
+  };
+  std::unique_ptr<meep_geom::material_data, decltype(material_deleter)> dielectric(
+      meep_geom::make_dielectric(eps), material_deleter);
   geometric_object objects[7];
   vector3 origin = v3(0.0, 0.0, 0.0);
   vector3 xhat = v3(1.0, 0.0, 0.0);
@@ -144,7 +151,7 @@ int main(int argc, char *argv[]) {
   double x0 = 0.5 * d;
   double deltax = 1.0;
   double height = meep_geom::ENORMOUS;
-  objects[0] = make_block(dielectric, origin, xhat, yhat, zhat, size);
+  objects[0] = make_block(dielectric.get(), origin, xhat, yhat, zhat, size);
   int no = 1;
   for (int n = 0; n < N; n++) {
     vector3 center = v3(x0 + n * deltax, 0.0, 0.0);
@@ -180,8 +187,6 @@ int main(int argc, char *argv[]) {
   int rank;
   size_t dims1D[1], dims2D[2];
   direction dirs1D[1], dirs2D[2];
-  std::complex<realnum> *file_slice1d = 0;
-  realnum *file_slice2d = 0;
 
 #define H5FILENAME DATADIR "array-slice-ll-ref"
 #define NX 126
@@ -199,19 +204,22 @@ int main(int argc, char *argv[]) {
     // read 1D and 2D array-slice data from HDF5 file
     //
     h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
-    realnum *rdata = (realnum *)file->read("hz.r", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
+    std::unique_ptr<realnum []> rdata(static_cast<realnum *>(
+        file->read("hz.r", &rank, dims1D, 1, sizeof(realnum) == sizeof(float))));
     if (rank != 1 || dims1D[0] != NX)
       meep::abort("failed to read 1D data(hz.r) from file %s.h5", H5FILENAME);
-    realnum *idata = (realnum *)file->read("hz.i", &rank, dims1D, 1, sizeof(realnum) == sizeof(float));
+
+    std::unique_ptr<realnum []> idata(static_cast<realnum *>(
+        file->read("hz.i", &rank, dims1D, 1, sizeof(realnum) == sizeof(float))));
     if (rank != 1 || dims1D[0] != NX)
       meep::abort("failed to read 1D data(hz.i) from file %s.h5", H5FILENAME);
-    file_slice1d = new std::complex<realnum>[dims1D[0]];
-    for (size_t n = 0; n < dims1D[0]; n++)
-      file_slice1d[n] = std::complex<realnum>(rdata[n], idata[n]);
-    delete[] rdata;
-    delete[] idata;
 
-    file_slice2d = (realnum *)file->read("sy", &rank, dims2D, 2, sizeof(realnum) == sizeof(float));
+    std::vector<std::complex<realnum>> file_slice1d;
+    for (size_t n = 0; n < dims1D[0]; n++)
+      file_slice1d.emplace_back(rdata[n], idata[n]);
+
+    std::unique_ptr<realnum[]> file_slice2d(static_cast<realnum *>(
+        file->read("sy", &rank, dims2D, 2, sizeof(realnum) == sizeof(float))));
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY)
       meep::abort("failed to read 2D reference data from file %s.h5", H5FILENAME);
     delete file;
@@ -222,20 +230,20 @@ int main(int argc, char *argv[]) {
     //
     rank = f.get_array_slice_dimensions(v1d, dims1D, dirs1D, true, false);
     if (rank != 1 || dims1D[0] != NX) meep::abort("incorrect dimensions for 1D slice");
-    std::complex<double> *slice1d = f.get_complex_array_slice(v1d, Hz, 0, 0, true);
-    std::complex<realnum> *slice1d_realnum = new std::complex<realnum>[NX];
+    std::unique_ptr<std::complex<double> []> slice1d(f.get_complex_array_slice(v1d, Hz, 0, 0, true));
+    std::vector<std::complex<realnum>> slice1d_realnum;
     for (int i = 0; i < NX; ++i)
-      slice1d_realnum[i] = std::complex<realnum>(slice1d[i]);
-    double RelErr1D = Compare(slice1d_realnum, file_slice1d, NX, "Hz_1d");
+      slice1d_realnum.emplace_back(slice1d[i]);
+    double RelErr1D = Compare(slice1d_realnum.data(), file_slice1d.data(), NX, "Hz_1d");
     master_printf("1D: rel error %e\n", RelErr1D);
 
     rank = f.get_array_slice_dimensions(v2d, dims2D, dirs2D, true, false);
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) meep::abort("incorrect dimensions for 2D slice");
-    double *slice2d = f.get_array_slice(v2d, Sy, 0, 0, true);
-    realnum *slice2d_realnum = new realnum[NX*NY];
-    for (int i = 0; i < NX*NY; ++i)
-      slice2d_realnum[i] = realnum(slice2d[i]);
-    double RelErr2D = Compare(slice2d_realnum, file_slice2d, NX * NY, "Sy_2d");
+    std::unique_ptr<double []> slice2d(f.get_array_slice(v2d, Sy, 0, 0, true));
+    std::unique_ptr<realnum[]> slice2d_realnum(new realnum[NX * NY]);
+    for (int i = 0; i < NX * NY; ++i)
+      slice2d_realnum[i] = static_cast<realnum>(slice2d[i]);
+    double RelErr2D = Compare(slice2d_realnum.get(), file_slice2d.get(), NX * NY, "Sy_2d");
     master_printf("2D: rel error %e\n", RelErr2D);
 
   }; // if (write_files) ... else ...

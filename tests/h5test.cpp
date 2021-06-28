@@ -1,3 +1,4 @@
+#include <memory>
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -89,8 +90,12 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
   sync();
   file = f.open_h5file(name, h5file::READONLY);
 
-  char *str = file->read("stringtest");
-  if (strcmp(str, "Hello, world!\n")) meep::abort("Failed to read back string test from %s...", name);
+  {
+    char *str = file->read("stringtest");
+    if (strcmp(str, "Hello, world!\n"))
+      meep::abort("Failed to read back string test from %s...", name);
+    delete[] str;
+  }
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
@@ -198,8 +203,12 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
   sync();
   file = f.open_h5file(name, h5file::READONLY);
 
-  char *str = file->read("stringtest");
-  if (strcmp(str, "Hello, world!\n")) meep::abort("Failed to read back string test from %s...", name);
+  {
+    char *str = file->read("stringtest");
+    if (strcmp(str, "Hello, world!\n"))
+      meep::abort("Failed to read back string test from %s...", name);
+    delete[] str;
+  }
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
@@ -361,7 +370,7 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   int chances;
   verbosity = 0;
-  const char *temp_dir = make_output_directory();
+  std::unique_ptr<const char[]> temp_dir(make_output_directory());
 #ifdef HAVE_HDF5
   const double pad1 = 0.314159, pad2 = 0.27183, pad3 = 0.14142;
 
@@ -404,7 +413,7 @@ int main(int argc, char **argv) {
                        gv_2d_name[igv], component_name(tm_c[ic]), use_real ? "_r" : "");
               master_printf("Checking %s...\n", name);
               if (!check_2d(funky_eps_2d, a, splitting, Sf2[iS], Sf2_kx[iS], Sf2_ky[iS], Ez,
-                            tm_c[ic], gv_2d[igv], use_real, gv_2d_rank[igv], name, temp_dir))
+                            tm_c[ic], gv_2d[igv], use_real, gv_2d_rank[igv], name, temp_dir.get()))
                 return 1;
             }
 
@@ -418,7 +427,7 @@ int main(int argc, char **argv) {
                      component_name(tm_c[ic]), use_real ? "_r" : "");
             master_printf("Checking %s...\n", name);
             if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, tm_c[ic],
-                                  vec(pad1, pad2), use_real, name, temp_dir))
+                                  vec(pad1, pad2), use_real, name, temp_dir.get()))
               return 1;
           }
 
@@ -445,13 +454,13 @@ int main(int argc, char **argv) {
                      gv_3d_name[igv], component_name(c3d[ic]), use_real ? "_r" : "");
             master_printf("Checking %s...\n", name);
             if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic], gv_3d[igv], use_real,
-                          gv_3d_rank[igv], name, temp_dir))
+                          gv_3d_rank[igv], name, temp_dir.get()))
               return 1;
           }
       }
 #endif /* HAVE_HDF5 */
 
-  delete_directory(temp_dir);
+  delete_directory(temp_dir.get());
 
   return 0;
 }
