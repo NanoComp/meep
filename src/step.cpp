@@ -94,6 +94,8 @@ void fields::step() {
     synchronized_magnetic_fields = save_synchronized_magnetic_fields;
   }
 
+  changed_materials = false; // any material changes were handled in connect_chunks()
+
   if (!std::isfinite(get_field(D_EnergyDensity, gv.center(), false)))
     meep::abort("simulation fields are NaN or Inf");
 }

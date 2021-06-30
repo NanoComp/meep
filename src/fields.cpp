@@ -74,6 +74,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
         boundaries[b][d] = None;
     }
   chunk_connections_valid = false;
+  changed_materials = true;
 
   // unit directions are periodic by default:
   FOR_DIRECTIONS(d) {
@@ -126,6 +127,7 @@ fields::fields(const fields &thef)
   for (int b = 0; b < 2; b++)
     FOR_DIRECTIONS(d) { boundaries[b][d] = thef.boundaries[b][d]; }
   chunk_connections_valid = false;
+  changed_materials = true;
 }
 
 fields::~fields() {
@@ -152,6 +154,9 @@ void fields::use_real_fields() {
   is_real = 1;
   for (int i = 0; i < num_chunks; i++)
     chunks[i]->use_real_fields();
+
+  // don't need to call sync_chunk_connections() since use_real_fields()
+  // should always be called on every process
   chunk_connections_valid = false;
 }
 
@@ -492,6 +497,7 @@ void fields::require_source_components() {
   for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
     if (allneeded[c])
       _require_component(component(c), aniso2d);
+  sync_chunk_connections();
 }
 
 // check if we are in 2d but anisotropy couples xy with z
@@ -532,7 +538,9 @@ void fields::_require_component(component c, bool aniso2d) {
 
   if (need_to_reconnect) {
     figure_out_step_plan();
-    chunk_connections_valid = false; // connect_chunks() will synchronize this for us
+    // we will eventually call sync_chunk_connections(), in either require_component(c)
+    // or require_components(), to synchronize this across processes:
+    chunk_connections_valid = false;
   }
 }
 
@@ -566,6 +574,7 @@ void fields_chunk::remove_susceptibilities(bool shared_chunks) {
 }
 
 void fields::remove_susceptibilities() {
+  changed_materials = true;
   for (int i = 0; i < num_chunks; i++)
     chunks[i]->remove_susceptibilities(shared_chunks);
 }
@@ -635,6 +644,7 @@ int fields::phase_in_material(const structure *snew, double time) {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->phase_in_material(snew->chunks[i]);
   phasein_time = (int)(time / dt);
+  changed_materials = true;
   // FIXME: how to handle changes in susceptibilities?
   return phasein_time;
 }

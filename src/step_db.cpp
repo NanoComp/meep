@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -32,7 +33,10 @@ namespace meep {
 void fields::step_db(field_type ft) {
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      if (chunks[i]->step_db(ft)) chunk_connections_valid = false;
+      if (chunks[i]->step_db(ft)) {
+       chunk_connections_valid = false;
+       assert(changed_materials);
+      }
 }
 
 bool fields_chunk::step_db(field_type ft) {

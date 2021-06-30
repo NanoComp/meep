@@ -16,6 +16,7 @@
 */
 
 #include <string.h>
+#include <assert.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -28,8 +29,10 @@ void fields::update_eh(field_type ft, bool skip_w_components) {
   if (ft != E_stuff && ft != H_stuff) meep::abort("update_eh only works with E/H");
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      if (chunks[i]->update_eh(ft, skip_w_components))
+      if (chunks[i]->update_eh(ft, skip_w_components)) {
         chunk_connections_valid = false; // E/H allocated - reconnect chunks
+        assert(changed_materials);
+      }
 }
 
 bool fields_chunk::needs_W_prev(component c) const {
