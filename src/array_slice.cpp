@@ -25,10 +25,47 @@
 #include <math.h>
 
 #include "meep_internals.hpp"
+#include "config.h"
+
+#define UNUSED(x) (void)x // silence compiler warnings
+
+namespace meep {
+namespace {
 
 using namespace std;
 
-namespace meep {
+constexpr size_t ARRAY_TO_ALL_BUFSIZE = 1 << 16; // Use (64k * 8 bytes) of buffer
+
+/***************************************************************/
+/* repeatedly call sum_to_all to consolidate all entries of    */
+/* an array on all cores.                                      */
+/* array: in/out ptr to the data                               */
+/* array_size: data size in multiples of sizeof(double)        */
+/***************************************************************/
+double *array_to_all(double *array, size_t array_size) {
+#ifdef HAVE_MPI
+  double *buffer = new double[ARRAY_TO_ALL_BUFSIZE];
+  ptrdiff_t offset = 0;
+  size_t remaining = array_size;
+  while (remaining != 0) {
+    size_t xfer_size = (remaining > ARRAY_TO_ALL_BUFSIZE ? ARRAY_TO_ALL_BUFSIZE : remaining);
+    sum_to_all(array + offset, buffer, xfer_size);
+    memcpy(array + offset, buffer, xfer_size * sizeof(double));
+    remaining -= xfer_size;
+    offset += xfer_size;
+  }
+  delete[] buffer;
+#else
+  UNUSED(array_size);
+#endif
+  return array;
+}
+
+complex<double> *array_to_all(complex<double> *array, size_t array_size) {
+  return (complex<double> *)array_to_all((double *)array, 2 * array_size);
+}
+
+} // namespace
 
 /***************************************************************************/
 
@@ -77,8 +114,6 @@ typedef struct {
   bool snap;
   bool empty_dim[5];
 } array_slice_data;
-
-#define UNUSED(x) (void)x // silence compiler warnings
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
 static complex<double> default_field_func(const complex<double> *fields, const vec &loc, void *data_) {
@@ -386,30 +421,6 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
       slice[idx2] = data->rfun(fields, loc, data->fun_data);
 
   } // LOOP_OVER_IVECS
-}
-
-/***************************************************************/
-/* repeatedly call sum_to_all to consolidate all entries of    */
-/* an array on all cores.                                      */
-/***************************************************************/
-#define BUFSIZE 1 << 16 // use 64k buffer
-double *array_to_all(double *array, size_t array_size) {
-  double *buffer = new double[BUFSIZE];
-  ptrdiff_t offset = 0;
-  size_t remaining = array_size;
-  while (remaining != 0) {
-    size_t xfer_size = (remaining > BUFSIZE ? BUFSIZE : remaining);
-    sum_to_all(array + offset, buffer, xfer_size);
-    memcpy(array + offset, buffer, xfer_size * sizeof(double));
-    remaining -= xfer_size;
-    offset += xfer_size;
-  }
-  delete[] buffer;
-  return array;
-}
-
-complex<double> *array_to_all(complex<double> *array, size_t array_size) {
-  return (complex<double> *)array_to_all((double *)array, 2 * array_size);
 }
 
 /***************************************************************/
