@@ -44,6 +44,7 @@ w2 = fsolve(@(w)detMwk(w,k),w1-0.1);
 
 */
 
+#include <vector>
 #include <meep.hpp>
 using namespace meep;
 using std::complex;
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
     }
     double T2 = 200;
     int iT2 = T2 / f.dt;
-    complex<double> *vals = new complex<double>[iT2];
+    std::vector<complex<double>> vals(iT2);
     while (f.t - iT < iT2) {
       if ((f.t - iT) % (iT2 / 10) == 0)
         master_printf("%g%% done with harminv\n", (f.t - iT) * 100.0 / iT2);
@@ -127,7 +128,7 @@ int main(int argc, char **argv) {
     double freqs_re[8], freqs_im[8];
 
     master_printf("done with timestepping, running harminv...\n");
-    int num = do_harminv(vals, iT2, f.dt, 0.0, 1.0, 8, amps, freqs_re, freqs_im);
+    int num = do_harminv(vals.data(), iT2, f.dt, 0.0, 1.0, 8, amps, freqs_re, freqs_im);
 
     // compute the error compared to analytical solution
     int i0 = 0;

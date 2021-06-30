@@ -1,6 +1,8 @@
 /***************************************************************/
 /* simple test for libmeepgeom, modeled after meep_test.ctl    */
 /***************************************************************/
+#include <memory>
+#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -29,14 +31,19 @@ bool compare_hdf5_datasets(const char *file1, const char *name1, const char *fil
                            double abs_tol = 1.0e-8) {
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
-  size_t *dims1 = new size_t[expected_rank];
-  realnum *data1 = (realnum *)f1.read(name1, &rank1, dims1, expected_rank, sizeof(realnum) == sizeof(float));
+  std::vector<size_t> dims1(expected_rank);
+
+  std::unique_ptr<realnum []> data1;
+  std::unique_ptr<realnum []> data2;
+  data1.reset(static_cast<realnum *>(
+      f1.read(name1, &rank1, dims1.data(), expected_rank, sizeof(realnum) == sizeof(float))));
   if (!data1) return false;
 
   h5file f2(file2, h5file::READONLY, false);
   int rank2;
-  size_t *dims2 = new size_t[expected_rank];
-  realnum *data2 = (realnum *)f2.read(name2, &rank2, dims2, expected_rank, sizeof(realnum) == sizeof(float));
+  std::vector<size_t> dims2(expected_rank);
+  data2.reset(static_cast<realnum *>(
+      f2.read(name2, &rank2, dims2.data(), expected_rank, sizeof(realnum) == sizeof(float))));
   if (!data2) return false;
 
   if (rank1 != expected_rank || rank2 != expected_rank) return false;
