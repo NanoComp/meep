@@ -543,9 +543,10 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
     PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
+    PyErr_Clear(); // clear errors from attributes not present
     bool do_averaging = false;
     if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
-    if (eps && eps == Py_True) { md = make_user_material(py_epsilon_func_wrap, po, do_averaging); }
+    if (eps && PyObject_IsTrue(eps)) { md = make_user_material(py_epsilon_func_wrap, po, do_averaging); }
     else {
       md = make_user_material(py_user_material_func_wrap, po, do_averaging);
     }
@@ -714,9 +715,14 @@ static PyObject *material_to_py_material(material_type mat) {
 
       return py_mat;
     }
+    case meep_geom::material_data::MATERIAL_USER: {
+      PyObject *py_mat = (PyObject *) mat->user_data;
+      Py_INCREF(py_mat);
+      return py_mat;
+    }
     default:
       // Only Medium is supported at this time.
-      meep::abort("Can only convert C++ medium_struct to Python");
+      meep::abort("Can only convert C++ medium_struct subtype %d to Python", mat->which_subclass);
   }
 }
 
