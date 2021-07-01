@@ -1,0 +1,14 @@
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: auto
+    patch: false
+    changes: false
+
+comment: off
+
+ignore:
+  - "python/tests/*”

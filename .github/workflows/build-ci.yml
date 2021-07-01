@@ -125,6 +125,10 @@ jobs:
     - name: Install Python dependencies
       run: pip install -r python/requirements.txt
 
+    - name: Install coverage
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
+      run: pip install coverage==4.5.4
+
     - name: Install mpi4py
       if: ${{ matrix.enable-mpi && steps.cache.outputs.cache-hit != true }}
       run: pip install mpi4py
@@ -136,28 +140,60 @@ jobs:
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
     - name: Run configure
+      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.6) }}
       run: |
         mkdir -p build &&
         pushd build &&
         ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
         popd
 
+    - name: Run configure
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
+      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+
+    - name: Run make
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
+      run: make ${MKCHECKFLAGS}
+
+    - name: Run make check
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
+      run: |
+        pushd python/ &&
+        make ${MKCHECKFLAGS} check &&
+        popd
+
     - name: Run make distcheck
+      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.6) }}
       run: |
         pushd build &&
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
+    - name: Generate coverage report
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }
+      run: |
+        pushd python/ &&
+        coverage xml -i &&
+        popd
+
+    - name: Upload coverage to Codecov
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
+      uses: codecov/codecov-action@v1
+      with:
+        files: ./python/coverage.xml
+        env_vars: ${{ runner.os }},${{ matrix.python-version }}
+        fail_ci_if_error: true
+
     - name: Archive C++ test logs
+      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.6) }}
       uses: actions/upload-artifact@v2
-      if: failure()
       with:
         name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
 
     - name: Archive Python test logs
+      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.6) }}
       uses: actions/upload-artifact@v2
-      if: failure()
       with:
         name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log
