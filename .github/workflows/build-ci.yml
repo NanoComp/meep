@@ -170,7 +170,7 @@ jobs:
         popd
 
     - name: Generate coverage report
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
       run: |
         pushd python/ &&
         coverage xml -i &&
