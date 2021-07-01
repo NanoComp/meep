@@ -209,18 +209,18 @@ static void get_source_slice_chunkloop(fields_chunk *fc, int ichnk, component cg
   if (has_direction(dim, Y)) NY = ((slice_imax - slice_imin).in_direction(Y) / 2) + 1;
 
   for (int ft = 0; ft < NUM_FIELD_TYPES; ft++)
-    for (src_vol *s = fc->sources[ft]; s; s = s->next) {
+    for (const src_vol &s : fc->get_sources(static_cast<field_type>(ft))) {
       component cS = S.transform(data->source_component, -sn);
-      if (s->c != cS) continue;
+      if (s.c != cS) continue;
 
       // loop over point sources in this src_vol. for each point source,
       // the src_vol stores the amplitude and the global index of the
       // symmetry-parent grid point, from which we need to compute the
       // local index of the symmetry-child grid point within this
       // slice (that is, if it even lies within the slice)
-      for (size_t npt = 0; npt < s->npts; npt++) {
-        complex<double> amp = s->A[npt];
-        ptrdiff_t chunk_index = s->index[npt];
+      for (size_t npt = 0; npt < s.num_points(); npt++) {
+        const complex<double> &amp = s.amplitude_at(npt);
+        ptrdiff_t chunk_index = s.index_at(npt);
         ivec iloc_parent = fc->gv.iloc(Dielectric, chunk_index);
         ivec iloc_child = S.transform(iloc_parent, sn) + shift;
         if (!in_subgrid(slice_imin, iloc_child, slice_imax)) continue; // source point outside slice

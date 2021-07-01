@@ -47,11 +47,12 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
 
   bool have_int_sources = false;
   if (!doing_solve_cw) {
-    for (src_vol *sv = sources[ft2]; sv; sv = sv->next)
-      if (sv->t->is_integrated) {
+    for (const src_vol &sv : sources[ft2]) {
+      if (sv.t()->is_integrated) {
         have_int_sources = true;
         break;
       }
+    }
   }
 
   FOR_FT_COMPONENTS(ft, ec) {
@@ -103,12 +104,12 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
   // Next, subtract time-integrated sources (i.e. polarizations, not currents)
 
   if (have_f_minus_p && !doing_solve_cw) {
-    for (src_vol *sv = sources[ft2]; sv; sv = sv->next) {
-      if (sv->t->is_integrated && f[sv->c][0] && ft == type(sv->c)) {
-        component c = field_type_component(ft2, sv->c);
-        for (size_t j = 0; j < sv->npts; ++j) {
-          const complex<double> A = sv->dipole(j);
-          DOCMP { f_minus_p[c][cmp][sv->index[j]] -= (cmp) ? imag(A) : real(A); }
+    for (const src_vol &sv : sources[ft2]) {
+      if (sv.t()->is_integrated && f[sv.c][0] && ft == type(sv.c)) {
+        component c = field_type_component(ft2, sv.c);
+        for (size_t j = 0; j < sv.num_points(); ++j) {
+          const complex<double> A = sv.dipole(j);
+          DOCMP { f_minus_p[c][cmp][sv.index_at(j)] -= (cmp) ? imag(A) : real(A); }
         }
       }
     }

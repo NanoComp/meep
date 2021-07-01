@@ -201,22 +201,22 @@ void fields::step_source(field_type ft, bool including_integrated) {
 }
 void fields_chunk::step_source(field_type ft, bool including_integrated) {
   if (doing_solve_cw && !including_integrated) return;
-  for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
-    component c = direction_component(first_field_component(ft), component_direction(sv->c));
-    const realnum *cndinv = s->condinv[c][component_direction(sv->c)];
-    if ((including_integrated || !sv->t->is_integrated) && f[c][0] &&
-        ((ft == D_stuff && is_electric(sv->c)) || (ft == B_stuff && is_magnetic(sv->c)))) {
+  for (const src_vol &sv : sources[ft]) {
+    component c = direction_component(first_field_component(ft), component_direction(sv.c));
+    const realnum *cndinv = s->condinv[c][component_direction(sv.c)];
+    if ((including_integrated || !sv.t()->is_integrated) && f[c][0] &&
+        ((ft == D_stuff && is_electric(sv.c)) || (ft == B_stuff && is_magnetic(sv.c)))) {
       if (cndinv)
-        for (size_t j = 0; j < sv->npts; j++) {
-          const ptrdiff_t i = sv->index[j];
-          const complex<double> A = sv->current(j) * dt * double(cndinv[i]);
+        for (size_t j = 0; j < sv.num_points(); j++) {
+          const ptrdiff_t i = sv.index_at(j);
+          const complex<double> A = sv.current(j) * dt * double(cndinv[i]);
           f[c][0][i] -= real(A);
           if (!is_real) f[c][1][i] -= imag(A);
         }
       else
-        for (size_t j = 0; j < sv->npts; j++) {
-          const complex<double> A = sv->current(j) * dt;
-          const ptrdiff_t i = sv->index[j];
+        for (size_t j = 0; j < sv.num_points(); j++) {
+          const complex<double> A = sv.current(j) * dt;
+          const ptrdiff_t i = sv.index_at(j);
           f[c][0][i] -= real(A);
           if (!is_real) f[c][1][i] -= imag(A);
         }
