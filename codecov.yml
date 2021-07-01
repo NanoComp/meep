@@ -9,6 +9,3 @@ coverage:
     changes: false
 
 comment: off
-
-ignore:
-  - "python/tests/*”
