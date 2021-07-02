@@ -34,7 +34,9 @@ namespace {
 
 using namespace std;
 
+#ifdef HAVE_MPI
 constexpr size_t ARRAY_TO_ALL_BUFSIZE = 1 << 16; // Use (64k * 8 bytes) of buffer
+#endif
 
 /***************************************************************/
 /* repeatedly call sum_to_all to consolidate all entries of    */
