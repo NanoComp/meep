@@ -726,18 +726,16 @@ public:
   int num_effort_volumes;
 
   ~structure();
-  structure();
   structure(const grid_volume &gv, material_function &eps,
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
             double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
-            const binary_partition *bp = NULL);
+            const binary_partition *_bp = NULL);
   structure(const grid_volume &gv, double eps(const vec &),
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
             double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
-            const binary_partition *bp = NULL);
-  structure(const structure *);
+            const binary_partition *_bp = NULL);
   structure(const structure &);
 
   void set_materials(material_function &mat, bool use_anisotropic_averaging = true,
@@ -800,6 +798,9 @@ public:
   std::complex<double> get_mu(const vec &loc, double frequency = 0) const;
   double max_eps() const;
   double estimated_cost(int process = my_rank());
+  // Returns the binary partition that was used to partition the volume into chunks. The returned
+  // pointer is only valid for the lifetime of this `structure` instance.
+  const binary_partition *get_binary_partition() const;
 
   friend class boundary_region;
 
@@ -807,12 +808,14 @@ private:
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region &br,
-                            const symmetry &s, const binary_partition *bp);
+                            const symmetry &s, const binary_partition *_bp);
   void check_chunks();
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
   void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
   void write_susceptibility_params(h5file *file, const char *dname, int EorH);
+
+  std::unique_ptr<binary_partition> bp;
 };
 
 // defined in structure.cpp
@@ -2169,7 +2172,7 @@ struct split_plane {
 };
 
 // binary tree class for importing layout of chunk partition
-// Moveable but not copyable.
+// Moveable and copyable.
 class binary_partition {
 public:
   // Constructs a new leaf node with id `_id`.
@@ -2179,6 +2182,7 @@ public:
   // Takes ownership of `left_tree` and `right_tree`.
   binary_partition(const split_plane &_split_plane, std::unique_ptr<binary_partition> &&left_tree,
                    std::unique_ptr<binary_partition> &&right_tree);
+  binary_partition(const binary_partition& other);
 
   bool is_leaf() const;
   // Returns the leaf node ID iff is_leaf() == true.

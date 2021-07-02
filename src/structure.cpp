@@ -30,46 +30,33 @@ using namespace std;
 
 namespace meep {
 
-structure::structure()
-    : Courant(0.5), v(D1) // Aaack, this is very hokey.
-{
-  num_chunks = 0;
-  num_effort_volumes = 0;
-  effort_volumes = NULL;
-  effort = NULL;
-  outdir = ".";
-  S = identity();
-  a = 1;
-  dt = Courant / a;
-  shared_chunks = false;
-}
 
 typedef structure_chunk *structure_chunk_ptr;
 
 structure::structure(const grid_volume &thegv, material_function &eps, const boundary_region &br,
                      const symmetry &s, int num, double Courant, bool use_anisotropic_averaging,
-                     double tol, int maxeval, const binary_partition *bp)
+                     double tol, int maxeval, const binary_partition *_bp)
     : Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) meep::abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
-  choose_chunkdivision(thegv, num, br, s, bp);
+  choose_chunkdivision(thegv, num, br, s, _bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
 structure::structure(const grid_volume &thegv, double eps(const vec &), const boundary_region &br,
                      const symmetry &s, int num, double Courant, bool use_anisotropic_averaging,
-                     double tol, int maxeval, const binary_partition *bp)
+                     double tol, int maxeval, const binary_partition *_bp)
     : Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   shared_chunks = false;
   if (!br.check_ok(thegv)) meep::abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
-  choose_chunkdivision(thegv, num, br, s, bp);
+  choose_chunkdivision(thegv, num, br, s, _bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   if (eps) {
     simple_material_function epsilon(eps);
@@ -108,7 +95,7 @@ static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
                                      const boundary_region &br, const symmetry &s,
-                                     const binary_partition *bp) {
+                                     const binary_partition *_bp) {
 
   if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
 
@@ -119,13 +106,16 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   a = gv.a;
   dt = Courant / a;
 
-  std::unique_ptr<binary_partition> my_bp;
-  if (!bp) my_bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+  if (_bp) {
+    bp.reset(new binary_partition(*_bp));
+  } else {
+    bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+  }
 
   // create the chunks:
   std::vector<grid_volume> chunk_volumes;
   std::vector<int> ids;
-  split_by_binarytree(gv, chunk_volumes, ids, (!bp) ? my_bp.get() : bp);
+  split_by_binarytree(gv, chunk_volumes, ids, bp.get());
 
   // initialize effort volumes
   num_effort_volumes = 1;
@@ -141,7 +131,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   num_chunks = 0;
   chunks = new structure_chunk_ptr[chunk_volumes.size() * num_effort_volumes];
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = (!bp) ? i * count_processors() / chunk_volumes.size() : ids[i] % count_processors();
+    const int proc = (!_bp) ? i * count_processors() / chunk_volumes.size() : ids[i] % count_processors();
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
@@ -346,49 +336,21 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
   num_effort_volumes = counter;
 }
 
-structure::structure(const structure *s) : v(s->v) {
-  shared_chunks = false;
-  num_chunks = s->num_chunks;
-  outdir = s->outdir;
-  gv = s->gv;
-  S = s->S;
-  user_volume = s->user_volume;
-  chunks = new structure_chunk_ptr[num_chunks];
-  for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new structure_chunk(s->chunks[i]);
-  num_effort_volumes = s->num_effort_volumes;
-  effort_volumes = new grid_volume[num_effort_volumes];
-  effort = new double[num_effort_volumes];
-  for (int i = 0; i < num_effort_volumes; i++) {
-    effort_volumes[i] = s->effort_volumes[i];
-    effort[i] = s->effort[i];
-  }
-  a = s->a;
-  Courant = s->Courant;
-  dt = s->dt;
-}
-
-structure::structure(const structure &s) : v(s.v) {
-  shared_chunks = false;
-  num_chunks = s.num_chunks;
-  outdir = s.outdir;
-  gv = s.gv;
-  S = s.S;
-  user_volume = s.user_volume;
+structure::structure(const structure &s)
+    : num_chunks{s.num_chunks}, shared_chunks{false}, gv(s.gv),
+      user_volume(s.user_volume), a{s.a}, Courant{s.Courant}, dt{s.dt}, v(s.v), S(s.S),
+      outdir(s.outdir), num_effort_volumes{s.num_effort_volumes},
+      bp(new binary_partition(*s.bp)) {
   chunks = new structure_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++) {
     chunks[i] = new structure_chunk(s.chunks[i]);
   }
-  num_effort_volumes = s.num_effort_volumes;
   effort_volumes = new grid_volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
   for (int i = 0; i < num_effort_volumes; i++) {
     effort_volumes[i] = s.effort_volumes[i];
     effort[i] = s.effort[i];
   }
-  a = s.a;
-  Courant = s.Courant;
-  dt = s.dt;
 }
 
 structure::~structure() {
@@ -1049,4 +1011,7 @@ std::vector<int> structure::get_chunk_owners() const {
   }
   return result;
 }
+
+const binary_partition *structure::get_binary_partition() const { return bp.get(); }
+
 } // namespace meep
