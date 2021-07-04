@@ -173,6 +173,7 @@ jobs:
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
       run: |
         pushd python/ &&
+        coverage report -i &&
         coverage xml -i &&
         popd
 

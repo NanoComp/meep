@@ -88,7 +88,7 @@ TESTS =                                   \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
-  PY_LOG_COMPILER = coverage run -a --omit=$(top_srcdir)/python/tests/*,${HOME}/virtualenv/*,$(top_srcdir)/python/examples/*
+  PY_LOG_COMPILER = coverage run -a --source=$(top_srcdir)/python/meep --omit=$(top_srcdir)/python/tests/*,${HOME}/virtualenv/*,$(top_srcdir)/python/examples/*
 else
   PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 endif
