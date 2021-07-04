@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml)
 [![Sanitizers](https://github.com/NanoComp/meep/actions/workflows/build-san.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-san.yml)
-[![codecov](https://codecov.io/gh/oskooi/meep/branch/master/graph/badge.svg?token=06W3NJS69D)](https://codecov.io/gh/oskooi/meep)
 [![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
 ![Python versions 3.6–3.9](https://img.shields.io/badge/python-3.6%2C%203.7%2C%203.8%2C%203.9-brightgreen.svg)
 
