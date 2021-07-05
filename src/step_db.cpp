@@ -115,7 +115,9 @@ bool fields_chunk::step_db(field_type ft) {
           default: meep::abort("bug - non-cylindrical field component in Dcyl");
         }
 
-      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant, dsig, s->sig[dsig],
+      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m,
+                gv, gv.little_owned_corner0(cc), gv.big_corner(),
+                Courant, dsig, s->sig[dsig],
                 s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
                 s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
                 f_cond[cc][cmp]);
@@ -146,7 +148,8 @@ bool fields_chunk::step_db(field_type ft) {
       const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
       const realnum betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1) *
                             (f[c_g][1 - cmp] ? (ft == D_stuff ? -1 : +1) * (2 * cmp - 1) : 1);
-      STEP_BETA(the_f, cc, g, gv, betadt, dsig, s->siginv[dsig], f_u[cc][cmp], dsigu,
+      STEP_BETA(the_f, cc, g, gv, gv.little_owned_corner0(cc), gv.big_corner(),
+                betadt, dsig, s->siginv[dsig], f_u[cc][cmp], dsigu,
                 s->siginv[dsigu], s->condinv[cc][d_c], f_cond[cc][cmp]);
     }
 
