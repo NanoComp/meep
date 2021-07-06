@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <array>
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -133,65 +135,119 @@ void fields_chunk::phase_material(int phasein_time) {
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
 
-  // Do the metals first!
-  for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
+  {
+    // Initiate receive operations as early as possible.
+    std::unique_ptr<comms_manager> manager = create_comms_manager();
 
-  /* Note that the copying of data to/from buffers is order-sensitive,
-     and must be kept consistent with the code in boundaries.cpp.
-     In particular, we require that boundaries.cpp set up the connections
-     array so that all of the connections for process i come before all
-     of the connections for process i' for i < i'  */
-
-  // First copy outgoing data to buffers...
-  am_now_working_on(Boundaries);
-  for (int j = 0; j < num_chunks; j++)
-    if (chunks[j]->is_mine()) {
-      int wh[3] = {0, 0, 0};
-      for (int i = 0; i < num_chunks; i++) {
-        const int pair = j + i * num_chunks;
-        size_t n0 = 0;
-        for (int ip = 0; ip < 3; ip++) {
-          for (size_t n = 0; n < comm_sizes[ft][ip][pair]; n++)
-            comm_blocks[ft][pair][n0 + n] = *(chunks[j]->connections[ft][ip][Outgoing][wh[ip]++]);
-          n0 += comm_sizes[ft][ip][pair];
-        }
+    const auto &sequence = comms_sequence_for_field[ft];
+    for (const comms_operation &op : sequence.receive_ops) {
+      if (chunks[op.other_chunk_idx]->is_mine()) {
+        continue;
       }
+      manager->receive_real_async(comm_blocks[ft][op.pair_idx], static_cast<int>(op.transfer_size),
+                                  op.other_proc_id, op.tag);
     }
-  finished_working();
 
-  am_now_working_on(MpiOneTime);
-  boundary_communications(ft);
+    // Do the metals first!
+    for (int i = 0; i < num_chunks; i++)
+      if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
+
+    /* Note that the copying of data to/from buffers is order-sensitive,
+       and must be kept consistent with the code in boundaries.cpp.
+       In particular, we require that boundaries.cpp set up the connections
+       array so that all of the connections for process i come before all
+       of the connections for process i' for i < i'  */
+
+    // Copy outgoing data into buffers while following the predefined sequence of comms operations.
+    // Trigger the asynchronous send immediately once the outgoing comms buffer has been filled.
+    using offset_array = std::array<ptrdiff_t, NUM_CONNECT_PHASE_TYPES>;
+    std::map<int, offset_array> connection_offset_by_chunk;
+    am_now_working_on(Boundaries);
+
+    for (const comms_operation &op : sequence.send_ops) {
+      if (!connection_offset_by_chunk.count(op.my_chunk_idx)) {
+        connection_offset_by_chunk.emplace(std::make_pair(op.my_chunk_idx, offset_array{}));
+      }
+      const std::pair<int, int> comm_pair{op.my_chunk_idx, op.other_chunk_idx};
+      const int pair_idx = op.pair_idx;
+      size_t n0 = 0;
+
+      for (connect_phase ip : all_connect_phases) {
+        const size_t pair_comm_size = get_comm_size({ft, ip, comm_pair});
+        ptrdiff_t &connection_offset = connection_offset_by_chunk[op.my_chunk_idx][ip];
+        for (size_t n = 0; n < pair_comm_size; ++n) {
+          comm_blocks[ft][pair_idx][n0 + n] =
+              *(chunks[op.my_chunk_idx]->connections[ft][ip][Outgoing][connection_offset++]);
+        }
+        n0 += pair_comm_size;
+      }
+      if (chunks[op.other_chunk_idx]->is_mine()) {
+        continue;
+      }
+      manager->send_real_async(comm_blocks[ft][pair_idx], static_cast<int>(op.transfer_size),
+                               op.other_proc_id, op.tag);
+    }
+    finished_working();
+
+    am_now_working_on(MpiOneTime);
+    // Let the communication manager drop out of scope to complete all outstanding requests.
+  }
   finished_working();
 
   // Finally, copy incoming data to the fields themselves, multiplying phases:
   am_now_working_on(Boundaries);
-  for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) {
-      int wh[3] = {0, 0, 0};
-      for (int j = 0; j < num_chunks; j++) {
-        const int pair = j + i * num_chunks;
-        connect_phase ip = CONNECT_PHASE;
-        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
-          const double phr = real(chunks[i]->connection_phases[ft][wh[ip] / 2]);
-          const double phi = imag(chunks[i]->connection_phases[ft][wh[ip] / 2]);
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]]) =
-              phr * comm_blocks[ft][pair][n] - phi * comm_blocks[ft][pair][n + 1];
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip] + 1]) =
-              phr * comm_blocks[ft][pair][n + 1] + phi * comm_blocks[ft][pair][n];
+  for (int i = 0; i < num_chunks; i++) {
+    if (!chunks[i]->is_mine()) continue;
+
+    ptrdiff_t connection_phase_offset = 0;
+    ptrdiff_t negate_phase_offset = 0;
+    ptrdiff_t copy_phase_offset = 0;
+    const std::complex<realnum> *connection_phase_for_ft = chunks[i]->connection_phases[ft];
+
+    for (int j = 0; j < num_chunks; j++) {
+      const chunk_pair pair{j, i};
+      const int pair_idx = chunk_pair_to_index(pair);
+      const realnum *pair_comm_block = static_cast<realnum *>(comm_blocks[ft][pair_idx]);
+
+      {
+        const std::complex<realnum> *pair_comm_block_complex =
+            reinterpret_cast<const std::complex<realnum> *>(pair_comm_block);
+        const connect_phase ip = CONNECT_PHASE;
+        realnum **dst = chunks[i]->connections[ft][ip][Incoming];
+        size_t num_transfers = get_comm_size({ft, ip, pair}) / 2; // Two realnums per complex
+
+        for (size_t n = 0; n < num_transfers; ++n) {
+          std::complex<realnum> temp =  connection_phase_for_ft[connection_phase_offset + n] * pair_comm_block_complex[n];
+          *(dst[2*(connection_phase_offset + n)]) = temp.real();
+          *(dst[2*(connection_phase_offset + n)+1]) = temp.imag();
         }
-        size_t n0 = comm_sizes[ft][ip][pair];
-        ip = CONNECT_NEGATE;
-        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; ++n)
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++]) = -comm_blocks[ft][pair][n0 + n];
-        n0 += comm_sizes[ft][ip][pair];
-        ip = CONNECT_COPY;
-        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; ++n)
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++]) = comm_blocks[ft][pair][n0 + n];
+        connection_phase_offset += num_transfers;
+        pair_comm_block += 2 * num_transfers;
+      }
+
+      {
+        const connect_phase ip = CONNECT_NEGATE;
+        const size_t num_transfers = get_comm_size({ft, ip, pair});
+        realnum **dst = chunks[i]->connections[ft][ip][Incoming];
+        for (size_t n = 0; n < num_transfers; ++n) {
+          *(dst[negate_phase_offset + n]) = -pair_comm_block[n];
+        }
+        negate_phase_offset += num_transfers;
+        pair_comm_block += num_transfers;
+      }
+
+      {
+        connect_phase ip = CONNECT_COPY;
+        const size_t num_transfers = get_comm_size({ft, ip, pair});
+        realnum **dst = chunks[i]->connections[ft][ip][Incoming];
+        for (size_t n = 0; n < num_transfers; ++n) {
+          *(dst[copy_phase_offset + n]) = pair_comm_block[n];
+        }
+        copy_phase_offset += num_transfers;
       }
     }
+  }
   finished_working();
-
 }
 
 void fields::step_source(field_type ft, bool including_integrated) {

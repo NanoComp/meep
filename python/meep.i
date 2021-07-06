@@ -1469,7 +1469,15 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;
+%ignore meep::all_in_or_out;
+%ignore meep::all_connect_phases;
 %ignore meep::choose_chunkdivision;
+%ignore meep::comms_key;
+%ignore meep::comms_key_hash_fn;
+%ignore meep::comms_manager;
+%ignore meep::comms_operation;
+%ignore meep::comms_sequence;
+%ignore meep::create_comms_manager;
 %ignore meep::fields_chunk;
 %ignore meep::infinity;
 
