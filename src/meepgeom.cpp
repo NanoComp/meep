@@ -2602,9 +2602,9 @@ double get_material_gradient(
     dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2 * du);
 
   int dir_idx = 0;
-  if (field_dir == meep::Ex)
+  if (field_dir == meep::Ex || field_dir == meep::Er)
     dir_idx = 0;
-  else if (field_dir == meep::Ey)
+  else if (field_dir == meep::Ey || field_dir == meep::Ep)
     dir_idx = 1;
   else if (field_dir == meep::Ez)
     dir_idx = 2;
