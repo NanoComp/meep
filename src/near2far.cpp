@@ -695,6 +695,9 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
         if (is_electric(temp_struct.near_fd_comp))
           EH0 *= -1;
         EH0 /= f->S.multiplicity(ix0);
+        if (x_0.dim == Dcyl){
+          EH0 /= xs.r();
+        }
         temp_struct.amp_arr.push_back(EH0);
       }
     }
