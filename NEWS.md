@@ -1,5 +1,23 @@
 # Meep Release Notes
 
+## Meep 1.19.0
+
+7/6/2021
+
+* Support for optional single-precision floating point for fields arrays ([#1544]).
+
+* Subpixel smoothing for `MaterialGrid` using analytical rather than numerical-quadrature framework ([#1539], [#1568]).
+
+* Improvements to user-specified chunk layout as `BinaryPartition` object ([#1577]).
+
+* JAX wrapper for `Simulation` object and adjoint solver ([#1569]).
+
+* Continuous integration (CI) via GitHub Actions ([#1599], [#1608], [#1618], [#1623]).
+
+* Remove MPI synchronization barrier at each timestep from connection of chunks ([#1635]).
+
+* Various bugfixes ([#1546], [#1574], [#1588], [#1591], [#1592], [#1598], [#1599], [#1601], [#1603], [#1606], [#1634], [#1652]), additional documentation, and tests.
+
 ## Meep 1.18.0
 
 3/26/2021
