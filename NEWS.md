@@ -6,7 +6,7 @@
 
 * Support for optional single-precision floating point for fields arrays ([#1544]).
 
-* Subpixel smoothing for `MaterialGrid` using analytical rather than numerical-quadrature framework ([#1539], [#1568]).
+* Optional subpixel smoothing for `MaterialGrid` using analytical rather than numerical-quadrature framework ([#1539], [#1568]).
 
 * Improvements to user-specified chunk layout as `BinaryPartition` object ([#1577]).
 
