@@ -5205,8 +5205,8 @@ class BinaryPartition(object):
                     self.split_pos = data[0][1]
                 else:
                     raise ValueError("expecting 2-tuple (split_dir,split_pos) but got {}".format(data[0]))
-                self.left = BinaryPartition(data=data[1])
-                self.right = BinaryPartition(data=data[2])
+                self.left = data[1]
+                self.right = data[2]
             elif isinstance(data,int):
                 self.proc_id = data
             else:
