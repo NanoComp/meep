@@ -37,7 +37,16 @@ def traverse_tree(bp=None,min_corner=None,max_corner=None):
 class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
     def test_chunk_layout_binary_partition(self):
-        chunk_layout = mp.BinaryPartition(data=[ (mp.X,-2.0), 0, [ (mp.Y,1.5), [ (mp.X,3.0), 1, [ (mp.Y,-0.5), 4, 3 ] ], 2 ] ])
+        BP = mp.BinaryPartition
+        chunk_layout = BP(data=[(mp.X,-2.0),
+                                BP(proc_id=0),
+                                BP(data=[(mp.Y,1.5),
+                                         BP(data=[(mp.X,3.0),
+                                                  BP(proc_id=1),
+                                                  BP(data=[(mp.Y,-0.5),
+                                                           BP(proc_id=4),
+                                                           BP(proc_id=3) ]) ]),
+                                         BP(proc_id=2)])])
 
         cell_size = mp.Vector3(10.0,5.0,0)
 

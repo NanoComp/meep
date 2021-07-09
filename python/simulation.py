@@ -5199,12 +5199,12 @@ class BinaryPartition(object):
         self.left = None
         self.right = None
         if data is not None:
-            if isinstance(data,list) and len(data) == 3:
-                if isinstance(data[0],tuple) and len(data[0]) == 2:
+            if isinstance(data, Sequence) and len(data) == 3:
+                if isinstance(data[0], Sequence) and len(data[0]) == 2:
                     self.split_dir = data[0][0]
                     self.split_pos = data[0][1]
                 else:
-                    raise ValueError("expecting 2-tuple (split_dir,split_pos) but got {}".format(data[0]))
+                    raise ValueError("expecting 2-element sequence (split_dir,split_pos) but got {}".format(data[0]))
                 self.left = data[1]
                 self.right = data[2]
             elif isinstance(data,int):
