@@ -5218,6 +5218,43 @@ class BinaryPartition(object):
             self.right = right
         else:
             self.proc_id = proc_id
+    
+    def print(self):
+        """Pretty-prints the tree structure of the BinaryPartition object."""
+        print(str(self) + " with {} chunks:".format(self.numchunks()))
+        for line in self._print(is_root=True):
+            print(line)
+
+    def _print(self, prefix="", is_root=True):
+        # pointers
+        ptr_l = ' ├L─ '
+        ext_l = ' │   '
+        ptr_r = ' └R─ '
+        ext_r = '     '
+
+        if is_root:
+            yield prefix + self._node_info()
+
+        if self.left is not None and self.right is not None:
+            yield prefix + ptr_l + self.left._node_info()
+            if self.left.left is not None and self.left.right is not None:
+                yield from self.left._print(prefix=prefix+ext_l, is_root=False)
+
+            yield prefix + ptr_r + self.right._node_info()
+            if self.right.left is not None and self.right.right is not None:
+                yield from self.right._print(prefix=prefix+ext_r, is_root=False)
+
+    def _node_info(self) -> str:
+        if self.proc_id is not None:
+            return "<proc_id={}>".format(self.proc_id)
+        else:
+            split_dir_str = {
+                mp.X: "X",
+                mp.Y: "Y",
+                mp.Z: "Z"
+            }[self.split_dir]
+            return "<split_dir={}, split_pos={}>".format(
+                split_dir_str, self.split_pos)
 
     def _numchunks(self,bp):
         if bp is None:
