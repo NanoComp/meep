@@ -4,6 +4,7 @@
 [![Sanitizers](https://github.com/NanoComp/meep/actions/workflows/build-san.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-san.yml)
 [![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
 ![Python versions 3.6–3.9](https://img.shields.io/badge/python-3.6%2C%203.7%2C%203.8%2C%203.9-brightgreen.svg)
+[![codecov](https://codecov.io/gh/NanoComp/meep/branch/master/graph/badge.svg?token=k88ZuW3795)](https://codecov.io/gh/NanoComp/meep)
 
 **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method spanning a broad range of applications.
 
