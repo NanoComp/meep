@@ -15,10 +15,13 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <algorithm>
+#include <map>
 #include <stdlib.h>
 #include <complex>
 
 #include "meep.hpp"
+#include "meep/mympi.hpp"
 #include "meep_internals.hpp"
 
 #define UNUSED(x) (void)x // silence compiler warnings
@@ -26,6 +29,52 @@
 using namespace std;
 
 namespace meep {
+
+namespace {
+
+// Creates an optimized comms_sequence from a vector of comms_operations.
+// Send operations are prioritized in descending order by the amount of data that is transferred.
+comms_sequence optimize_comms_operations(const std::vector<comms_operation> &operations) {
+  comms_sequence ret;
+  std::map<int, size_t> send_size_by_my_chunk_idx;
+  std::map<int, std::vector<comms_operation> > send_ops_by_my_chunk_idx;
+
+  for (const auto &op : operations) {
+    if (op.comm_direction == Incoming) {
+      ret.receive_ops.push_back(op);
+      continue;
+    }
+
+    // Group send operations by source chunk and accumulate the transfer size - excluding chunk
+    // pairs that reside on the same processor.
+    if (op.other_proc_id != my_rank()) {
+      send_size_by_my_chunk_idx[op.my_chunk_idx] += op.transfer_size;
+    }
+    else {
+      // Make sure that op.my_chunk_idx is represented in the map.
+      send_size_by_my_chunk_idx[op.my_chunk_idx] += 0;
+    }
+    send_ops_by_my_chunk_idx[op.my_chunk_idx].push_back(op);
+  }
+
+  // Sort in descending order to prioritize large transfers.
+  std::vector<std::pair<int, size_t> > send_op_sizes(send_size_by_my_chunk_idx.begin(),
+                                                     send_size_by_my_chunk_idx.end());
+  std::sort(send_op_sizes.begin(), send_op_sizes.end(),
+            [](const std::pair<int, size_t> &a, const std::pair<int, size_t> &b) -> bool {
+              return a.second > b.second;
+            });
+
+  // Assemble send operations.
+  for (const auto &size_pair : send_op_sizes) {
+    int my_chunk_idx = size_pair.first;
+    const auto& ops_vector = send_ops_by_my_chunk_idx[my_chunk_idx];
+    ret.send_ops.insert(std::end(ret.send_ops), std::begin(ops_vector), std::end(ops_vector));
+  }
+  return ret;
+}
+
+}  // namespace
 
 void fields::set_boundary(boundary_side b, direction d, boundary_condition cond) {
   if (boundaries[b][d] != cond) {
@@ -116,10 +165,10 @@ void fields::disconnect_chunks() {
     for (int i = 0; i < num_chunks * num_chunks; i++) {
       delete[] comm_blocks[ft][i];
       comm_blocks[ft][i] = 0;
-      for (int ip = 0; ip < 3; ++ip)
-        comm_sizes[ft][ip][i] = 0;
     }
+    comms_sequence_for_field[ft].clear();
   }
+  comm_sizes.clear();
 }
 
 // this should be called by any code that might set chunk_connections_valid = false,
@@ -309,9 +358,9 @@ bool fields_chunk::needs_W_notowned(component c) {
 }
 
 void fields::connect_the_chunks() {
-  size_t *nc[NUM_FIELD_TYPES][3][2];
+  size_t *nc[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][2];
   FOR_FIELD_TYPES(f) {
-    for (int ip = 0; ip < 3; ip++)
+    for (connect_phase ip : all_connect_phases)
       for (int io = 0; io < 2; io++) {
         nc[f][ip][io] = new size_t[num_chunks];
         for (int i = 0; i < num_chunks; i++)
@@ -356,14 +405,10 @@ void fields::connect_the_chunks() {
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
   finished_working();
 
+  comm_sizes.clear();
   for (int i = 0; i < num_chunks; i++) {
     // First count the border elements...
     const grid_volume vi = chunks[i]->gv;
-    FOR_FIELD_TYPES(ft) {
-      for (int ip = 0; ip < 3; ip++)
-        for (int j = 0; j < num_chunks; j++)
-          comm_sizes[ft][ip][j + i * num_chunks] = 0;
-    }
     FOR_COMPONENTS(corig) {
       if (have_component(corig)) LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
           IVEC_LOOP_ILOC(vi, here);
@@ -372,10 +417,10 @@ void fields::connect_the_chunks() {
           complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here))
             for (int j = 0; j < num_chunks; j++) {
+              const std::pair<int, int> pair_j_to_i{j, i};
               if ((chunks[i]->is_mine() || chunks[j]->is_mine()) && chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
                     B_redundant[5 * j + c - Bx])) {
-                const int pair = j + i * num_chunks;
                 const connect_phase ip = thephase == 1.0
                                              ? CONNECT_COPY
                                              : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
@@ -384,14 +429,14 @@ void fields::connect_the_chunks() {
                   const int nn = is_real ? 1 : 2;
                   nc[f][ip][Incoming][i] += nn;
                   nc[f][ip][Outgoing][j] += nn;
-                  comm_sizes[f][ip][pair] += nn;
+                  comm_sizes[{f, ip, pair_j_to_i}] += nn;
                 }
                 if (needs_W_notowned[corig]) {
                   field_type f = is_electric(corig) ? WE_stuff : WH_stuff;
                   const int nn = is_real ? 1 : 2;
                   nc[f][ip][Incoming][i] += nn;
                   nc[f][ip][Outgoing][j] += nn;
-                  comm_sizes[f][ip][pair] += nn;
+                  comm_sizes[{f, ip, pair_j_to_i}] += nn;
                 }
                 if (is_electric(corig) || is_magnetic(corig)) {
                   field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
@@ -411,11 +456,11 @@ void fields::connect_the_chunks() {
                   const size_t nn = (is_real ? 1 : 2) * (cni);
                   nc[f][ip][Incoming][i] += nn;
                   nc[f][ip][Outgoing][j] += nn;
-                  comm_sizes[f][ip][pair] += nn;
+                  comm_sizes[{f, ip, pair_j_to_i}] += nn;
                   const connect_phase iip = CONNECT_COPY;
                   nc[f][iip][Incoming][i] += ni;
                   nc[f][iip][Outgoing][j] += ni;
-                  comm_sizes[f][iip][pair] += ni;
+                  comm_sizes[{f, iip, pair_j_to_i}] += ni;
                 }
               } // if is_mine and owns...
             }   // loop over j chunks
@@ -426,7 +471,7 @@ void fields::connect_the_chunks() {
     FOR_FIELD_TYPES(ft) {
       for (int j = 0; j < num_chunks; j++) {
         delete[] comm_blocks[ft][j + i * num_chunks];
-        comm_blocks[ft][j + i * num_chunks] = new realnum[comm_size_tot(ft, j + i * num_chunks)];
+        comm_blocks[ft][j + i * num_chunks] = new realnum[comm_size_tot(ft, {j, i})];
       }
     }
   } // loop over i chunks
@@ -438,15 +483,15 @@ void fields::connect_the_chunks() {
      for i < i' */
 
   // wh stores the current indices in the connections array(s)
-  size_t *wh[NUM_FIELD_TYPES][3][2];
+  size_t *wh[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][2];
 
   /* Now allocate the connection arrays... this is still slightly
      wasteful (by a factor of 2) because we allocate for chunks we
      don't own if we have a connection with them. Removing this waste
      would mean a bunch more is_mine() checks below. */
   FOR_FIELD_TYPES(f) {
-    for (int ip = 0; ip < 3; ip++) {
-      for (int io = 0; io < 2; io++) {
+    for (connect_phase ip : all_connect_phases) {
+      for (in_or_out io : all_in_or_out) {
         for (int i = 0; i < num_chunks; i++)
           chunks[i]->alloc_extra_connections(field_type(f), connect_phase(ip), in_or_out(io),
                                              nc[f][ip][io][i]);
@@ -465,11 +510,10 @@ void fields::connect_the_chunks() {
 
     // initialize wh[f][ip][Incoming][j] to sum of comm_sizes for jj < j
     FOR_FIELD_TYPES(f) {
-      for (int ip = 0; ip < 3; ip++) {
+      for (connect_phase ip : all_connect_phases) {
         wh[f][ip][Incoming][0] = 0;
         for (int j = 1; j < num_chunks; ++j)
-          wh[f][ip][Incoming][j] =
-              wh[f][ip][Incoming][j - 1] + comm_sizes[f][ip][(j - 1) + i * num_chunks];
+          wh[f][ip][Incoming][j] = wh[f][ip][Incoming][j - 1] + get_comm_size({f, ip, {j - 1, i}});
       }
     }
 
@@ -555,10 +599,51 @@ void fields::connect_the_chunks() {
         }         // LOOP_OVER_VOL_NOTOWNED
     }             // FOR_COMPONENTS
   }               // loop over i chunks
+
   FOR_FIELD_TYPES(f) {
-    for (int ip = 0; ip < 3; ip++)
+    for (connect_phase ip : all_connect_phases)
       for (int io = 0; io < 2; io++)
         delete[] wh[f][ip][io];
+
+    // Calculate the sequence of sends and receives in advance.
+    // Initiate receive operations as early as possible.
+    std::unique_ptr<comms_manager> manager = create_comms_manager();
+    std::vector<comms_operation> operations;
+    std::vector<int> tagto(count_processors());
+
+    for (int j = 0; j < num_chunks; j++) {
+      for (int i = 0; i < num_chunks; i++) {
+        const chunk_pair pair{j, i};
+        const size_t comm_size = comm_size_tot(f, pair);
+        if (!comm_size) continue;
+        if (comm_size > manager->max_transfer_size()) {
+          // MPI uses int for size to send/recv
+          meep::abort("communications size too big for the current implementation");
+        }
+        const int pair_idx = j + i * num_chunks;
+
+        if (chunks[j]->is_mine()) {
+          operations.push_back(comms_operation{/*my_chunk_idx=*/j,
+                                               /*other_chunk_idx=*/i,
+                                               /*other_proc_id=*/chunks[i]->n_proc(),
+                                               /*pair_idx=*/pair_idx,
+                                               /*transfer_size=*/comm_size,
+                                               /*comm_direction=*/Outgoing,
+                                               /*tag=*/tagto[chunks[i]->n_proc()]++});
+        }
+        if (chunks[i]->is_mine()) {
+          operations.push_back(comms_operation{/*my_chunk_idx=*/i,
+                                               /*other_chunk_idx=*/j,
+                                               /*other_proc_id=*/chunks[j]->n_proc(),
+                                               /*pair_idx=*/pair_idx,
+                                               /*transfer_size=*/comm_size,
+                                               /*comm_direction=*/Incoming,
+                                               /*tag=*/tagto[chunks[j]->n_proc()]++});
+        }
+      }
+    }
+
+    comms_sequence_for_field[f] = optimize_comms_operations(operations);
   }
   delete[] B_redundant;
 }

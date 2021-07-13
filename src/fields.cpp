@@ -58,11 +58,6 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   for (int i = 0; i < num_chunks; i++)
     chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i);
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++) {
-      comm_sizes[ft][ip] = new size_t[num_chunks * num_chunks];
-      for (int i = 0; i < num_chunks * num_chunks; i++)
-        comm_sizes[ft][ip][i] = 0;
-    }
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
     for (int i = 0; i < num_chunks * num_chunks; i++)
@@ -116,11 +111,6 @@ fields::fields(const fields &thef)
   for (int i = 0; i < num_chunks; i++)
     chunks[i] = new fields_chunk(*thef.chunks[i], i);
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++) {
-      comm_sizes[ft][ip] = new size_t[num_chunks * num_chunks];
-      for (int i = 0; i < num_chunks * num_chunks; i++)
-        comm_sizes[ft][ip][i] = 0;
-    }
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
     for (int i = 0; i < num_chunks * num_chunks; i++)
@@ -140,8 +130,6 @@ fields::~fields() {
     for (int i = 0; i < num_chunks * num_chunks; i++)
       delete[] comm_blocks[ft][i];
     delete[] comm_blocks[ft];
-    for (int ip = 0; ip < 3; ip++)
-      delete[] comm_sizes[ft][ip];
   }
   delete sources;
   delete fluxes;
@@ -770,6 +758,10 @@ double linear_interpolate(double rx, double ry, double rz, double *data,
               dz);
 
 #undef D
+}
+
+bool operator==(const comms_key &lhs, const comms_key &rhs) {
+  return (lhs.ft == rhs.ft) && (lhs.phase == rhs.phase) && (lhs.pair == rhs.pair);
 }
 
 } // namespace meep

@@ -280,7 +280,15 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 
 %warnfilter(302,325,451,503,509);
 
+%ignore meep::all_in_or_out;
+%ignore meep::all_connect_phases;
 %ignore meep::choose_chunkdivision;
+%ignore meep::comms_key;
+%ignore meep::comms_key_hash_fn;
+%ignore meep::comms_manager;
+%ignore meep::comms_operation;
+%ignore meep::comms_sequence;
+%ignore meep::create_comms_manager;
 %ignore meep::fields_chunk;
 %ignore meep_geom::fragment_stats;
 
@@ -300,4 +308,3 @@ static meep::vec my_kpoint_func(double freq, int mode, void *user_data) {
 %}
 
 %include "meep-ctl-swig.hpp"
-

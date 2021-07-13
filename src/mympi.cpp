@@ -67,9 +67,63 @@ using namespace std;
 
 namespace meep {
 
+namespace {
+
 #ifdef HAVE_MPI
-static MPI_Comm mycomm = MPI_COMM_WORLD;
+MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
+
+// comms_manager implementation that uses MPI.
+class mpi_comms_manager : public comms_manager {
+public:
+  mpi_comms_manager() {}
+  ~mpi_comms_manager() override {
+#ifdef HAVE_MPI
+    if (!reqs.empty()) {
+      MPI_Waitall(reqs.size(), reqs.data(), MPI_STATUSES_IGNORE);
+    }
+#endif
+  }
+
+  void send_real_async(const void *buf, size_t count, int dest, int tag) override {
+#ifdef HAVE_MPI
+    reqs.emplace_back();
+    MPI_Isend(buf, static_cast<int>(count), MPI_REALNUM, dest, tag, mycomm, &reqs.back());
+#else
+    (void)buf;
+    (void)count;
+    (void)dest;
+    (void)tag;
+#endif
+  }
+
+  void receive_real_async(void *buf, size_t count, int source, int tag) override {
+#ifdef HAVE_MPI
+    reqs.emplace_back();
+    MPI_Irecv(buf, static_cast<int>(count), MPI_REALNUM, source, tag, mycomm, &reqs.back());
+#else
+    (void)buf;
+    (void)count;
+    (void)source;
+    (void)tag;
+#endif
+  }
+
+#ifdef HAVE_MPI
+  size_t max_transfer_size() const override { return std::numeric_limits<int>::max(); }
+#endif
+
+private:
+#ifdef HAVE_MPI
+  std::vector<MPI_Request> reqs;
+#endif
+};
+
+} // namespace
+
+std::unique_ptr<comms_manager> create_comms_manager() {
+  return std::unique_ptr<comms_manager>(new mpi_comms_manager());
+}
 
 int verbosity = 1; // defined in meep.h
 
@@ -514,53 +568,6 @@ bool with_mpi() {
   return true;
 #else
   return false;
-#endif
-}
-
-void fields::boundary_communications(field_type ft) {
-  // Communicate the data around!
-#if 0 // This is the blocking version, which should always be safe!
-  for (int noti=0;noti<num_chunks;noti++)
-    for (int j=0;j<num_chunks;j++) {
-      const int i = (noti+j)%num_chunks;
-      const int pair = j+i*num_chunks;
-      DOCMP {
-        send(chunks[j]->n_proc(), chunks[i]->n_proc(),
-             comm_blocks[ft][pair], comm_size_tot(ft,pair));
-      }
-    }
-#endif
-#ifdef HAVE_MPI
-  const int maxreq = num_chunks * num_chunks;
-  MPI_Request *reqs = new MPI_Request[maxreq];
-  MPI_Status *stats = new MPI_Status[maxreq];
-  int reqnum = 0;
-  int *tagto = new int[count_processors()];
-  for (int i = 0; i < count_processors(); i++)
-    tagto[i] = 0;
-  for (int noti = 0; noti < num_chunks; noti++)
-    for (int j = 0; j < num_chunks; j++) {
-      const int i = (noti + j) % num_chunks;
-      const int pair = j + i * num_chunks;
-      const size_t comm_size = comm_size_tot(ft, pair);
-      if (comm_size > 0) {
-        if (comm_size > 2147483647) // MPI uses int for size to send/recv
-          meep::abort("communications size too big for MPI");
-        if (chunks[j]->is_mine() && !chunks[i]->is_mine())
-          MPI_Isend(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[i]->n_proc(),
-                    tagto[chunks[i]->n_proc()]++, mycomm, &reqs[reqnum++]);
-        if (chunks[i]->is_mine() && !chunks[j]->is_mine())
-          MPI_Irecv(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[j]->n_proc(),
-                    tagto[chunks[j]->n_proc()]++, mycomm, &reqs[reqnum++]);
-      }
-    }
-  delete[] tagto;
-  if (reqnum > maxreq) meep::abort("Too many requests!!!\n");
-  if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
-  delete[] reqs;
-  delete[] stats;
-#else
-  (void)ft; // unused
 #endif
 }
 

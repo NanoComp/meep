@@ -25,8 +25,8 @@
 
 namespace meep {
 
-const int NUM_FIELD_COMPONENTS = 20;
-const int NUM_FIELD_TYPES = 8;
+constexpr int NUM_FIELD_COMPONENTS = 20;
+constexpr int NUM_FIELD_TYPES = 8;
 
 enum component {
   Ex = 0,
