@@ -2446,6 +2446,9 @@ class Simulation(object):
         if self.fields is None:
             self.init_sim()
 
+        if not self.dft_objects:
+            raise RuntimeError('DFT monitor dft_fields must be initialized before calling output_dft')
+
         if hasattr(dft_fields, 'swigobj'):
             dft_fields_swigobj = dft_fields.swigobj
         else:
@@ -3228,6 +3231,9 @@ class Simulation(object):
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
           `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
         """
+        if not self.dft_objects:
+            raise RuntimeError('DFT monitor dft_obj must be initialized before calling get_dft_array')
+
         if hasattr(dft_obj, 'swigobj'):
             dft_swigobj = dft_obj.swigobj
         else:
