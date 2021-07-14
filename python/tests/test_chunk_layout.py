@@ -53,6 +53,21 @@ class TestChunkLayoutBinaryPartition(unittest.TestCase):
 
         self.assertListEqual([int(f) for f in owners],[f % mp.count_processors() for f in process_ids])
         self.assertListEqual(areas,chunk_areas)
-        
+
+    def test_meep_default_chunk_layout(self):
+        cell_size = mp.Vector3(10.0,5.0,0)
+        sim = mp.Simulation(cell_size=cell_size,
+                            resolution=10)
+
+        sim.init_sim()
+        owners = sim.structure.get_chunk_owners()
+        areas = [ v.surroundings().full_volume() for v in sim.structure.get_chunk_volumes() ]
+
+        chunk_layout = sim.chunk_layout
+        traverse_tree(chunk_layout,-0.5*cell_size,0.5*cell_size)
+
+        self.assertListEqual([int(f) for f in owners],[f % mp.count_processors() for f in process_ids])
+        self.assertListEqual(areas,chunk_areas)
+
 if __name__ == '__main__':
     unittest.main()
