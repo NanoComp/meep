@@ -17,10 +17,7 @@
 #ifndef MEEP_H
 #define MEEP_H
 
-#include <functional>
-#include <limits>
 #include <memory>
-#include <unordered_map>
 #include <stdio.h>
 #include <stddef.h>
 #include <math.h>
@@ -714,81 +711,6 @@ boundary_region pml(double thickness, double Rasymptotic = 1e-15, double mean_st
 
 class binary_partition;
 
-enum in_or_out { Incoming = 0, Outgoing };
-constexpr std::initializer_list<in_or_out> all_in_or_out{Incoming, Outgoing};
-
-enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE = 1, CONNECT_COPY = 2 };
-constexpr std::initializer_list<connect_phase> all_connect_phases{
-     CONNECT_PHASE, CONNECT_NEGATE, CONNECT_COPY};
-constexpr int NUM_CONNECT_PHASE_TYPES = 3;
-
-// Communication pair(i, j) implies data being sent from i to j.
-using chunk_pair = std::pair<int, int>;
-
-// Key for the map that stored communication sizes.
-struct comms_key {
-  field_type ft;
-  connect_phase phase;
-  chunk_pair pair;
-};
-
-// Defined in fields.cpp
-bool operator==(const comms_key &lhs, const comms_key &rhs);
-
-class comms_key_hash_fn {
-
-public:
-  inline std::size_t operator()(const comms_key &key) const {
-    // Unroll hash combination to promote the generatiion of efficient code.
-    std::size_t ret = ft_hasher(key.ft);
-    ret ^= connect_phase_hasher(key.phase) + kHashAddConst + (ret << 6) + (ret >> 2);
-    ret ^= int_hasher(key.pair.first) + kHashAddConst + (ret << 6) + (ret >> 2);
-    ret ^= int_hasher(key.pair.second) + kHashAddConst + (ret << 6) + (ret >> 2);
-    return ret;
-  }
-
-private:
-  static constexpr size_t kHashAddConst = 0x9e3779b9;
-  std::hash<int> int_hasher;
-  std::hash<connect_phase> connect_phase_hasher;
-  std::hash<field_type> ft_hasher;
-};
-
-// Represents a communication operation between chunks.
-struct comms_operation {
-  ptrdiff_t my_chunk_idx;
-  ptrdiff_t other_chunk_idx;
-  int other_proc_id;
-  int pair_idx;  // The numeric pair index used in many communications related arrays.
-  size_t transfer_size;
-  in_or_out comm_direction;
-  int tag;
-};
-
-struct comms_sequence {
-  std::vector<comms_operation> receive_ops;
-  std::vector<comms_operation> send_ops;
-
-  void clear() {
-    receive_ops.clear();
-    send_ops.clear();
-  }
-};
-
-// RAII based comms_manager that allows asynchronous send and receive functions to be initiated.
-// Upon destruction, the comms_manager waits for completion of all enqueued operations.
-class comms_manager {
- public:
-  virtual ~comms_manager() {}
-  virtual void send_real_async(const void *buf, size_t count, int dest, int tag) = 0;
-  virtual void receive_real_async(void *buf, size_t count, int source, int tag) = 0;
-  virtual size_t max_transfer_size() const { return std::numeric_limits<size_t>::max(); };
-};
-
-// Factory function for `comms_manager`.
-std::unique_ptr<comms_manager> create_comms_manager();
-
-
 class structure {
 public:
   structure_chunk **chunks;
@@ -804,16 +726,18 @@ public:
   int num_effort_volumes;
 
   ~structure();
+  structure();
   structure(const grid_volume &gv, material_function &eps,
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
             double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
-            const binary_partition *_bp = NULL);
+            const binary_partition *bp = NULL);
   structure(const grid_volume &gv, double eps(const vec &),
             const boundary_region &br = boundary_region(), const symmetry &s = meep::identity(),
             int num_chunks = 0, double Courant = 0.5, bool use_anisotropic_averaging = false,
             double tol = DEFAULT_SUBPIXEL_TOL, int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
-            const binary_partition *_bp = NULL);
+            const binary_partition *bp = NULL);
+  structure(const structure *);
   structure(const structure &);
 
   void set_materials(material_function &mat, bool use_anisotropic_averaging = true,
@@ -876,9 +800,6 @@ public:
   std::complex<double> get_mu(const vec &loc, double frequency = 0) const;
   double max_eps() const;
   double estimated_cost(int process = my_rank());
-  // Returns the binary partition that was used to partition the volume into chunks. The returned
-  // pointer is only valid for the lifetime of this `structure` instance.
-  const binary_partition *get_binary_partition() const;
 
   friend class boundary_region;
 
@@ -886,14 +807,12 @@ private:
   void use_pml(direction d, boundary_side b, double dx);
   void add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort);
   void choose_chunkdivision(const grid_volume &gv, int num_chunks, const boundary_region &br,
-                            const symmetry &s, const binary_partition *_bp);
+                            const symmetry &s, const binary_partition *bp);
   void check_chunks();
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
   void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
   void write_susceptibility_params(h5file *file, const char *dname, int EorH);
-
-  std::unique_ptr<binary_partition> bp;
 };
 
 // defined in structure.cpp
@@ -1398,6 +1317,8 @@ public:
   volume where;
 };
 
+enum in_or_out { Incoming = 0, Outgoing };
+enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE = 1, CONNECT_COPY = 2 };
 
 // data for each susceptibility
 typedef struct polarization_state_s {
@@ -1435,8 +1356,8 @@ public:
 
   realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   size_t num_zeroes[NUM_FIELD_TYPES];
-  realnum **connections[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][Outgoing + 1];
-  size_t num_connections[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][Outgoing + 1];
+  realnum **connections[NUM_FIELD_TYPES][CONNECT_COPY + 1][Outgoing + 1];
+  size_t num_connections[NUM_FIELD_TYPES][CONNECT_COPY + 1][Outgoing + 1];
   std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
 
   int npol[NUM_FIELD_TYPES];                // only E_stuff and H_stuff are used
@@ -1646,6 +1567,19 @@ public:
   flux_vol *fluxes;
   symmetry S;
 
+  // The following is an array that is num_chunks by num_chunks.  Actually
+  // it is two arrays, one for the imaginary and one for the real part.
+  realnum **comm_blocks[NUM_FIELD_TYPES];
+  // This is the same size as each comm_blocks array, and store the sizes
+  // of the comm blocks themselves for each connection-phase type
+  size_t *comm_sizes[NUM_FIELD_TYPES][CONNECT_COPY + 1];
+  size_t comm_size_tot(int f, int pair) const {
+    size_t sum = 0;
+    for (int ip = 0; ip < 3; ++ip)
+      sum += comm_sizes[f][ip][pair];
+    return sum;
+  }
+
   double a, dt; // The resolution a and timestep dt=Courant/a
   grid_volume gv, user_volume;
   volume v;
@@ -1684,6 +1618,10 @@ public:
   void update_eh(field_type ft, bool skip_w_components = false);
 
   volume total_volume(void) const;
+
+  // fields_dump.cpp
+  void dump(const char *filename);
+  void load(const char *filename);
 
   // h5fields.cpp:
   // low-level function:
@@ -2120,6 +2058,8 @@ private:
   bool locate_point_in_user_volume(ivec *, std::complex<double> *phase) const;
   void locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
                                            std::complex<double> kphase[8], int &ncopies) const;
+  // mympi.cpp
+  void boundary_communications(field_type);
   // step.cpp
   void phase_material();
   void step_db(field_type ft);
@@ -2142,31 +2082,6 @@ public:
   void am_now_working_on(time_sink);
   void finished_working();
   void reset_timers();
-
- private:
-  // The following is an array that is num_chunks by num_chunks.  Actually
-  // it is two arrays, one for the imaginary and one for the real part.
-  realnum **comm_blocks[NUM_FIELD_TYPES];
-  // Map with all non-zero communication block sizes.
-  std::unordered_map<comms_key, size_t, comms_key_hash_fn> comm_sizes;
-  // The sequence of send and receive operations for each field type.
-  comms_sequence comms_sequence_for_field[NUM_FIELD_TYPES];
-
-  size_t get_comm_size(const comms_key& key) const {
-    auto it = comm_sizes.find(key);
-    return (it != comm_sizes.end()) ? it->second : 0;
-  }
-
-  size_t comm_size_tot(field_type ft, const chunk_pair& pair) const {
-    size_t sum = 0;
-    for (auto ip : all_connect_phases)
-      sum += get_comm_size({ft, ip, pair});
-    return sum;
-  }
-
-  int chunk_pair_to_index(const chunk_pair& pair) const {
-    return pair.first + num_chunks * pair.second;
-  }
 };
 
 class flux_vol {
@@ -2258,7 +2173,7 @@ struct split_plane {
 };
 
 // binary tree class for importing layout of chunk partition
-// Moveable and copyable.
+// Moveable but not copyable.
 class binary_partition {
 public:
   // Constructs a new leaf node with id `_id`.
@@ -2268,7 +2183,6 @@ public:
   // Takes ownership of `left_tree` and `right_tree`.
   binary_partition(const split_plane &_split_plane, std::unique_ptr<binary_partition> &&left_tree,
                    std::unique_ptr<binary_partition> &&right_tree);
-  binary_partition(const binary_partition& other);
 
   bool is_leaf() const;
   // Returns the leaf node ID iff is_leaf() == true.
