@@ -23,13 +23,11 @@ class TestSimulation(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # cls.temp_dir = mp.make_output_directory()
-        cls.temp_dir = "/tmp/test_simulation"
+        cls.temp_dir = mp.make_output_directory()
 
     @classmethod
     def tearDownClass(cls):
-        # mp.delete_directory(cls.temp_dir)
-        pass
+        mp.delete_directory(cls.temp_dir)
 
     def test_interpolate_numbers(self):
 
@@ -205,7 +203,6 @@ class TestSimulation(unittest.TestCase):
         fn = os.path.join(self.temp_dir, 'test_in_point-ez-000200.00.h5')
         self.assertTrue(os.path.exists(fn))
 
-    @unittest.skip('References unavailable data files')
     def test_epsilon_input_file(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
@@ -225,7 +222,6 @@ class TestSimulation(unittest.TestCase):
             fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
             self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
 
-    @unittest.skip('References unavailable data files')
     def test_numpy_epsilon(self):
         sim = self.init_simple_simulation()
         eps_input_fname = 'cyl-ellipsoid-eps-ref.h5'
