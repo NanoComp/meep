@@ -43,7 +43,7 @@ dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, doub
   }
 }
 
-dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double> freq_, double eps_, double mu_,
+dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double>& freq_, double eps_, double mu_,
                            const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])

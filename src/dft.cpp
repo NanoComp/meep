@@ -50,6 +50,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   bool sqrt_dV_and_interp_weights;
   bool empty_dim[5];
   dft_chunk *dft_chunks;
+  int decimation_factor;
 };
 
 dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_,
@@ -92,6 +93,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   S = S_;
   sn = sn_;
   vc = data->vc;
+  decimation_factor = data->decimation_factor;
 
   const int Nomega = data->omega.size();
   omega = data->omega;
@@ -156,7 +158,7 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
 dft_chunk *fields::add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
-                           complex<double> extra_weight, bool use_centered_grid, int vc) {
+                           complex<double> extra_weight, bool use_centered_grid, int vc, int decimation_factor) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -171,12 +173,13 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   dft_chunk_data data;
   data.c = c;
   data.vc = vc;
+  data.decimation_factor = decimation_factor;
   data.omega.resize(Nfreq);
   for (size_t i = 0; i < Nfreq; ++i)
     data.omega[i] = 2 * pi * freq[i];
   data.stored_weight = stored_weight;
   data.extra_weight = extra_weight;
-  data.dt_factor = dt / sqrt(2.0 * pi);
+  data.dt_factor = dt / sqrt(2.0 * pi) * decimation_factor;
   data.include_dV_and_interp_weights = include_dV_and_interp_weights;
   data.sqrt_dV_and_interp_weights = sqrt_dV_and_interp_weights;
   data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] =
@@ -188,7 +191,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   return data.dft_chunks;
 }
 
-dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> freq,
+dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> &freq,
                            bool include_dV_and_interp_weights) {
   dft_chunk *chunks = 0;
   while (where) {
@@ -204,14 +207,16 @@ dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> f
 void fields::update_dfts() {
   am_now_working_on(FourierTransforming);
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) chunks[i]->update_dfts(time(), time() - 0.5 * dt);
+    if (chunks[i]->is_mine()) chunks[i]->update_dfts(time(), time() - 0.5 * dt, t);
   finished_working();
 }
 
-void fields_chunk::update_dfts(double timeE, double timeH) {
+void fields_chunk::update_dfts(double timeE, double timeH, int current_step) {
   if (doing_solve_cw) return;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk) {
-    cur->update_dft(is_magnetic(cur->c) ? timeH : timeE);
+    if ((current_step % cur->get_decimation_factor()) == 0) {
+      cur->update_dft(is_magnetic(cur->c) ? timeH : timeE);
+    }
   }
 }
 
@@ -346,7 +351,7 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
 }
 
 dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,
-                   const std::vector<double> freq_, const volume &where_,
+                   const std::vector<double> &freq_, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
     : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
       use_symmetry(use_symmetry_) {
@@ -475,7 +480,7 @@ dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B
 }
 
 dft_energy::dft_energy(dft_chunk *E_, dft_chunk *H_, dft_chunk *D_, dft_chunk *B_,
-                       const std::vector<double> freq_, const volume &where_)
+                       const std::vector<double> &freq_, const volume &where_)
     : E(E_), H(H_), D(D_), B(B_), where(where_) {
   freq = freq_;
 }
@@ -662,7 +667,7 @@ dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double f
   return add_dft_flux_box(where, meep::linspace(freq_min, freq_max, Nfreq));
 }
 
-dft_flux fields::add_dft_flux_box(const volume &where, const std::vector<double> freq) {
+dft_flux fields::add_dft_flux_box(const volume &where, const std::vector<double> &freq) {
   volume_list *faces = 0;
   LOOP_OVER_DIRECTIONS(where.dim, d) {
     if (where.in_direction(d) > 0) {
@@ -686,7 +691,7 @@ dft_flux fields::add_dft_flux_plane(const volume &where, double freq_min, double
   return add_dft_flux_plane(where, meep::linspace(freq_min, freq_max, Nfreq));
 }
 
-dft_flux fields::add_dft_flux_plane(const volume &where, const std::vector<double> freq) {
+dft_flux fields::add_dft_flux_plane(const volume &where, const std::vector<double> &freq) {
   return add_dft_flux(NO_DIRECTION, where, freq);
 }
 
@@ -697,7 +702,7 @@ dft_fields::dft_fields(dft_chunk *chunks_, double freq_min, double freq_max, int
   freq = meep::linspace(freq_min, freq_max, Nf);
 }
 
-dft_fields::dft_fields(dft_chunk *chunks_, const std::vector<double> freq_, const volume &where_)
+dft_fields::dft_fields(dft_chunk *chunks_, const std::vector<double> &freq_, const volume &where_)
     : where(where_) {
   chunks = chunks_;
   freq = freq_;
@@ -721,16 +726,17 @@ void dft_fields::remove() {
 }
 
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
-                                  const double *freq, size_t Nfreq, bool use_centered_grid) {
+                                  const double *freq, size_t Nfreq, bool use_centered_grid,
+                                  int decimation_factor) {
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
   complex<double> stored_weight = 1.0;
-  dft_chunk *chunks = 0;
+  dft_chunk *chunks = NULL;
   for (int nc = 0; nc < num_components; nc++)
-    chunks =
-        add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights, stored_weight,
-                chunks, sqrt_dV_and_interp_weights, extra_weight, use_centered_grid);
+    chunks = add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights,
+                     stored_weight, chunks, sqrt_dV_and_interp_weights, extra_weight,
+                     use_centered_grid, 0, decimation_factor);
 
   return dft_fields(chunks, freq, Nfreq, where);
 }

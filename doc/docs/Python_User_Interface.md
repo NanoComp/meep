@@ -715,7 +715,7 @@ of the field at that point.
 
 ```python
 def add_dft_fields(self, *args, **kwargs):
-def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False):
+def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -729,7 +729,13 @@ The volume can also be specified via the `center` and `size` arguments. The
 default routine interpolates the Fourier transformed fields at the center of each
 voxel within the specified volume. Alternatively, the exact Fourier transformed
 fields evaluated at each corresponding Yee grid point is available by setting
-`yee_grid` to `True`.
+`yee_grid` to `True`. To reduce the memory bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+specified. DFT field values are updated every `decimation_factor`
+timesteps. Use this experimental feature with care, as the decimated
+timeseries may be corruped by aliasing of high frequencies. The choice
+of decimation factor should take the properties of all sources in the
+simulation and the frequency range of the DFT field monitor into account.
 
 </div>
 
