@@ -65,8 +65,9 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
 }
 
 static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
-                                                       bool fragment_cost) {
-  if (n == 1) { return std::unique_ptr<binary_partition>(new binary_partition(-1)); }
+                                                       bool fragment_cost, int &proc_id) {
+  if (n == 1) return std::unique_ptr<binary_partition>(new binary_partition(proc_id++
+                                                                            % count_processors()));
 
   int best_split_point;
   direction best_split_direction;
@@ -89,8 +90,8 @@ static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
   grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
   return std::unique_ptr<binary_partition>(
       new binary_partition(optimal_plane,
-                           /*left=*/split_by_cost(num_left, left_gvol, fragment_cost),
-                           /*right=*/split_by_cost(n - num_left, right_gvol, fragment_cost)));
+                           /*left=*/split_by_cost(num_left, left_gvol, fragment_cost, proc_id),
+                           /*right=*/split_by_cost(n - num_left, right_gvol, fragment_cost, proc_id)));
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
@@ -131,7 +132,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   num_chunks = 0;
   chunks = new structure_chunk_ptr[chunk_volumes.size() * num_effort_volumes];
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = (!_bp) ? i * count_processors() / chunk_volumes.size() : ids[i] % count_processors();
+    const int proc = ids[i] % count_processors();
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
@@ -189,16 +190,17 @@ std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &
       if (break_this[d]) gv = gv.pad((direction)d);
   }
 
+  int proc_id = 0;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by voxels\n", desired_num_chunks);
-    return split_by_cost(desired_num_chunks, gv, false);
+    return split_by_cost(desired_num_chunks, gv, false, proc_id);
   }
   else {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
-    return split_by_cost(desired_num_chunks, gv, true);
+    return split_by_cost(desired_num_chunks, gv, true, proc_id);
   }
 }
 
