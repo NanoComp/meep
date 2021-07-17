@@ -66,7 +66,8 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
 
 static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
                                                        bool fragment_cost, int &proc_id) {
-  if (n == 1) { return std::unique_ptr<binary_partition>(new binary_partition(proc_id++)); }
+  if (n == 1) return std::unique_ptr<binary_partition>(new binary_partition(proc_id++
+                                                                            % count_processors()));
 
   int best_split_point;
   direction best_split_direction;
