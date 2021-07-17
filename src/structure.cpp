@@ -132,7 +132,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   num_chunks = 0;
   chunks = new structure_chunk_ptr[chunk_volumes.size() * num_effort_volumes];
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = (!_bp) ? i * count_processors() / chunk_volumes.size() : ids[i] % count_processors();
+    const int proc = ids[i] % count_processors();
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
