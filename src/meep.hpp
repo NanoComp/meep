@@ -715,10 +715,10 @@ boundary_region pml(double thickness, double Rasymptotic = 1e-15, double mean_st
 class binary_partition;
 
 enum in_or_out { Incoming = 0, Outgoing };
-constexpr std::initializer_list<in_or_out> all_in_or_out{Incoming, Outgoing};
+const std::initializer_list<in_or_out> all_in_or_out{Incoming, Outgoing};
 
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE = 1, CONNECT_COPY = 2 };
-constexpr std::initializer_list<connect_phase> all_connect_phases{
+const std::initializer_list<connect_phase> all_connect_phases{
      CONNECT_PHASE, CONNECT_NEGATE, CONNECT_COPY};
 constexpr int NUM_CONNECT_PHASE_TYPES = 3;
 
@@ -740,8 +740,8 @@ class comms_key_hash_fn {
 public:
   inline std::size_t operator()(const comms_key &key) const {
     // Unroll hash combination to promote the generatiion of efficient code.
-    std::size_t ret = ft_hasher(key.ft);
-    ret ^= connect_phase_hasher(key.phase) + kHashAddConst + (ret << 6) + (ret >> 2);
+    std::size_t ret = int_hasher(int(key.ft));
+    ret ^= int_hasher(int(key.phase)) + kHashAddConst + (ret << 6) + (ret >> 2);
     ret ^= int_hasher(key.pair.first) + kHashAddConst + (ret << 6) + (ret >> 2);
     ret ^= int_hasher(key.pair.second) + kHashAddConst + (ret << 6) + (ret >> 2);
     return ret;
@@ -750,8 +750,6 @@ public:
 private:
   static constexpr size_t kHashAddConst = 0x9e3779b9;
   std::hash<int> int_hasher;
-  std::hash<connect_phase> connect_phase_hasher;
-  std::hash<field_type> ft_hasher;
 };
 
 // Represents a communication operation between chunks.
