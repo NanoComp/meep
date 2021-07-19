@@ -35,7 +35,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
 }
 
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
-                     const std::vector<double> freq_, const volume &where_)
+                     const std::vector<double> &freq_, const volume &where_)
     : where(where_) {
   freq = freq_;
   offdiag1 = offdiag1_;
