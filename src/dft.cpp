@@ -253,7 +253,7 @@ void dft_chunk::update_dft(double time) {
     else {
       realnum fr = f[0];
       for (int i = 0; i < Nomega; ++i)
-        dft[Nomega * idx_dft + i] += dft_phase[i] * fr;
+        dft[Nomega * idx_dft + i] += std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
     }
     idx_dft++;
   }
