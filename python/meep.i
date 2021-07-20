@@ -1838,6 +1838,10 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 %newobject create_structure_and_set_materials;
 %inline %{
 
+size_t get_realnum_size() {
+  return sizeof(meep::realnum);
+}
+
 bool is_single_precision() {
   return sizeof(meep::realnum) == sizeof(float);
 }
