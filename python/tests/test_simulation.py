@@ -1,3 +1,4 @@
+import itertools
 import os
 import re
 import sys
@@ -578,6 +579,47 @@ class TestSimulation(unittest.TestCase):
         sim.run(mp.at_end(print_field), until=50)
 
         self.assertAlmostEqual(result[0], -0.0599602798684155)
+
+    def test_timing_data(self):
+        resolution = 20
+        cell_size = mp.Vector3(10, 10)
+        pml = [mp.PML(1)]
+        center = mp.Vector3(2, -1)
+        result = []
+        fcen = 0.15
+        df = 0.1
+
+        sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
+                             center=mp.Vector3())]
+        geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(mp.inf, 3, mp.inf),
+                             material=mp.Medium(epsilon=12))]
+
+        sim = mp.Simulation(resolution=resolution, cell_size=cell_size, boundary_layers=pml,
+                            sources=sources, geometry=geometry, geometry_center=center)
+        sim.run(until=50)
+        timing_data = sim.get_timing_data()
+
+        # Non-exhaustive collection of steps where some time should be spent:
+        EXPECTED_NONZERO_TIMESINKS = (mp.Stepping, mp.Boundaries,
+                                      mp.FieldUpdateB, mp.FieldUpdateH,
+                                      mp.FieldUpdateD, mp.FieldUpdateE)
+        # Due to the problem setup, no time should be spent on these steps:
+        EXPECTED_ZERO_TIMESINKS = (mp.MPBTime, mp.GetFarfieldsTime)
+
+        for sink in itertools.chain(EXPECTED_NONZERO_TIMESINKS,
+                                    EXPECTED_ZERO_TIMESINKS):
+            self.assertIn(sink, timing_data.keys())
+            self.assertEqual(len(timing_data[sink]), mp.count_processors())
+            np.testing.assert_array_equal(sim.time_spent_on(sink),
+                                          timing_data[sink])
+
+        for sink in EXPECTED_NONZERO_TIMESINKS:
+            for t in timing_data[sink]:
+                self.assertGreater(t, 0)
+
+        for sink in EXPECTED_ZERO_TIMESINKS:
+            for t in timing_data[sink]:
+                self.assertEqual(t, 0)
 
     def test_source_slice(self):
         sim = self.init_simple_simulation()
