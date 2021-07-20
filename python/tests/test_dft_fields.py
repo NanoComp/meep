@@ -96,5 +96,22 @@ class TestDFTFields(unittest.TestCase):
         np.testing.assert_allclose(exp_fields, fields_arr)
         np.testing.assert_allclose(exp_flux, flux_arr)
 
+    def test_decimated_dft_fields_are_almost_equal_to_undecimated_fields(self):
+        sim = self.init()
+        sim.init_sim()
+        undecimated_field = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1)
+        decimated_field = sim.add_dft_fields([mp.Ez],
+                                             self.fcen,
+                                             0,
+                                             1,
+                                             decimation_factor=4)
+
+        sim.run(until_after_sources=100)
+
+        expected_dft = sim.get_dft_array(undecimated_field, mp.Ez, 0)
+        actual_dft = sim.get_dft_array(decimated_field, mp.Ez, 0)
+        np.testing.assert_allclose(expected_dft, actual_dft, rtol=5.e-2)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -35,7 +35,7 @@ dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag
 }
 
 dft_force::dft_force(dft_chunk *offdiag1_, dft_chunk *offdiag2_, dft_chunk *diag_,
-                     const std::vector<double> freq_, const volume &where_)
+                     const std::vector<double> &freq_, const volume &where_)
     : where(where_) {
   freq = freq_;
   offdiag1 = offdiag1_;
@@ -93,7 +93,9 @@ static void stress_sum(size_t Nfreq, double *F, const dft_chunk *F1, const dft_c
     complex<double> extra_weight(real(curF1->extra_weight), imag(curF1->extra_weight));
     for (size_t k = 0; k < curF1->N; ++k)
       for (size_t i = 0; i < Nfreq; ++i)
-        F[i] += real(extra_weight * curF1->dft[k * Nfreq + i] * conj(curF2->dft[k * Nfreq + i]));
+        F[i] += real(extra_weight *
+                     complex<double>(curF1->dft[k * Nfreq + i]) *
+                     conj(complex<double>(curF2->dft[k * Nfreq + i])));
   }
 }
 

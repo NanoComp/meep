@@ -2419,7 +2419,7 @@ class Simulation(object):
 
     def add_dft_fields(self, *args, **kwargs):
         """
-        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False)` ##sig
+        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=1)` ##sig
 
         Given a list of field components `cs`, compute the Fourier transform of these
         fields for `nfreq` equally spaced frequencies covering the frequency range
@@ -2429,7 +2429,13 @@ class Simulation(object):
         default routine interpolates the Fourier transformed fields at the center of each
         voxel within the specified volume. Alternatively, the exact Fourier transformed
         fields evaluated at each corresponding Yee grid point is available by setting
-        `yee_grid` to `True`.
+        `yee_grid` to `True`. To reduce the memory bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this experimental feature with care, as the decimated
+        timeseries may be corruped by aliasing of high frequencies. The choice
+        of decimation factor should take the properties of all sources in the
+        simulation and the frequency range of the DFT field monitor into account.
         """
         components = args[0]
         args = fix_dft_args(args, 1)
@@ -2438,21 +2444,27 @@ class Simulation(object):
         center = kwargs.get('center', None)
         size = kwargs.get('size', None)
         yee_grid = kwargs.get('yee_grid', False)
+        decimation_factor = kwargs.get('decimation_factor', 1)
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
         use_centered_grid = not yee_grid
-        dftf = DftFields(self._add_dft_fields, [components, where, center_v3, size_v3, freq, use_centered_grid])
+        dftf = DftFields(self._add_dft_fields, [
+            components, where, center_v3, size_v3, freq, use_centered_grid,
+            decimation_factor
+        ])
         self.dft_objects.append(dftf)
         return dftf
 
-    def _add_dft_fields(self, components, where, center, size, freq, use_centered_grid):
+    def _add_dft_fields(self, components, where, center, size, freq,
+                        use_centered_grid, decimation_factor):
         if self.fields is None:
             self.init_sim()
         try:
             where = self._volume_from_kwargs(where, center, size)
         except ValueError:
             where = self.fields.total_volume()
-        return self.fields.add_dft_fields(components, where, freq, use_centered_grid)
+        return self.fields.add_dft_fields(components, where, freq,
+                                          use_centered_grid, decimation_factor)
 
     def output_dft(self, dft_fields, fname):
         """
