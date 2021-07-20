@@ -1869,6 +1869,10 @@ size_t get_realnum_size() {
   return sizeof(meep::realnum);
 }
 
+bool is_single_precision() {
+  return sizeof(meep::realnum) == sizeof(float);
+}
+
 meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     std::vector<meep_geom::dft_data> dft_data_list_,
                                                     std::vector<meep::volume> pml_1d_vols_,
