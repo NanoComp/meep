@@ -308,10 +308,8 @@ _Pragma(clause)     				                                                     \
          loop_ibound++)                                                                            \
   S1LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-/* The following is the stride optimized
-version of the parallel loops from above.
-We can use simd vectorization in addition
-to the usual par for optimization */
+/* The following is the stride-optimized version of the parallel loops from above.
+   We can use simd vectorization in addition to the usual par for optimization */
 // loop over indices idx from is to ie (inclusive) in gv
 #define PS1LOOP_OVER_IVECS(gv, is, ie, idx)                                                        \
 for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
