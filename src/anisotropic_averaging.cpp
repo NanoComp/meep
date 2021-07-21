@@ -237,8 +237,8 @@ breakout:
   double trivial_val[3] = {0, 0, 0};
   trivial_val[idiag] = 1.0;
   ivec shift1(unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1));
-  PLOOP_OVER_IVECS_C(gv, (gv).little_corner() + (gv).iyee_shift(c),                                   \
-                  (gv).big_corner() + (gv).iyee_shift(c), i, "omp parallel for collapse(3), firstprivate(last_output_time)") {
+  // TODO: make this loop thread-safe and change to PLOOP_OVER_VOL
+  LOOP_OVER_VOL(gv, c, i) {
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(gv, here);
     medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
@@ -265,7 +265,6 @@ breakout:
                     (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);
       last_output_time = wall_time();
     }
-    #pragma omp atomic
     ++ipixel;
   }
   direction ds[3];
