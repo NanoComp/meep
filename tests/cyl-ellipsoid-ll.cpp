@@ -28,7 +28,7 @@ typedef std::complex<double> cdouble;
 /***************************************************************/
 bool compare_hdf5_datasets(const char *file1, const char *name1, const char *file2,
                            const char *name2, int expected_rank = 2, double rel_tol = 1.0e-4,
-                           double abs_tol = 1.0e-8) {
+                           double abs_tol = sizeof(realnum) == sizeof(float) ? 1.0e-6 : 1.0e-8) {
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
   std::vector<size_t> dims1(expected_rank);
