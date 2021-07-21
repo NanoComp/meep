@@ -186,18 +186,14 @@ component first_field_component(field_type ft);
          loop_ibound++)                                                                            \
   LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-// The following work identically to the LOOP_* macros above,
-// but are optimized for shared memory parallelism. This
-// is really only implemented in step_generic and code
-// generated from step_generic
+/* The following work identically to the LOOP_* macros above,
+   but employ shared memory-parallelism using OpenMP. Mainly
+   used in step_generic and a few other time-critical loops. */
 
-/* for the parallel implementation, we
-introduce 2 dummy loops, one at the begininnging
-and one at the end, in order to "trick" openMP
-to allow us to define our localy variables
-without having to change any other code
-in the main codebase. We can proceed to do
-a collapse over all three main loops. */
+/* for the parallel implementation, we introduce 2 dummy loops, one at the begininnging
+   and one at the end, in order to "trick" openMP to allow us to define our localy variables
+   without having to change any other code in the main codebase. We can proceed to do
+   a collapse over all three main loops. */
 
 #define CHUNK_OPENMP _Pragma("omp parallel for")
 
