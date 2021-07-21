@@ -214,10 +214,8 @@ class TestSimulation(unittest.TestCase):
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
-        if mp.is_single_precision():
-            self.assertAlmostEqual(fp, -0.002989868633449077 + 0j)
-        else:
-            self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j, places=places)
 
         # Test unicode file name for Python 2
         if sys.version_info[0] == 2:
@@ -238,10 +236,8 @@ class TestSimulation(unittest.TestCase):
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
-        if mp.is_single_precision():
-            self.assertAlmostEqual(fp, -0.002989868633449077 + 0j)
-        else:
-            self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j, places=places)
 
     def test_set_materials(self):
 
@@ -514,11 +510,10 @@ class TestSimulation(unittest.TestCase):
         with self.assertRaises(TypeError):
             mp.vec(1, [2, 3])
 
+    @unittest.skipIf(mp.is_single_precision(), "double-precision floating point specific test")
     def test_epsilon_warning(self):
         ## fields blow up using dispersive material
         ## when compiled using single precision
-        if mp.is_single_precision():
-            return;
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")

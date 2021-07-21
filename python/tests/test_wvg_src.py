@@ -43,10 +43,8 @@ class TestWvgSrc(unittest.TestCase):
         flux2 = self.sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(6.0), size=mp.Vector3(1.8, 6)))
 
         self.assertAlmostEqual(flux1, -1.775216564842667e-03)
-        if mp.is_single_precision():
-            self.assertAlmostEqual(flux2, 7.215785440838316)
-        else:
-            self.assertAlmostEqual(flux2, 7.215785537102116e+00)
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(flux2, 7.215785537102116e+00, places=places)
 
 if __name__ == '__main__':
     unittest.main()

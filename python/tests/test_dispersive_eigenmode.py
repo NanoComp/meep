@@ -6,16 +6,14 @@
 #  * check magnetic profiles
 #  * once imaginary component is supported, check that
 
-from __future__ import division
-
-import unittest
 import meep as mp
+from utils import VectorComparisonMixin
+import unittest
 import numpy as np
-from meep import mpb
 import h5py
 import os
 
-class TestDispersiveEigenmode(unittest.TestCase):
+class TestDispersiveEigenmode(VectorComparisonMixin, unittest.TestCase):
     # ----------------------------------------- #
     # ----------- Helper Functions ------------ #
     # ----------------------------------------- #
@@ -35,8 +33,9 @@ class TestDispersiveEigenmode(unittest.TestCase):
         n = np.real(np.sqrt(np.linalg.inv(chi1inv.astype(np.complex128))))
 
         n_actual = np.real(np.sqrt(material.epsilon(frequency).astype(np.complex128)))
-        
-        np.testing.assert_allclose(n,n_actual)
+
+        tol = 1e-6 if mp.is_single_precision() else 1e-8
+        self.assertVectorsClose(n, n_actual, epsilon=tol)
 
     @classmethod
     def setUpClass(cls):

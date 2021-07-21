@@ -144,12 +144,12 @@ jobs:
       run: |
         mkdir -p build &&
         pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single &&
         popd
 
     - name: Run configure
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
-      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single
 
     - name: Run make
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}

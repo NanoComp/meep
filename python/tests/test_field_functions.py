@@ -1,5 +1,6 @@
-import unittest
 import meep as mp
+import unittest
+
 
 def f(r, ex, hz, eps):
     return (r.x * r.norm() + ex) - (eps * hz)
@@ -95,7 +96,8 @@ class TestFieldFunctions(unittest.TestCase):
         sim.run(until_after_sources=10)
 
         res1 = sim.integrate2_field_function(fields2, [mp.Ez], [mp.Ez], f2)
-        self.assertAlmostEqual(res1, 0.17158099566244897)
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(res1, 0.17158099566244897, places=places)
 
     def test_max_abs_field_function(self):
         sim = self.init()

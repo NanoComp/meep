@@ -197,7 +197,7 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.3 if mp.is_single_precision() else 1e-5
+            tol = 0.3 if mp.is_single_precision() else 0.01
             self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 
@@ -210,7 +210,7 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
 
             ## compute unperturbed S12
             S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE, frequencies)
-            
+
             ## compare objective results
             print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
             tol = 1e-3
@@ -218,14 +218,14 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies)
-            
+
             ## compare gradients
             if adjsol_grad.ndim < 2:
                 adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04 if mp.is_single_precision() else 1e-5
+            tol = 0.04 if mp.is_single_precision() else 0.03
             self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 
@@ -266,7 +266,7 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
             adj_scale = (dp[None,:]@bp_adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04 if mp.is_single_precision() else 1e-5
+            tol = 0.04 if mp.is_single_precision() else 0.03
             self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 

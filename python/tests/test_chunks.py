@@ -1,5 +1,6 @@
-import unittest
 import meep as mp
+import unittest
+
 
 class TestChunks(unittest.TestCase):
 
@@ -44,8 +45,12 @@ class TestChunks(unittest.TestCase):
         sim.save_flux('tot_flux', tot_flux)
         sim1 = sim
 
-        geometry = [mp.Block(center=mp.Vector3(), size=mp.Vector3(sxy, sxy, mp.inf), material=mp.Medium(index=3.5)),
-                    mp.Block(center=mp.Vector3(), size=mp.Vector3(sxy-2*dpml, sxy-2*dpml, mp.inf), material=mp.air)]
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(sxy, sxy, mp.inf),
+                             material=mp.Medium(index=3.5)),
+                    mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(sxy-2*dpml, sxy-2*dpml, mp.inf),
+                             material=mp.air)]
 
         sim = mp.Simulation(cell_size=cell,
                             geometry=geometry,
@@ -62,7 +67,8 @@ class TestChunks(unittest.TestCase):
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mp.Vector3(), 1e-5))
 
-        self.assertAlmostEqual(86.90826609300862, mp.get_fluxes(tot_flux)[0])
+        places = 3 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(86.90826609300862, mp.get_fluxes(tot_flux)[0], places=places)
 
 
 if __name__ == '__main__':
