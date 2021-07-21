@@ -1585,6 +1585,7 @@ public:
   // ownership of it.
   explicit timing_scope(time_sink_to_duration_map *timers_, time_sink sink_ = Other);
   ~timing_scope();
+  timing_scope &operator=(const timing_scope &other);
   // Stops time accumulation for the timing_scope.
   void exit();
 

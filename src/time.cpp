@@ -100,6 +100,15 @@ void timing_scope::exit() {
   active = false;
 }
 
+timing_scope &timing_scope::operator=(const timing_scope &other) {
+  exit();
+  timers = other.timers;
+  sink = other.sink;
+  active = other.active;
+  t_start = other.t_start;
+  return *this;
+}
+
 timing_scope fields::with_timing_scope(time_sink sink) { return timing_scope(&times_spent, sink); }
 
 void fields::finished_working() {
