@@ -149,7 +149,9 @@ void fields::initialize_field(component c, complex<double> func(const vec &)) {
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
   if (f[c][0]) {
-    PLOOP_OVER_VOL(gv, c, i) {
+    // note: this loop is not thread-safe unless func is, which
+    // isn't true if func e.g. calls back to Python
+    LOOP_OVER_VOL(gv, c, i) {
       IVEC_LOOP_LOC(gv, here);
       complex<double> val = func(here);
       f[c][0][i] += real(val);

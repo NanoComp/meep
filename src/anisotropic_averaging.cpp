@@ -2,16 +2,9 @@
 
 #include "meep_internals.hpp"
 
-#ifdef _OPENMP
-#include "omp.h"
-#else
-#define omp_get_thread_num() 0
-#endif
-
 /* This file contains routines to compute the "average" or "effective"
    dielectric constant for a pixel, using an anisotropic averaging
-   procedure described in an upcoming paper (similar to the one in
-   MPB). */
+   procedure described in our papers (similar to MPB). */
 
 using namespace std;
 
@@ -238,6 +231,8 @@ breakout:
   trivial_val[idiag] = 1.0;
   ivec shift1(unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1));
   // TODO: make this loop thread-safe and change to PLOOP_OVER_VOL
+  // Note that we *cannot* make it thread-safe if `medium` is not thread-safe,
+  // e.g. if it calls back to Python.
   LOOP_OVER_VOL(gv, c, i) {
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(gv, here);
@@ -258,7 +253,7 @@ breakout:
     }
 
     if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
-        wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME && (omp_get_thread_num() == 0)) {
+        wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
       master_printf("%s is %g%% done, %g s remaining\n",
                     use_anisotropic_averaging ? "subpixel-averaging" : "grid initialization",
                     ipixel * 100.0 / npixels,
