@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
 
   const double a2d = argc > 1 ? atof(argv[1]) : 20, a3d = argc > 1 ? a2d : 10;
 
-  if (!check_cyl(5.0, 10.0, 20.0)) return 1;
+  if ((sizeof(realnum) == sizeof(double)) &&  !check_cyl(5.0, 10.0, 20.0)) return 1;
 
   // NOTE: see hack above -- we require sources to be odd in Z and even in X or vice-versa
   if (!check_2d_3d(D3, 4, a3d, Ez, Hx, false)) return 1;

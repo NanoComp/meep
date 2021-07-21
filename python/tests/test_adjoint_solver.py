@@ -8,6 +8,7 @@ from autograd import numpy as npa
 from autograd import tensor_jacobian_product
 import unittest
 from enum import Enum
+from utils import VectorComparisonMixin
 
 MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 
@@ -170,7 +171,7 @@ def mapping(x,filter_radius,eta,beta):
     return projected_field.flatten()
 
 
-class TestAdjointSolver(unittest.TestCase):
+class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
 
     def test_adjoint_solver_DFT_fields(self):
         print("*** TESTING DFT ADJOINT FEATURES ***")
@@ -184,7 +185,8 @@ class TestAdjointSolver(unittest.TestCase):
             
             ## compare objective results
             print("|Ez|^2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            np.testing.assert_array_almost_equal(adjsol_obj,S12_unperturbed,decimal=3)
+            tol = 1e-3
+            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=tol)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(p+dp, MonitorObject.DFT, frequencies)
@@ -195,7 +197,8 @@ class TestAdjointSolver(unittest.TestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            np.testing.assert_array_almost_equal(adj_scale,fd_grad,decimal=5)
+            tol = 0.3 if mp.is_single_precision() else 1e-5
+            self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 
     def test_adjoint_solver_eigenmode(self):
@@ -210,7 +213,8 @@ class TestAdjointSolver(unittest.TestCase):
             
             ## compare objective results
             print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            np.testing.assert_array_almost_equal(adjsol_obj,S12_unperturbed,decimal=3)
+            tol = 1e-3
+            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=tol)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies)
@@ -221,7 +225,8 @@ class TestAdjointSolver(unittest.TestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            np.testing.assert_array_almost_equal(adj_scale,fd_grad,decimal=5)
+            tol = 0.04 if mp.is_single_precision() else 1e-5
+            self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 
     def test_gradient_backpropagation(self):
@@ -250,7 +255,8 @@ class TestAdjointSolver(unittest.TestCase):
 
             ## compare objective results
             print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            np.testing.assert_array_almost_equal(adjsol_obj,S12_unperturbed,decimal=3)
+            tol = 1e-2 if mp.is_single_precision() else 1e-3
+            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=tol)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta), MonitorObject.EIGENMODE,frequencies)
@@ -260,7 +266,8 @@ class TestAdjointSolver(unittest.TestCase):
             adj_scale = (dp[None,:]@bp_adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            np.testing.assert_array_almost_equal(adj_scale,fd_grad,decimal=5)
+            tol = 0.04 if mp.is_single_precision() else 1e-5
+            self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 
 if __name__ == '__main__':
