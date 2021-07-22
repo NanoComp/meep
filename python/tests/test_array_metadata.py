@@ -82,12 +82,9 @@ class TestArrayMetadata(unittest.TestCase):
 
         if ((mp.count_processors() % 2 == 0) and mp.is_single_precision()):
             ref_val = 0.94
-            places = 2
         else:
             ref_val = 1.00
-            places = 2
-
-        self.assertAlmostEqual(cw_modal_volume/pulse_modal_volume, ref_val, places=places)
+        self.assertAlmostEqual(cw_modal_volume/pulse_modal_volume, ref_val, places=2)
 
 if __name__ == '__main__':
     unittest.main()
