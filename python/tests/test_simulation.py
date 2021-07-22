@@ -621,6 +621,14 @@ class TestSimulation(unittest.TestCase):
             for t in timing_data[sink]:
                 self.assertEqual(t, 0)
 
+        self.assertGreaterEqual(
+            sum(timing_data[mp.Stepping]),
+            sum(timing_data[mp.FieldUpdateB]) +
+            sum(timing_data[mp.FieldUpdateH]) +
+            sum(timing_data[mp.FieldUpdateD]) +
+            sum(timing_data[mp.FieldUpdateE]) +
+            sum(timing_data[mp.FourierTransforming]))
+
     def test_source_slice(self):
         sim = self.init_simple_simulation()
         sim.run(until=1)
