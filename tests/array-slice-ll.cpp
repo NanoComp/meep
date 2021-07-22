@@ -39,7 +39,8 @@ std::complex<double> default_field_function(const std::complex<double> *fields, 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-#define RELTOL 1.0e-6
+const double RELTOL = sizeof(realnum) == sizeof(float) ? 1.0e-4: 1.0e-6;
+
 double Compare(realnum *d1, realnum *d2, int N, const char *Name) {
   double Norm1 = 0.0, Norm2 = 0.0, NormDelta = 0.0;
   for (int n = 0; n < N; n++) {

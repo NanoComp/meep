@@ -140,7 +140,7 @@ jobs:
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
     - name: Run configure
-      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.6) }}
+      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.6) && !(matrix.enable-mpi == true && matrix.python-version == 3.9) }}
       run: |
         mkdir -p build &&
         pushd build &&
@@ -150,6 +150,14 @@ jobs:
     - name: Run configure
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
       run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+
+    - name: Run configure with single-precision floating point
+      if: ${{ matrix.enable-mpi == true && matrix.python-version == 3.9 }}
+      run: |
+        mkdir -p build &&
+        pushd build &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single &&
+        popd
 
     - name: Run make
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}

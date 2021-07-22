@@ -1,9 +1,8 @@
-from __future__ import division
-
-import unittest
 import meep as mp
+import unittest
 import numpy as np
 import math
+
 
 class TestGetPoint(unittest.TestCase):
 
@@ -95,9 +94,14 @@ class TestGetPoint(unittest.TestCase):
                     1.0370162714 ]
 
         x = np.linspace(-0.865692,2.692867,29)
+        places = 5 if mp.is_single_precision() else 10
         for j in range(x.size):
-            self.assertAlmostEqual(np.real(sim.get_field_point(mp.Ez, mp.Vector3(x[j],-0.394862))),ez_ref[j],places=10)
-            self.assertAlmostEqual(sim.get_epsilon_point(mp.Vector3(x[j],2.967158)),eps_ref[j],places=10)
+            self.assertAlmostEqual(np.real(sim.get_field_point(mp.Ez, mp.Vector3(x[j],-0.394862))),
+                                   ez_ref[j],
+                                   places=places)
+            self.assertAlmostEqual(sim.get_epsilon_point(mp.Vector3(x[j],2.967158)),
+                                   eps_ref[j],
+                                   places=places)
 
 if __name__ == '__main__':
     unittest.main()

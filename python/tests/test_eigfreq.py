@@ -1,18 +1,14 @@
-from __future__ import division
-
-import unittest
 import meep as mp
-import cmath
-import math
-from time import time
+import unittest
 
 class TestEigfreq(unittest.TestCase):
 
+    @unittest.skipIf(mp.is_single_precision(), "double-precision floating point specific test")
     def test_eigfreq(self):
         w = 1.2           # width of waveguide
         r = 0.36          # radius of holes
         d = 1.4           # defect spacing (ordinary spacing = 1)
-        N = 3        # number of holes on either side of defect
+        N = 3             # number of holes on either side of defect
         sy = 6            # size of cell in y direction (perpendicular to wvg.)
         pad = 2           # padding between last hole and PML edge
         dpml = 1          # PML thickness
