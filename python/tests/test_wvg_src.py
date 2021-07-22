@@ -44,7 +44,7 @@ class TestWvgSrc(unittest.TestCase):
 
         self.assertAlmostEqual(flux1, -1.775216564842667e-03)
         places = 6 if mp.is_single_precision() else 7
-        self.assertAlmostEqual(flux2, 7.215785537102116e+00, places=places)
+        self.assertAlmostEqual(flux2, 7.215785537102116, places=places)
 
 if __name__ == '__main__':
     unittest.main()

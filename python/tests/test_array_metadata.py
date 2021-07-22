@@ -81,8 +81,8 @@ class TestArrayMetadata(unittest.TestCase):
         pulse_modal_volume = np.sum(W*EpsE2)/np.max(EpsE2) * vec_func_sum
 
         if ((mp.count_processors() % 2 == 0) and mp.is_single_precision()):
-            ref_val = 0.90
-            places = 1
+            ref_val = 0.94
+            places = 2
         else:
             ref_val = 1.00
             places = 2

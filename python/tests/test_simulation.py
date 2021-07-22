@@ -215,14 +215,14 @@ class TestSimulation(unittest.TestCase):
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
         places = 6 if mp.is_single_precision() else 7
-        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j, places=places)
+        self.assertAlmostEqual(fp, -0.002989654055823199, places=places)
 
         # Test unicode file name for Python 2
         if sys.version_info[0] == 2:
             sim = self.init_simple_simulation(epsilon_input_file=unicode(eps_input_path))
             sim.run(until=200)
             fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
-            self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+            self.assertAlmostEqual(fp, -0.002989654055823199)
 
     def test_numpy_epsilon(self):
         sim = self.init_simple_simulation()
@@ -237,7 +237,7 @@ class TestSimulation(unittest.TestCase):
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
         places = 6 if mp.is_single_precision() else 7
-        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j, places=places)
+        self.assertAlmostEqual(fp, -0.002989654055823199, places=places)
 
     def test_set_materials(self):
 

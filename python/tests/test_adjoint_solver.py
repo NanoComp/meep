@@ -185,8 +185,7 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
             
             ## compare objective results
             print("|Ez|^2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            tol = 1e-3
-            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=tol)
+            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(p+dp, MonitorObject.DFT, frequencies)
@@ -213,8 +212,7 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
 
             ## compare objective results
             print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            tol = 1e-3
-            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=tol)
+            self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies)

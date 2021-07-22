@@ -139,13 +139,9 @@ int main(int argc, char **argv) {
     master_printf("err. real: %g\n", fabs(freqs_re[i0] - 0.41562) / 0.41562);
     master_printf("err. imag: %g\n", fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7);
 
-    if (sizeof(realnum) == sizeof(float)) {
-      ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4 &&
-         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.23;
-    } else {
-      ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4 &&
-         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.20;
-    }
+    double tol = sizeof(realnum) == sizeof(float) ? 0.23 : 0.20;
+    ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4 &&
+         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < tol;
   }
   end_divide_parallel();
   return !and_to_all(ok);
