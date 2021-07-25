@@ -408,7 +408,7 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 #undef D
 
   // [du_dx,du_dy,du_dz] is the gradient ∇u with respect to the transformed coordinate
-  // r1 of the matgrid_val function but what we want is the gradient of u(g(r2)) with 
+  // r1 of the matgrid_val function but what we want is the gradient of u(g(r2)) with
   // respect to r2 where g(r2) is the to_geom_object_coords function (in libctl/utils/geom.c).
   // computing this quantity involves using the chain rule and thus the vector-Jacobian product
   // ∇u J where J is the Jacobian matrix of g.
@@ -2579,9 +2579,9 @@ double get_material_gradient(
   if ((mm->E_susceptibilities.size() == 0) && mm->D_conductivity_diag.x == 0 &&
       mm->D_conductivity_diag.y == 0 && mm->D_conductivity_diag.z == 0){
         switch (field_dir){
-          case meep::Ex: return 2 * (m2->epsilon_diag.x - m1->epsilon_diag.x) * (fields_a * fields_f).real();
-          case meep::Ey: return 2 * (m2->epsilon_diag.y - m1->epsilon_diag.y) * (fields_a * fields_f).real();
-          case meep::Ez: return 2 * (m2->epsilon_diag.z - m1->epsilon_diag.z) * (fields_a * fields_f).real();
+          case meep::Ex: return (m2->epsilon_diag.x - m1->epsilon_diag.x) * (fields_a * fields_f).real();
+          case meep::Ey: return (m2->epsilon_diag.y - m1->epsilon_diag.y) * (fields_a * fields_f).real();
+          case meep::Ez: return (m2->epsilon_diag.z - m1->epsilon_diag.z) * (fields_a * fields_f).real();
           default: meep::abort("Invalid field component specified in gradient.");
         }
       }
@@ -2612,7 +2612,7 @@ double get_material_gradient(
     meep::abort("Invalid adjoint field component");
 
   std::complex<double> result = fields_a * dA_du[3 * dir_idx + dir_idx] * fields_f;
-  return 2 * result.real();
+  return result.real();
 }
 
 /* add the weights from linear_interpolate (see the linear_interpolate

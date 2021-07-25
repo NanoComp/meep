@@ -92,6 +92,8 @@ class ObjectiveQuantity(abc.ABC):
         else:
             # multi frequency simulations
             scale = dV * iomega / adj_src_phase
+        if self.sim.force_complex_fields:
+            scale *= 0.5
         return scale
 
     def _create_time_profile(self, fwidth_frac=0.1):
@@ -262,7 +264,7 @@ class FourierFields(ObjectiveQuantity):
                 for yi in range(y_dim):
                     for xi in range(x_dim):
                         '''We only need to add a current source if the
-                        jacobian is nonzero for all frequencies at 
+                        jacobian is nonzero for all frequencies at
                         that particular point. Otherwise, the fitting
                         algorithm is going to fail.
                         '''
@@ -340,7 +342,7 @@ class Near2FarFields(ObjectiveQuantity):
                     time_src.frequency,
                     self._frequencies,
                     scale,
-                    dt,
+                    self.sim.fields.dt,
                 )
                 (num_basis, num_pts) = src.nodes.shape
                 for basis_i in range(num_basis):
