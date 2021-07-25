@@ -93,7 +93,7 @@ class ObjectiveQuantity(abc.ABC):
             # multi frequency simulations
             scale = dV * iomega / adj_src_phase
         if not self.sim.force_complex_fields:
-            scale *= 0.5
+            scale *= 2
         return scale
 
     def _create_time_profile(self, fwidth_frac=0.1):
