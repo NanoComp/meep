@@ -53,7 +53,11 @@ sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                               eig_parity=eig_parity)]
 
 
+<<<<<<< HEAD
 def forward_simulation(design_params,mon_type,frequencies=None, use_complex=False):
+=======
+def forward_simulation(design_params,mon_type,frequencies=None, use_complex):
+>>>>>>> fix factor 2
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -108,7 +112,11 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex=Fals
         return Ez2
 
 
+<<<<<<< HEAD
 def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False):
+=======
+def adjoint_solver(design_params, mon_type, frequencies=None, use_complex):
+>>>>>>> fix factor 2
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -215,7 +223,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
                 ## compare objective results
                 print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+<<<<<<< HEAD
                 self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
+=======
+                self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
+>>>>>>> fix factor 2
 
                 ## compute perturbed S12
                 S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies, use_complex)
@@ -226,8 +238,13 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 adj_scale = (dp[None,:]@adjsol_grad).flatten()
                 fd_grad = S12_perturbed-S12_unperturbed
                 print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+<<<<<<< HEAD
                 tol = 0.1 if mp.is_single_precision() else 0.03
                 self.assertClose(adj_scale,fd_grad,epsilon=tol)
+=======
+                tol = 0.04 if mp.is_single_precision() else 0.03
+                self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
+>>>>>>> fix factor 2
 
 
     def test_gradient_backpropagation(self):
