@@ -53,7 +53,7 @@ sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                               eig_parity=eig_parity)]
 
 
-def forward_simulation(design_params,mon_type,frequencies=None, use_complex):
+def forward_simulation(design_params,mon_type,frequencies=None, use_complex=False):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -108,7 +108,7 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex):
         return Ez2
 
 
-def adjoint_solver(design_params, mon_type, frequencies=None, use_complex):
+def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
