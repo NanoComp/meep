@@ -92,7 +92,7 @@ class ObjectiveQuantity(abc.ABC):
         else:
             # multi frequency simulations
             scale = dV * iomega / adj_src_phase
-        if self.sim.force_complex_fields:
+        if not self.sim.force_complex_fields:
             scale *= 0.5
         return scale
 
