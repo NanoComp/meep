@@ -428,6 +428,13 @@ bool grid_volume::get_boundary_icorners(component c, int ib, ivec *cs, ivec *ce)
   return ib_found;
 }
 
+// given a vec >= little_corner that matches little_corner.r(),
+// convert r direction back to little_corner0.r() in cylindrical coords
+ivec grid_volume::corner_to_corner0(ivec iloc) const {
+  if (dim == Dcyl && origin.r() == 0.0 && iloc.r() == 0) iloc.set_direction(R, 2);
+  return iloc;
+}
+
 // first "owned" point for c in grid_volume (see also grid_volume::owns)
 ivec grid_volume::little_owned_corner(component c) const {
   ivec iloc(little_owned_corner0(c));
