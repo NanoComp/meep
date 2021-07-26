@@ -382,7 +382,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is,
      of the "MOST GENERAL CASE" loop with various terms thrown out. */
 
   if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
-    KSTRIDE_DEF(dsigw, kw, gv.corner_to_corner0(is), gv);
+    KSTRIDE_DEF(dsigw, kw, is, gv);
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
         //////////////////// MOST GENERAL CASE //////////////////////

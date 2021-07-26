@@ -974,7 +974,6 @@ public:
   }
 
   ivec little_owned_corner(component c) const;
-  ivec corner_to_corner0(ivec iloc) const;
   bool owns(const ivec &) const;
   volume surroundings() const;
   volume interior() const;
