@@ -287,6 +287,8 @@ class OptimizationProblem(object):
     def adjoint_run(self):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
+        if self.sim.k_point: self.sim.k_point *= -1
+        print(self.sim.k_point)
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
@@ -329,6 +331,7 @@ class OptimizationProblem(object):
                             self.sim.get_dft_array(dgm, c, f))
 
         # update optimizer's state
+        if self.sim.k_point: self.sim.k_point *= -1
         self.current_state = "ADJ"
 
     def calculate_gradient(self):
