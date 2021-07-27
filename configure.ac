@@ -514,7 +514,7 @@ fi
 
 ##############################################################################
 # Miscellaneous function and header checks
-AC_CHECK_HEADERS([sys/time.h])
+AC_CHECK_HEADERS([sys/time.h immintrin.h])
 AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
 
 ##############################################################################
