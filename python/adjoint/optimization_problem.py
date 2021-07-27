@@ -288,7 +288,6 @@ class OptimizationProblem(object):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
         if self.sim.k_point: self.sim.k_point *= -1
-        print(self.sim.k_point)
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
