@@ -198,7 +198,7 @@ class TestAdjointSolver(VectorComparisonMixin, unittest.TestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.3 if mp.is_single_precision() else 0.01
+            tol = 0.7 if mp.is_single_precision() else 0.01
             self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
 
 
