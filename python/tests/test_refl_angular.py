@@ -1,11 +1,11 @@
 import meep as mp
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonMixin
 import math
 import unittest
 import numpy as np
 
 
-class TestReflAngular(VectorComparisonMixin, unittest.TestCase):
+class TestReflAngular(ApproxComparisonMixin, unittest.TestCase):
 
     def test_refl_angular(self):
         resolution = 100
@@ -121,7 +121,7 @@ class TestReflAngular(VectorComparisonMixin, unittest.TestCase):
         ]
 
         tol = 1e-7 if mp.is_single_precision() else 1e-8
-        self.assertVectorsClose(expected, list(zip(freqs, refl_flux)), epsilon=tol)
+        self.assertClose(expected, list(zip(freqs, refl_flux)), epsilon=tol)
 
 
 if __name__ == '__main__':

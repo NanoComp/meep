@@ -2,9 +2,9 @@ from __future__ import division
 
 import unittest
 import meep as mp
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonMixin
 
-class TestRingCyl(VectorComparisonMixin, unittest.TestCase):
+class TestRingCyl(ApproxComparisonMixin, unittest.TestCase):
 
     def setUp(self):
         n = 3.4
@@ -66,7 +66,7 @@ class TestRingCyl(VectorComparisonMixin, unittest.TestCase):
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
         tol = 1e-6 if mp.is_single_precision() else 1e-7
-        self.assertVectorsClose(expected, res, epsilon=tol)
+        self.assertClose(expected, res, epsilon=tol)
 
 
 if __name__ == '__main__':

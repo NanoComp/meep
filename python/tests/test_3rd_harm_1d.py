@@ -2,9 +2,9 @@ from __future__ import division
 
 import unittest
 import meep as mp
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonMixin
 
-class Test3rdHarm1d(VectorComparisonMixin, unittest.TestCase):
+class Test3rdHarm1d(ApproxComparisonMixin, unittest.TestCase):
 
     def setUp(self):
         self.sz = 100
@@ -53,7 +53,7 @@ class Test3rdHarm1d(VectorComparisonMixin, unittest.TestCase):
         harmonics = [self.k, self.amp, mp.get_fluxes(self.trans1)[0], mp.get_fluxes(self.trans3)[0]]
 
         tol = 3e-5 if mp.is_single_precision() else 1e-7
-        self.assertVectorsClose(expected_harmonics, harmonics, epsilon=tol)
+        self.assertClose(expected_harmonics, harmonics, epsilon=tol)
 
 
 if __name__ == '__main__':

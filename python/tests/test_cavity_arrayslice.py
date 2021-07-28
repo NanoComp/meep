@@ -1,11 +1,11 @@
 import meep as mp
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonMixin
 import os
 import unittest
 import numpy as np
 
 
-class TestCavityArraySlice(VectorComparisonMixin, unittest.TestCase):
+class TestCavityArraySlice(ApproxComparisonMixin, unittest.TestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
     expected_1d = np.load(os.path.join(data_dir, 'cavity_arrayslice_1d.npy'))
@@ -59,14 +59,14 @@ class TestCavityArraySlice(VectorComparisonMixin, unittest.TestCase):
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
         hl_slice1d = self.sim.get_array(mp.Hz, vol)
         tol = 1e-5 if mp.is_single_precision() else 1e-8
-        self.assertVectorsClose(self.expected_1d, hl_slice1d, epsilon=tol)
+        self.assertClose(self.expected_1d, hl_slice1d, epsilon=tol)
 
     def test_2d_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
         hl_slice2d = self.sim.get_array(mp.Hz, vol)
         tol = 1e-5 if mp.is_single_precision() else 1e-8
-        self.assertVectorsClose(self.expected_2d, hl_slice2d, epsilon=tol)
+        self.assertClose(self.expected_2d, hl_slice2d, epsilon=tol)
 
     def test_1d_slice_user_array(self):
         self.sim.run(until_after_sources=0)
@@ -74,7 +74,7 @@ class TestCavityArraySlice(VectorComparisonMixin, unittest.TestCase):
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
         self.sim.get_array(mp.Hz, vol, arr=arr)
         tol = 1e-5 if mp.is_single_precision() else 1e-8
-        self.assertVectorsClose(self.expected_1d, arr, epsilon=tol)
+        self.assertClose(self.expected_1d, arr, epsilon=tol)
 
     def test_2d_slice_user_array(self):
         self.sim.run(until_after_sources=0)
@@ -82,7 +82,7 @@ class TestCavityArraySlice(VectorComparisonMixin, unittest.TestCase):
         vol = mp.Volume(center=self.center_2d, size=self.size_2d)
         self.sim.get_array(mp.Hz, vol, arr=arr)
         tol = 1e-5 if mp.is_single_precision() else 1e-8
-        self.assertVectorsClose(self.expected_2d, arr, epsilon=tol)
+        self.assertClose(self.expected_2d, arr, epsilon=tol)
 
     def test_illegal_user_array(self):
         self.sim.run(until_after_sources=0)

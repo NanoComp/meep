@@ -1,9 +1,9 @@
 import meep as mp
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonMixin
 import unittest
 
 
-class TestHoleyWvgCavity(VectorComparisonMixin, unittest.TestCase):
+class TestHoleyWvgCavity(ApproxComparisonMixin, unittest.TestCase):
 
     def setUp(self):
         eps = 13
@@ -72,7 +72,7 @@ class TestHoleyWvgCavity(VectorComparisonMixin, unittest.TestCase):
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
         tol = 1e-6 if mp.is_single_precision() else 1e-8
-        self.assertVectorsClose(expected, res, epsilon=tol)
+        self.assertClose(expected, res, epsilon=tol)
 
     def test_transmission_spectrum(self):
         expected = [
@@ -145,7 +145,7 @@ class TestHoleyWvgCavity(VectorComparisonMixin, unittest.TestCase):
 
         tol = 1e-8 if mp.is_single_precision() else 1e-10
         for e, r in zip(expected, res):
-            self.assertVectorsClose(e, r, epsilon=tol)
+            self.assertClose(e, r, epsilon=tol)
 
 
 
