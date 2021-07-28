@@ -120,7 +120,7 @@ class TestSourceTypemaps(unittest.TestCase):
         sim.run(mp.after_sources(h), until_after_sources=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(1))
 
-        self.assertAlmostEqual(fp, -0.021997617628500023 + 0j)
+        self.assertAlmostEqual(fp, -0.021997617628500023 + 0j, 5 if mp.is_single_precision() else 7)
 
 
 def amp_fun(p):
