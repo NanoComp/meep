@@ -144,7 +144,7 @@ jobs:
       run: |
         mkdir -p build &&
         pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
+        ../configure --enable-maintainer-mode --with-coverage --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
         popd
 
     - name: Run configure
