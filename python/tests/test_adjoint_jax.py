@@ -1,7 +1,7 @@
 import unittest
 import parameterized
 
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 
 import jax
 import jax.numpy as jnp
@@ -166,7 +166,7 @@ class UtilsTest(unittest.TestCase):
       self.assertEqual(value.dtype, onp.complex128)
 
 
-class WrapperTest(ApproxComparisonMixin, unittest.TestCase):
+class WrapperTest(ApproxComparisonTestCase):
 
   @parameterized.parameterized.expand([
     ('1500_1550bw_01relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0),

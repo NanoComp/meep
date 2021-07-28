@@ -1,11 +1,11 @@
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 import os
 import unittest
 import h5py
 
 
-class TestCavityFarfield(ApproxComparisonMixin, unittest.TestCase):
+class TestCavityFarfield(ApproxComparisonTestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 

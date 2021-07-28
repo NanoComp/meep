@@ -1,11 +1,11 @@
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 import math
 import unittest
 import numpy as np
 
 
-class TestReflAngular(ApproxComparisonMixin, unittest.TestCase):
+class TestReflAngular(ApproxComparisonTestCase):
 
     def test_refl_angular(self):
         resolution = 100

@@ -1,11 +1,11 @@
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 import os
 import unittest
 import numpy as np
 
 
-class TestCavityArraySlice(ApproxComparisonMixin, unittest.TestCase):
+class TestCavityArraySlice(ApproxComparisonTestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
     expected_1d = np.load(os.path.join(data_dir, 'cavity_arrayslice_1d.npy'))

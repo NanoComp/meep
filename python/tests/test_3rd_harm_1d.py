@@ -2,9 +2,9 @@ from __future__ import division
 
 import unittest
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 
-class Test3rdHarm1d(ApproxComparisonMixin, unittest.TestCase):
+class Test3rdHarm1d(ApproxComparisonTestCase):
 
     def setUp(self):
         self.sz = 100

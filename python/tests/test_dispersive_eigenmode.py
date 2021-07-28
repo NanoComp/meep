@@ -7,13 +7,13 @@
 #  * once imaginary component is supported, check that
 
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 import unittest
 import numpy as np
 import h5py
 import os
 
-class TestDispersiveEigenmode(ApproxComparisonMixin, unittest.TestCase):
+class TestDispersiveEigenmode(ApproxComparisonTestCase):
     # ----------------------------------------- #
     # ----------- Helper Functions ------------ #
     # ----------------------------------------- #

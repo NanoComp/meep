@@ -8,7 +8,7 @@ from autograd import numpy as npa
 from autograd import tensor_jacobian_product
 import unittest
 from enum import Enum
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 
 MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 
@@ -173,7 +173,7 @@ def mapping(x,filter_radius,eta,beta):
     return projected_field.flatten()
 
 
-class TestAdjointSolver(ApproxComparisonMixin, unittest.TestCase):
+class TestAdjointSolver(ApproxComparisonTestCase):
 
     def test_adjoint_solver_DFT_fields(self):
         print("*** TESTING DFT ADJOINT FEATURES ***")

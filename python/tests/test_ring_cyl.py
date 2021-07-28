@@ -2,9 +2,9 @@ from __future__ import division
 
 import unittest
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 
-class TestRingCyl(ApproxComparisonMixin, unittest.TestCase):
+class TestRingCyl(ApproxComparisonTestCase):
 
     def setUp(self):
         n = 3.4

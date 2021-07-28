@@ -15,7 +15,7 @@ def compare_arrays(test_instance, exp, res, tol=1e-3):
         test_instance.assertLess(diff, tol)
 
 
-class ApproxComparisonMixin(unittest.TestCase):
+class ApproxComparisonTestCase(unittest.TestCase):
     """A mixin for adding proper floating point value and vector comparison."""
 
     def assertClose(self, x, y, epsilon = 1e-2, msg = ''):

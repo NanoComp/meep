@@ -1,9 +1,9 @@
 import meep as mp
-from utils import ApproxComparisonMixin
+from utils import ApproxComparisonTestCase
 import unittest
 
 
-class TestHoleyWvgCavity(ApproxComparisonMixin, unittest.TestCase):
+class TestHoleyWvgCavity(ApproxComparisonTestCase):
 
     def setUp(self):
         eps = 13
