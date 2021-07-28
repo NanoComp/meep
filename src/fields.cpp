@@ -211,9 +211,7 @@ static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result)
 
   int best_split_point;
   direction best_split_direction;
-  double left_effort_fraction;
-  gvol.find_best_split(2, false /* fragment_cost */, best_split_point, best_split_direction,
-                       left_effort_fraction);
+  gvol.tile_split(best_split_point, best_split_direction);
   grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
   split_into_tiles(left_gvol, result);
   grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
