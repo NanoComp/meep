@@ -33,7 +33,9 @@ namespace meep {
 
 // Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy),
 // omega_0, gamma, no_omega_0_denominator)
-void structure::write_susceptibility_params(h5file *file, const char *dname, int EorH) {
+void structure::write_susceptibility_params(h5file *file,
+                                            bool single_parallel_file,
+                                            const char *dname, int EorH) {
   // Get number of susceptibility params from first chunk, since all chunks will have
   // the same susceptibility list.
   size_t params_ntotal = 0;
@@ -47,7 +49,7 @@ void structure::write_susceptibility_params(h5file *file, const char *dname, int
   size_t params_start = 0;
   file->create_data(dname, 1, &params_ntotal, false /* append_data */,
                     sizeof(realnum) == sizeof(float) /* single_precision */);
-  if (am_master()) {
+  if (am_master() || !single_parallel_file) {
     susceptibility *sus = chunks[0]->chiP[EorH];
     while (sus) {
       sus->dump_params(file, &params_start);
@@ -85,36 +87,60 @@ void structure::dump_chunk_layout(const char *filename) {
   delete[] nums;
 }
 
-void structure::dump(const char *filename) {
+void structure::dump(const char *filename, bool single_parallel_file) {
   if (verbosity > 0) master_printf("creating epsilon output file \"%s\"...\n", filename);
 
-  // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
-  // the number of entries in the chi1inv array for each chunk.
-  size_t *num_chi1inv_ = new size_t[num_chunks * NUM_FIELD_COMPONENTS * 5];
-  memset(num_chi1inv_, 0, sizeof(size_t) * size_t(num_chunks * NUM_FIELD_COMPONENTS * 5));
+  /*
+   * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
+   * the number of entries in the chi1inv array for each chunk.
+   *
+   * When 'single_parallel_file' is true, we are creating a single block of data
+   * for ALL chunks (that are merged using MPI). Otherwise, we are just
+   * making a copy of just the chunks that are ours.
+   */
+  int my_num_chunks = 0;
+  for (int i = 0; i < num_chunks; i++) {
+    my_num_chunks += (single_parallel_file || chunks[i]->is_mine());
+  }
+  size_t num_chi1inv_size = my_num_chunks * NUM_FIELD_COMPONENTS * 5;
+  std::vector<size_t> num_chi1inv_(num_chi1inv_size);
   size_t my_ntot = 0;
-  for (int i = 0; i < num_chunks; i++)
+  for (int i = 0, chunk_i = 0; i < num_chunks; i++) {
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
-      for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-        for (int d = 0; d < 5; ++d)
+      for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
+        for (int d = 0; d < 5; ++d) {
           if (chunks[i]->chi1inv[c][d])
-            my_ntot += (num_chi1inv_[(i * NUM_FIELD_COMPONENTS + c) * 5 + d] = ntot);
+            my_ntot += (num_chi1inv_[(chunk_i * NUM_FIELD_COMPONENTS + c) * 5 + d] = ntot);
+        }
+      }
     }
-  size_t *num_chi1inv = new size_t[num_chunks * NUM_FIELD_COMPONENTS * 5];
-  sum_to_master(num_chi1inv_, num_chi1inv, num_chunks * NUM_FIELD_COMPONENTS * 5);
-  delete[] num_chi1inv_;
+    chunk_i += (chunks[i]->is_mine() || single_parallel_file);
+  }
+
+  std::vector<size_t> num_chi1inv;
+  if (single_parallel_file) {
+    num_chi1inv.resize(num_chi1inv_size);
+    sum_to_master(num_chi1inv_.data(), num_chi1inv.data(), num_chi1inv_size);
+  } else {
+    num_chi1inv = std::move(num_chi1inv_);
+  }
 
   // determine total dataset size and offset of this process's data
-  size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-  size_t ntotal = sum_to_all(my_ntot);
+  size_t my_start = 0;
+  size_t ntotal = my_ntot;
+  if (single_parallel_file) {
+    my_start = partial_sum_to_all(my_ntot) - my_ntot;
+    ntotal = sum_to_all(my_ntot);
+  }
 
   h5file file(filename, h5file::WRITE, true);
-  size_t dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
+  size_t dims[3] = {(size_t)my_num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
-  if (am_master()) file.write_chunk(3, start, dims, num_chi1inv);
-  delete[] num_chi1inv;
+  if (am_master() || !single_parallel_file) {
+    file.write_chunk(3, start, dims, num_chi1inv.data());
+  }
 
   // write the data
   file.create_data("chi1inv", 1, &ntotal, false /* append_data */, false /* single_precision */);
@@ -147,7 +173,7 @@ void structure::dump(const char *filename) {
     // Write the number of susceptibilites
     size_t len = 2;
     file.create_data("num_sus", 1, &len);
-    if (am_master()) {
+    if (am_master() || !single_parallel_file) {
       size_t start = 0;
       size_t ntot = 2;
       file.write_chunk(1, &start, &ntot, num_sus);
@@ -157,13 +183,11 @@ void structure::dump(const char *filename) {
   // Get number of non-null sigma entries for each chiP in each chunk.
   // Assumes each susceptibility in the chiP[E_stuff] list has the
   // same number of non-null sigma elements. Likewise for chiP[H_stuff]
-  size_t *my_num_sigmas[2];
-  size_t *num_sigmas[2];
+  std::vector<size_t> my_num_sigmas[2];
+  std::vector<size_t> num_sigmas[2];
   for (int ft = 0; ft < 2; ++ft) {
-    my_num_sigmas[ft] = new size_t[num_chunks];
-    num_sigmas[ft] = new size_t[num_chunks];
-    memset(my_num_sigmas[ft], 0, sizeof(size_t) * num_chunks);
-    memset(num_sigmas[ft], 0, sizeof(size_t) * num_chunks);
+    my_num_sigmas[ft].resize(num_chunks);
+    num_sigmas[ft].resize(num_chunks);
   }
 
   for (int i = 0; i < num_chunks; ++i) {
@@ -199,7 +223,7 @@ void structure::dump(const char *filename) {
 
   file.prevent_deadlock();
   for (int ft = 0; ft < 2; ++ft) {
-    sum_to_all(my_num_sigmas[ft], num_sigmas[ft], num_chunks);
+    sum_to_all(my_num_sigmas[ft].data(), num_sigmas[ft].data(), num_chunks);
   }
 
   size_t num_E_sigmas = 0;
@@ -210,17 +234,13 @@ void structure::dump(const char *filename) {
   }
 
   // Allocate space for component and direction of non-null sigmas
-  size_t *my_sigma_cd[2] = {NULL, NULL};
-  my_sigma_cd[E_stuff] = new size_t[num_E_sigmas * 2];
-  memset(my_sigma_cd[E_stuff], 0, sizeof(size_t) * num_E_sigmas * 2);
-  my_sigma_cd[H_stuff] = new size_t[num_H_sigmas * 2];
-  memset(my_sigma_cd[H_stuff], 0, sizeof(size_t) * num_H_sigmas * 2);
+  std::vector<size_t> my_sigma_cd[2];
+  my_sigma_cd[E_stuff].resize(num_E_sigmas * 2);
+  my_sigma_cd[H_stuff].resize(num_H_sigmas * 2);
 
-  size_t *sigma_cd[2] = {NULL, NULL};
-  sigma_cd[E_stuff] = new size_t[num_E_sigmas * 2];
-  memset(sigma_cd[E_stuff], 0, sizeof(size_t) * num_E_sigmas * 2);
-  sigma_cd[H_stuff] = new size_t[num_H_sigmas * 2];
-  memset(sigma_cd[H_stuff], 0, sizeof(size_t) * num_H_sigmas * 2);
+  std::vector<size_t> sigma_cd[2];
+  sigma_cd[E_stuff].resize(num_E_sigmas * 2);
+  sigma_cd[H_stuff].resize(num_H_sigmas * 2);
 
   // Find component and direction of non-null sigmas
   {
@@ -246,8 +266,8 @@ void structure::dump(const char *filename) {
         }
       }
     }
-    bw_or_to_all(my_sigma_cd[E_stuff], sigma_cd[E_stuff], num_E_sigmas * 2);
-    bw_or_to_all(my_sigma_cd[H_stuff], sigma_cd[H_stuff], num_H_sigmas * 2);
+    bw_or_to_all(my_sigma_cd[E_stuff].data(), sigma_cd[E_stuff].data(), num_E_sigmas * 2);
+    bw_or_to_all(my_sigma_cd[H_stuff].data(), sigma_cd[H_stuff].data(), num_H_sigmas * 2);
   }
 
   // Write location (component and direction) data of non-null sigmas (sigma[c][d])
@@ -256,9 +276,9 @@ void structure::dump(const char *filename) {
     file.create_data("sigma_cd", 1, &len);
     size_t start = 0;
     for (int ft = 0; ft < 2; ++ft) {
-      if (am_master()) {
-        size_t count = (ft == 0 ? num_E_sigmas : num_H_sigmas) * 2;
-        file.write_chunk(1, &start, &count, sigma_cd[ft]);
+      if (am_master() || !single_parallel_file) {
+        size_t count = sigma_cd[ft].size();
+        file.write_chunk(1, &start, &count, sigma_cd[ft].data());
         start += count;
       }
     }
@@ -292,15 +312,8 @@ void structure::dump(const char *filename) {
     }
   }
 
-  write_susceptibility_params(&file, "E_params", E_stuff);
-  write_susceptibility_params(&file, "H_params", H_stuff);
-
-  for (int ft = 0; ft < 2; ++ft) {
-    delete[] sigma_cd[ft];
-    delete[] my_sigma_cd[ft];
-    delete[] num_sigmas[ft];
-    delete[] my_num_sigmas[ft];
-  }
+  write_susceptibility_params(&file, single_parallel_file, "E_params", E_stuff);
+  write_susceptibility_params(&file, single_parallel_file, "H_params", H_stuff);
 }
 
 // Reconstruct the chiP lists of susceptibilities from the params hdf5 data
@@ -542,35 +555,49 @@ void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
   check_chunks();
 }
 
-void structure::load(const char *filename) {
+void structure::load(const char *filename, bool single_parallel_file) {
   h5file file(filename, h5file::READONLY, true);
 
   if (verbosity > 0) master_printf("reading epsilon from file \"%s\"...\n", filename);
 
-  // make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
-  // the number of entries in the chi1inv array for each chunk.
-  size_t *num_chi1inv = new size_t[num_chunks * NUM_FIELD_COMPONENTS * 5];
+  /*
+   * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
+   * the number of entries in the chi1inv array for each chunk.
+   *
+   * When 'single_parallel_file' is true, we are creating a single block of data
+   * for ALL chunks (that are merged using MPI). Otherwise, we are just
+   * making a copy of just the chunks that are ours.
+   */
+  int my_num_chunks = 0;
+  for (int i = 0; i < num_chunks; i++) {
+    my_num_chunks += (single_parallel_file || chunks[i]->is_mine());
+  }
+  size_t num_chi1inv_size = my_num_chunks * NUM_FIELD_COMPONENTS * 5;
+  std::vector<size_t> num_chi1inv(num_chi1inv_size);
+
   int rank;
-  size_t dims[3], _dims[3] = {(size_t)num_chunks, NUM_FIELD_COMPONENTS, 5};
+  size_t dims[3], _dims[3] = {(size_t)my_num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.read_size("num_chi1inv", &rank, dims, 3);
   if (rank != 3 || _dims[0] != dims[0] || _dims[1] != dims[1] || _dims[2] != dims[2])
     meep::abort("chunk mismatch in structure::load");
-  if (am_master()) file.read_chunk(3, start, dims, num_chi1inv);
+  if (am_master() || !single_parallel_file) file.read_chunk(3, start, dims, num_chi1inv.data());
 
-  file.prevent_deadlock();
-  broadcast(0, num_chi1inv, dims[0] * dims[1] * dims[2]);
+  if (single_parallel_file) {
+    file.prevent_deadlock();
+    broadcast(0, num_chi1inv.data(), dims[0] * dims[1] * dims[2]);
+  }
 
   changing_chunks();
 
   // allocate data as needed and check sizes
   size_t my_ntot = 0;
-  for (int i = 0; i < num_chunks; i++)
+  for (int i = 0, chunk_i = 0; i < num_chunks; i++) {
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
         for (int d = 0; d < 5; ++d) {
-          size_t n = num_chi1inv[(i * NUM_FIELD_COMPONENTS + c) * 5 + d];
+          size_t n = num_chi1inv[(chunk_i * NUM_FIELD_COMPONENTS + c) * 5 + d];
           if (n == 0) {
             delete[] chunks[i]->chi1inv[c][d];
             chunks[i]->chi1inv[c][d] = NULL;
@@ -582,10 +609,16 @@ void structure::load(const char *filename) {
           }
         }
     }
+    chunk_i += (chunks[i]->is_mine() || single_parallel_file);
+  }
 
   // determine total dataset size and offset of this process's data
-  size_t my_start = partial_sum_to_all(my_ntot) - my_ntot;
-  size_t ntotal = sum_to_all(my_ntot);
+  size_t my_start = 0;
+  size_t ntotal = my_ntot;
+  if (single_parallel_file) {
+    my_start = partial_sum_to_all(my_ntot) - my_ntot;
+    ntotal = sum_to_all(my_ntot);
+  }
 
   // read the data
   file.read_size("chi1inv", &rank, dims, 1);
@@ -611,22 +644,22 @@ void structure::load(const char *filename) {
     size_t dims[] = {0, 0, 0};
     file.read_size("num_sus", &rank, dims, 1);
     if (dims[0] > 0) {
-      if (am_master()) {
+      if (am_master() || !single_parallel_file) {
         size_t start = 0;
         size_t count = 2;
         file.read_chunk(rank, &start, &count, num_sus);
       }
     }
-    file.prevent_deadlock();
-    broadcast(0, num_sus, 2);
+    if (single_parallel_file) {
+      file.prevent_deadlock();
+      broadcast(0, num_sus, 2);
+    }
   }
 
   // Allocate and read non-null sigma entry data
-  size_t *num_sigmas[2] = {NULL, NULL};
-  num_sigmas[E_stuff] = new size_t[num_chunks];
-  memset(num_sigmas[E_stuff], 0, sizeof(size_t) * num_chunks);
-  num_sigmas[H_stuff] = new size_t[num_chunks];
-  memset(num_sigmas[H_stuff], 0, sizeof(size_t) * num_chunks);
+  std::vector<size_t> num_sigmas[2];
+  num_sigmas[E_stuff].resize(num_chunks);
+  num_sigmas[H_stuff].resize(num_chunks);
 
   // Read num_sigmas data
   {
@@ -634,21 +667,21 @@ void structure::load(const char *filename) {
     size_t dims[] = {0, 0, 0};
     file.read_size("num_sigmas", &rank, dims, 1);
     if (dims[0] != (size_t)num_chunks * 2) { meep::abort("inconsistent data size in structure::load"); }
-    if (am_master()) {
+    if (am_master() || !single_parallel_file) {
       size_t start = 0;
       size_t count = num_chunks;
-      file.read_chunk(rank, &start, &count, num_sigmas[E_stuff]);
+      file.read_chunk(rank, &start, &count, num_sigmas[E_stuff].data());
       start += count;
-      file.read_chunk(rank, &start, &count, num_sigmas[H_stuff]);
+      file.read_chunk(rank, &start, &count, num_sigmas[H_stuff].data());
     }
-    file.prevent_deadlock();
-    broadcast(0, num_sigmas[E_stuff], num_chunks);
-    broadcast(0, num_sigmas[H_stuff], num_chunks);
+    if (single_parallel_file) {
+      file.prevent_deadlock();
+      broadcast(0, num_sigmas[E_stuff].data(), num_chunks);
+      broadcast(0, num_sigmas[H_stuff].data(), num_chunks);
+    }
   }
 
   // Allocate space for component and direction data of the non-null susceptibilities
-  size_t *sigma_cd[2] = {NULL, NULL};
-
   size_t nsig[2] = {0, 0};
   for (int ft = 0; ft < 2; ++ft) {
     for (int i = 0; i < num_chunks; ++i) {
@@ -656,10 +689,9 @@ void structure::load(const char *filename) {
     }
   }
 
-  sigma_cd[E_stuff] = new size_t[nsig[E_stuff] * 2];
-  memset(sigma_cd[E_stuff], 0, sizeof(size_t) * nsig[E_stuff] * 2);
-  sigma_cd[H_stuff] = new size_t[nsig[H_stuff] * 2];
-  memset(sigma_cd[H_stuff], 0, sizeof(size_t) * nsig[H_stuff] * 2);
+  std::vector<size_t> sigma_cd[2];
+  sigma_cd[E_stuff].resize(nsig[E_stuff] * 2);
+  sigma_cd[H_stuff].resize(nsig[H_stuff] * 2);
 
   // Read the component/direction data
   {
@@ -670,17 +702,19 @@ void structure::load(const char *filename) {
       meep::abort("inconsistent data size in structure::load");
     }
 
-    if (am_master()) {
+    if (am_master() || !single_parallel_file) {
       size_t start = 0;
       for (int ft = 0; ft < 2; ++ft) {
-        size_t count = nsig[ft] * 2;
-        file.read_chunk(rank, &start, &count, sigma_cd[ft]);
+        size_t count = sigma_cd[ft].size();
+        file.read_chunk(rank, &start, &count, sigma_cd[ft].data());
         start += count;
       }
     }
-    file.prevent_deadlock();
-    broadcast(0, sigma_cd[E_stuff], nsig[E_stuff] * 2);
-    broadcast(0, sigma_cd[H_stuff], nsig[H_stuff] * 2);
+    if (single_parallel_file) {
+      file.prevent_deadlock();
+      broadcast(0, sigma_cd[E_stuff].data(), nsig[E_stuff] * 2);
+      broadcast(0, sigma_cd[H_stuff].data(), nsig[H_stuff] * 2);
+    }
   }
 
   for (int ft = 0; ft < 2; ++ft) {
@@ -729,11 +763,6 @@ void structure::load(const char *filename) {
         }
       }
     }
-  }
-
-  for (int ft = 0; ft < 2; ++ft) {
-    delete[] num_sigmas[ft];
-    delete[] sigma_cd[ft];
   }
 }
 } // namespace meep
