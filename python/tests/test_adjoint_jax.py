@@ -1,7 +1,7 @@
 import unittest
 import parameterized
 
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonTestCase
 
 import jax
 import jax.numpy as jnp
@@ -166,7 +166,7 @@ class UtilsTest(unittest.TestCase):
       self.assertEqual(value.dtype, onp.complex128)
 
 
-class WrapperTest(VectorComparisonMixin, unittest.TestCase):
+class WrapperTest(ApproxComparisonTestCase):
 
   @parameterized.parameterized.expand([
     ('1500_1550bw_01relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0),
@@ -237,7 +237,7 @@ class WrapperTest(VectorComparisonMixin, unittest.TestCase):
     fd_projection = onp.stack(fd_projection)
 
     # Check that dp . ∇T ~ T(p + dp) - T(p)
-    self.assertVectorsClose(
+    self.assertClose(
       projection,
       fd_projection,
       epsilon=_TOL,
