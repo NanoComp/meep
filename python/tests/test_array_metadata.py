@@ -1,9 +1,9 @@
 import meep as mp
 import unittest
 import numpy as np
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonTestCase
 
-class TestArrayMetadata(VectorComparisonMixin):
+class TestArrayMetadata(ApproxComparisonTestCase):
 
     def test_array_metadata(self):
         resolution = 25
@@ -82,7 +82,7 @@ class TestArrayMetadata(VectorComparisonMixin):
         pulse_modal_volume = np.sum(W*EpsE2)/np.max(EpsE2) * vec_func_sum
 
         tol = 5e-2 if mp.is_single_precision() else 1e-2
-        self.assertVectorsClose(cw_modal_volume/pulse_modal_volume, 1.0, epsilon=tol)
+        self.assertClose(cw_modal_volume/pulse_modal_volume, 1.0, epsilon=tol)
 
 if __name__ == '__main__':
     unittest.main()
