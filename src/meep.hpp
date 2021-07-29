@@ -2332,6 +2332,9 @@ private:
   std::unique_ptr<binary_partition> right;
 };
 
+// control whether CPU flushes subnormal values; see mympi.cpp
+void set_zero_subnormals(bool iszero);
+
 } /* namespace meep */
 
 #endif /* MEEP_H */

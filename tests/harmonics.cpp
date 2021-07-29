@@ -98,7 +98,7 @@ int main(int argc, char **argv) {
 
   double a2, a3, a2_2, a3_2;
 
-  double thresh = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-5;
+  double thresh = sizeof(realnum) == sizeof(float) ? 1e-3 : 1e-5;
   harmonics(freq, 0.27e-4, 1e-4, 1.0, a2, a3);
   if (different(a2, 9.80330e-07, thresh, "2nd harmonic mismatches known val")) return 1;
   if (sizeof(realnum) == sizeof(float)) {
