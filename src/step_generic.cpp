@@ -11,8 +11,8 @@
    and these macros define the relevant strides etc. for each loop.
    KSTRIDE_DEF defines the relevant strides etc. and goes outside the
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
-#define KSTRIDE_DEF(dsig, k, corner)                                                               \
-  const int k##0 = corner.in_direction(dsig) - gv.little_corner().in_direction(dsig);              \
+#define KSTRIDE_DEF(dsig, k, is, gv)                                                               \
+  const int k##0 = is.in_direction(dsig) - gv.little_corner().in_direction(dsig);              \
   const int s##k##1 = gv.yucky_direction(0) == dsig ? 2 : 0;                                       \
   const int s##k##2 = gv.yucky_direction(1) == dsig ? 2 : 0;                                       \
   const int s##k##3 = gv.yucky_direction(2) == dsig ? 2 : 0
@@ -110,7 +110,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
     else { // fu update, no PML in f update
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, is, gv);
       if (cnd) {
         realnum dt2 = dt * 0.5;
         if (g2) {
@@ -153,7 +153,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
     }
   }
   else { /* PML in f update */
-    KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
+    KSTRIDE_DEF(dsig, k, is, gv);
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
         realnum dt2 = dt * 0.5;
@@ -193,7 +193,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
       }
     }
     else { // fu update + PML in f update
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, is, gv);
       if (cnd) {
         realnum dt2 = dt * 0.5;
         if (g2) {
@@ -257,9 +257,9 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, const ive
                const RPR cndinv, RPR fcnd) {
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
-    KSTRIDE_DEF(dsig, k, gv.little_owned_corner0(c));
+    KSTRIDE_DEF(dsig, k, is, gv);
     if (dsigu != NO_DIRECTION) { // PML in f + fu
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, is, gv);
       if (cndinv) { // conductivity + PML
         //////////////////// MOST GENERAL CASE //////////////////////
         LOOP_OVER_IVECS(gv, is, ie, i) {
@@ -302,7 +302,7 @@ void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, const ive
   }
   else {                         // no PML in f update
     if (dsigu != NO_DIRECTION) { // fu, no PML in f
-      KSTRIDE_DEF(dsigu, ku, gv.little_owned_corner0(c));
+      KSTRIDE_DEF(dsigu, ku, is, gv);
       if (cndinv) { // conductivity, no PML
         LOOP_OVER_IVECS(gv, is, ie, i) {
           DEF_ku;
@@ -382,7 +382,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is,
      of the "MOST GENERAL CASE" loop with various terms thrown out. */
 
   if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
-    KSTRIDE_DEF(dsigw, kw, gv.little_owned_corner0(fc));
+    KSTRIDE_DEF(dsigw, kw, is, gv);
     if (u1 && u2) { // 3x3 off-diagonal u
       if (chi3) {
         //////////////////// MOST GENERAL CASE //////////////////////

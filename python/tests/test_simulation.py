@@ -214,14 +214,15 @@ class TestSimulation(unittest.TestCase):
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
-        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(fp, -0.002989654055823199, places=places)
 
         # Test unicode file name for Python 2
         if sys.version_info[0] == 2:
             sim = self.init_simple_simulation(epsilon_input_file=unicode(eps_input_path))
             sim.run(until=200)
             fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
-            self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+            self.assertAlmostEqual(fp, -0.002989654055823199)
 
     def test_numpy_epsilon(self):
         sim = self.init_simple_simulation()
@@ -234,7 +235,9 @@ class TestSimulation(unittest.TestCase):
 
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
-        self.assertAlmostEqual(fp, -0.002989654055823199 + 0j)
+
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(fp, -0.002989654055823199, places=places)
 
     def test_set_materials(self):
 
@@ -512,7 +515,10 @@ class TestSimulation(unittest.TestCase):
         with self.assertRaises(TypeError):
             mp.vec(1, [2, 3])
 
+    @unittest.skipIf(mp.is_single_precision(), "double-precision floating point specific test")
     def test_epsilon_warning(self):
+        ## fields blow up using dispersive material
+        ## when compiled using single precision
 
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -625,6 +631,14 @@ class TestSimulation(unittest.TestCase):
         for sink in EXPECTED_ZERO_TIMESINKS:
             for t in timing_data[sink]:
                 self.assertEqual(t, 0)
+
+        self.assertGreaterEqual(
+            sum(timing_data[mp.Stepping]),
+            sum(timing_data[mp.FieldUpdateB]) +
+            sum(timing_data[mp.FieldUpdateH]) +
+            sum(timing_data[mp.FieldUpdateD]) +
+            sum(timing_data[mp.FieldUpdateE]) +
+            sum(timing_data[mp.FourierTransforming]))
 
     def test_source_slice(self):
         sim = self.init_simple_simulation()

@@ -437,7 +437,7 @@ binary_partition::binary_partition(const split_plane &_split_plane,
   if (!left || !right) { meep::abort("Binary partition tree is required to be full"); }
 }
 
-binary_partition::binary_partition(const binary_partition& other) : proc_id{other.proc_id}, plane{other.plane} {
+binary_partition::binary_partition(const binary_partition& other) : proc_id(other.proc_id), plane(other.plane) {
   if (!other.is_leaf()) {
     left.reset(new binary_partition(*other.left));
     right.reset(new binary_partition(*other.right));

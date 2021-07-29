@@ -333,7 +333,9 @@ int main(int argc, char **argv) {
   // if (check_pml2d(one, Ez, 0, false, 0.5)) meep::abort("not a pml in 2d TM + offdiag.");
   // if (check_pml2d(one, Hz, 0, false, 0.5)) meep::abort("not a pml in 2d TE + offdiag.");
   // if (check_pmlcyl(one)) meep::abort("not a pml in cylincrical co-ordinates.");
-  if (pml1d_scaling(one)) meep::abort("pml doesn't scale properly with length.");
+  if (sizeof(realnum) == sizeof(double)) {
+    if (pml1d_scaling(one)) meep::abort("pml doesn't scale properly with length.");
+  }
   if (pmlcyl_scaling(one, 0)) meep::abort("m=0 cylindrical pml doesn't scale properly with length.");
   if (pmlcyl_scaling(one, 1)) meep::abort("m=1 cylindrical pml doesn't scale properly with length.");
   if (pmlcyl_scaling(one, 2)) meep::abort("m=2 cylindrical pml doesn't scale properly with length.");

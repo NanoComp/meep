@@ -1598,6 +1598,7 @@ public:
   // ownership of it.
   explicit timing_scope(time_sink_to_duration_map *timers_, time_sink sink_ = Other);
   ~timing_scope();
+  timing_scope &operator=(const timing_scope &other);
   // Stops time accumulation for the timing_scope.
   void exit();
 
@@ -2343,6 +2344,9 @@ private:
   std::unique_ptr<binary_partition> left;
   std::unique_ptr<binary_partition> right;
 };
+
+// control whether CPU flushes subnormal values; see mympi.cpp
+void set_zero_subnormals(bool iszero);
 
 } /* namespace meep */
 

@@ -2,10 +2,9 @@ from __future__ import division
 
 import unittest
 import meep as mp
-import numpy as np
+from utils import ApproxComparisonTestCase
 
-
-class TestRingCyl(unittest.TestCase):
+class TestRingCyl(ApproxComparisonTestCase):
 
     def setUp(self):
         n = 3.4
@@ -66,7 +65,8 @@ class TestRingCyl(unittest.TestCase):
         m = h.modes[0]
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
-        np.testing.assert_allclose(expected, res)
+        tol = 1e-6 if mp.is_single_precision() else 1e-7
+        self.assertClose(expected, res, epsilon=tol)
 
 
 if __name__ == '__main__':

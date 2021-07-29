@@ -1,12 +1,10 @@
-from __future__ import division
-
+import meep as mp
 import cmath
 import math
 import unittest
+from utils import ApproxComparisonTestCase
 
-import meep as mp
-
-class TestPwSource(unittest.TestCase):
+class TestPwSource(ApproxComparisonTestCase):
 
     def setUp(self):
         s = 11
@@ -71,7 +69,9 @@ class TestPwSource(unittest.TestCase):
         pt1 = self.sim.get_field_point(mp.Ez, v1)
         pt2 = self.sim.get_field_point(mp.Ez, v2)
 
-        self.assertAlmostEqual(pt1 / pt2, 27.557668029008262)
+        tol = 1e-4 if mp.is_single_precision() else 1e-9
+        self.assertClose(pt1 / pt2, 27.557668029008262, epsilon=tol)
+
         self.assertAlmostEqual(cmath.exp(1j * self.k.dot(v1 - v2)), 0.7654030066070924 - 0.6435512702783076j)
 
 if __name__ == '__main__':

@@ -517,7 +517,7 @@ class Medium(object):
         # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
         conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
         if np.count_nonzero(conductivity) > 0:
-            epsmu = (1 + 1j/freqs * conductivity) * epsmu
+            epsmu = (1 + 1j/(2*np.pi*freqs) * conductivity) * epsmu
 
         # Convert list matrix to 3D numpy array size [freqs,3,3]
         return np.squeeze(epsmu)
