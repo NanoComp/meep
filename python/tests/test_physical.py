@@ -41,7 +41,7 @@ class TestPhysical(unittest.TestCase):
                             sources=sources,
                             force_complex_fields=True)
         sim.init_sim()
-        sim.solve_cw(tol=1e-6)
+        sim.solve_cw(tol=1e-5 if mp.is_single_precision() else 1e-6)
 
         p1 = mp.Vector3()
         p2 = mp.Vector3(dx)

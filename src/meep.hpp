@@ -1824,8 +1824,9 @@ public:
   // cw_fields.cpp:
   bool solve_cw(double tol, int maxiters, std::complex<double> frequency, int L = 2,
                 std::complex<double> *eigfreq = NULL, double eigtol = 1e-8, int eigiters = 20);
-  bool solve_cw(double tol = 1e-8, int maxiters = 10000, int L = 2,
-                std::complex<double> *eigfreq = NULL, double eigtol = 1e-8, int eigiters = 20);
+  bool solve_cw(double tol = sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-8, int maxiters = 10000,
+                int L = 2, std::complex<double> *eigfreq = NULL, double eigtol = 1e-8,
+                int eigiters = 20);
 
   // sources.cpp:
   double last_source_time();

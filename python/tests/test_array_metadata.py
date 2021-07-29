@@ -43,7 +43,7 @@ class TestArrayMetadata(ApproxComparisonTestCase):
                             boundary_layers=pml_layers)
 
         sim.init_sim()
-        sim.solve_cw(1e-6, 1000, 10)
+        sim.solve_cw(1e-5 if mp.is_single_precision() else 1e-6, 1000, 10)
 
         def electric_energy(r, ez, eps):
             return np.real(eps * np.conj(ez)*ez)

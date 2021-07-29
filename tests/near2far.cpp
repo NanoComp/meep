@@ -44,7 +44,7 @@ int check_cyl(double sr, double sz, double a) {
   continuous_src_time src(w);
   vec x0 = veccyl(0.5 * sr, 0);
   f.add_point_source(c0, src, x0);
-  f.solve_cw(1e-6);
+  f.solve_cw(sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-6);
 
   component c = Ep;
   const int N = 20;
@@ -137,7 +137,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
   continuous_src_time src(w);
   f.add_point_source(c0, src, zero_vec(dim));
   if (c1 != NO_COMPONENT) f.add_point_source(c1, src, zero_vec(dim), 0.7654321);
-  f.solve_cw(1e-6);
+  f.solve_cw(sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-6);
 
   FOR_E_AND_H(c) {
     if (gv.has_field(c)) {
