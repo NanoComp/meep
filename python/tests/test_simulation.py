@@ -299,7 +299,7 @@ class TestSimulation(unittest.TestCase):
         sim.field_energy_in_box(tv)
         sim.field_energy_in_box(v)
 
-    def _load_dump_structure(self, chunk_file=False, chunk_sim=False):
+    def _load_dump_structure(self, chunk_file=False, chunk_sim=False, single_parallel_file=True):
         from meep.materials import Al
         resolution = 50
         cell = mp.Vector3(5, 5)
@@ -326,12 +326,14 @@ class TestSimulation(unittest.TestCase):
             ref_field_points.append(p.real)
 
         sim1.run(mp.at_every(5, get_ref_field_point), until=50)
-        dump_fn = os.path.join(self.temp_dir, 'test_load_dump_structure.h5')
+
+        dump_dirname = os.path.join(self.temp_dir, 'test_load_dump')
+        sim1.dump(dump_dirname, structure=True, single_parallel_file=single_parallel_file)
+
         dump_chunk_fname = None
         chunk_layout = None
-        sim1.dump_structure(dump_fn)
         if chunk_file:
-            dump_chunk_fname = os.path.join(self.temp_dir, 'test_load_dump_structure_chunks.h5')
+            dump_chunk_fname = os.path.join(dump_dirname, 'chunk_layout.h5')
             sim1.dump_chunk_layout(dump_chunk_fname)
             chunk_layout = dump_chunk_fname
         if chunk_sim:
@@ -342,9 +344,8 @@ class TestSimulation(unittest.TestCase):
                             boundary_layers=pml_layers,
                             sources=[sources],
                             symmetries=symmetries,
-                            chunk_layout=chunk_layout,
-                            load_structure=dump_fn)
-
+                            chunk_layout=chunk_layout)
+        sim.load(dump_dirname, structure=True, single_parallel_file=single_parallel_file)
         field_points = []
 
         def get_field_point(sim):
@@ -358,6 +359,10 @@ class TestSimulation(unittest.TestCase):
 
     def test_load_dump_structure(self):
         self._load_dump_structure()
+
+    @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
+    def test_load_dump_structure_sharded(self):
+        self._load_dump_structure(single_parallel_file=False)
 
     def test_load_dump_chunk_layout_file(self):
         self._load_dump_structure(chunk_file=True)

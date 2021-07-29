@@ -88,7 +88,7 @@ void structure::dump_chunk_layout(const char *filename) {
 }
 
 void structure::dump(const char *filename, bool single_parallel_file) {
-  if (verbosity > 0) master_printf("creating epsilon output file \"%s\"...\n", filename);
+  if (verbosity > 0) printf("creating epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
 
   /*
    * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
@@ -134,7 +134,7 @@ void structure::dump(const char *filename, bool single_parallel_file) {
     ntotal = sum_to_all(my_ntot);
   }
 
-  h5file file(filename, h5file::WRITE, true);
+  h5file file(filename, h5file::WRITE, single_parallel_file, !single_parallel_file);
   size_t dims[3] = {(size_t)my_num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
@@ -419,7 +419,7 @@ void structure::set_chiP_from_file(h5file *file, const char *dataset, field_type
   size_t dims[3] = {0, 0, 0};
 
   file->read_size(dataset, &rank, dims, 1);
-  if (rank != 1) meep::abort("inconsistent data size in structure::load");
+  if (rank != 1) meep::abort("inconsistent data size in structure::set_chiP_from_file");
 
   if (dims[0] != 0) {
     for (int i = 0; i < num_chunks; ++i) {
@@ -556,9 +556,9 @@ void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
 }
 
 void structure::load(const char *filename, bool single_parallel_file) {
-  h5file file(filename, h5file::READONLY, true);
+  h5file file(filename, h5file::READONLY, single_parallel_file, !single_parallel_file);
 
-  if (verbosity > 0) master_printf("reading epsilon from file \"%s\"...\n", filename);
+  if (verbosity > 0) printf("reading epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
 
   /*
    * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
@@ -622,7 +622,12 @@ void structure::load(const char *filename, bool single_parallel_file) {
 
   // read the data
   file.read_size("chi1inv", &rank, dims, 1);
-  if (rank != 1 || dims[0] != ntotal) meep::abort("inconsistent data size in structure::load");
+  if (rank != 1 || dims[0] != ntotal) {
+    meep::abort(
+        "inconsistent data size for chi1inv in structure::load (rank, dims[0]): "
+        "(%d, %zu) != (1, %zu)",
+        rank, dims[0], ntotal);
+  }
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
@@ -666,7 +671,7 @@ void structure::load(const char *filename, bool single_parallel_file) {
     int rank = 0;
     size_t dims[] = {0, 0, 0};
     file.read_size("num_sigmas", &rank, dims, 1);
-    if (dims[0] != (size_t)num_chunks * 2) { meep::abort("inconsistent data size in structure::load"); }
+    if (dims[0] != (size_t)num_chunks * 2) { meep::abort("inconsistent data size for num_sigmas in structure::load"); }
     if (am_master() || !single_parallel_file) {
       size_t start = 0;
       size_t count = num_chunks;
@@ -699,7 +704,7 @@ void structure::load(const char *filename, bool single_parallel_file) {
     size_t dims[] = {0, 0, 0};
     file.read_size("sigma_cd", &rank, dims, 1);
     if (dims[0] != 2 * (nsig[E_stuff] + nsig[H_stuff])) {
-      meep::abort("inconsistent data size in structure::load");
+      meep::abort("inconsistent data size for sigma_cd in structure::load");
     }
 
     if (am_master() || !single_parallel_file) {

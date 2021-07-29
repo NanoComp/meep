@@ -260,7 +260,7 @@ void h5file::read_size(const char *dataname, int *rank, size_t *dims, int maxran
     H5Sclose(space_id);
   }
 
-  if (!parallel) {
+  if (!parallel && !local) {
     *rank = broadcast(0, *rank);
     broadcast(0, dims, *rank);
 
