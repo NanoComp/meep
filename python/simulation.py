@@ -3061,13 +3061,14 @@ class Simulation(object):
 
         return self.fields.modal_volume_in_box(box)
 
-    def solve_cw(self, tol=1e-8, maxiters=10000, L=2):
+    def solve_cw(self, tol=1e-5 if mp.is_single_precision() else 1e-8, maxiters=10000, L=2):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using solve_cw')
         self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
-    def solve_eigfreq(self, tol=1e-7, maxiters=100, guessfreq=None, cwtol=None, cwmaxiters=10000, L=10):
+    def solve_eigfreq(self, tol=1e-5 if mp.is_single_precision() else 1e-7, maxiters=100,
+                      guessfreq=None, cwtol=None, cwmaxiters=10000, L=10):
         if self.fields is None:
             raise RuntimeError('Fields must be initialized before using solve_cw')
         if cwtol is None:
