@@ -1895,10 +1895,13 @@ class Simulation(object):
 
     def _get_load_dump_dirname(self, dirname, single_parallel_file):
         """
+        Get the dirname to dump simulation state to.
         """
         if single_parallel_file:
             dump_dirname = dirname
         else:
+            # When doing a sharded dump (each process to its own file), use
+            # the process rank to get a unique name.
             dump_dirname = os.path.join(dirname, 'rank%02d' % mp.my_rank())
         return dump_dirname
 
