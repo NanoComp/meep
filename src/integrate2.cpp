@@ -177,11 +177,11 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
     }
 
     complex<double> integrand = data->integrand(fvals, loc, data->integrand_data_);
-    maxabs = max(maxabs, abs(integrand));
+    maxabs = std::max(maxabs, abs(integrand));
     sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
   }
 
-  data->maxabs = max(data->maxabs, maxabs);
+  data->maxabs = std::max(data->maxabs, maxabs);
   data->sum += sum;
 }
 
