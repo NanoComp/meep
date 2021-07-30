@@ -269,7 +269,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@bp_adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04 if mp.is_single_precision() else 0.03
+            tol = 0.05 if mp.is_single_precision() else 0.03
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
