@@ -94,7 +94,7 @@ class ObjectiveQuantity(abc.ABC):
             scale = dV * iomega / adj_src_phase
         # compensate for the fact that real fields take the real part of the current,
         # which halves the Fourier amplitude at the positive frequency (Re[J] = (J + J*)/2)
-        if not self.sim.force_complex_fields:
+        if self.sim.using_real_fields():
             scale *= 2
         return scale
 

@@ -1928,15 +1928,7 @@ class Simulation(object):
             self.fields.require_component(mp.Ez)
             self.fields.require_component(mp.Hz)
 
-        def use_real(self):
-            cond1 = self.is_cylindrical and self.m != 0
-            cond2 = any([s.phase.imag for s in self.symmetries])
-            cond3 = not self.k_point
-            cond4 = self.special_kz and self.k_point.x == 0 and self.k_point.y == 0
-            cond5 = not (cond3 or cond4 or self.k_point == Vector3())
-            return not (self.force_complex_fields or cond1 or cond2 or cond5)
-
-        if use_real(self):
+        if self.using_real_fields():
             self.fields.use_real_fields()
         elif verbosity.meep > 0:
             print("Meep: using complex fields.")
@@ -1951,6 +1943,14 @@ class Simulation(object):
             hook()
 
         self._is_initialized = True
+        
+    def using_real_fields(self):
+        cond1 = self.is_cylindrical and self.m != 0
+        cond2 = any([s.phase.imag for s in self.symmetries])
+        cond3 = not self.k_point
+        cond4 = self.special_kz and self.k_point.x == 0 and self.k_point.y == 0
+        cond5 = not (cond3 or cond4 or self.k_point == Vector3())
+        return not (self.force_complex_fields or cond1 or cond2 or cond5)
 
     def initialize_field(self, cmpnt, amp_func):
         """
