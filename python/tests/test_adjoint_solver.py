@@ -109,7 +109,11 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex=Fals
         return Ez2
 
 
+<<<<<<< HEAD
 def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False):
+=======
+def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False, k=False):
+>>>>>>> 314b6057f1408aa3c89c286253c24cc633fb179f
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
