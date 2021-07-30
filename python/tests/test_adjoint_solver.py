@@ -109,11 +109,7 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex=Fals
         return Ez2
 
 
-<<<<<<< HEAD
-def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False):
-=======
 def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False, k=False):
->>>>>>> 314b6057f1408aa3c89c286253c24cc633fb179f
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -205,7 +201,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
             tol = 0.3 if mp.is_single_precision() else 0.01
-            self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
+            self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
     def test_adjoint_solver_eigenmode(self):
@@ -222,7 +218,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
                     ## compare objective results
                     print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-                    self.assertVectorsClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
+                    self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
 
                     ## compute perturbed S12
                     S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies, use_complex, k)
@@ -234,7 +230,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     fd_grad = S12_perturbed-S12_unperturbed
                     print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
                     tol = 0.1 if mp.is_single_precision() else 0.03
-                    self.assertVectorsClose(adj_scale,fd_grad,epsilon=tol)
+                    self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_gradient_backpropagation(self):
         print("*** TESTING BACKPROP FEATURES ***")
