@@ -86,7 +86,7 @@ static void h5_findsize_chunkloop(fields_chunk *fc, int ichnk, component cgrid, 
   LOOP_OVER_DIRECTIONS(fc->gv.dim, d) {
     bufsz *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
   }
-  data->bufsz = max(data->bufsz, bufsz);
+  data->bufsz = std::max(data->bufsz, bufsz);
 }
 
 static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, ivec is, ivec ie,
@@ -124,7 +124,7 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
+    start[i] = (std::min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }

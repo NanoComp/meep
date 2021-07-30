@@ -20,6 +20,7 @@
    h5fields.cpp
 */
 
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -277,7 +278,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
+    start[i] = (std::min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     slice_size *= count[i];
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;

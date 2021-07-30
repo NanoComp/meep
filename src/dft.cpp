@@ -772,7 +772,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
   for (int i = 0; i < rank; ++i) {
     direction d = ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-    start[i] = (min(isd, ied) - min_corner.in_direction(d)) / 2;
+    start[i] = (std::min(isd, ied) - min_corner.in_direction(d)) / 2;
     file_count[i] = abs(ied - isd) / 2 + 1;
     if (ied < isd) file_offset[permute.in_direction(d)] = file_count[i] - 1;
     array_count[i] = (max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1;
@@ -944,7 +944,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
       LOOP_OVER_DIRECTIONS(chunk->fc->gv.dim, d) {
         this_bufsz *= (chunk->ie.in_direction(d) - chunk->is.in_direction(d)) / 2 + 1;
       }
-      bufsz = max(bufsz, this_bufsz);
+      bufsz = std::max(bufsz, this_bufsz);
     }
   am_now_working_on(MpiAllTime);
   max_corner = max_to_all(max_corner);

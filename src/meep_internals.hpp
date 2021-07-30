@@ -24,14 +24,6 @@ namespace meep {
 #define DOCMP for (int cmp = 0; cmp < 2 - is_real; cmp++)
 #define DOCMP2 for (int cmp = 0; cmp < 2; cmp++)
 
-inline double max(double a, double b) { return (a > b) ? a : b; }
-inline double min(double a, double b) { return (a < b) ? a : b; }
-inline int max(int a, int b) { return (a > b) ? a : b; }
-inline size_t max(size_t a, size_t b) { return (a > b) ? a : b; }
-inline int min(int a, int b) { return (a < b) ? a : b; }
-static inline int abs(int a) { return a < 0 ? -a : a; }
-static inline double abs(double a) { return fabs(a); }
-
 // note that C99 has a round() function, but I don't want to rely on it
 static inline int my_round(double x) { return int(floor(fabs(x) + 0.5) * (x < 0 ? -1 : 1)); }
 
