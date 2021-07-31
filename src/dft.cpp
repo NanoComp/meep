@@ -265,6 +265,64 @@ void dft_chunk::update_dft(double time) {
   }
 }
 
+/* Return the L2 norm of all of the fields used to update DFTs.  This is useful
+   to check whether the simulation is finished (whether all relevant fields have decayed).
+   (Collective operation.) */
+double fields::dft_fields_norm() {
+  am_now_working_on(Other);
+  double sum = 0.0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_fields_norm2();
+  finished_working();
+  return std::sqrt(sum_to_all(sum));
+}
+
+double fields_chunk::dft_fields_norm2() const {
+  double sum = 0.0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    sum += cur->dft_fields_norm2();
+  return sum;
+}
+
+static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
+
+double dft_chunk::dft_fields_norm2() const {
+  if (!fc->f[c][0]) return 0.0;
+  int numcmp = fc->f[c][1] ? 2 : 1;
+  double sum = 0.0;
+  size_t idx_dft = 0;
+  const int Nomega = omega.size();
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    for (int i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx_dft + i]);
+    idx_dft++;
+  }
+  return sum;
+}
+
+// return the minimum abs(freq) over all DFT chunks
+double fields::dft_minfreq() const {
+  double minfreq = meep::infinity;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine())
+      minfreq = std::min(minfreq, chunks[i]->dft_minfreq());
+  return -max_to_all(-minfreq); // == min_to_all(minfreq)
+}
+
+double fields_chunk::dft_minfreq() const {
+  double minomega = meep::infinity;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    minomega = std::min(minomega, cur->minomega());
+  return minomega / (2*meep::pi);
+}
+
+double dft_chunk::minomega() const {
+  double minomega = meep::infinity;
+  for (const auto& o : omega)
+    minomega = std::min(minomega, std::abs(o));
+  return minomega;
+}
+
 void dft_chunk::scale_dft(complex<double> scale) {
   for (size_t i = 0; i < N * omega.size(); ++i)
     dft[i] *= scale;

@@ -69,7 +69,7 @@ class OptimizationProblem(object):
         fcen=None,
         df=None,
         nf=None,
-        decay_dt=50,
+        decay_dt=25,
         decay_fields=[mp.Ez],
         decay_by=1e-6,
         decimation_factor=1,
@@ -237,12 +237,8 @@ class OptimizationProblem(object):
         # Forward run
         self.sim.run(until_after_sources=stop_when_dft_decayed(
             self.sim,
-            self.design_region_monitors,
             self.decay_dt,
-            self.decay_fields,
-            self.fcen_idx,
             self.decay_by,
-            True,
             self.minimum_run_time,
             self.maximum_run_time,
         ))
@@ -312,12 +308,8 @@ class OptimizationProblem(object):
             # Adjoint run
             self.sim.run(until_after_sources=stop_when_dft_decayed(
                 self.sim,
-                self.design_region_monitors,
                 self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
                 self.decay_by,
-                True,
                 self.minimum_run_time,
                 self.maximum_run_time,
             ))
@@ -431,12 +423,8 @@ class OptimizationProblem(object):
 
             self.sim.run(until_after_sources=stop_when_dft_decayed(
                 self.sim,
-                self.forward_monitors,
                 self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
                 self.decay_by,
-                True,
                 self.minimum_run_time,
                 self.maximum_run_time,
             ))
@@ -466,12 +454,8 @@ class OptimizationProblem(object):
             # add monitor used to track dft convergence
             self.sim.run(until_after_sources=stop_when_dft_decayed(
                 self.sim,
-                self.forward_monitors,
                 self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
                 self.decay_by,
-                True,
                 self.minimum_run_time,
                 self.maximum_run_time,
             ))
@@ -533,32 +517,16 @@ class OptimizationProblem(object):
 
 def stop_when_dft_decayed(
     simob,
-    mon,
     dt,
-    c,
-    fcen_idx,
     decay_by,
-    yee_grid=False,
     minimum_run_time=0,
     maximum_run_time=None,
 ):
     '''Step function that monitors the relative change in DFT fields for a list of monitors.
 
-    mon ............. a list of monitors
-    c ............... a list of components to monitor
-
     '''
-    # get monitor dft output array dimensions
-    dims = []
-    for m in mon:
-        ci_dims = []
-        for ci in c:
-            comp = ci if yee_grid else mp.Dielectric
-            ci_dims += [simob.get_array_slice_dimensions(comp, vol=m.where)[0]]
-        dims.append(ci_dims)
-
     # Record data in closure so that we can persitently edit
-    closure = {'previous_fields': [[None for di in d] for d in dims], 't0': 0}
+    closure = {'previous_fields': 1, 't0': 0}
 
     def _stop(sim):
         if sim.round_time() <= dt + closure['t0']:
@@ -567,44 +535,9 @@ def stop_when_dft_decayed(
             return True
         else:
             previous_fields = closure['previous_fields']
-
-            # Pull all the relevant frequency and spatial dft points
-            relative_change = []
-            current_fields = [[0 for di in d] for d in dims]
-            for mi, m in enumerate(mon):
-                for ic, cc in enumerate(c):
-                    if isinstance(m, mp.DftFlux):
-                        current_fields[mi][ic] = mp.get_fluxes(m)[fcen_idx]
-                    elif isinstance(m, mp.DftFields):
-                        current_fields[mi][ic] = atleast_3d(
-                            sim.get_dft_array(m, cc, fcen_idx))
-                    elif isinstance(m, mp.simulation.DftNear2Far):
-                        current_fields[mi][ic] = atleast_3d(
-                            sim.get_dft_array(m, cc, fcen_idx))
-                    else:
-                        raise TypeError(
-                            "Monitor of type {} not supported".format(type(m)))
-
-                    if previous_fields[mi][ic] is not None:
-                        if np.sum(
-                                np.abs(previous_fields[mi][ic] -
-                                       current_fields[mi][ic])) == 0:
-                            relative_change.append(0)
-                        elif np.all(np.abs(previous_fields[mi][ic])):
-                            relative_change_raw = np.abs(
-                                previous_fields[mi][ic] -
-                                current_fields[mi][ic]) / np.abs(
-                                    previous_fields[mi][ic])
-                            relative_change.append(
-                                np.mean(relative_change_raw.flatten())
-                            )  # average across space and frequency
-                        else:
-                            relative_change.append(1)
-                    else:
-                        relative_change.append(1)
-
-            relative_change = np.mean(
-                relative_change)  # average across monitors
+            current_fields  = simob.fields.dft_fields_norm()
+            relative_change =  np.abs(previous_fields-current_fields) /  previous_fields   
+            
             closure['previous_fields'] = current_fields
             closure['t0'] = sim.round_time()
 
