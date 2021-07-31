@@ -264,16 +264,16 @@ void dft_chunk::update_dft(double time) {
   }
 }
 
-/* Return the L2 norm^2 of all of the fields used to update DFTs.  This is useful
+/* Return the L2 norm of all of the fields used to update DFTs.  This is useful
    to check whether the simulation is finished (whether all relevant fields have decayed).
    (Collective operation.) */
-double fields::dft_fields_norm2() {
+double fields::dft_fields_norm() {
   am_now_working_on(Other);
   double sum = 0.0;
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) sum += chunks[i]->dft_fields_norm2();
   finished_working();
-  return sum_to_all(sum);
+  return std::sqrt(sum_to_all(sum));
 }
 
 double fields_chunk::dft_fields_norm2() const {
