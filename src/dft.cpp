@@ -264,6 +264,46 @@ void dft_chunk::update_dft(double time) {
   }
 }
 
+/* Return the L2 norm^2 of all of the fields used to update DFTs.  This is useful
+   to check whether the simulation is finished (whether all relevant fields have decayed).
+   (Collective operation.) */
+double fields::dft_fields_norm2() {
+  am_now_working_on(Other);
+  double sum = 0.0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_fields_norm2();
+  finished_working();
+  return sum_to_all(sum);
+}
+
+double fields_chunk::dft_fields_norm2() const {
+  double sum = 0.0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    sum += cur->dft_fields_norm2();
+  return sum;
+}
+
+static double sqr(realnum x) { return double(x)*double(x); }
+
+double dft_chunk::dft_fields_norm2() const {
+  if (!fc->f[c][0]) return 0.0;
+  int numcmp = fc->f[c][1] ? 2 : 1;
+  double sum = 0.0;
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    if (avg2)
+      for (int cmp = 0; cmp < numcmp; ++cmp)
+        sum += sqr(0.25 * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx + avg1] +
+                           fc->f[c][cmp][idx + avg2] + fc->f[c][cmp][idx + (avg1 + avg2)]));
+    else if (avg1)
+      for (int cmp = 0; cmp < numcmp; ++cmp)
+        sum += sqr(0.5 * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx + avg1]));
+    else
+      for (int cmp = 0; cmp < numcmp; ++cmp)
+        sum += sqr(fc->f[c][cmp][idx]);
+  }
+  return sum;
+}
+
 void dft_chunk::scale_dft(complex<double> scale) {
   for (size_t i = 0; i < N * omega.size(); ++i)
     dft[i] *= scale;

@@ -1095,6 +1095,7 @@ public:
   ~dft_chunk();
 
   void update_dft(double time);
+  double dft_fields_norm2() const;
 
   void scale_dft(std::complex<double> scale);
 
@@ -1546,6 +1547,7 @@ private:
   void alloc_extra_connections(field_type, connect_phase, in_or_out, size_t);
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
+  double dft_fields_norm2() const;
 
   void changing_structure();
 };
@@ -1958,6 +1960,7 @@ public:
   dft_chunk *add_dft(const volume_list *where, const std::vector<double> &freq,
                      bool include_dV = true);
   void update_dfts();
+  double dft_fields_norm2();
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
                         bool use_symmetry = true, bool centered_grid = true);
   dft_flux add_dft_flux(const volume_list *where, const std::vector<double> &freq,
