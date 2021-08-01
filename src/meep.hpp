@@ -1460,7 +1460,7 @@ public:
   int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin, int chunkidx);
+               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base);
 
   fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
@@ -1695,7 +1695,8 @@ public:
   bool components_allocated;
 
   // fields.cpp methods:
-  fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true);
+  fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,
+         int loop_tile_base = 0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;

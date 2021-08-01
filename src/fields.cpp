@@ -29,7 +29,8 @@ using namespace std;
 
 namespace meep {
 
-fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin)
+fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin,
+               int loop_tile_base)
     : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta),
       working_on(&times_spent) {
   shared_chunks = s->shared_chunks;
@@ -57,7 +58,8 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta,
+                                 zero_fields_near_cylorigin, i, loop_tile_base);
   FOR_FIELD_TYPES(ft) {
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
@@ -202,9 +204,9 @@ fields_chunk::~fields_chunk() {
   if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
 }
 
-static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result) {
-  const size_t base_nowned_min = 12000;
-  if (gvol.nowned_min() < base_nowned_min) {
+static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                             const size_t loop_tile_base) {
+  if (gvol.nowned_min() < loop_tile_base) {
     result->push_back(gvol);
     return;
   }
@@ -213,9 +215,9 @@ static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result)
   direction best_split_direction;
   gvol.tile_split(best_split_point, best_split_direction);
   grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
-  split_into_tiles(left_gvol, result);
+  split_into_tiles(left_gvol, result, loop_tile_base);
   grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
-  split_into_tiles(right_gvol, result);
+  split_into_tiles(right_gvol, result, loop_tile_base);
   return;
 }
 
@@ -235,7 +237,7 @@ static void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
-                           bool zero_fields_near_cylorigin, int chunkidx)
+                           bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base)
     : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
       beta(beta) {
   s = the_s;
@@ -248,8 +250,12 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
-  split_into_tiles(gv, &gvs);
-  check_tiles(gv, gvs);
+  if (loop_tile_base > 0) {
+    split_into_tiles(gv, &gvs, loop_tile_base);
+    check_tiles(gv, gvs);
+  } else {
+    gvs.push_back(gv);
+  }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     pol[ft] = NULL;
