@@ -304,6 +304,29 @@ double dft_chunk::dft_fields_norm2() const {
   return sum;
 }
 
+// return the minimum abs(freq) over all DFT chunks
+double fields::dft_minfreq() const {
+  double minfreq = meep::infinity;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine())
+      minfreq = std::min(minfreq, chunks[i]->dft_minfreq());
+  return -max_to_all(-minfreq); // == min_to_all(minfreq)
+}
+
+double fields_chunk::dft_minfreq() const {
+  double minomega = meep::infinity;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    minomega = std::min(minomega, cur->minomega());
+  return minomega / (2*meep::pi);
+}
+
+double dft_chunk::minomega() const {
+  double minomega = meep::infinity;
+  for (const auto& o : omega)
+    minomega = std::min(minomega, std::abs(o));
+  return minomega;
+}
+
 void dft_chunk::scale_dft(complex<double> scale) {
   for (size_t i = 0; i < N * omega.size(); ++i)
     dft[i] *= scale;
