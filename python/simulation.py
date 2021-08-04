@@ -2418,16 +2418,16 @@ class Simulation(object):
         `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced
         frequencies over the `Volume` specified by `where` (default to the entire cell).
         The volume can also be specified via the `center` and `size` arguments. The
-        default routine interpolates the Fourier transformed fields at the center of each
-        voxel within the specified volume. Alternatively, the exact Fourier transformed
+        default routine interpolates the Fourier-transformed fields at the center of each
+        voxel within the specified volume. Alternatively, the exact Fourier-transformed
         fields evaluated at each corresponding Yee grid point is available by setting
-        `yee_grid` to `True`. To reduce the memory bandwidth burden of
+        `yee_grid` to `True`. To reduce the memory-bandwidth burden of
         accumulating DFT fields, an integer `decimation_factor` >= 1 can be
         specified. DFT field values are updated every `decimation_factor`
         timesteps. Use this experimental feature with care, as the decimated
-        timeseries may be corruped by aliasing of high frequencies. The choice
-        of decimation factor should take the properties of all sources in the
-        simulation and the frequency range of the DFT field monitor into account.
+        timeseries may be corrupted by aliasing of high frequencies. The choice
+        of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         components = args[0]
         args = fix_dft_args(args, 1)
@@ -2817,9 +2817,9 @@ class Simulation(object):
         self.load_force_data(force, fdata)
         force.scale_dfts(complex(-1.0))
 
-    def add_flux(self, *args):
+    def add_flux(self, *args, **kwargs):
         """
-        `add_flux(fcen, df, nfreq, freq, FluxRegions...)` ##sig
+        `add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=1)` ##sig
 
         Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if
         they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2831,14 +2831,16 @@ class Simulation(object):
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
-        flux = DftFlux(self._add_flux, [freq, fluxes])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        flux = DftFlux(self._add_flux, [freq, fluxes], decimation_factor)
         self.dft_objects.append(flux)
         return flux
 
-    def _add_flux(self, freq, fluxes):
+    def _add_flux(self, freq, fluxes, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
+        return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes,
+                                       decimation_factor)
 
     def add_mode_monitor(self, *args, **kwargs):
         """
@@ -2849,12 +2851,14 @@ class Simulation(object):
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
+        decimation_factor = kwargs.get('decimation_factor', 1)
         yee_grid = kwargs.get("yee_grid", False)
-        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid])
+        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid],
+                       decimation_factor)
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, freq, fluxes, yee_grid):
+    def _add_mode_monitor(self, freq, fluxes, yee_grid, decimation_factor):
         if self.fields is None:
             self.init_sim()
 
@@ -2867,7 +2871,7 @@ class Simulation(object):
         d0 = region.direction
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
-        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
+        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid, decimation_factor)
 
     def display_fluxes(self, *fluxes):
         """
