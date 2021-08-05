@@ -1963,8 +1963,8 @@ public:
                         bool use_symmetry = true, bool centered_grid = true,
                         int decimation_factor = 1);
   dft_flux add_dft_flux(const volume_list *where, const std::vector<double> &freq,
-                        bool use_symmetry = true, bool centered_grid = true,
-                        int decimation_factor = 1) {
+                        int decimation_factor = 1, bool use_symmetry = true,
+                        bool centered_grid = true) {
     return add_dft_flux(where, freq.data(), freq.size(), use_symmetry, centered_grid,
                         decimation_factor);
   }

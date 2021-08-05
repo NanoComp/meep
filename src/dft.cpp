@@ -423,7 +423,7 @@ void dft_flux::scale_dfts(complex<double> scale) {
 }
 
 dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, size_t Nfreq,
-                              bool use_symmetry, bool centered_grid) {
+                              bool use_symmetry, bool centered_grid, int decimation_factor) {
   if (!where_) // handle empty list of volumes
     return dft_flux(Ex, Hy, NULL, NULL, freq, Nfreq, v, NO_DIRECTION, use_symmetry);
 
@@ -459,8 +459,10 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
 
     for (int i = 0; i < 2; ++i) {
       E = add_dft(cE[i], where->v, freq, Nfreq, true,
-                  where->weight * double(1 - 2 * i), E, false, std::complex<double>(1.0,0), centered_grid);
-      H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0,0), centered_grid);
+                  where->weight * double(1 - 2 * i), E, false, std::complex<double>(1.0,0),
+                  centered_grid, decimation_factor);
+      H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0,0),
+                  centered_grid, decimation_factor);
     }
 
     where = where->next;
@@ -649,10 +651,10 @@ direction fields::normal_direction(const volume &where) const {
 }
 
 dft_flux fields::add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
-                              bool use_symmetry, bool centered_grid) {
+                              bool use_symmetry, bool centered_grid, int decimation_factor) {
   if (d == NO_DIRECTION) d = normal_direction(where);
   volume_list vl(where, direction_component(Sx, d));
-  dft_flux flux = add_dft_flux(&vl, freq, Nfreq, use_symmetry, centered_grid);
+  dft_flux flux = add_dft_flux(&vl, freq, Nfreq, use_symmetry, centered_grid, decimation_factor);
   flux.normal_direction = d;
   return flux;
 }

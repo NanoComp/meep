@@ -2832,15 +2832,15 @@ class Simulation(object):
         freq = args[0]
         fluxes = args[1:]
         decimation_factor = kwargs.get('decimation_factor', 1)
-        flux = DftFlux(self._add_flux, [freq, fluxes], decimation_factor)
+        flux = DftFlux(self._add_flux, [freq, fluxes, decimation_factor])
         self.dft_objects.append(flux)
         return flux
 
     def _add_flux(self, freq, fluxes, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes,
-                                       decimation_factor)
+        return self._add_fluxish_stuff(self.fields.add_dft_flux,
+                                       freq, fluxes, decimation_factor)
 
     def add_mode_monitor(self, *args, **kwargs):
         """
@@ -2853,12 +2853,11 @@ class Simulation(object):
         fluxes = args[1:]
         decimation_factor = kwargs.get('decimation_factor', 1)
         yee_grid = kwargs.get("yee_grid", False)
-        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid],
-                       decimation_factor)
+        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, freq, fluxes, yee_grid, decimation_factor):
+    def _add_mode_monitor(self, freq, fluxes, yee_grid):
         if self.fields is None:
             self.init_sim()
 
@@ -2871,7 +2870,7 @@ class Simulation(object):
         d0 = region.direction
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
-        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid, decimation_factor)
+        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
 
     def display_fluxes(self, *fluxes):
         """
@@ -3086,7 +3085,7 @@ class Simulation(object):
             self.fields.solve_cw(cwtol, cwmaxiters, guessfreq, L, eigfreq, tol, maxiters)
         return eigfreq.item()
 
-    def _add_fluxish_stuff(self, add_dft_stuff, freq, stufflist, *args):
+    def _add_fluxish_stuff(self, add_dft_stuff, freq, stufflist, decimation_factor, *args):
         vol_list = None
 
         for s in stufflist:
@@ -3098,8 +3097,7 @@ class Simulation(object):
             v2 = Volume(center=s.center, size=s.size, dims=self.dimensions,
                         is_cylindrical=self.is_cylindrical).swigobj
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
-
-        stuff = add_dft_stuff(vol_list, freq, *args)
+        stuff = add_dft_stuff(vol_list, freq, decimation_factor, *args)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
