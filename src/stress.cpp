@@ -151,7 +151,8 @@ void dft_force::scale_dfts(complex<double> scale) {
 /* note that the components where->c indicate the direction of the
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
-dft_force fields::add_dft_force(const volume_list *where_, const double *freq, size_t Nfreq) {
+dft_force fields::add_dft_force(const volume_list *where_, const double *freq, size_t Nfreq,
+                                int decimation_factor) {
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
 
   volume_list *where = S.reduce(where_);
@@ -167,19 +168,21 @@ dft_force fields::add_dft_force(const volume_list *where_, const double *freq, s
 
     if (fd != nd) { // off-diagaonal stress-tensor terms
       offdiag1 = add_dft(direction_component(Ex, fd), where->v, freq, Nfreq, true, where->weight,
-                         offdiag1);
-      offdiag2 = add_dft(direction_component(Ex, nd), where->v, freq, Nfreq, false, 1.0, offdiag2);
+                         offdiag1, decimation_factor);
+      offdiag2 = add_dft(direction_component(Ex, nd), where->v, freq, Nfreq, false, 1.0, offdiag2,
+                         decimation_factor);
       offdiag1 = add_dft(direction_component(Hx, fd), where->v, freq, Nfreq, true, where->weight,
-                         offdiag1);
-      offdiag2 = add_dft(direction_component(Hx, nd), where->v, freq, Nfreq, false, 1.0, offdiag2);
+                         offdiag1, decimation_factor);
+      offdiag2 = add_dft(direction_component(Hx, nd), where->v, freq, Nfreq, false, 1.0, offdiag2,
+                         decimation_factor);
     }
     else // diagonal stress-tensor terms
       LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
         complex<double> weight1 = where->weight * (d == fd ? +0.5 : -0.5);
         diag = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, diag, true,
-                       weight1, false);
+                       weight1, false, decimation_factor);
         diag = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, diag, true,
-                       weight1, false);
+                       weight1, false, decimation_factor);
       }
     everywhere = everywhere | where->v;
   }

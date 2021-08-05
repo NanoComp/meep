@@ -2485,7 +2485,7 @@ class Simulation(object):
 
     def add_near2far(self, *args, **kwargs):
         """
-        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1)`  ##sig
+        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=1)`  ##sig
 
         Add a bunch of `Near2FarRegion`s to the current simulation (initializing the
         fields if they have not yet been initialized), telling Meep to accumulate the
@@ -2498,18 +2498,20 @@ class Simulation(object):
         freq = args[0]
         near2fars = args[1:]
         nperiods = kwargs.get('nperiods', 1)
-        n2f = DftNear2Far(self._add_near2far, [freq, nperiods, near2fars])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        n2f = DftNear2Far(self._add_near2far, [freq, nperiods, near2fars, decimation_factor])
         self.dft_objects.append(n2f)
         return n2f
 
-    def _add_near2far(self, freq, nperiods, near2fars):
+    def _add_near2far(self, freq, nperiods, near2fars, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars, nperiods)
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars,
+                                       decimation_factor, nperiods)
 
-    def add_energy(self, *args):
+    def add_energy(self, *args, **kwargs):
         """
-        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`  ##sig
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=1)`  ##sig
 
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2521,14 +2523,16 @@ class Simulation(object):
         args = fix_dft_args(args, 0)
         freq = args[0]
         energys = args[1:]
-        en = DftEnergy(self._add_energy, [freq, energys])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        en = DftEnergy(self._add_energy, [freq, energys, decimation_factor])
         self.dft_objects.append(en)
         return en
 
-    def _add_energy(self, freq, energys):
+    def _add_energy(self, freq, energys, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_energy, freq, energys)
+        return self._add_fluxish_stuff(self.fields.add_dft_energy, freq, energys,
+                                       decimation_factor)
 
     def _display_energy(self, name, func, energys):
         if energys:
@@ -2720,9 +2724,9 @@ class Simulation(object):
         self.load_near2far_data(near2far, n2fdata)
         near2far.scale_dfts(complex(-1.0))
 
-    def add_force(self, *args):
+    def add_force(self, *args, **kwargs):
         """
-        `add_force(fcen, df, nfreq, freq, ForceRegions...)`  ##sig
+        `add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=1)`  ##sig
 
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -2734,14 +2738,16 @@ class Simulation(object):
         args = fix_dft_args(args, 0)
         freq = args[0]
         forces = args[1:]
-        force = DftForce(self._add_force, [freq, forces])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        force = DftForce(self._add_force, [freq, forces, decimation_factor])
         self.dft_objects.append(force)
         return force
 
-    def _add_force(self, freq, forces):
+    def _add_force(self, freq, forces, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_force, freq, forces)
+        return self._add_fluxish_stuff(self.fields.add_dft_force, freq, forces,
+                                       decimation_factor)
 
     def display_forces(self, *forces):
         """
@@ -2853,11 +2859,11 @@ class Simulation(object):
         fluxes = args[1:]
         decimation_factor = kwargs.get('decimation_factor', 1)
         yee_grid = kwargs.get("yee_grid", False)
-        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid])
+        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid, decimation_factor])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, freq, fluxes, yee_grid):
+    def _add_mode_monitor(self, freq, fluxes, yee_grid, decimation_factor):
         if self.fields is None:
             self.init_sim()
 
@@ -2870,7 +2876,7 @@ class Simulation(object):
         d0 = region.direction
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
-        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
+        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid, decimation_factor)
 
     def display_fluxes(self, *fluxes):
         """

@@ -546,7 +546,8 @@ double *dft_energy::total() {
   return F;
 }
 
-dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq) {
+dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq,
+                                  int decimation_factor) {
 
   if (!where_) // handle empty list of volumes
     return dft_energy(NULL, NULL, NULL, NULL, freq, Nfreq, v);
@@ -557,10 +558,14 @@ dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq,
   volume_list *where_save = where;
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
-      E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E);
-      D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D);
-      H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H);
-      B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B);
+      E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E,
+                  false, 1.0, true, 0, decimation_factor);
+      D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D,
+                  false, 1.0, true, 0, decimation_factor);
+      H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H,
+                  false, 1.0, true, 0, decimation_factor);
+      B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B,
+                  false, 1.0, true, 0, decimation_factor);
     }
     where = where->next;
   }
@@ -660,8 +665,9 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, const double *fr
 }
 
 
-dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid) {
-  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid);
+dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq,
+                                  size_t Nfreq, bool centered_grid, int decimation_factor) {
+  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid, decimation_factor);
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max,
