@@ -2093,13 +2093,13 @@ public:
   // near2far.cpp
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
                                 int Nfreq, int decimation_factor = 1, int Nperiods = 1) {
-    return add_dft_near2far(where, linspace(freq_min, freq_max, Nfreq), Nperiods,
-                            decimation_factor);
+    return add_dft_near2far(where, linspace(freq_min, freq_max, Nfreq), decimation_factor,
+                            Nperiods);
   }
   dft_near2far add_dft_near2far(const volume_list *where, const std::vector<double> &freq,
                                 int decimation_factor = 1, int Nperiods = 1) {
-    return add_dft_near2far(where, freq.data(), freq.size(), Nperiods,
-                            decimation_factor);
+    return add_dft_near2far(where, freq.data(), freq.size(), decimation_factor,
+                            Nperiods);
   }
   dft_near2far add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
                                 int decimation_factor = 1, int Nperiods = 1);

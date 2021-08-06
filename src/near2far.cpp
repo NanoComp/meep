@@ -557,7 +557,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
 dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
-                                      int Nperiods, int decimation_factor) {
+                                      int decimation_factor, int Nperiods) {
 
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
