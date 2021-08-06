@@ -158,7 +158,7 @@ class TestBendFlux(ApproxComparisonTestCase):
                                  mp.get_fluxes(self.trans_decimated),
                                  mp.get_fluxes(self.refl_decimated)))
 
-        tol = 1e-3 if mp.is_single_precision() else 1e-8
+        tol = 1e-3
         self.assertClose(np.array(expected), np.array(res[:20]), epsilon=tol)
         self.assertClose(np.array(expected), np.array(res_decimated[:20]), epsilon=tol)
 

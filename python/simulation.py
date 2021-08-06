@@ -3650,7 +3650,7 @@ class Simulation(object):
     def reset_meep(self):
         """
         Reset all of Meep's parameters, deleting the fields, structures, etcetera, from
-        memory as if you had not run any computations. If the num_chunks or chunk_layout
+        memory as if you had not run any computations. If the `num_chunks` or `chunk_layout`
         attributes have been modified internally, they are reset to their original
         values passed in at instantiation.
         """
