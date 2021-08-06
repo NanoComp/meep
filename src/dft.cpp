@@ -158,7 +158,8 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
 dft_chunk *fields::add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
-                           complex<double> extra_weight, bool use_centered_grid, int vc, int decimation_factor) {
+                           complex<double> extra_weight, bool use_centered_grid,
+                           int vc, int decimation_factor) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -460,9 +461,9 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
     for (int i = 0; i < 2; ++i) {
       E = add_dft(cE[i], where->v, freq, Nfreq, true,
                   where->weight * double(1 - 2 * i), E, false, std::complex<double>(1.0,0),
-                  centered_grid, decimation_factor);
+                  centered_grid, 0, decimation_factor);
       H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0,0),
-                  centered_grid, decimation_factor);
+                  centered_grid, 0, decimation_factor);
     }
 
     where = where->next;

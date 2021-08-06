@@ -2424,9 +2424,9 @@ class Simulation(object):
         `yee_grid` to `True`. To reduce the memory-bandwidth burden of
         accumulating DFT fields, an integer `decimation_factor` >= 1 can be
         specified. DFT field values are updated every `decimation_factor`
-        timesteps. Use this experimental feature with care, as the decimated
-        timeseries may be corrupted by aliasing of high frequencies. The choice
-        of decimation factor should take into account the properties of all sources
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
         in the simulation as well as the frequency range of the DFT field monitor.
         """
         components = args[0]
@@ -2492,7 +2492,13 @@ class Simulation(object):
         appropriate field Fourier transforms for `nfreq` equally spaced frequencies
         covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq`
         for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass
-        to the functions below to get the far fields.
+        to the functions below to get the far fields. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
@@ -2518,7 +2524,13 @@ class Simulation(object):
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
         frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
         spaced frequencies. Return an *energy object*, which you can pass to the functions
-        below to get the energy spectrum, etcetera.
+        below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
@@ -2733,7 +2745,13 @@ class Simulation(object):
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
         frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
         spaced frequencies. Return a `force`object, which you can pass to the functions
-        below to get the force spectrum, etcetera.
+        below to get the force spectrum, etcetera. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
@@ -2832,7 +2850,13 @@ class Simulation(object):
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
         frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
         spaced frequencies. Return a *flux object*, which you can pass to the functions
-        below to get the flux spectrum, etcetera.
+        below to get the flux spectrum, etcetera. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]

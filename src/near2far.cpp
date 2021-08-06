@@ -558,6 +558,7 @@ static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fab
 
 dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
                                       int Nperiods, int decimation_factor) {
+
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
   volume everywhere = where->v;
