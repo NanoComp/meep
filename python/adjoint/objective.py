@@ -137,8 +137,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self._monitor = self.sim.add_mode_monitor(
             frequencies,
             mp.ModeRegion(center=self.volume.center, size=self.volume.size),
-            yee_grid=True,
-            decimation_factor=self.decimation_factor
+            yee_grid=True
         )
         self._normal_direction = self._monitor.normal_direction
         return self._monitor
@@ -215,8 +214,7 @@ class FourierFields(ObjectiveQuantity):
             [self.component],
             self._frequencies,
             where=self.volume,
-            yee_grid=False,
-            decimation_factor=self.decimation_factor
+            yee_grid=False
         )
         return self._monitor
 
@@ -314,8 +312,7 @@ class Near2FarFields(ObjectiveQuantity):
         self._monitor = self.sim.add_near2far(
             self._frequencies,
             *self.Near2FarRegions,
-            yee_grid=True,
-            decimation_factor=self.decimation_factor
+            yee_grid=True
         )
         return self._monitor
 

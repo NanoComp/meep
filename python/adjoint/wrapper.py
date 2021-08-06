@@ -160,8 +160,7 @@ class MeepJaxWrapper:
         design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
-            self.frequencies,
-            self.decimation_factor
+            self.frequencies
         )
         self.simulation.init_sim()
         sim_run_args = {
@@ -193,8 +192,7 @@ class MeepJaxWrapper:
         design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
-            self.frequencies,
-            self.decimation_factor
+            self.frequencies
         )
         self.simulation.init_sim()
         sim_run_args = {
