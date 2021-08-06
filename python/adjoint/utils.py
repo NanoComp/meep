@@ -61,6 +61,7 @@ def install_design_region_monitors(
     simulation: mp.Simulation,
     design_regions: List[DesignRegion],
     frequencies: List[float],
+    decimation_factor: int
 ) -> List[mp.DftFields]:
     """Installs DFT field monitors at the design regions of the simulation."""
     design_region_monitors = [
@@ -69,6 +70,7 @@ def install_design_region_monitors(
             frequencies,
             where=design_region.volume,
             yee_grid=True,
+            decimation_factor=decimation_factor
         ) for design_region in design_regions
     ]
     return design_region_monitors

@@ -72,6 +72,7 @@ class OptimizationProblem(object):
         decay_dt=50,
         decay_fields=[mp.Ez],
         decay_by=1e-6,
+        decimation_factor=1,
         minimum_run_time=0,
         maximum_run_time=None,
     ):
@@ -128,6 +129,7 @@ class OptimizationProblem(object):
         self.decay_by = decay_by
         self.decay_fields = decay_fields
         self.decay_dt = decay_dt
+        self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
 
@@ -215,6 +217,7 @@ class OptimizationProblem(object):
                 self.frequencies,
                 where=dr.volume,
                 yee_grid=True,
+                decimation_factor=self.decimation_factor
             ) for dr in self.design_regions
         ]
 
@@ -302,6 +305,7 @@ class OptimizationProblem(object):
                     self.frequencies,
                     where=dr.volume,
                     yee_grid=True,
+                    decimation_factor=self.decimation_factor
                 ) for dr in self.design_regions
             ]
 

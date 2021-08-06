@@ -161,6 +161,7 @@ class MeepJaxWrapper:
             self.simulation,
             self.design_regions,
             self.frequencies,
+            self.decimation_factor
         )
         self.simulation.init_sim()
         sim_run_args = {
@@ -193,6 +194,7 @@ class MeepJaxWrapper:
             self.simulation,
             self.design_regions,
             self.frequencies,
+            self.decimation_factor
         )
         self.simulation.init_sim()
         sim_run_args = {
