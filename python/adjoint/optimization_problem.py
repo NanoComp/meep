@@ -217,7 +217,7 @@ class OptimizationProblem(object):
                 self.frequencies,
                 where=dr.volume,
                 yee_grid=True,
-                decimation_factor=self.decimation_factor
+                decimation_factor=self.decimation_factor,
             ) for dr in self.design_regions
         ]
 
@@ -305,7 +305,7 @@ class OptimizationProblem(object):
                     self.frequencies,
                     where=dr.volume,
                     yee_grid=True,
-                    decimation_factor=self.decimation_factor
+                    decimation_factor=self.decimation_factor,
                 ) for dr in self.design_regions
             ]
 
