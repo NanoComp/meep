@@ -534,10 +534,29 @@ def mean_time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return the mean time spent by all processes for a type of work `time_sink` which
-can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
-(`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
-(`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
-(`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
+can be one of the following integer constants:
+* meep.Stepping ("time stepping")
+* meep.Connecting ("connecting chunks")
+* meep.Boundaries ("copying boundaries")
+* meep.MpiAllTime ("all-all communication")
+* meep.MpiOneTime ("1-1 communication")
+* meep.FieldOutput ("outputting fields")
+* meep.FourierTransforming ("Fourier transforming")
+* meep.MPBTime ("MPB mode solver")
+* meep.GetFarfieldsTime ("far-field transform")
+* meep.FieldUpdateB ("updating B field")
+* meep.FieldUpdateH ("updating H field")
+* meep.FieldUpdateD ("updating D field")
+* meep.FieldUpdateE ("updating E field")
+* meep.BoundarySteppingB ("boundary stepping B")
+* meep.BoundarySteppingWH ("boundary stepping WH")
+* meep.BoundarySteppingPH ("boundary stepping PH")
+* meep.BoundarySteppingH ("boundary stepping H")
+* meep.BoundarySteppingD ("boundary stepping D")
+* meep.BoundarySteppingWE ("boundary stepping WE")
+* meep.BoundarySteppingPE ("boundary stepping PE")
+* meep.BoundarySteppingE ("boundary stepping E")
+* meep.Other ("everything else")
 
 </div>
 
@@ -726,16 +745,16 @@ fields for `nfreq` equally spaced frequencies covering the frequency range
 `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced
 frequencies over the `Volume` specified by `where` (default to the entire cell).
 The volume can also be specified via the `center` and `size` arguments. The
-default routine interpolates the Fourier transformed fields at the center of each
-voxel within the specified volume. Alternatively, the exact Fourier transformed
+default routine interpolates the Fourier-transformed fields at the center of each
+voxel within the specified volume. Alternatively, the exact Fourier-transformed
 fields evaluated at each corresponding Yee grid point is available by setting
-`yee_grid` to `True`. To reduce the memory bandwidth burden of
+`yee_grid` to `True`. To reduce the memory-bandwidth burden of
 accumulating DFT fields, an integer `decimation_factor` >= 1 can be
 specified. DFT field values are updated every `decimation_factor`
-timesteps. Use this experimental feature with care, as the decimated
-timeseries may be corruped by aliasing of high frequencies. The choice
-of decimation factor should take the properties of all sources in the
-simulation and the frequency range of the DFT field monitor into account.
+timesteps. Use this feature with care, as the decimated timeseries may be
+corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+The choice of decimation factor should take into account the properties of all sources
+in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
@@ -1009,7 +1028,9 @@ def reset_meep(self):
 <div class="method_docstring" markdown="1">
 
 Reset all of Meep's parameters, deleting the fields, structures, etcetera, from
-memory as if you had not run any computations.
+memory as if you had not run any computations. If the `num_chunks` or `chunk_layout`
+attributes have been modified internally, they are reset to their original
+values passed in at instantiation.
 
 </div>
 
@@ -1094,8 +1115,8 @@ Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accum
 <div class="class_members" markdown="1">
 
 ```python
-def add_flux(self, *args):
-def add_flux(fcen, df, nfreq, freq, FluxRegions...):
+def add_flux(self, *args, **kwargs):
+def add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1106,7 +1127,13 @@ they have not yet been initialized), telling Meep to accumulate the appropriate
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a *flux object*, which you can pass to the functions
-below to get the flux spectrum, etcetera.
+below to get the flux spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+specified. DFT field values are updated every `decimation_factor`
+timesteps. Use this feature with care, as the decimated timeseries may be
+corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+The choice of decimation factor should take into account the properties of all sources
+in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
@@ -1482,8 +1509,8 @@ The usage is similar to the flux spectra: you define a set of [`EnergyRegion`](#
 <div class="class_members" markdown="1">
 
 ```python
-def add_energy(self, *args):
-def add_energy(fcen, df, nfreq, freq, EnergyRegions...):
+def add_energy(self, *args, **kwargs):
+def add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1494,7 +1521,13 @@ if they have not yet been initialized), telling Meep to accumulate the appropria
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return an *energy object*, which you can pass to the functions
-below to get the energy spectrum, etcetera.
+below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+specified. DFT field values are updated every `decimation_factor`
+timesteps. Use this feature with care, as the decimated timeseries may be
+corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+The choice of decimation factor should take into account the properties of all sources
+in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
@@ -1708,8 +1741,8 @@ The usage is similar to the [flux spectra](Python_Tutorials/Basics.md#transmitta
 <div class="class_members" markdown="1">
 
 ```python
-def add_force(self, *args):
-def add_force(fcen, df, nfreq, freq, ForceRegions...):
+def add_force(self, *args, **kwargs):
+def add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1720,7 +1753,13 @@ if they have not yet been initialized), telling Meep to accumulate the appropria
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a `force`object, which you can pass to the functions
-below to get the force spectrum, etcetera.
+below to get the force spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+specified. DFT field values are updated every `decimation_factor`
+timesteps. Use this feature with care, as the decimated timeseries may be
+corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+The choice of decimation factor should take into account the properties of all sources
+in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
@@ -1988,7 +2027,7 @@ There are three steps to using the near-to-far-field feature: first, define the 
 
 ```python
 def add_near2far(self, *args, **kwargs):
-def add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1):
+def add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1999,7 +2038,13 @@ fields if they have not yet been initialized), telling Meep to accumulate the
 appropriate field Fourier transforms for `nfreq` equally spaced frequencies
 covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq`
 for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass
-to the functions below to get the far fields.
+to the functions below to get the far fields. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+specified. DFT field values are updated every `decimation_factor`
+timesteps. Use this feature with care, as the decimated timeseries may be
+corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+The choice of decimation factor should take into account the properties of all sources
+in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
@@ -7361,6 +7406,22 @@ or (b) a leaf with integer value for the process ID `proc_id` in the range betwe
 `proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
 process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
 of processes.
+
+</div>
+
+</div>
+
+<a id="BinaryPartition.print"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def print(self):
+```
+
+<div class="method_docstring" markdown="1">
+
+Pretty-prints the tree structure of the BinaryPartition object.
 
 </div>
 

@@ -158,7 +158,8 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
 dft_chunk *fields::add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
-                           complex<double> extra_weight, bool use_centered_grid, int vc, int decimation_factor) {
+                           complex<double> extra_weight, bool use_centered_grid,
+                           int vc, int decimation_factor) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -423,7 +424,7 @@ void dft_flux::scale_dfts(complex<double> scale) {
 }
 
 dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, size_t Nfreq,
-                              bool use_symmetry, bool centered_grid) {
+                              bool use_symmetry, bool centered_grid, int decimation_factor) {
   if (!where_) // handle empty list of volumes
     return dft_flux(Ex, Hy, NULL, NULL, freq, Nfreq, v, NO_DIRECTION, use_symmetry);
 
@@ -459,8 +460,10 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
 
     for (int i = 0; i < 2; ++i) {
       E = add_dft(cE[i], where->v, freq, Nfreq, true,
-                  where->weight * double(1 - 2 * i), E, false, std::complex<double>(1.0,0), centered_grid);
-      H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0,0), centered_grid);
+                  where->weight * double(1 - 2 * i), E, false, std::complex<double>(1.0,0),
+                  centered_grid, 0, decimation_factor);
+      H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0,0),
+                  centered_grid, 0, decimation_factor);
     }
 
     where = where->next;
@@ -544,7 +547,8 @@ double *dft_energy::total() {
   return F;
 }
 
-dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq) {
+dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq,
+                                  int decimation_factor) {
 
   if (!where_) // handle empty list of volumes
     return dft_energy(NULL, NULL, NULL, NULL, freq, Nfreq, v);
@@ -555,10 +559,14 @@ dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq,
   volume_list *where_save = where;
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
-      E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E);
-      D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D);
-      H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H);
-      B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B);
+      E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E,
+                  false, 1.0, true, 0, decimation_factor);
+      D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D,
+                  false, 1.0, true, 0, decimation_factor);
+      H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H,
+                  false, 1.0, true, 0, decimation_factor);
+      B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B,
+                  false, 1.0, true, 0, decimation_factor);
     }
     where = where->next;
   }
@@ -649,17 +657,18 @@ direction fields::normal_direction(const volume &where) const {
 }
 
 dft_flux fields::add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
-                              bool use_symmetry, bool centered_grid) {
+                              bool use_symmetry, bool centered_grid, int decimation_factor) {
   if (d == NO_DIRECTION) d = normal_direction(where);
   volume_list vl(where, direction_component(Sx, d));
-  dft_flux flux = add_dft_flux(&vl, freq, Nfreq, use_symmetry, centered_grid);
+  dft_flux flux = add_dft_flux(&vl, freq, Nfreq, use_symmetry, centered_grid, decimation_factor);
   flux.normal_direction = d;
   return flux;
 }
 
 
-dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq, bool centered_grid) {
-  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid);
+dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq,
+                                  size_t Nfreq, bool centered_grid, int decimation_factor) {
+  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid, decimation_factor);
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max,

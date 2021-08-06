@@ -1,5 +1,4 @@
 import unittest
-
 import meep as mp
 
 
@@ -22,6 +21,7 @@ class TestForce(unittest.TestCase):
 
         fr = mp.ForceRegion(mp.Vector3(y=1.27), direction=mp.Y, size=mp.Vector3(4.38))
         self.myforce = self.sim.add_force(fcen, 0, 1, fr)
+        self.myforce_decimated = self.sim.add_force(fcen, 0, 1, fr, decimation_factor=10)
 
     def test_force(self):
 
@@ -35,6 +35,7 @@ class TestForce(unittest.TestCase):
         f = mp.get_forces(self.myforce)
 
         self.assertAlmostEqual(f[0], -0.11039089113393187)
+        self.assertAlmostEqual(f[0], mp.get_forces(self.myforce_decimated)[0])
 
 
 if __name__ == '__main__':

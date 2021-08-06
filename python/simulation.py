@@ -2418,16 +2418,16 @@ class Simulation(object):
         `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced
         frequencies over the `Volume` specified by `where` (default to the entire cell).
         The volume can also be specified via the `center` and `size` arguments. The
-        default routine interpolates the Fourier transformed fields at the center of each
-        voxel within the specified volume. Alternatively, the exact Fourier transformed
+        default routine interpolates the Fourier-transformed fields at the center of each
+        voxel within the specified volume. Alternatively, the exact Fourier-transformed
         fields evaluated at each corresponding Yee grid point is available by setting
-        `yee_grid` to `True`. To reduce the memory bandwidth burden of
+        `yee_grid` to `True`. To reduce the memory-bandwidth burden of
         accumulating DFT fields, an integer `decimation_factor` >= 1 can be
         specified. DFT field values are updated every `decimation_factor`
-        timesteps. Use this experimental feature with care, as the decimated
-        timeseries may be corruped by aliasing of high frequencies. The choice
-        of decimation factor should take the properties of all sources in the
-        simulation and the frequency range of the DFT field monitor into account.
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         components = args[0]
         args = fix_dft_args(args, 1)
@@ -2485,50 +2485,66 @@ class Simulation(object):
 
     def add_near2far(self, *args, **kwargs):
         """
-        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1)`  ##sig
+        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=1)`  ##sig
 
         Add a bunch of `Near2FarRegion`s to the current simulation (initializing the
         fields if they have not yet been initialized), telling Meep to accumulate the
         appropriate field Fourier transforms for `nfreq` equally spaced frequencies
         covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq`
         for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass
-        to the functions below to get the far fields.
+        to the functions below to get the far fields. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
         near2fars = args[1:]
         nperiods = kwargs.get('nperiods', 1)
-        n2f = DftNear2Far(self._add_near2far, [freq, nperiods, near2fars])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        n2f = DftNear2Far(self._add_near2far, [freq, nperiods, near2fars, decimation_factor])
         self.dft_objects.append(n2f)
         return n2f
 
-    def _add_near2far(self, freq, nperiods, near2fars):
+    def _add_near2far(self, freq, nperiods, near2fars, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars, nperiods)
+        return self._add_fluxish_stuff(self.fields.add_dft_near2far, freq, near2fars,
+                                       decimation_factor, nperiods)
 
-    def add_energy(self, *args):
+    def add_energy(self, *args, **kwargs):
         """
-        `add_energy(fcen, df, nfreq, freq, EnergyRegions...)`  ##sig
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=1)`  ##sig
 
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
         frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
         spaced frequencies. Return an *energy object*, which you can pass to the functions
-        below to get the energy spectrum, etcetera.
+        below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
         energys = args[1:]
-        en = DftEnergy(self._add_energy, [freq, energys])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        en = DftEnergy(self._add_energy, [freq, energys, decimation_factor])
         self.dft_objects.append(en)
         return en
 
-    def _add_energy(self, freq, energys):
+    def _add_energy(self, freq, energys, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_energy, freq, energys)
+        return self._add_fluxish_stuff(self.fields.add_dft_energy, freq, energys,
+                                       decimation_factor)
 
     def _display_energy(self, name, func, energys):
         if energys:
@@ -2720,28 +2736,36 @@ class Simulation(object):
         self.load_near2far_data(near2far, n2fdata)
         near2far.scale_dfts(complex(-1.0))
 
-    def add_force(self, *args):
+    def add_force(self, *args, **kwargs):
         """
-        `add_force(fcen, df, nfreq, freq, ForceRegions...)`  ##sig
+        `add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=1)`  ##sig
 
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
         frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
         spaced frequencies. Return a `force`object, which you can pass to the functions
-        below to get the force spectrum, etcetera.
+        below to get the force spectrum, etcetera. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
         forces = args[1:]
-        force = DftForce(self._add_force, [freq, forces])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        force = DftForce(self._add_force, [freq, forces, decimation_factor])
         self.dft_objects.append(force)
         return force
 
-    def _add_force(self, freq, forces):
+    def _add_force(self, freq, forces, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_force, freq, forces)
+        return self._add_fluxish_stuff(self.fields.add_dft_force, freq, forces,
+                                       decimation_factor)
 
     def display_forces(self, *forces):
         """
@@ -2817,28 +2841,36 @@ class Simulation(object):
         self.load_force_data(force, fdata)
         force.scale_dfts(complex(-1.0))
 
-    def add_flux(self, *args):
+    def add_flux(self, *args, **kwargs):
         """
-        `add_flux(fcen, df, nfreq, freq, FluxRegions...)` ##sig
+        `add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=1)` ##sig
 
         Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if
         they have not yet been initialized), telling Meep to accumulate the appropriate
         field Fourier transforms for `nfreq` equally spaced frequencies covering the
         frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
         spaced frequencies. Return a *flux object*, which you can pass to the functions
-        below to get the flux spectrum, etcetera.
+        below to get the flux spectrum, etcetera. To reduce the memory-bandwidth burden of
+        accumulating DFT fields, an integer `decimation_factor` >= 1 can be
+        specified. DFT field values are updated every `decimation_factor`
+        timesteps. Use this feature with care, as the decimated timeseries may be
+        corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
+        The choice of decimation factor should take into account the properties of all sources
+        in the simulation as well as the frequency range of the DFT field monitor.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
-        flux = DftFlux(self._add_flux, [freq, fluxes])
+        decimation_factor = kwargs.get('decimation_factor', 1)
+        flux = DftFlux(self._add_flux, [freq, fluxes, decimation_factor])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_flux(self, freq, fluxes):
+    def _add_flux(self, freq, fluxes, decimation_factor):
         if self.fields is None:
             self.init_sim()
-        return self._add_fluxish_stuff(self.fields.add_dft_flux, freq, fluxes)
+        return self._add_fluxish_stuff(self.fields.add_dft_flux,
+                                       freq, fluxes, decimation_factor)
 
     def add_mode_monitor(self, *args, **kwargs):
         """
@@ -2849,12 +2881,13 @@ class Simulation(object):
         args = fix_dft_args(args, 0)
         freq = args[0]
         fluxes = args[1:]
+        decimation_factor = kwargs.get('decimation_factor', 1)
         yee_grid = kwargs.get("yee_grid", False)
-        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid])
+        flux = DftFlux(self._add_mode_monitor, [freq, fluxes, yee_grid, decimation_factor])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, freq, fluxes, yee_grid):
+    def _add_mode_monitor(self, freq, fluxes, yee_grid, decimation_factor):
         if self.fields is None:
             self.init_sim()
 
@@ -2867,7 +2900,7 @@ class Simulation(object):
         d0 = region.direction
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
-        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid)
+        return self.fields.add_mode_monitor(d, v.swigobj, freq, centered_grid, decimation_factor)
 
     def display_fluxes(self, *fluxes):
         """
@@ -3082,7 +3115,7 @@ class Simulation(object):
             self.fields.solve_cw(cwtol, cwmaxiters, guessfreq, L, eigfreq, tol, maxiters)
         return eigfreq.item()
 
-    def _add_fluxish_stuff(self, add_dft_stuff, freq, stufflist, *args):
+    def _add_fluxish_stuff(self, add_dft_stuff, freq, stufflist, decimation_factor, *args):
         vol_list = None
 
         for s in stufflist:
@@ -3094,8 +3127,7 @@ class Simulation(object):
             v2 = Volume(center=s.center, size=s.size, dims=self.dimensions,
                         is_cylindrical=self.is_cylindrical).swigobj
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
-
-        stuff = add_dft_stuff(vol_list, freq, *args)
+        stuff = add_dft_stuff(vol_list, freq, decimation_factor, *args)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -3618,7 +3650,7 @@ class Simulation(object):
     def reset_meep(self):
         """
         Reset all of Meep's parameters, deleting the fields, structures, etcetera, from
-        memory as if you had not run any computations. If the num_chunks or chunk_layout
+        memory as if you had not run any computations. If the `num_chunks` or `chunk_layout`
         attributes have been modified internally, they are reset to their original
         values passed in at instantiation.
         """
