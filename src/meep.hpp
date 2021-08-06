@@ -1438,9 +1438,10 @@ public:
 
   realnum **zeroes[NUM_FIELD_TYPES]; // Holds pointers to metal points.
   size_t num_zeroes[NUM_FIELD_TYPES];
-  realnum **connections[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][Outgoing + 1];
-  size_t num_connections[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][Outgoing + 1];
-  std::complex<realnum> *connection_phases[NUM_FIELD_TYPES];
+  std::unordered_map<comms_key, std::vector<realnum *>, comms_key_hash_fn> connections_in;
+  std::unordered_map<comms_key, std::vector<realnum *>, comms_key_hash_fn> connections_out;
+  std::unordered_map<comms_key, std::vector<std::complex<realnum> >, comms_key_hash_fn>
+      connection_phases;
 
   int npol[NUM_FIELD_TYPES];                // only E_stuff and H_stuff are used
   polarization_state *pol[NUM_FIELD_TYPES]; // array of npol[i] polarization_state structures
@@ -1542,8 +1543,6 @@ private:
   void initialize_field(component, std::complex<double> f(const vec &));
   void initialize_with_nth_te(int n, double kz);
   void initialize_with_nth_tm(int n, double kz);
-  // boundaries.cpp
-  void alloc_extra_connections(field_type, connect_phase, in_or_out, size_t);
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
 

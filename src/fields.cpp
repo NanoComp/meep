@@ -176,12 +176,6 @@ fields_chunk::~fields_chunk() {
     delete[] f_cond_backup[c][cmp];
   }
   delete[] f_rderiv_int;
-  FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++)
-      for (int io = 0; io < 2; io++)
-        delete[] connections[ft][ip][io];
-  }
-  FOR_FIELD_TYPES(ft) { delete[] connection_phases[ft]; }
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
     delete dft_chunks;
@@ -250,12 +244,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   }
   f_rderiv_int = NULL;
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++)
-      num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
-    connection_phases[ft] = 0;
-    for (int ip = 0; ip < 3; ip++)
-      for (int io = 0; io < 2; io++)
-        connections[ft][ip][io] = NULL;
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
@@ -334,12 +322,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
     }
   }
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++)
-      num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
-    connection_phases[ft] = 0;
-    for (int ip = 0; ip < 3; ip++)
-      for (int io = 0; io < 2; io++)
-        connections[ft][ip][io] = NULL;
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
