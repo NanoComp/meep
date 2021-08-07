@@ -72,21 +72,23 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex=Fals
                         sources=sources,
                         geometry=geometry,
                         force_complex_fields=use_complex,
-                        k_point = k)
+                        k_point=k)
     if not frequencies:
         frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
         mode = sim.add_mode_monitor(frequencies,
                                     mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),size=mp.Vector3(0,sxy-2*dpml,0)),
-                                    yee_grid=True)
+                                    yee_grid=True,
+                                    decimation_factor=10)
 
     elif mon_type.name == 'DFT':
         mode = sim.add_dft_fields([mp.Ez],
                                   frequencies,
                                   center=mp.Vector3(1.25),
                                   size=mp.Vector3(0.25,1,0),
-                                  yee_grid=False)
+                                  yee_grid=False,
+                                  decimation_factor=10)
 
     sim.run(until_after_sources=50)
 
@@ -131,14 +133,17 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
                         sources=sources,
                         geometry=geometry,
                         force_complex_fields=use_complex,
-                        k_point = k)
+                        k_point=k)
+
     if not frequencies:
         frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
         obj_list = [mpa.EigenmodeCoefficient(sim,
                                              mp.Volume(center=mp.Vector3(0.5*sxy-dpml-0.1),
-                                                       size=mp.Vector3(0,sxy-2*dpml,0)),1)]
+                                                       size=mp.Vector3(0,sxy-2*dpml,0)),
+                                             1,
+                                             decimation_factor=5)]
 
         def J(mode_mon):
             return npa.abs(mode_mon)**2
@@ -147,7 +152,8 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
         obj_list = [mpa.FourierFields(sim,
                                       mp.Volume(center=mp.Vector3(1.25),
                                                 size=mp.Vector3(0.25,1,0)),
-                                      mp.Ez)]
+                                      mp.Ez,
+                                      decimation_factor=5)]
 
         def J(mode_mon):
             return npa.abs(mode_mon[:,4,10])**2
@@ -158,7 +164,8 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
         objective_arguments = obj_list,
         design_regions = [matgrid_region],
         frequencies=frequencies,
-        decay_fields=[mp.Ez])
+        decay_fields=[mp.Ez],
+        decimation_factor=10)
 
     f, dJ_du = opt([design_params])
 
