@@ -4,15 +4,15 @@
 
 8/10/2021
 
-* Support for decimation of the DFT time-series updates ([#1684], [#1720], [#1722])
+* Support for decimation of the DFT time-series updates ([#1684], [#1720], [#1722]).
 
-* Support for optional single-precision floating point for the DFT fields arrays ([#1675])
+* Support for optional single-precision floating point for the DFT fields arrays ([#1675]).
 
-* Support for cache-oblivious loop tiling of the step-curl field updates ([#1655])
+* Support for cache-oblivious loop tiling of the step-curl field updates ([#1655]).
 
-* Code coverage for Python API via GitHub Actions ([#1651])
+* Performance improvements in chunk-to-chunk communication ([#1656], [#1721]).
 
-* Performance improvements in chunk-to-chunk communication ([#1656], [#1721])
+* Code coverage for Python API via GitHub Actions ([#1651]).
 
 * Various bugfixes ([#1692], [#1704]), minor improvements, and additional documentation.
 
