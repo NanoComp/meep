@@ -318,7 +318,6 @@ class Near2FarFields(ObjectiveQuantity):
         self._monitor = self.sim.add_near2far(
             self._frequencies,
             *self.Near2FarRegions,
-            yee_grid=True,
             decimation_factor=self.decimation_factor,
         )
         return self._monitor
