@@ -800,18 +800,6 @@ The following classes are available directly via the `meep` package.
 ** Related function:**
 @@ get_center_and_size @@
 
-@@ DftObj[methods-with-docstrings] @@
-
-@@ DftFlux[methods-with-docstrings] @@
-
-@@ DftForce[methods-with-docstrings] @@
-
-@@ DftNear2Far[methods-with-docstrings] @@
-
-@@ DftEnergy[methods-with-docstrings] @@
-
-@@ DftFields[methods-with-docstrings] @@
-
 @@ Animate2D[methods-with-docstrings] @@
 
 @@ Harminv[methods-with-docstrings] @@

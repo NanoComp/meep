@@ -293,11 +293,10 @@ Python. `Vector3` is a `meep` class.
   modify the output volume instead of setting `output_volume` directly.
 
 + **`output_single_precision` [`boolean`]** — Meep performs its computations in
-  [double precision](https://en.wikipedia.org/wiki/double_precision), and by
-  default its output HDF5 files are in the same format. However, by setting this
-  variable to `True` (default is `False`) you can instead output in [single
-  precision](https://en.wikipedia.org/wiki/single_precision) which saves a factor
-  of two in space.
+  [double-precision floating point](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays),
+  and by default its output HDF5 files are in the same format. However, by setting
+  this variable to `True` (default is `False`) you can instead output in single
+  precision which saves a factor of two in space.
 
 + **`progress_interval` [`number`]** — Time interval (seconds) after which Meep
   prints a progress message. Default is 4 seconds.
@@ -514,10 +513,7 @@ def time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return a list of times spent by each process for a type of work `time_sink` which
-can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
-(`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
-(`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
-(`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
+is the same as for `mean_time_spent_on`.
 
 </div>
 
@@ -534,29 +530,14 @@ def mean_time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return the mean time spent by all processes for a type of work `time_sink` which
-can be one of the following integer constants:
-* meep.Stepping ("time stepping")
-* meep.Connecting ("connecting chunks")
-* meep.Boundaries ("copying boundaries")
-* meep.MpiAllTime ("all-all communication")
-* meep.MpiOneTime ("1-1 communication")
-* meep.FieldOutput ("outputting fields")
-* meep.FourierTransforming ("Fourier transforming")
-* meep.MPBTime ("MPB mode solver")
-* meep.GetFarfieldsTime ("far-field transform")
-* meep.FieldUpdateB ("updating B field")
-* meep.FieldUpdateH ("updating H field")
-* meep.FieldUpdateD ("updating D field")
-* meep.FieldUpdateE ("updating E field")
-* meep.BoundarySteppingB ("boundary stepping B")
-* meep.BoundarySteppingWH ("boundary stepping WH")
-* meep.BoundarySteppingPH ("boundary stepping PH")
-* meep.BoundarySteppingH ("boundary stepping H")
-* meep.BoundarySteppingD ("boundary stepping D")
-* meep.BoundarySteppingWE ("boundary stepping WE")
-* meep.BoundarySteppingPE ("boundary stepping PE")
-* meep.BoundarySteppingE ("boundary stepping E")
-* meep.Other ("everything else")
+can be one of the following integer constants: `0`: "time stepping", `1`: "connecting chunks",
+`2`: "copying boundaries", `3`: "all-all communication", `4`: "1-1 communication",
+`5`: "outputting fields", `6`: "Fourier transforming", `7`: "MPB mode solver",
+`8`: "near-to-far-field transform", `9`: "updating B field", `10`: "updating H field",
+`11`: "updating D field", `12`: "updating E field", `13`: "boundary stepping B",
+`14`: "boundary stepping WH", `15`: "boundary stepping PH", `16`: "boundary stepping H",
+`17`: "boundary stepping D", `18`: "boundary stepping WE", `19`: "boundary stepping PE",
+`20`: "boundary stepping E", `21`: "everything else".
 
 </div>
 
@@ -1380,7 +1361,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 
 ```python
 def add_mode_monitor(self, *args, **kwargs):
-def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...):
+def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions, decimation_factor=1):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6704,244 +6685,6 @@ def get_center_and_size(vol):
 
 Utility function that takes a `meep::volume` `vol` and returns the center and size of
 the volume as a tuple of `Vector3`.
-
-</div>
-
----
-<a id="DftObj"></a>
-
-### DftObj
-
-```python
-class DftObj(object):
-```
-
-<div class="class_docstring" markdown="1">
-
-Wrapper around dft objects that allows delayed initialization of the structure.
-
-When splitting the structure into chunks for parallel simulations, we want to know all
-of the details of the simulation in order to ensure that each processor gets a similar
-amount of work. The problem with DFTs is that the 'add_flux' style methods immediately
-initialize the structure and fields. So, if the user adds multiple DFT objects to the
-simulation, the load balancing code only knows about the first one and can't split the
-work up nicely. To circumvent this, we delay the execution of the 'add_flux' methods
-as late as possible. When 'add_flux' (or add_near2far, etc.) is called, we:
-
-1. Create an instance of the appropriate subclass of DftObj (DftForce, DftFlux, etc.).
-   Set its args property to the list of arguments passed to add_flux, and set its func
-   property to the 'real' add_flux, which is prefixed by an underscore.
-
-2. Add this DftObj to the list Simulation.dft_objects. When we actually run the
-   simulation, we call Simulation._evaluate_dft_objects, which calls dft.func(*args)
-   for each dft in the list.
-
-If the user tries to access a property or call a function on the DftObj before
-Simulation._evaluate_dft_objects is called, then we initialize the C++ object through
-swigobj_attr and return the property they requested.
-
-</div>
-
-
-
-<a id="DftObj.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftObj`.
-
-</div>
-
-</div>
-
----
-<a id="DftFlux"></a>
-
-### DftFlux
-
-```python
-class DftFlux(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftFlux.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftFlux`.
-
-</div>
-
-</div>
-
----
-<a id="DftForce"></a>
-
-### DftForce
-
-```python
-class DftForce(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftForce.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftForce`.
-
-</div>
-
-</div>
-
----
-<a id="DftNear2Far"></a>
-
-### DftNear2Far
-
-```python
-class DftNear2Far(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftNear2Far.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftNear2Far`.
-
-</div>
-
-</div>
-
-<a id="DftNear2Far.flux"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def flux(self, direction, where, resolution):
-```
-
-<div class="method_docstring" markdown="1">
-
-Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid
-points / distance unit), compute the far fields in `where` (which may lie
-*outside* the cell) in a grid with the given resolution (which may differ from the
-FDTD solution) and return its Poynting flux in `direction` as a list. The dataset
-is a 1d array of `nfreq` dimensions.
-
-</div>
-
-</div>
-
----
-<a id="DftEnergy"></a>
-
-### DftEnergy
-
-```python
-class DftEnergy(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftEnergy.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftEnergy`.
-
-</div>
-
-</div>
-
----
-<a id="DftFields"></a>
-
-### DftFields
-
-```python
-class DftFields(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftFields.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftFields`.
-
-</div>
 
 </div>
 
