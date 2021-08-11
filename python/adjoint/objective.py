@@ -121,6 +121,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                  mode,
                  forward=True,
                  kpoint_func=None,
+                 decimation_factor=1,
                  **kwargs):
         super().__init__(sim)
         self.volume = volume
@@ -131,6 +132,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self._monitor = None
         self._normal_direction = None
         self._cscale = None
+        self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -138,6 +140,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             frequencies,
             mp.ModeRegion(center=self.volume.center, size=self.volume.size),
             yee_grid=True,
+            decimation_factor=self.decimation_factor,
         )
         self._normal_direction = self._monitor.normal_direction
         return self._monitor
@@ -203,10 +206,11 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    def __init__(self, sim, volume, component):
+    def __init__(self, sim, volume, component, decimation_factor=1):
         super().__init__(sim)
         self.volume = volume
         self.component = component
+        self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -215,6 +219,7 @@ class FourierFields(ObjectiveQuantity):
             self._frequencies,
             where=self.volume,
             yee_grid=False,
+            decimation_factor=self.decimation_factor,
         )
         return self._monitor
 
@@ -301,11 +306,12 @@ class FourierFields(ObjectiveQuantity):
 
 
 class Near2FarFields(ObjectiveQuantity):
-    def __init__(self, sim, Near2FarRegions, far_pts):
+    def __init__(self, sim, Near2FarRegions, far_pts, decimation_factor=1):
         super().__init__(sim)
         self.Near2FarRegions = Near2FarRegions
         self.far_pts = far_pts  #list of far pts
         self._nfar_pts = len(far_pts)
+        self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -313,6 +319,7 @@ class Near2FarFields(ObjectiveQuantity):
             self._frequencies,
             *self.Near2FarRegions,
             yee_grid=True,
+            decimation_factor=self.decimation_factor,
         )
         return self._monitor
 
