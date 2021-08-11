@@ -978,6 +978,24 @@ static double cost_diff(int desired_chunks, std::complex<double> costs) {
   return right_cost - left_cost;
 }
 
+void grid_volume::tile_split(int &best_split_point,
+                             direction &best_split_direction) const {
+  const size_t ntot_thresh = 10;
+  if (ntot() < ntot_thresh) {
+    best_split_point = 0;
+    best_split_direction = NO_DIRECTION;
+  } else if (nx() > 1) {
+    best_split_point = nx() / 2;
+    best_split_direction = X;
+  } else if (ny() > 1) {
+    best_split_point = ny() / 2;
+    best_split_direction = Y;
+  } else {
+    best_split_point = nz() / 2;
+    best_split_direction = Z;
+  }
+}
+
 void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
                                   int &best_split_point,
                                   direction &best_split_direction,
