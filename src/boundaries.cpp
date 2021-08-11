@@ -144,22 +144,9 @@ vec fields::lattice_vector(direction d) const { return gv[ilattice_vector(d)]; }
 void fields::disconnect_chunks() {
   chunk_connections_valid = false;
   for (int i = 0; i < num_chunks; i++) {
-    DOCMP {
-      FOR_FIELD_TYPES(f) {
-        for (int ip = 0; ip < 3; ++ip)
-          for (int io = 0; io < 2; io++) {
-            delete[] chunks[i]->connections[f][ip][io];
-            chunks[i]->connections[f][ip][io] = NULL;
-          }
-      }
-    }
-    FOR_FIELD_TYPES(f) {
-      delete[] chunks[i]->connection_phases[f];
-      chunks[i]->connection_phases[f] = NULL;
-      for (int ip = 0; ip < 3; ++ip)
-        for (int io = 0; io < 2; io++)
-          chunks[i]->num_connections[f][ip][io] = 0;
-    }
+    chunks[i]->connections_in.clear();
+    chunks[i]->connections_out.clear();
+    chunks[i]->connection_phases.clear();
   }
   FOR_FIELD_TYPES(ft) {
     for (int i = 0; i < num_chunks * num_chunks; i++) {
@@ -358,16 +345,6 @@ bool fields_chunk::needs_W_notowned(component c) {
 }
 
 void fields::connect_the_chunks() {
-  size_t *nc[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][2];
-  FOR_FIELD_TYPES(f) {
-    for (connect_phase ip : all_connect_phases)
-      for (int io = 0; io < 2; io++) {
-        nc[f][ip][io] = new size_t[num_chunks];
-        for (int i = 0; i < num_chunks; i++)
-          nc[f][ip][io][i] = 0;
-      }
-  }
-
   /* For some of the chunks, H==B, and we definitely don't need to
      send B between two such chunks.   We'll still send B when
      the recipient has H != B, since the recipient needs to get B
@@ -377,13 +354,13 @@ void fields::connect_the_chunks() {
      a bit subtle since the non-owned B may be different from H even
      on an H==B chunk (true?), but since we don't use the non-owned B
      for anything(?) it shouldn't matter. */
-  int *B_redundant = new int[num_chunks * 2 * 5];
+  std::vector<int> B_redundant(num_chunks * 2 * 5);
   for (int i = 0; i < num_chunks; ++i)
     FOR_H_AND_B(hc, bc) {
       B_redundant[5 * (num_chunks + i) + bc - Bx] = chunks[i]->f[hc][0] == chunks[i]->f[bc][0];
     }
   am_now_working_on(MpiAllTime);
-  and_to_all(B_redundant + 5 * num_chunks, B_redundant, 5 * num_chunks);
+  and_to_all(B_redundant.data() + 5 * num_chunks, B_redundant.data(), 5 * num_chunks);
   finished_working();
 
   /* Figure out whether we need the notowned W field (== E/H in
@@ -406,6 +383,7 @@ void fields::connect_the_chunks() {
   finished_working();
 
   comm_sizes.clear();
+  const size_t num_reals_per_voxel = is_real ? 1 : 2;
   for (int i = 0; i < num_chunks; i++) {
     // First count the border elements...
     const grid_volume vi = chunks[i]->gv;
@@ -424,19 +402,11 @@ void fields::connect_the_chunks() {
                 const connect_phase ip = thephase == 1.0
                                              ? CONNECT_COPY
                                              : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
-                {
-                  field_type f = type(c);
-                  const int nn = is_real ? 1 : 2;
-                  nc[f][ip][Incoming][i] += nn;
-                  nc[f][ip][Outgoing][j] += nn;
-                  comm_sizes[{f, ip, pair_j_to_i}] += nn;
-                }
+                comm_sizes[{type(c), ip, pair_j_to_i}] += num_reals_per_voxel;
+
                 if (needs_W_notowned[corig]) {
                   field_type f = is_electric(corig) ? WE_stuff : WH_stuff;
-                  const int nn = is_real ? 1 : 2;
-                  nc[f][ip][Incoming][i] += nn;
-                  nc[f][ip][Outgoing][j] += nn;
-                  comm_sizes[{f, ip, pair_j_to_i}] += nn;
+                  comm_sizes[{f, ip, pair_j_to_i}] += num_reals_per_voxel;
                 }
                 if (is_electric(corig) || is_magnetic(corig)) {
                   field_type f = is_electric(corig) ? PE_stuff : PH_stuff;
@@ -453,14 +423,8 @@ void fields::connect_the_chunks() {
                           cni += pj->s->num_cinternal_notowned_needed(c, pj->data);
                         }
                       }
-                  const size_t nn = (is_real ? 1 : 2) * (cni);
-                  nc[f][ip][Incoming][i] += nn;
-                  nc[f][ip][Outgoing][j] += nn;
-                  comm_sizes[{f, ip, pair_j_to_i}] += nn;
-                  const connect_phase iip = CONNECT_COPY;
-                  nc[f][iip][Incoming][i] += ni;
-                  nc[f][iip][Outgoing][j] += ni;
-                  comm_sizes[{f, iip, pair_j_to_i}] += ni;
+                  comm_sizes[{f, ip, pair_j_to_i}] += cni * num_reals_per_voxel;
+                  comm_sizes[{f, CONNECT_COPY, pair_j_to_i}] += ni;
                 }
               } // if is_mine and owns...
             }   // loop over j chunks
@@ -476,87 +440,90 @@ void fields::connect_the_chunks() {
     }
   } // loop over i chunks
 
-  /* Note that the ordering of the connections arrays must be kept
-     consistent with the fields::step_boundaries.  In particular, we
-     must set up the connections array so that all of the connections
-     for process i come before all of the connections for process i'
-     for i < i' */
-
-  // wh stores the current indices in the connections array(s)
-  size_t *wh[NUM_FIELD_TYPES][NUM_CONNECT_PHASE_TYPES][2];
-
-  /* Now allocate the connection arrays... this is still slightly
-     wasteful (by a factor of 2) because we allocate for chunks we
-     don't own if we have a connection with them. Removing this waste
-     would mean a bunch more is_mine() checks below. */
-  FOR_FIELD_TYPES(f) {
-    for (connect_phase ip : all_connect_phases) {
-      for (in_or_out io : all_in_or_out) {
-        for (int i = 0; i < num_chunks; i++)
-          chunks[i]->alloc_extra_connections(field_type(f), connect_phase(ip), in_or_out(io),
-                                             nc[f][ip][io][i]);
-        delete[] nc[f][ip][io];
-        wh[f][ip][io] = new size_t[num_chunks];
-      }
-      for (int i = 0; i < num_chunks; i++)
-        wh[f][ip][Outgoing][i] = 0;
+  // Preallocate all connection vectors.
+  for (const std::pair<const comms_key, size_t> &key_and_comm_size : comm_sizes) {
+    const chunk_pair &pair_j_to_i = key_and_comm_size.first.pair;
+    if (chunks[pair_j_to_i.first]->is_mine()) {
+      chunks[pair_j_to_i.first]->connections_out[key_and_comm_size.first].reserve(
+          key_and_comm_size.second);
+    }
+    if (chunks[pair_j_to_i.second]->is_mine()) {
+      chunks[pair_j_to_i.second]->connections_in[key_and_comm_size.first].reserve(
+          key_and_comm_size.second);
     }
   }
 
   // Next start setting up the connections...
-
   for (int i = 0; i < num_chunks; i++) {
-    const grid_volume vi = chunks[i]->gv;
-
-    // initialize wh[f][ip][Incoming][j] to sum of comm_sizes for jj < j
-    FOR_FIELD_TYPES(f) {
-      for (connect_phase ip : all_connect_phases) {
-        wh[f][ip][Incoming][0] = 0;
-        for (int j = 1; j < num_chunks; ++j)
-          wh[f][ip][Incoming][j] = wh[f][ip][Incoming][j - 1] + get_comm_size({f, ip, {j - 1, i}});
-      }
-    }
+    const grid_volume &vi = chunks[i]->gv;
 
     FOR_COMPONENTS(corig) {
       if (have_component(corig)) LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
           IVEC_LOOP_ILOC(vi, here);
           component c = corig;
           // We're looking at a border element...
-          complex<double> thephase;
-          if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here))
+          std::complex<double> thephase_double;
+          if (locate_component_point(&c, &here, &thephase_double) && !on_metal_boundary(here)) {
+            std::complex<realnum> thephase(thephase_double.real(), thephase_double.imag());
             for (int j = 0; j < num_chunks; j++) {
-              if ((chunks[i]->is_mine() || chunks[j]->is_mine()) && chunks[j]->gv.owns(here) &&
+              const std::pair<int, int> pair_j_to_i{j, i};
+              const bool i_is_mine = chunks[i]->is_mine();
+              const bool j_is_mine = chunks[j]->is_mine();
+              if (!i_is_mine && !j_is_mine) { continue; }
+
+              auto push_back_phase = [this, &thephase, &pair_j_to_i](field_type f) {
+                chunks[pair_j_to_i.second]
+                    ->connection_phases[{f, CONNECT_PHASE, pair_j_to_i}]
+                    .push_back(std::complex<realnum>(thephase.real(), thephase.imag()));
+              };
+              auto push_back_incoming_pointer = [this, &pair_j_to_i](field_type f, connect_phase ip,
+                                                                     realnum *p) {
+                chunks[pair_j_to_i.second]->connections_in[{f, ip, pair_j_to_i}].push_back(p);
+              };
+              auto push_back_outgoing_pointer = [this, &pair_j_to_i](field_type f, connect_phase ip,
+                                                                     realnum *p) {
+                chunks[pair_j_to_i.first]->connections_out[{f, ip, pair_j_to_i}].push_back(p);
+              };
+
+              if (chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
                     B_redundant[5 * j + c - Bx])) {
-                const connect_phase ip = thephase == 1.0
-                                             ? CONNECT_COPY
-                                             : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
+                const connect_phase ip =
+                    thephase == static_cast<realnum>(1.0)
+                        ? CONNECT_COPY
+                        : (thephase == static_cast<realnum>(-1.0) ? CONNECT_NEGATE : CONNECT_PHASE);
                 const ptrdiff_t m = chunks[j]->gv.index(c, here);
 
                 {
                   field_type f = type(c);
-                  if (ip == CONNECT_PHASE)
-                    chunks[i]->connection_phases[f][wh[f][ip][Incoming][j] / 2] = thephase;
-                  DOCMP {
-                    chunks[i]->connections[f][ip][Incoming][wh[f][ip][Incoming][j]++] =
-                        chunks[i]->f[corig][cmp] + n;
-                    chunks[j]->connections[f][ip][Outgoing][wh[f][ip][Outgoing][j]++] =
-                        chunks[j]->f[c][cmp] + m;
+                  if (i_is_mine) {
+                    if (ip == CONNECT_PHASE) { push_back_phase(f); }
+                    DOCMP { push_back_incoming_pointer(f, ip, chunks[i]->f[corig][cmp] + n); }
+                  }
+                  if (j_is_mine) {
+                    DOCMP { push_back_outgoing_pointer(f, ip, chunks[j]->f[c][cmp] + m); }
                   }
                 }
 
                 if (needs_W_notowned[corig]) {
                   field_type f = is_electric(corig) ? WE_stuff : WH_stuff;
-                  if (ip == CONNECT_PHASE)
-                    chunks[i]->connection_phases[f][wh[f][ip][Incoming][j] / 2] = thephase;
-                  DOCMP {
-                    chunks[i]->connections[f][ip][Incoming][wh[f][ip][Incoming][j]++] =
-                        (chunks[i]->f_w[corig][cmp] ? chunks[i]->f_w[corig][cmp]
-                                                    : chunks[i]->f[corig][cmp]) +
-                        n;
-                    chunks[j]->connections[f][ip][Outgoing][wh[f][ip][Outgoing][j]++] =
-                        (chunks[j]->f_w[c][cmp] ? chunks[j]->f_w[c][cmp] : chunks[j]->f[c][cmp]) +
-                        m;
+                  if (i_is_mine) {
+                    if (ip == CONNECT_PHASE) { push_back_phase(f); }
+                    DOCMP {
+                      push_back_incoming_pointer(f, ip,
+                                                 (chunks[i]->f_w[corig][cmp]
+                                                      ? chunks[i]->f_w[corig][cmp]
+                                                      : chunks[i]->f[corig][cmp]) +
+                                                     n);
+                    }
+                  }
+                  if (j_is_mine) {
+                    DOCMP {
+                      push_back_outgoing_pointer(
+                          f, ip,
+                          (chunks[j]->f_w[c][cmp] ? chunks[j]->f_w[c][cmp] : chunks[j]->f[c][cmp]) +
+                              m);
+                    }
                   }
                 }
 
@@ -574,21 +541,31 @@ void fields::connect_the_chunks() {
                           const connect_phase iip = CONNECT_COPY;
                           const size_t ni = po->s->num_internal_notowned_needed(corig, po->data);
                           for (size_t k = 0; k < ni; ++k) {
-                            chunks[i]->connections[f][iip][Incoming][wh[f][iip][Incoming][j]++] =
-                                po->s->internal_notowned_ptr(k, corig, n, pi->data);
-                            chunks[j]->connections[f][iip][Outgoing][wh[f][iip][Outgoing][j]++] =
-                                po->s->internal_notowned_ptr(k, c, m, pj->data);
+                            if (i_is_mine) {
+                              push_back_incoming_pointer(
+                                  f, iip, po->s->internal_notowned_ptr(k, corig, n, pi->data));
+                            }
+                            if (j_is_mine) {
+                              push_back_outgoing_pointer(
+                                  f, iip, po->s->internal_notowned_ptr(k, c, m, pj->data));
+                            }
                           }
                           const size_t cni = po->s->num_cinternal_notowned_needed(corig, po->data);
                           for (size_t k = 0; k < cni; ++k) {
-                            if (ip == CONNECT_PHASE)
-                              chunks[i]->connection_phases[f][wh[f][ip][Incoming][j] / 2] =
-                                  thephase;
-                            DOCMP {
-                              chunks[i]->connections[f][ip][Incoming][wh[f][ip][Incoming][j]++] =
-                                  po->s->cinternal_notowned_ptr(k, corig, cmp, n, pi->data);
-                              chunks[j]->connections[f][ip][Outgoing][wh[f][ip][Outgoing][j]++] =
-                                  po->s->cinternal_notowned_ptr(k, c, cmp, m, pj->data);
+                            if (i_is_mine) {
+                              if (ip == CONNECT_PHASE) { push_back_phase(f); }
+
+                              DOCMP {
+                                push_back_incoming_pointer(
+                                    f, ip,
+                                    po->s->cinternal_notowned_ptr(k, corig, cmp, n, pi->data));
+                              }
+                            }
+                            if (j_is_mine) {
+                              DOCMP {
+                                push_back_outgoing_pointer(
+                                    f, ip, po->s->cinternal_notowned_ptr(k, c, cmp, m, pj->data));
+                              }
                             }
                           }
                         }
@@ -596,14 +573,12 @@ void fields::connect_the_chunks() {
                 } // is_electric(corig)
               }   // if is_mine and owns...
             }     // loop over j chunks
+          }       // here in user_volume
         }         // LOOP_OVER_VOL_NOTOWNED
     }             // FOR_COMPONENTS
   }               // loop over i chunks
 
   FOR_FIELD_TYPES(f) {
-    for (connect_phase ip : all_connect_phases)
-      for (int io = 0; io < 2; io++)
-        delete[] wh[f][ip][io];
 
     // Calculate the sequence of sends and receives in advance.
     // Initiate receive operations as early as possible.
@@ -645,23 +620,6 @@ void fields::connect_the_chunks() {
 
     comms_sequence_for_field[f] = optimize_comms_operations(operations);
   }
-  delete[] B_redundant;
-}
-
-void fields_chunk::alloc_extra_connections(field_type f, connect_phase ip, in_or_out io,
-                                           size_t num) {
-  if (num == 0) return; // No need to go to any bother...
-  const size_t tot = num_connections[f][ip][io] + num;
-  if (io == Incoming && ip == CONNECT_PHASE) {
-    delete[] connection_phases[f];
-    connection_phases[f] = new complex<realnum>[tot];
-  }
-  typedef realnum *realnum_ptr;
-  realnum **conn = new realnum_ptr[tot];
-  if (!conn) meep::abort("Out of memory!\n");
-  delete[] connections[f][ip][io];
-  connections[f][ip][io] = conn;
-  num_connections[f][ip][io] = tot;
 }
 
 } // namespace meep
