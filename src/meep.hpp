@@ -2207,9 +2207,9 @@ public:
   // Returns a map from time_sink to the vector of total times each MPI process spent on the
   // indicated category.
   std::unordered_map<time_sink, std::vector<double>, std::hash<int> > get_timing_data() const;
+  void reset_timers();
 
 private:
-  void reset_timers();
   timing_scope with_timing_scope(time_sink sink);
 
   // The following is an array that is num_chunks by num_chunks.  Actually
