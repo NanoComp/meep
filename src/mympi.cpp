@@ -32,6 +32,12 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include "omp.h"
+#else
+#define omp_get_num_threads() (1)
+#endif
+
 #ifdef IGNORE_SIGFPE
 #include <signal.h>
 #endif
@@ -57,6 +63,10 @@ extern "C" int feenableexcept(int EXCEPTS);
 #define gettimeofday BSDgettimeofday
 #define HAVE_GETTIMEOFDAY 1
 #endif
+#endif
+
+#if HAVE_IMMINTRIN_H
+#include <immintrin.h>
 #endif
 
 #define UNUSED(x) (void)x // silence compiler warnings
@@ -127,6 +137,37 @@ std::unique_ptr<comms_manager> create_comms_manager() {
 
 int verbosity = 1; // defined in meep.h
 
+/* Set CPU to flush subnormal values to zero (if iszero == true).  This slightly
+   reduces the range of floating-point numbers, but can greatly increase the speed
+   in cases where subnormal values might arise (e.g. deep in the tails of
+   exponentially decaying sources).
+
+   See also meep#1708.
+
+   code based on github.com/JuliaLang/julia/blob/master/src/processor_x86.cpp#L1087-L1104,
+   which is free software under the GPL-compatible "MIT license" */
+static void _set_zero_subnormals(bool iszero)
+{
+#if HAVE_IMMINTRIN_H
+    unsigned int flags = 0x00008040; // assume a non-ancient processor with SSE2, supporting both FTZ and DAZ flags
+    unsigned int state = _mm_getcsr();
+    if (iszero)
+      state |= flags;
+    else
+      state &= ~flags;
+    _mm_setcsr(state);
+#endif
+}
+void set_zero_subnormals(bool iszero)
+{
+  int n = omp_get_num_threads();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static,1)
+#endif
+  for (int i = 0; i < n; ++i)
+    _set_zero_subnormals(iszero); // This has to be done in every thread for OpenMP.
+}
+
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
   MPI_Init(&argc, &argv);
@@ -144,6 +185,7 @@ initialize::initialize(int &argc, char **&argv) {
 #ifdef IGNORE_SIGFPE
   signal(SIGFPE, SIG_IGN);
 #endif
+  set_zero_subnormals(true);
   t_start = wall_time();
 }
 

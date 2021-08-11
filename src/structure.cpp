@@ -937,14 +937,14 @@ structure_chunk::structure_chunk(const grid_volume &thegv, const volume &vol_lim
 double structure::max_eps() const {
   double themax = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) themax = max(themax, chunks[i]->max_eps());
+    if (chunks[i]->is_mine()) themax = std::max(themax, chunks[i]->max_eps());
   return max_to_all(themax);
 }
 
 double fields::max_eps() const {
   double themax = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) themax = max(themax, chunks[i]->s->max_eps());
+    if (chunks[i]->is_mine()) themax = std::max(themax, chunks[i]->s->max_eps());
   return max_to_all(themax);
 }
 
@@ -954,7 +954,7 @@ double structure_chunk::max_eps() const {
     direction d = component_direction(c);
     if (chi1inv[c][d])
       for (size_t i = 0; i < gv.ntot(); i++)
-        themax = max(themax, 1 / chi1inv[c][d][i]);
+        themax = std::max<double>(themax, 1 / chi1inv[c][d][i]);
   }
   return themax;
 }

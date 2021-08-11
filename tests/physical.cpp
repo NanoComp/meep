@@ -42,7 +42,7 @@ int radiating_2D(const double xmax) {
 
   // let the source reach steady state
 #if 1
-  f.solve_cw(1e-6);
+  f.solve_cw(sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-6);
 #else
   while (f.time() < 400)
     f.step();

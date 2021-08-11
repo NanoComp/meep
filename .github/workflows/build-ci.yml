@@ -149,7 +149,7 @@ jobs:
 
     - name: Run configure
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
-      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+      run: ./configure --enable-maintainer-mode --with-coverage --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: Run configure with single-precision floating point
       if: ${{ matrix.enable-mpi == true && matrix.python-version == 3.9 }}

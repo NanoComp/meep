@@ -117,6 +117,10 @@ class TestModeDecomposition(unittest.TestCase):
         mode = sim.add_mode_monitor(fcen, 0, 1,
                                     mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0,0),
                                                   size=mp.Vector3(0,sxy,0)))
+        mode_decimated = sim.add_mode_monitor(fcen, 0, 1,
+                                              mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0,0),
+                                                            size=mp.Vector3(0,sxy,0)),
+                                              decimation_factor=10)
 
         sim.run(until_after_sources=30)
 
@@ -124,10 +128,19 @@ class TestModeDecomposition(unittest.TestCase):
         coeff = sim.get_eigenmode_coefficients(mode,[1],
                                                direction=mp.NO_DIRECTION,
                                                kpoint_func=lambda f,n: kpoint).alpha[0,0,0]
+        flux_decimated = mp.get_fluxes(mode_decimated)[0]
+        coeff_decimated = sim.get_eigenmode_coefficients(mode_decimated,[1],
+                                                         direction=mp.NO_DIRECTION,
+                                                         kpoint_func=lambda f,n: kpoint).alpha[0,0,0]
 
         print("oblique-waveguide-flux:, {:.6f}, {:.6f}".format(-flux, abs(coeff)**2))
+        print("oblique-waveguide-flux (decimated):, {:.6f}, {:.6f}".format(-flux_decimated,
+                                                                           abs(coeff_decimated)**2))
         ## the magnitude of |flux| is 100.008731 and so we check two significant digits of accuracy
         self.assertAlmostEqual(-1,abs(coeff)**2/flux,places=2)
+        self.assertAlmostEqual(flux,flux_decimated,places=3)
+        self.assertAlmostEqual(coeff,coeff_decimated,places=3)
+
 
 if __name__ == '__main__':
     unittest.main()

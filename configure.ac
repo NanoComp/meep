@@ -514,7 +514,7 @@ fi
 
 ##############################################################################
 # Miscellaneous function and header checks
-AC_CHECK_HEADERS([sys/time.h])
+AC_CHECK_HEADERS([sys/time.h immintrin.h])
 AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
 
 ##############################################################################
@@ -537,6 +537,9 @@ AC_CHECK_PROG(SWIG, swig, swig, echo)
 if test "$USE_MAINTAINER_MODE" = yes && (test "x$with_python" = "xyes" || test "x$with_scheme" = "xyes") && test "x$SWIG" = xecho; then
   AC_MSG_ERROR([SWIG not found; configure --without-python --without-scheme or use a release tarball])
 fi
+
+AC_ARG_WITH(coverage, [AS_HELP_STRING([--with-coverage],[enable Python coverage tests])],
+            with_coverage=$withval, with_coverage=no)
 
 if test "x$with_python" = xno; then
   have_python=no
@@ -572,14 +575,15 @@ else
           AC_MSG_WARN([disabling Python wrappers])
           have_python=no],[#include <Python.h>])
 
-        AC_MSG_CHECKING([for coverage module])
-        $PYTHON -c 'import coverage' 2>/dev/null
-        if test $? = 0; then
-          AC_MSG_RESULT([yes])
-          have_coverage=yes
-        else
-          AC_MSG_RESULT([no])
-          have_coverage=no
+        if test x"$with_coverage" = xyes; then
+          AC_MSG_CHECKING([for coverage module])
+          $PYTHON -c 'import coverage' 2>/dev/null
+          if test $? = 0; then
+            AC_MSG_RESULT([yes])
+          else
+            AC_MSG_RESULT([no])
+            with_coverage=no
+          fi
         fi
       fi
 
@@ -591,7 +595,7 @@ fi # with_python
 
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
-AM_CONDITIONAL(WITH_COVERAGE, test x"$have_coverage" = "xyes")
+AM_CONDITIONAL(WITH_COVERAGE, test x"$with_coverage" = "xyes")
 
 if test "x$with_scheme" = xyes; then
    # Copy/symlink casimir.scm and materials.scm to builddir for out-of-tree builds

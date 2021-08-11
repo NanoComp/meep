@@ -1,13 +1,11 @@
-from __future__ import division
-
 import os
 import unittest
 import numpy as np
 import meep as mp
-from utils import compare_arrays
+from utils import ApproxComparisonTestCase
 
 
-class TestBendFlux(unittest.TestCase):
+class TestBendFlux(ApproxComparisonTestCase):
 
     def init(self, no_bend=False, gdsii=False):
         sx = 16
@@ -65,10 +63,13 @@ class TestBendFlux(unittest.TestCase):
             fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, (sy / 2) - 1.5), size=mp.Vector3(w * 2, 0))
 
         self.trans = self.sim.add_flux(fcen, df, nfreq, fr)
+        self.trans_decimated = self.sim.add_flux(fcen, df, nfreq, fr, decimation_factor=5)
+
         refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
                                 size=mp.Vector3(0, w * 2))
-
         self.refl = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr)
+        self.refl_decimated = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr,
+                                                decimation_factor=10)
 
         if no_bend:
             self.pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)
@@ -81,6 +82,7 @@ class TestBendFlux(unittest.TestCase):
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
         # Save flux data for use in real run below
         fdata = self.sim.get_flux_data(self.refl)
+        fdata_decimated = self.sim.get_flux_data(self.refl_decimated)
 
         expected = [
             (0.1, 3.65231563251e-05, 3.68932495077e-05),
@@ -105,16 +107,24 @@ class TestBendFlux(unittest.TestCase):
             (0.119191919192, 0.0254987474079, 0.0252348211592),
         ]
 
-        res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
+        res = list(zip(mp.get_flux_freqs(self.trans),
+                       mp.get_fluxes(self.trans),
+                       mp.get_fluxes(self.refl)))
 
-        tolerance = 1e-2 if from_gdsii_file else 1e-3
-        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=tolerance)
+        res_decimated = list(zip(mp.get_flux_freqs(self.trans_decimated),
+                                 mp.get_fluxes(self.trans_decimated),
+                                 mp.get_fluxes(self.refl_decimated)))
+
+        tol = 1e-6 if mp.is_single_precision() else 1e-8
+        self.assertClose(np.array(expected), np.array(res[:20]), epsilon=tol)
+        self.assertClose(np.array(expected), np.array(res_decimated[:20]), epsilon=tol)
 
         # Real run
         self.sim = None
         self.init(gdsii=from_gdsii_file)
         # Load flux data obtained from normalization run
         self.sim.load_minus_flux_data(self.refl, fdata)
+        self.sim.load_minus_flux_data(self.refl_decimated, fdata_decimated)
         self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
 
         expected = [
@@ -138,13 +148,19 @@ class TestBendFlux(unittest.TestCase):
             (0.11717171717171727, 0.005243320443599316, -0.003215529845495731),
             (0.11818181818181829, 0.0067654019326068, -0.004266367104375331),
             (0.11919191919191931, 0.008646855439680507, -0.005614491919262783),
-
         ]
 
-        res = list(zip(mp.get_flux_freqs(self.trans), mp.get_fluxes(self.trans), mp.get_fluxes(self.refl)))
+        res = list(zip(mp.get_flux_freqs(self.trans),
+                       mp.get_fluxes(self.trans),
+                       mp.get_fluxes(self.refl)))
 
-        tolerance = 1e-2 if from_gdsii_file else 1e-3
-        compare_arrays(self, np.array(expected), np.array(res[:20]), tol=tolerance)
+        res_decimated = list(zip(mp.get_flux_freqs(self.trans_decimated),
+                                 mp.get_fluxes(self.trans_decimated),
+                                 mp.get_fluxes(self.refl_decimated)))
+
+        tol = 1e-3
+        self.assertClose(np.array(expected), np.array(res[:20]), epsilon=tol)
+        self.assertClose(np.array(expected), np.array(res_decimated[:20]), epsilon=tol)
 
     def test_bend_flux(self):
         self.run_bend_flux(False)

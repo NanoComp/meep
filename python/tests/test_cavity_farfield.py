@@ -1,11 +1,11 @@
 import meep as mp
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonTestCase
 import os
 import unittest
 import h5py
 
 
-class TestCavityFarfield(VectorComparisonMixin, unittest.TestCase):
+class TestCavityFarfield(ApproxComparisonTestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
@@ -76,12 +76,12 @@ class TestCavityFarfield(VectorComparisonMixin, unittest.TestCase):
             ref_hz = mp.complexarray(f['hz.r'][()], f['hz.i'][()])
 
             tol = 1e-5 if mp.is_single_precision() else 1e-7
-            self.assertVectorsClose(ref_ex, result['Ex'], epsilon=tol)
-            self.assertVectorsClose(ref_ey, result['Ey'], epsilon=tol)
-            self.assertVectorsClose(ref_ez, result['Ez'], epsilon=tol)
-            self.assertVectorsClose(ref_hx, result['Hx'], epsilon=tol)
-            self.assertVectorsClose(ref_hy, result['Hy'], epsilon=tol)
-            self.assertVectorsClose(ref_hz, result['Hz'], epsilon=tol)
+            self.assertClose(ref_ex, result['Ex'], epsilon=tol)
+            self.assertClose(ref_ey, result['Ey'], epsilon=tol)
+            self.assertClose(ref_ez, result['Ez'], epsilon=tol)
+            self.assertClose(ref_hx, result['Hx'], epsilon=tol)
+            self.assertClose(ref_hy, result['Hy'], epsilon=tol)
+            self.assertClose(ref_hz, result['Hz'], epsilon=tol)
 
 
     def test_cavity_farfield(self):

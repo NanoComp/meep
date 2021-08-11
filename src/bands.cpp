@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <algorithm>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -33,9 +34,9 @@ namespace meep {
 
 double fields::last_source_time() {
   double last_time = 0;
-  if (sources != NULL) last_time = max(last_time, sources->last_time_max());
+  if (sources != NULL) last_time = std::max(last_time, sources->last_time_max());
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) last_time = max(last_time, chunks[i]->last_source_time());
+    if (chunks[i]->is_mine()) last_time = std::max(last_time, chunks[i]->last_source_time());
   return max_to_all(last_time);
 }
 
