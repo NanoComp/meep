@@ -1,5 +1,3 @@
-from __future__ import division
-
 import unittest
 import meep as mp
 
@@ -26,6 +24,9 @@ class TestDftEnergy(unittest.TestCase):
 
         flux = sim.add_flux(fsrc, 0, 1, mp.FluxRegion(center=mp.Vector3(3), size=mp.Vector3(y=5)))
         energy = sim.add_energy(fsrc, 0, 1, mp.EnergyRegion(center=mp.Vector3(3), size=mp.Vector3(y=5)))
+        energy_decimated = sim.add_energy(fsrc, 0, 1,
+                                          mp.EnergyRegion(center=mp.Vector3(3), size=mp.Vector3(y=5)),
+                                          decimation_factor=10)
         sim.run(until_after_sources=100)
 
         res = sim.get_eigenmode_coefficients(flux, [1], eig_parity=mp.ODD_Z+mp.EVEN_Y)
@@ -38,6 +39,11 @@ class TestDftEnergy(unittest.TestCase):
 
         self.assertAlmostEqual(m_energy + e_energy, t_energy)
         self.assertAlmostEqual(ratio_vg, mode_vg, places=3)
+
+        e_energy_decimated = mp.get_electric_energy(energy_decimated)[0]
+        m_energy_decimated = mp.get_magnetic_energy(energy_decimated)[0]
+        self.assertAlmostEqual(e_energy, e_energy_decimated, places=1)
+        self.assertAlmostEqual(m_energy, m_energy_decimated, places=1)
 
 
 if __name__ == '__main__':

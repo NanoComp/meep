@@ -1027,6 +1027,8 @@ public:
 
   std::complex<double> get_split_costs(direction d, int split_point,
                                        bool frag_cost) const;
+  void tile_split(int &best_split_point,
+                  direction &best_split_direction) const;
   void find_best_split(int desired_chunks, bool frag_cost,
                        int &best_split_point, direction &best_split_direction,
                        double &left_effort_fraction) const;

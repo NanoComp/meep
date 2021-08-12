@@ -53,7 +53,7 @@ src_time *src_time::add_to(src_time *others, src_time **added) const {
 }
 
 double src_time::last_time_max(double after) {
-  after = max(last_time(), after);
+  after = std::max(last_time(), after);
   if (next)
     return next->last_time_max(after);
   else

@@ -131,7 +131,7 @@ component first_field_component(field_type ft) {
 vec min(const vec &vec1, const vec &vec2) {
   vec m(vec1.dim);
   LOOP_OVER_DIRECTIONS(vec1.dim, d) {
-    m.set_direction(d, min(vec1.in_direction(d), vec2.in_direction(d)));
+    m.set_direction(d, std::min(vec1.in_direction(d), vec2.in_direction(d)));
   }
   return m;
 }
@@ -139,7 +139,7 @@ vec min(const vec &vec1, const vec &vec2) {
 vec max(const vec &vec1, const vec &vec2) {
   vec m(vec1.dim);
   LOOP_OVER_DIRECTIONS(vec1.dim, d) {
-    m.set_direction(d, max(vec1.in_direction(d), vec2.in_direction(d)));
+    m.set_direction(d, std::max(vec1.in_direction(d), vec2.in_direction(d)));
   }
   return m;
 }
@@ -147,7 +147,7 @@ vec max(const vec &vec1, const vec &vec2) {
 ivec min(const ivec &ivec1, const ivec &ivec2) {
   ivec m(ivec1.dim);
   LOOP_OVER_DIRECTIONS(ivec1.dim, d) {
-    m.set_direction(d, min(ivec1.in_direction(d), ivec2.in_direction(d)));
+    m.set_direction(d, std::min(ivec1.in_direction(d), ivec2.in_direction(d)));
   }
   return m;
 }
@@ -155,7 +155,7 @@ ivec min(const ivec &ivec1, const ivec &ivec2) {
 ivec max(const ivec &ivec1, const ivec &ivec2) {
   ivec m(ivec1.dim);
   LOOP_OVER_DIRECTIONS(ivec1.dim, d) {
-    m.set_direction(d, max(ivec1.in_direction(d), ivec2.in_direction(d)));
+    m.set_direction(d, std::max(ivec1.in_direction(d), ivec2.in_direction(d)));
   }
   return m;
 }
@@ -195,7 +195,7 @@ double volume::full_volume() const {
 
 double volume::diameter() const {
   double diam = 0.0;
-  LOOP_OVER_DIRECTIONS(dim, d) { diam = max(diam, in_direction(d)); }
+  LOOP_OVER_DIRECTIONS(dim, d) { diam = std::max(diam, in_direction(d)); }
   return diam;
 }
 
@@ -203,8 +203,8 @@ volume volume::intersect_with(const volume &a) const {
   if (a.dim != dim) meep::abort("Can't intersect volumes of dissimilar dimensions.\n");
   volume result(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    double minval = max(in_direction_min(d), a.in_direction_min(d));
-    double maxval = min(in_direction_max(d), a.in_direction_max(d));
+    double minval = std::max(in_direction_min(d), a.in_direction_min(d));
+    double maxval = std::min(in_direction_max(d), a.in_direction_max(d));
     if (minval > maxval) return volume(zero_vec(dim), zero_vec(dim));
     result.set_direction_min(d, minval);
     result.set_direction_max(d, maxval);
@@ -215,8 +215,8 @@ volume volume::intersect_with(const volume &a) const {
 bool volume::intersects(const volume &a) const {
   if (a.dim != dim) meep::abort("Can't intersect volumes of dissimilar dimensions.\n");
   LOOP_OVER_DIRECTIONS(dim, d) {
-    double minval = max(in_direction_min(d), a.in_direction_min(d));
-    double maxval = min(in_direction_max(d), a.in_direction_max(d));
+    double minval = std::max(in_direction_min(d), a.in_direction_min(d));
+    double maxval = std::min(in_direction_max(d), a.in_direction_max(d));
     if (minval > maxval) return false;
   }
   return true;
@@ -757,8 +757,8 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
   int temp_num[3] = {0, 0, 0};
   ivec new_io(dim);
   LOOP_OVER_DIRECTIONS(dim, d) {
-    int minval = max(little_corner().in_direction(d), vol_in.little_corner().in_direction(d));
-    int maxval = min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
+    int minval = std::max(little_corner().in_direction(d), vol_in.little_corner().in_direction(d));
+    int maxval = std::min(big_corner().in_direction(d), vol_in.big_corner().in_direction(d));
     if (minval >= maxval) return false;
     temp_num[d % 3] = (maxval - minval) / 2;
     new_io.set_direction(d, minval);
@@ -825,7 +825,7 @@ vec grid_volume::loc_at_resolution(ptrdiff_t index, double res) const {
     const direction d = (direction)dd;
     if (has_boundary(High, d)) {
       const double dist = boundary_location(High, d) - boundary_location(Low, d);
-      const int nhere = max(1, (int)floor(dist * res + 0.5));
+      const int nhere = std::max(1, (int)floor(dist * res + 0.5));
       where.set_direction(d, origin.in_direction(d) + ((index % nhere) + 0.5) * (1.0 / res));
       index /= nhere;
     }
@@ -839,7 +839,7 @@ size_t grid_volume::ntot_at_resolution(double res) const {
     if (has_boundary(High, (direction)d)) {
       const double dist =
           boundary_location(High, (direction)d) - boundary_location(Low, (direction)d);
-      mytot *= max(size_t(1), (size_t)(dist * res + 0.5));
+      mytot *= std::max(size_t(1), (size_t)(dist * res + 0.5));
     }
   return mytot;
 }
@@ -978,6 +978,24 @@ static double cost_diff(int desired_chunks, std::complex<double> costs) {
   return right_cost - left_cost;
 }
 
+void grid_volume::tile_split(int &best_split_point,
+                             direction &best_split_direction) const {
+  const size_t ntot_thresh = 10;
+  if (ntot() < ntot_thresh) {
+    best_split_point = 0;
+    best_split_direction = NO_DIRECTION;
+  } else if (nx() > 1) {
+    best_split_point = nx() / 2;
+    best_split_direction = X;
+  } else if (ny() > 1) {
+    best_split_point = ny() / 2;
+    best_split_direction = Y;
+  } else {
+    best_split_point = nz() / 2;
+    best_split_direction = Z;
+  }
+}
+
 void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
                                   int &best_split_point,
                                   direction &best_split_direction,
@@ -1019,7 +1037,7 @@ void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
     std::complex<double> costs = get_split_costs(d, split_point, fragment_cost);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
-    double split_measure = max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - (desired_chunks / 2)));
+    double split_measure = std::max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - (desired_chunks / 2)));
     // Give a 30% preference to the longest axis, as a heuristic to prefer lower communication costs
     // when the split_measure is somewhat close.   TODO: use a data-driven communication cost function.
     if (d == longest_axis) split_measure *= 0.7;
