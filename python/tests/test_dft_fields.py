@@ -102,7 +102,8 @@ class TestDFTFields(ApproxComparisonTestCase):
     def test_decimated_dft_fields_are_almost_equal_to_undecimated_fields(self):
         sim = self.init()
         sim.init_sim()
-        undecimated_field = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1)
+        undecimated_field = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1,
+                                               decimation_factor=1)
         decimated_field = sim.add_dft_fields([mp.Ez],
                                              self.fcen,
                                              0,
