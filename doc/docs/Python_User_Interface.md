@@ -107,6 +107,7 @@ def __init__(self,
              progress_interval=4,
              subpixel_tol=0.0001,
              subpixel_maxeval=100000,
+             loop_tile_base=0,
              ensure_periodicity=True,
              num_chunks=0,
              Courant=0.5,
@@ -715,7 +716,7 @@ of the field at that point.
 
 ```python
 def add_dft_fields(self, *args, **kwargs):
-def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=1):
+def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -729,12 +730,13 @@ The volume can also be specified via the `center` and `size` arguments. The
 default routine interpolates the Fourier-transformed fields at the center of each
 voxel within the specified volume. Alternatively, the exact Fourier-transformed
 fields evaluated at each corresponding Yee grid point is available by setting
-`yee_grid` to `True`. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` >= 1 can be
-specified. DFT field values are updated every `decimation_factor`
-timesteps. Use this feature with care, as the decimated timeseries may be
-corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
-The choice of decimation factor should take into account the properties of all sources
+`yee_grid` to `True`. To reduce the memory-bandwidth burden of accumulating
+DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
+is 0 (the default), this value is automatically determined. It can be turned off by
+setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
+Use this feature with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
+of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
@@ -1097,7 +1099,7 @@ Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accum
 
 ```python
 def add_flux(self, *args, **kwargs):
-def add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=1):
+def add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1109,11 +1111,12 @@ field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a *flux object*, which you can pass to the functions
 below to get the flux spectrum, etcetera. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` >= 1 can be
-specified. DFT field values are updated every `decimation_factor`
-timesteps. Use this feature with care, as the decimated timeseries may be
-corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
-The choice of decimation factor should take into account the properties of all sources
+accumulating DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
+is 0 (the default), this value is automatically determined. It can be turned off by
+setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
+Use this feature with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
+of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
@@ -1361,7 +1364,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 
 ```python
 def add_mode_monitor(self, *args, **kwargs):
-def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions, decimation_factor=1):
+def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1491,7 +1494,7 @@ The usage is similar to the flux spectra: you define a set of [`EnergyRegion`](#
 
 ```python
 def add_energy(self, *args, **kwargs):
-def add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=1):
+def add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1502,12 +1505,13 @@ if they have not yet been initialized), telling Meep to accumulate the appropria
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return an *energy object*, which you can pass to the functions
-below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` >= 1 can be
-specified. DFT field values are updated every `decimation_factor`
-timesteps. Use this feature with care, as the decimated timeseries may be
-corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
-The choice of decimation factor should take into account the properties of all sources
+below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of accumulating
+DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
+is 0 (the default), this value is automatically determined. It can be turned off by
+setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
+Use this feature with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
+of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
@@ -1723,7 +1727,7 @@ The usage is similar to the [flux spectra](Python_Tutorials/Basics.md#transmitta
 
 ```python
 def add_force(self, *args, **kwargs):
-def add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=1):
+def add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1735,11 +1739,12 @@ field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a `force`object, which you can pass to the functions
 below to get the force spectrum, etcetera. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` >= 1 can be
-specified. DFT field values are updated every `decimation_factor`
-timesteps. Use this feature with care, as the decimated timeseries may be
-corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
-The choice of decimation factor should take into account the properties of all sources
+DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
+is 0 (the default), this value is automatically determined. It can be turned off by
+setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
+Use this feature with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
+of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
@@ -2008,7 +2013,7 @@ There are three steps to using the near-to-far-field feature: first, define the 
 
 ```python
 def add_near2far(self, *args, **kwargs):
-def add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=1):
+def add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2020,11 +2025,12 @@ appropriate field Fourier transforms for `nfreq` equally spaced frequencies
 covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq`
 for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass
 to the functions below to get the far fields. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` >= 1 can be
-specified. DFT field values are updated every `decimation_factor`
-timesteps. Use this feature with care, as the decimated timeseries may be
-corrupted by [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
-The choice of decimation factor should take into account the properties of all sources
+accumulating DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
+is 0 (the default), this value is automatically determined. It can be turned off by
+setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
+Use this feature with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
+of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
@@ -4266,8 +4272,7 @@ $\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The 
 +\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
 ($\beta$: bias or "smoothness" of the turn on) and `eta` ($\eta$: offset for erosion/dilation). The level set provides a general
 approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
-The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
-can be specified using the `Simulation` constructor.
+Subpixel smoothing is fast and accurate because it exploits an analytic framework for level-set functions.
 
 It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
 (e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of

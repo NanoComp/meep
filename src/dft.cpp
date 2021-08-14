@@ -174,7 +174,22 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   dft_chunk_data data;
   data.c = c;
   data.vc = vc;
+
+  if (decimation_factor == 0) {
+    double src_freq_max = 0;
+    for (src_time *s = sources; s; s = s->next) {
+      if (s->frequency().real()+0.5*s->fwidth() > src_freq_max)
+        src_freq_max = s->frequency().real()+0.5*s->fwidth();
+    }
+    if (src_freq_max > 0)
+      decimation_factor = 1/(dt*(freq[Nfreq-1] + src_freq_max));
+    if (decimation_factor > 2)
+      decimation_factor -= 1;
+    else
+      decimation_factor = 1;
+  }
   data.decimation_factor = decimation_factor;
+
   data.omega.resize(Nfreq);
   for (size_t i = 0; i < Nfreq; ++i)
     data.omega[i] = 2 * pi * freq[i];
