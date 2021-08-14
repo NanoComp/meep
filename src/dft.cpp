@@ -178,8 +178,13 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   if (decimation_factor == 0) {
     double src_freq_max = 0;
     for (src_time *s = sources; s; s = s->next) {
-      if (s->frequency().real()+0.5*s->fwidth() > src_freq_max)
-        src_freq_max = s->frequency().real()+0.5*s->fwidth();
+      if (s->get_width() == 0) {
+          decimation_factor = 1;
+        } else {
+        if (s->frequency().real()+0.5/s->get_width() > src_freq_max) {
+          src_freq_max = s->frequency().real()+0.5/s->get_width();
+        }
+      }
     }
     if (src_freq_max > 0) {
       decimation_factor = 1/(dt*(freq[Nfreq-1] + src_freq_max));
