@@ -69,7 +69,7 @@ def install_design_region_monitors(
             frequencies,
             where=design_region.volume,
             yee_grid=True,
-            decimation_factor=1
+            decimation_factor=0
         ) for design_region in design_regions
     ]
     return design_region_monitors

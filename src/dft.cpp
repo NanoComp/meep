@@ -186,10 +186,14 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
         }
       }
     }
-    if (src_freq_max > 0) {
-      decimation_factor = 1/(dt*(freq[Nfreq-1] + src_freq_max));
+    double freq_max = 0;
+    for (size_t i = 0; i < Nfreq; ++i) {
+      if (freq[i] > freq_max)
+        freq_max = freq[i];
     }
-    if (decimation_factor > 1) decimation_factor -= 1;
+    if ((freq_max > 0) && (src_freq_max > 0)) {
+      decimation_factor = 1/(dt*(freq_max + src_freq_max));
+    }
   }
   data.decimation_factor = decimation_factor;
 

@@ -731,10 +731,12 @@ default routine interpolates the Fourier-transformed fields at the center of eac
 voxel within the specified volume. Alternatively, the exact Fourier-transformed
 fields evaluated at each corresponding Yee grid point is available by setting
 `yee_grid` to `True`. To reduce the memory-bandwidth burden of accumulating
-DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
-is 0 (the default), this value is automatically determined. It can be turned off by
-setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
-Use this feature with care, as the decimated timeseries may be corrupted by
+DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
 [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
 of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
@@ -1111,10 +1113,12 @@ field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a *flux object*, which you can pass to the functions
 below to get the flux spectrum, etcetera. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
-is 0 (the default), this value is automatically determined. It can be turned off by
-setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
-Use this feature with care, as the decimated timeseries may be corrupted by
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
 [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
 of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
@@ -1505,11 +1509,13 @@ if they have not yet been initialized), telling Meep to accumulate the appropria
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return an *energy object*, which you can pass to the functions
-below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of accumulating
-DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
-is 0 (the default), this value is automatically determined. It can be turned off by
-setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
-Use this feature with care, as the decimated timeseries may be corrupted by
+below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
 [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
 of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
@@ -1739,10 +1745,12 @@ field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a `force`object, which you can pass to the functions
 below to get the force spectrum, etcetera. To reduce the memory-bandwidth burden of
-DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
-is 0 (the default), this value is automatically determined. It can be turned off by
-setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
-Use this feature with care, as the decimated timeseries may be corrupted by
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
 [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
 of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
@@ -2025,10 +2033,12 @@ appropriate field Fourier transforms for `nfreq` equally spaced frequencies
 covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq`
 for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass
 to the functions below to get the far fields. To reduce the memory-bandwidth burden of
-accumulating DFT fields, an integer `decimation_factor` can be specified. If `decimation_factor`
-is 0 (the default), this value is automatically determined. It can be turned off by
-setting it to 1. DFT field values are updated every `decimation_factor` timesteps.
-Use this feature with care, as the decimated timeseries may be corrupted by
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
 [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
 of decimation factor should take into account the properties of all sources
 in the simulation as well as the frequency range of the DFT field monitor.
