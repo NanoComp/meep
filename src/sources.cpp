@@ -105,6 +105,12 @@ std::complex<double> gaussian_src_time::fourier_transform(const double f) {
   return width * polar(1.0, omega * peak_time) * exp(-0.5 * delta * delta);
 }
 
+// bandwidth of the Fourier transform of the Gaussian source function
+// when it has decayed by tolerance tol below its peak value
+double gaussian_src_time::get_fwidth(double tol) const {
+  return 2/width * sqrt(-2.0 * log(tol));
+}
+
 bool gaussian_src_time::is_equal(const src_time &t) const {
   const gaussian_src_time *tp = dynamic_cast<const gaussian_src_time *>(&t);
   if (tp)

@@ -2430,9 +2430,7 @@ class Simulation(object):
         [Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
         sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
         with care, as the decimated timeseries may be corrupted by
-        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
-        of decimation factor should take into account the properties of all sources
-        in the simulation as well as the frequency range of the DFT field monitor.
+        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
         """
         components = args[0]
         args = fix_dft_args(args, 1)
@@ -2504,9 +2502,7 @@ class Simulation(object):
         [Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
         sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
         with care, as the decimated timeseries may be corrupted by
-        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
-        of decimation factor should take into account the properties of all sources
-        in the simulation as well as the frequency range of the DFT field monitor.
+        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
@@ -2539,9 +2535,7 @@ class Simulation(object):
         [Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
         sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
         with care, as the decimated timeseries may be corrupted by
-        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
-        of decimation factor should take into account the properties of all sources
-        in the simulation as well as the frequency range of the DFT field monitor.
+        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
@@ -2763,9 +2757,7 @@ class Simulation(object):
         [Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
         sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
         with care, as the decimated timeseries may be corrupted by
-        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
-        of decimation factor should take into account the properties of all sources
-        in the simulation as well as the frequency range of the DFT field monitor.
+        [aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
         """
         args = fix_dft_args(args, 0)
         freq = args[0]
