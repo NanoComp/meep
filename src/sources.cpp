@@ -106,10 +106,10 @@ std::complex<double> gaussian_src_time::fourier_transform(const double f) {
 }
 
 // bandwidth (in frequency units, not angular frequency) of the
-// Fourier transform of the Gaussian source function when it has
-// decayed by a tolerance tol below its peak value
+// continuous Fourier transform of the Gaussian source function
+// when it has decayed by a tolerance tol below its peak value
 double gaussian_src_time::get_fwidth(double tol) const {
-  return sqrt(-2.0 * log(tol)) / (width * 2 * pi);
+  return sqrt(-2.0 * log(tol)) / (width * pi);
 }
 
 bool gaussian_src_time::is_equal(const src_time &t) const {
