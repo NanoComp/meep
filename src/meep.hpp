@@ -784,9 +784,11 @@ struct comms_sequence {
 // Upon destruction, the comms_manager waits for completion of all enqueued operations.
 class comms_manager {
  public:
+  using receive_callback = std::function<void()>;
   virtual ~comms_manager() {}
   virtual void send_real_async(const void *buf, size_t count, int dest, int tag) = 0;
-  virtual void receive_real_async(void *buf, size_t count, int source, int tag) = 0;
+  virtual void receive_real_async(void *buf, size_t count, int source, int tag,
+                                  const receive_callback &cb) = 0;
   virtual size_t max_transfer_size() const { return std::numeric_limits<size_t>::max(); };
 };
 
@@ -2162,6 +2164,7 @@ public:
   double max_eps() const;
   // step.cpp
   void step_boundaries(field_type);
+  void process_incoming_chunk_data(field_type ft, const chunk_pair &comm_pair);
 
   bool nosize_direction(direction d) const;
   direction normal_direction(const volume &where) const;

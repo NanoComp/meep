@@ -89,8 +89,18 @@ public:
   mpi_comms_manager() {}
   ~mpi_comms_manager() override {
 #ifdef HAVE_MPI
-    if (!reqs.empty()) {
-      MPI_Waitall(reqs.size(), reqs.data(), MPI_STATUSES_IGNORE);
+    int num_pending_requests = reqs.size();
+    std::vector<int> completed_indices(num_pending_requests);
+    while (num_pending_requests) {
+      int num_completed_requests = 0;
+      MPI_Waitsome(reqs.size(), reqs.data(), &num_completed_requests, completed_indices.data(),
+                   MPI_STATUSES_IGNORE);
+      for (int i = 0; i < num_completed_requests; ++i) {
+        int request_idx = completed_indices[i];
+        callbacks[request_idx]();
+        reqs[request_idx] = MPI_REQUEST_NULL;
+        --num_pending_requests;
+      }
     }
 #endif
   }
@@ -98,6 +108,7 @@ public:
   void send_real_async(const void *buf, size_t count, int dest, int tag) override {
 #ifdef HAVE_MPI
     reqs.emplace_back();
+    callbacks.push_back(/*no-op*/ []{});
     MPI_Isend(buf, static_cast<int>(count), MPI_REALNUM, dest, tag, mycomm, &reqs.back());
 #else
     (void)buf;
@@ -107,9 +118,11 @@ public:
 #endif
   }
 
-  void receive_real_async(void *buf, size_t count, int source, int tag) override {
+  void receive_real_async(void *buf, size_t count, int source, int tag,
+                          const receive_callback &cb) override {
 #ifdef HAVE_MPI
     reqs.emplace_back();
+    callbacks.push_back(cb);
     MPI_Irecv(buf, static_cast<int>(count), MPI_REALNUM, source, tag, mycomm, &reqs.back());
 #else
     (void)buf;
@@ -127,6 +140,7 @@ private:
 #ifdef HAVE_MPI
   std::vector<MPI_Request> reqs;
 #endif
+  std::vector<receive_callback> callbacks;
 };
 
 } // namespace
