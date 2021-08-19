@@ -384,7 +384,13 @@ class h5file {
 public:
   typedef enum { READONLY, READWRITE, WRITE } access_mode;
 
-  h5file(const char *filename_, access_mode m = READWRITE, bool parallel_ = true);
+  // If 'parallel_' is true, then we assume that all processes will be doing
+  // I/O, else we assume that *only* the master is doing I/O and all other
+  // processes will send/receive data to/from the master.
+  // If 'local_' is true, then 'parallel_' *must* be false and assumes that
+  // each process is writing to a local non-shared file and the filename is
+  // unique to the process.
+  h5file(const char *filename_, access_mode m = READWRITE, bool parallel_ = true, bool local_ = false);
   ~h5file(); // closes the files (and any open dataset)
 
   bool ok();
@@ -423,6 +429,7 @@ private:
   access_mode mode;
   char *filename;
   bool parallel;
+  bool local;
 
   bool is_cur(const char *dataname);
   void unset_cur();
@@ -849,9 +856,15 @@ public:
   std::vector<int> get_chunk_owners() const;
 
   // structure_dump.cpp
-  void dump(const char *filename);
+  // Dump structure to specified file. If 'single_parallel_file'
+  // is 'true' (the default) - then all processes write to the same/single file
+  // file after computing their respective offsets into this file. When set to
+  // 'false', each process writes data for the chunks it owns to a separate
+  // (process unique) file.
+  void dump(const char *filename, bool single_parallel_file=true);
+  void load(const char *filename, bool single_parallel_file=true);
+
   void dump_chunk_layout(const char *filename);
-  void load(const char *filename);
   void load_chunk_layout(const char *filename, boundary_region &br);
   void load_chunk_layout(const std::vector<grid_volume> &gvs,
                          const std::vector<int> &ids,
@@ -889,7 +902,7 @@ private:
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
   void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
-  void write_susceptibility_params(h5file *file, const char *dname, int EorH);
+  void write_susceptibility_params(h5file *file, bool single_parallel_file, const char *dname, int EorH);
 
   std::unique_ptr<binary_partition> bp;
 };

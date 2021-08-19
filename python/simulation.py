@@ -961,7 +961,6 @@ class Simulation(object):
                  filename_prefix=None,
                  output_volume=None,
                  output_single_precision=False,
-                 load_structure='',
                  geometry_center=mp.Vector3(),
                  force_all_components=False,
                  split_chunks_evenly=True,
@@ -1158,11 +1157,6 @@ class Simulation(object):
           that are specified by geometric objects. You should list any materials other
           than scalar dielectrics that are returned by `material_function` here.
 
-        + **`load_structure` [`string`]** — If not empty, Meep will load the structure
-          file specified by this string. The file must have been created by
-          `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
-          Structure](#load-and-dump-structure) for more information.
-
         + **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
           This will cause the `Simulation` to use the chunk layout described by either
           (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
@@ -1235,7 +1229,6 @@ class Simulation(object):
         self.is_cylindrical = False
         self.material_function = material_function
         self.epsilon_func = epsilon_func
-        self.load_structure_file = load_structure
         self.dft_objects = []
         self._is_initialized = False
         self.force_all_components = force_all_components
@@ -1245,6 +1238,9 @@ class Simulation(object):
         self.collect_stats = collect_stats
         self.fragment_stats = None
         self._output_stats = os.environ.get('MEEP_STATS', None)
+
+        self.load_single_parallel_file = True
+        self.load_structure_file = None
 
         self.special_kz = False
         if self.cell_size.z == 0 and self.k_point and self.k_point.z != 0:
@@ -1717,7 +1713,8 @@ class Simulation(object):
             self.num_chunks = self.chunk_layout.numchunks()
 
         if self.load_structure_file:
-            self.load_structure(self.load_structure_file)
+            self.load_structure(
+                self.load_structure_file, self.load_single_parallel_file)
 
     def _is_outer_boundary(self, vol, direction, side):
 
@@ -1861,22 +1858,22 @@ class Simulation(object):
             None
         )
 
-    def dump_structure(self, fname):
+    def dump_structure(self, fname, single_parallel_file=True):
         """
         Dumps the structure to the file `fname`.
         """
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling dump_structure")
-        self.structure.dump(fname)
+        self.structure.dump(fname, single_parallel_file)
 
-    def load_structure(self, fname):
+    def load_structure(self, fname, single_parallel_file=True):
         """
         Loads a structure from the file `fname`. A file name to load can also be passed to
         the `Simulation` constructor via the `load_structure` keyword argument.
         """
         if self.structure is None:
             raise ValueError("Fields must be initialized before calling load_structure")
-        self.structure.load(fname)
+        self.structure.load(fname, single_parallel_file)
 
     def dump_chunk_layout(self, fname):
         """
@@ -1897,6 +1894,41 @@ class Simulation(object):
         else:
             ## source is either filename (string)
             self.structure.load_chunk_layout(source, br)
+
+    def _get_load_dump_dirname(self, dirname, single_parallel_file):
+        """
+        Get the dirname to dump simulation state to.
+        """
+        if single_parallel_file:
+            dump_dirname = dirname
+        else:
+            # When doing a sharded dump (each process to its own file), use
+            # the process rank to get a unique name.
+            dump_dirname = os.path.join(dirname, 'rank%02d' % mp.my_rank())
+        return dump_dirname
+
+    def dump(self, dirname, structure=True, single_parallel_file=True):
+        """
+        Dumps simulation state.
+        """
+        dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
+        os.makedirs(dump_dirname, exist_ok=True)
+
+        if structure:
+            structure_dump_filename = os.path.join(dump_dirname, 'structure.h5')
+            self.dump_structure(structure_dump_filename, single_parallel_file)
+
+    def load(self, dirname, structure=True, single_parallel_file=True):
+        """
+        Loads simulation state.
+
+        This should called right after the Simulation object has been created
+        but before 'init_sim' is called.
+        """
+        dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
+        self.load_single_parallel_file = single_parallel_file
+        if structure:
+          self.load_structure_file = os.path.join(dump_dirname, 'structure.h5')
 
     def init_sim(self):
         if self._is_initialized:
