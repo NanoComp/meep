@@ -49,10 +49,8 @@ class TestNear2FarPeriodicBoundaries(unittest.TestCase):
                                 sources=sources,
                                 symmetries=symmetries)
 
-            n2f_obj = sim.add_near2far(fcen, 0, 1, mp.Near2FarRegion(center=n2f_pt, size=mp.Vector3(y=sy)),
-                                       nperiods=10, decimation_factor=1)
-            dft_obj = sim.add_dft_fields([mp.Ez], fcen, 0, 1, center=dft_pt, size=mp.Vector3(y=sy),
-                                         decimation_factor=1)
+            n2f_obj = sim.add_near2far(fcen, 0, 1, mp.Near2FarRegion(center=n2f_pt, size=mp.Vector3(y=sy)), nperiods=10)
+            dft_obj = sim.add_dft_fields([mp.Ez], fcen, 0, 1, center=dft_pt, size=mp.Vector3(y=sy))
 
             sim.run(until_after_sources=300)
 
