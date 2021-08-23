@@ -3765,26 +3765,20 @@ class Simulation(object):
         until_after_sources = kwargs.pop('until_after_sources', None)
 
         if self.fields is None:
-            print("init_sim")
             self.init_sim()
 
-        print("_evaluate_dft_objects")
         self._evaluate_dft_objects()
-        print("_check_material_frequencies")
         self._check_material_frequencies()
 
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources is not None:
-            print("_run_sources_until")
             self._run_sources_until(until_after_sources, step_funcs)
         elif until is not None:
-            print("_run_until")
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
-        print("run_sim done.")
 
     def print_times(self):
         """
