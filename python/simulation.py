@@ -1241,6 +1241,7 @@ class Simulation(object):
 
         self.load_single_parallel_file = True
         self.load_structure_file = None
+        self.load_fields_file = None
 
         self.special_kz = False
         if self.cell_size.z == 0 and self.k_point and self.k_point.z != 0:
@@ -1863,29 +1864,44 @@ class Simulation(object):
         Dumps the structure to the file `fname`.
         """
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling dump_structure")
+            raise ValueError("Structure must be initialized before calling dump_structure")
         self.structure.dump(fname, single_parallel_file)
 
     def load_structure(self, fname, single_parallel_file=True):
         """
-        Loads a structure from the file `fname`. A file name to load can also be passed to
-        the `Simulation` constructor via the `load_structure` keyword argument.
+        Loads a structure from the file `fname`.
         """
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling load_structure")
+            raise ValueError("Structure must be initialized before loading structure from file '%s'" % fname)
         self.structure.load(fname, single_parallel_file)
+
+    def dump_fields(self, fname, single_parallel_file=True):
+        """
+        Dumps the fields to the file `fname`.
+        """
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before calling dump_fields")
+        self.fields.dump(fname, single_parallel_file)
+
+    def load_fields(self, fname, single_parallel_file=True):
+        """
+        Loads a fields from the file `fname`.
+        """
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before loading fields from file '%s'" % fname)
+        self.fields.load(fname, single_parallel_file)
 
     def dump_chunk_layout(self, fname):
         """
         Dumps the chunk layout to file `fname`.
         """
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling load_structure")
+            raise ValueError("Structure must be initialized before calling dump_chunk_layout")
         self.structure.dump_chunk_layout(fname)
 
     def load_chunk_layout(self, br, source):
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling load_structure")
+            raise ValueError("Structure must be initialized before loading chunk layout from file '%s'" % fname)
 
         if isinstance(source, Simulation):
             vols = source.structure.get_chunk_volumes()
@@ -1907,7 +1923,7 @@ class Simulation(object):
             dump_dirname = os.path.join(dirname, 'rank%02d' % mp.my_rank())
         return dump_dirname
 
-    def dump(self, dirname, structure=True, single_parallel_file=True):
+    def dump(self, dirname, structure=True, fields=True, single_parallel_file=True):
         """
         Dumps simulation state.
         """
@@ -1918,7 +1934,11 @@ class Simulation(object):
             structure_dump_filename = os.path.join(dump_dirname, 'structure.h5')
             self.dump_structure(structure_dump_filename, single_parallel_file)
 
-    def load(self, dirname, structure=True, single_parallel_file=True):
+        if fields:
+            fields_dump_filename = os.path.join(dump_dirname, 'fields.h5')
+            self.dump_fields(fields_dump_filename, single_parallel_file)
+
+    def load(self, dirname, structure=True, fields=True, single_parallel_file=True):
         """
         Loads simulation state.
 
@@ -1927,8 +1947,12 @@ class Simulation(object):
         """
         dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
         self.load_single_parallel_file = single_parallel_file
+
         if structure:
           self.load_structure_file = os.path.join(dump_dirname, 'structure.h5')
+
+        if fields:
+          self.load_fields_file = os.path.join(dump_dirname, 'fields.h5')
 
     def init_sim(self):
         if self._is_initialized:
@@ -1958,6 +1982,12 @@ class Simulation(object):
             self.loop_tile_base
         )
 
+        if self.load_fields_file:
+            print("Loading fields from file: %s (%s)" % (self.load_fields_file, str(self.load_single_parallel_file)))
+            self.load_fields(
+                self.load_fields_file, self.load_single_parallel_file)
+            print("LOADED fields from file: %s (%s)" % (self.load_fields_file, str(self.load_single_parallel_file)))
+
         if self.force_all_components and self.dimensions != 1:
             self.fields.require_component(mp.Ez)
             self.fields.require_component(mp.Hz)
@@ -1977,6 +2007,7 @@ class Simulation(object):
             hook()
 
         self._is_initialized = True
+        print("Sim INITIALIZED.")
         
     def using_real_fields(self):
         cond1 = self.is_cylindrical and self.m != 0
@@ -2220,6 +2251,7 @@ class Simulation(object):
             if isinstance(cond[i], numbers.Number):
                 stop_time = cond[i]
                 t0 = self.round_time()
+                print('_run_until: stop_time = %s, t0 = %s' % (str(stop_time), str(t0)))
 
                 def stop_cond(sim):
                     return sim.round_time() >= t0 + stop_time
@@ -2237,6 +2269,7 @@ class Simulation(object):
 
         while not any([x(self) for x in cond]):
             for func in step_funcs:
+                print('_run_until: _eval_step_func: ' + str(func))
                 _eval_step_func(self, func, 'step')
             self.fields.step()
 
@@ -3732,20 +3765,26 @@ class Simulation(object):
         until_after_sources = kwargs.pop('until_after_sources', None)
 
         if self.fields is None:
+            print("init_sim")
             self.init_sim()
 
+        print("_evaluate_dft_objects")
         self._evaluate_dft_objects()
+        print("_check_material_frequencies")
         self._check_material_frequencies()
 
         if kwargs:
             raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
 
         if until_after_sources is not None:
+            print("_run_sources_until")
             self._run_sources_until(until_after_sources, step_funcs)
         elif until is not None:
+            print("_run_until")
             self._run_until(until, step_funcs)
         else:
             raise ValueError("Invalid run configuration")
+        print("run_sim done.")
 
     def print_times(self):
         """

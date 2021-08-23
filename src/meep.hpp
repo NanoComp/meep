@@ -1734,6 +1734,15 @@ public:
 
   volume total_volume(void) const;
 
+  // fields_dump.cpp
+  // Dump fields to specified file. If 'single_parallel_file'
+  // is 'true' (the default) - then all processes write to the same/single file
+  // file after computing their respective offsets into this file. When set to
+  // 'false', each process writes data for the chunks it owns to a separate
+  // (process unique) file.
+  void dump(const char *filename, bool single_parallel_file=true);
+  void load(const char *filename, bool single_parallel_file=true);
+
   // h5fields.cpp:
   // low-level function:
   void output_hdf5(h5file *file, const char *dataname, int num_fields, const component *components,
@@ -2205,6 +2214,14 @@ private:
   void add_volume_source_check(component c, const src_time &src, const volume &where,
                                std::complex<double> A(const vec &), std::complex<double> amp,
                                component c0, direction d, int has_tm, int has_te);
+
+  // fields_dump.cpp
+  // Helper methods for dumping field chunks.
+  using FieldPtrGetter = std::function<realnum **(fields_chunk *, int, int)>;
+  void dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
+                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
+  void load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
+                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
 
 public:
   // monitor.cpp
