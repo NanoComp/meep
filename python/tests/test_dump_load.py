@@ -7,6 +7,7 @@ import warnings
 import h5py
 import numpy as np
 import meep as mp
+import pdb
 
 try:
     unicode
@@ -90,15 +91,19 @@ class TestLoadDump(unittest.TestCase):
             self.assertAlmostEqual(ref_pt, pt)
 
     def test_load_dump_structure(self):
+        # pdb.set_trace()
         self._load_dump_structure()
 
     @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
+    @unittest.skip("foo")
     def test_load_dump_structure_sharded(self):
         self._load_dump_structure(single_parallel_file=False)
 
+    @unittest.skip("foo")
     def test_load_dump_chunk_layout_file(self):
         self._load_dump_structure(chunk_file=True)
 
+    @unittest.skip("foo")
     def test_load_dump_chunk_layout_sim(self):
         self._load_dump_structure(chunk_sim=True)
 

@@ -1193,10 +1193,10 @@ public:
    int decimation_factor;
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {

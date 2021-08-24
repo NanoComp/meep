@@ -129,6 +129,15 @@ void fields::dump(const char *filename, bool single_parallel_file) {
   dump_fields_chunk_field(
       &file, single_parallel_file, "f_cond",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
+
+  // Dump DFT chunks.
+  for (int i = 0; i < num_chunks; i++) {
+    if (chunks[i]->is_mine()) {
+      char dataname[1024];
+      snprintf(dataname, 1024, "chunk%02d", i);
+      save_dft_hdf5(chunks[i]->dft_chunks, dataname, &file, 0, single_parallel_file);
+    }
+  }
 }
 
 void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
@@ -239,6 +248,15 @@ void fields::load(const char *filename, bool single_parallel_file) {
   load_fields_chunk_field(
       &file, single_parallel_file, "f_cond",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
+
+  // Load DFT chunks.
+  for (int i = 0; i < num_chunks; i++) {
+    if (chunks[i]->is_mine()) {
+      char dataname[1024];
+      snprintf(dataname, 1024, "chunk%02d", i);
+      load_dft_hdf5(chunks[i]->dft_chunks, dataname, &file, 0, single_parallel_file);
+    }
+  }
 }
 
 }  // namespace meep

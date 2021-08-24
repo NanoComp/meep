@@ -2269,7 +2269,7 @@ class Simulation(object):
 
         while not any([x(self) for x in cond]):
             for func in step_funcs:
-                print('_run_until: _eval_step_func: ' + str(func))
+                print('_run_until: _eval_step_func: ' + str(func) + ', time=' + str(self.round_time()))
                 _eval_step_func(self, func, 'step')
             self.fields.step()
 
