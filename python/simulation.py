@@ -1983,7 +1983,6 @@ class Simulation(object):
         )
 
         if self.load_fields_file:
-            print("Loading fields from file: %s (%s)" % (self.load_fields_file, str(self.load_single_parallel_file)))
             self.load_fields(
                 self.load_fields_file, self.load_single_parallel_file)
             print("LOADED fields from file: %s (%s)" % (self.load_fields_file, str(self.load_single_parallel_file)))
@@ -2007,7 +2006,6 @@ class Simulation(object):
             hook()
 
         self._is_initialized = True
-        print("Sim INITIALIZED.")
         
     def using_real_fields(self):
         cond1 = self.is_cylindrical and self.m != 0
@@ -2251,7 +2249,6 @@ class Simulation(object):
             if isinstance(cond[i], numbers.Number):
                 stop_time = cond[i]
                 t0 = self.round_time()
-                print('_run_until: stop_time = %s, t0 = %s' % (str(stop_time), str(t0)))
 
                 def stop_cond(sim):
                     return sim.round_time() >= t0 + stop_time

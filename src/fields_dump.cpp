@@ -49,10 +49,6 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
   std::vector<size_t> num_f_(num_f_size);
   size_t my_ntot = 0;
   for (int i = 0, chunk_i = 0; i < num_chunks; i++) {
-    printf(
-        "dump: i = %d, chunk_i = %d, is_mine = %d, num_chunks = %d, my_num_chunks = "
-        "%d\n",
-        i, chunk_i, chunks[i]->is_mine(), num_chunks, my_num_chunks);
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
@@ -60,7 +56,6 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
           realnum **f = field_ptr_getter(chunks[i], c, d);
           if (*f) {
             my_ntot += (num_f_[(chunk_i * NUM_FIELD_COMPONENTS + c) * 2 + d] = ntot);
-            printf("dump: c=%d d=%d ntot=%zu my_ntot=%zu\n", c, d, ntot, my_ntot);
           }
         }
       }
@@ -168,10 +163,6 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
   /* allocate data as needed and check sizes */
   size_t my_ntot = 0;
   for (int i = 0, chunk_i = 0; i < num_chunks; i++) {
-    printf(
-        "load: i = %d, chunk_i = %d, is_mine = %d, num_chunks = %d, my_num_chunks = "
-        "%d\n",
-        i, chunk_i, chunks[i]->is_mine(), num_chunks, my_num_chunks);
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
@@ -186,7 +177,6 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
               meep::abort("grid size mismatch %zd vs %zd in fields::load", n, ntot);
             *f = new realnum[ntot];
             my_ntot += ntot;
-            printf("load: c=%d d=%d ntot=%zu my_ntot=%zu\n", c, d, ntot, my_ntot);
           }
         }
       }
@@ -194,7 +184,6 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
     chunk_i += (chunks[i]->is_mine() || single_parallel_file);
   }
 
-  printf("000\n");
   /* determine total dataset size and offset of this process's data */
   size_t my_start = 0;
   size_t ntotal = my_ntot;
@@ -203,7 +192,6 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
     ntotal = sum_to_all(my_ntot);
   }
 
-  printf("001\n");
   /* read the data */
   h5f->read_size(field_name.c_str(), &rank, dims, 1);
   if (rank != 1 || dims[0] != ntotal) {
@@ -212,7 +200,6 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
         "(%d, %zu) != (1, %zu)",
         field_name.c_str(), rank, dims[0], ntotal);
   }
-  printf("002\n");
   for (int i = 0; i < num_chunks; i++) {
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
@@ -227,7 +214,6 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
       }
     }
   }
-  printf("003\n");
 }
 
 void fields::load(const char *filename, bool single_parallel_file) {
