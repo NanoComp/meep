@@ -1866,6 +1866,7 @@ class Simulation(object):
         if self.structure is None:
             raise ValueError("Structure must be initialized before calling dump_structure")
         self.structure.dump(fname, single_parallel_file)
+        print("Dumped structure to file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def load_structure(self, fname, single_parallel_file=True):
         """
@@ -1874,6 +1875,7 @@ class Simulation(object):
         if self.structure is None:
             raise ValueError("Structure must be initialized before loading structure from file '%s'" % fname)
         self.structure.load(fname, single_parallel_file)
+        print("Loaded structure from file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def dump_fields(self, fname, single_parallel_file=True):
         """
@@ -1882,6 +1884,7 @@ class Simulation(object):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling dump_fields")
         self.fields.dump(fname, single_parallel_file)
+        print("Dumped fields to file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def load_fields(self, fname, single_parallel_file=True):
         """
@@ -1890,6 +1893,7 @@ class Simulation(object):
         if self.fields is None:
             raise ValueError("Fields must be initialized before loading fields from file '%s'" % fname)
         self.fields.load(fname, single_parallel_file)
+        print("Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def dump_chunk_layout(self, fname):
         """
@@ -1923,22 +1927,22 @@ class Simulation(object):
             dump_dirname = os.path.join(dirname, 'rank%02d' % mp.my_rank())
         return dump_dirname
 
-    def dump(self, dirname, structure=True, fields=True, single_parallel_file=True):
+    def dump(self, dirname, dump_structure=True, dump_fields=True, single_parallel_file=True):
         """
         Dumps simulation state.
         """
         dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
         os.makedirs(dump_dirname, exist_ok=True)
 
-        if structure:
+        if dump_structure:
             structure_dump_filename = os.path.join(dump_dirname, 'structure.h5')
             self.dump_structure(structure_dump_filename, single_parallel_file)
 
-        if fields:
+        if dump_fields:
             fields_dump_filename = os.path.join(dump_dirname, 'fields.h5')
             self.dump_fields(fields_dump_filename, single_parallel_file)
 
-    def load(self, dirname, structure=True, fields=True, single_parallel_file=True):
+    def load(self, dirname, load_structure=True, load_fields=True, single_parallel_file=True):
         """
         Loads simulation state.
 
@@ -1948,11 +1952,21 @@ class Simulation(object):
         dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
         self.load_single_parallel_file = single_parallel_file
 
-        if structure:
-          self.load_structure_file = os.path.join(dump_dirname, 'structure.h5')
+        if load_structure:
+          load_structure_file = os.path.join(dump_dirname, 'structure.h5')
+          # If structure is already initialized, load it straight away.
+          # Otherwise, do a delayed load.
+          if self.structure:
+            self.load_structure(load_structure_file, self.load_single_parallel_file)
+          else:
+            self.load_structure_file = load_structure_file
 
-        if fields:
-          self.load_fields_file = os.path.join(dump_dirname, 'fields.h5')
+        if load_fields:
+          load_fields_file = os.path.join(dump_dirname, 'fields.h5')
+          if self.fields:
+            self.load_fields(load_fields_file, self.load_single_parallel_file)
+          else:
+            self.load_fields_file = load_fields_file
 
     def init_sim(self):
         if self._is_initialized:
@@ -1985,7 +1999,6 @@ class Simulation(object):
         if self.load_fields_file:
             self.load_fields(
                 self.load_fields_file, self.load_single_parallel_file)
-            print("LOADED fields from file: %s (%s)" % (self.load_fields_file, str(self.load_single_parallel_file)))
 
         if self.force_all_components and self.dimensions != 1:
             self.fields.require_component(mp.Ez)
@@ -2266,7 +2279,6 @@ class Simulation(object):
 
         while not any([x(self) for x in cond]):
             for func in step_funcs:
-                print('_run_until: _eval_step_func: ' + str(func) + ', time=' + str(self.round_time()))
                 _eval_step_func(self, func, 'step')
             self.fields.step()
 

@@ -112,6 +112,13 @@ void fields::dump(const char *filename, bool single_parallel_file) {
 
   h5file file(filename, h5file::WRITE, single_parallel_file, !single_parallel_file);
 
+  // Write out the current time 't'
+  size_t dims[1] = {1};
+  size_t start[1] = {0};
+  size_t time[1] = {(size_t)t};
+  file.create_data("t", 1, dims);
+  file.write_chunk(1, start, dims, time);
+
   dump_fields_chunk_field(
       &file, single_parallel_file, "f",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f[c][d]); });
@@ -221,6 +228,16 @@ void fields::load(const char *filename, bool single_parallel_file) {
     printf("reading fields from file \"%s\" (%d)...\n", filename, single_parallel_file);
 
   h5file file(filename, h5file::READONLY, single_parallel_file, !single_parallel_file);
+
+  // Read in the current time 't'
+  int rank;
+  size_t dims[1] = {1};
+  size_t start[1] = {0};
+  size_t time[1];
+  file.read_size("t", &rank, dims, 1);
+  if (rank != 1 || dims[0] != 1) meep::abort("time size mismatch in fields::load");
+  file.read_chunk(1, start, dims, time);
+  t = static_cast<int>(time[0]);
 
   load_fields_chunk_field(
       &file, single_parallel_file, "f",
