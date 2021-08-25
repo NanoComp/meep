@@ -43,7 +43,7 @@ class ObjectiveQuantity(abc.ABC):
 
     def get_evaluation(self):
         """Evaluates the objective quantity."""
-        if self._eval:
+        if self._eval is not None:
             return self._eval
         else:
             raise RuntimeError(
