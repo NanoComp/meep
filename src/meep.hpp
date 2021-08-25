@@ -1720,6 +1720,7 @@ public:
   void remove_susceptibilities();
   void remove_fluxes();
   void reset();
+  void log(const char* prefix = "");
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);

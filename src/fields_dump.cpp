@@ -108,6 +108,7 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
 void fields::dump(const char *filename, bool single_parallel_file) {
   if (verbosity > 0) {
     printf("creating fields output file \"%s\" (%d)...\n", filename, single_parallel_file);
+    log();
   }
 
   h5file file(filename, h5file::WRITE, single_parallel_file, !single_parallel_file);
@@ -115,9 +116,9 @@ void fields::dump(const char *filename, bool single_parallel_file) {
   // Write out the current time 't'
   size_t dims[1] = {1};
   size_t start[1] = {0};
-  size_t time[1] = {(size_t)t};
+  size_t _t[1] = {(size_t)t};
   file.create_data("t", 1, dims);
-  file.write_chunk(1, start, dims, time);
+  if (am_master() || !single_parallel_file) file.write_chunk(1, start, dims, _t);
 
   dump_fields_chunk_field(
       &file, single_parallel_file, "f",
@@ -134,7 +135,7 @@ void fields::dump(const char *filename, bool single_parallel_file) {
 
   // Dump DFT chunks.
   for (int i = 0; i < num_chunks; i++) {
-    if (chunks[i]->is_mine()) {
+    if (single_parallel_file || chunks[i]->is_mine()) {
       char dataname[1024];
       snprintf(dataname, 1024, "chunk%02d", i);
       save_dft_hdf5(chunks[i]->dft_chunks, dataname, &file, 0, single_parallel_file);
@@ -233,11 +234,18 @@ void fields::load(const char *filename, bool single_parallel_file) {
   int rank;
   size_t dims[1] = {1};
   size_t start[1] = {0};
-  size_t time[1];
+  size_t _t[1];
   file.read_size("t", &rank, dims, 1);
   if (rank != 1 || dims[0] != 1) meep::abort("time size mismatch in fields::load");
-  file.read_chunk(1, start, dims, time);
-  t = static_cast<int>(time[0]);
+  if (am_master() || !single_parallel_file) file.read_chunk(1, start, dims, _t);
+
+  if (single_parallel_file) {
+    file.prevent_deadlock();
+    broadcast(0, _t, dims[0]);
+  }
+
+  t = static_cast<int>(_t[0]);
+  calc_sources(time());
 
   load_fields_chunk_field(
       &file, single_parallel_file, "f",
@@ -254,12 +262,15 @@ void fields::load(const char *filename, bool single_parallel_file) {
 
   // Load DFT chunks.
   for (int i = 0; i < num_chunks; i++) {
-    if (chunks[i]->is_mine()) {
+    if (single_parallel_file || chunks[i]->is_mine()) {
       char dataname[1024];
       snprintf(dataname, 1024, "chunk%02d", i);
       load_dft_hdf5(chunks[i]->dft_chunks, dataname, &file, 0, single_parallel_file);
     }
   }
+
+  if (verbosity > 0)
+    log();
 }
 
 }  // namespace meep
