@@ -57,22 +57,6 @@ class OptimizationProblem(object):
     This is done by the __call__ method.
 
     """
-<<<<<<< HEAD
-    def __init__(self,
-                 simulation,
-                 objective_functions,
-                 objective_arguments,
-                 design_regions,
-                 frequencies=None,
-                 fcen=None,
-                 df=None,
-                 nf=None,
-                 decay_dt=50,
-                 decay_fields=[mp.Ez],
-                 decay_by=1e-6,
-                 minimum_run_time=0,
-                 maximum_run_time=None):
-=======
     def __init__(
         self,
         simulation,
@@ -90,7 +74,6 @@ class OptimizationProblem(object):
         minimum_run_time=0,
         maximum_run_time=None,
     ):
->>>>>>> 21c94c0d25ac205168819fa98b10de2dce9dc0e4
 
         self.sim = simulation
 
@@ -225,13 +208,6 @@ class OptimizationProblem(object):
 
         # register design region
         self.design_region_monitors = [
-<<<<<<< HEAD
-            self.sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez],
-                                    self.frequencies,
-                                    where=dr.volume,
-                                    yee_grid=True)
-            for dr in self.design_regions
-=======
             self.sim.add_dft_fields(
                 [mp.Ex, mp.Ey, mp.Ez],
                 self.frequencies,
@@ -239,7 +215,6 @@ class OptimizationProblem(object):
                 yee_grid=True,
                 decimation_factor=self.decimation_factor,
             ) for dr in self.design_regions
->>>>>>> 21c94c0d25ac205168819fa98b10de2dce9dc0e4
         ]
 
         # store design region voxel parameters
@@ -314,13 +289,6 @@ class OptimizationProblem(object):
 
             # register design flux
             self.design_region_monitors = [
-<<<<<<< HEAD
-                self.sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez],
-                                        self.frequencies,
-                                        where=dr.volume,
-                                        yee_grid=True)
-                for dr in self.design_regions
-=======
                 self.sim.add_dft_fields(
                     [mp.Ex, mp.Ey, mp.Ez],
                     self.frequencies,
@@ -328,7 +296,6 @@ class OptimizationProblem(object):
                     yee_grid=True,
                     decimation_factor=self.decimation_factor,
                 ) for dr in self.design_regions
->>>>>>> 21c94c0d25ac205168819fa98b10de2dce9dc0e4
             ]
 
             # Adjoint run
