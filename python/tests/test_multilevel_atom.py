@@ -1,13 +1,11 @@
-from __future__ import division
-
+import meep as mp
 import math
 import unittest
-
-import meep as mp
 
 
 class TestMultiLevelAtom(unittest.TestCase):
 
+    @unittest.skipIf(mp.is_single_precision(), "double-precision floating point specific test")
     def test_multilevel_atom(self):
         resolution = 40
         ncav = 1.5

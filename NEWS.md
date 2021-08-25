@@ -1,5 +1,39 @@
 # Meep Release Notes
 
+## Meep 1.20.0
+
+8/11/2021
+
+* Support for decimation of the DFT time-series updates ([#1684], [#1720], [#1722]).
+
+* Support for optional single-precision floating point for the DFT fields arrays ([#1675]).
+
+* Support for cache-oblivious loop tiling of the step-curl field updates ([#1655]).
+
+* Performance improvements in chunk-to-chunk communication ([#1656], [#1721]).
+
+* Code coverage for Python API via GitHub Actions ([#1651]).
+
+* Various bugfixes ([#1692], [#1704]), minor improvements, and additional documentation.
+
+## Meep 1.19.0
+
+7/6/2021
+
+* Support for optional single-precision floating point for fields arrays ([#1544]).
+
+* Optional subpixel smoothing for `MaterialGrid` using analytical rather than numerical-quadrature framework ([#1539], [#1568]).
+
+* Improvements to user-specified chunk layout as `BinaryPartition` object ([#1577]).
+
+* JAX wrapper for `Simulation` object and adjoint solver ([#1569]).
+
+* Continuous integration (CI) via GitHub Actions ([#1599], [#1608], [#1618], [#1623]).
+
+* Remove MPI synchronization barrier at each timestep from connection of chunks ([#1635]).
+
+* Various bugfixes ([#1546], [#1574], [#1588], [#1591], [#1592], [#1598], [#1599], [#1601], [#1603], [#1606], [#1634], [#1652]), additional documentation, and tests.
+
 ## Meep 1.18.0
 
 3/26/2021
@@ -406,7 +440,7 @@
 
   * Bug fixes in LDOS computation.
 
-  * Work around gcc bug [#54498], which caused a spurious PML test
+  * Work around gcc bug #54498, which caused a spurious PML test
     failure with gcc 4.7 and 4.7.1; thanks to Brahmanand Jogai and
     Thorsten Alteholz for the bug reports.
 
@@ -533,7 +567,7 @@ Meep 1.0.1
   * Fix failure in flux test under gcc 4.3.1 in some cases; thanks
     to Alex Prengel for the bug report.
 
-  * Fix compilation problem with gcc 4.4, correcting Debian bug [#505002].
+  * Fix compilation problem with gcc 4.4, correcting Debian bug #505002.
 
 ## Meep 1.0
 
@@ -761,16 +795,6 @@ Meep 1.0.1
   * Initial public release.
 
 <!--- generated links: -->
-[#1464]: https://github.com/NanoComp/meep/issues/1464
-[#1487]: https://github.com/NanoComp/meep/issues/1487
-[#1499]: https://github.com/NanoComp/meep/issues/1499
-[#1512]: https://github.com/NanoComp/meep/issues/1512
-[#1515]: https://github.com/NanoComp/meep/issues/1515
-[#1519]: https://github.com/NanoComp/meep/issues/1519
-[#1521]: https://github.com/NanoComp/meep/issues/1521
-[#1522]: https://github.com/NanoComp/meep/issues/1522
-[#1527]: https://github.com/NanoComp/meep/issues/1527
-[#1528]: https://github.com/NanoComp/meep/issues/1528
 [#13]: https://github.com/NanoComp/meep/issues/13
 [#14]: https://github.com/NanoComp/meep/issues/14
 [#20]: https://github.com/NanoComp/meep/issues/20
@@ -924,5 +948,34 @@ Meep 1.0.1
 [#1522]: https://github.com/NanoComp/meep/issues/1522
 [#1527]: https://github.com/NanoComp/meep/issues/1527
 [#1528]: https://github.com/NanoComp/meep/issues/1528
-[#54498]: https://github.com/NanoComp/meep/issues/54498
-[#505002]: https://github.com/NanoComp/meep/issues/505002
+[#1539]: https://github.com/NanoComp/meep/issues/1539
+[#1544]: https://github.com/NanoComp/meep/issues/1544
+[#1546]: https://github.com/NanoComp/meep/issues/1546
+[#1568]: https://github.com/NanoComp/meep/issues/1568
+[#1569]: https://github.com/NanoComp/meep/issues/1569
+[#1574]: https://github.com/NanoComp/meep/issues/1574
+[#1577]: https://github.com/NanoComp/meep/issues/1577
+[#1588]: https://github.com/NanoComp/meep/issues/1588
+[#1591]: https://github.com/NanoComp/meep/issues/1591
+[#1592]: https://github.com/NanoComp/meep/issues/1592
+[#1598]: https://github.com/NanoComp/meep/issues/1598
+[#1599]: https://github.com/NanoComp/meep/issues/1599
+[#1601]: https://github.com/NanoComp/meep/issues/1601
+[#1603]: https://github.com/NanoComp/meep/issues/1603
+[#1606]: https://github.com/NanoComp/meep/issues/1606
+[#1608]: https://github.com/NanoComp/meep/issues/1608
+[#1618]: https://github.com/NanoComp/meep/issues/1618
+[#1623]: https://github.com/NanoComp/meep/issues/1623
+[#1634]: https://github.com/NanoComp/meep/issues/1634
+[#1635]: https://github.com/NanoComp/meep/issues/1635
+[#1651]: https://github.com/NanoComp/meep/issues/1651
+[#1652]: https://github.com/NanoComp/meep/issues/1652
+[#1655]: https://github.com/NanoComp/meep/issues/1655
+[#1656]: https://github.com/NanoComp/meep/issues/1656
+[#1675]: https://github.com/NanoComp/meep/issues/1675
+[#1684]: https://github.com/NanoComp/meep/issues/1684
+[#1692]: https://github.com/NanoComp/meep/issues/1692
+[#1704]: https://github.com/NanoComp/meep/issues/1704
+[#1720]: https://github.com/NanoComp/meep/issues/1720
+[#1721]: https://github.com/NanoComp/meep/issues/1721
+[#1722]: https://github.com/NanoComp/meep/issues/1722

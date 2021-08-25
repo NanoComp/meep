@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <cassert>
+#include <utility>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -51,7 +53,7 @@ src_time *src_time::add_to(src_time *others, src_time **added) const {
 }
 
 double src_time::last_time_max(double after) {
-  after = max(last_time(), after);
+  after = std::max(last_time(), after);
   if (next)
     return next->last_time_max(after);
   else
@@ -152,52 +154,25 @@ bool custom_src_time::is_equal(const src_time &t) const {
 
 /*********************************************************************/
 
-src_vol::src_vol(component cc, src_time *st, size_t n, ptrdiff_t *ind, complex<double> *amps) {
-  c = cc;
-  if (is_D(c)) c = direction_component(Ex, component_direction(c));
-  if (is_B(c)) c = direction_component(Hx, component_direction(c));
-  t = st;
-  next = NULL;
-  npts = n;
-  index = ind;
-  A = amps;
+src_vol::src_vol(component cc, src_time *st, std::vector<ptrdiff_t> &&ind,
+                 std::vector<std::complex<double> > &&amps)
+    : c([](component c) -> component {
+        if (is_D(c)) c = direction_component(Ex, component_direction(c));
+        if (is_B(c)) c = direction_component(Hx, component_direction(c));
+        return c;
+      }(cc)),
+      src_t(st), index(std::move(ind)), amp(std::move(amps)) {
+  assert(index.size() == amp.size());
 }
 
-src_vol::src_vol(const src_vol &sv) {
-  c = sv.c;
-  t = sv.t;
-  npts = sv.npts;
-  index = new ptrdiff_t[npts];
-  A = new complex<double>[npts];
-  for (size_t j = 0; j < npts; j++) {
-    index[j] = sv.index[j];
-    A[j] = sv.A[j];
-  }
-  if (sv.next)
-    next = new src_vol(*sv.next);
-  else
-    next = NULL;
+bool src_vol::combinable(const src_vol &a, const src_vol &b) {
+  return (a.c == b.c) && (a.src_t == b.src_t) && (a.index == b.index);
 }
 
-src_vol *src_vol::add_to(src_vol *others) {
-  if (others) {
-    if (*this == *others) {
-      if (npts != others->npts)
-        abort("Cannot add grid_volume sources with different number of points\n");
-      /* Compare all of the indices...if this ever becomes too slow,
-         we can just compare the first and last indices. */
-      for (size_t j = 0; j < npts; j++) {
-        if (others->index[j] != index[j]) abort("Different indices\n");
-        others->A[j] += A[j];
-      }
-    }
-    else
-      others->next = add_to(others->next);
-    return others;
-  }
-  else {
-    next = others;
-    return this;
+void src_vol::add_amplitudes_from(const src_vol &other) {
+  assert(amp.size() == other.num_points());
+  for (size_t i = 0; i < amp.size(); ++i) {
+    amp[i] += other.amp[i];
   }
 }
 
@@ -267,8 +242,8 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
 
   size_t npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d) { npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
-  ptrdiff_t *index_array = new ptrdiff_t[npts];
-  complex<double> *amps_array = new complex<double>[npts];
+  std::vector<ptrdiff_t> index_array(npts);
+  std::vector<complex<double>> amps_array(npts);
 
   complex<double> amp = data->amp * conj(shift_phase);
 
@@ -297,28 +272,24 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     index_array[idx_vol++] = idx;
   }
 
-  if (idx_vol > npts) abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
+  if (idx_vol > npts) meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
-  src_vol *tmp = new src_vol(c, data->src, idx_vol, index_array, amps_array);
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
-  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+  fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array)));
 }
 
 void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr){
   sources = src->add_to(sources, &src);
-  ptrdiff_t* index_arr = new ptrdiff_t[n];
-  std::complex<double>* amp_arr_copy = new std::complex<double>[n];
-  for (size_t i = 0; i < n; i++){
-    index_arr[i] = cur_data.idx_arr[i];
-    amp_arr_copy[i] = amp_arr[i];
-  }
+  std::vector<ptrdiff_t> index_arr(cur_data.idx_arr);
+  std::vector<std::complex<double>> amplitudes(amp_arr, amp_arr+n);
   component c = cur_data.near_fd_comp;
-  src_vol *tmp = new src_vol(c, src, n, index_arr, amp_arr_copy);
+
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
-  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) abort("fields chunk index out of range");
+  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) meep::abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
-  if (!fc->is_mine()) abort("wrong fields chunk");
-  fc->sources[ft] = tmp->add_to(fc->sources[ft]);
+  if (!fc->is_mine()) meep::abort("wrong fields chunk");
+
+  fc->add_source(ft, src_vol(c, src, std::move(index_arr), std::move(amplitudes)));
   // We can't do require_component(c) since that only works if all processes are adding
   // srcdata for the same components in the same order, which may not be true.
   // ... instead, the caller should call fields::require_source_components()
@@ -411,7 +382,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 
   for (int i = 0; i < 3; ++i) {
     if (re_dims[i] != im_dims[i]) {
-      abort("Imaginary and real datasets have different dimensions");
+      meep::abort("Imaginary and real datasets have different dimensions");
     }
   }
 
@@ -432,11 +403,11 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
                                complex<double> A(const vec &), complex<double> amp) {
   volume where(where_); // make a copy to adjust size if necessary
   if (gv.dim != where.dim)
-    abort("incorrect source grid_volume dimensionality in add_volume_source");
+    meep::abort("incorrect source grid_volume dimensionality in add_volume_source");
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w = user_volume.boundary_location(High, d) - user_volume.boundary_location(Low, d);
     if (where.in_direction(d) > w + gv.inva)
-      abort("Source width > cell width in %s direction!\n", direction_name(d));
+      meep::abort("Source width > cell width in %s direction!\n", direction_name(d));
     else if (where.in_direction(d) > w) { // difference is less than 1 pixel
       double dw = where.in_direction(d) - w;
       where.set_direction_min(d, where.in_direction_min(d) - dw * 0.5);
@@ -488,7 +459,7 @@ static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
   case Hx: return EH[3];
   case Hy: return EH[4];
   case Hz: return EH[5];
-  default: abort("invalid component in gaussianbeam_ampfunc");
+  default: meep::abort("invalid component in gaussianbeam_ampfunc");
   }
 }
 
@@ -502,7 +473,7 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
             ? 0
             : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
     if (n == -1)
-      abort(
+      meep::abort(
           "can't determine source direction for non-empty source volume with NO_DIRECTION source");
   }
   bool has_tm = abs(beam.get_E0(2)) > 0;
@@ -527,7 +498,7 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
 
 gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
                            double eps_, double mu_, std::complex<double> E0_[3]) {
-  if (x0_.dim == Dcyl) abort("wrong dimensionality in gaussianbeam");
+  if (x0_.dim == Dcyl) meep::abort("wrong dimensionality in gaussianbeam");
 
   x0 = x0_;
   kdir = kdir_;

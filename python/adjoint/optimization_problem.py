@@ -57,6 +57,7 @@ class OptimizationProblem(object):
     This is done by the __call__ method.
 
     """
+<<<<<<< HEAD
     def __init__(self,
                  simulation,
                  objective_functions,
@@ -71,6 +72,25 @@ class OptimizationProblem(object):
                  decay_by=1e-6,
                  minimum_run_time=0,
                  maximum_run_time=None):
+=======
+    def __init__(
+        self,
+        simulation,
+        objective_functions,
+        objective_arguments,
+        design_regions,
+        frequencies=None,
+        fcen=None,
+        df=None,
+        nf=None,
+        decay_dt=50,
+        decay_fields=[mp.Ez],
+        decay_by=1e-6,
+        decimation_factor=1,
+        minimum_run_time=0,
+        maximum_run_time=None,
+    ):
+>>>>>>> 21c94c0d25ac205168819fa98b10de2dce9dc0e4
 
         self.sim = simulation
 
@@ -122,6 +142,7 @@ class OptimizationProblem(object):
         self.decay_by = decay_by
         self.decay_fields = decay_fields
         self.decay_dt = decay_dt
+        self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
 
@@ -204,11 +225,21 @@ class OptimizationProblem(object):
 
         # register design region
         self.design_region_monitors = [
+<<<<<<< HEAD
             self.sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez],
                                     self.frequencies,
                                     where=dr.volume,
                                     yee_grid=True)
             for dr in self.design_regions
+=======
+            self.sim.add_dft_fields(
+                [mp.Ex, mp.Ey, mp.Ez],
+                self.frequencies,
+                where=dr.volume,
+                yee_grid=True,
+                decimation_factor=self.decimation_factor,
+            ) for dr in self.design_regions
+>>>>>>> 21c94c0d25ac205168819fa98b10de2dce9dc0e4
         ]
 
         # store design region voxel parameters
@@ -273,6 +304,7 @@ class OptimizationProblem(object):
     def adjoint_run(self):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
+        if self.sim.k_point: self.sim.k_point *= -1
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
@@ -282,11 +314,21 @@ class OptimizationProblem(object):
 
             # register design flux
             self.design_region_monitors = [
+<<<<<<< HEAD
                 self.sim.add_dft_fields([mp.Ex, mp.Ey, mp.Ez],
                                         self.frequencies,
                                         where=dr.volume,
                                         yee_grid=True)
                 for dr in self.design_regions
+=======
+                self.sim.add_dft_fields(
+                    [mp.Ex, mp.Ey, mp.Ez],
+                    self.frequencies,
+                    where=dr.volume,
+                    yee_grid=True,
+                    decimation_factor=self.decimation_factor,
+                ) for dr in self.design_regions
+>>>>>>> 21c94c0d25ac205168819fa98b10de2dce9dc0e4
             ]
 
             # Adjoint run
@@ -307,6 +349,7 @@ class OptimizationProblem(object):
                             self.sim.get_dft_array(dgm, c, f))
 
         # update optimizer's state
+        if self.sim.k_point: self.sim.k_point *= -1
         self.current_state = "ADJ"
 
     def calculate_gradient(self):

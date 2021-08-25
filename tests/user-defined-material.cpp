@@ -162,13 +162,13 @@ int main(int argc, char *argv[]) {
   bool with_susceptibility = true;
   for (int narg = 1; narg < argc; narg++) {
     if (argv[narg] && !strcmp(argv[narg], "--eps_ref_file")) {
-      if (narg + 1 == argc) abort("no option specified for --eps_ref_file");
+      if (narg + 1 == argc) meep::abort("no option specified for --eps_ref_file");
       eps_ref_file = argv[++narg];
     }
     else if (argv[narg] && !strcmp(argv[narg], "--without_susceptibility"))
       with_susceptibility = false;
     else
-      abort("unrecognized command-line option %s", argv[narg]);
+      meep::abort("unrecognized command-line option %s", argv[narg]);
   };
   std::string eps_ref_path = DATADIR + eps_ref_file;
 
@@ -206,6 +206,6 @@ int main(int argc, char *argv[]) {
   if (status)
     master_printf("user-defined-material test successful.\n");
   else
-    abort("user-defined-material test failed.\n");
+    meep::abort("user-defined-material test failed.\n");
   return 0;
 }

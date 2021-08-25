@@ -543,9 +543,10 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");
     PyObject *py_do_averaging = PyObject_GetAttrString(po, "do_averaging");
+    PyErr_Clear(); // clear errors from attributes not present
     bool do_averaging = false;
     if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
-    if (eps && eps == Py_True) { md = make_user_material(py_epsilon_func_wrap, po, do_averaging); }
+    if (eps && PyObject_IsTrue(eps)) { md = make_user_material(py_epsilon_func_wrap, po, do_averaging); }
     else {
       md = make_user_material(py_user_material_func_wrap, po, do_averaging);
     }
@@ -714,9 +715,14 @@ static PyObject *material_to_py_material(material_type mat) {
 
       return py_mat;
     }
+    case meep_geom::material_data::MATERIAL_USER: {
+      PyObject *py_mat = (PyObject *) mat->user_data;
+      Py_INCREF(py_mat);
+      return py_mat;
+    }
     default:
       // Only Medium is supported at this time.
-      meep::abort("Can only convert C++ medium_struct to Python");
+      meep::abort("Can only convert C++ medium_struct subtype %d to Python", mat->which_subclass);
   }
 }
 
@@ -1028,39 +1034,48 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
     geometric_object_destroy(objs->items[i]);
   }
 
-  free(objs->items);
+  delete[] objs->items;
 
   return py_res;
 }
 
-static meep::binary_partition *py_bp_to_bp(PyObject *pybp) {
-    meep::binary_partition *bp = NULL;
-    if (pybp == Py_None) return bp;
-
-    PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
-    PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
-    PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
-    PyObject *left = PyObject_GetAttrString(pybp, "left");
-    PyObject *right = PyObject_GetAttrString(pybp, "right");
-
-    if (!id || !split_dir || !split_pos || !left || !right) {
-      meep::abort("BinaryPartition class object is incorrectly defined.");
+void gobj_list_freearg(geometric_object_list* objs) {
+    for(int i = 0; i < objs->num_items; ++i) {
+        material_free((material_data *)objs->items[i].material);
+        delete (material_data *)objs->items[i].material;
+        geometric_object_destroy(objs->items[i]);
     }
+    delete[] objs->items;
+}
 
-    if (PyLong_Check(id)) {
-         bp = new meep::binary_partition(PyLong_AsLong(id));
-    } else {
-         bp = new meep::binary_partition(direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos));
-         bp->left = py_bp_to_bp(left);
-         bp->right = py_bp_to_bp(right);
-    }
+static std::unique_ptr<meep::binary_partition> py_bp_to_bp(PyObject *pybp) {
+  std::unique_ptr<meep::binary_partition> bp;
+  if (pybp == Py_None) return bp;
 
-    Py_XDECREF(id);
-    Py_XDECREF(split_dir);
-    Py_XDECREF(split_pos);
-    Py_XDECREF(left);
-    Py_XDECREF(right);
-    return bp;
+  PyObject *id = PyObject_GetAttrString(pybp, "proc_id");
+  PyObject *split_dir = PyObject_GetAttrString(pybp, "split_dir");
+  PyObject *split_pos = PyObject_GetAttrString(pybp, "split_pos");
+  PyObject *left = PyObject_GetAttrString(pybp, "left");
+  PyObject *right = PyObject_GetAttrString(pybp, "right");
+
+  if (!id || !split_dir || !split_pos || !left || !right) {
+    meep::abort("BinaryPartition class object is incorrectly defined.");
+  }
+
+  if (PyLong_Check(id)) { bp.reset(new meep::binary_partition(PyLong_AsLong(id))); }
+  else {
+    bp.reset(new meep::binary_partition(
+        meep::split_plane{direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos)},
+        py_bp_to_bp(left),
+        py_bp_to_bp(right)));
+  }
+
+  Py_XDECREF(id);
+  Py_XDECREF(split_dir);
+  Py_XDECREF(split_pos);
+  Py_XDECREF(left);
+  Py_XDECREF(right);
+  return bp;
 }
 
 static PyObject *py_binary_partition_object() {
@@ -1070,4 +1085,32 @@ static PyObject *py_binary_partition_object() {
     bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition");
   }
   return bp_type;
+}
+
+// Converts a meep::binary_partition object into a Python class instance
+static PyObject *bp_to_py_bp(const meep::binary_partition *bp) {
+  PyObject *bp_class = py_binary_partition_object();
+  PyObject *args = PyTuple_New(0);  // no numbered arguments to pass
+  if (bp->is_leaf()) {
+    // leaf nodes will have proc_id and no other properties
+    int proc_id = bp->get_proc_id();
+    PyObject *kwargs = Py_BuildValue("{s:i}", "proc_id", proc_id);
+    PyObject *py_bp = PyObject_Call(bp_class, args, kwargs);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    return py_bp;
+  } else {
+    // other nodes will have left, right, split_dir, split_pos
+    PyObject *left = bp_to_py_bp(bp->left_tree());
+    PyObject *right = bp_to_py_bp(bp->right_tree());
+    meep::direction split_dir = bp->get_plane().dir;
+    double split_pos = bp->get_plane().pos;
+    PyObject *kwargs =
+        Py_BuildValue("{s:O,s:O,s:i,s:d}", "left", left, "right", right,
+                      "split_dir", split_dir, "split_pos", split_pos);
+    PyObject *py_bp = PyObject_Call(bp_class, args, kwargs);
+    Py_DECREF(args);
+    Py_DECREF(kwargs);
+    return py_bp;
+  }
 }

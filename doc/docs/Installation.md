@@ -99,17 +99,6 @@ conda create -n pmp1.9 -c conda-forge pymeep=1.9.0=mpi_mpich_*
 
 Note that parallel (MPI) versions are only available with `pymeep >= 1.8.0`.
 
-### Nightly Builds
-
-To experiment with new features before they are distributed in an official release, you can try the [nightly-development builds](https://github.com/Simpetus/pymeep-nightly-recipe). They are hosted on the `simpetus` channel. Currently, the nightly builds are only available for Python 2.7 and 3.6.
-
-```bash
-# Serial pymeep
-conda create -n mp_test -c simpetus -c conda-forge pymeep
-# Parallel pymeep
-conda create -n pmp_test -c simpetus -c conda-forge pymeep=*=mpi_mpich*
-```
-
 ### Version Number
 
 You can determine the version number as well as the most recent commit of the Meep module via:
@@ -123,7 +112,7 @@ This will show something like `1.11.0-1-g415bc8eb` where the first three digits 
 
 ### Non-Networked Systems
 
-To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), using the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) or [nightly build](https://anaconda.org/simpetus/pymeep/files) will *not* work without the dependencies. A possible workaround is [Conda-Pack](https://github.com/conda/conda-pack).
+To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), using the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) will *not* work without the dependencies. A possible workaround is [Conda-Pack](https://github.com/conda/conda-pack).
 
 Installation on Linux
 -------------------------

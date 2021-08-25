@@ -1,7 +1,7 @@
 import unittest
 import parameterized
 
-from utils import VectorComparisonMixin
+from utils import ApproxComparisonTestCase
 
 import jax
 import jax.numpy as jnp
@@ -16,7 +16,7 @@ jax.config.update('jax_enable_x64', True)
 _FD_STEP = 1e-4
 
 # The tolerance for the adjoint and finite difference gradient comparison
-_TOL = 2e-2
+_TOL = 0.1 if mp.is_single_precision() else 0.02
 
 mp.verbosity(0)
 
@@ -166,7 +166,7 @@ class UtilsTest(unittest.TestCase):
       self.assertEqual(value.dtype, onp.complex128)
 
 
-class WrapperTest(VectorComparisonMixin, unittest.TestCase):
+class WrapperTest(ApproxComparisonTestCase):
 
   @parameterized.parameterized.expand([
     ('1500_1550bw_01relative_gaussian', onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0),
@@ -237,7 +237,7 @@ class WrapperTest(VectorComparisonMixin, unittest.TestCase):
     fd_projection = onp.stack(fd_projection)
 
     # Check that dp . ∇T ~ T(p + dp) - T(p)
-    self.assertVectorsClose(
+    self.assertClose(
       projection,
       fd_projection,
       epsilon=_TOL,

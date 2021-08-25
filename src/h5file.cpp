@@ -23,7 +23,7 @@
 
 #define CHECK(condition, message)                                                                  \
   do {                                                                                             \
-    if (!(condition)) { abort("error on line %d of " __FILE__ ": " message "\n", __LINE__); }      \
+    if (!(condition)) { meep::abort("error on line %d of " __FILE__ ": " message "\n", __LINE__); }      \
   } while (0)
 
 #include "config.h"
@@ -150,7 +150,7 @@ void h5file::close_id() {
 
 /* note: if parallel is true, then *all* processes must call this,
    and all processes will use I/O. */
-h5file::h5file(const char *filename_, access_mode m, bool parallel_) {
+h5file::h5file(const char *filename_, access_mode m, bool parallel_, bool local_) {
   cur_dataname = NULL;
   id = (void *)malloc(sizeof(hid_t));
   cur_id = (void *)malloc(sizeof(hid_t));
@@ -160,7 +160,12 @@ h5file::h5file(const char *filename_, access_mode m, bool parallel_) {
   filename = new char[strlen(filename_) + 1];
   strcpy(filename, filename_);
   mode = m;
+
+  if (parallel_ && local_) {
+    meep::abort("Can not open h5file (%s) in both parallel and local mode.", filename);
+  }
   parallel = parallel_;
+  local = local_;
 }
 
 h5file::~h5file() {
@@ -191,7 +196,9 @@ void h5file::remove() {
   extending = 0;
 
   IF_EXCLUSIVE(if (parallel) all_wait(), (void)0);
-  if (am_master() && std::remove(filename)) abort("error removing file %s", filename);
+  if (am_master() || local) {
+    if (std::remove(filename)) meep::abort("error removing file %s", filename);
+  }
 }
 
 h5file::extending_s *h5file::get_extending(const char *dataname) const {
@@ -226,7 +233,7 @@ void h5file::set_cur(const char *dataname, void *data_id) {
 
 void h5file::read_size(const char *dataname, int *rank, size_t *dims, int maxrank) {
 #ifdef HAVE_HDF5
-  if (parallel || am_master()) {
+  if (parallel || am_master() || local) {
     hid_t file_id = HID(get_id()), space_id, data_id;
 
     CHECK(file_id >= 0, "error opening HDF5 input file");
@@ -253,7 +260,7 @@ void h5file::read_size(const char *dataname, int *rank, size_t *dims, int maxran
     H5Sclose(space_id);
   }
 
-  if (!parallel) {
+  if (!parallel && !local) {
     *rank = broadcast(0, *rank);
     broadcast(0, dims, *rank);
 
@@ -291,7 +298,7 @@ void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
                    bool single_precision) {
 #ifdef HAVE_HDF5
   void *data = 0;
-  if (parallel || am_master()) {
+  if (parallel || am_master() || local) {
     int i, N;
     hid_t file_id = HID(get_id()), space_id, data_id;
 
@@ -304,7 +311,7 @@ void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
         close_data_id = false;
       }
       else {
-        if (!dataset_exists(dataname)) { abort("missing dataset in HDF5 file: %s", dataname); }
+        if (!dataset_exists(dataname)) { meep::abort("missing dataset in HDF5 file: %s", dataname); }
         data_id = H5Dopen(file_id, dataname);
       }
     }
@@ -345,7 +352,7 @@ void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
     if (close_data_id) H5Dclose(data_id);
   }
 
-  if (!parallel) {
+  if (!parallel && !local) {
     *rank = broadcast(0, *rank);
     broadcast(0, dims, *rank);
     size_t N = 1;
@@ -375,7 +382,7 @@ char *h5file::read(const char *dataname) {
 #ifdef HAVE_HDF5
   char *data = 0;
   int len = 0;
-  if (parallel || am_master()) {
+  if (parallel || am_master() || local) {
     hid_t file_id = HID(get_id()), space_id, data_id, type_id;
 
     CHECK(file_id >= 0, "error opening HDF5 input file");
@@ -404,7 +411,7 @@ char *h5file::read(const char *dataname) {
     H5Dclose(data_id);
   }
 
-  if (!parallel) {
+  if (!parallel && !local) {
     len = broadcast(0, len);
     if (!am_master()) data = new char[len];
     broadcast(0, data, len);
@@ -430,7 +437,7 @@ void h5file::remove_data(const char *dataname) {
     extending_s *prev = 0, *cur = extending;
     for (; cur && strcmp(cur->dataname, dataname); cur = (prev = cur)->next)
       ;
-    if (!cur) abort("bug in remove_data: inconsistent get_extending");
+    if (!cur) meep::abort("bug in remove_data: inconsistent get_extending");
     if (prev)
       prev->next = cur->next;
     else
@@ -442,7 +449,7 @@ void h5file::remove_data(const char *dataname) {
   if (dataset_exists(dataname)) {
     /* this is hackish ...need to pester HDF5 developers to make
        H5Gunlink a collective operation for parallel mode */
-    if (!parallel || am_master()) {
+    if (!parallel || am_master() || local) {
       H5Gunlink(file_id, dataname); /* delete it */
       H5Fflush(file_id, H5F_SCOPE_GLOBAL);
     }
@@ -471,7 +478,7 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims, boo
   unset_cur();
   remove_data(dataname); // HDF5 gives error if we H5Dcreate existing dataset
 
-  if (IF_EXCLUSIVE(!parallel || am_master(), 1)) {
+  if (local || IF_EXCLUSIVE(!parallel || am_master(), 1)) {
     hsize_t *dims_copy = new hsize_t[rank1 + append_data];
     hsize_t *maxdims = new hsize_t[rank1 + append_data];
     hsize_t N = 1;
@@ -501,7 +508,7 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims, boo
     hid_t type_id = single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE;
 
     data_id = H5Dcreate(file_id, dataname, type_id, space_id, prop_id);
-    if (data_id < 0) abort("Error creating dataset");
+    if (data_id < 0) meep::abort("Error creating dataset");
 
     H5Pclose(prop_id);
   }
@@ -538,7 +545,7 @@ void h5file::create_data(const char *dataname, int rank, const size_t *dims, boo
     extending = cur;
   }
 #else
-  abort("not compiled with HDF5, required for HDF5 output");
+  meep::abort("not compiled with HDF5, required for HDF5 output");
 #endif
 }
 
@@ -580,7 +587,7 @@ void h5file::extend_data(const char *dataname, int rank, const size_t *dims) {
   delete[] dims_copy;
 
 #else
-  abort("not compiled with HDF5, required for HDF5 output");
+  meep::abort("not compiled with HDF5, required for HDF5 output");
 #endif
 }
 
@@ -678,7 +685,7 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
   H5Sclose(mem_space_id);
   H5Sclose(space_id);
 #else
-  abort("not compiled with HDF5, required for HDF5 output");
+  meep::abort("not compiled with HDF5, required for HDF5 output");
 #endif
 }
 
@@ -708,12 +715,12 @@ void h5file::done_writing_chunks() {
      I'm assuming(?) that non-extensible datasets will use different
      files, etcetera, for different timesteps.  All of this hackery
      goes away if we just use an MPI-compiled version of HDF5. */
-  if (parallel && cur_dataname && get_extending(cur_dataname)) prevent_deadlock(); // closes id
+  if (parallel && !local && cur_dataname && get_extending(cur_dataname)) prevent_deadlock(); // closes id
 }
 
 void h5file::write(const char *dataname, int rank, const size_t *dims, void *data,
                    bool single_precision) {
-  if (parallel || am_master()) {
+  if (parallel || am_master() || local) {
     size_t *start = new size_t[rank + 1];
     for (int i = 0; i < rank; i++)
       start[i] = 0;
@@ -732,7 +739,7 @@ void h5file::write(const char *dataname, int rank, const size_t *dims, void *dat
 
 void h5file::write(const char *dataname, const char *data) {
 #ifdef HAVE_HDF5
-  if (IF_EXCLUSIVE(am_master(), parallel || am_master())) {
+  if (local || IF_EXCLUSIVE(am_master(), parallel || am_master())) {
     hid_t file_id = HID(get_id()), type_id, data_id, space_id;
 
     CHECK(file_id >= 0, "error opening HDF5 output file");
@@ -751,7 +758,7 @@ void h5file::write(const char *dataname, const char *data) {
     H5Dclose(data_id);
   }
 #else
-  abort("not compiled with HDF5, required for HDF5 output");
+  meep::abort("not compiled with HDF5, required for HDF5 output");
 #endif
 }
 
@@ -819,7 +826,7 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
   H5Sclose(mem_space_id);
   H5Sclose(space_id);
 #else
-  abort("not compiled with HDF5, required for HDF5 input");
+  meep::abort("not compiled with HDF5, required for HDF5 input");
 #endif
 }
 

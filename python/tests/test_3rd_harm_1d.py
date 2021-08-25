@@ -1,11 +1,8 @@
-from __future__ import division
-
 import unittest
 import meep as mp
-import numpy as np
+from utils import ApproxComparisonTestCase
 
-
-class Test3rdHarm1d(unittest.TestCase):
+class Test3rdHarm1d(ApproxComparisonTestCase):
 
     def setUp(self):
         self.sz = 100
@@ -53,7 +50,8 @@ class Test3rdHarm1d(unittest.TestCase):
 
         harmonics = [self.k, self.amp, mp.get_fluxes(self.trans1)[0], mp.get_fluxes(self.trans3)[0]]
 
-        np.testing.assert_allclose(expected_harmonics, harmonics)
+        tol = 3e-5 if mp.is_single_precision() else 1e-7
+        self.assertClose(expected_harmonics, harmonics, epsilon=tol)
 
 
 if __name__ == '__main__':

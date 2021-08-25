@@ -102,41 +102,41 @@ void dft_ldos::update(fields &f) {
 
   for (int ic = 0; ic < f.num_chunks; ic++)
     if (f.chunks[ic]->is_mine()) {
-      for (src_vol *sv = f.chunks[ic]->sources[D_stuff]; sv; sv = sv->next) {
-        component c = direction_component(Ex, component_direction(sv->c));
+      for (const src_vol &sv : f.chunks[ic]->get_sources(D_stuff)) {
+        component c = direction_component(Ex, component_direction(sv.c));
         realnum *fr = f.chunks[ic]->f[c][0];
         realnum *fi = f.chunks[ic]->f[c][1];
         if (fr && fi) // complex E
-          for (size_t j = 0; j < sv->npts; j++) {
-            const ptrdiff_t idx = sv->index[j];
-            const complex<double> A = sv->A[j];
+          for (size_t j = 0; j < sv.num_points(); j++) {
+            const ptrdiff_t idx = sv.index_at(j);
+            const complex<double>& A = sv.amplitude_at(j);
             EJ += complex<double>(fr[idx], fi[idx]) * conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // E is purely real
-          for (size_t j = 0; j < sv->npts; j++) {
-            const ptrdiff_t idx = sv->index[j];
-            const complex<double> A = sv->A[j];
+          for (size_t j = 0; j < sv.num_points(); j++) {
+            const ptrdiff_t idx = sv.index_at(j);
+            const complex<double>& A = sv.amplitude_at(j);
             EJ += double(fr[idx]) * conj(A);
             Jsum += abs(A);
           }
         }
       }
-      for (src_vol *sv = f.chunks[ic]->sources[B_stuff]; sv; sv = sv->next) {
-        component c = direction_component(Hx, component_direction(sv->c));
+      for (const src_vol& sv : f.chunks[ic]->get_sources(B_stuff)) {
+        component c = direction_component(Hx, component_direction(sv.c));
         realnum *fr = f.chunks[ic]->f[c][0];
         realnum *fi = f.chunks[ic]->f[c][1];
         if (fr && fi) // complex H
-          for (size_t j = 0; j < sv->npts; j++) {
-            const ptrdiff_t idx = sv->index[j];
-            const complex<double> A = sv->A[j];
+          for (size_t j = 0; j < sv.num_points(); j++) {
+            const ptrdiff_t idx = sv.index_at(j);
+            const complex<double>& A = sv.amplitude_at(j);
             HJ += complex<double>(fr[idx], fi[idx]) * conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // H is purely real
-          for (size_t j = 0; j < sv->npts; j++) {
-            const ptrdiff_t idx = sv->index[j];
-            const complex<double> A = sv->A[j];
+          for (size_t j = 0; j < sv.num_points(); j++) {
+            const ptrdiff_t idx = sv.index_at(j);
+            const complex<double>& A = sv.amplitude_at(j);
             HJ += double(fr[idx]) * conj(A);
             Jsum += abs(A);
           }

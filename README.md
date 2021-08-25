@@ -1,9 +1,10 @@
 ![](doc/docs/images/Meep-banner.png)
 
+[![CI](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-ci.yml)
+[![Sanitizers](https://github.com/NanoComp/meep/actions/workflows/build-san.yml/badge.svg)](https://github.com/NanoComp/meep/actions/workflows/build-san.yml)
 [![Latest Docs](https://readthedocs.org/projects/meep/badge/?version=latest)](http://meep.readthedocs.io/en/latest/)
-[![Build Status](https://travis-ci.org/NanoComp/meep.svg?branch=master)](https://travis-ci.org/NanoComp/meep)
-[![Coverage Status](https://coveralls.io/repos/github/stevengj/meep/badge.svg?branch=master)](https://coveralls.io/github/stevengj/meep?branch=master)
-![Python versions 2.7–3.6](https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5%2C%203.6-brightgreen.svg)
+![Python versions 3.6–3.9](https://img.shields.io/badge/python-3.6%2C%203.7%2C%203.8%2C%203.9-brightgreen.svg)
+[![codecov](https://codecov.io/gh/NanoComp/meep/branch/master/graph/badge.svg?token=k88ZuW3795)](https://codecov.io/gh/NanoComp/meep)
 
 **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (FDTD) method spanning a broad range of applications.
 
@@ -14,7 +15,7 @@
 -   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
 -   Distributed memory [parallelism](https://meep.readthedocs.io/en/latest/Parallel_Meep) on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
--   **Precompiled binary packages** of official releases and nightly builds of the master branch via [Conda](https://meep.readthedocs.io/en/latest/Installation/#conda-packages).
+-   **Precompiled binary packages** of official releases via [Conda](https://meep.readthedocs.io/en/latest/Installation/#conda-packages).
 -   Variety of arbitrary [material](https://meep.readthedocs.io/en/latest/Materials) types: **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, **saturable** gain/absorption, and **gyrotropic** media (magneto-optical effects).
 -   [Materials library](https://meep.readthedocs.io/en/latest/Materials/#materials-library) containing predefined broadband, complex refractive indices.
 -   [Perfectly matched layer](https://meep.readthedocs.io/en/latest/Perfectly_Matched_Layer) (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.

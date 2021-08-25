@@ -21,11 +21,7 @@
 /* the void *data field in geometric_object_struct points to   */
 /* a material_data structure, defined below.                   */
 /***************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <algorithm>
+#include <vector>
 
 #include <meep.hpp>
 #include <ctlgeom.h>
@@ -47,14 +43,8 @@ struct transition {
   double gamma;
   double pumping_rate;
 
-  bool operator==(const transition &other) const {
-    return (from_level == other.from_level && to_level == other.to_level &&
-            transition_rate == other.transition_rate && frequency == other.frequency &&
-            vector3_equal(sigma_diag, other.sigma_diag) && gamma == other.gamma &&
-            pumping_rate == other.pumping_rate);
-  }
-
-  bool operator!=(const transition &other) const { return !(*this == other); }
+  bool operator==(const transition &other) const;
+  bool operator!=(const transition &other) const;
 };
 
 typedef struct susceptibility_struct {
@@ -88,19 +78,10 @@ struct medium_struct {
   vector3 D_conductivity_diag;
   vector3 B_conductivity_diag;
 
-  medium_struct(double epsilon = 1) :
-      epsilon_diag{epsilon, epsilon, epsilon},
-      epsilon_offdiag{},
-      mu_diag{1, 1, 1},
-      mu_offdiag{},
-      E_susceptibilities(), H_susceptibilities(),
-      E_chi2_diag{},
-      E_chi3_diag{},
-      H_chi2_diag{},
-      H_chi3_diag{},
-      D_conductivity_diag{},
-      B_conductivity_diag{}
-    {}
+  explicit medium_struct(double epsilon = 1);
+
+  // Aborts Meep if a non-zero imaginary part of an offdiagonal mu or epsilon entry is found.
+  void check_offdiag_im_zero_or_abort() const;
 };
 
 // prototype for user-defined material function,
@@ -178,47 +159,9 @@ struct material_data {
   */
   enum { U_MIN = 0, U_PROD = 1, U_MEAN = 2, U_DEFAULT = 3 } material_grid_kinds;
 
-  material_data()
-      : which_subclass(MEDIUM), medium(), user_func(NULL), user_data(NULL),
-        do_averaging(false), epsilon_data(NULL),
-        weights(NULL), medium_1(), medium_2() {
-    epsilon_dims[0] = 0;
-    epsilon_dims[1] = 0;
-    epsilon_dims[2] = 0;
-    grid_size.x = 0;
-    grid_size.y = 0;
-    grid_size.z = 0;
-    material_grid_kinds = U_DEFAULT;
-  }
+  material_data();
 
-  void copy_from(const material_data& from) {
-    which_subclass = from.which_subclass;
-    medium = from.medium;
-
-    user_func = from.user_func;
-    // NOTE: the user_data field here opaque/void - so this is the best we can do.
-    user_data = from.user_data;
-    do_averaging = from.do_averaging;
-
-    memcpy(epsilon_dims, from.epsilon_dims, 3 * sizeof(size_t));
-    if (from.epsilon_data) {
-      size_t N = from.epsilon_dims[0] * from.epsilon_dims[1] * from.epsilon_dims[2];
-      epsilon_data = new double[N];
-      memcpy(epsilon_data, from.epsilon_data, N * sizeof(double));
-    }
-
-    grid_size = from.grid_size;
-    if (from.weights) {
-      size_t N = from.grid_size.x * from.grid_size.y * from.grid_size.z;
-      weights = new double[N];
-      memcpy(weights, from.weights, N * sizeof(double));
-    }
-
-    medium_1 = from.medium_1;
-    medium_2 = from.medium_2;
-    beta = from.beta;
-    eta = from.eta;
-  }
+  void copy_from(const material_data& from);
 };
 
 typedef material_data *material_type;
@@ -227,7 +170,7 @@ struct material_type_list {
   material_type *items;
   int num_items;
 
-  material_type_list() : items(NULL), num_items(0) {}
+  material_type_list();
 };
 
 // global variables

@@ -517,7 +517,7 @@ class Medium(object):
         # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
         conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
         if np.count_nonzero(conductivity) > 0:
-            epsmu = (1 + 1j/freqs * conductivity) * epsmu
+            epsmu = (1 + 1j/(2*np.pi*freqs) * conductivity) * epsmu
 
         # Convert list matrix to 3D numpy array size [freqs,3,3]
         return np.squeeze(epsmu)
@@ -547,8 +547,7 @@ class MaterialGrid(object):
         +\\tanh(\\beta\\times(u-\\eta)))/(\\tanh(\\beta\\times\\eta)+\\tanh(\\beta\\times(1-\\eta)))$ involving the parameters `beta`
         ($\\beta$: bias or "smoothness" of the turn on) and `eta` ($\\eta$: offset for erosion/dilation). The level set provides a general
         approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
-        The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
-        can be specified using the `Simulation` constructor.
+        Subpixel smoothing is fast and accurate because it exploits an analytic framework for level-set functions.
 
         It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
         (e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of

@@ -53,7 +53,7 @@ inline complex<double> getcm(const realnum *const f[2], size_t i) {
 }
 
 void fields::get_point(monitor_point *pt, const vec &loc) const {
-  if (pt == NULL) abort("Error:  get_point passed a null pointer!\n");
+  if (pt == NULL) meep::abort("Error:  get_point passed a null pointer!\n");
   for (int i = 0; i < 10; i++)
     pt->f[i] = 0.0;
   pt->loc = loc;
@@ -120,7 +120,7 @@ double fields::get_field(derived_component c, const vec &loc, bool parallel) con
           }
         }
       return sum * 0.5;
-    default: abort("unknown derived_component in get_field");
+    default: meep::abort("unknown derived_component in get_field");
   }
 }
 
@@ -245,7 +245,7 @@ void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]
        V[0 + 3 * 1] * (V[0 + 3 * 1] * V[2 + 3 * 2] - V[1 + 3 * 2] * V[0 + 3 * 2]) +
        V[0 + 3 * 2] * (V[0 + 3 * 1] * V[1 + 3 * 2] - V[1 + 3 * 1] * V[0 + 3 * 2]));
 
-  if (det == 0.0) abort("meep: Matrix is singular, aborting.\n");
+  if (det == 0.0) meep::abort("meep: Matrix is singular, aborting.\n");
 
   Vinv[0 + 3 * 0] = 1.0 / det * (V[1 + 3 * 1] * V[2 + 3 * 2] - V[1 + 3 * 2] * V[2 + 3 * 1]);
   Vinv[0 + 3 * 1] = 1.0 / det * (V[0 + 3 * 2] * V[2 + 3 * 1] - V[0 + 3 * 1] * V[2 + 3 * 2]);
@@ -417,7 +417,7 @@ double monitor_point::poynting_in_direction(direction d) {
 }
 
 double monitor_point::poynting_in_direction(vec dir) {
-  if (dir.dim != loc.dim) abort("poynting_in_direction: dir.dim != loc.dim\n");
+  if (dir.dim != loc.dim) meep::abort("poynting_in_direction: dir.dim != loc.dim\n");
   dir = dir / abs(dir);
   double result = 0.0;
   LOOP_OVER_DIRECTIONS(dir.dim, d) { result += dir.in_direction(d) * poynting_in_direction(d); }

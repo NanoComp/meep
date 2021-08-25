@@ -328,29 +328,29 @@ int main(int argc, char **argv) {
   master_printf("Testing 2D...\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml(one, s)) abort("error in test_pml vacuum\n");
+    if (!test_pml(one, s)) meep::abort("error in test_pml vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml_tm(one, s)) abort("error in test_pml_tm vacuum\n");
+    if (!test_pml_tm(one, s)) meep::abort("error in test_pml_tm vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_pml_te(one, s)) abort("error in test_pml_te vacuum\n");
+    if (!test_pml_te(one, s)) meep::abort("error in test_pml_te vacuum\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_metal(one, s)) abort("error in test_metal vacuum\n");
-  // if (!test_metal(one, 200)) abort("error in test_metal vacuum\n");
+    if (!test_metal(one, s)) meep::abort("error in test_metal vacuum\n");
+  // if (!test_metal(one, 200)) meep::abort("error in test_metal vacuum\n");
 
   for (int s = 2; s < 5; s++)
-    if (!test_metal(targets, s)) abort("error in test_metal targets\n");
-  // if (!test_metal(targets, 60)) abort("error in test_metal targets\n");
+    if (!test_metal(targets, s)) meep::abort("error in test_metal targets\n");
+  // if (!test_metal(targets, 60)) meep::abort("error in test_metal targets\n");
 
   for (int s = 2; s < 5; s++)
-    if (!test_periodic(targets, s)) abort("error in test_periodic targets\n");
+    if (!test_periodic(targets, s)) meep::abort("error in test_periodic targets\n");
   // if (!test_periodic(one, 200))
-  //  abort("error in test_periodic targets\n");
+  //  meep::abort("error in test_periodic targets\n");
 
   for (int s = 2; s < 4; s++)
-    if (!test_periodic_tm(one, s)) abort("error in test_periodic_tm vacuum\n");
+    if (!test_periodic_tm(one, s)) meep::abort("error in test_periodic_tm vacuum\n");
 
   return 0;
 }

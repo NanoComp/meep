@@ -728,8 +728,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) GEOMETRIC_OBJECT {
     if ($1.material) {
-        delete[] ((material_data *)$1.material)->weights;
-        delete[] ((material_data *)$1.material)->epsilon_data;
+        material_free((material_data *)$1.material);
         delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
@@ -761,19 +760,24 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
     }
 }
 
+%typemap(in) geometric_object_list* (geometric_object_list temp){
+    if(!py_list_to_gobj_list($input, &temp)) {
+        SWIG_fail;
+    }
+    $1 = &temp;
+}
+
 %typemap(arginit) geometric_object_list {
     $1.num_items = 0;
     $1.items = NULL;
 }
 
 %typemap(freearg) geometric_object_list {
-    for(int i = 0; i < $1.num_items; i++) {
-        delete[] ((material_data *)$1.items[i].material)->epsilon_data;
-        delete[] ((material_data *)$1.items[i].material)->weights;
-        delete (material_data *)$1.items[i].material;
-        geometric_object_destroy($1.items[i]);
-    }
-    delete[] $1.items;
+    gobj_list_freearg(&$1);
+}
+
+%typemap(freearg) geometric_object_list* {
+    gobj_list_freearg($1);
 }
 
 %typemap(out) geometric_object_list {
@@ -809,7 +813,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
     if (PyArray_NDIM(pao_grad) !=2) {meep::abort("Numpy grad array must have 2 dimensions.");}
     double *grad_c = (double *)PyArray_DATA(pao_grad);
-    int ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
+    npy_intp ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
     // clean the adjoint fields array
     PyArrayObject *pao_fields_a = (PyArrayObject *)fields_a;
@@ -840,7 +844,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy fields array must be C-style contiguous.");
     double *frequencies_c = (double *)PyArray_DATA(pao_freqs);
-    int nf = PyArray_DIMS(pao_freqs)[0];
+    npy_intp nf = PyArray_DIMS(pao_freqs)[0];
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
     // prepare a geometry_tree
@@ -957,8 +961,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %typemap(freearg) material_type {
     if ($1) {
-        delete[] $1->weights;
-        delete[] $1->epsilon_data;
+        material_free($1);
         delete $1;
     }
 }
@@ -1362,8 +1365,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %typemap(freearg) material_type_list {
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
-            delete[] $1.items[i]->weights;
-            delete[] $1.items[i]->epsilon_data;
+            material_free($1.items[i]);
         }
     }
     delete[] $1.items;
@@ -1422,17 +1424,39 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     $1 = PyObject_IsInstance($input, py_binary_partition_object());
 }
 
-%typemap(in) meep::binary_partition * {
-    $1 = py_bp_to_bp($input);
+%typemap(in) meep::binary_partition * (std::unique_ptr<meep::binary_partition> temp){
+  temp = py_bp_to_bp($input);
+  $1 = temp.get();
+}
+
+%typemap(out) const meep::binary_partition * {
+  $result = bp_to_py_bp($1);
 }
 
 %typemap(arginit) meep::binary_partition * {
     $1 = NULL;
 }
 
-%typemap(freearg) meep::binary_partition * {
-    delete $1;
+
+// typemaps for timing data
+
+%typemap(out) std::unordered_map<meep::time_sink, std::vector<double>, std::hash<int> > {
+  PyObject *out_dict = PyDict_New();
+  for (const auto& ts_vec : $1) {
+    const std::vector<double>& timing_vector = ts_vec.second;
+    PyObject *res = PyList_New(timing_vector.size());
+    for (size_t i = 0; i < timing_vector.size(); ++i) {
+      PyList_SetItem(res, i, PyFloat_FromDouble(timing_vector[i]));
+    }
+    PyObject *key = PyInteger_FromLong(static_cast<int>(ts_vec.first));
+    PyDict_SetItem(out_dict, key, res);
+
+    Py_DECREF(key);
+    Py_DECREF(res);
+  }
+  $result = out_dict;
 }
+
 
 // Tells Python to take ownership of the h5file* this function returns so that
 // it gets garbage collected and the file gets closed.
@@ -1470,7 +1494,23 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;
+%ignore meep::all_in_or_out;
+%ignore meep::all_connect_phases;
+%ignore meep::choose_chunkdivision;
+%ignore meep::comms_key;
+%ignore meep::comms_key_hash_fn;
+%ignore meep::comms_manager;
+%ignore meep::comms_operation;
+%ignore meep::comms_sequence;
+%ignore meep::create_comms_manager;
+%ignore meep::fields::get_time_spent_on;
+%ignore meep::fields::times_spent;
+%ignore meep::fields::was_working_on;
+%ignore meep::fields::with_timing_scope;
+%ignore meep::fields::working_on;
+%ignore meep::fields_chunk;
 %ignore meep::infinity;
+%ignore meep::timing_scope;
 
 %ignore std::vector<meep::volume>::vector(size_type);
 %ignore std::vector<meep::volume>::resize;
@@ -1833,6 +1873,10 @@ size_t get_realnum_size() {
   return sizeof(meep::realnum);
 }
 
+bool is_single_precision() {
+  return sizeof(meep::realnum) == sizeof(float);
+}
+
 meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     std::vector<meep_geom::dft_data> dft_data_list_,
                                                     std::vector<meep::volume> pml_1d_vols_,
@@ -1857,7 +1901,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
                                                     bool set_materials,
                                                     meep::structure *existing_s,
                                                     bool output_chunk_costs,
-                                                    meep::binary_partition *my_bp) {
+                                                    const meep::binary_partition *my_bp) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1875,11 +1919,11 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
 
     if (output_chunk_costs) {
          meep::volume thev = gv.surroundings();
-         meep::binary_partition *bp = NULL;
+         std::unique_ptr<meep::binary_partition> bp;
          if (!my_bp) bp = meep::choose_chunkdivision(gv, thev, num_chunks, sym);
          std::vector<grid_volume> chunk_vols;
          std::vector<int> ids;
-         meep::split_by_binarytree(gv, chunk_vols, ids, (!my_bp) ? bp : my_bp);
+         meep::split_by_binarytree(gv, chunk_vols, ids, (!my_bp) ? bp.get() : my_bp);
          for (size_t i = 0; i < chunk_vols.size(); ++i)
               master_printf("CHUNK:, %2zu, %f, %zu\n",i,chunk_vols[i].get_cost(),chunk_vols[i].surface_area());
          return NULL;
