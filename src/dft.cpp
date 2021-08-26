@@ -304,27 +304,27 @@ double dft_chunk::dft_fields_norm2() const {
   return sum;
 }
 
-// return the minimum abs(freq) over all DFT chunks
-double fields::dft_minfreq() const {
-  double minfreq = meep::infinity;
+// return the maximum abs(freq) over all DFT chunks
+double fields::dft_maxfreq() const {
+  double maxfreq = 0;
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      minfreq = std::min(minfreq, chunks[i]->dft_minfreq());
-  return -max_to_all(-minfreq); // == min_to_all(minfreq)
+      maxfreq = std::max(maxfreq, chunks[i]->dft_maxfreq());
+  return max_to_all(maxfreq);
 }
 
-double fields_chunk::dft_minfreq() const {
-  double minomega = meep::infinity;
+double fields_chunk::dft_maxfreq() const {
+  double maxomega = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    minomega = std::min(minomega, cur->minomega());
-  return minomega / (2*meep::pi);
+    maxomega = std::max(maxomega, cur->maxomega());
+  return maxomega / (2*meep::pi);
 }
 
-double dft_chunk::minomega() const {
-  double minomega = meep::infinity;
+double dft_chunk::maxomega() const {
+  double maxomega = 0;
   for (const auto& o : omega)
-    minomega = std::min(minomega, std::abs(o));
-  return minomega;
+    maxomega = std::max(maxomega, std::abs(o));
+  return maxomega;
 }
 
 void dft_chunk::scale_dft(complex<double> scale) {
