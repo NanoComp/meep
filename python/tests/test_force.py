@@ -35,7 +35,9 @@ class TestForce(unittest.TestCase):
         f = mp.get_forces(self.myforce)
 
         self.assertAlmostEqual(f[0], -0.11039089113393187)
-        self.assertAlmostEqual(f[0], mp.get_forces(self.myforce_decimated)[0])
+
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(f[0], mp.get_forces(self.myforce_decimated)[0], places=places)
 
 
 if __name__ == '__main__':
