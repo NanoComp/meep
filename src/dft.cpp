@@ -230,8 +230,8 @@ void dft_chunk::update_dft(double time) {
 
   int numcmp = fc->f[c][1] ? 2 : 1;
 
-  size_t idx_dft = 0;
-  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+  PLOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    size_t idx_dft = IVEC_LOOP_COUNTER;
     double w;
     if (include_dV_and_interp_weights) {
       w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
@@ -261,7 +261,6 @@ void dft_chunk::update_dft(double time) {
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
     }
-    idx_dft++;
   }
 }
 

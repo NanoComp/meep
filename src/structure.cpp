@@ -801,12 +801,13 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi3
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (size_t i = 0; i < gv.ntot(); ++i)
+    for (size_t i = 0; i < gv.ntot(); i++)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
   if (!chi3[c]) chi3[c] = new realnum[gv.ntot()];
   bool trivial = true;
+  // note: not thread-safe if epsilon is not thread-safe, e.g. it if calls back to Python
   LOOP_OVER_VOL(gv, c, i) {
     IVEC_LOOP_LOC(gv, here);
     chi3[c][i] = epsilon.chi3(c, here);
@@ -837,7 +838,7 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi2
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (size_t i = 0; i < gv.ntot(); ++i)
+    for (size_t i = 0; i < gv.ntot(); i++)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
