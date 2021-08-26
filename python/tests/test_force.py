@@ -20,7 +20,7 @@ class TestForce(unittest.TestCase):
                                  sources=[sources])
 
         fr = mp.ForceRegion(mp.Vector3(y=1.27), direction=mp.Y, size=mp.Vector3(4.38))
-        self.myforce = self.sim.add_force(fcen, 0, 1, fr)
+        self.myforce = self.sim.add_force(fcen, 0, 1, fr, decimation_factor=1)
         self.myforce_decimated = self.sim.add_force(fcen, 0, 1, fr, decimation_factor=10)
 
     def test_force(self):

@@ -116,7 +116,8 @@ class TestModeDecomposition(unittest.TestCase):
 
         mode = sim.add_mode_monitor(fcen, 0, 1,
                                     mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0,0),
-                                                  size=mp.Vector3(0,sxy,0)))
+                                                  size=mp.Vector3(0,sxy,0)),
+                                    decimation_factor=1)
         mode_decimated = sim.add_mode_monitor(fcen, 0, 1,
                                               mp.FluxRegion(center=mp.Vector3(-0.5*sxy+dpml,0,0),
                                                             size=mp.Vector3(0,sxy,0)),

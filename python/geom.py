@@ -547,7 +547,7 @@ class MaterialGrid(object):
         +\\tanh(\\beta\\times(u-\\eta)))/(\\tanh(\\beta\\times\\eta)+\\tanh(\\beta\\times(1-\\eta)))$ involving the parameters `beta`
         ($\\beta$: bias or "smoothness" of the turn on) and `eta` ($\\eta$: offset for erosion/dilation). The level set provides a general
         approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
-        Subpixel smoothing is fast and accurate because it exploits an analytic framework for level-set functions.
+        Subpixel smoothing is fast and accurate because it exploits an analytic formulation for level-set functions.
 
         It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
         (e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of

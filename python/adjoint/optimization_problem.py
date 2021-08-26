@@ -72,7 +72,7 @@ class OptimizationProblem(object):
         decay_dt=50,
         decay_fields=[mp.Ez],
         decay_by=1e-6,
-        decimation_factor=1,
+        decimation_factor=0,
         minimum_run_time=0,
         maximum_run_time=None,
     ):
