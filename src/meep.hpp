@@ -1111,7 +1111,8 @@ public:
 
   void update_dft(double time);
   double dft_fields_norm2() const;
-  double minomega() const;
+  double dft_time_fields_norm2() const;
+  double maxomega() const;
 
   void scale_dft(std::complex<double> scale);
 
@@ -1564,7 +1565,8 @@ private:
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
   double dft_fields_norm2() const;
-  double dft_minfreq() const;
+  double dft_time_fields_norm2() const;
+  double dft_maxfreq() const;
 
   void changing_structure();
 };
@@ -1980,7 +1982,8 @@ public:
                      bool include_dV = true);
   void update_dfts();
   double dft_fields_norm();
-  double dft_minfreq() const;
+  double dft_time_fields_norm();
+  double dft_maxfreq() const;
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
                         bool use_symmetry = true, bool centered_grid = true,
                         int decimation_factor = 1);

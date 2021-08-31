@@ -4410,6 +4410,52 @@ def stop_on_interrupt():
 
     return _stop
 
+def stop_when_dft_decayed(sim, dt, decay_by, minimum_run_time=0, maximum_run_time=None, method='dft'):
+    """
+    Return a `condition` function, suitable for passing to `sim.run()` as the `until`
+    or `until_after_sources` parameter, that checks all of the Simulation's dft objects
+    every `dt` timesteps, and stops the simulation once all the components and frequencies
+    of *every* dft object have decayed by at least `decay_by`.
+
+    There are two methods for checking dft convergence. The first (and default) simply computes the
+    l2 norm of the already computed DFT fields at the current timestep (`method=dft`).
+
+    The second computes the l2 norm of the field *updates* and ignoring the phase term in the
+    DTFT update equation (`method=td`). This results in a more conservative approach that examines
+    *all* frequencies. If this method is chose, the user-specified time interval `dt` is overridden
+    to ensure that the fields are properly sampled.
+
+    Optionally the user can specify a minimum run time (`minimum_run_time`) or a maximum
+    run time (`maximum_run_time`).
+    """
+    # Record data in closure so that we can persitently edit
+    closure = {'previous_fields': 1, 't0': 0}
+
+    if method not in ["dft","td"]:
+        raise ValueError('Improper method, {}. Must either choose "dft" or "td".'.format(method))
+
+    if method == "td":
+        dt = 1/sim.dft_maxfreq()
+    def _stop(_sim):
+        if _sim.round_time() <= dt + closure['t0']:
+            return False
+        elif maximum_run_time and _sim.round_time() > maximum_run_time:
+            return True
+        else:
+            previous_fields = closure['previous_fields']
+            current_fields  = _sim.fields.dft_fields_norm()
+            relative_change =  np.abs(previous_fields-current_fields) /  previous_fields   
+            
+            closure['previous_fields'] = current_fields
+            closure['t0'] = _sim.round_time()
+
+            if mp.verbosity > 0:
+                fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
+                print(fmt.format(_sim.meep_time(), np.real(relative_change)))
+            return relative_change <= decay_by and _sim.round_time(
+            ) >= minimum_run_time
+
+    return _stop
 
 def combine_step_funcs(*step_funcs):
     """

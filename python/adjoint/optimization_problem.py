@@ -75,6 +75,7 @@ class OptimizationProblem(object):
         decimation_factor=1,
         minimum_run_time=0,
         maximum_run_time=None,
+        termination_method='dft'
     ):
 
         self.sim = simulation
@@ -132,6 +133,7 @@ class OptimizationProblem(object):
         self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
+        self.termination_method = termination_method
 
         # store sources for finite difference estimations
         self.forward_sources = self.sim.sources
@@ -235,12 +237,13 @@ class OptimizationProblem(object):
         self.prepare_forward_run()
 
         # Forward run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(
+        self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
             self.sim,
             self.decay_dt,
             self.decay_by,
             self.minimum_run_time,
             self.maximum_run_time,
+            self.termination_method
         ))
 
         # record objective quantities from user specified monitors
@@ -306,12 +309,13 @@ class OptimizationProblem(object):
             ]
 
             # Adjoint run
-            self.sim.run(until_after_sources=stop_when_dft_decayed(
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.sim,
                 self.decay_dt,
                 self.decay_by,
                 self.minimum_run_time,
                 self.maximum_run_time,
+                self.termination_method
             ))
 
             # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
@@ -421,12 +425,13 @@ class OptimizationProblem(object):
                 self.forward_monitors.append(
                     m.register_monitors(self.frequencies))
 
-            self.sim.run(until_after_sources=stop_when_dft_decayed(
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.sim,
                 self.decay_dt,
                 self.decay_by,
                 self.minimum_run_time,
                 self.maximum_run_time,
+                self.termination_method
             ))
 
             # record final objective function value
@@ -452,12 +457,13 @@ class OptimizationProblem(object):
                     m.register_monitors(self.frequencies))
 
             # add monitor used to track dft convergence
-            self.sim.run(until_after_sources=stop_when_dft_decayed(
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.sim,
                 self.decay_dt,
                 self.decay_by,
                 self.minimum_run_time,
                 self.maximum_run_time,
+                self.termination_method
             ))
 
             # record final objective function value
@@ -513,42 +519,6 @@ class OptimizationProblem(object):
             self.prepare_forward_run()
 
         self.sim.plot2D(**kwargs)
-
-
-def stop_when_dft_decayed(
-    simob,
-    dt,
-    decay_by,
-    minimum_run_time=0,
-    maximum_run_time=None,
-):
-    '''Step function that monitors the relative change in DFT fields for a list of monitors.
-
-    '''
-    # Record data in closure so that we can persitently edit
-    closure = {'previous_fields': 1, 't0': 0}
-
-    def _stop(sim):
-        if sim.round_time() <= dt + closure['t0']:
-            return False
-        elif maximum_run_time and sim.round_time() > maximum_run_time:
-            return True
-        else:
-            previous_fields = closure['previous_fields']
-            current_fields  = simob.fields.dft_fields_norm()
-            relative_change =  np.abs(previous_fields-current_fields) /  previous_fields   
-            
-            closure['previous_fields'] = current_fields
-            closure['t0'] = sim.round_time()
-
-            if mp.verbosity > 0:
-                fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
-                print(fmt.format(sim.meep_time(), np.real(relative_change)))
-            return relative_change <= decay_by and sim.round_time(
-            ) >= minimum_run_time
-
-    return _stop
-
 
 def atleast_3d(*arys):
     from numpy import array, asanyarray, newaxis

@@ -265,7 +265,7 @@ void dft_chunk::update_dft(double time) {
   }
 }
 
-/* Return the L2 norm of all of the fields used to update DFTs.  This is useful
+/* Return the L2 norm of the DFTs themselves.  This is useful
    to check whether the simulation is finished (whether all relevant fields have decayed).
    (Collective operation.) */
 double fields::dft_fields_norm() {
@@ -300,27 +300,73 @@ double dft_chunk::dft_fields_norm2() const {
   return sum;
 }
 
-// return the minimum abs(freq) over all DFT chunks
-double fields::dft_minfreq() const {
-  double minfreq = meep::infinity;
+/* Return the L2 norm of all of the fields used to update DFTs.  This is useful
+   to check whether the simulation is finished (whether all relevant fields have decayed).
+   (Collective operation.) 
+
+   Note that this is different from above, where we compute the norm of the *actual*
+   dft fields. In this case, we are only looking at the *update* (e.g. independent
+   of the phase term in the DTFT inner product). This is a more conservative approach
+   that by definition looks at *all* the simulation's frequencies (not just the ones
+   we care about).  
+*/
+
+double fields::dft_time_fields_norm() {
+  am_now_working_on(Other);
+  double sum = 0.0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_fields_norm2();
+  finished_working();
+  return std::sqrt(sum_to_all(sum));
+}
+
+double fields_chunk::dft_time_fields_norm2() const {
+  double sum = 0.0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    sum += cur->dft_fields_norm2();
+  return sum;
+}
+
+double dft_chunk::dft_time_fields_norm2() const {
+  if (!fc->f[c][0]) return 0.0;
+  int numcmp = fc->f[c][1] ? 2 : 1;
+  double sum = 0.0;
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    if (avg2)
+      for (int cmp = 0; cmp < numcmp; ++cmp)
+        sum += sqr(0.25 * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx + avg1] +
+                           fc->f[c][cmp][idx + avg2] + fc->f[c][cmp][idx + (avg1 + avg2)]));
+    else if (avg1)
+      for (int cmp = 0; cmp < numcmp; ++cmp)
+        sum += sqr(0.5 * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx + avg1]));
+    else
+      for (int cmp = 0; cmp < numcmp; ++cmp)
+        sum += sqr(fc->f[c][cmp][idx]);
+  }
+  return sum;
+}
+
+// return the maximum abs(freq) over all DFT chunks
+double fields::dft_maxfreq() const {
+  double maxfreq = 0;
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      minfreq = std::min(minfreq, chunks[i]->dft_minfreq());
-  return -max_to_all(-minfreq); // == min_to_all(minfreq)
+      maxfreq = std::max(maxfreq, chunks[i]->dft_maxfreq());
+  return max_to_all(maxfreq);
 }
 
-double fields_chunk::dft_minfreq() const {
-  double minomega = meep::infinity;
+double fields_chunk::dft_maxfreq() const {
+  double maxomega = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    minomega = std::min(minomega, cur->minomega());
-  return minomega / (2*meep::pi);
+    maxomega = std::max(maxomega, cur->maxomega());
+  return maxomega / (2*meep::pi);
 }
 
-double dft_chunk::minomega() const {
-  double minomega = meep::infinity;
+double dft_chunk::maxomega() const {
+  double maxomega = 0;
   for (const auto& o : omega)
-    minomega = std::min(minomega, std::abs(o));
-  return minomega;
+    maxomega = std::max(maxomega, std::abs(o));
+  return maxomega;
 }
 
 void dft_chunk::scale_dft(complex<double> scale) {
