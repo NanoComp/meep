@@ -801,12 +801,13 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi3
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (size_t i = 0; i < gv.ntot(); ++i)
+    for (size_t i = 0; i < gv.ntot(); i++)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
   if (!chi3[c]) chi3[c] = new realnum[gv.ntot()];
   bool trivial = true;
+  // note: not thread-safe if epsilon is not thread-safe, e.g. it if calls back to Python
   LOOP_OVER_VOL(gv, c, i) {
     IVEC_LOOP_LOC(gv, here);
     chi3[c][i] = epsilon.chi3(c, here);
@@ -837,7 +838,7 @@ void structure_chunk::set_chi2(component c, material_function &epsilon) {
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi2
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (size_t i = 0; i < gv.ntot(); ++i)
+    for (size_t i = 0; i < gv.ntot(); i++)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
@@ -937,14 +938,14 @@ structure_chunk::structure_chunk(const grid_volume &thegv, const volume &vol_lim
 double structure::max_eps() const {
   double themax = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) themax = max(themax, chunks[i]->max_eps());
+    if (chunks[i]->is_mine()) themax = std::max(themax, chunks[i]->max_eps());
   return max_to_all(themax);
 }
 
 double fields::max_eps() const {
   double themax = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) themax = max(themax, chunks[i]->s->max_eps());
+    if (chunks[i]->is_mine()) themax = std::max(themax, chunks[i]->s->max_eps());
   return max_to_all(themax);
 }
 
@@ -954,7 +955,7 @@ double structure_chunk::max_eps() const {
     direction d = component_direction(c);
     if (chi1inv[c][d])
       for (size_t i = 0; i < gv.ntot(); i++)
-        themax = max(themax, 1 / chi1inv[c][d][i]);
+        themax = std::max<double>(themax, 1 / chi1inv[c][d][i]);
   }
   return themax;
 }

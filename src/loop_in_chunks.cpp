@@ -459,22 +459,22 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
               e0c.set_direction(d, e1.in_direction(dS));
             }
             if (iecS.in_direction(dS) == iscS.in_direction(dS)) {
-              double w = min(s0c.in_direction(d), e0c.in_direction(d));
+              double w = std::min(s0c.in_direction(d), e0c.in_direction(d));
               s0c.set_direction(d, w);
               e0c.set_direction(d, w);
               s1c.set_direction(d, w);
               e1c.set_direction(d, w);
             }
             else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 1 * 2) {
-              double w = min(s0c.in_direction(d), e1c.in_direction(d));
+              double w = std::min(s0c.in_direction(d), e1c.in_direction(d));
               s0c.set_direction(d, w);
               e1c.set_direction(d, w);
-              w = min(s1c.in_direction(d), e0c.in_direction(d));
+              w = std::min(s1c.in_direction(d), e0c.in_direction(d));
               s1c.set_direction(d, w);
               e0c.set_direction(d, w);
             }
             else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 2 * 2) {
-              double w = min(s1c.in_direction(d), e1c.in_direction(d));
+              double w = std::min(s1c.in_direction(d), e1c.in_direction(d));
               s1c.set_direction(d, w);
               e1c.set_direction(d, w);
             }

@@ -15,7 +15,7 @@ Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-sou
 
 ### Who are the developers of Meep?
 
-Meep was originally developed as part of graduate research at MIT. The project has been under continuous development for nearly 20 years. It is currently maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep).
+Meep was originally developed as part of graduate research at MIT. The project has been under continuous development for nearly 20 years. It is currently maintained by an active developer community on [GitHub](https://github.com/NanoComp/meep).
 
 ### Where can I ask questions regarding Meep?
 
@@ -31,7 +31,7 @@ Yes. The technical details of Meep's inner workings are described in the peer-re
 
 ### Where can I find a list of projects which have used Meep?
 
-For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
+For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see this [projects page](http://www.simpetus.com/projects.html).
 
 ### Can I access Meep in the public cloud?
 
@@ -42,7 +42,7 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, from notebooks to desktops to supercomputers. [Conda packages](Installation.md#conda-packages) of the latest released version are available for Linux and macOS. There are also Conda packages of [nightly development builds](Installation.md#nightly-builds) which can be used to experiment with new features. Installing Meep from the source code requires some understanding of Unix, especially to install the various dependencies. Installation shell scripts are available for [Ubuntu 16.04 and 18.04](Build_From_Source.md#building-from-source) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, from notebooks to desktops to supercomputers. [Conda packages](Installation.md#conda-packages) of the latest released version are available for Linux and macOS. Installing Meep from the source code requires some understanding of Unix, especially to install the various dependencies. Installation shell scripts are available for [Ubuntu 16.04 and 18.04](Build_From_Source.md#building-from-source) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 ### Can I install Meep on Windows machines?
 
@@ -50,7 +50,7 @@ Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft
 
 ### Are there precompiled binary packages for Ubuntu?
 
-Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
+Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages).
 
 ### Guile is installed, but configure complains that it can't find `guile`
 

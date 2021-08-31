@@ -139,15 +139,15 @@ jobs:
         MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
-    - name: Run configure
+    - name: Run configure with OpenMP
       if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.6) && !(matrix.enable-mpi == true && matrix.python-version == 3.9) }}
       run: |
         mkdir -p build &&
         pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
         popd
 
-    - name: Run configure
+    - name: Run configure with coverage
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.6 }}
       run: ./configure --enable-maintainer-mode --with-coverage --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 

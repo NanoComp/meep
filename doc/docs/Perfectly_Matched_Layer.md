@@ -8,7 +8,7 @@ The finite-difference implementation of PML requires the conductivities to be tu
 
 For a more detailed discussion of PMLs in Meep, see Chapter 5 ("Rigorous PML Validation and a Corrected Unsplit PML for Anisotropic Dispersive Media") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). In particular, there are two useful references:
 
--   [Notes on Perfectly Matched Layers](http://math.mit.edu/~stevenj/18.369/pml.pdf) by S. G. Johnson: a general introduction to PML concepts
+-   [Notes on Perfectly Matched Layers](https://arxiv.org/abs/2108.05348) (arXiv:2108.05348) by S. G. Johnson: a general introduction to PML concepts
 -   [J. Computational Physics, Vol. 230, pp. 2369-77, 2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf): a description of the precise PML formulation that is used in Meep, which is slightly different from many PML formulations described elsewhere in order to properly handle arbitrary anisotropy. This paper also describes a general strategy to validate PML.
 
 [TOC]

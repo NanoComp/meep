@@ -72,6 +72,7 @@ class OptimizationProblem(object):
         decay_dt=50,
         decay_fields=[mp.Ez],
         decay_by=1e-6,
+        decimation_factor=0,
         minimum_run_time=0,
         maximum_run_time=None,
     ):
@@ -131,6 +132,7 @@ class OptimizationProblem(object):
         self.decay_by = decay_by
         self.decay_fields = decay_fields
         self.decay_dt = decay_dt
+        self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
 
@@ -218,6 +220,7 @@ class OptimizationProblem(object):
                 self.frequencies,
                 where=dr.volume,
                 yee_grid=True,
+                decimation_factor=self.decimation_factor,
             ) for dr in self.design_regions
         ]
 
@@ -294,8 +297,12 @@ class OptimizationProblem(object):
     def adjoint_run(self):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
+
         if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
             self.sim.m = -self.sim.m
+
+        if self.sim.k_point:
+            self.sim.k_point *= -1
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
@@ -310,6 +317,7 @@ class OptimizationProblem(object):
                     self.frequencies,
                     where=dr.volume,
                     yee_grid=True,
+                    decimation_factor=self.decimation_factor,
                 ) for dr in self.design_regions
             ]
 
@@ -342,6 +350,7 @@ class OptimizationProblem(object):
             self.sim.m = -self.sim.m
 
         # update optimizer's state
+        if self.sim.k_point: self.sim.k_point *= -1
         self.current_state = "ADJ"
 
     def calculate_gradient(self):

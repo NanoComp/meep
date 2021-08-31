@@ -2,9 +2,10 @@ import unittest
 import h5py
 import numpy as np
 import meep as mp
+from utils import ApproxComparisonTestCase
 import os
 
-class TestDFTFields(unittest.TestCase):
+class TestDFTFields(ApproxComparisonTestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -79,8 +80,9 @@ class TestDFTFields(unittest.TestCase):
         with h5py.File(os.path.join(self.temp_dir, 'thin-y-flux.h5'), 'r') as thin_y:
             thin_y_h5 = mp.complexarray(thin_y['ez_0.r'][()], thin_y['ez_0.i'][()])
 
-        np.testing.assert_allclose(thin_x_array, thin_x_h5)
-        np.testing.assert_allclose(thin_y_array, thin_y_h5)
+        tol = 1e-6
+        self.assertClose(thin_x_array, thin_x_h5, epsilon=tol)
+        self.assertClose(thin_y_array, thin_y_h5, epsilon=tol)
 
         # compare array data to HDF5 file content for fields and flux
         fields_arr = sim.get_dft_array(dft_fields, mp.Ez, 0)
@@ -93,13 +95,15 @@ class TestDFTFields(unittest.TestCase):
             exp_fields = mp.complexarray(fields['ez_0.r'][()], fields['ez_0.i'][()])
             exp_flux = mp.complexarray(flux['ez_0.r'][()], flux['ez_0.i'][()])
 
-        np.testing.assert_allclose(exp_fields, fields_arr)
-        np.testing.assert_allclose(exp_flux, flux_arr)
+        tol = 1e-6
+        self.assertClose(exp_fields, fields_arr, epsilon=tol)
+        self.assertClose(exp_flux, flux_arr, epsilon=tol)
 
     def test_decimated_dft_fields_are_almost_equal_to_undecimated_fields(self):
         sim = self.init()
         sim.init_sim()
-        undecimated_field = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1)
+        undecimated_field = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1,
+                                               decimation_factor=1)
         decimated_field = sim.add_dft_fields([mp.Ez],
                                              self.fcen,
                                              0,
@@ -110,7 +114,7 @@ class TestDFTFields(unittest.TestCase):
 
         expected_dft = sim.get_dft_array(undecimated_field, mp.Ez, 0)
         actual_dft = sim.get_dft_array(decimated_field, mp.Ez, 0)
-        np.testing.assert_allclose(expected_dft, actual_dft, rtol=5.e-2)
+        self.assertClose(expected_dft, actual_dft, epsilon=1e-3)
 
 
 if __name__ == '__main__':

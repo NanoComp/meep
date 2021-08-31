@@ -53,7 +53,7 @@ src_time *src_time::add_to(src_time *others, src_time **added) const {
 }
 
 double src_time::last_time_max(double after) {
-  after = max(last_time(), after);
+  after = std::max(last_time(), after);
   if (next)
     return next->last_time_max(after);
   else
@@ -103,6 +103,13 @@ std::complex<double> gaussian_src_time::fourier_transform(const double f) {
   double omega0 = 2.0 * pi * freq;
   double delta = (omega - omega0) * width;
   return width * polar(1.0, omega * peak_time) * exp(-0.5 * delta * delta);
+}
+
+// bandwidth (in frequency units, not angular frequency) of the
+// continuous Fourier transform of the Gaussian source function
+// when it has decayed by a tolerance tol below its peak value
+double gaussian_src_time::get_fwidth(double tol) const {
+  return sqrt(-2.0 * log(tol)) / (width * pi);
 }
 
 bool gaussian_src_time::is_equal(const src_time &t) const {

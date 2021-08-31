@@ -1,5 +1,3 @@
-from __future__ import division
-
 import unittest
 import meep as mp
 
@@ -36,7 +34,8 @@ class TestDivideParallelProcesses(unittest.TestCase):
                                      mp.FluxRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
                                      mp.FluxRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
                                      mp.FluxRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
-                                     mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
+                                     mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1),
+                                     decimation_factor=1)
 
         self.sim.run(until_after_sources=30)
 
