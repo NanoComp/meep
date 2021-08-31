@@ -342,7 +342,10 @@ class OptimizationProblem(object):
             for nb, dgm in enumerate(self.design_region_monitors):
                 for ic, c in enumerate(self.components):
                     for f in range(self.nf):
-                        self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
+                        if (self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL):
+                            self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
+                        else:
+                            self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(self.sim.get_dft_array(dgm, c, f))
 
         if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
             self.sim.m = -self.sim.m
