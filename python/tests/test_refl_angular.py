@@ -41,7 +41,7 @@ class TestReflAngular(ApproxComparisonTestCase):
                             resolution=resolution)
 
         refl_fr = mp.FluxRegion(center=mp.Vector3(z=-0.25 * sz))
-        refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+        refl = sim.add_flux(fcen, df, nfreq, refl_fr, decimation_factor=1)
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(z=-0.5 * sz + dpml), 1e-9))
 
@@ -59,7 +59,7 @@ class TestReflAngular(ApproxComparisonTestCase):
                             dimensions=dimensions,
                             resolution=resolution)
 
-        refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+        refl = sim.add_flux(fcen, df, nfreq, refl_fr, decimation_factor=1)
         sim.load_minus_flux_data(refl, empty_data)
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(z=-0.5 * sz + dpml), 1e-9))

@@ -988,6 +988,7 @@ public:
     return 1;
   }
   virtual std::complex<double> frequency() const { return 0.0; }
+  virtual double get_fwidth(double tol) const { return 0.0; }
   virtual void set_frequency(std::complex<double> f) { (void)f; }
 
 private:
@@ -1009,6 +1010,7 @@ public:
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
+  virtual double get_fwidth(double tol) const;
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
   std::complex<double> fourier_transform(const double f);
 
@@ -1029,6 +1031,7 @@ public:
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
+  virtual double get_fwidth(double tol) const { return 0.0; };
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
@@ -1061,6 +1064,7 @@ public:
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
+  virtual double get_fwidth(double tol) const { return 0.0; };
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
@@ -1946,7 +1950,7 @@ public:
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0, int decimation_factor = 1) {
+                     int vc = 0, int decimation_factor = 0) {
     return add_dft(c, where, linspace(freq_min, freq_max, Nfreq), include_dV_and_interp_weights,
                    stored_weight, chunk_next, sqrt_dV_and_interp_weights, extra_weight,
                    use_centered_grid, vc, decimation_factor);
@@ -1956,13 +1960,13 @@ public:
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0, int decimation_factor = 1);
+                     int vc = 0, int decimation_factor = 0);
   dft_chunk *add_dft(component c, const volume &where, const std::vector<double>& freq,
                      bool include_dV_and_interp_weights = true,
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0, int decimation_factor = 1) {
+                     int vc = 0, int decimation_factor = 0) {
     return add_dft(c, where, freq.data(), freq.size(), include_dV_and_interp_weights, stored_weight,
                    chunk_next, sqrt_dV_and_interp_weights, extra_weight, use_centered_grid, vc,
                    decimation_factor);
@@ -1986,34 +1990,34 @@ public:
   double dft_maxfreq() const;
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
                         bool use_symmetry = true, bool centered_grid = true,
-                        int decimation_factor = 1);
+                        int decimation_factor = 0);
   dft_flux add_dft_flux(const volume_list *where, const std::vector<double> &freq,
-                        int decimation_factor = 1, bool use_symmetry = true,
+                        int decimation_factor = 0, bool use_symmetry = true,
                         bool centered_grid = true) {
     return add_dft_flux(where, freq.data(), freq.size(), use_symmetry, centered_grid,
                         decimation_factor);
   }
   dft_flux add_dft_flux(const volume_list *where, double freq_min, double freq_max, int Nfreq,
                         bool use_symmetry = true, bool centered_grid = true,
-                        int decimation_factor = 1) {
+                        int decimation_factor = 0) {
     return add_dft_flux(where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid,
                         decimation_factor);
   }
   dft_flux add_dft_flux(direction d, const volume &where, double freq_min, double freq_max,
                         int Nfreq, bool use_symmetry = true, bool centered_grid = true,
-                        int decimation_factor = 1) {
+                        int decimation_factor = 0) {
     return add_dft_flux(d, where, linspace(freq_min, freq_max, Nfreq), use_symmetry, centered_grid,
                         decimation_factor);
   }
   dft_flux add_dft_flux(direction d, const volume &where, const std::vector<double> &freq,
                         bool use_symmetry = true, bool centered_grid = true,
-                        int decimation_factor = 1) {
+                        int decimation_factor = 0) {
     return add_dft_flux(d, where, freq.data(), freq.size(), use_symmetry, centered_grid,
                         decimation_factor);
   }
   dft_flux add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
                         bool use_symmetry = true, bool centered_grid = true,
-                        int decimation_factor = 1);
+                        int decimation_factor = 0);
   dft_flux add_dft_flux_box(const volume &where, double freq_min, double freq_max, int Nfreq);
   dft_flux add_dft_flux_box(const volume &where, const std::vector<double> &freq);
   dft_flux add_dft_flux_plane(const volume &where, double freq_min, double freq_max, int Nfreq);
@@ -2021,33 +2025,33 @@ public:
 
   // a "mode monitor" is just a dft_flux with symmetry reduction turned off.
   dft_flux add_mode_monitor(direction d, const volume &where, double freq_min, double freq_max,
-                            int Nfreq, bool centered_grid = true, int decimation_factor = 1) {
+                            int Nfreq, bool centered_grid = true, int decimation_factor = 0) {
     return add_mode_monitor(d, where, linspace(freq_min, freq_max, Nfreq), centered_grid,
                             decimation_factor);
   }
   dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> &freq,
-                            bool centered_grid = true, int decimation_factor = 1) {
+                            bool centered_grid = true, int decimation_factor = 0) {
     return add_mode_monitor(d, where, freq.data(), freq.size(), centered_grid,
                             decimation_factor);
   }
   dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq,
-                            bool centered_grid = true, int decimation_factor = 1);
+                            bool centered_grid = true, int decimation_factor = 0);
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             double freq_min, double freq_max, int Nfreq,
-                            bool use_centered_grid = true, int decimation_factor = 1) {
+                            bool use_centered_grid = true, int decimation_factor = 0) {
     return add_dft_fields(components, num_components, where, linspace(freq_min, freq_max, Nfreq),
                           use_centered_grid, decimation_factor);
   }
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             const std::vector<double> &freq, bool use_centered_grid = true,
-                            int decimation_factor = 1) {
+                            int decimation_factor = 0) {
     return add_dft_fields(components, num_components, where, freq.data(), freq.size(),
                           use_centered_grid, decimation_factor);
   }
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             const double *freq, size_t Nfreq, bool use_centered_grid = true,
-                            int decimation_factor = 1);
+                            int decimation_factor = 0);
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */
@@ -2093,41 +2097,41 @@ public:
                              std::complex<double> overlaps[2]);
 
   dft_energy add_dft_energy(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                            int decimation_factor = 1) {
+                            int decimation_factor = 0) {
     return add_dft_energy(where, linspace(freq_min, freq_max, Nfreq), decimation_factor);
   }
   dft_energy add_dft_energy(const volume_list *where, const std::vector<double> &freq,
-                            int decimation_factor = 1) {
+                            int decimation_factor = 0) {
     return add_dft_energy(where, freq.data(), freq.size(), decimation_factor);
   }
   dft_energy add_dft_energy(const volume_list *where, const double *freq, size_t Nfreq,
-                            int decimation_factor = 1);
+                            int decimation_factor = 0);
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                          int decimation_factor = 1) {
+                          int decimation_factor = 0) {
     return add_dft_force(where, linspace(freq_min, freq_max, Nfreq), decimation_factor);
   }
   dft_force add_dft_force(const volume_list *where, const std::vector<double> &freq,
-                          int decimation_factor = 1) {
+                          int decimation_factor = 0) {
     return add_dft_force(where, freq.data(), freq.size(), decimation_factor);
   }
   dft_force add_dft_force(const volume_list *where, const double *freq, size_t Nfreq,
-                          int decimation_factor = 1);
+                          int decimation_factor = 0);
 
   // near2far.cpp
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
-                                int Nfreq, int decimation_factor = 1, int Nperiods = 1) {
+                                int Nfreq, int decimation_factor = 0, int Nperiods = 1) {
     return add_dft_near2far(where, linspace(freq_min, freq_max, Nfreq), decimation_factor,
                             Nperiods);
   }
   dft_near2far add_dft_near2far(const volume_list *where, const std::vector<double> &freq,
-                                int decimation_factor = 1, int Nperiods = 1) {
+                                int decimation_factor = 0, int Nperiods = 1) {
     return add_dft_near2far(where, freq.data(), freq.size(), decimation_factor,
                             Nperiods);
   }
   dft_near2far add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
-                                int decimation_factor = 1, int Nperiods = 1);
+                                int decimation_factor = 0, int Nperiods = 1);
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
                                    bool parallel = true) const;

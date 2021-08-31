@@ -34,9 +34,9 @@ class Test3rdHarm1d(ApproxComparisonTestCase):
                                  dimensions=dimensions)
 
         fr = mp.FluxRegion(mp.Vector3(0, 0, (0.5 * self.sz) - self.dpml - 0.5))
-        self.trans = self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr)
-        self.trans1 = self.sim.add_flux(fcen, 0, 1, fr)
-        self.trans3 = self.sim.add_flux(3 * fcen, 0, 1, fr)
+        self.trans = self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr, decimation_factor=1)
+        self.trans1 = self.sim.add_flux(fcen, 0, 1, fr, decimation_factor=1)
+        self.trans3 = self.sim.add_flux(3 * fcen, 0, 1, fr, decimation_factor=1)
 
     def test_3rd_harm_1d(self):
 

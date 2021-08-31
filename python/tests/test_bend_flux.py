@@ -62,12 +62,13 @@ class TestBendFlux(ApproxComparisonTestCase):
         else:
             fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, (sy / 2) - 1.5), size=mp.Vector3(w * 2, 0))
 
-        self.trans = self.sim.add_flux(fcen, df, nfreq, fr)
+        self.trans = self.sim.add_flux(fcen, df, nfreq, fr, decimation_factor=1)
         self.trans_decimated = self.sim.add_flux(fcen, df, nfreq, fr, decimation_factor=5)
 
         refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
                                 size=mp.Vector3(0, w * 2))
-        self.refl = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr)
+        self.refl = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr,
+                                      decimation_factor=1)
         self.refl_decimated = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr,
                                                 decimation_factor=10)
 

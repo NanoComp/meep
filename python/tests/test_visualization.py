@@ -82,10 +82,10 @@ def setup_sim(zDim=0):
     resolution = 10
 
     sim = mp.Simulation(cell_size=cell,
-                    boundary_layers=pml_layers,
-                    geometry=geometry,
-                    sources=sources,
-                    resolution=resolution)
+                        boundary_layers=pml_layers,
+                        geometry=geometry,
+                        sources=sources,
+                        resolution=resolution)
     # Line monitor
     sim.add_flux(1,0,1,mp.FluxRegion(center=mp.Vector3(5,0,0),size=mp.Vector3(0,4,4), direction=mp.X))
 

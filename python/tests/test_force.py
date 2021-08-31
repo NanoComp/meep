@@ -20,7 +20,7 @@ class TestForce(unittest.TestCase):
                                  sources=[sources])
 
         fr = mp.ForceRegion(mp.Vector3(y=1.27), direction=mp.Y, size=mp.Vector3(4.38))
-        self.myforce = self.sim.add_force(fcen, 0, 1, fr)
+        self.myforce = self.sim.add_force(fcen, 0, 1, fr, decimation_factor=1)
         self.myforce_decimated = self.sim.add_force(fcen, 0, 1, fr, decimation_factor=10)
 
     def test_force(self):
@@ -35,7 +35,9 @@ class TestForce(unittest.TestCase):
         f = mp.get_forces(self.myforce)
 
         self.assertAlmostEqual(f[0], -0.11039089113393187)
-        self.assertAlmostEqual(f[0], mp.get_forces(self.myforce_decimated)[0])
+
+        places = 6 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(f[0], mp.get_forces(self.myforce_decimated)[0], places=places)
 
 
 if __name__ == '__main__':

@@ -174,7 +174,26 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   dft_chunk_data data;
   data.c = c;
   data.vc = vc;
+
+  if (decimation_factor == 0) {
+    double tol = 1e-7;
+    double src_freq_max = 0;
+    for (src_time *s = sources; s; s = s->next) {
+      if (s->get_fwidth(tol) == 0)
+        decimation_factor = 1;
+      else
+        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth(tol));
+    }
+    double freq_max = 0;
+    for (size_t i = 0; i < Nfreq; ++i)
+      freq_max = std::max(freq_max, std::abs(freq[i]));
+    if ((freq_max > 0) && (src_freq_max > 0))
+      decimation_factor = std::max(1, int(std::floor(1/(dt*(freq_max + src_freq_max)))));
+    else
+      decimation_factor = 1;
+  }
   data.decimation_factor = decimation_factor;
+
   data.omega.resize(Nfreq);
   for (size_t i = 0; i < Nfreq; ++i)
     data.omega[i] = 2 * pi * freq[i];
@@ -230,8 +249,8 @@ void dft_chunk::update_dft(double time) {
 
   int numcmp = fc->f[c][1] ? 2 : 1;
 
-  size_t idx_dft = 0;
-  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+  PLOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    size_t idx_dft = IVEC_LOOP_COUNTER;
     double w;
     if (include_dV_and_interp_weights) {
       w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
@@ -261,7 +280,6 @@ void dft_chunk::update_dft(double time) {
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
     }
-    idx_dft++;
   }
 }
 
