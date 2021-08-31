@@ -323,7 +323,6 @@ class Near2FarFields(ObjectiveQuantity):
         return self._monitor
 
     def place_adjoint_source(self, dJ):
-        dt = self.sim.fields.dt
         time_src = self._create_time_profile()
         sources = []
         if dJ.ndim == 4:
