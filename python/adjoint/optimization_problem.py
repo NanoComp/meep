@@ -71,11 +71,11 @@ class OptimizationProblem(object):
         nf=None,
         decay_dt=25,
         decay_fields=[mp.Ez],
-        decay_by=1e-6,
+        decay_by=1e-10,
         decimation_factor=1,
         minimum_run_time=0,
         maximum_run_time=None,
-        termination_method='dft'
+        termination_method='td'
     ):
 
         self.sim = simulation
@@ -128,7 +128,7 @@ class OptimizationProblem(object):
                     2))  # index of center frequency
 
         self.decay_by = decay_by
-        self.decay_fields = decay_fields
+        self.decay_fields = decay_fields # left for legacy, but doesn't do anything
         self.decay_dt = decay_dt
         self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
@@ -238,8 +238,6 @@ class OptimizationProblem(object):
 
         # Forward run
         self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-            self.sim,
-            self.decay_dt,
             self.decay_by,
             self.minimum_run_time,
             self.maximum_run_time,
@@ -310,8 +308,6 @@ class OptimizationProblem(object):
 
             # Adjoint run
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-                self.sim,
-                self.decay_dt,
                 self.decay_by,
                 self.minimum_run_time,
                 self.maximum_run_time,
@@ -426,8 +422,6 @@ class OptimizationProblem(object):
                     m.register_monitors(self.frequencies))
 
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-                self.sim,
-                self.decay_dt,
                 self.decay_by,
                 self.minimum_run_time,
                 self.maximum_run_time,
@@ -458,8 +452,6 @@ class OptimizationProblem(object):
 
             # add monitor used to track dft convergence
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-                self.sim,
-                self.decay_dt,
                 self.decay_by,
                 self.minimum_run_time,
                 self.maximum_run_time,
