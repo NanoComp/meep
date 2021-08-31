@@ -2793,8 +2793,6 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
         for (int i2 = 0; i2 < n2; ++i2) {     // z
           for (int i4 = 0; i4 < n4; ++i4) {//y
             for (int i3 = 0; i3 < n3; ++i3) {//x
-
-              //printf("\n for loop %i, %i, %i, %i\n", i1, i2, i3, i4);
               p.z = i2 * s1 + c1; p.x = i3 * s2 + c2; p.y = i4 * s3 + c3;
               material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index]*p.x, fields_f[xyz_index], field_dir[c], p,
                                                scalegrad, frequencies[i1], geometry_tree);
