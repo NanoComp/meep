@@ -290,7 +290,7 @@ Python. `Vector3` is a `meep` class.
   field updates, Meep has an experimental feature to "tile" the loop over the Yee grid
   voxels. The splitting of this loop into tiles or subdomains involves a recursive-bisection
   method in which the base case for the number of voxels is specified using this parameter.
-  The default value is 0 or no tiling.
+  The default value is 0 or no tiling; a typical nonzero value to try would be `10000`.
 
 + **`output_volume` [`Volume` class ]** — Specifies the default region of space
   that is output by the HDF5 output functions (below); see also the `Volume` class
