@@ -50,10 +50,10 @@ def forward_simulation(design_params):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,0,Nz),
                               SiO2,
                               Si,
-                              weights=design_params.reshape(Nx,0,Nz))
+                              weights=design_params.reshape(Nx,1,Nz))
 
     geometry = [mp.Block(center=mp.Vector3(0.1+design_r/2,0,0),
-                                 size=mp.Vector3(design_r,1,design_z),
+                                 size=mp.Vector3(design_r,0,design_z),
                                  material=matgrid)]
 
     sim = mp.Simulation(resolution=resolution,
