@@ -72,7 +72,7 @@ def forward_simulation(design_params):
         decimation_factor=10
     )
 
-    sim.run(until_after_sources=800)
+    sim.run(until_after_sources=1200)
     Er = sim.get_farfield(mode, far_x[0])
     sim.reset_meep()
 
@@ -111,7 +111,7 @@ def adjoint_solver(design_params):
         nf = 1,
         decay_fields=[mp.Er],
         decay_by=1e-4,
-        maximum_run_time=800)
+        maximum_run_time=1200)
 
     f, dJ_du = opt([design_params])
     sim.reset_meep()
