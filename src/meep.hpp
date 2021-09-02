@@ -988,7 +988,8 @@ public:
     return 1;
   }
   virtual std::complex<double> frequency() const { return 0.0; }
-  virtual double get_fwidth(double tol) const { (void)tol; return 0.0; }
+  virtual double get_fwidth() const { return 0.0; }
+  virtual void set_fwidth(double fw) { (void)fw; }
   virtual void set_frequency(std::complex<double> f) { (void)f; }
 
 private:
@@ -1010,12 +1011,13 @@ public:
   virtual src_time *clone() const { return new gaussian_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
-  virtual double get_fwidth(double tol) const;
+  virtual double get_fwidth() const { return fwidth; };
+  virtual void set_fwidth(double fw) { fwidth = fw; };
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
   std::complex<double> fourier_transform(const double f);
 
 private:
-  double freq, width, peak_time, cutoff;
+  double freq, fwidth, width, peak_time, cutoff;
 };
 
 // Continuous (CW) source with (optional) slow turn-on and/or turn-off.
@@ -1031,7 +1033,7 @@ public:
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
-  virtual double get_fwidth(double tol) const { (void)tol; return 0.0; };
+  virtual double get_fwidth() const { return 0.0; };
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
@@ -1064,7 +1066,8 @@ public:
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
-  virtual double get_fwidth(double tol) const { (void)tol; return 0.0; };
+  virtual double get_fwidth() const { return 0.0; };
+  virtual void set_fwidth(double fw) { (void)fw; }
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:

@@ -60,11 +60,20 @@ double src_time::last_time_max(double after) {
     return after;
 }
 
-gaussian_src_time::gaussian_src_time(double f, double fwidth, double s) {
+// bandwidth (in frequency units, not angular frequency) of the
+// continuous Fourier transform of the Gaussian source function
+// when it has decayed by a tolerance tol below its peak value
+static double gaussian_bandwidth(double width) {
+  double tol = 1e-7;
+  return sqrt(-2.0 * log(tol)) / (width * pi);
+}
+
+gaussian_src_time::gaussian_src_time(double f, double my_fwidth, double s) {
   freq = f;
-  width = 1.0 / fwidth;
+  width = 1.0 / my_fwidth;
   peak_time = width * s;
   cutoff = width * s;
+  fwidth = gaussian_bandwidth(width);
 
   // this is to make last_source_time as small as possible
   while (exp(-cutoff * cutoff / (2 * width * width)) < 1e-100)
@@ -77,6 +86,7 @@ gaussian_src_time::gaussian_src_time(double f, double w, double st, double et) {
   width = w;
   peak_time = 0.5 * (st + et);
   cutoff = (et - st) * 0.5;
+  fwidth = gaussian_bandwidth(width);
 
   // this is to make last_source_time as small as possible
   while (exp(-cutoff * cutoff / (2 * width * width)) < 1e-100)
@@ -103,13 +113,6 @@ std::complex<double> gaussian_src_time::fourier_transform(const double f) {
   double omega0 = 2.0 * pi * freq;
   double delta = (omega - omega0) * width;
   return width * polar(1.0, omega * peak_time) * exp(-0.5 * delta * delta);
-}
-
-// bandwidth (in frequency units, not angular frequency) of the
-// continuous Fourier transform of the Gaussian source function
-// when it has decayed by a tolerance tol below its peak value
-double gaussian_src_time::get_fwidth(double tol) const {
-  return sqrt(-2.0 * log(tol)) / (width * pi);
 }
 
 bool gaussian_src_time::is_equal(const src_time &t) const {
