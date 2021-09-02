@@ -2796,6 +2796,8 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
               p.z = i2 * s1 + c1; p.x = i3 * s2 + c2; p.y = i4 * s3 + c3;
               material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index]*p.x, fields_f[xyz_index], field_dir[c], p,
                                                scalegrad, frequencies[i1], geometry_tree);
+              //p.x is the (2pi)r' factor from integrating in cyldrical coordinate;
+              //2pi is canceled out by a overcouted factor of 2pi*r of the Near2FarRegion; See near2far.cpp
               xyz_index++;
             }
           }

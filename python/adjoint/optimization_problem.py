@@ -343,6 +343,7 @@ class OptimizationProblem(object):
                 for ic, c in enumerate(self.components):
                     for f in range(self.nf):
                         if (self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL):
+                            # Addtional factor of 2 for cyldrical coordinate
                             self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
                         else:
                             self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(self.sim.get_dft_array(dgm, c, f))
