@@ -43,7 +43,7 @@ class ObjectiveQuantity(abc.ABC):
 
     def get_evaluation(self):
         """Evaluates the objective quantity."""
-        if self._eval:
+        if self._eval is not None:
             return self._eval
         else:
             raise RuntimeError(
@@ -330,11 +330,8 @@ class Near2FarFields(ObjectiveQuantity):
         dJ = dJ.flatten()
         farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
         far_pt0 = self.far_pts[0]
-        far_pt_vec = py_v3_to_vec(
-            self.sim.dimensions,
-            far_pt0,
-            self.sim.is_cylindrical,
-        )
+        far_pt_vec = py_v3_to_vec(self.sim.dimensions, far_pt0,
+                                  self.sim.is_cylindrical)
 
         all_nearsrcdata = self._monitor.swigobj.near_sourcedata(
             far_pt_vec, farpt_list, self._nfar_pts, dJ)

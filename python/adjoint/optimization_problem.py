@@ -1,6 +1,6 @@
 import meep as mp
 import numpy as np
-from autograd import grad, jacobian
+from jax import grad, jacobian
 from collections import namedtuple
 
 Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
@@ -8,14 +8,12 @@ YeeDims = namedtuple('YeeDims', ['Ex', 'Ey', 'Ez'])
 
 
 class DesignRegion(object):
-    def __init__(
-            self,
-            design_parameters,
-            volume=None,
-            size=None,
-            center=mp.Vector3(),
-            MaterialGrid=None,
-    ):
+    def __init__(self,
+                 design_parameters,
+                 volume=None,
+                 size=None,
+                 center=mp.Vector3(),
+                 MaterialGrid=None):
         self.volume = volume if volume else mp.Volume(center=center, size=size)
         self.size = self.volume.size
         self.center = self.volume.center
@@ -111,12 +109,10 @@ class OptimizationProblem(object):
                 fmax = fcen + 0.5 * df
                 fmin = fcen - 0.5 * df
                 dfreq = (fmax - fmin) / (nf - 1)
-                self.frequencies = np.linspace(
-                    fmin,
-                    fmin + dfreq * nf,
-                    num=nf,
-                    endpoint=False,
-                )
+                self.frequencies = np.linspace(fmin,
+                                               fmin + dfreq * nf,
+                                               num=nf,
+                                               endpoint=False)
                 self.nf = nf
 
         if self.nf == 1:
@@ -243,16 +239,9 @@ class OptimizationProblem(object):
 
         # Forward run
         self.sim.run(until_after_sources=stop_when_dft_decayed(
-            self.sim,
-            self.design_region_monitors,
-            self.decay_dt,
-            self.decay_fields,
-            self.fcen_idx,
-            self.decay_by,
-            True,
-            self.minimum_run_time,
-            self.maximum_run_time,
-        ))
+            self.sim, self.design_region_monitors, self.decay_dt,
+            self.decay_fields, self.fcen_idx, self.decay_by, True,
+            self.minimum_run_time, self.maximum_run_time))
 
         # record objective quantities from user specified monitors
         self.results_list = []
@@ -288,8 +277,8 @@ class OptimizationProblem(object):
         for ar in range(len(self.objective_functions)):
             for mi, m in enumerate(self.objective_arguments):
                 dJ = jacobian(self.objective_functions[ar],
-                              mi)(*self.results_list)
-                # get gradient of objective w.r.t. monitor
+                              mi)(*self.results_list
+                                  )  # get gradient of objective w.r.t. monitor
                 if np.any(dJ):
                     self.adjoint_sources[ar] += m.place_adjoint_source(
                         dJ)  # place the appropriate adjoint sources
@@ -323,16 +312,9 @@ class OptimizationProblem(object):
 
             # Adjoint run
             self.sim.run(until_after_sources=stop_when_dft_decayed(
-                self.sim,
-                self.design_region_monitors,
-                self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
-                self.decay_by,
-                True,
-                self.minimum_run_time,
-                self.maximum_run_time,
-            ))
+                self.sim, self.design_region_monitors, self.decay_dt,
+                self.decay_fields, self.fcen_idx, self.decay_by, True,
+                self.minimum_run_time, self.maximum_run_time))
 
             # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
             self.a_E.append([[
@@ -358,12 +340,9 @@ class OptimizationProblem(object):
     def calculate_gradient(self):
         # Iterate through all design regions and calculate gradient
         self.gradient = [[
-            dr.get_gradient(
-                self.sim,
-                self.a_E[ar][dri],
-                self.d_E[dri],
-                self.frequencies,
-            ) for dri, dr in enumerate(self.design_regions)
+            dr.get_gradient(self.sim, self.a_E[ar][dri], self.d_E[dri],
+                            self.frequencies)
+            for dri, dr in enumerate(self.design_regions)
         ] for ar in range(len(self.objective_functions))]
 
         # Cleanup list of lists
@@ -380,13 +359,11 @@ class OptimizationProblem(object):
         # Return optimizer's state to initialization
         self.current_state = "INIT"
 
-    def calculate_fd_gradient(
-        self,
-        num_gradients=1,
-        db=1e-4,
-        design_variables_idx=0,
-        filter=None,
-    ):
+    def calculate_fd_gradient(self,
+                              num_gradients=1,
+                              db=1e-4,
+                              design_variables_idx=0,
+                              filter=None):
         '''
         Estimate central difference gradients.
 
@@ -423,8 +400,7 @@ class OptimizationProblem(object):
         fd_gradient_idx = np.random.choice(
             self.num_design_params[design_variables_idx],
             num_gradients,
-            replace=False,
-        )
+            replace=False)
 
         for k in fd_gradient_idx:
 
@@ -448,16 +424,9 @@ class OptimizationProblem(object):
                     m.register_monitors(self.frequencies))
 
             self.sim.run(until_after_sources=stop_when_dft_decayed(
-                self.sim,
-                self.forward_monitors,
-                self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
-                self.decay_by,
-                True,
-                self.minimum_run_time,
-                self.maximum_run_time,
-            ))
+                self.sim, self.forward_monitors, self.decay_dt,
+                self.decay_fields, self.fcen_idx, self.decay_by, True,
+                self.minimum_run_time, self.maximum_run_time))
 
             # record final objective function value
             results_list = []
@@ -483,16 +452,9 @@ class OptimizationProblem(object):
 
             # add monitor used to track dft convergence
             self.sim.run(until_after_sources=stop_when_dft_decayed(
-                self.sim,
-                self.forward_monitors,
-                self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
-                self.decay_by,
-                True,
-                self.minimum_run_time,
-                self.maximum_run_time,
-            ))
+                self.sim, self.forward_monitors, self.decay_dt,
+                self.decay_fields, self.fcen_idx, self.decay_by, True,
+                self.minimum_run_time, self.maximum_run_time))
 
             # record final objective function value
             results_list = []
@@ -549,17 +511,15 @@ class OptimizationProblem(object):
         self.sim.plot2D(**kwargs)
 
 
-def stop_when_dft_decayed(
-    simob,
-    mon,
-    dt,
-    c,
-    fcen_idx,
-    decay_by,
-    yee_grid=False,
-    minimum_run_time=0,
-    maximum_run_time=None,
-):
+def stop_when_dft_decayed(simob,
+                          mon,
+                          dt,
+                          c,
+                          fcen_idx,
+                          decay_by,
+                          yee_grid=False,
+                          minimum_run_time=0,
+                          maximum_run_time=None):
     '''Step function that monitors the relative change in DFT fields for a list of monitors.
 
     mon ............. a list of monitors
