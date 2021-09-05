@@ -1045,8 +1045,8 @@ private:
 class custom_src_time : public src_time {
 public:
   custom_src_time(std::complex<double> (*func)(double t, void *), void *data, double st = -infinity,
-                  double et = infinity, std::complex<double> f = 0)
-      : func(func), data(data), freq(f), start_time(float(st)), end_time(float(et)) {}
+                  double et = infinity, std::complex<double> f = 0, double fw = 0)
+      : func(func), data(data), freq(f), start_time(float(st)), end_time(float(et)), fwidth(fw) {}
   virtual ~custom_src_time() {}
 
   virtual std::complex<double> current(double time, double dt) const {
@@ -1074,7 +1074,7 @@ private:
   std::complex<double> (*func)(double t, void *);
   void *data;
   std::complex<double> freq;
-  double start_time, end_time;
+  double start_time, end_time, fwidth;
 };
 
 class monitor_point {
