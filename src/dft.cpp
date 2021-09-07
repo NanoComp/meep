@@ -286,25 +286,25 @@ void dft_chunk::update_dft(double time) {
 /* Return the L2 norm of the DFTs themselves.  This is useful
    to check whether the simulation is finished (whether all relevant fields have decayed).
    (Collective operation.) */
-double fields::dft_fields_norm() {
+double fields::dft_norm2() {
   am_now_working_on(Other);
   double sum = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) sum += chunks[i]->dft_fields_norm2();
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2();
   finished_working();
   return std::sqrt(sum_to_all(sum));
 }
 
-double fields_chunk::dft_fields_norm2() const {
+double fields_chunk::dft_norm2() const {
   double sum = 0.0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    sum += cur->dft_fields_norm2();
+    sum += cur->norm2();
   return sum;
 }
 
 static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
 
-double dft_chunk::dft_fields_norm2() const {
+double dft_chunk::norm2() const {
   if (!fc->f[c][0]) return 0.0;
   int numcmp = fc->f[c][1] ? 2 : 1;
   double sum = 0.0;
@@ -318,50 +318,21 @@ double dft_chunk::dft_fields_norm2() const {
   return sum;
 }
 
-/* Return the L2 norm of all of the fields used to update DFTs.  This is useful
-   to check whether the simulation is finished (whether all relevant fields have decayed).
-   (Collective operation.) 
-
-   Note that this is different from above, where we compute the norm of the *actual*
-   dft fields. In this case, we are only looking at the *update* (e.g. independent
-   of the phase term in the DTFT inner product). This is a more conservative approach
-   that by definition looks at *all* the simulation's frequencies (not just the ones
-   we care about).  
-*/
-
-double fields::dft_time_fields_norm() {
-  am_now_working_on(Other);
-  double sum = 0.0;
+// return the minimum decimation factor across
+// all dft regions
+int fields::min_decimation() const {
+  int mindec = std::numeric_limits<int>::max();
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) sum += chunks[i]->dft_fields_norm2();
-  finished_working();
-  return std::sqrt(sum_to_all(sum));
+    if (chunks[i]->is_mine())
+      mindec = std::min(mindec, chunks[i]->min_decimation());
+  return min_to_all(mindec);
 }
 
-double fields_chunk::dft_time_fields_norm2() const {
-  double sum = 0.0;
+int fields_chunk::min_decimation() const {
+  int mindec = std::numeric_limits<int>::max();
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    sum += cur->dft_fields_norm2();
-  return sum;
-}
-
-double dft_chunk::dft_time_fields_norm2() const {
-  if (!fc->f[c][0]) return 0.0;
-  int numcmp = fc->f[c][1] ? 2 : 1;
-  double sum = 0.0;
-  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-    if (avg2)
-      for (int cmp = 0; cmp < numcmp; ++cmp)
-        sum += sqr(0.25 * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx + avg1] +
-                           fc->f[c][cmp][idx + avg2] + fc->f[c][cmp][idx + (avg1 + avg2)]));
-    else if (avg1)
-      for (int cmp = 0; cmp < numcmp; ++cmp)
-        sum += sqr(0.5 * (fc->f[c][cmp][idx] + fc->f[c][cmp][idx + avg1]));
-    else
-      for (int cmp = 0; cmp < numcmp; ++cmp)
-        sum += sqr(fc->f[c][cmp][idx]);
-  }
-  return sum;
+    mindec = std::min(mindec, cur->get_decimation_factor());
+  return mindec;
 }
 
 // return the maximum abs(freq) over all DFT chunks

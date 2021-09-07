@@ -4417,49 +4417,33 @@ def stop_on_interrupt():
 
     return _stop
 
-def stop_when_dft_decayed(decay_by, minimum_run_time=0, maximum_run_time=None, method='td'):
+def stop_when_dft_decayed(decay_by, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `sim.run()` as the `until`
     or `until_after_sources` parameter, that checks all of the Simulation's dft objects
     every `dt` timesteps, and stops the simulation once all the components and frequencies
     of *every* dft object have decayed by at least `decay_by`. The routine calculates the optimal
-    `dt` to use based on the frequency content in the DFT monitors
-
-    There are two methods for checking dft convergence. The first (and default) simply computes the
-    l2 norm of the already computed DFT fields at the current timestep (`method=dft`).
-
-    The second computes the l2 norm of the field *updates* and ignoring the phase term in the
-    DTFT update equation (`method=td`). This results in a more conservative approach that examines
-    *all* frequencies. If this method is chose, the user-specified time interval `dt` is overridden
-    to ensure that the fields are properly sampled.
+    `dt` to use based on the frequency content in the DFT monitors.
 
     Optionally the user can specify a minimum run time (`minimum_run_time`) or a maximum
     run time (`maximum_run_time`).
     """
     # Record data in closure so that we can persitently edit
-    closure = {'previous_fields':1, 't0':0, 'dt':0, 'f':None}
-
-    if method not in ["dft","td"]:
-        raise ValueError('Improper method, {}. Must either choose "dft" or "td".'.format(method))
-    f = None
+    closure = {'previous_fields':1, 't0':0, 'dt':0}
     def _stop(_sim):
         if _sim.fields.t == 0:
-            closure['dt'] = 1/_sim.fields.dft_maxfreq()
-            if method == "td":
-                closure['f'] = lambda: _sim.fields.dft_time_fields_norm()
-            elif method == "dft":
-                closure['f'] = lambda: _sim.fields.dft_fields_norm()
-        if _sim.round_time() <= closure['dt'] + closure['t0']:
+            closure['dt'] = max(int(1/_sim.fields.dft_maxfreq()/_sim.fields.dt),int(_sim.fields.min_decimation()))
+        if _sim.fields.t <= closure['dt'] + closure['t0']:
             return False
         elif maximum_run_time and _sim.round_time() > maximum_run_time:
             return True
         else:
             previous_fields = closure['previous_fields']
-            current_fields  = closure['f']()
+            current_fields  = _sim.fields.dft_norm2()
             relative_change = np.abs(previous_fields-current_fields) /  previous_fields   
             
             closure['previous_fields'] = current_fields
-            closure['t0'] = _sim.round_time()
+            closure['t0'] = _sim.fields.t
 
             if mp.verbosity > 0:
                 fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"

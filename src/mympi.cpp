@@ -387,6 +387,14 @@ int max_to_all(int in) {
   return out;
 }
 
+int min_to_all(int in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_MIN, mycomm);
+#endif
+  return out;
+}
+
 ivec max_to_all(const ivec &pt) {
   int in[5], out[5];
   for (int i = 0; i < 5; ++i)

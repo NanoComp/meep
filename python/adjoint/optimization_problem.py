@@ -74,8 +74,7 @@ class OptimizationProblem(object):
         decay_by=1e-10,
         decimation_factor=0,
         minimum_run_time=0,
-        maximum_run_time=None,
-        termination_method='td'
+        maximum_run_time=None
     ):
 
         self.sim = simulation
@@ -133,7 +132,6 @@ class OptimizationProblem(object):
         self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
-        self.termination_method = termination_method
 
         # store sources for finite difference estimations
         self.forward_sources = self.sim.sources
@@ -240,8 +238,7 @@ class OptimizationProblem(object):
         self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
             self.decay_by,
             self.minimum_run_time,
-            self.maximum_run_time,
-            self.termination_method
+            self.maximum_run_time
         ))
 
         # record objective quantities from user specified monitors
@@ -310,8 +307,7 @@ class OptimizationProblem(object):
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.decay_by,
                 self.minimum_run_time,
-                self.maximum_run_time,
-                self.termination_method
+                self.maximum_run_time
             ))
 
             # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
@@ -424,8 +420,7 @@ class OptimizationProblem(object):
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.decay_by,
                 self.minimum_run_time,
-                self.maximum_run_time,
-                self.termination_method
+                self.maximum_run_time
             ))
 
             # record final objective function value
@@ -454,8 +449,7 @@ class OptimizationProblem(object):
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.decay_by,
                 self.minimum_run_time,
-                self.maximum_run_time,
-                self.termination_method
+                self.maximum_run_time
             ))
 
             # record final objective function value
