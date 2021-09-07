@@ -109,8 +109,6 @@ def adjoint_solver(design_params):
         fcen=fcen,
         df = 0,
         nf = 1,
-        decay_fields=[mp.Er],
-        decay_by=1e-4,
         maximum_run_time=1200)
 
     f, dJ_du = opt([design_params])
