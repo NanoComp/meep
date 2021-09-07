@@ -2579,7 +2579,9 @@ double get_material_gradient(
   if ((mm->E_susceptibilities.size() == 0) && mm->D_conductivity_diag.x == 0 &&
       mm->D_conductivity_diag.y == 0 && mm->D_conductivity_diag.z == 0){
         switch (field_dir){
+          case meep::Er:
           case meep::Ex: return (m2->epsilon_diag.x - m1->epsilon_diag.x) * (fields_a * fields_f).real();
+          case meep::Ep:
           case meep::Ey: return (m2->epsilon_diag.y - m1->epsilon_diag.y) * (fields_a * fields_f).real();
           case meep::Ez: return (m2->epsilon_diag.z - m1->epsilon_diag.z) * (fields_a * fields_f).real();
           default: meep::abort("Invalid field component specified in gradient.");
@@ -2602,9 +2604,9 @@ double get_material_gradient(
     dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2 * du);
 
   int dir_idx = 0;
-  if (field_dir == meep::Ex)
+  if (field_dir == meep::Ex || field_dir == meep::Er)
     dir_idx = 0;
-  else if (field_dir == meep::Ey)
+  else if (field_dir == meep::Ey || field_dir == meep::Ep)
     dir_idx = 1;
   else if (field_dir == meep::Ez)
     dir_idx = 2;
@@ -2739,7 +2741,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, double *frequencies,
                                 size_t nf, double scalegrad, const meep::volume &where,
-                                geom_box_tree geometry_tree, meep::fields *f) {
+                                geom_box_tree geometry_tree, meep::fields *f, bool sim_is_cylindrical) {
   int n2, n3, n4;
   double s[3][3], cen[3][3], c1, c2, c3, s1, s2, s3;
   vector3 p;
@@ -2748,6 +2750,10 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
   meep::direction dirs[3];
   meep::vec min_max_loc[2] = {meep::vec(0,0,0),meep::vec(0,0,0)}; // extremal points in subgrid
   meep::component field_dir[3] = {meep::Ex, meep::Ey, meep::Ez};
+  if (sim_is_cylindrical) {
+    field_dir[0] = meep::Er;
+    field_dir[1] = meep::Ep;
+  }
   size_t dims[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
   for (int c = 0; c < 3; c++) {
 
@@ -2758,6 +2764,16 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
     double max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
     vector3 min_corner = vec_to_vector3(min_max_loc[0]);
     double min_c_array[3] = {min_corner.x, min_corner.y, min_corner.z};
+
+    if (sim_is_cylindrical){
+      max_c_array[0] = max_corner.z;
+      max_c_array[1] = max_corner.x;
+      max_c_array[2] = max_corner.y;
+      min_c_array[0] = min_corner.z;
+      min_c_array[1] = min_corner.x;
+      min_c_array[2] = min_corner.y;
+    }
+
     for (int ci = 0; ci < 3; ci++) {
       s[c][ci] = (max_c_array[ci] - min_c_array[ci]) == 0 ? 0 : (max_c_array[ci] - min_c_array[ci]) / (dims[3 * c + ci] - 1);
       cen[c][ci] = dims[3 * c + ci] <= 1 ? 0 : min_c_array[ci];
@@ -2767,6 +2783,28 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
   // Loop over component, x, y, z, and frequency dimensions
   // TODO speed up with MPI (if needed)
   int xyz_index = 0;
+  if (sim_is_cylindrical){
+    for (int c = 0; c < 3; c++) {             // component
+      n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
+      c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
+      s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
+
+      for (int i1 = 0; i1 < nf; ++i1) {       // freq
+        for (int i2 = 0; i2 < n2; ++i2) {     // z
+          for (int i4 = 0; i4 < n4; ++i4) {//y
+            for (int i3 = 0; i3 < n3; ++i3) {//x
+              p.z = i2 * s1 + c1; p.x = i3 * s2 + c2; p.y = i4 * s3 + c3;
+              material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index]*p.x, fields_f[xyz_index], field_dir[c], p,
+                                               scalegrad, frequencies[i1], geometry_tree);
+              //p.x is the (2pi)r' factor from integrating in cyldrical coordinate;
+              //2pi is canceled out by a overcouted factor of 2pi*r of the Near2FarRegion; See near2far.cpp
+              xyz_index++;
+            }
+          }
+        }
+      }
+    }
+  } else {
   for (int c = 0; c < 3; c++) {             // component
     n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
     c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
@@ -2785,6 +2823,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
       }
     }
   }
+}
 }
 
 static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {

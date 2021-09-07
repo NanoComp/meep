@@ -40,8 +40,8 @@ class DesignRegion(object):
         f = sim.fields
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
-        mp._get_gradient(grad, fields_a, fields_f, vol, np.array(frequencies),
-                         geom_list, f)
+        sim_is_cylindrical = (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical
+        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),geom_list,f, sim_is_cylindrical)
 
         return np.squeeze(grad).T
 
@@ -78,6 +78,9 @@ class OptimizationProblem(object):
     ):
 
         self.sim = simulation
+        self.components = [mp.Ex,mp.Ey,mp.Ez]
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            self.components = [mp.Er,mp.Ep,mp.Ez]
 
         if isinstance(objective_functions, list):
             self.objective_functions = objective_functions
@@ -213,7 +216,7 @@ class OptimizationProblem(object):
         # register design region
         self.design_region_monitors = [
             self.sim.add_dft_fields(
-                [mp.Ex, mp.Ey, mp.Ez],
+                self.components,
                 self.frequencies,
                 where=dr.volume,
                 yee_grid=True,
@@ -223,10 +226,14 @@ class OptimizationProblem(object):
 
         # store design region voxel parameters
         self.design_grids = []
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            YeeDims = namedtuple('YeeDims', ['Er','Ep','Ez'])
+        else:
+            YeeDims = namedtuple('YeeDims', ['Ex','Ey','Ez'])
         for drm in self.design_region_monitors:
             s = [
                 self.sim.get_array_slice_dimensions(c, vol=drm.where)[0]
-                for c in [mp.Ex, mp.Ey, mp.Ez]
+                for c in self.components
             ]
             self.design_grids += [YeeDims(*s)]
 
@@ -257,7 +264,7 @@ class OptimizationProblem(object):
             for c in dg
         ] for dg in self.design_grids]
         for nb, dgm in enumerate(self.design_region_monitors):
-            for ic, c in enumerate([mp.Ex, mp.Ey, mp.Ez]):
+            for ic, c in enumerate(self.components):
                 for f in range(self.nf):
                     self.d_E[nb][ic][f, :, :, :] = atleast_3d(
                         self.sim.get_dft_array(dgm, c, f))
@@ -284,7 +291,12 @@ class OptimizationProblem(object):
     def adjoint_run(self):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
-        if self.sim.k_point: self.sim.k_point *= -1
+
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            self.sim.m = -self.sim.m
+
+        if self.sim.k_point:
+            self.sim.k_point *= -1
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
@@ -295,7 +307,7 @@ class OptimizationProblem(object):
             # register design flux
             self.design_region_monitors = [
                 self.sim.add_dft_fields(
-                    [mp.Ex, mp.Ey, mp.Ez],
+                    self.components,
                     self.frequencies,
                     where=dr.volume,
                     yee_grid=True,
@@ -316,10 +328,16 @@ class OptimizationProblem(object):
                 for c in dg
             ] for dg in self.design_grids])
             for nb, dgm in enumerate(self.design_region_monitors):
-                for ic, c in enumerate([mp.Ex, mp.Ey, mp.Ez]):
+                for ic, c in enumerate(self.components):
                     for f in range(self.nf):
-                        self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(
-                            self.sim.get_dft_array(dgm, c, f))
+                        if (self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL):
+                            # Addtional factor of 2 for cyldrical coordinate
+                            self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
+                        else:
+                            self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(self.sim.get_dft_array(dgm, c, f))
+
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            self.sim.m = -self.sim.m
 
         # update optimizer's state
         if self.sim.k_point: self.sim.k_point *= -1

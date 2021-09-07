@@ -696,6 +696,11 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
         if (is_electric(temp_struct.near_fd_comp))
           EH0 *= -1;
         EH0 /= f->S.multiplicity(ix0);
+        if (x_0.dim == Dcyl){
+          EH0 /= xs.r();
+          //Somehow, a factor of (2pi)r for r of the near2far region was double counted.
+          //2pi is canceled out by the integral over design region, where an extra factor of 2pi*r' (r' of the design region) is needed. See meepgeom.cpp
+        }
         temp_struct.amp_arr.push_back(EH0);
       }
     }

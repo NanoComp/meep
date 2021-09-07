@@ -260,5 +260,3 @@ The plot of the resonant mode frequency with resolution is shown in the figure b
 </center>
 
 Finally, it is worth mentioning that a Gaussian blur (which provides only first-order accuracy) would probably be slower than doing the second-order accurate anisotropic smoothing using a [level set](https://en.wikipedia.org/wiki/Level_set) since the smoothing (e.g., via a Sigmoid function) as well as the normal vector can be computed analytically for the level set (see [\#1229](https://github.com/NanoComp/meep/issues/1229)).
-
-In the future, Meep may provide built-in interpolation methods for material functions (see [\#1199](https://github.com/NanoComp/meep/issues/1199)).
