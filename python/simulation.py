@@ -1678,7 +1678,7 @@ class Simulation(object):
         self.pml_vols3 = fragment_vols[3]
         self.absorber_vols = fragment_vols[4]
         self.gv = gv
-
+        #self.geps = mp.create_geom_eps(self.gv,self.geometry,self.extra_materials)
         self.structure = mp.create_structure_and_set_materials(
             self.cell_size,
             self.dft_data_list,

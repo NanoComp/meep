@@ -137,9 +137,6 @@ bool material_type_equal(const material_type m1, const material_type m2) {
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-typedef struct {
-  double m00, m01, m02, m11, m12, m22;
-} symmetric_matrix;
 
 /* rotate A by a unitary (real) rotation matrix R:
       RAR = transpose(R) * A * R
@@ -631,69 +628,6 @@ void epsilon_file_material(material_data *md, vector3 p) {
   mm->epsilon_offdiag.x.re = mm->epsilon_offdiag.y.re = mm->epsilon_offdiag.z.re = 0;
 }
 
-struct pol {
-  susceptibility user_s;
-  struct pol *next;
-};
-
-// structure to hold a conductivity profile (for scalar absorbing layers)
-struct cond_profile {
-  double L;     // thickness
-  int N;        // number of points prof[n] from 0..N corresponding to 0..L
-  double *prof; // (NULL if none)
-};
-
-class geom_epsilon : public meep::material_function {
-  geometric_object_list geometry;
-  geom_box_tree geometry_tree;
-  geom_box_tree restricted_tree;
-
-  cond_profile cond[5][2]; // [direction][side]
-
-public:
-  geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
-  virtual ~geom_epsilon();
-
-  virtual void set_cond_profile(meep::direction, meep::boundary_side, double L, double dx,
-                                double (*prof)(int, double *, void *), void *, double R);
-
-  virtual void set_volume(const meep::volume &v);
-  virtual void unset_volume(void);
-
-  bool has_chi(meep::component c, int p);
-  virtual bool has_chi3(meep::component c);
-  virtual bool has_chi2(meep::component c);
-
-  double chi(meep::component c, const meep::vec &r, int p);
-  virtual double chi3(meep::component c, const meep::vec &r);
-  virtual double chi2(meep::component c, const meep::vec &r);
-
-  virtual bool has_mu();
-
-  virtual bool has_conductivity(meep::component c);
-  virtual double conductivity(meep::component c, const meep::vec &r);
-
-  virtual double chi1p1(meep::field_type ft, const meep::vec &r);
-  virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
-                               double tol, int maxeval);
-
-  void eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
-                          const meep::volume &v, double tol, int maxeval, bool &fallback);
-
-  void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
-                            double tol, int maxeval);
-
-  virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
-  void add_susceptibilities(meep::structure *s);
-  void add_susceptibilities(meep::field_type ft, meep::structure *s);
-
-private:
-  void get_material_pt(material_type &material, const meep::vec &r);
-
-  material_type_list extra_materials;
-  pol *current_pol;
-};
-
 /***********************************************************************/
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
@@ -741,6 +675,17 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   restricted_tree = geometry_tree;
 }
 
+// copy constructor
+geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
+  geometry = geps1.geometry; // TODO make a copy
+  geometry_tree = geps1.geometry_tree;
+  restricted_tree = geps1.restricted_tree;
+  extra_materials = geps1.extra_materials;
+  current_pol = NULL;
+
+  FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = geps1.cond[d][b].prof; }
+
+}
 geom_epsilon::~geom_epsilon() {
   unset_volume();
   destroy_geom_box_tree(geometry_tree);
@@ -1928,11 +1873,18 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void set_materials_from_geometry(meep::structure *s, geometric_object_list g, vector3 center,
-                                 bool use_anisotropic_averaging, double tol, int maxeval,
-                                 bool _ensure_periodicity, material_type _default_material,
-                                 absorber_list alist, material_type_list extra_materials) {
-  // set global variables in libctlgeom based on data fields in s
+
+/* create a geom_epsilon object that can persist
+if needed*/
+geom_epsilon make_geom_epsilon(meep::grid_volume gv, geometric_object_list g, 
+                               material_type_list extra_materials) {
+  geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
+  return geps;
+}
+
+// set global variables in libctlgeom based on data fields in s
+void init_libctl(meep::structure *s, vector3 center, bool _ensure_periodicity, 
+                 material_type _default_material) {
   geom_initialize();
   geometry_center = center;
 
@@ -1980,9 +1932,13 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
     master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
                   resolution);
   }
+}
 
-  geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
-
+/* from geom_eps objects, set all the material 
+information within the structure */
+void set_materials(meep::structure *s, geom_epsilon geps, absorber_list alist, 
+                   bool use_anisotropic_averaging, double tol, int maxeval) {
+  meep::grid_volume gv = s->gv;
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
@@ -2001,7 +1957,6 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
       }
     }
   }
-
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
@@ -2010,6 +1965,27 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
   geps.add_susceptibilities(s);
 
   if (meep::verbosity > 0) master_printf("-----------\n");
+}
+
+/* set the materials without previously creating
+a geom_eps object */
+void set_materials_from_geometry(meep::structure *s, geometric_object_list g, vector3 center,
+                                 bool use_anisotropic_averaging, double tol, int maxeval,
+                                 bool _ensure_periodicity, material_type _default_material,
+                                 absorber_list alist, material_type_list extra_materials) {
+  init_libctl(s, center, _ensure_periodicity, _default_material);
+  geom_epsilon geps(g, extra_materials, s->gv.pad().surroundings());
+  set_materials(s, geps, alist, use_anisotropic_averaging, tol, maxeval);
+}
+
+/* from a previously created geom_epsilon object,
+set the materials as specified */
+void set_materials_from_geometry(meep::structure *s, geom_epsilon geps, vector3 center,
+                                 bool use_anisotropic_averaging, double tol, int maxeval,
+                                 bool _ensure_periodicity, material_type _default_material,
+                                 absorber_list alist) {
+  init_libctl(s, center, _ensure_periodicity, _default_material);
+  set_materials(s, geps, alist, use_anisotropic_averaging, tol, maxeval);
 }
 
 /***************************************************************/
