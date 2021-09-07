@@ -141,7 +141,7 @@ bool material_type_equal(const material_type m1, const material_type m2) {
 /* rotate A by a unitary (real) rotation matrix R:
       RAR = transpose(R) * A * R
 */
-void sym_matrix_rotate(symmetric_matrix *RAR, const symmetric_matrix *A_, const double R[3][3]) {
+void sym_matrix_rotate(symm_matrix *RAR, const symm_matrix *A_, const double R[3][3]) {
   int i, j;
   double A[3][3], AR[3][3];
   A[0][0] = A_->m00;
@@ -165,7 +165,7 @@ void sym_matrix_rotate(symmetric_matrix *RAR, const symmetric_matrix *A_, const 
 }
 
 /* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
-void sym_matrix_invert(symmetric_matrix *Vinv, const symmetric_matrix *V) {
+void sym_matrix_invert(symm_matrix *Vinv, const symm_matrix *V) {
   double m00 = V->m00, m11 = V->m11, m22 = V->m22;
   double m01 = V->m01, m02 = V->m02, m12 = V->m12;
 
@@ -198,7 +198,7 @@ void sym_matrix_invert(symmetric_matrix *Vinv, const symmetric_matrix *V) {
 }
 
 /* Returns whether or not V is positive-definite. */
-int sym_matrix_positive_definite(symmetric_matrix *V) {
+int sym_matrix_positive_definite(symm_matrix *V) {
   double det2, det3;
   double m00 = V->m00, m11 = V->m11, m22 = V->m22;
 
@@ -730,8 +730,8 @@ void geom_epsilon::set_volume(const meep::volume &v) {
   restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
-static void material_epsmu(meep::field_type ft, material_type material, symmetric_matrix *epsmu,
-                           symmetric_matrix *epsmu_inv) {
+static void material_epsmu(meep::field_type ft, material_type material, symm_matrix *epsmu,
+                           symm_matrix *epsmu_inv) {
 
   material_data *md = material;
   if (ft == meep::E_stuff) switch (md->which_subclass) {
@@ -845,7 +845,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
 
 // returns trace of the tensor diagonal
 double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
-  symmetric_matrix chi1p1, chi1p1_inv;
+  symm_matrix chi1p1, chi1p1_inv;
 
 #ifdef DEBUG
   vector3 p = vec_to_vector3(r);
@@ -981,7 +981,7 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
 
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                    double tol, int maxeval) {
-  symmetric_matrix meps_inv;
+  symm_matrix meps_inv;
   bool fallback;
   eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);
 
@@ -1010,12 +1010,12 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
   }
 }
 
-void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
+void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
                                       const meep::volume &v, double tol, int maxeval,
                                       bool &fallback) {
   const geometric_object *o;
   material_type mat, mat_behind;
-  symmetric_matrix meps;
+  symm_matrix meps;
   vector3 p, shiftby, normal;
   fallback = false;
 
@@ -1057,8 +1057,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1i
   double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
 
   material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
-  symmetric_matrix eps2, epsinv2;
-  symmetric_matrix eps1, delta;
+  symm_matrix eps2, epsinv2;
+  symm_matrix eps1, delta;
   double Rot[3][3];
   material_epsmu(meep::type(c), mat_behind, &eps2, &epsinv2);
   eps1 = meps;
@@ -1257,7 +1257,7 @@ static number inveps_func(int n, number *x, void *geomeps_) {
 void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3],
                                         const meep::volume &v, double tol, int maxeval) {
 
-  symmetric_matrix chi1p1, chi1p1_inv;
+  symm_matrix chi1p1, chi1p1_inv;
   material_type material;
   vector3 p = vec_to_vector3(v.center());
   boolean inobject;
@@ -1875,7 +1875,7 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 /***************************************************************/
 
 /* create a geom_epsilon object that can persist
-if needed*/
+if needed */
 geom_epsilon make_geom_epsilon(meep::grid_volume gv, geometric_object_list g, 
                                material_type_list extra_materials) {
   geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
@@ -1980,7 +1980,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
 
 /* from a previously created geom_epsilon object,
 set the materials as specified */
-void set_materials_from_geometry(meep::structure *s, geom_epsilon geps, vector3 center,
+void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon geps, vector3 center,
                                  bool use_anisotropic_averaging, double tol, int maxeval,
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist) {

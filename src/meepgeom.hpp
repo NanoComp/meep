@@ -155,10 +155,10 @@ inline vector3 make_vector3(double x = 0.0, double y = 0.0, double z = 0.0) {
 
 typedef struct {
   double m00, m01, m02, m11, m12, m22;
-} symmetric_matrix;
+} symm_matrix;
 
 struct pol {
-  susceptibility user_s;
+  meep_geom::susceptibility user_s;
   struct pol *next;
 };
 
@@ -204,7 +204,7 @@ public:
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                double tol, int maxeval);
 
-  void eff_chi1inv_matrix(meep::component c, symmetric_matrix *chi1inv_matrix,
+  void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
                           const meep::volume &v, double tol, int maxeval, bool &fallback);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
@@ -224,10 +224,6 @@ private:
 void set_dimensions(int dims);
 geom_epsilon make_geom_epsilon(meep::structure *s, geometric_object_list g, 
                                material_type_list extra_materials);
-void init_libctl(meep::structure *s, vector3 center, bool _ensure_periodicity, 
-                 material_type _default_material);
-void set_materials(meep::structure *s, geom_epsilon geps, absorber_list alist, 
-                   bool use_anisotropic_averaging, double tol, int maxeval);
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  vector3 center = make_vector3(),
                                  bool use_anisotropic_averaging = true,
@@ -236,7 +232,7 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  bool ensure_periodicity = false,
                                  material_type _default_material = vacuum, absorber_list alist = 0,
                                  material_type_list extra_materials = material_type_list());
-void set_materials_from_geometry(meep::structure *s, geom_epsilon geps,
+void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon geps,
                                  vector3 center = make_vector3(),
                                  bool use_anisotropic_averaging = true,
                                  double tol = DEFAULT_SUBPIXEL_TOL,
@@ -244,6 +240,7 @@ void set_materials_from_geometry(meep::structure *s, geom_epsilon geps,
                                  bool ensure_periodicity = false,
                                  material_type _default_material = vacuum, absorber_list alist = 0,
                                  material_type_list extra_materials = material_type_list());
+
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
 material_type make_file_material(const char *eps_input_file);
