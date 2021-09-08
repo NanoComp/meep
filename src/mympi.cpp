@@ -182,7 +182,15 @@ void set_zero_subnormals(bool iszero)
     _set_zero_subnormals(iszero); // This has to be done in every thread for OpenMP.
 }
 
+void setup() {
+#ifdef _OPENMP
+  if (getenv("OMP_NUM_THREADS") == NULL)
+    omp_set_num_threads(1);
+#endif
+}
+
 initialize::initialize(int &argc, char **&argv) {
+  setup();
 #ifdef HAVE_MPI
 #ifdef _OPENMP
   int provided;
