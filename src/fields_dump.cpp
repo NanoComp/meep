@@ -50,6 +50,10 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
   size_t my_ntot = 0;
   for (int i = 0, chunk_i = 0; i < num_chunks; i++) {
     if (chunks[i]->is_mine()) {
+      FOR_FIELD_TYPES(ft) {
+        if (chunks[i]->pol[ft] != NULL)
+          meep::abort("non-null polarization_state in fields::dump (unsupported)");
+      }
       size_t ntot = chunks[i]->gv.ntot();
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
         for (int d = 0; d < 2; ++d) {
