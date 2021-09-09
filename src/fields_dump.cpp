@@ -136,6 +136,9 @@ void fields::dump(const char *filename, bool single_parallel_file) {
   dump_fields_chunk_field(
       &file, single_parallel_file, "f_cond",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
+  dump_fields_chunk_field(
+      &file, single_parallel_file, "f_w_prev",
+      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w_prev[c][d]); });
 
   // Dump DFT chunks.
   for (int i = 0; i < num_chunks; i++) {
@@ -263,6 +266,9 @@ void fields::load(const char *filename, bool single_parallel_file) {
   load_fields_chunk_field(
       &file, single_parallel_file, "f_cond",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
+  load_fields_chunk_field(
+      &file, single_parallel_file, "f_w_prev",
+      [](fields_chunk *chunk, int c, int d) { return &(chunk->w_prev[c][d]); });
 
   // Load DFT chunks.
   for (int i = 0; i < num_chunks; i++) {
