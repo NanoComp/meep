@@ -2379,6 +2379,9 @@ private:
 // control whether CPU flushes subnormal values; see mympi.cpp
 void set_zero_subnormals(bool iszero);
 
+// initialize various properties of the simulation
+void setup();
+
 } /* namespace meep */
 
 #endif /* MEEP_H */

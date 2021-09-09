@@ -250,7 +250,7 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 
 **`--with-openmp`**
 —
-This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multi-threading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). When you run Meep, you should first set the environment variable `OMP_NUM_THREADS` to the number of threads you want OpenMP to use (the default is a single thread).
 
 ### Floating-Point Precision of the Fields and Materials Arrays
 
