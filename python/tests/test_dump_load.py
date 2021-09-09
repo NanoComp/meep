@@ -29,8 +29,7 @@ class TestLoadDump(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # mp.delete_directory(cls.temp_dir)
-        pass
+        mp.delete_directory(cls.temp_dir)
 
     # Tests various combinations of dumping/loading structure & chunk layout.
     def _load_dump_structure(self, chunk_file=False, chunk_sim=False, single_parallel_file=True):
@@ -91,34 +90,28 @@ class TestLoadDump(unittest.TestCase):
         for ref_pt, pt in zip(ref_field_points, field_points):
             self.assertAlmostEqual(ref_pt, pt)
 
-    @unittest.skip("disable_temporarily_for_debugging")
     def test_load_dump_structure(self):
         self._load_dump_structure()
 
     @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
-    @unittest.skip("disable_temporarily_for_debugging")
     def test_load_dump_structure_sharded(self):
         self._load_dump_structure(single_parallel_file=False)
 
-    @unittest.skip("disable_temporarily_for_debugging")
     def test_load_dump_chunk_layout_file(self):
         self._load_dump_structure(chunk_file=True)
 
-    @unittest.skip("disable_temporarily_for_debugging")
     def test_load_dump_chunk_layout_sim(self):
         self._load_dump_structure(chunk_sim=True)
 
     # Tests dumping/loading of fields & structure.
     def _load_dump_fields(self, single_parallel_file=True):
-        from meep.materials import Al
         resolution = 50
         cell = mp.Vector3(5, 5)
-        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.2), center=mp.Vector3(), component=mp.Ez)
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4), center=mp.Vector3(), component=mp.Ez)
         one_by_one = mp.Vector3(1, 1, mp.inf)
-        geometry = [mp.Block(material=Al, center=mp.Vector3(), size=one_by_one),
+        geometry = [mp.Block(material=mp.Medium(index=3.2), center=mp.Vector3(), size=one_by_one),
                     mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1), size=one_by_one)]
         pml_layers = [mp.PML(0.5)]
-
         symmetries = [mp.Mirror(mp.Y)]
 
         sim1 = mp.Simulation(resolution=resolution,
@@ -129,21 +122,21 @@ class TestLoadDump(unittest.TestCase):
                              sources=[sources])
 
         sample_point = mp.Vector3(0.12, -0.29)
-        ref_field_points = {}
 
+        dump_dirname = os.path.join(self.temp_dir, 'test_load_dump_fields')
+        os.makedirs(dump_dirname, exist_ok=True)
+
+        ref_field_points = {}
         def get_ref_field_point(sim):
             p = sim.get_field_point(mp.Ez, sample_point)
             ref_field_points[sim.meep_time()] = p.real
 
-        # First run until t=25 and save structure/fields
-        sim1.run(mp.at_every(5, get_ref_field_point), until=25)
-
-        dump_dirname = os.path.join(self.temp_dir, 'test_load_dump_fields')
+        # First run until t=15 and save structure/fields
+        sim1.run(mp.at_every(1, get_ref_field_point), until=15)
         sim1.dump(dump_dirname, dump_structure=True, dump_fields=True, single_parallel_file=single_parallel_file)
 
-        # Then continue running another 25 until t=50
-        sim1.run(mp.at_every(5, get_ref_field_point), until=25)
-        print('ref_field_points = ' + str(ref_field_points))
+        # Then continue running another 5 until t=20
+        sim1.run(mp.at_every(1, get_ref_field_point), until=5)
 
         # Now create a new simulation and try restoring state.
         sim = mp.Simulation(resolution=resolution,
@@ -160,13 +153,11 @@ class TestLoadDump(unittest.TestCase):
             p = sim.get_field_point(mp.Ez, sample_point)
             field_points[sim.meep_time()] = p.real
 
-        # Run until t=1 so that fields are initialized.
-        sim.run(mp.at_every(5, get_field_point), until=1)
+        sim.init_sim()
 
-        # Now load the fields.
+        # Now load the fields (at t=15) and then continue to t=20
         sim.load(dump_dirname, load_structure=False, load_fields=True, single_parallel_file=single_parallel_file)
-        sim.run(mp.at_every(5, get_field_point), until=25)
-        print('field_points = ' + str(field_points))
+        sim.run(mp.at_every(1, get_field_point), until=5)
 
         for t, v in field_points.items():
             self.assertAlmostEqual(ref_field_points[t], v)
@@ -175,10 +166,36 @@ class TestLoadDump(unittest.TestCase):
         self._load_dump_fields()
 
     @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
-    @unittest.skip("disable_temporarily_for_debugging")
     def test_load_dump_fields_sharded(self):
         self._load_dump_fields(single_parallel_file=False)
 
+    # This assertRaisesRegex check does not play well with MPI due to the
+    # underlying call to meep::abort
+    @unittest.skipIf(mp.with_mpi(), "MPI specific test")
+    def test_dump_fails_for_non_null_polarization_state(self):
+        resolution = 50
+        cell = mp.Vector3(5, 5)
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4), center=mp.Vector3(), component=mp.Ez)
+        one_by_one = mp.Vector3(1, 1, mp.inf)
+        from meep.materials import Al
+        geometry = [mp.Block(material=Al, center=mp.Vector3(), size=one_by_one),
+                    mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1), size=one_by_one)]
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            boundary_layers=[],
+                            geometry=geometry,
+                            symmetries=[],
+                            sources=[sources])
+
+        dump_dirname = os.path.join(self.temp_dir, 'test_load_dump_fields')
+        os.makedirs(dump_dirname, exist_ok=True)
+
+        sim.run(until=1)
+        # NOTE: We do not yet support checkpoint/restore when there is a
+        # non-null polarization_state
+        with self.assertRaisesRegex(RuntimeError, 'meep: non-null polarization_state in fields::dump'):
+          sim.dump(dump_dirname, dump_structure=True, dump_fields=True)
 
 if __name__ == '__main__':
     unittest.main()
