@@ -183,6 +183,7 @@ void set_zero_subnormals(bool iszero)
 }
 
 void setup() {
+  set_zero_subnormals(true);
 #ifdef _OPENMP
   if (getenv("OMP_NUM_THREADS") == NULL)
     omp_set_num_threads(1);
@@ -190,7 +191,6 @@ void setup() {
 }
 
 initialize::initialize(int &argc, char **&argv) {
-  setup();
 #ifdef HAVE_MPI
 #ifdef _OPENMP
   int provided;
@@ -214,8 +214,8 @@ initialize::initialize(int &argc, char **&argv) {
 #ifdef IGNORE_SIGFPE
   signal(SIGFPE, SIG_IGN);
 #endif
-  set_zero_subnormals(true);
   t_start = wall_time();
+  setup();
 }
 
 initialize::~initialize() {

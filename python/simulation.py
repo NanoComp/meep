@@ -40,7 +40,7 @@ except ImportError:
 
 verbosity = Verbosity(mp.cvar, 'meep', 1)
 
-mp.set_zero_subnormals(True)
+mp.setup()
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
 mp.set_meep_printf_callback(mp.py_master_printf_wrap)
