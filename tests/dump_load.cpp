@@ -124,65 +124,43 @@ int test_metal(double eps(const vec &), int splitting, const char *tmpdir) {
   double ttot = 17.0;
 
   grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
-  structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
 
   std::string filename_prefix =
       std::string(tmpdir) + "/test_metal_" + std::to_string(splitting);
-  std::string structure_filename_original =
+  std::string structure_filename =
       structure_dump(&s, filename_prefix, "original");
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299, 0.299, 0.401), 1.0);
 
-  std::string fields_filename_original =
+  while (f.time() < ttot) f.step();
+
+  std::string fields_filename =
       fields_dump(&f, filename_prefix, "original");
 
-  fields f1(&s1);
-  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299, 0.299, 0.401), 1.0);
-
-  double field_energy_check_time = 8.0;
-  while (f.time() < ttot) {
-    f.step();
-    f1.step();
-    if (!compare_point(f, f1, vec(0.5, 0.5, 0.01))) return 0;
-    if (!compare_point(f, f1, vec(0.46, 0.33, 0.33))) return 0;
-    if (!compare_point(f, f1, vec(1.301, 0.301, 0.399))) return 0;
-    if (f.time() >= field_energy_check_time) {
-      if (!compare(f.field_energy(), f1.field_energy(), "   total energy"))
-        return 0;
-      if (!compare(f.electric_energy_in_box(gv.surroundings()),
-                   f1.electric_energy_in_box(gv.surroundings()),
-                   "electric energy"))
-        return 0;
-      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
-                   f1.magnetic_energy_in_box(gv.surroundings()),
-                   "magnetic energy"))
-        return 0;
-      field_energy_check_time += 5.0;
-    }
-  }
-
-  std::string structure_filename_after_sim =
-      structure_dump(&s, filename_prefix, "after-sim");
-
-  std::string fields_filename_after_sim =
-      fields_dump(&f, filename_prefix, "after_sim");
-
   structure s_load(gv, eps, no_pml(), identity(), splitting);
-  structure_load(&s_load, structure_filename_after_sim);
-
-  std::string structure_filename_dump_loaded =
-      structure_dump(&s, filename_prefix, "dump-loaded");
+  structure_load(&s_load, structure_filename);
 
   fields f_load(&s_load);
   f_load.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299, 0.299, 0.401),
                           1.0);
-  fields_load(&f_load, fields_filename_after_sim);
+  fields_load(&f_load, fields_filename);
 
-  std::string fields_filename_dump_loaded =
-      fields_dump(&f_load, filename_prefix, "dump-loaded");
+  if (!compare_point(f, f_load, vec(0.5, 0.5, 0.01))) return 0;
+  if (!compare_point(f, f_load, vec(0.46, 0.33, 0.33))) return 0;
+  if (!compare_point(f, f_load, vec(1.301, 0.301, 0.399))) return 0;
+  if (!compare(f.field_energy(), f_load.field_energy(), "   total energy"))
+    return 0;
+  if (!compare(f.electric_energy_in_box(gv.surroundings()),
+               f_load.electric_energy_in_box(gv.surroundings()),
+               "electric energy"))
+    return 0;
+  if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+               f_load.magnetic_energy_in_box(gv.surroundings()),
+               "magnetic energy"))
+    return 0;
   return 1;
 }
 
@@ -196,150 +174,41 @@ int test_periodic(double eps(const vec &), int splitting, const char *tmpdir) {
 
   std::string filename_prefix =
       std::string(tmpdir) + "/test_periodic_" + std::to_string(splitting);
-  std::string structure_filename_original =
+  std::string structure_filename =
       structure_dump(&s, filename_prefix, "original");
 
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&s);
   f.use_bloch(vec(0.1, 0.7, 0.3));
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3, 0.25, 0.5), 1.0);
-  std::string fields_filename_original =
+
+  while (f.time() < ttot) f.step();
+
+  std::string fields_filename =
       fields_dump(&f, filename_prefix, "original");
 
-  fields f1(&s1);
-  f1.use_bloch(vec(0.1, 0.7, 0.3));
-  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3, 0.25, 0.5), 1.0);
-
-  double field_energy_check_time = 8.0;
-  while (f.time() < ttot) {
-    f.step();
-    f1.step();
-    if (!compare_point(f, f1, vec(0.5, 0.01, 0.5))) return 0;
-    if (!compare_point(f, f1, vec(0.46, 0.33, 0.2))) return 0;
-    if (!compare_point(f, f1, vec(1.0, 0.25, 0.301))) return 0;
-    if (f.time() >= field_energy_check_time) {
-      if (!compare(f.field_energy(), f1.field_energy(), "   total energy"))
-        return 0;
-      if (!compare(f.electric_energy_in_box(gv.surroundings()),
-                   f1.electric_energy_in_box(gv.surroundings()),
-                   "electric energy"))
-        return 0;
-      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
-                   f1.magnetic_energy_in_box(gv.surroundings()),
-                   "magnetic energy"))
-        return 0;
-      field_energy_check_time += 5.0;
-    }
-  }
-
-  std::string structure_filename_after_sim =
-      structure_dump(&s, filename_prefix, "after-sim");
-
-  std::string fields_filename_after_sim =
-      fields_dump(&f, filename_prefix, "after_sim");
-
   structure s_load(gv, eps, no_pml(), identity(), splitting);
-  structure_load(&s_load, structure_filename_after_sim);
-
-  std::string structure_filename_dump_loaded =
-      structure_dump(&s, filename_prefix, "dump-loaded");
+  structure_load(&s_load, structure_filename);
 
   fields f_load(&s_load);
   f_load.use_bloch(vec(0.1, 0.7, 0.3));
   f_load.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3, 0.25, 0.5), 1.0);
-  fields_load(&f_load, fields_filename_after_sim);
+  fields_load(&f_load, fields_filename);
 
-  std::string fields_filename_dump_loaded =
-      fields_dump(&f_load, filename_prefix, "dump-loaded");
-  return 1;
-}
+  if (!compare_point(f, f_load, vec(0.5, 0.01, 0.5))) return 0;
+  if (!compare_point(f, f_load, vec(0.46, 0.33, 0.2))) return 0;
+  if (!compare_point(f, f_load, vec(1.0, 0.25, 0.301))) return 0;
+  if (!compare(f.field_energy(), f_load.field_energy(), "   total energy"))
+    return 0;
+  if (!compare(f.electric_energy_in_box(gv.surroundings()),
+               f_load.electric_energy_in_box(gv.surroundings()),
+               "electric energy"))
+    return 0;
+  if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+               f_load.magnetic_energy_in_box(gv.surroundings()),
+               "magnetic energy"))
+    return 0;
 
-int test_pml(double eps(const vec &), const char *tmpdir) {
-  master_printf("Testing pml quality...\n");
-
-  double a = 10.0;
-  grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
-  structure s(gv, eps, pml(0.401));
-
-  std::string filename_prefix = std::string(tmpdir) + "/test_pml";
-  std::string structure_filename_original =
-      structure_dump(&s, filename_prefix, "original");
-
-  fields f(&s);
-  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.751, 0.5, 0.601), 1.0);
-  const double deltaT = 10.0;
-  const double ttot = 3.1 * deltaT;
-  double field_energy_check_time = deltaT;
-
-  std::string fields_filename_original =
-      fields_dump(&f, filename_prefix, "original");
-
-  while (f.time() < f.last_source_time()) f.step();
-
-  double last_energy = f.field_energy();
-  while (f.time() < ttot) {
-    f.step();
-    if (f.time() >= field_energy_check_time) {
-      const double new_energy = f.field_energy();
-      master_printf("Got newE/oldE of %g\n", new_energy / last_energy);
-      if (new_energy > last_energy * 4e-3) {
-        master_printf("Energy decaying too slowly: from %g to %g (%g)\n",
-                      last_energy, new_energy, new_energy / last_energy);
-        return 0;
-      }
-      field_energy_check_time += deltaT;
-    }
-  }
-
-  std::string structure_filename_after_sim =
-      structure_dump(&s, filename_prefix, "after-sim");
-
-  std::string fields_filename_after_sim =
-      fields_dump(&f, filename_prefix, "after_sim");
-
-  structure s_load(gv, eps, pml(0.401));
-  structure_load(&s_load, structure_filename_after_sim);
-
-  std::string structure_filename_dump_loaded =
-      structure_dump(&s, filename_prefix, "dump-loaded");
-
-  fields f_load(&s_load);
-  fields_load(&f_load, fields_filename_after_sim);
-
-  std::string fields_filename_dump_loaded =
-      fields_dump(&f_load, filename_prefix, "dump-loaded");
-  return 1;
-}
-
-int test_pml_splitting(double eps(const vec &), int splitting,
-                       const char *tmpdir) {
-  double a = 10.0;
-
-  grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
-  structure s1(gv, eps, pml(0.3));
-  structure s(gv, eps, pml(0.3), identity(), splitting);
-
-  master_printf("Testing pml while splitting into %d chunks...\n", splitting);
-  fields f(&s);
-  f.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.099, 0.499, 0.501), 1.0);
-  fields f1(&s1);
-  f1.add_point_source(Ez, 0.8, 1.6, 0.0, 4.0, vec(1.099, 0.499, 0.501), 1.0);
-  const double ttot = 31.0;
-
-  double next_energy_time = 10.0;
-  while (f.time() < ttot) {
-    f.step();
-    f1.step();
-    if (!approx_point(f, f1, vec(0.5, 0.01, 1.0))) return 0;
-    if (!approx_point(f, f1, vec(0.46, 0.33, 0.33))) return 0;
-    if (!approx_point(f, f1, vec(1.0, 1.0, 0.33))) return 0;
-    if (!approx_point(f, f1, vec(1.3, 0.3, 0.15))) return 0;
-    if (f.time() > next_energy_time) {
-      if (!compare(f.field_energy(), f1.field_energy(), "   total energy"))
-        return 0;
-      next_energy_time += 10.0;
-    }
-  }
   return 1;
 }
 
@@ -350,8 +219,6 @@ int main(int argc, char **argv) {
   std::unique_ptr<const char[]> temp_dir(make_output_directory());
   master_printf("Testing 3D dump/load: temp_dir = %s...\n", temp_dir.get());
 
-  if (!test_pml(one, temp_dir.get())) abort("error in test_pml vacuum\n");
-
   for (int s = 2; s < 7; s++)
     if (!test_periodic(targets, s, temp_dir.get()))
       abort("error in test_periodic targets\n");
@@ -360,10 +227,6 @@ int main(int argc, char **argv) {
     if (!test_metal(one, s, temp_dir.get()))
       abort("error in test_metal vacuum\n");
 
-  for (int s = 2; s < 4; s++)
-    if (!test_pml_splitting(one, s, temp_dir.get()))
-      abort("error in test_pml_splitting vacuum\n");
-
-  // delete_directory(temp_dir.get());
+  delete_directory(temp_dir.get());
   return 0;
 }
