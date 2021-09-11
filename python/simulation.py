@@ -953,7 +953,8 @@ class Simulation(object):
                  progress_interval=4,
                  subpixel_tol=1e-4,
                  subpixel_maxeval=100000,
-                 loop_tile_base=0,
+                 loop_tile_base_db=0,
+                 loop_tile_base_eh=0,
                  ensure_periodicity=True,
                  num_chunks=0,
                  Courant=0.5,
@@ -1206,7 +1207,8 @@ class Simulation(object):
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
-        self.loop_tile_base = loop_tile_base
+        self.loop_tile_base_db = loop_tile_base_db
+        self.loop_tile_base_eh = loop_tile_base_eh
         self.ensure_periodicity = ensure_periodicity
         self.extra_materials = extra_materials
         self.default_material = default_material
@@ -1963,7 +1965,7 @@ class Simulation(object):
             self.m if self.is_cylindrical else 0,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin,
-            self.loop_tile_base
+            self.loop_tile_base_db, self.loop_tile_base_eh
         )
 
         if self.force_all_components and self.dimensions != 1:

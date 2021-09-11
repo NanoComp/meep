@@ -30,12 +30,73 @@ using namespace std;
 
 namespace meep {
 
+static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                             const size_t loop_tile_base) {
+  if (gvol.nowned_min() < loop_tile_base) {
+    result->push_back(gvol);
+    return;
+  }
+
+  int best_split_point;
+  direction best_split_direction;
+  gvol.tile_split(best_split_point, best_split_direction);
+  grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
+  split_into_tiles(left_gvol, result, loop_tile_base);
+  grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
+  split_into_tiles(right_gvol, result, loop_tile_base);
+  return;
+}
+
+// First check that the tile volumes gvs do not intersect and that they add
+// up to the chunk's total grid_volume gv
+static void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
+  grid_volume vol_intersection;
+  for (size_t i = 0; i < gvs.size(); i++)
+    for (size_t j = i + 1; j < gvs.size(); j++)
+      if (gvs[i].intersect_with(gvs[j], &vol_intersection))
+        meep::abort("gvs[%zu] intersects with gvs[%zu]\n", i, j);
+  size_t sum = 0;
+  for (const auto& sub_gv : gvs) { sum += sub_gv.nowned_min(); }
+  size_t v_grid_points = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
+}
+
 void fields::step_db(field_type ft) {
+  // split the chunk volume into subdomains for tiled execution of step_db and update_eh loops
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine() && changed_materials) {
+      bool is_aniso = false;
+      FOR_FT_COMPONENTS(ft, cc) {
+        const direction d_c = component_direction(cc);
+        const direction d_1 = cycle_direction(chunks[i]->gv.dim, d_c, 1);
+        const direction d_2 = cycle_direction(chunks[i]->gv.dim, d_c, 2);
+        if (chunks[i]->s->chi1inv[cc][d_1] && chunks[i]->s->chi1inv[cc][d_2]) {
+          is_aniso = true;
+          break;
+        }
+      }
+      if (chunks[i]->gvs_db.size() > 0) chunks[i]->gvs_db.clear();
+      if (loop_tile_base_db > 0 && is_aniso) {
+        split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_db, loop_tile_base_db);
+        check_tiles(chunks[i]->gv, chunks[i]->gvs_db);
+      } else {
+        chunks[i]->gvs_db.push_back(chunks[i]->gv);
+      }
+      if (chunks[i]->gvs_eh.size() > 0) chunks[i]->gvs_eh.clear();
+      if (loop_tile_base_eh > 0 && is_aniso) {
+        split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_eh, loop_tile_base_eh);
+        check_tiles(chunks[i]->gv, chunks[i]->gvs_eh);
+      } else {
+        chunks[i]->gvs_eh.push_back(chunks[i]->gv);
+      }
+    }
+
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->step_db(ft)) {
-       chunk_connections_valid = false;
-       assert(changed_materials);
+        chunk_connections_valid = false;
+        assert(changed_materials);
       }
 }
 
@@ -44,7 +105,7 @@ bool fields_chunk::step_db(field_type ft) {
 
   if (ft != B_stuff && ft != D_stuff) meep::abort("bug - step_db should only be called for B or D");
 
-  for (const auto& sub_gv : gvs) {
+  for (const auto& sub_gv : gvs_db) {
     DOCMP FOR_FT_COMPONENTS(ft, cc) {
       if (f[cc][cmp]) {
         const component c_p = plus_component[cc], c_m = minus_component[cc];
