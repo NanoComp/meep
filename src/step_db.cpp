@@ -30,8 +30,8 @@ using namespace std;
 
 namespace meep {
 
-static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
-                             const size_t loop_tile_base) {
+void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                      const size_t loop_tile_base) {
   if (gvol.nowned_min() < loop_tile_base) {
     result->push_back(gvol);
     return;
@@ -49,7 +49,7 @@ static void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
 
 // First check that the tile volumes gvs do not intersect and that they add
 // up to the chunk's total grid_volume gv
-static void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
+void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
   grid_volume vol_intersection;
   for (size_t i = 0; i < gvs.size(); i++)
     for (size_t j = i + 1; j < gvs.size(); j++)
@@ -63,32 +63,17 @@ static void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
 }
 
 void fields::step_db(field_type ft) {
-  // split the chunk volume into subdomains for tiled execution of step_db and update_eh loops
+  if (ft != B_stuff && ft != D_stuff) meep::abort("step_db only works with B/D");
+
+  // split the chunk volume into subdomains for tiled execution of step_db loop
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine() && changed_materials) {
-      bool is_aniso = false;
-      FOR_FT_COMPONENTS(ft, cc) {
-        const direction d_c = component_direction(cc);
-        const direction d_1 = cycle_direction(chunks[i]->gv.dim, d_c, 1);
-        const direction d_2 = cycle_direction(chunks[i]->gv.dim, d_c, 2);
-        if (chunks[i]->s->chi1inv[cc][d_1] && chunks[i]->s->chi1inv[cc][d_2]) {
-          is_aniso = true;
-          break;
-        }
-      }
-      if (chunks[i]->gvs_db.size() > 0) chunks[i]->gvs_db.clear();
-      if (loop_tile_base_db > 0 && is_aniso) {
+      if (!chunks[i]->gvs_db.empty()) chunks[i]->gvs_db.clear();
+      if (loop_tile_base_db > 0) {
         split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_db, loop_tile_base_db);
         check_tiles(chunks[i]->gv, chunks[i]->gvs_db);
       } else {
         chunks[i]->gvs_db.push_back(chunks[i]->gv);
-      }
-      if (chunks[i]->gvs_eh.size() > 0) chunks[i]->gvs_eh.clear();
-      if (loop_tile_base_eh > 0 && is_aniso) {
-        split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_eh, loop_tile_base_eh);
-        check_tiles(chunks[i]->gv, chunks[i]->gvs_eh);
-      } else {
-        chunks[i]->gvs_eh.push_back(chunks[i]->gv);
       }
     }
 
@@ -102,8 +87,6 @@ void fields::step_db(field_type ft) {
 
 bool fields_chunk::step_db(field_type ft) {
   bool allocated_u = false;
-
-  if (ft != B_stuff && ft != D_stuff) meep::abort("bug - step_db should only be called for B or D");
 
   for (const auto& sub_gv : gvs_db) {
     DOCMP FOR_FT_COMPONENTS(ft, cc) {

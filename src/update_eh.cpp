@@ -27,6 +27,28 @@ namespace meep {
 
 void fields::update_eh(field_type ft, bool skip_w_components) {
   if (ft != E_stuff && ft != H_stuff) meep::abort("update_eh only works with E/H");
+  // split the chunk volume into subdomains for tiled execution of update_eh loop
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine() && changed_materials) {
+      bool is_aniso = false;
+      FOR_FT_COMPONENTS(ft, cc) {
+        const direction d_c = component_direction(cc);
+        const direction d_1 = cycle_direction(chunks[i]->gv.dim, d_c, 1);
+        const direction d_2 = cycle_direction(chunks[i]->gv.dim, d_c, 2);
+        if (chunks[i]->s->chi1inv[cc][d_1] && chunks[i]->s->chi1inv[cc][d_2]) {
+          is_aniso = true;
+          break;
+        }
+      }
+      if (!chunks[i]->gvs_eh.empty()) chunks[i]->gvs_eh.clear();
+      if (loop_tile_base_eh > 0 && is_aniso) {
+        split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_eh, loop_tile_base_eh);
+        check_tiles(chunks[i]->gv, chunks[i]->gvs_eh);
+      } else {
+        chunks[i]->gvs_eh.push_back(chunks[i]->gv);
+      }
+    }
+
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->update_eh(ft, skip_w_components)) {

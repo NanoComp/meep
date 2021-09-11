@@ -2383,6 +2383,11 @@ void set_zero_subnormals(bool iszero);
 // initialize various properties of the simulation
 void setup();
 
+void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                      const size_t loop_tile_base);
+
+void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs);
+
 } /* namespace meep */
 
 #endif /* MEEP_H */
