@@ -286,7 +286,7 @@ void dft_chunk::update_dft(double time) {
 /* Return the L2 norm of the DFTs themselves.  This is useful
    to check whether the simulation is finished (whether all relevant fields have decayed).
    (Collective operation.) */
-double fields::dft_norm2() {
+double fields::dft_norm() {
   am_now_working_on(Other);
   double sum = 0.0;
   for (int i = 0; i < num_chunks; i++)

@@ -4437,10 +4437,10 @@ def stop_when_dft_decayed(tol, minimum_run_time=0, maximum_run_time=None):
     run time (`maximum_run_time`).
     """
     # Record data in closure so that we can persitently edit
-    closure = {'previous_fields':1, 't0':0, 'dt':0, 'maxchange':1}
+    closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':1}
     def _stop(_sim):
         if _sim.fields.t == 0:
-            closure['dt'] = max(int(1/_sim.fields.dft_maxfreq()/_sim.fields.dt),int(_sim.fields.min_decimation()))
+            closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.min_decimation())
         if maximum_run_time and _sim.round_time() > maximum_run_time:
             return True
         elif _sim.fields.t <= closure['dt'] + closure['t0']:
@@ -4449,11 +4449,14 @@ def stop_when_dft_decayed(tol, minimum_run_time=0, maximum_run_time=None):
             previous_fields = closure['previous_fields']
             current_fields  = _sim.fields.dft_norm2()
             change = np.abs(previous_fields-current_fields)
-            closure['maxchange'] = max(closure['maxchange'],change)  
+            closure['maxchange'] = max(closure['maxchange'],change)
+
+            if previous_fields == 0:
+                closure['previous_fields'] = current_fields
+                return False
             
             closure['previous_fields'] = current_fields
             closure['t0'] = _sim.fields.t
-
             if mp.verbosity > 0:
                 fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
                 print(fmt.format(_sim.meep_time(), np.real(change/closure['maxchange'])))
