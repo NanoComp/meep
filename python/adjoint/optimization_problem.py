@@ -69,7 +69,7 @@ class OptimizationProblem(object):
         fcen=None,
         df=None,
         nf=None,
-        decay_by=1e-10,
+        decay_by=1e-11,
         decimation_factor=0,
         minimum_run_time=0,
         maximum_run_time=None
