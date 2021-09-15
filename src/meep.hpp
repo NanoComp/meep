@@ -1567,7 +1567,7 @@ private:
   void initialize_with_nth_tm(int n, double kz);
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
-  double dft_norm() const;
+  double dft_norm2() const;
   double dft_maxfreq() const;
   int min_decimation() const;
 
@@ -1984,7 +1984,7 @@ public:
   dft_chunk *add_dft(const volume_list *where, const std::vector<double> &freq,
                      bool include_dV = true);
   void update_dfts();
-  double dft_norm2();
+  double dft_norm();
   double dft_maxfreq() const;
   int min_decimation() const;
 
