@@ -60,7 +60,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
     chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta,
-                                 zero_fields_near_cylorigin, i);
+                                 zero_fields_near_cylorigin, i, loop_tile_base_db);
   FOR_FIELD_TYPES(ft) {
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
@@ -199,8 +199,40 @@ fields_chunk::~fields_chunk() {
   if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
 }
 
+void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                      const size_t loop_tile_base) {
+  if (gvol.nowned_min() < loop_tile_base) {
+    result->push_back(gvol);
+    return;
+  }
+
+  int best_split_point;
+  direction best_split_direction;
+  gvol.tile_split(best_split_point, best_split_direction);
+  grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
+  split_into_tiles(left_gvol, result, loop_tile_base);
+  grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
+  split_into_tiles(right_gvol, result, loop_tile_base);
+  return;
+}
+
+// First check that the tile volumes gvs do not intersect and that they add
+// up to the chunk's total grid_volume gv
+void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
+  grid_volume vol_intersection;
+  for (size_t i = 0; i < gvs.size(); i++)
+    for (size_t j = i + 1; j < gvs.size(); j++)
+      if (gvs[i].intersect_with(gvs[j], &vol_intersection))
+        meep::abort("gvs[%zu] intersects with gvs[%zu]\n", i, j);
+  size_t sum = 0;
+  for (const auto& sub_gv : gvs) { sum += sub_gv.nowned_min(); }
+  size_t v_grid_points = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
+}
+
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
-                           bool zero_fields_near_cylorigin, int chunkidx)
+                           bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db)
     : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
       beta(beta) {
   s = the_s;
@@ -213,6 +245,12 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
+  if (loop_tile_base_db > 0) {
+    split_into_tiles(gv, &gvs_tiled, loop_tile_base_db);
+    check_tiles(gv, gvs_tiled);
+  } else {
+    gvs_tiled.push_back(gv);
+  }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     pol[ft] = NULL;
@@ -268,8 +306,10 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
-  gvs_db = thef.gvs_db;
-  gvs_eh = thef.gvs_eh;
+  gvs_tiled = thef.gvs_tiled;
+  FOR_FIELD_TYPES(ft) {
+    gvs_eh[ft] = thef.gvs_eh[ft];
+  }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     for (polarization_state *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {

@@ -1467,7 +1467,7 @@ public:
 
   double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   grid_volume gv;
-  std::vector<grid_volume> gvs_db, gvs_eh; // subdomains for tiled execution of step_db and update_eh
+  std::vector<grid_volume> gvs_tiled, gvs_eh[NUM_FIELD_TYPES]; // subdomains for tiled execution
   volume v;
   double m;                        // angular dependence in cyl. coords
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
@@ -1480,7 +1480,7 @@ public:
   int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin, int chunkidx);
+               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db);
 
   fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();

@@ -107,7 +107,8 @@ def __init__(self,
              progress_interval=4,
              subpixel_tol=0.0001,
              subpixel_maxeval=100000,
-             loop_tile_base=0,
+             loop_tile_base_db=0,
+             loop_tile_base_eh=0,
              ensure_periodicity=True,
              num_chunks=0,
              Courant=0.5,
@@ -286,11 +287,12 @@ Python. `Vector3` is a `meep` class.
   the minimum refractive index (usually 1), and in practice $S$ should be slightly
   smaller.
 
-+ **`loop_tile_base` [`number`]** — To improve the memory locality of the step-curl
-  field updates, Meep has an experimental feature to "tile" the loop over the Yee grid
-  voxels. The splitting of this loop into tiles or subdomains involves a recursive-bisection
-  method in which the base case for the number of voxels is specified using this parameter.
-  The default value is 0 or no tiling; a typical nonzero value to try would be `10000`.
++ **`loop_tile_base_db`, `loop_tile_base_eh` [`number`]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
+  of the field updates, Meep has an experimental feature to "tile" the loops over the Yee grid
+  voxels. The splitting of the update loops for step-curl and update-eh into tiles or subdomains
+  involves a recursive-bisection method in which the base case for the number of voxels is
+  specified using these two parameters, respectively. The default value is 0 or no tiling;
+  a typical nonzero value to try would be 10000.
 
 + **`output_volume` [`Volume` class ]** — Specifies the default region of space
   that is output by the HDF5 output functions (below); see also the `Volume` class

@@ -27,7 +27,8 @@ namespace meep {
 
 void fields::update_eh(field_type ft, bool skip_w_components) {
   if (ft != E_stuff && ft != H_stuff) meep::abort("update_eh only works with E/H");
-  // split the chunk volume into subdomains for tiled execution of update_eh loop
+
+  // split the chunks' volume into subdomains for tiled execution of update_eh loop
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine() && changed_materials) {
       bool is_aniso = false;
@@ -40,12 +41,12 @@ void fields::update_eh(field_type ft, bool skip_w_components) {
           break;
         }
       }
-      if (!chunks[i]->gvs_eh.empty()) chunks[i]->gvs_eh.clear();
+      if (!chunks[i]->gvs_eh[ft].empty()) chunks[i]->gvs_eh[ft].clear();
       if (loop_tile_base_eh > 0 && is_aniso) {
-        split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_eh, loop_tile_base_eh);
-        check_tiles(chunks[i]->gv, chunks[i]->gvs_eh);
+        split_into_tiles(chunks[i]->gv, &chunks[i]->gvs_eh[ft], loop_tile_base_eh);
+        check_tiles(chunks[i]->gv, chunks[i]->gvs_eh[ft]);
       } else {
-        chunks[i]->gvs_eh.push_back(chunks[i]->gv);
+        chunks[i]->gvs_eh[ft].push_back(chunks[i]->gv);
       }
     }
 
@@ -145,7 +146,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     dmp[dc][cmp] = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
   }
 
-  for (size_t i = 0; i < gvs_eh.size(); ++i) {
+  for (size_t i = 0; i < gvs_eh[ft].size(); ++i) {
     DOCMP FOR_FT_COMPONENTS(ft, ec) {
       if (f[ec][cmp]) {
         if (type(ec) != ft) meep::abort("bug in FOR_FT_COMPONENTS");
@@ -188,7 +189,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
         }
 
         if (f[ec][cmp] != f[dc][cmp])
-          STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, gvs_eh[i].little_owned_corner(ec), gvs_eh[i].big_corner(),
+          STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, gvs_eh[ft][i].little_owned_corner(ec), gvs_eh[ft][i].big_corner(),
                            dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
                            s->chi1inv[ec][d_ec], dmp[dc_1][cmp] ? s->chi1inv[ec][d_1] : NULL,
                            dmp[dc_2][cmp] ? s->chi1inv[ec][d_2] : NULL, s_ec, s_1, s_2, s->chi2[ec],
