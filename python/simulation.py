@@ -4437,7 +4437,7 @@ def stop_when_dft_decayed(tol, minimum_run_time=0, maximum_run_time=None):
     run time (`maximum_run_time`).
     """
     # Record data in closure so that we can persitently edit
-    closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':1}
+    closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':0}
     def _stop(_sim):
         if _sim.fields.t == 0:
             closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.min_decimation())
@@ -4447,7 +4447,7 @@ def stop_when_dft_decayed(tol, minimum_run_time=0, maximum_run_time=None):
             return False
         else:
             previous_fields = closure['previous_fields']
-            current_fields  = _sim.fields.dft_norm2()
+            current_fields  = _sim.fields.dft_norm()
             change = np.abs(previous_fields-current_fields)
             closure['maxchange'] = max(closure['maxchange'],change)
 
