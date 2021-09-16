@@ -38,14 +38,16 @@ TESTS =                                   \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_solver.py         \
-		$(TEST_DIR)/test_adjoint_cyl.py            \
+    $(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_jax.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
+    $(TEST_DIR)/test_binary_partition.py       \
     $(BINARY_GRATING_TEST)                \
     $(TEST_DIR)/test_cavity_arrayslice.py      \
     $(TEST_DIR)/test_cavity_farfield.py        \
+    $(TEST_DIR)/test_chunk_balancer.py         \
     $(TEST_DIR)/test_chunk_layout.py           \
     $(TEST_DIR)/test_chunks.py                 \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
@@ -84,6 +86,7 @@ TESTS =                                   \
     $(TEST_DIR)/test_simulation.py             \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
+    $(TEST_DIR)/test_timing_measurements.py    \
     $(TEST_DIR)/test_user_defined_material.py  \
     $(TEST_DIR)/test_visualization.py          \
     $(WVG_SRC_TEST)
