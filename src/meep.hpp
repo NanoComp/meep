@@ -1467,7 +1467,7 @@ public:
 
   double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   grid_volume gv;
-  std::vector<grid_volume> gvs; // subdomains for cache-tiled execution of step_curl
+  std::vector<grid_volume> gvs_tiled, gvs_eh[NUM_FIELD_TYPES]; // subdomains for tiled execution
   volume v;
   double m;                        // angular dependence in cyl. coords
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
@@ -1480,7 +1480,7 @@ public:
   int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base);
+               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db);
 
   fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
@@ -1711,10 +1711,11 @@ public:
   boundary_condition boundaries[2][5];
   char *outdir;
   bool components_allocated;
+  size_t loop_tile_base_db, loop_tile_base_eh;
 
   // fields.cpp methods:
   fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,
-         int loop_tile_base = 0);
+         int loop_tile_base_db = 0, int loop_tile_base_eh = 0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
@@ -2381,6 +2382,11 @@ void set_zero_subnormals(bool iszero);
 
 // initialize various properties of the simulation
 void setup();
+
+void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                      const size_t loop_tile_base);
+
+void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs);
 
 } /* namespace meep */
 
