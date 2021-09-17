@@ -283,6 +283,81 @@ void dft_chunk::update_dft(double time) {
   }
 }
 
+/* Return the L2 norm of the DFTs themselves.  This is useful
+   to check whether the simulation is finished (whether all relevant fields have decayed).
+   (Collective operation.) */
+double fields::dft_norm() {
+  am_now_working_on(Other);
+  double sum = 0.0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2();
+  finished_working();
+  return std::sqrt(sum_to_all(sum));
+}
+
+double fields_chunk::dft_norm2() const {
+  double sum = 0.0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    sum += cur->norm2();
+  return sum;
+}
+
+static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
+
+double dft_chunk::norm2() const {
+  if (!fc->f[c][0]) return 0.0;
+  int numcmp = fc->f[c][1] ? 2 : 1;
+  double sum = 0.0;
+  size_t idx_dft = 0;
+  const int Nomega = omega.size();
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    for (int i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx_dft + i]);
+    idx_dft++;
+  }
+  return sum;
+}
+
+// return the minimum decimation factor across
+// all dft regions
+int fields::min_decimation() const {
+  int mindec = std::numeric_limits<int>::max();
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine())
+      mindec = std::min(mindec, chunks[i]->min_decimation());
+  return min_to_all(mindec);
+}
+
+int fields_chunk::min_decimation() const {
+  int mindec = std::numeric_limits<int>::max();
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    mindec = std::min(mindec, cur->get_decimation_factor());
+  return mindec;
+}
+
+// return the maximum abs(freq) over all DFT chunks
+double fields::dft_maxfreq() const {
+  double maxfreq = 0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine())
+      maxfreq = std::max(maxfreq, chunks[i]->dft_maxfreq());
+  return max_to_all(maxfreq);
+}
+
+double fields_chunk::dft_maxfreq() const {
+  double maxomega = 0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    maxomega = std::max(maxomega, cur->maxomega());
+  return maxomega / (2*meep::pi);
+}
+
+double dft_chunk::maxomega() const {
+  double maxomega = 0;
+  for (const auto& o : omega)
+    maxomega = std::max(maxomega, std::abs(o));
+  return maxomega;
+}
+
 void dft_chunk::scale_dft(complex<double> scale) {
   for (size_t i = 0; i < N * omega.size(); ++i)
     dft[i] *= scale;

@@ -164,7 +164,6 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
         objective_arguments = obj_list,
         design_regions = [matgrid_region],
         frequencies=frequencies,
-        decay_fields=[mp.Ez],
         decimation_factor=10)
 
     f, dJ_du = opt([design_params])
