@@ -2691,12 +2691,12 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
 at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
 has decayed by at least `decay_by` from its maximum previous value. In particular, it
 keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
 over that time period &mdash; in this way, it won't be fooled just because the field
-happens to go through 0 at some instant.
+happens to go through zero at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency
@@ -2719,8 +2719,8 @@ def stop_when_dft_decayed(tol=None,
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
 or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every `dt`
 timesteps, and stops the simulation once all the field components and frequencies of *every*
-dft object have decayed by at least some tolerance `tol` (no default value). The optimal `dt`
-is determined automatically based on the frequency content in the DFT monitors.
+dft object have decayed by at least some tolerance `tol` (no default value). The time interval
+`dt` is determined automatically based on the frequency content in the DFT monitors.
 There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
 maximum run time `maximum_run_time` (no default).
 
@@ -7516,12 +7516,12 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
 at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
 has decayed by at least `decay_by` from its maximum previous value. In particular, it
 keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
 over that time period &mdash; in this way, it won't be fooled just because the field
-happens to go through 0 at some instant.
+happens to go through zero at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency
