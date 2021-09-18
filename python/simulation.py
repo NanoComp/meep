@@ -4462,11 +4462,11 @@ def stop_when_dft_decayed(tol=None, minimum_run_time=0, maximum_run_time=None):
             if previous_fields == 0:
                 closure['previous_fields'] = current_fields
                 return False
-            
+
             closure['previous_fields'] = current_fields
             closure['t0'] = _sim.fields.t
-            if mp.verbosity > 0:
-                fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
+            if mp.verbosity > 1:
+                fmt = "DFT fields decay(t = {0:0.2f}): {1:0.4e}"
                 print(fmt.format(_sim.meep_time(), np.real(change/closure['maxchange'])))
             return (change/closure['maxchange']) <= tol and _sim.round_time() >= minimum_run_time
 
