@@ -4235,9 +4235,9 @@ class MaterialGrid(object):
 
 <div class="class_docstring" markdown="1">
 
-This class is used to specify materials interpolated from a discrete Cartesian grid. A class object is passed as the
-`material` argument of a [`Block`](#block) geometric object or the `default_material` argument of the
-[`Simulation`](#Simulation) constructor (similar to a material function).
+This class is used to specify materials interpolated from a discrete Cartesian grid. A class object is
+passed as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
+argument of the [`Simulation`](#Simulation) constructor (similar to a material function).
 
 </div>
 
@@ -4263,29 +4263,42 @@ def __init__(self,
 
 Creates a `MaterialGrid` object.
 
-The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on a Cartesian grid
-by the NumPy array `weights` of size `grid_size` (a 3-tuple or `Vector3` of integers). Elements of the `weights` array must be in the
-range [0,1] where 0 is `medium1` and 1 is `medium2`. Two material types are supported: (1) frequency-independent
-isotropic $\varepsilon$ or $\mu$ and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
+The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
+is defined on a rectilinear Cartesian grid by the NumPy array `weights` of size `grid_size`
+(a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
+depending on the `size` property of the `Block` object as shown in the following example for a 2d
+`MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
+$z$ direction. Note that the grid points are defined at the corners of the voxels.
+
+![](images/material_grid.png)
+
+Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
+Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ or $\mu$
+and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
 materials are bilinearly interpolated from the Cartesian grid to Meep's [Yee grid](Yee_Lattice.md).
 
-For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`.
-If you want to use a material grid to define a (nearly) discontinuous, piecewise-constant material that is *either* `medium1`
-or `medium2` almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta`
-to a positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a [level-set
-function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
-$\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
-+\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
-($\beta$: bias or "smoothness" of the turn on) and `eta` ($\eta$: offset for erosion/dilation). The level set provides a general
-approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
-Subpixel smoothing is fast and accurate because it exploits an analytic formulation for level-set functions.
+For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
+`do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
+piecewise-constant material that is *either* `medium1` or `medium2` almost everywhere, you can
+optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
+positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a
+[level-set function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at
+$u(x)=\eta$ with a smoothing factor $\beta$ where $\beta=+\infty$ gives an unsmoothed,
+discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
++\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$
+involving the parameters `beta` ($\beta$: bias or "smoothness" of the turn on) and `eta`
+($\eta$: offset for erosion/dilation). The level set provides a general approach for defining
+a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
+grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
+for level-set functions.
 
-It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
-(e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of
-itself. In the case of spatially overlapping `MaterialGrid` objects (with no intervening objects), any overlapping points are
-computed using the method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product),
-`"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options allow you to combine any material
-grids that overlap in space with no intervening objects.
+It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
+grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
+given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping
+`MaterialGrid` objects (with no intervening objects), any overlapping points are computed using the
+method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` 
+(product), `"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options
+allow you to combine any material grids that overlap in space with no intervening objects.
 
 </div>
 

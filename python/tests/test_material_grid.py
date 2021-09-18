@@ -18,8 +18,8 @@ def compute_resonant_mode(res,default_mat=False):
 
         design_shape = mp.Vector3(1,1,0)
         design_region_resolution = 50
-        Nx = int(design_region_resolution*design_shape.x)
-        Ny = int(design_region_resolution*design_shape.y)
+        Nx = int(design_region_resolution*design_shape.x)+1
+        Ny = int(design_region_resolution*design_shape.y)+1
         x = np.linspace(-0.5*design_shape.x,0.5*design_shape.x,Nx)
         y = np.linspace(-0.5*design_shape.y,0.5*design_shape.y,Ny)
         xv, yv = np.meshgrid(x,y)
