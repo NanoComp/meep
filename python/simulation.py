@@ -4354,13 +4354,13 @@ def to_appended(fname, *step_funcs):
     return _to_appended
 
 
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
     or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
     at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
     has decayed by at least `decay_by` from its maximum previous value. In particular, it
-    keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+    keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
     over that time period &mdash; in this way, it won't be fooled just because the field
     happens to go through 0 at some instant.
 
@@ -4370,6 +4370,9 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
     [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
     slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
     """
+    if (dt is None) or (c is None) or (pt is None) or (decay_by is None):
+        raise TypeError("stop_when_fields_decayed: dt, c, pt, decay_by must all be specified.")
+
     closure = {
         'max_abs': 0,
         'cur_max': 0,
@@ -4428,18 +4431,20 @@ def stop_on_interrupt():
 
     return _stop
 
-def stop_when_dft_decayed(tol, minimum_run_time=0, maximum_run_time=None):
+def stop_when_dft_decayed(tol=None, minimum_run_time=0, maximum_run_time=None):
     """
-    Return a `condition` function, suitable for passing to `sim.run()` as the `until`
-    or `until_after_sources` parameter, that checks all of the Simulation's dft objects
-    every `dt` timesteps, and stops the simulation once all the components and frequencies
-    of *every* dft object have decayed by at least some tolerance, `tol`. The routine 
-    calculates the optimal `dt` to use based on the frequency content in the DFT monitors.
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+    or `until_after_sources` parameter, that checks all of the `Simulation`'s dft objects
+    every `dt` timesteps, and stops the simulation once *all* the field components and frequencies
+    of *every* dft object have decayed by at least some tolerance `tol` (no default value).
+    The optimal `dt` is determined automatically based on the frequency content in the DFT monitors.
+    There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
+    maximum run time `maximum_run_time` (no default).
+    """
+    if tol is None:
+        raise TypeError("stop_when_dft_decayed: tol parameter must be specified.")
 
-    Optionally the user can specify a minimum run time (`minimum_run_time`) or a maximum
-    run time (`maximum_run_time`).
-    """
-    # Record data in closure so that we can persitently edit
+    # Record data in closure so that we can persistently edit
     closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':0}
     def _stop(_sim):
         if _sim.fields.t == 0:
