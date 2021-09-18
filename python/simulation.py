@@ -4434,10 +4434,10 @@ def stop_on_interrupt():
 def stop_when_dft_decayed(tol=None, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-    or `until_after_sources` parameter, that checks all of the `Simulation`'s dft objects
-    every `dt` timesteps, and stops the simulation once *all* the field components and frequencies
-    of *every* dft object have decayed by at least some tolerance `tol` (no default value).
-    The optimal `dt` is determined automatically based on the frequency content in the DFT monitors.
+    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every `dt`
+    timesteps, and stops the simulation once all the field components and frequencies of *every*
+    dft object have decayed by at least some tolerance `tol` (no default value). The optimal `dt`
+    is determined automatically based on the frequency content in the DFT monitors.
     There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
     maximum run time `maximum_run_time` (no default).
     """
