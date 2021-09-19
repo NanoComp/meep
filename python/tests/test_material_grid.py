@@ -17,9 +17,13 @@ def compute_resonant_mode(res,default_mat=False):
         k_point = mp.Vector3(0.3892,0.1597,0)
 
         design_shape = mp.Vector3(1,1,0)
-        design_region_resolution = 50
-        Nx = int(design_region_resolution*design_shape.x)+1
-        Ny = int(design_region_resolution*design_shape.y)+1
+        design_region_resolution = 1200
+
+        # for a fixed resolution, compute the number of grid points
+        # necessary which are defined on the corners of the voxels
+        Nx = int(design_region_resolution*design_shape.x) + 1
+        Ny = int(design_region_resolution*design_shape.y) + 1
+
         x = np.linspace(-0.5*design_shape.x,0.5*design_shape.x,Nx)
         y = np.linspace(-0.5*design_shape.y,0.5*design_shape.y,Ny)
         xv, yv = np.meshgrid(x,y)
@@ -64,15 +68,15 @@ def compute_resonant_mode(res,default_mat=False):
 class TestMaterialGrid(unittest.TestCase):
 
     def test_material_grid(self):
-        ## reference frequency computed using MaterialGrid at resolution = 300
-        freq_ref = 0.306877757638932
+        ## "exact" frequency computed using MaterialGrid at resolution = 300
+        freq_ref = 0.29826813873225283
 
         res = [25, 50]
         freq_matgrid = []
         for r in res:
             freq_matgrid.append(compute_resonant_mode(r))
-            ## verify that the resonant mode is approximately equivalent to
-            ## the reference value
+            ## verify that the frequency of the resonant mode is
+            ## approximately equal to the reference value
             self.assertAlmostEqual(freq_ref, freq_matgrid[-1], 2)
 
         ## verify that the relative error is decreasing with increasing resolution
