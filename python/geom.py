@@ -524,16 +524,17 @@ class Medium(object):
 
 class MaterialGrid(object):
     """
-    This class is used to specify materials interpolated from a discrete rectilinear grid. A class object is
-    passed as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
-    argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
+    This class is used to specify materials interpolated from discrete points on a rectilinear grid.
+    A class object is passed as the `material` argument of a [`Block`](#block) geometric object or
+    the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
+    [material function](#medium)).
     """
     def __init__(self,grid_size,medium1,medium2,weights=None,grid_type="U_DEFAULT",do_averaging=False,beta=0,eta=0.5):
         """
         Creates a `MaterialGrid` object.
 
         The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
-        is defined on a rectilinear grid by the NumPy array `weights` of size `grid_size`
+        is defined on discrete points of a rectilinear grid by the NumPy array `weights` of size `grid_size`
         (a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
         depending on the `size` property of the `Block` object as shown in the following example for a 2d
         `MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
