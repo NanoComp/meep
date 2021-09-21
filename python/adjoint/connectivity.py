@@ -1,7 +1,7 @@
 """
 Connectivity constraint inspired by https://link.springer.com/article/10.1007/s00158-016-1459-5
 Solve and find adjoint gradients for [-div (k grad) + alpha^2 (1-rho)k + alpha0^2]T=0.
-BC: Dirichlet T0 on last slice rho[-Nx*Ny:], 0 outside the first slice, and Neumann on sides.
+BC: Dirichlet on last slice rho[-Nx*Ny:], 0 outside the first slice, and Neumann on sides.
 Mo Chen <mochen@mit.edu>
 """
 
@@ -11,13 +11,13 @@ from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix, lil_matrix
 from scipy.linalg import norm
 import matplotlib.pyplot as plt
 class ConnectivityConstraint(object):
-    def __init__(self, nx, ny, nz, k0=1000, T0=1000, zeta=0, sp_solver=spsolve, alpha=None, alpha0=None, thresh=0.1, p=1):
+    def __init__(self, nx, ny, nz, k0=1000, zeta=0, sp_solver=cg, alpha=None, alpha0=None, thresh=0.1, p=2):
         #zeta is to prevent singularity when damping is zero; with damping, zeta should be zero
         self.nx, self.ny, self.nz= nx, ny, nz
         self.n = nx*ny*nz
         self.m = nx*ny*(nz-1)
         self.solver = sp_solver
-        self.k0, self.T0, self.zeta = k0, T0, zeta
+        self.k0, self.zeta = k0, zeta
         self.thresh = thresh
         self.p = p
 
@@ -63,7 +63,7 @@ class ConnectivityConstraint(object):
 
         # Dirichlet condition on the last row becomes term on the RHS
         Bz = csc_matrix(self.Lz)[:,-self.nx*self.ny:]
-        rhs = -self.T0*Bz.sum(axis=1)
+        rhs = -Bz.sum(axis=1)
         self.rhs=rhs
 
         #LHS operator after moving the boundary term to the RHS
@@ -73,17 +73,17 @@ class ConnectivityConstraint(object):
         damping = self.k0*self.alpha**2*diags(1-rho_vector[:-self.nx*self.ny]) + diags([self.alpha0**2], shape=(self.m, self.m))
         self.A = eq + damping
         self.damping = damping
-        self.T = self.solver(csr_matrix(self.A), rhs)
+        self.T, sinfo = self.solver(csr_matrix(self.A), rhs)
         #exclude last row of rho and calculate weighted average of temperature
         self.rho_vec = rho_vector[:-self.nx*self.ny]
 
-        self.Td_p = (self.T0 - self.T)**self.p
+        self.Td_p = (1 - self.T)**self.p
         self.Td = (sum(self.Td_p * self.rho_vec)/sum(self.rho_vec))**(1/self.p)
 
         return self.Td
 
     def adjoint(self):
-        T_p1 = -(self.T-self.T0) ** (self.p-1)
+        T_p1 = -(self.T-1) ** (self.p-1)
         dg_dT = self.Td**(1-self.p) * (T_p1*self.rho_vec)/sum(self.rho_vec)
         return self.solver(csr_matrix(self.A.transpose()), dg_dT)
     def calculate_grad(self):
@@ -102,7 +102,7 @@ class ConnectivityConstraint(object):
         drhoy = kron(kron(eye(self.nz-1), diags([0.5,0.5], [0, 1], shape=[self.ny-1,self.ny])), eye(self.nx))
         dAy[:, :-self.nx*self.ny] =  (1-self.zeta)*self.k0*lil_matrix(self.dy * drhoy.multiply(gyT)) #element-wise product
 
-        Tz = np.pad(self.T, (0, self.nx*self.ny), 'constant', constant_values=self.T0)
+        Tz = np.pad(self.T, (0, self.nx*self.ny), 'constant', constant_values=1)
         gzTz = np.reshape(self.gz * Tz, (-1,1))
         drhoz = diags([0.5,0.5], [0, -1], shape=[self.nz,self.nz], format="lil")
         drhoz[0,0]=0
@@ -117,7 +117,7 @@ class ConnectivityConstraint(object):
     def __call__(self, rho_vector):
         Td = self.forward(rho_vector)
         grad = self.calculate_grad()
-        return Td-self.thresh*self.T0, grad
+        return Td-self.thresh, grad
     def calculate_fd_grad(self, rho_vector, num, db=1e-4):
         fdidx = np.random.choice(self.n, num)
         fdgrad = []
