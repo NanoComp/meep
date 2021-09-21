@@ -20,15 +20,55 @@
    h5fields.cpp
 */
 
+#include <algorithm>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 
 #include "meep_internals.hpp"
+#include "config.h"
+
+#define UNUSED(x) (void)x // silence compiler warnings
+
+namespace meep {
+namespace {
 
 using namespace std;
 
-namespace meep {
+#ifdef HAVE_MPI
+constexpr size_t ARRAY_TO_ALL_BUFSIZE = 1 << 16; // Use (64k * 8 bytes) of buffer
+#endif
+
+/***************************************************************/
+/* repeatedly call sum_to_all to consolidate all entries of    */
+/* an array on all cores.                                      */
+/* array: in/out ptr to the data                               */
+/* array_size: data size in multiples of sizeof(double)        */
+/***************************************************************/
+double *array_to_all(double *array, size_t array_size) {
+#ifdef HAVE_MPI
+  double *buffer = new double[ARRAY_TO_ALL_BUFSIZE];
+  ptrdiff_t offset = 0;
+  size_t remaining = array_size;
+  while (remaining != 0) {
+    size_t xfer_size = (remaining > ARRAY_TO_ALL_BUFSIZE ? ARRAY_TO_ALL_BUFSIZE : remaining);
+    sum_to_all(array + offset, buffer, xfer_size);
+    memcpy(array + offset, buffer, xfer_size * sizeof(double));
+    remaining -= xfer_size;
+    offset += xfer_size;
+  }
+  delete[] buffer;
+#else
+  UNUSED(array_size);
+#endif
+  return array;
+}
+
+complex<double> *array_to_all(complex<double> *array, size_t array_size) {
+  return (complex<double> *)array_to_all((double *)array, 2 * array_size);
+}
+
+} // namespace
 
 /***************************************************************************/
 
@@ -77,8 +117,6 @@ typedef struct {
   bool snap;
   bool empty_dim[5];
 } array_slice_data;
-
-#define UNUSED(x) (void)x // silence compiler warnings
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
 static complex<double> default_field_func(const complex<double> *fields, const vec &loc, void *data_) {
@@ -174,18 +212,18 @@ static void get_source_slice_chunkloop(fields_chunk *fc, int ichnk, component cg
   if (has_direction(dim, Y)) NY = ((slice_imax - slice_imin).in_direction(Y) / 2) + 1;
 
   for (int ft = 0; ft < NUM_FIELD_TYPES; ft++)
-    for (src_vol *s = fc->sources[ft]; s; s = s->next) {
+    for (const src_vol &s : fc->get_sources(static_cast<field_type>(ft))) {
       component cS = S.transform(data->source_component, -sn);
-      if (s->c != cS) continue;
+      if (s.c != cS) continue;
 
       // loop over point sources in this src_vol. for each point source,
       // the src_vol stores the amplitude and the global index of the
       // symmetry-parent grid point, from which we need to compute the
       // local index of the symmetry-child grid point within this
       // slice (that is, if it even lies within the slice)
-      for (size_t npt = 0; npt < s->npts; npt++) {
-        complex<double> amp = s->A[npt];
-        ptrdiff_t chunk_index = s->index[npt];
+      for (size_t npt = 0; npt < s.num_points(); npt++) {
+        const complex<double> &amp = s.amplitude_at(npt);
+        ptrdiff_t chunk_index = s.index_at(npt);
         ivec iloc_parent = fc->gv.iloc(Dielectric, chunk_index);
         ivec iloc_child = S.transform(iloc_parent, sn) + shift;
         if (!in_subgrid(slice_imin, iloc_child, slice_imax)) continue; // source point outside slice
@@ -240,7 +278,7 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
-    start[i] = (min(isd, ied) - data->min_corner.in_direction(d)) / 2;
+    start[i] = (std::min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
     slice_size *= count[i];
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
@@ -389,30 +427,6 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
 }
 
 /***************************************************************/
-/* repeatedly call sum_to_all to consolidate all entries of    */
-/* an array on all cores.                                      */
-/***************************************************************/
-#define BUFSIZE 1 << 16 // use 64k buffer
-double *array_to_all(double *array, size_t array_size) {
-  double *buffer = new double[BUFSIZE];
-  ptrdiff_t offset = 0;
-  size_t remaining = array_size;
-  while (remaining != 0) {
-    size_t xfer_size = (remaining > BUFSIZE ? BUFSIZE : remaining);
-    sum_to_all(array + offset, buffer, xfer_size);
-    memcpy(array + offset, buffer, xfer_size * sizeof(double));
-    remaining -= xfer_size;
-    offset += xfer_size;
-  }
-  delete[] buffer;
-  return array;
-}
-
-complex<double> *array_to_all(complex<double> *array, size_t array_size) {
-  return (complex<double> *)array_to_all((double *)array, 2 * array_size);
-}
-
-/***************************************************************/
 /* given a volume, fill in the dims[] and dirs[] arrays        */
 /* describing the array slice needed to store field data for   */
 /* all grid points in the volume.                              */
@@ -468,7 +482,7 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
   int rank = 0;
   size_t slice_size = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (rank >= 3) abort("too many dimensions in array_slice");
+    if (rank >= 3) meep::abort("too many dimensions in array_slice");
     size_t n = (data->max_corner.in_direction(d) - data->min_corner.in_direction(d)) / 2 + 1;
     if (where.in_direction(d) == 0.0 && collapse_empty_dimensions) n = 1;
     if (n > 1) {
@@ -547,7 +561,7 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   size_t reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
   size_t reduced_array_size = data_size * reduced_grid_size;
   double *reduced_array = new double[reduced_array_size];
-  if (!reduced_array) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
+  if (!reduced_array) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
   memset(reduced_array, 0, reduced_array_size * sizeof(double));
 
   size_t n[3] = {0, 0, 0};
@@ -621,7 +635,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       break;
     }
   if (needs_dielectric) FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninveps == 3) abort("more than 3 field components??");
+      if (data.ninveps == 3) meep::abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
@@ -636,7 +650,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
       break;
     }
   if (needs_permeability) FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninvmu == 3) abort("more than 3 field components??");
+      if (data.ninvmu == 3) meep::abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;
@@ -724,7 +738,7 @@ complex<double> *fields::get_source_slice(const volume &where, component source_
   data.slice_imin = gv.round_vec(min_max_loc[0]);
   data.slice_imax = gv.round_vec(min_max_loc[1]);
   data.slice = new complex<double>[slice_size];
-  if (!data.slice) abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
+  if (!data.slice) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
 

@@ -300,7 +300,7 @@ As an additional demonstration of the mode-decomposition feature, the reflectanc
 
 The following script is adapted from the previous binary-grating example involving a [normally-incident planewave](#transmittance-spectra-for-planewave-at-normal-incidence). The total reflectance, transmittance, and their sum are displayed at the end of the simulation on two separate lines prefixed by `mode-coeff:` and `poynting-flux:`.
 
-Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. A narrow bandwidth pulse is used in order to mitigate the intrinsic discretization effects of the [Yee grid](../Yee_Lattice.md) for oblique planewaves. Also, the `stop_when_fields_decayed` termination criteria is replaced with `until_after_sources`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
+Results are computed for a single wavelength of 0.5 μm. The pulsed planewave is incident at an angle of 10.7°. Its spatial profile is defined using the source amplitude function `pw_amp`. This [anonymous function](https://en.wikipedia.org/wiki/Anonymous_function) takes two arguments, the wavevector and a point in space (both `mp.Vector3`s), and returns a function of one argument which defines the planewave amplitude at that point. Even though we are computing the reflectance and transmittance at a single wavelength, the choice of the bandwidth of the pulsed source is important. This is because a broad-bandwidth source generates glancing-angle waves which are poorly absorbed by the PML (or by an absorber) which in turn prevents the simulation from terminating as the fields do not decay away. The solution is to use a narrow-bandwidth pulse which limits the generation of glancing-angle waves. Because launching glancing-angle waves is generally unavoidable, the `sim.run(until_after_sources=mp.stop_when_fields_decayed(...))` termination criteria is replaced with a fixed runtime via `sim.run(until_after_sources=200)`. As a general rule of thumb, the more oblique the planewave source, the longer the run time required to ensure accurate results. There is an additional line monitor between the source and the grating for computing the reflectance. The angle of each reflected/transmitted mode, which can be positive or negative, is computed using its dominant planewave vector. Since the oblique source breaks the symmetry in the $y$ direction, each diffracted order must be computed separately. In total, there are 59 reflected and 39 transmitted orders.
 
 The simulation script is in [examples/binary_grating_oblique.py](https://github.com/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.py). The notebook is [examples/binary_grating_oblique.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/binary_grating_oblique.ipynb).
 
@@ -439,7 +439,7 @@ for nm in range(nm_t):
   print("tran:, {:2d}, {:6.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
   Tsum += Tmode
 
-print("mode-coeff:, {:.6f}, {:.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
+print("mode-coeff:, {:.6f}, {:11.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
 
 r_flux = mp.get_fluxes(refl_flux)
 t_flux = mp.get_fluxes(tran_flux)
@@ -483,7 +483,7 @@ The mode number is equivalent to the band index from the MPB calculation. The or
 The two main lines of the output are:
 
 ```
-mode-coeff:, 0.061007, 0.937897, 0.998904
+mode-coeff:,    0.061007, 0.937897, 0.998904
 poynting-flux:, 0.061063, 0.938384, 0.999447
 ```
 

@@ -1,3 +1,4 @@
+#include <memory>
 #include <math.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -10,6 +11,8 @@
 #include "config.h"
 using namespace meep;
 using std::complex;
+using std::max;
+using std::min;
 
 const double xsize = 2.0;
 const double ysize = 2.0;
@@ -45,12 +48,12 @@ symmetry make_rotate4z(const grid_volume &gv) { return rotate4(Z, gv); }
 
 typedef symmetry (*symfunc)(const grid_volume &);
 
-const double tol = sizeof(realnum) == sizeof(float) ? 1e-4 : 1e-8;
+const double tol = sizeof(realnum) == sizeof(float) ? 2e-4 : 1e-8;
 double compare(double a, double b, const char *nam, size_t i0, size_t i1, size_t i2) {
   if (fabs(a - b) > tol * tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a - b));
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
-    abort("Error in %s at (%zd,%zd,%zd)\n", nam, i0, i1, i2);
+    meep::abort("Error in %s at (%zd,%zd,%zd)\n", nam, i0, i1, i2);
   }
   return fabs(a - b);
 }
@@ -89,8 +92,12 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
   sync();
   file = f.open_h5file(name, h5file::READONLY);
 
-  char *str = file->read("stringtest");
-  if (strcmp(str, "Hello, world!\n")) abort("Failed to read back string test from %s...", name);
+  {
+    char *str = file->read("stringtest");
+    if (strcmp(str, "Hello, world!\n"))
+      meep::abort("Failed to read back string test from %s...", name);
+    delete[] str;
+  }
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
@@ -116,9 +123,9 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
 
     realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
-    if (!h5data) abort("failed to read dataset %s:%s\n", name, dataname);
+    if (!h5data) meep::abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
-      abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
+      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
     if (expected_rank == 1 && file_gv.in_direction_min(X) == file_gv.in_direction_max(X)) {
       dims[1] = dims[0];
       dims[0] = 1;
@@ -152,9 +159,9 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
 
         double err =
             compare(h5data[idx], get_reim(f.get_field(cs, loc) * ph, reim), name, i0, i1, 0);
-        err_max = max(err, err_max);
-        data_min = min(data_min, h5data[idx]);
-        data_max = max(data_max, h5data[idx]);
+        err_max = max<double>(err, err_max);
+        data_min = min<double>(data_min, h5data[idx]);
+        data_max = max<double>(data_max, h5data[idx]);
       }
     }
     delete[] h5data;
@@ -198,8 +205,12 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
   sync();
   file = f.open_h5file(name, h5file::READONLY);
 
-  char *str = file->read("stringtest");
-  if (strcmp(str, "Hello, world!\n")) abort("Failed to read back string test from %s...", name);
+  {
+    char *str = file->read("stringtest");
+    if (strcmp(str, "Hello, world!\n"))
+      meep::abort("Failed to read back string test from %s...", name);
+    delete[] str;
+  }
 
   // compute corner coordinate of file data
   vec loc0(file_gv.get_min_corner());
@@ -225,9 +236,9 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
 
     realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 3, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
-    if (!h5data) abort("failed to read dataset %s:%s\n", name, dataname);
+    if (!h5data) meep::abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
-      abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
+      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
     vec loc(loc0.dim);
     for (size_t i0 = 0; i0 < dims[0]; ++i0) {
       for (size_t i1 = 0; i1 < dims[1]; ++i1) {
@@ -260,8 +271,8 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
           double err =
               compare(h5data[idx], get_reim(f.get_field(cs, loc) * ph, reim), name, i0, i1, i2);
           err_max = max(err, err_max);
-          data_min = min(data_min, h5data[idx]);
-          data_max = max(data_max, h5data[idx]);
+          data_min = min<double>(data_min, h5data[idx]);
+          data_max = max<double>(data_max, h5data[idx]);
         }
       }
     }
@@ -332,15 +343,15 @@ bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc 
 
     realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
-    if (!h5data) abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
-    if (rank != 1) abort("monitor-point data is not one-dimensional");
-    if (dims[0] != size_t(f.t)) abort("incorrect size of monitor-point data");
+    if (!h5data) meep::abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
+    if (rank != 1) meep::abort("monitor-point data is not one-dimensional");
+    if (dims[0] != size_t(f.t)) meep::abort("incorrect size of monitor-point data");
 
     for (int i = 0; i < f.t; ++i) {
       double err = compare(h5data[i], get_reim(mon[i], reim), name, i, 0, 0);
       err_max = max(err, err_max);
-      data_min = min(data_min, h5data[i]);
-      data_max = max(data_max, h5data[i]);
+      data_min = min<double>(data_min, h5data[i]);
+      data_max = max<double>(data_max, h5data[i]);
     }
     delete[] h5data;
   }
@@ -361,7 +372,7 @@ int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   int chances;
   verbosity = 0;
-  const char *temp_dir = make_output_directory();
+  std::unique_ptr<const char[]> temp_dir(make_output_directory());
 #ifdef HAVE_HDF5
   const double pad1 = 0.314159, pad2 = 0.27183, pad3 = 0.14142;
 
@@ -404,7 +415,7 @@ int main(int argc, char **argv) {
                        gv_2d_name[igv], component_name(tm_c[ic]), use_real ? "_r" : "");
               master_printf("Checking %s...\n", name);
               if (!check_2d(funky_eps_2d, a, splitting, Sf2[iS], Sf2_kx[iS], Sf2_ky[iS], Ez,
-                            tm_c[ic], gv_2d[igv], use_real, gv_2d_rank[igv], name, temp_dir))
+                            tm_c[ic], gv_2d[igv], use_real, gv_2d_rank[igv], name, temp_dir.get()))
                 return 1;
             }
 
@@ -418,7 +429,7 @@ int main(int argc, char **argv) {
                      component_name(tm_c[ic]), use_real ? "_r" : "");
             master_printf("Checking %s...\n", name);
             if (!check_2d_monitor(funky_eps_2d, a, splitting, Sf2[iS], Ez, tm_c[ic],
-                                  vec(pad1, pad2), use_real, name, temp_dir))
+                                  vec(pad1, pad2), use_real, name, temp_dir.get()))
               return 1;
           }
 
@@ -445,13 +456,13 @@ int main(int argc, char **argv) {
                      gv_3d_name[igv], component_name(c3d[ic]), use_real ? "_r" : "");
             master_printf("Checking %s...\n", name);
             if (!check_3d(funky_eps_3d, a, splitting, Sf3[iS], Ez, c3d[ic], gv_3d[igv], use_real,
-                          gv_3d_rank[igv], name, temp_dir))
+                          gv_3d_rank[igv], name, temp_dir.get()))
               return 1;
           }
       }
 #endif /* HAVE_HDF5 */
 
-  delete_directory(temp_dir);
+  delete_directory(temp_dir.get());
 
   return 0;
 }

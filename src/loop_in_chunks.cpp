@@ -293,7 +293,7 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
       e1.set_direction(d, s0.in_direction(d));
     }
     else
-      abort("bug: impossible(?) looping boundaries");
+      meep::abort("bug: impossible(?) looping boundaries");
   }
 }
 
@@ -340,10 +340,10 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, const volume &where,
                             component cgrid, bool use_symmetry, bool snap_empty_dimensions) {
   if (coordinate_mismatch(gv.dim, cgrid))
-    abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n", component_name(cgrid),
+    meep::abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n", component_name(cgrid),
           dimension_name(gv.dim));
   if (where.dim != gv.dim)
-    abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
+    meep::abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
   if (cgrid == Permeability) cgrid = Centered;
 
@@ -459,22 +459,22 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
               e0c.set_direction(d, e1.in_direction(dS));
             }
             if (iecS.in_direction(dS) == iscS.in_direction(dS)) {
-              double w = min(s0c.in_direction(d), e0c.in_direction(d));
+              double w = std::min(s0c.in_direction(d), e0c.in_direction(d));
               s0c.set_direction(d, w);
               e0c.set_direction(d, w);
               s1c.set_direction(d, w);
               e1c.set_direction(d, w);
             }
             else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 1 * 2) {
-              double w = min(s0c.in_direction(d), e1c.in_direction(d));
+              double w = std::min(s0c.in_direction(d), e1c.in_direction(d));
               s0c.set_direction(d, w);
               e1c.set_direction(d, w);
-              w = min(s1c.in_direction(d), e0c.in_direction(d));
+              w = std::min(s1c.in_direction(d), e0c.in_direction(d));
               s1c.set_direction(d, w);
               e0c.set_direction(d, w);
             }
             else if (iecS.in_direction(dS) == iscS.in_direction(dS) + 2 * 2) {
-              double w = min(s1c.in_direction(d), e1c.in_direction(d));
+              double w = std::min(s1c.in_direction(d), e1c.in_direction(d));
               s1c.set_direction(d, w);
               e1c.set_direction(d, w);
             }

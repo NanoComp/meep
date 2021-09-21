@@ -107,6 +107,8 @@ def __init__(self,
              progress_interval=4,
              subpixel_tol=0.0001,
              subpixel_maxeval=100000,
+             loop_tile_base_db=0,
+             loop_tile_base_eh=0,
              ensure_periodicity=True,
              num_chunks=0,
              Courant=0.5,
@@ -114,7 +116,6 @@ def __init__(self,
              filename_prefix=None,
              output_volume=None,
              output_single_precision=False,
-             load_structure='',
              geometry_center=Vector3<0.0, 0.0, 0.0>,
              force_all_components=False,
              split_chunks_evenly=True,
@@ -286,6 +287,13 @@ Python. `Vector3` is a `meep` class.
   the minimum refractive index (usually 1), and in practice $S$ should be slightly
   smaller.
 
++ **`loop_tile_base_db`, `loop_tile_base_eh` [`number`]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
+  of the field updates, Meep has an experimental feature to "tile" the loops over the Yee grid
+  voxels. The splitting of the update loops for step-curl and update-eh into tiles or subdomains
+  involves a recursive-bisection method in which the base case for the number of voxels is
+  specified using these two parameters, respectively. The default value is 0 or no tiling;
+  a typical nonzero value to try would be 10000.
+
 + **`output_volume` [`Volume` class ]** — Specifies the default region of space
   that is output by the HDF5 output functions (below); see also the `Volume` class
   which manages `meep::volume*` objects. Default is `None`, which means that the
@@ -293,11 +301,10 @@ Python. `Vector3` is a `meep` class.
   modify the output volume instead of setting `output_volume` directly.
 
 + **`output_single_precision` [`boolean`]** — Meep performs its computations in
-  [double precision](https://en.wikipedia.org/wiki/double_precision), and by
-  default its output HDF5 files are in the same format. However, by setting this
-  variable to `True` (default is `False`) you can instead output in [single
-  precision](https://en.wikipedia.org/wiki/single_precision) which saves a factor
-  of two in space.
+  [double-precision floating point](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays),
+  and by default its output HDF5 files are in the same format. However, by setting
+  this variable to `True` (default is `False`) you can instead output in single
+  precision which saves a factor of two in space.
 
 + **`progress_interval` [`number`]** — Time interval (seconds) after which Meep
   prints a progress message. Default is 4 seconds.
@@ -314,11 +321,6 @@ Python. `Vector3` is a `meep` class.
   of materials that Meep should look for in the cell in addition to any materials
   that are specified by geometric objects. You should list any materials other
   than scalar dielectrics that are returned by `material_function` here.
-
-+ **`load_structure` [`string`]** — If not empty, Meep will load the structure
-  file specified by this string. The file must have been created by
-  `mp.dump_structure`. Defaults to an empty string. See [Load and Dump
-  Structure](#load-and-dump-structure) for more information.
 
 + **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
   This will cause the `Simulation` to use the chunk layout described by either
@@ -514,10 +516,7 @@ def time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return a list of times spent by each process for a type of work `time_sink` which
-can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
-(`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
-(`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
-(`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
+is the same as for `mean_time_spent_on`.
 
 </div>
 
@@ -534,10 +533,14 @@ def mean_time_spent_on(self, time_sink):
 <div class="method_docstring" markdown="1">
 
 Return the mean time spent by all processes for a type of work `time_sink` which
-can be one of ten integer values `0`-`9`: (`0`) connecting chunks, (`1`) time stepping,
-(`2`) copying boundaries, (`3`) MPI all-to-all communication/synchronization,
-(`4`) MPI one-to-one communication, (`5`) field output, (`6`) Fourier transforming,
-(`7`) MPB mode solver, (`8`) near-to-far field transformation, and (`9`) other.
+can be one of the following integer constants: `0`: "time stepping", `1`: "connecting chunks",
+`2`: "copying boundaries", `3`: "all-all communication", `4`: "1-1 communication",
+`5`: "outputting fields", `6`: "Fourier transforming", `7`: "MPB mode solver",
+`8`: "near-to-far-field transform", `9`: "updating B field", `10`: "updating H field",
+`11`: "updating D field", `12`: "updating E field", `13`: "boundary stepping B",
+`14`: "boundary stepping WH", `15`: "boundary stepping PH", `16`: "boundary stepping H",
+`17`: "boundary stepping D", `18`: "boundary stepping WE", `19`: "boundary stepping PE",
+`20`: "boundary stepping E", `21`: "everything else".
 
 </div>
 
@@ -715,7 +718,7 @@ of the field at that point.
 
 ```python
 def add_dft_fields(self, *args, **kwargs):
-def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False):
+def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -726,10 +729,17 @@ fields for `nfreq` equally spaced frequencies covering the frequency range
 `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily spaced
 frequencies over the `Volume` specified by `where` (default to the entire cell).
 The volume can also be specified via the `center` and `size` arguments. The
-default routine interpolates the Fourier transformed fields at the center of each
-voxel within the specified volume. Alternatively, the exact Fourier transformed
+default routine interpolates the Fourier-transformed fields at the center of each
+voxel within the specified volume. Alternatively, the exact Fourier-transformed
 fields evaluated at each corresponding Yee grid point is available by setting
-`yee_grid` to `True`.
+`yee_grid` to `True`. To reduce the memory-bandwidth burden of accumulating
+DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
 
 </div>
 
@@ -1003,7 +1013,9 @@ def reset_meep(self):
 <div class="method_docstring" markdown="1">
 
 Reset all of Meep's parameters, deleting the fields, structures, etcetera, from
-memory as if you had not run any computations.
+memory as if you had not run any computations. If the `num_chunks` or `chunk_layout`
+attributes have been modified internally, they are reset to their original
+values passed in at instantiation.
 
 </div>
 
@@ -1088,8 +1100,8 @@ Given a bunch of [`FluxRegion`](#fluxregion) objects, you can tell Meep to accum
 <div class="class_members" markdown="1">
 
 ```python
-def add_flux(self, *args):
-def add_flux(fcen, df, nfreq, freq, FluxRegions...):
+def add_flux(self, *args, **kwargs):
+def add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1100,7 +1112,16 @@ they have not yet been initialized), telling Meep to accumulate the appropriate
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a *flux object*, which you can pass to the functions
-below to get the flux spectrum, etcetera.
+below to get the flux spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies. The choice
+of decimation factor should take into account the properties of all sources
+in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
@@ -1347,7 +1368,7 @@ Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to
 
 ```python
 def add_mode_monitor(self, *args, **kwargs):
-def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions...):
+def add_mode_monitor(fcen, df, nfreq, freq, ModeRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1476,8 +1497,8 @@ The usage is similar to the flux spectra: you define a set of [`EnergyRegion`](#
 <div class="class_members" markdown="1">
 
 ```python
-def add_energy(self, *args):
-def add_energy(fcen, df, nfreq, freq, EnergyRegions...):
+def add_energy(self, *args, **kwargs):
+def add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1488,7 +1509,14 @@ if they have not yet been initialized), telling Meep to accumulate the appropria
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return an *energy object*, which you can pass to the functions
-below to get the energy spectrum, etcetera.
+below to get the energy spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
 
 </div>
 
@@ -1702,8 +1730,8 @@ The usage is similar to the [flux spectra](Python_Tutorials/Basics.md#transmitta
 <div class="class_members" markdown="1">
 
 ```python
-def add_force(self, *args):
-def add_force(fcen, df, nfreq, freq, ForceRegions...):
+def add_force(self, *args, **kwargs):
+def add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1714,7 +1742,14 @@ if they have not yet been initialized), telling Meep to accumulate the appropria
 field Fourier transforms for `nfreq` equally spaced frequencies covering the
 frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq` for arbitrarily
 spaced frequencies. Return a `force`object, which you can pass to the functions
-below to get the force spectrum, etcetera.
+below to get the force spectrum, etcetera. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
 
 </div>
 
@@ -1982,7 +2017,7 @@ There are three steps to using the near-to-far-field feature: first, define the 
 
 ```python
 def add_near2far(self, *args, **kwargs):
-def add_near2far(fcen, df, nfreq, freq, Near2FarRegions..., nperiods=1):
+def add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1993,7 +2028,14 @@ fields if they have not yet been initialized), telling Meep to accumulate the
 appropriate field Fourier transforms for `nfreq` equally spaced frequencies
 covering the frequency range `fcen-df/2` to `fcen+df/2` or an array/list `freq`
 for arbitrarily spaced frequencies. Return a `near2far` object, which you can pass
-to the functions below to get the far fields.
+to the functions below to get the far fields. To reduce the memory-bandwidth burden of
+accumulating DFT fields, an integer `decimation_factor` can be specified for updating the DFT
+fields at every `decimation_factor` timesteps. If `decimation_factor` is 0 (the default),
+this value is automatically determined from the
+[Nyquist rate](https://en.wikipedia.org/wiki/Nyquist_rate) of the bandwidth-limited
+sources and this DFT monitor. It can be turned off by setting it to 1. Use this feature
+with care, as the decimated timeseries may be corrupted by
+[aliasing](https://en.wikipedia.org/wiki/Aliasing) of high frequencies.
 
 </div>
 
@@ -2273,13 +2315,15 @@ is a 1d array of `nfreq` dimensions.
 
 These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive $\varepsilon$ and $\mu$ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
 
+For dump_structure and load_structure, when `single_parallel_file=True` (the default) - all chunks write to the same/single file after computing their respective offsets into this file. When set to 'False', each chunk writes writes its data to a separate file that is appropriately named by its chunk index.
+
 
 <a id="Simulation.dump_structure"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def dump_structure(self, fname):
+def dump_structure(self, fname, single_parallel_file=True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2295,7 +2339,7 @@ Dumps the structure to the file `fname`.
 <div class="class_members" markdown="1">
 
 ```python
-def load_structure(self, fname):
+def load_structure(self, fname, single_parallel_file=True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4191,9 +4235,10 @@ class MaterialGrid(object):
 
 <div class="class_docstring" markdown="1">
 
-This class is used to specify materials interpolated from a discrete Cartesian grid. A class object is passed as the
-`material` argument of a [`Block`](#block) geometric object or the `default_material` argument of the
-[`Simulation`](#Simulation) constructor (similar to a material function).
+This class is used to specify materials interpolated from discrete points on a rectilinear grid.
+A class object is passed as the `material` argument of a [`Block`](#block) geometric object or
+the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
+[material function](#medium)).
 
 </div>
 
@@ -4219,30 +4264,43 @@ def __init__(self,
 
 Creates a `MaterialGrid` object.
 
-The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on a Cartesian grid
-by the NumPy array `weights` of size `grid_size` (a 3-tuple or `Vector3` of integers). Elements of the `weights` array must be in the
-range [0,1] where 0 is `medium1` and 1 is `medium2`. Two material types are supported: (1) frequency-independent
-isotropic $\varepsilon$ or $\mu$ and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-materials are bilinearly interpolated from the Cartesian grid to Meep's [Yee grid](Yee_Lattice.md).
+The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
+is defined on discrete points of a rectilinear grid by the NumPy array `weights` of size `grid_size`
+(a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
+depending on the `size` property of the `Block` object as shown in the following example for a 2d
+`MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
+$z$ direction. The grid points are defined at the corners of the voxels.
 
-For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`.
-If you want to use a material grid to define a (nearly) discontinuous, piecewise-constant material that is *either* `medium1`
-or `medium2` almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta`
-to a positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a [level-set
-function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
-$\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
-+\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
-($\beta$: bias or "smoothness" of the turn on) and `eta` ($\eta$: offset for erosion/dilation). The level set provides a general
-approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
-The subpixel smoothing is based on an adaptive quadrature scheme with properties `subpixel_maxeval` and `subpixel_tol` which
-can be specified using the `Simulation` constructor.
+![](images/material_grid.png)
 
-It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
-(e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of
-itself. In the case of spatially overlapping `MaterialGrid` objects (with no intervening objects), any overlapping points are
-computed using the method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product),
-`"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options allow you to combine any material
-grids that overlap in space with no intervening objects.
+Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
+Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ or $\mu$
+and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
+materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
+from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
+
+For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
+`do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
+piecewise-constant material that is *either* `medium1` or `medium2` almost everywhere, you can
+optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
+positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a
+[level-set function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at
+$u(x)=\eta$ with a smoothing factor $\beta$ where $\beta=+\infty$ gives an unsmoothed,
+discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
++\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$
+involving the parameters `beta` ($\beta$: bias or "smoothness" of the turn on) and `eta`
+($\eta$: offset for erosion/dilation). The level set provides a general approach for defining
+a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
+grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
+for level-set functions.
+
+It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
+grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
+given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping
+`MaterialGrid` objects (with no intervening objects), any overlapping points are computed using the
+method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` 
+(product), `"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options
+allow you to combine any material grids that overlap in space with no intervening objects.
 
 </div>
 
@@ -6657,244 +6715,6 @@ the volume as a tuple of `Vector3`.
 </div>
 
 ---
-<a id="DftObj"></a>
-
-### DftObj
-
-```python
-class DftObj(object):
-```
-
-<div class="class_docstring" markdown="1">
-
-Wrapper around dft objects that allows delayed initialization of the structure.
-
-When splitting the structure into chunks for parallel simulations, we want to know all
-of the details of the simulation in order to ensure that each processor gets a similar
-amount of work. The problem with DFTs is that the 'add_flux' style methods immediately
-initialize the structure and fields. So, if the user adds multiple DFT objects to the
-simulation, the load balancing code only knows about the first one and can't split the
-work up nicely. To circumvent this, we delay the execution of the 'add_flux' methods
-as late as possible. When 'add_flux' (or add_near2far, etc.) is called, we:
-
-1. Create an instance of the appropriate subclass of DftObj (DftForce, DftFlux, etc.).
-   Set its args property to the list of arguments passed to add_flux, and set its func
-   property to the 'real' add_flux, which is prefixed by an underscore.
-
-2. Add this DftObj to the list Simulation.dft_objects. When we actually run the
-   simulation, we call Simulation._evaluate_dft_objects, which calls dft.func(*args)
-   for each dft in the list.
-
-If the user tries to access a property or call a function on the DftObj before
-Simulation._evaluate_dft_objects is called, then we initialize the C++ object through
-swigobj_attr and return the property they requested.
-
-</div>
-
-
-
-<a id="DftObj.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftObj`.
-
-</div>
-
-</div>
-
----
-<a id="DftFlux"></a>
-
-### DftFlux
-
-```python
-class DftFlux(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftFlux.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftFlux`.
-
-</div>
-
-</div>
-
----
-<a id="DftForce"></a>
-
-### DftForce
-
-```python
-class DftForce(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftForce.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftForce`.
-
-</div>
-
-</div>
-
----
-<a id="DftNear2Far"></a>
-
-### DftNear2Far
-
-```python
-class DftNear2Far(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftNear2Far.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftNear2Far`.
-
-</div>
-
-</div>
-
-<a id="DftNear2Far.flux"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def flux(self, direction, where, resolution):
-```
-
-<div class="method_docstring" markdown="1">
-
-Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid
-points / distance unit), compute the far fields in `where` (which may lie
-*outside* the cell) in a grid with the given resolution (which may differ from the
-FDTD solution) and return its Poynting flux in `direction` as a list. The dataset
-is a 1d array of `nfreq` dimensions.
-
-</div>
-
-</div>
-
----
-<a id="DftEnergy"></a>
-
-### DftEnergy
-
-```python
-class DftEnergy(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftEnergy.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftEnergy`.
-
-</div>
-
-</div>
-
----
-<a id="DftFields"></a>
-
-### DftFields
-
-```python
-class DftFields(DftObj):
-```
-
-<div class="class_docstring" markdown="1">
-
-
-
-</div>
-
-
-
-<a id="DftFields.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(self, func, args):
-```
-
-<div class="method_docstring" markdown="1">
-
-Construct a `DftFields`.
-
-</div>
-
-</div>
-
----
 <a id="Animate2D"></a>
 
 ### Animate2D
@@ -7355,6 +7175,22 @@ or (b) a leaf with integer value for the process ID `proc_id` in the range betwe
 `proc_id`. Note that the same process ID can be assigned to as many chunks as you want, which means that one
 process timesteps multiple chunks. If you use fewer MPI processes, then the process ID is taken modulo the number
 of processes.
+
+</div>
+
+</div>
+
+<a id="BinaryPartition.print"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def print(self):
+```
+
+<div class="method_docstring" markdown="1">
+
+Pretty-prints the tree structure of the BinaryPartition object.
 
 </div>
 

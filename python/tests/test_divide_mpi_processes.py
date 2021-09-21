@@ -1,5 +1,3 @@
-from __future__ import division
-
 import unittest
 import meep as mp
 
@@ -36,7 +34,8 @@ class TestDivideParallelProcesses(unittest.TestCase):
                                      mp.FluxRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
                                      mp.FluxRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
                                      mp.FluxRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
-                                     mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
+                                     mp.FluxRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1),
+                                     decimation_factor=1)
 
         self.sim.run(until_after_sources=30)
 
@@ -47,8 +46,9 @@ class TestDivideParallelProcesses(unittest.TestCase):
 
         self.assertEqual(fcens[0],1)
         self.assertEqual(fcens[1],0.5)
-        self.assertAlmostEqual(tot_fluxes[0], 9.8628728533)
-        self.assertAlmostEqual(tot_fluxes[1], 19.6537275387)
+        places = 4 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(tot_fluxes[0], 9.8628728533, places=places)
+        self.assertAlmostEqual(tot_fluxes[1], 19.6537275387, places=places)
         
 if __name__ == '__main__':
     unittest.main()

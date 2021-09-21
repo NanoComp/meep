@@ -177,11 +177,11 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
     }
 
     complex<double> integrand = data->integrand(fvals, loc, data->integrand_data_);
-    maxabs = max(maxabs, abs(integrand));
+    maxabs = std::max(maxabs, abs(integrand));
     sum += integrand * IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
   }
 
-  data->maxabs = max(data->maxabs, maxabs);
+  data->maxabs = std::max(data->maxabs, maxabs);
   data->sum += sum;
 }
 
@@ -190,7 +190,7 @@ complex<double> fields::integrate2(const fields &fields2, int num_fvals1,
                                    const component *components2, field_function integrand,
                                    void *integrand_data_, const volume &where, double *maxabs) {
   if (!equal_layout(fields2))
-    abort("invalid call to integrate2: fields must have equal grid layout");
+    meep::abort("invalid call to integrate2: fields must have equal grid layout");
 
   if (num_fvals2 == 0)
     return integrate(num_fvals1, components1, integrand, integrand_data_, where, maxabs);
@@ -244,7 +244,7 @@ complex<double> fields::integrate2(const fields &fields2, int num_fvals1,
         break;
       }
   if (needs_dielectric) FOR_ELECTRIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninveps == 3) abort("more than 3 field components??");
+      if (data.ninveps == 3) meep::abort("more than 3 field components??");
       data.inveps_cs[data.ninveps] = c;
       data.inveps_ds[data.ninveps] = component_direction(c);
       ++data.ninveps;
@@ -265,7 +265,7 @@ complex<double> fields::integrate2(const fields &fields2, int num_fvals1,
         break;
       }
   if (needs_permeability) FOR_MAGNETIC_COMPONENTS(c) if (gv.has_field(c)) {
-      if (data.ninvmu == 3) abort("more than 3 field components??");
+      if (data.ninvmu == 3) meep::abort("more than 3 field components??");
       data.invmu_cs[data.ninvmu] = c;
       data.invmu_ds[data.ninvmu] = component_direction(c);
       ++data.ninvmu;

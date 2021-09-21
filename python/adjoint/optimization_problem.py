@@ -40,8 +40,8 @@ class DesignRegion(object):
         f = sim.fields
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
-        mp._get_gradient(grad, fields_a, fields_f, vol, np.array(frequencies),
-                         geom_list, f)
+        sim_is_cylindrical = (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical
+        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),geom_list,f, sim_is_cylindrical)
 
         return np.squeeze(grad).T
 
@@ -69,14 +69,16 @@ class OptimizationProblem(object):
         fcen=None,
         df=None,
         nf=None,
-        decay_dt=50,
-        decay_fields=[mp.Ez],
-        decay_by=1e-6,
+        decay_by=1e-11,
+        decimation_factor=0,
         minimum_run_time=0,
-        maximum_run_time=None,
+        maximum_run_time=None
     ):
 
         self.sim = simulation
+        self.components = [mp.Ex,mp.Ey,mp.Ez]
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            self.components = [mp.Er,mp.Ep,mp.Ez]
 
         if isinstance(objective_functions, list):
             self.objective_functions = objective_functions
@@ -126,8 +128,7 @@ class OptimizationProblem(object):
                     2))  # index of center frequency
 
         self.decay_by = decay_by
-        self.decay_fields = decay_fields
-        self.decay_dt = decay_dt
+        self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
 
@@ -211,19 +212,24 @@ class OptimizationProblem(object):
         # register design region
         self.design_region_monitors = [
             self.sim.add_dft_fields(
-                [mp.Ex, mp.Ey, mp.Ez],
+                self.components,
                 self.frequencies,
                 where=dr.volume,
                 yee_grid=True,
+                decimation_factor=self.decimation_factor,
             ) for dr in self.design_regions
         ]
 
         # store design region voxel parameters
         self.design_grids = []
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            YeeDims = namedtuple('YeeDims', ['Er','Ep','Ez'])
+        else:
+            YeeDims = namedtuple('YeeDims', ['Ex','Ey','Ez'])
         for drm in self.design_region_monitors:
             s = [
                 self.sim.get_array_slice_dimensions(c, vol=drm.where)[0]
-                for c in [mp.Ex, mp.Ey, mp.Ez]
+                for c in self.components
             ]
             self.design_grids += [YeeDims(*s)]
 
@@ -232,16 +238,10 @@ class OptimizationProblem(object):
         self.prepare_forward_run()
 
         # Forward run
-        self.sim.run(until_after_sources=stop_when_dft_decayed(
-            self.sim,
-            self.design_region_monitors,
-            self.decay_dt,
-            self.decay_fields,
-            self.fcen_idx,
+        self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
             self.decay_by,
-            True,
             self.minimum_run_time,
-            self.maximum_run_time,
+            self.maximum_run_time
         ))
 
         # record objective quantities from user specified monitors
@@ -260,7 +260,7 @@ class OptimizationProblem(object):
             for c in dg
         ] for dg in self.design_grids]
         for nb, dgm in enumerate(self.design_region_monitors):
-            for ic, c in enumerate([mp.Ex, mp.Ey, mp.Ez]):
+            for ic, c in enumerate(self.components):
                 for f in range(self.nf):
                     self.d_E[nb][ic][f, :, :, :] = atleast_3d(
                         self.sim.get_dft_array(dgm, c, f))
@@ -287,6 +287,12 @@ class OptimizationProblem(object):
     def adjoint_run(self):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
+
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            self.sim.m = -self.sim.m
+
+        if self.sim.k_point:
+            self.sim.k_point *= -1
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
@@ -297,24 +303,19 @@ class OptimizationProblem(object):
             # register design flux
             self.design_region_monitors = [
                 self.sim.add_dft_fields(
-                    [mp.Ex, mp.Ey, mp.Ez],
+                    self.components,
                     self.frequencies,
                     where=dr.volume,
                     yee_grid=True,
+                    decimation_factor=self.decimation_factor,
                 ) for dr in self.design_regions
             ]
 
             # Adjoint run
-            self.sim.run(until_after_sources=stop_when_dft_decayed(
-                self.sim,
-                self.design_region_monitors,
-                self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.decay_by,
-                True,
                 self.minimum_run_time,
-                self.maximum_run_time,
+                self.maximum_run_time
             ))
 
             # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
@@ -323,12 +324,19 @@ class OptimizationProblem(object):
                 for c in dg
             ] for dg in self.design_grids])
             for nb, dgm in enumerate(self.design_region_monitors):
-                for ic, c in enumerate([mp.Ex, mp.Ey, mp.Ez]):
+                for ic, c in enumerate(self.components):
                     for f in range(self.nf):
-                        self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(
-                            self.sim.get_dft_array(dgm, c, f))
+                        if (self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL):
+                            # Addtional factor of 2 for cyldrical coordinate
+                            self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
+                        else:
+                            self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(self.sim.get_dft_array(dgm, c, f))
+
+        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            self.sim.m = -self.sim.m
 
         # update optimizer's state
+        if self.sim.k_point: self.sim.k_point *= -1
         self.current_state = "ADJ"
 
     def calculate_gradient(self):
@@ -423,16 +431,10 @@ class OptimizationProblem(object):
                 self.forward_monitors.append(
                     m.register_monitors(self.frequencies))
 
-            self.sim.run(until_after_sources=stop_when_dft_decayed(
-                self.sim,
-                self.forward_monitors,
-                self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.decay_by,
-                True,
                 self.minimum_run_time,
-                self.maximum_run_time,
+                self.maximum_run_time
             ))
 
             # record final objective function value
@@ -458,16 +460,10 @@ class OptimizationProblem(object):
                     m.register_monitors(self.frequencies))
 
             # add monitor used to track dft convergence
-            self.sim.run(until_after_sources=stop_when_dft_decayed(
-                self.sim,
-                self.forward_monitors,
-                self.decay_dt,
-                self.decay_fields,
-                self.fcen_idx,
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
                 self.decay_by,
-                True,
                 self.minimum_run_time,
-                self.maximum_run_time,
+                self.maximum_run_time
             ))
 
             # record final objective function value
@@ -523,93 +519,6 @@ class OptimizationProblem(object):
             self.prepare_forward_run()
 
         self.sim.plot2D(**kwargs)
-
-
-def stop_when_dft_decayed(
-    simob,
-    mon,
-    dt,
-    c,
-    fcen_idx,
-    decay_by,
-    yee_grid=False,
-    minimum_run_time=0,
-    maximum_run_time=None,
-):
-    '''Step function that monitors the relative change in DFT fields for a list of monitors.
-
-    mon ............. a list of monitors
-    c ............... a list of components to monitor
-
-    '''
-    # get monitor dft output array dimensions
-    dims = []
-    for m in mon:
-        ci_dims = []
-        for ci in c:
-            comp = ci if yee_grid else mp.Dielectric
-            ci_dims += [simob.get_array_slice_dimensions(comp, vol=m.where)[0]]
-        dims.append(ci_dims)
-
-    # Record data in closure so that we can persitently edit
-    closure = {'previous_fields': [[None for di in d] for d in dims], 't0': 0}
-
-    def _stop(sim):
-        if sim.round_time() <= dt + closure['t0']:
-            return False
-        elif maximum_run_time and sim.round_time() > maximum_run_time:
-            return True
-        else:
-            previous_fields = closure['previous_fields']
-
-            # Pull all the relevant frequency and spatial dft points
-            relative_change = []
-            current_fields = [[0 for di in d] for d in dims]
-            for mi, m in enumerate(mon):
-                for ic, cc in enumerate(c):
-                    if isinstance(m, mp.DftFlux):
-                        current_fields[mi][ic] = mp.get_fluxes(m)[fcen_idx]
-                    elif isinstance(m, mp.DftFields):
-                        current_fields[mi][ic] = atleast_3d(
-                            sim.get_dft_array(m, cc, fcen_idx))
-                    elif isinstance(m, mp.simulation.DftNear2Far):
-                        current_fields[mi][ic] = atleast_3d(
-                            sim.get_dft_array(m, cc, fcen_idx))
-                    else:
-                        raise TypeError(
-                            "Monitor of type {} not supported".format(type(m)))
-
-                    if previous_fields[mi][ic] is not None:
-                        if np.sum(
-                                np.abs(previous_fields[mi][ic] -
-                                       current_fields[mi][ic])) == 0:
-                            relative_change.append(0)
-                        elif np.all(np.abs(previous_fields[mi][ic])):
-                            relative_change_raw = np.abs(
-                                previous_fields[mi][ic] -
-                                current_fields[mi][ic]) / np.abs(
-                                    previous_fields[mi][ic])
-                            relative_change.append(
-                                np.mean(relative_change_raw.flatten())
-                            )  # average across space and frequency
-                        else:
-                            relative_change.append(1)
-                    else:
-                        relative_change.append(1)
-
-            relative_change = np.mean(
-                relative_change)  # average across monitors
-            closure['previous_fields'] = current_fields
-            closure['t0'] = sim.round_time()
-
-            if mp.verbosity > 0:
-                fmt = "DFT decay(t = {0:1.1f}): {1:0.4e}"
-                print(fmt.format(sim.meep_time(), np.real(relative_change)))
-            return relative_change <= decay_by and sim.round_time(
-            ) >= minimum_run_time
-
-    return _stop
-
 
 def atleast_3d(*arys):
     from numpy import array, asanyarray, newaxis

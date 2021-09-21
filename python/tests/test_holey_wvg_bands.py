@@ -1,5 +1,5 @@
-import unittest
 import meep as mp
+import unittest
 
 
 class TestHoleyWvgBands(unittest.TestCase):
@@ -65,9 +65,10 @@ class TestHoleyWvgBands(unittest.TestCase):
         ]
 
         self.assertTrue(h.modes)
+        places = 4 if mp.is_single_precision() else 7
         for (r, i), m in zip(expected, h.modes):
-            self.assertAlmostEqual(m.freq, r)
-            self.assertAlmostEqual(m.decay, i)
+            self.assertAlmostEqual(m.freq, r, places=places)
+            self.assertAlmostEqual(m.decay, i, places=places)
 
 
 if __name__ == '__main__':

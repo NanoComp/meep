@@ -102,7 +102,7 @@ complex<double> *make_casimir_gfunc(double T, double dt, double sigma, field_typ
   fftw_execute(p);
   fftw_destroy_plan(p);
 #else
-  abort("make_casimir_g requires some version of FFTW");
+  meep::abort("make_casimir_g requires some version of FFTW");
 #endif
 
   int N = int(ceil(T / dt));
@@ -211,11 +211,11 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
   direction dcomponent = NO_DIRECTION; // relevant component of field to integrate over
   double coefficient = 1.0;
 
-  if (where.dim != gv.dim) abort("invalid dimesionality in casimir_stress_dct_integral");
+  if (where.dim != gv.dim) meep::abort("invalid dimesionality in casimir_stress_dct_integral");
   if (coordinate_mismatch(gv.dim, dforce) || coordinate_mismatch(gv.dim, dsource))
-    abort("invalid directions in casimir_stress_dct_integral");
-  if (dnormal == NO_DIRECTION) abort("invalid integration surface in casimir_stress_dct_integral");
-  if (ft != E_stuff && ft != H_stuff) abort("invalid field type in casimir_stress_dct_integral");
+    meep::abort("invalid directions in casimir_stress_dct_integral");
+  if (dnormal == NO_DIRECTION) meep::abort("invalid integration surface in casimir_stress_dct_integral");
+  if (ft != E_stuff && ft != H_stuff) meep::abort("invalid field type in casimir_stress_dct_integral");
 
   if (dforce != dnormal && dsource != dnormal)
     return 0.0;

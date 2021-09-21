@@ -40,7 +40,7 @@ class TestNear2FarPeriodicBoundaries(unittest.TestCase):
         res = [20,25,30]
         norm = np.empty(3)
 
-        for j in range(3):        
+        for j in range(3):
             sim = mp.Simulation(resolution=res[j],
                                 cell_size=mp.Vector3(sx,sy),
                                 boundary_layers=pml_layers,
@@ -59,10 +59,10 @@ class TestNear2FarPeriodicBoundaries(unittest.TestCase):
 
             norm[j] = LA.norm(n2f_Ez['Ez']-dft_Ez[1:-1])
             print("norm:, {}, {:.5f}".format(res[j],norm[j]))
-            sim.reset_meep()        
+            sim.reset_meep()
 
         self.assertGreater(norm[0],norm[1])
         self.assertGreater(norm[1],norm[2])
 
 if __name__ == '__main__':
-    unittest.main()    
+    unittest.main()

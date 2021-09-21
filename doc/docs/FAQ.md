@@ -15,7 +15,7 @@ Meep is a [free and open-source](https://en.wikipedia.org/wiki/Free_and_open-sou
 
 ### Who are the developers of Meep?
 
-Meep was originally developed as part of graduate research at MIT. The project has been under continuous development for nearly 20 years. It is currently maintained by [Simpetus](http://www.simpetus.com) and the developer community on [GitHub](https://github.com/NanoComp/meep).
+Meep was originally developed as part of graduate research at MIT. The project has been under continuous development for nearly 20 years. It is currently maintained by an active developer community on [GitHub](https://github.com/NanoComp/meep).
 
 ### Where can I ask questions regarding Meep?
 
@@ -31,7 +31,7 @@ Yes. The technical details of Meep's inner workings are described in the peer-re
 
 ### Where can I find a list of projects which have used Meep?
 
-For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
+For a list of more than 2500 published works which have used Meep, see the [Google Scholar citation page](https://scholar.google.com/scholar?hl=en&q=meep+software) as well as that for the [Meep manuscript](https://scholar.google.com/scholar?cites=17712807607104508775) and the [subpixel smoothing reference](https://scholar.google.com/scholar?cites=410731148689673259). For examples based on technology applications, see this [projects page](http://www.simpetus.com/projects.html).
 
 ### Can I access Meep in the public cloud?
 
@@ -42,7 +42,7 @@ Installation
 
 ### Where can I install Meep?
 
-Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, from notebooks to desktops to supercomputers. [Conda packages](Installation.md#conda-packages) of the latest released version are available for Linux and macOS. There are also Conda packages of [nightly development builds](Installation.md#nightly-builds) which can be used to experiment with new features. Installing Meep from the source code requires some understanding of Unix, especially to install the various dependencies. Installation shell scripts are available for [Ubuntu 16.04 and 18.04](Build_From_Source.md#building-from-source) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
+Meep runs on any Unix-like operating system, such as Linux, macOS, and FreeBSD, from notebooks to desktops to supercomputers. [Conda packages](Installation.md#conda-packages) of the latest released version are available for Linux and macOS. Installing Meep from the source code requires some understanding of Unix, especially to install the various dependencies. Installation shell scripts are available for [Ubuntu 16.04 and 18.04](Build_From_Source.md#building-from-source) and [macOS Sierra](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/msg05811.html).
 
 ### Can I install Meep on Windows machines?
 
@@ -50,7 +50,7 @@ Yes. For Windows 10, you can install the [Ubuntu terminal](https://www.microsoft
 
 ### Are there precompiled binary packages for Ubuntu?
 
-Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages) which contain the official releases as well as nightly builds of the master branch of the source repository.
+Yes. Ubuntu and Debian packages can be obtained via the package manager [APT](https://en.wikipedia.org/wiki/APT_(Debian)) as described in [Download](Download.md#precompiled-packages-for-ubuntu). However, the Meep packages for Ubuntu 16.04 ([serial](https://packages.ubuntu.com/xenial/meep) and [parallel](https://packages.ubuntu.com/xenial/meep-openmpi)) and 18.04 ([serial](https://packages.ubuntu.com/bionic/meep) and [parallel](https://packages.ubuntu.com/bionic/meep-openmpi)) are for [version 1.3](https://github.com/NanoComp/meep/releases/tag/1.3) (September 2017) which is out of date. The Meep package for Ubuntu is in the process of being updated and will likely appear in Ubuntu 19.10 as derived from the [unstable Debian package](https://packages.debian.org/unstable/meep). In the meantime, since the [Scheme interface](Scheme_User_Interface.md) is no longer being supported and has been replaced by the [Python interface](Python_User_Interface.md), you can use the [Conda packages](Installation.md#conda-packages).
 
 ### Guile is installed, but configure complains that it can't find `guile`
 
@@ -324,7 +324,7 @@ Usage: Structures
 
 ### What are the different ways to define a structure?
 
-There are five ways to define a structure: (1) the [`GeometricObject`](Python_User_Interface.md#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface.md#geometric-object) (Scheme) class used to specify a collection of predefined shapes including `Prism`, `Sphere`, `Cylinder`, `Cone`, `Block`, and `Ellipsoid`, (2) [`material_function`](Python_User_Interface.md#material-function) (Python) or [`material-function`](Scheme_User_Interface.md#material-function) (Scheme) used to define an arbitrary function: for a given position in the cell, return the $\varepsilon$/$\mu$ at that point, (3) import the scalar, real-valued, frequency-independent permittivity from an HDF5 file (which can be created using e.g., [h5py](http://docs.h5py.org/en/stable/)) via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter, (4) import planar geometries from a [GDSII file](Python_User_Interface.md#gdsii-support), or (5) load the raw $\varepsilon$/$\mu$ saved from a previous simulation using [`load_structure`](Python_User_Interface.md#load-and-dump-structure) (Python) or [`meep-structure-load`](Scheme_User_Interface.md#load-and-dump-structure) (Scheme). Combinations of (1), (2), and (4) are allowed but not (3) or (5).
+There are six ways to define a structure: (1) the [`GeometricObject`](Python_User_Interface.md#geometricobject) (Python) or [`geometric-object`](Scheme_User_Interface.md#geometric-object) (Scheme) class used to specify a collection of predefined shapes including `Prism`, `Sphere`, `Cylinder`, `Cone`, `Block`, and `Ellipsoid`, (2) [`material_function`](Python_User_Interface.md#material-function) (Python) or [`material-function`](Scheme_User_Interface.md#material-function) (Scheme) used to define an arbitrary function: for a given position in the cell, return the $\varepsilon$/$\mu$ at that point, (3) import the scalar, real-valued, frequency-independent permittivity from an HDF5 file (which can be created using e.g., [h5py](http://docs.h5py.org/en/stable/)) via the `epsilon_input_file` (Python) or `epsilon-input-file` (Scheme) input parameter, (4) import planar geometries from a [GDSII file](Python_User_Interface.md#gdsii-support), (5) load the raw $\varepsilon$/$\mu$ saved from a previous simulation using [`load_structure`](Python_User_Interface.md#load-and-dump-structure) (Python) or [`meep-structure-load`](Scheme_User_Interface.md#load-and-dump-structure) (Scheme), or (6) a [`MaterialGrid`](Python_User_Interface.md#materialgrid) used to specify a pixel grid. Combinations of (1), (2), (4), and (6) are allowed but not (3) or (5).
 
 ### Does Meep support importing GDSII files?
 
@@ -360,6 +360,8 @@ Subpixel averaging affects pixels that contain **at most one** object interface.
 ### Can subpixel averaging be applied to a user-defined material function?
 
 Yes but its performance tends to be slow. Subpixel averaging is performed by default (`eps_averaging=True`) for [`GeometricObject`](Python_User_Interface.md#geometricobject)s (e.g. `Cylinder`, `Block`, `Prism`, etc.) where the material filling fraction and normal vector of boundary pixels, which are used to form the [effective permittivity](Subpixel_Smoothing.md#smoothed-permittivity-tensor-via-perturbation-theory), can be computed analytically. This procedure typically takes a few seconds for a 3d cell. Computing these quantities for a user-defined material function using adaptive numerical integration can be *very* slow (minutes, hours) and also less accurate than the analytic approach. As a result, simulations involving a discontinuous `material_function` may require disabling subpixel averaging (the default) and increasing the `resolution` for accurate results. For an example, see [Subpixel Smoothing/Enabling Averaging for Material Function](Subpixel_Smoothing.md#enabling-averaging-for-material-function).
+
+Also, fast and accurate subpixel smoothing is available for the [`MaterialGrid`](Python_User_Interface.md#materialgrid) which is based on an analytic formulation.
 
 Usage: Performance
 ------------------
@@ -471,8 +473,6 @@ Yes. You can use the [`set_boundary`](Python_User_Interface.md#field-computation
 
 To model e.g., fiber waveguides with 2d claddings, diffractive binary gratings with arbitrary incident planewaves in 3d, etc. in Cartesian coordinates, you would create a 2d cell in the $xy$ plane and specify a `k_point` with *non-zero* component in $z$. The resulting 3d simulation involves all electromagnetic fields (rather than a 2d simulation which involves a subset of the fields determined by the polarization of the current source). Performance can be improved by specifying `special_kz=True` in the `Simulation` constructor; this results in a 2d simulation with real rather than complex fields (as long as the $x$ and $y$ components of `k_point` are zero).
 
-Note: [mode decomposition](Python_Tutorials/Mode_Decomposition.md) is *not* yet currently supported for this use case (Issues [#291](https://github.com/NanoComp/meep/issues/291), [#604](https://github.com/NanoComp/meep/issues/604)).
-
 ### Can Meep model electrostatic effects?
 
 In principle, this corresponds to the limit as the frequency goes to zero or the wavelength goes to infinity.  However, a time-domain simulation is rather inefficient for [electrostatic](https://en.wikipedia.org/wiki/Electrostatics) or magnetostatic calculation; this includes [lumped circuit models](https://en.wikipedia.org/wiki/Lumped_element_model) involving resistance, voltage, capacitance, etc. In this regime, you are usually much better off directly solving e.g. [Poisson's equation](https://en.wikipedia.org/wiki/Poisson%27s_equation#Electrostatics) to obtain the fields from a given charge distribution. There are many available Poisson solvers based on [finite](https://en.wikipedia.org/wiki/Finite_element_method) or [boundary](https://en.wikipedia.org/wiki/Boundary_element_method) element methods.  In Meep, probably the best you can do is to use a source with a very low frequency and a gradual turn-on specified by the `width` parameter of [`ContinuousSource`](Python_User_Interface.md#continuoussource).
@@ -491,4 +491,4 @@ The second approach is based on a full nonlinear simulation of the Raman process
 
 ### Does Meep support adjoint-based optimization?
 
-Yes. Meep contains an [adjoint solver](Python_Tutorials/Adjoint_Solver.md) which can be used for sensitivity analysis and automated design optimization with respect to a grid of $\varepsilon$ values (also known as "density-based" topology optimization).  (Of course, you can always use finite differences or similar methods to compute sensitivities for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)
+Yes. Meep has an [adjoint solver](Python_Tutorials/Adjoint_Solver.md) which can be used for inverse design and density-based topology optimization in which the degrees of freedom are a grid of $\varepsilon$ voxels.  (Of course, you can always use finite differences or similar methods to compute sensitivities or gradients for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)

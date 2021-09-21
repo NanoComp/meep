@@ -41,7 +41,8 @@ class TestAntennaRadiation(unittest.TestCase):
                                          mp.Near2FarRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
                                          mp.Near2FarRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
                                          mp.Near2FarRegion(mp.Vector3(0.5*sxy), size=mp.Vector3(y=sxy)),
-                                         mp.Near2FarRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1))
+                                         mp.Near2FarRegion(mp.Vector3(-0.5*sxy), size=mp.Vector3(y=sxy), weight=-1),
+                                         decimation_factor=20)
 
         flux_box = sim.add_flux(fcen, 0, 1,
                                 mp.FluxRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
@@ -69,11 +70,12 @@ class TestAntennaRadiation(unittest.TestCase):
         Pr = np.sqrt(np.square(Px)+np.square(Py))
         far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
-        rr = 20/fcen      # length of far field square box
-        far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)), resolution)[0]
-                           - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)), resolution)[0]
-                           + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)), resolution)[0]
-                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)), resolution)[0])
+        rr = 20/fcen      # length of far-field square box
+        res_far = 20      # resolution of far-field square box
+        far_flux_square = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=0.5*rr), size=mp.Vector3(rr)), res_far)[0]
+                           - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-0.5*rr), size=mp.Vector3(rr)), res_far)[0]
+                           + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(0.5*rr), size=mp.Vector3(y=rr)), res_far)[0]
+                           - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-0.5*rr), size=mp.Vector3(y=rr)), res_far)[0])
 
         print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_circle,far_flux_square))
 

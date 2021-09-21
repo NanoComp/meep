@@ -41,7 +41,7 @@ double J(int m, double kr) {
 #elif defined(HAVE_LIBGSL)
   return gsl_sf_bessel_Jn(m, kr);
 #else
-  abort("not compiled with GSL, required for Bessel functions");
+  meep::abort("not compiled with GSL, required for Bessel functions");
   return 0;
 #endif
 }
@@ -57,7 +57,7 @@ static double Jroot(int m, int n) {
 #else
   (void)m;
   (void)n;
-  abort("not compiled with GSL, required for Bessel functions");
+  meep::abort("not compiled with GSL, required for Bessel functions");
   return 0;
 #endif
 }
@@ -149,6 +149,8 @@ void fields::initialize_field(component c, complex<double> func(const vec &)) {
 
 void fields_chunk::initialize_field(component c, complex<double> func(const vec &)) {
   if (f[c][0]) {
+    // note: this loop is not thread-safe unless func is, which
+    // isn't true if func e.g. calls back to Python
     LOOP_OVER_VOL(gv, c, i) {
       IVEC_LOOP_LOC(gv, here);
       complex<double> val = func(here);

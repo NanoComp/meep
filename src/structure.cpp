@@ -15,6 +15,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <memory>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -29,46 +30,33 @@ using namespace std;
 
 namespace meep {
 
-structure::structure()
-    : Courant(0.5), v(D1) // Aaack, this is very hokey.
-{
-  num_chunks = 0;
-  num_effort_volumes = 0;
-  effort_volumes = NULL;
-  effort = NULL;
-  outdir = ".";
-  S = identity();
-  a = 1;
-  dt = Courant / a;
-  shared_chunks = false;
-}
 
 typedef structure_chunk *structure_chunk_ptr;
 
 structure::structure(const grid_volume &thegv, material_function &eps, const boundary_region &br,
                      const symmetry &s, int num, double Courant, bool use_anisotropic_averaging,
-                     double tol, int maxeval, const binary_partition *bp)
+                     double tol, int maxeval, const binary_partition *_bp)
     : Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   shared_chunks = false;
-  if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  if (!br.check_ok(thegv)) meep::abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
-  choose_chunkdivision(thegv, num, br, s, bp);
+  choose_chunkdivision(thegv, num, br, s, _bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   set_materials(eps, use_anisotropic_averaging, tol, maxeval);
 }
 
 structure::structure(const grid_volume &thegv, double eps(const vec &), const boundary_region &br,
                      const symmetry &s, int num, double Courant, bool use_anisotropic_averaging,
-                     double tol, int maxeval, const binary_partition *bp)
+                     double tol, int maxeval, const binary_partition *_bp)
     : Courant(Courant), v(D1) // Aaack, this is very hokey.
 {
   outdir = ".";
   shared_chunks = false;
-  if (!br.check_ok(thegv)) abort("invalid boundary absorbers for this grid_volume");
+  if (!br.check_ok(thegv)) meep::abort("invalid boundary absorbers for this grid_volume");
   double tstart = wall_time();
-  choose_chunkdivision(thegv, num, br, s, bp);
+  choose_chunkdivision(thegv, num, br, s, _bp);
   if (verbosity > 0) master_printf("time for choose_chunkdivision = %g s\n", wall_time() - tstart);
   if (eps) {
     simple_material_function epsilon(eps);
@@ -76,35 +64,41 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   }
 }
 
-static binary_partition *split_by_cost(int n, grid_volume gvol, bool fragment_cost) {
-  if (n == 1) {
-    binary_partition *bp_leaf = new binary_partition(-1);
-    return bp_leaf;
+static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
+                                                       bool fragment_cost, int &proc_id) {
+  if (n == 1) return std::unique_ptr<binary_partition>(new binary_partition(proc_id++
+                                                                            % count_processors()));
+
+  int best_split_point;
+  direction best_split_direction;
+  double best_split_position;
+  double left_effort_fraction;
+  gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction,
+                       left_effort_fraction);
+
+  const int num_left = static_cast<int>(left_effort_fraction * n + 0.5);
+  if (num_left == 0 || num_left == n) {
+    return std::unique_ptr<binary_partition>(new binary_partition(-1));
   }
-  else {
-    int best_split_point;
-    direction best_split_direction;
-    double best_split_position;
-    double left_effort_fraction;
-    gvol.find_best_split(n, fragment_cost, best_split_point, best_split_direction, left_effort_fraction);
-    best_split_position = gvol.surroundings().get_min_corner().in_direction(best_split_direction) +
+
+  best_split_position =
+      gvol.surroundings().get_min_corner().in_direction(best_split_direction) +
       (gvol.surroundings().in_direction(best_split_direction) * best_split_point) /
-      gvol.num_direction(best_split_direction);
-    binary_partition *bp_split = new binary_partition(best_split_direction, best_split_position);
-    grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
-    const int num_left = (size_t)(left_effort_fraction * n + 0.5);
-    bp_split->left = split_by_cost(num_left, left_gvol, fragment_cost);
-    grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
-    bp_split->right = split_by_cost(n - num_left, right_gvol, fragment_cost);
-    return bp_split;
-  }
+          gvol.num_direction(best_split_direction);
+  split_plane optimal_plane{best_split_direction, best_split_position};
+  grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
+  grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
+  return std::unique_ptr<binary_partition>(
+      new binary_partition(optimal_plane,
+                           /*left=*/split_by_cost(num_left, left_gvol, fragment_cost, proc_id),
+                           /*right=*/split_by_cost(n - num_left, right_gvol, fragment_cost, proc_id)));
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
                                      const boundary_region &br, const symmetry &s,
-                                     const binary_partition *bp) {
+                                     const binary_partition *_bp) {
 
-  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
 
   user_volume = thegv;
   gv = thegv;
@@ -113,13 +107,16 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   a = gv.a;
   dt = Courant / a;
 
-  std::unique_ptr<binary_partition> my_bp;
-  if (!bp) my_bp.reset(meep::choose_chunkdivision(gv, v, desired_num_chunks, s));
+  if (_bp) {
+    bp.reset(new binary_partition(*_bp));
+  } else {
+    bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
+  }
 
   // create the chunks:
   std::vector<grid_volume> chunk_volumes;
   std::vector<int> ids;
-  split_by_binarytree(gv, chunk_volumes, ids, (!bp) ? my_bp.get() : bp);
+  split_by_binarytree(gv, chunk_volumes, ids, bp.get());
 
   // initialize effort volumes
   num_effort_volumes = 1;
@@ -135,7 +132,7 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   num_chunks = 0;
   chunks = new structure_chunk_ptr[chunk_volumes.size() * num_effort_volumes];
   for (size_t i = 0, stop = chunk_volumes.size(); i < stop; ++i) {
-    const int proc = (!bp) ? i * count_processors() / chunk_volumes.size() : ids[i] % count_processors();
+    const int proc = ids[i] % count_processors();
     for (int j = 0; j < num_effort_volumes; ++j) {
       grid_volume vc;
       if (chunk_volumes[i].intersect_with(effort_volumes[j], &vc)) {
@@ -155,11 +152,11 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
 
 }
 
-binary_partition *choose_chunkdivision(grid_volume &gv, volume &v, int desired_num_chunks,
-                                       const symmetry &S) {
+std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &v,
+                                                       int desired_num_chunks, const symmetry &S) {
 
   if (desired_num_chunks == 0) desired_num_chunks = count_processors();
-  if (gv.dim == Dcyl && gv.get_origin().r() < 0) abort("r < 0 origins are not supported");
+  if (gv.dim == Dcyl && gv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
 
   // First, reduce overall grid_volume gv by symmetries:
   if (S.multiplicity() > 1) {
@@ -193,18 +190,18 @@ binary_partition *choose_chunkdivision(grid_volume &gv, volume &v, int desired_n
       if (break_this[d]) gv = gv.pad((direction)d);
   }
 
+  int proc_id = 0;
   if (meep_geom::fragment_stats::resolution == 0 ||
       meep_geom::fragment_stats::split_chunks_evenly) {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by voxels\n", desired_num_chunks);
-    return split_by_cost(desired_num_chunks, gv, false);
+    return split_by_cost(desired_num_chunks, gv, false, proc_id);
   }
   else {
     if (verbosity > 0 && desired_num_chunks > 1)
       master_printf("Splitting into %d chunks by cost\n", desired_num_chunks);
-    return split_by_cost(desired_num_chunks, gv, true);
+    return split_by_cost(desired_num_chunks, gv, true, proc_id);
   }
-
 }
 
 double structure::estimated_cost(int process) {
@@ -221,7 +218,7 @@ void boundary_region::apply(structure *s) const {
     switch (kind) {
       case NOTHING_SPECIAL: break;
       case PML: s->use_pml(d, side, thickness); break;
-      default: abort("unknown boundary region kind");
+      default: meep::abort("unknown boundary region kind");
     }
   }
   if (next) next->apply(s);
@@ -237,7 +234,7 @@ void boundary_region::apply(const structure *s, structure_chunk *sc) const {
                     mean_stretch, pml_profile, pml_profile_data, pml_profile_integral,
                     pml_profile_integral_u);
         break;
-      default: abort("unknown boundary region kind");
+      default: meep::abort("unknown boundary region kind");
     }
   }
   if (next) next->apply(s, sc);
@@ -287,7 +284,7 @@ void structure::check_chunks() {
   for (int i = 0; i < num_chunks; i++)
     for (int j = i + 1; j < num_chunks; j++)
       if (chunks[i]->gv.intersect_with(chunks[j]->gv, &vol_intersection))
-        abort("chunks[%d] intersects with chunks[%d]\n", i, j);
+        meep::abort("chunks[%d] intersects with chunks[%d]\n", i, j);
   size_t sum = 0;
   for (int i = 0; i < num_chunks; i++) {
     size_t grid_points = 1;
@@ -296,7 +293,7 @@ void structure::check_chunks() {
   }
   size_t v_grid_points = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
-  if (sum != v_grid_points) abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
 }
 
 void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort) {
@@ -316,7 +313,7 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
         new_effort_volume.print();
         // NOTE: this may not be a bug if this function is used for
         // something other than PML.
-        abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
+        meep::abort("Did not expect num_others > 1 in add_to_effort_volumes\n");
       }
       temp_effort[counter] = extra_effort + effort[j];
       temp_volumes[counter] = intersection;
@@ -341,49 +338,21 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
   num_effort_volumes = counter;
 }
 
-structure::structure(const structure *s) : v(s->v) {
-  shared_chunks = false;
-  num_chunks = s->num_chunks;
-  outdir = s->outdir;
-  gv = s->gv;
-  S = s->S;
-  user_volume = s->user_volume;
-  chunks = new structure_chunk_ptr[num_chunks];
-  for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new structure_chunk(s->chunks[i]);
-  num_effort_volumes = s->num_effort_volumes;
-  effort_volumes = new grid_volume[num_effort_volumes];
-  effort = new double[num_effort_volumes];
-  for (int i = 0; i < num_effort_volumes; i++) {
-    effort_volumes[i] = s->effort_volumes[i];
-    effort[i] = s->effort[i];
-  }
-  a = s->a;
-  Courant = s->Courant;
-  dt = s->dt;
-}
-
-structure::structure(const structure &s) : v(s.v) {
-  shared_chunks = false;
-  num_chunks = s.num_chunks;
-  outdir = s.outdir;
-  gv = s.gv;
-  S = s.S;
-  user_volume = s.user_volume;
+structure::structure(const structure &s)
+    : num_chunks{s.num_chunks}, shared_chunks{false}, gv(s.gv),
+      user_volume(s.user_volume), a{s.a}, Courant{s.Courant}, dt{s.dt}, v(s.v), S(s.S),
+      outdir(s.outdir), num_effort_volumes{s.num_effort_volumes},
+      bp(new binary_partition(*s.bp)) {
   chunks = new structure_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++) {
     chunks[i] = new structure_chunk(s.chunks[i]);
   }
-  num_effort_volumes = s.num_effort_volumes;
   effort_volumes = new grid_volume[num_effort_volumes];
   effort = new double[num_effort_volumes];
   for (int i = 0; i < num_effort_volumes; i++) {
     effort_volumes[i] = s.effort_volumes[i];
     effort[i] = s.effort[i];
   }
-  a = s.a;
-  Courant = s.Courant;
-  dt = s.dt;
 }
 
 structure::~structure() {
@@ -583,7 +552,7 @@ bool structure_chunk::has_chi1inv(component c, direction d) const {
 
 void structure::mix_with(const structure *oth, double f) {
   if (num_chunks != oth->num_chunks)
-    abort("You can't phase materials with different chunk topologies...\n");
+    meep::abort("You can't phase materials with different chunk topologies...\n");
   changing_chunks();
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->mix_with(oth->chunks[i], f);
@@ -761,7 +730,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
   FOR_COMPONENTS(c) {
     if (is_mine() && o->chi3[c]) {
       chi3[c] = new realnum[gv.ntot()];
-      if (chi3[c] == NULL) abort("Out of memory!\n");
+      if (chi3[c] == NULL) meep::abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi3[c][i] = o->chi3[c][i];
     }
@@ -770,7 +739,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
     }
     if (is_mine() && o->chi2[c]) {
       chi2[c] = new realnum[gv.ntot()];
-      if (chi2[c] == NULL) abort("Out of memory!\n");
+      if (chi2[c] == NULL) meep::abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi2[c][i] = o->chi2[c][i];
     }
@@ -826,18 +795,19 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
 
 void structure_chunk::set_chi3(component c, material_function &epsilon) {
   if (!is_mine() || !gv.has_field(c)) return;
-  if (!is_electric(c) && !is_magnetic(c)) abort("only E or H can have chi3");
+  if (!is_electric(c) && !is_magnetic(c)) meep::abort("only E or H can have chi3");
 
   epsilon.set_volume(gv.pad().surroundings());
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi3
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (size_t i = 0; i < gv.ntot(); ++i)
+    for (size_t i = 0; i < gv.ntot(); i++)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
   if (!chi3[c]) chi3[c] = new realnum[gv.ntot()];
   bool trivial = true;
+  // note: not thread-safe if epsilon is not thread-safe, e.g. it if calls back to Python
   LOOP_OVER_VOL(gv, c, i) {
     IVEC_LOOP_LOC(gv, here);
     chi3[c][i] = epsilon.chi3(c, here);
@@ -862,13 +832,13 @@ void structure_chunk::set_chi3(component c, material_function &epsilon) {
 
 void structure_chunk::set_chi2(component c, material_function &epsilon) {
   if (!is_mine() || !gv.has_field(c)) return;
-  if (!is_electric(c) && !is_magnetic(c)) abort("only E or H can have chi2");
+  if (!is_electric(c) && !is_magnetic(c)) meep::abort("only E or H can have chi2");
 
   epsilon.set_volume(gv.pad().surroundings());
 
   if (!chi1inv[c][component_direction(c)]) { // require chi1 if we have chi2
     chi1inv[c][component_direction(c)] = new realnum[gv.ntot()];
-    for (size_t i = 0; i < gv.ntot(); ++i)
+    for (size_t i = 0; i < gv.ntot(); i++)
       chi1inv[c][component_direction(c)][i] = 1.0;
   }
 
@@ -902,14 +872,14 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
   C.set_volume(gv.pad().surroundings());
 
   if (!is_electric(c) && !is_magnetic(c) && !is_D(c) && !is_B(c))
-    abort("invalid component for conductivity");
+    meep::abort("invalid component for conductivity");
 
   direction c_d = component_direction(c);
   component c_C = is_electric(c) ? direction_component(Dx, c_d)
                                  : (is_magnetic(c) ? direction_component(Bx, c_d) : c);
   realnum *multby = is_electric(c) || is_magnetic(c) ? chi1inv[c][c_d] : 0;
   if (!conductivity[c_C][c_d]) conductivity[c_C][c_d] = new realnum[gv.ntot()];
-  if (!conductivity[c_C][c_d]) abort("Memory allocation error.\n");
+  if (!conductivity[c_C][c_d]) meep::abort("Memory allocation error.\n");
   bool trivial = true;
   realnum *cnd = conductivity[c_C][c_d];
   if (multby) {
@@ -968,14 +938,14 @@ structure_chunk::structure_chunk(const grid_volume &thegv, const volume &vol_lim
 double structure::max_eps() const {
   double themax = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) themax = max(themax, chunks[i]->max_eps());
+    if (chunks[i]->is_mine()) themax = std::max(themax, chunks[i]->max_eps());
   return max_to_all(themax);
 }
 
 double fields::max_eps() const {
   double themax = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) themax = max(themax, chunks[i]->s->max_eps());
+    if (chunks[i]->is_mine()) themax = std::max(themax, chunks[i]->s->max_eps());
   return max_to_all(themax);
 }
 
@@ -985,7 +955,7 @@ double structure_chunk::max_eps() const {
     direction d = component_direction(c);
     if (chi1inv[c][d])
       for (size_t i = 0; i < gv.ntot(); i++)
-        themax = max(themax, 1 / chi1inv[c][d][i]);
+        themax = std::max<double>(themax, 1 / chi1inv[c][d][i]);
   }
   return themax;
 }
@@ -1044,4 +1014,7 @@ std::vector<int> structure::get_chunk_owners() const {
   }
   return result;
 }
+
+const binary_partition *structure::get_binary_partition() const { return bp.get(); }
+
 } // namespace meep

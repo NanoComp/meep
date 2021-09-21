@@ -25,8 +25,8 @@
 
 namespace meep {
 
-const int NUM_FIELD_COMPONENTS = 20;
-const int NUM_FIELD_TYPES = 8;
+constexpr int NUM_FIELD_COMPONENTS = 20;
+constexpr int NUM_FIELD_TYPES = 8;
 
 enum component {
   Ex = 0,
@@ -148,7 +148,7 @@ component first_field_component(field_type ft);
   for (meep::direction d = dim == meep::Dcyl ? meep::Z : meep::X;                                  \
        d < (dim == meep::Dcyl ? meep::NO_DIRECTION : meep::R); d = meep::direction(d + 1))
 
-// loop over indices idx from is to ie (inclusive) in gv
+
 #define LOOP_OVER_IVECS(gv, is, ie, idx)                                                           \
   for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
@@ -186,6 +186,63 @@ component first_field_component(field_type ft);
          loop_ibound++)                                                                            \
   LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
+/* The following loop macros work identically to the LOOP_* macros above,
+   but employ shared memory-parallelism using OpenMP. These loops are mainly
+   used in step_generic.cpp and a few other time-critical loops.
+
+   For the parallel implementation, we introduce two dummy loops, one at the beginning
+   and one at the end, in order to "trick" OpenMP to allow us to define our local variables
+   without having to change any other code anywhere else. We can then proceed to do
+   a collapse over all three main loops. */
+
+#define CHUNK_OPENMP _Pragma("omp parallel for")
+
+// the most generic use case where the user
+// can specify a custom clause
+#define PLOOP_OVER_IVECS_C(gv, is, ie, idx, clause)                                                \
+for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
+                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
+                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
+                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
+                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
+                 loop_d3 = (gv).yucky_direction(2),                                                \
+                 loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
+                 loop_s2 = (gv).stride((meep::direction)loop_d2),                                  \
+                 loop_s3 = (gv).stride((meep::direction)loop_d3),                                  \
+                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
+                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
+                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                  dummy_first=0;dummy_first<1;dummy_first++)                                       \
+_Pragma(clause)                                                                                    \
+  for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1; loop_i1++)                                        \
+    for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
+      for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
+        for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2 +                            \
+           loop_i3*loop_s3, dummy_last=0;dummy_last<1;dummy_last++)
+
+// For the main timestepping events, we know
+// we want to do a simple collapse
+#define PLOOP_OVER_IVECS(gv, is, ie, idx)                                                          \
+  PLOOP_OVER_IVECS_C(gv, is, ie, idx, "omp parallel for collapse(3)")
+
+#define PLOOP_OVER_VOL(gv, c, idx)                                                                 \
+  PLOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                  \
+                  (gv).big_corner() + (gv).iyee_shift(c), idx)
+
+#define PLOOP_OVER_VOL_OWNED(gv, c, idx)                                                           \
+  PLOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
+
+#define PLOOP_OVER_VOL_OWNED0(gv, c, idx)                                                          \
+  PLOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
+
+#define PLOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                        \
+  for (ivec loop_notowned_is((gv).dim, 0), loop_notowned_ie((gv).dim, 0);                          \
+       loop_notowned_is == zero_ivec((gv).dim);)                                                   \
+    for (int loop_ibound = 0;                                                                      \
+         (gv).get_boundary_icorners(c, loop_ibound, &loop_notowned_is, &loop_notowned_ie);         \
+         loop_ibound++)                                                                            \
+  PLOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
+
 #define LOOPS_ARE_STRIDE1(gv) ((gv).stride((gv).yucky_direction(2)) == 1)
 
 // The following work identically to the LOOP_* macros above,
@@ -199,8 +256,10 @@ component first_field_component(field_type ft);
 // should only use these macros where that is true!  (Basically,
 // all of this is here to support performance hacks of step_generic.)
 
-#if !defined(__INTEL_COMPILER) && !defined(__clang__) && (defined(__GNUC__) || defined(__GNUG__))
+#if !defined(__INTEL_COMPILER) && !defined(__clang__) && !defined(_OPENMP) && (defined(__GNUC__) || defined(__GNUG__))
 #define IVDEP _Pragma("GCC ivdep")
+#elif defined(_OPENMP)
+#define IVDEP _Pragma("omp simd")
 #elif defined(__INTEL_COMPILER)
 #define IVDEP _Pragma("ivdep")
 #else
@@ -244,6 +303,46 @@ component first_field_component(field_type ft);
          loop_ibound++)                                                                            \
   S1LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
+/* The following is the stride-optimized version of the parallel loops from above.
+   We can use simd vectorization in addition to the usual par for optimization */
+// loop over indices idx from is to ie (inclusive) in gv
+#define PS1LOOP_OVER_IVECS(gv, is, ie, idx)                                                        \
+for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
+                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
+                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
+                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
+                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
+                 loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
+                 loop_s2 = (gv).stride((meep::direction)loop_d2), loop_s3 = 1,                     \
+                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
+                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
+                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                  dummy_first=0;dummy_first<1;dummy_first++)                                       \
+_Pragma("omp parallel for collapse(2)")				                                                     \
+  for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1; loop_i1++)                                        \
+    for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
+      _Pragma("omp simd") \
+      for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
+        for (ptrdiff_t idx = idx0 + loop_i1 * loop_s1 + loop_i2 * loop_s2 + loop_i3, dummy_last=0;dummy_last<1;dummy_last++)
+
+#define PS1LOOP_OVER_VOL(gv, c, idx)                                                                \
+  PS1LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                 \
+                    (gv).big_corner() + (gv).iyee_shift(c), idx)
+
+#define PS1LOOP_OVER_VOL_OWNED(gv, c, idx)                                                          \
+  PS1LOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
+
+#define PS1LOOP_OVER_VOL_OWNED0(gv, c, idx)                                                         \
+  PS1LOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
+
+#define PS1LOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                      \
+  for (ivec loop_notowned_is((gv).dim, 0), loop_notowned_ie((gv).dim, 0);                          \
+       loop_notowned_is == meep::zero_ivec((gv).dim);)                                             \
+    for (int loop_ibound = 0;                                                                      \
+         (gv).get_boundary_icorners(c, loop_ibound, &loop_notowned_is, &loop_notowned_ie);         \
+         loop_ibound++)                                                                            \
+  PS1LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
+
 #define IVEC_LOOP_AT_BOUNDARY                                                                      \
   ((loop_s1 != 0 && (loop_i1 == 0 || loop_i1 == loop_n1 - 1)) ||                                   \
    (loop_s2 != 0 && (loop_i2 == 0 || loop_i2 == loop_n2 - 1)) ||                                   \
@@ -275,6 +374,9 @@ component first_field_component(field_type ft);
 #define IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV)                                                       \
   (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 3) *                                                          \
    (IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 2) * ((dV)*IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, 1))))
+
+// equivalent to incrementing a counter, starting from 0, in the loop body
+#define IVEC_LOOP_COUNTER ((loop_i1 * loop_n2 + loop_i2) * loop_n3 + loop_i3)
 
 inline signed_direction flip(signed_direction d) {
   signed_direction d2 = d;
@@ -322,7 +424,7 @@ inline field_type type(component c) {
     return D_stuff;
   else if (is_B(c))
     return B_stuff;
-  abort("Invalid field in type.\n");
+  meep::abort("Invalid field in type.\n");
   return E_stuff; // This is never reached.
 }
 const char *component_name(component c);
@@ -422,14 +524,14 @@ inline component direction_component(component c, direction d) {
   else if (d == NO_DIRECTION && component_direction(c) == d)
     return c;
   else
-    abort("unknown field component %d", c);
+    meep::abort("unknown field component %d", c);
   switch (d) {
     case X: return start_point;
     case Y: return (component)(start_point + 1);
     case Z: return (component)(start_point + 4);
     case R: return (component)(start_point + 2);
     case P: return (component)(start_point + 3);
-    case NO_DIRECTION: abort("vector %d component in NO_DIRECTION", c);
+    case NO_DIRECTION: meep::abort("vector %d component in NO_DIRECTION", c);
   }
   return Ex; // This is never reached.
 }
@@ -440,14 +542,14 @@ inline derived_component direction_component(derived_component c, direction d) {
   else if (is_energydensity(c) && d == NO_DIRECTION)
     return c;
   else
-    abort("unknown field component %d", c);
+    meep::abort("unknown field component %d", c);
   switch (d) {
     case X: return start_point;
     case Y: return (derived_component)(start_point + 1);
     case Z: return (derived_component)(start_point + 4);
     case R: return (derived_component)(start_point + 2);
     case P: return (derived_component)(start_point + 3);
-    case NO_DIRECTION: abort("vector %d derived_component in NO_DIRECTION", c);
+    case NO_DIRECTION: meep::abort("vector %d derived_component in NO_DIRECTION", c);
   }
   return Sx; // This is never reached.
 }
@@ -1027,6 +1129,8 @@ public:
 
   std::complex<double> get_split_costs(direction d, int split_point,
                                        bool frag_cost) const;
+  void tile_split(int &best_split_point,
+                  direction &best_split_direction) const;
   void find_best_split(int desired_chunks, bool frag_cost,
                        int &best_split_point, direction &best_split_direction,
                        double &left_effort_fraction) const;

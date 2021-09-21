@@ -2,7 +2,7 @@
 # Python Tutorial
 ---
 
-We will review several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are mainly 1d or 2d simulations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d simulations with a focus on technology applications, see the [Simpetus projects page](http://www.simpetus.com/projects.html).
+We will review several examples using the Python interface that demonstrate the process of computing fields, transmittance/reflectance spectra, and resonant modes. The examples are mainly 1d or 2d simulations, simply because they are quicker than 3d and they illustrate most of the essential features. For more advanced functionality involving 3d simulations with a focus on technology applications, see this [projects page](http://www.simpetus.com/projects.html).
 
 [TOC]
 

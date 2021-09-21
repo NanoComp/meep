@@ -92,6 +92,10 @@ class ObjectiveQuantity(abc.ABC):
         else:
             # multi frequency simulations
             scale = dV * iomega / adj_src_phase
+        # compensate for the fact that real fields take the real part of the current,
+        # which halves the Fourier amplitude at the positive frequency (Re[J] = (J + J*)/2)
+        if self.sim.using_real_fields():
+            scale *= 2
         return scale
 
     def _create_time_profile(self, fwidth_frac=0.1):
@@ -117,6 +121,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                  mode,
                  forward=True,
                  kpoint_func=None,
+                 decimation_factor=0,
                  **kwargs):
         super().__init__(sim)
         self.volume = volume
@@ -127,6 +132,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self._monitor = None
         self._normal_direction = None
         self._cscale = None
+        self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -134,6 +140,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             frequencies,
             mp.ModeRegion(center=self.volume.center, size=self.volume.size),
             yee_grid=True,
+            decimation_factor=self.decimation_factor,
         )
         self._normal_direction = self._monitor.normal_direction
         return self._monitor
@@ -199,10 +206,11 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    def __init__(self, sim, volume, component):
+    def __init__(self, sim, volume, component, decimation_factor=0):
         super().__init__(sim)
         self.volume = volume
         self.component = component
+        self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -211,6 +219,7 @@ class FourierFields(ObjectiveQuantity):
             self._frequencies,
             where=self.volume,
             yee_grid=False,
+            decimation_factor=self.decimation_factor,
         )
         return self._monitor
 
@@ -262,7 +271,7 @@ class FourierFields(ObjectiveQuantity):
                 for yi in range(y_dim):
                     for xi in range(x_dim):
                         '''We only need to add a current source if the
-                        jacobian is nonzero for all frequencies at 
+                        jacobian is nonzero for all frequencies at
                         that particular point. Otherwise, the fitting
                         algorithm is going to fail.
                         '''
@@ -297,18 +306,19 @@ class FourierFields(ObjectiveQuantity):
 
 
 class Near2FarFields(ObjectiveQuantity):
-    def __init__(self, sim, Near2FarRegions, far_pts):
+    def __init__(self, sim, Near2FarRegions, far_pts, decimation_factor=0):
         super().__init__(sim)
         self.Near2FarRegions = Near2FarRegions
         self.far_pts = far_pts  #list of far pts
         self._nfar_pts = len(far_pts)
+        self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
         self._monitor = self.sim.add_near2far(
             self._frequencies,
             *self.Near2FarRegions,
-            yee_grid=True,
+            decimation_factor=self.decimation_factor,
         )
         return self._monitor
 
@@ -340,7 +350,7 @@ class Near2FarFields(ObjectiveQuantity):
                     time_src.frequency,
                     self._frequencies,
                     scale,
-                    dt,
+                    self.sim.fields.dt,
                 )
                 (num_basis, num_pts) = src.nodes.shape
                 for basis_i in range(num_basis):

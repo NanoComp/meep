@@ -1,3 +1,4 @@
+#include <vector>
 #include <stdio.h>
 #include <meep.hpp>
 using namespace meep;
@@ -47,7 +48,7 @@ void test_convergence_without_averaging() {
     while (f.time() < f.last_source_time())
       f.step();
     int t_harminv_max = 2500; // try increasing this in case of failure
-    complex<double> *mon_data = new complex<double>[t_harminv_max];
+    std::vector<complex<double>> mon_data(t_harminv_max);
     int t = 0;
     monitor_point mp;
     while (t < t_harminv_max) {
@@ -56,13 +57,11 @@ void test_convergence_without_averaging() {
       mon_data[t] = mp.get_component(Er);
       t++;
     }
-    int maxbands = 10, nfreq;
-    complex<double> *amps = new complex<double>[maxbands];
-    ;
-    double *freq_re = new double[maxbands], *freq_im = new double[maxbands];
-    double *errors = new double[maxbands];
-    nfreq = do_harminv(mon_data, t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps, freq_re,
-                       freq_im, errors);
+    const int maxbands = 10;
+    std::vector<complex<double>> amps(maxbands);
+    std::vector<double> freq_re(maxbands), freq_im(maxbands), errors(maxbands);
+    int nfreq = do_harminv(mon_data.data(), t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps.data(),
+                           freq_re.data(), freq_im.data(), errors.data());
     double w = 0.0;
     for (int jf = 0; jf < nfreq; jf++)
       if (abs(freq_re[jf] - w0) < abs(w - w0)) w = freq_re[jf];
@@ -94,9 +93,9 @@ void test_convergence_without_averaging() {
      for the even-resolution cylindrical case here.  We no longer do this
      -- "no averaging" really means no averaging now. */
   if (find_exponent(a_mean[0], a_meansqr[0], a2_mean[0], a2_meansqr[0], "Even") != 1)
-    abort("Failed even convergence test with no fancy averaging!\n");
+    meep::abort("Failed even convergence test with no fancy averaging!\n");
   if (find_exponent(a_mean[1], a_meansqr[1], a2_mean[1], a2_meansqr[1], "Odd") != 1)
-    abort("Failed odd convergence test with no fancy averaging!\n");
+    meep::abort("Failed odd convergence test with no fancy averaging!\n");
   master_printf("Passed convergence test with no fancy averaging!\n");
 }
 
@@ -118,7 +117,7 @@ void test_convergence_with_averaging() {
     while (f.time() < f.last_source_time())
       f.step();
     int t_harminv_max = 2500; // try increasing this in case of failure
-    complex<double> *mon_data = new complex<double>[t_harminv_max];
+    std::vector<complex<double>> mon_data(t_harminv_max);
     int t = 0;
     monitor_point mp;
     while (t < t_harminv_max) {
@@ -127,13 +126,11 @@ void test_convergence_with_averaging() {
       mon_data[t] = mp.get_component(Er);
       t++;
     }
-    int maxbands = 10, nfreq;
-    complex<double> *amps = new complex<double>[maxbands];
-    ;
-    double *freq_re = new double[maxbands], *freq_im = new double[maxbands],
-           *errors = new double[maxbands];
-    nfreq = do_harminv(mon_data, t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps, freq_re,
-                       freq_im, errors);
+    const int maxbands = 10;
+    std::vector<complex<double>> amps(maxbands);
+    std::vector<double> freq_re(maxbands), freq_im(maxbands), errors(maxbands);
+    int nfreq = do_harminv(mon_data.data(), t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps.data(),
+                           freq_re.data(), freq_im.data(), errors.data());
     double w = 0.0;
     for (int jf = 0; jf < nfreq; jf++)
       if (abs(freq_re[jf] - w0) < abs(w - w0)) w = freq_re[jf];
@@ -161,9 +158,9 @@ void test_convergence_with_averaging() {
     a2_meansqr[i] /= n[i];
 
   if (find_exponent(a_mean[0], a_meansqr[0], a2_mean[0], a2_meansqr[0], "Even") != 2)
-    abort("Failed convergence test with anisotropic dielectric averaging!\n");
+    meep::abort("Failed convergence test with anisotropic dielectric averaging!\n");
   if (find_exponent(a_mean[1], a_meansqr[1], a2_mean[1], a2_meansqr[1], "Odd") != 2)
-    abort("Failed convergence test with anisotropic dielectric averaging!\n");
+    meep::abort("Failed convergence test with anisotropic dielectric averaging!\n");
   master_printf("Passed convergence test with anisotropic dielectric averaging!\n");
 }
 

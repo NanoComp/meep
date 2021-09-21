@@ -44,7 +44,7 @@ int check_cyl(double sr, double sz, double a) {
   continuous_src_time src(w);
   vec x0 = veccyl(0.5 * sr, 0);
   f.add_point_source(c0, src, x0);
-  f.solve_cw(1e-6);
+  f.solve_cw(sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-6);
 
   component c = Ep;
   const int N = 20;
@@ -116,7 +116,7 @@ int check_cyl(double sr, double sz, double a) {
 int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c1 = NO_COMPONENT,
                 bool evenz = true) {
   const double dpml = 1;
-  if (dim != D2 && dim != D3) abort("2d or 3d required");
+  if (dim != D2 && dim != D3) meep::abort("2d or 3d required");
   grid_volume gv = dim == D2 ? vol2d(xmax + 2 * dpml, xmax + 2 * dpml, a)
                              : vol3d(xmax + 2 * dpml, xmax + 2 * dpml, xmax + 2 * dpml, a);
   gv.center_origin();
@@ -137,7 +137,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
   continuous_src_time src(w);
   f.add_point_source(c0, src, zero_vec(dim));
   if (c1 != NO_COMPONENT) f.add_point_source(c1, src, zero_vec(dim), 0.7654321);
-  f.solve_cw(1e-6);
+  f.solve_cw(sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-6);
 
   FOR_E_AND_H(c) {
     if (gv.has_field(c)) {
@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
 
   const double a2d = argc > 1 ? atof(argv[1]) : 20, a3d = argc > 1 ? a2d : 10;
 
-  if (!check_cyl(5.0, 10.0, 20.0)) return 1;
+  if ((sizeof(realnum) == sizeof(double)) &&  !check_cyl(5.0, 10.0, 20.0)) return 1;
 
   // NOTE: see hack above -- we require sources to be odd in Z and even in X or vice-versa
   if (!check_2d_3d(D3, 4, a3d, Ez, Hx, false)) return 1;

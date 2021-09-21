@@ -1,11 +1,11 @@
+import meep as mp
+from utils import ApproxComparisonTestCase
 import os
 import unittest
 import h5py
-import numpy as np
-import meep as mp
 
 
-class TestCavityFarfield(unittest.TestCase):
+class TestCavityFarfield(ApproxComparisonTestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
 
@@ -50,9 +50,14 @@ class TestCavityFarfield(unittest.TestCase):
 
         nearfield = sim.add_near2far(
             fcen, 0.1, nfreqs,
-            mp.Near2FarRegion(mp.Vector3(0, 0.5 * w + d1), size=mp.Vector3(2 * dpml - sx)),
-            mp.Near2FarRegion(mp.Vector3(-0.5 * sx + dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1), weight=-1.0),
-            mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1))
+            mp.Near2FarRegion(mp.Vector3(0, 0.5 * w + d1),
+                              size=mp.Vector3(2 * dpml - sx)),
+            mp.Near2FarRegion(mp.Vector3(-0.5 * sx + dpml, 0.5 * w + 0.5 * d1),
+                              size=mp.Vector3(0, d1),
+                              weight=-1.0),
+            mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1),
+                              size=mp.Vector3(0, d1)),
+            decimation_factor=1
         )
         sim.run(until=200)
         d2 = 20
@@ -71,12 +76,14 @@ class TestCavityFarfield(unittest.TestCase):
             ref_hy = mp.complexarray(f['hy.r'][()], f['hy.i'][()])
             ref_hz = mp.complexarray(f['hz.r'][()], f['hz.i'][()])
 
-            np.testing.assert_allclose(ref_ex, result['Ex'])
-            np.testing.assert_allclose(ref_ey, result['Ey'])
-            np.testing.assert_allclose(ref_ez, result['Ez'])
-            np.testing.assert_allclose(ref_hx, result['Hx'])
-            np.testing.assert_allclose(ref_hy, result['Hy'])
-            np.testing.assert_allclose(ref_hz, result['Hz'])
+            tol = 1e-5 if mp.is_single_precision() else 1e-7
+            self.assertClose(ref_ex, result['Ex'], epsilon=tol)
+            self.assertClose(ref_ey, result['Ey'], epsilon=tol)
+            self.assertClose(ref_ez, result['Ez'], epsilon=tol)
+            self.assertClose(ref_hx, result['Hx'], epsilon=tol)
+            self.assertClose(ref_hy, result['Hy'], epsilon=tol)
+            self.assertClose(ref_hz, result['Hz'], epsilon=tol)
+
 
     def test_cavity_farfield(self):
         self.run_test(nfreqs=1)

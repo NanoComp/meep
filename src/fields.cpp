@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <algorithm>
+#include <utility>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -27,8 +29,11 @@ using namespace std;
 
 namespace meep {
 
-fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin)
-    : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta) {
+fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin,
+               int loop_tile_base_db, int loop_tile_base_eh)
+    : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta),
+      loop_tile_base_db(loop_tile_base_db), loop_tile_base_eh(loop_tile_base_eh),
+      working_on(&times_spent) {
   shared_chunks = s->shared_chunks;
   components_allocated = false;
   synchronized_magnetic_fields = 0;
@@ -54,13 +59,9 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta,
+                                 zero_fields_near_cylorigin, i, loop_tile_base_db);
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++) {
-      comm_sizes[ft][ip] = new size_t[num_chunks * num_chunks];
-      for (int i = 0; i < num_chunks * num_chunks; i++)
-        comm_sizes[ft][ip][i] = 0;
-    }
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
     for (int i = 0; i < num_chunks * num_chunks; i++)
@@ -74,6 +75,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
         boundaries[b][d] = None;
     }
   chunk_connections_valid = false;
+  changed_materials = true;
 
   // unit directions are periodic by default:
   FOR_DIRECTIONS(d) {
@@ -84,7 +86,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
 }
 
 fields::fields(const fields &thef)
-    : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v) {
+    : S(thef.S), gv(thef.gv), user_volume(thef.user_volume), v(thef.v), working_on(&times_spent) {
   shared_chunks = thef.shared_chunks;
   components_allocated = thef.components_allocated;
   synchronized_magnetic_fields = thef.synchronized_magnetic_fields;
@@ -113,11 +115,6 @@ fields::fields(const fields &thef)
   for (int i = 0; i < num_chunks; i++)
     chunks[i] = new fields_chunk(*thef.chunks[i], i);
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++) {
-      comm_sizes[ft][ip] = new size_t[num_chunks * num_chunks];
-      for (int i = 0; i < num_chunks * num_chunks; i++)
-        comm_sizes[ft][ip][i] = 0;
-    }
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
     for (int i = 0; i < num_chunks * num_chunks; i++)
@@ -126,6 +123,7 @@ fields::fields(const fields &thef)
   for (int b = 0; b < 2; b++)
     FOR_DIRECTIONS(d) { boundaries[b][d] = thef.boundaries[b][d]; }
   chunk_connections_valid = false;
+  changed_materials = true;
 }
 
 fields::~fields() {
@@ -136,8 +134,6 @@ fields::~fields() {
     for (int i = 0; i < num_chunks * num_chunks; i++)
       delete[] comm_blocks[ft][i];
     delete[] comm_blocks[ft];
-    for (int ip = 0; ip < 3; ip++)
-      delete[] comm_sizes[ft][ip];
   }
   delete sources;
   delete fluxes;
@@ -147,11 +143,14 @@ fields::~fields() {
 void fields::use_real_fields() {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (boundaries[High][d] == Periodic && k[d] != 0.0)
-      abort("Can't use real fields with bloch boundary conditions!\n");
+      meep::abort("Can't use real fields with bloch boundary conditions!\n");
   }
   is_real = 1;
   for (int i = 0; i < num_chunks; i++)
     chunks[i]->use_real_fields();
+
+  // don't need to call sync_chunk_connections() since use_real_fields()
+  // should always be called on every process
   chunk_connections_valid = false;
 }
 
@@ -180,19 +179,12 @@ fields_chunk::~fields_chunk() {
     delete[] f_cond_backup[c][cmp];
   }
   delete[] f_rderiv_int;
-  FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++)
-      for (int io = 0; io < 2; io++)
-        delete[] connections[ft][ip][io];
-  }
-  FOR_FIELD_TYPES(ft) { delete[] connection_phases[ft]; }
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
     delete dft_chunks;
     dft_chunks = nxt;
   }
   FOR_FIELD_TYPES(ft) {
-    delete sources[ft];
     delete[] zeroes[ft];
   }
   FOR_FIELD_TYPES(ft) {
@@ -207,8 +199,40 @@ fields_chunk::~fields_chunk() {
   if (new_s && new_s->refcount-- <= 1) delete new_s; // delete if not shared
 }
 
+void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                      const size_t loop_tile_base) {
+  if (gvol.nowned_min() < loop_tile_base) {
+    result->push_back(gvol);
+    return;
+  }
+
+  int best_split_point;
+  direction best_split_direction;
+  gvol.tile_split(best_split_point, best_split_direction);
+  grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
+  split_into_tiles(left_gvol, result, loop_tile_base);
+  grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
+  split_into_tiles(right_gvol, result, loop_tile_base);
+  return;
+}
+
+// First check that the tile volumes gvs do not intersect and that they add
+// up to the chunk's total grid_volume gv
+void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
+  grid_volume vol_intersection;
+  for (size_t i = 0; i < gvs.size(); i++)
+    for (size_t j = i + 1; j < gvs.size(); j++)
+      if (gvs[i].intersect_with(gvs[j], &vol_intersection))
+        meep::abort("gvs[%zu] intersects with gvs[%zu]\n", i, j);
+  size_t sum = 0;
+  for (const auto& sub_gv : gvs) { sum += sub_gv.nowned_min(); }
+  size_t v_grid_points = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
+  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
+}
+
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
-                           bool zero_fields_near_cylorigin, int chunkidx)
+                           bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db)
     : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
       beta(beta) {
   s = the_s;
@@ -221,6 +245,12 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   Courant = s->Courant;
   dt = s->dt;
   dft_chunks = NULL;
+  if (loop_tile_base_db > 0) {
+    split_into_tiles(gv, &gvs_tiled, loop_tile_base_db);
+    check_tiles(gv, gvs_tiled);
+  } else {
+    gvs_tiled.push_back(gv);
+  }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     pol[ft] = NULL;
@@ -241,7 +271,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   }
   doing_solve_cw = false;
   solve_cw_omega = 0.0;
-  FOR_FIELD_TYPES(ft) { sources[ft] = NULL; }
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
@@ -256,12 +285,6 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   }
   f_rderiv_int = NULL;
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++)
-      num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
-    connection_phases[ft] = 0;
-    for (int ip = 0; ip < 3; ip++)
-      for (int io = 0; io < 2; io++)
-        connections[ft][ip][io] = NULL;
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
@@ -283,6 +306,10 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   Courant = thef.Courant;
   dt = thef.dt;
   dft_chunks = NULL;
+  gvs_tiled = thef.gvs_tiled;
+  FOR_FIELD_TYPES(ft) {
+    gvs_eh[ft] = thef.gvs_eh[ft];
+  }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     for (polarization_state *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {
@@ -303,7 +330,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   }
   doing_solve_cw = thef.doing_solve_cw;
   solve_cw_omega = thef.solve_cw_omega;
-  FOR_FIELD_TYPES(ft) { sources[ft] = NULL; }
   FOR_COMPONENTS(c) DOCMP2 {
     f[c][cmp] = NULL;
     f_u[c][cmp] = NULL;
@@ -341,12 +367,6 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
     }
   }
   FOR_FIELD_TYPES(ft) {
-    for (int ip = 0; ip < 3; ip++)
-      num_connections[ft][ip][Incoming] = num_connections[ft][ip][Outgoing] = 0;
-    connection_phases[ft] = 0;
-    for (int ip = 0; ip < 3; ip++)
-      for (int io = 0; io < 2; io++)
-        connections[ft][ip][io] = NULL;
     zeroes[ft] = NULL;
     num_zeroes[ft] = 0;
   }
@@ -371,7 +391,7 @@ static inline bool cross_negative(direction a, direction b) {
 }
 
 static inline direction cross(direction a, direction b) {
-  if (a == b) abort("bug - cross expects different directions");
+  if (a == b) meep::abort("bug - cross expects different directions");
   bool dcyl = a >= R || b >= R;
   if (a >= R) a = direction(a - 3);
   if (b >= R) b = direction(b - 3);
@@ -479,8 +499,9 @@ void fields::require_source_components() {
   memset(needed, 0, sizeof(needed));
   for (int i = 0; i < num_chunks; i++) {
     FOR_FIELD_TYPES(ft) {
-      for (src_vol *src = chunks[i]->sources[ft]; src; src = src->next)
-        needed[src->c] = 1;
+      for (const auto& src : chunks[i]->get_sources(ft)) {
+        needed[src.c] = 1;
+      }
     }
   }
   int allneeded[NUM_FIELD_COMPONENTS];
@@ -492,6 +513,7 @@ void fields::require_source_components() {
   for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
     if (allneeded[c])
       _require_component(component(c), aniso2d);
+  sync_chunk_connections();
 }
 
 // check if we are in 2d but anisotropy couples xy with z
@@ -510,15 +532,15 @@ bool fields::is_aniso2d() {
     finished_working();
   }
   else if (beta != 0)
-    abort("Nonzero beta unsupported in dimensions other than 2.");
+    meep::abort("Nonzero beta unsupported in dimensions other than 2.");
   if (aniso2d && beta != 0 && is_real)
-    abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
+    meep::abort("Nonzero beta need complex fields when mu/epsilon couple TE and TM");
   return aniso2d || (beta != 0); // beta couples TE/TM
 }
 
 void fields::_require_component(component c, bool aniso2d) {
   if (!gv.has_field(c))
-    abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
+    meep::abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
 
   components_allocated = true;
 
@@ -532,14 +554,28 @@ void fields::_require_component(component c, bool aniso2d) {
 
   if (need_to_reconnect) {
     figure_out_step_plan();
-    chunk_connections_valid = false; // connect_chunks() will synchronize this for us
+    // we will eventually call sync_chunk_connections(), in either require_component(c)
+    // or require_components(), to synchronize this across processes:
+    chunk_connections_valid = false;
   }
+}
+
+void fields_chunk::add_source(field_type ft, src_vol &&src) {
+  auto it = std::find_if(sources[ft].begin(), sources[ft].end(), [&src](const src_vol &other) {
+    return src_vol::combinable(src, other);
+  });
+
+  if (it != sources[ft].end()) {
+    it->add_amplitudes_from(src);
+    return;
+  }
+
+  sources[ft].push_back(std::move(src));
 }
 
 void fields_chunk::remove_sources() {
   FOR_FIELD_TYPES(ft) {
-    delete sources[ft];
-    sources[ft] = NULL;
+    sources[ft].clear();
   }
 }
 
@@ -566,6 +602,7 @@ void fields_chunk::remove_susceptibilities(bool shared_chunks) {
 }
 
 void fields::remove_susceptibilities() {
+  changed_materials = true;
   for (int i = 0; i < num_chunks; i++)
     chunks[i]->remove_susceptibilities(shared_chunks);
 }
@@ -631,10 +668,11 @@ void fields_chunk::use_real_fields() {
 
 int fields::phase_in_material(const structure *snew, double time) {
   if (snew->num_chunks != num_chunks)
-    abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks, num_chunks);
+    meep::abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks, num_chunks);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->phase_in_material(snew->chunks[i]);
   phasein_time = (int)(time / dt);
+  changed_materials = true;
   // FIXME: how to handle changes in susceptibilities?
   return phasein_time;
 }
@@ -748,6 +786,10 @@ double linear_interpolate(double rx, double ry, double rz, double *data,
               dz);
 
 #undef D
+}
+
+bool operator==(const comms_key &lhs, const comms_key &rhs) {
+  return (lhs.ft == rhs.ft) && (lhs.phase == rhs.phase) && (lhs.pair == rhs.pair);
 }
 
 } // namespace meep

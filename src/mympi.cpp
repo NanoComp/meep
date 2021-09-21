@@ -32,6 +32,12 @@
 #include <mpi.h>
 #endif
 
+#ifdef _OPENMP
+#include "omp.h"
+#else
+#define omp_get_num_threads() (1)
+#endif
+
 #ifdef IGNORE_SIGFPE
 #include <signal.h>
 #endif
@@ -59,6 +65,10 @@ extern "C" int feenableexcept(int EXCEPTS);
 #endif
 #endif
 
+#if HAVE_IMMINTRIN_H
+#include <immintrin.h>
+#endif
+
 #define UNUSED(x) (void)x // silence compiler warnings
 
 #define MPI_REALNUM (sizeof(realnum) == sizeof(double) ? MPI_DOUBLE : MPI_FLOAT)
@@ -67,15 +77,129 @@ using namespace std;
 
 namespace meep {
 
+namespace {
+
 #ifdef HAVE_MPI
-static MPI_Comm mycomm = MPI_COMM_WORLD;
+MPI_Comm mycomm = MPI_COMM_WORLD;
 #endif
+
+// comms_manager implementation that uses MPI.
+class mpi_comms_manager : public comms_manager {
+public:
+  mpi_comms_manager() {}
+  ~mpi_comms_manager() override {
+#ifdef HAVE_MPI
+    int num_pending_requests = reqs.size();
+    std::vector<int> completed_indices(num_pending_requests);
+    while (num_pending_requests) {
+      int num_completed_requests = 0;
+      MPI_Waitsome(reqs.size(), reqs.data(), &num_completed_requests, completed_indices.data(),
+                   MPI_STATUSES_IGNORE);
+      for (int i = 0; i < num_completed_requests; ++i) {
+        int request_idx = completed_indices[i];
+        callbacks[request_idx]();
+        reqs[request_idx] = MPI_REQUEST_NULL;
+        --num_pending_requests;
+      }
+    }
+#endif
+  }
+
+  void send_real_async(const void *buf, size_t count, int dest, int tag) override {
+#ifdef HAVE_MPI
+    reqs.emplace_back();
+    callbacks.push_back(/*no-op*/ []{});
+    MPI_Isend(buf, static_cast<int>(count), MPI_REALNUM, dest, tag, mycomm, &reqs.back());
+#else
+    (void)buf;
+    (void)count;
+    (void)dest;
+    (void)tag;
+#endif
+  }
+
+  void receive_real_async(void *buf, size_t count, int source, int tag,
+                          const receive_callback &cb) override {
+#ifdef HAVE_MPI
+    reqs.emplace_back();
+    callbacks.push_back(cb);
+    MPI_Irecv(buf, static_cast<int>(count), MPI_REALNUM, source, tag, mycomm, &reqs.back());
+#else
+    (void)buf;
+    (void)count;
+    (void)source;
+    (void)tag;
+#endif
+  }
+
+#ifdef HAVE_MPI
+  size_t max_transfer_size() const override { return std::numeric_limits<int>::max(); }
+#endif
+
+private:
+#ifdef HAVE_MPI
+  std::vector<MPI_Request> reqs;
+#endif
+  std::vector<receive_callback> callbacks;
+};
+
+} // namespace
+
+std::unique_ptr<comms_manager> create_comms_manager() {
+  return std::unique_ptr<comms_manager>(new mpi_comms_manager());
+}
 
 int verbosity = 1; // defined in meep.h
 
+/* Set CPU to flush subnormal values to zero (if iszero == true).  This slightly
+   reduces the range of floating-point numbers, but can greatly increase the speed
+   in cases where subnormal values might arise (e.g. deep in the tails of
+   exponentially decaying sources).
+
+   See also meep#1708.
+
+   code based on github.com/JuliaLang/julia/blob/master/src/processor_x86.cpp#L1087-L1104,
+   which is free software under the GPL-compatible "MIT license" */
+static void _set_zero_subnormals(bool iszero)
+{
+#if HAVE_IMMINTRIN_H
+    unsigned int flags = 0x00008040; // assume a non-ancient processor with SSE2, supporting both FTZ and DAZ flags
+    unsigned int state = _mm_getcsr();
+    if (iszero)
+      state |= flags;
+    else
+      state &= ~flags;
+    _mm_setcsr(state);
+#endif
+}
+void set_zero_subnormals(bool iszero)
+{
+  int n = omp_get_num_threads();
+#ifdef _OPENMP
+#pragma omp parallel for schedule(static,1)
+#endif
+  for (int i = 0; i < n; ++i)
+    _set_zero_subnormals(iszero); // This has to be done in every thread for OpenMP.
+}
+
+void setup() {
+  set_zero_subnormals(true);
+#ifdef _OPENMP
+  if (getenv("OMP_NUM_THREADS") == NULL)
+    omp_set_num_threads(1);
+#endif
+}
+
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
+#ifdef _OPENMP
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  if (provided < MPI_THREAD_FUNNELED && omp_get_num_threads() > 1)
+      abort("MPI does not support multi-threaded execution");
+#else
   MPI_Init(&argc, &argv);
+#endif
   int major, minor;
   MPI_Get_version(&major, &minor);
   if (verbosity > 0)
@@ -91,6 +215,7 @@ initialize::initialize(int &argc, char **&argv) {
   signal(SIGFPE, SIG_IGN);
 #endif
   t_start = wall_time();
+  setup();
 }
 
 initialize::~initialize() {
@@ -104,6 +229,8 @@ initialize::~initialize() {
 double wall_time(void) {
 #ifdef HAVE_MPI
   return MPI_Wtime();
+#elif defined(_OPENMP)
+  return omp_get_wtime();
 #elif HAVE_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, 0);
@@ -264,6 +391,14 @@ int max_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
   MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_MAX, mycomm);
+#endif
+  return out;
+}
+
+int min_to_all(int in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_MIN, mycomm);
 #endif
   return out;
 }
@@ -517,53 +652,6 @@ bool with_mpi() {
 #endif
 }
 
-void fields::boundary_communications(field_type ft) {
-  // Communicate the data around!
-#if 0 // This is the blocking version, which should always be safe!
-  for (int noti=0;noti<num_chunks;noti++)
-    for (int j=0;j<num_chunks;j++) {
-      const int i = (noti+j)%num_chunks;
-      const int pair = j+i*num_chunks;
-      DOCMP {
-        send(chunks[j]->n_proc(), chunks[i]->n_proc(),
-             comm_blocks[ft][pair], comm_size_tot(ft,pair));
-      }
-    }
-#endif
-#ifdef HAVE_MPI
-  const int maxreq = num_chunks * num_chunks;
-  MPI_Request *reqs = new MPI_Request[maxreq];
-  MPI_Status *stats = new MPI_Status[maxreq];
-  int reqnum = 0;
-  int *tagto = new int[count_processors()];
-  for (int i = 0; i < count_processors(); i++)
-    tagto[i] = 0;
-  for (int noti = 0; noti < num_chunks; noti++)
-    for (int j = 0; j < num_chunks; j++) {
-      const int i = (noti + j) % num_chunks;
-      const int pair = j + i * num_chunks;
-      const size_t comm_size = comm_size_tot(ft, pair);
-      if (comm_size > 0) {
-        if (comm_size > 2147483647) // MPI uses int for size to send/recv
-          abort("communications size too big for MPI");
-        if (chunks[j]->is_mine() && !chunks[i]->is_mine())
-          MPI_Isend(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[i]->n_proc(),
-                    tagto[chunks[i]->n_proc()]++, mycomm, &reqs[reqnum++]);
-        if (chunks[i]->is_mine() && !chunks[j]->is_mine())
-          MPI_Irecv(comm_blocks[ft][pair], (int)comm_size, MPI_REALNUM, chunks[j]->n_proc(),
-                    tagto[chunks[j]->n_proc()]++, mycomm, &reqs[reqnum++]);
-      }
-    }
-  delete[] tagto;
-  if (reqnum > maxreq) abort("Too many requests!!!\n");
-  if (reqnum > 0) MPI_Waitall(reqnum, reqs, stats);
-  delete[] reqs;
-  delete[] stats;
-#else
-  (void)ft; // unused
-#endif
-}
-
 // IO Routines...
 
 bool am_really_master() { return (my_global_rank() == 0); }
@@ -623,7 +711,7 @@ void debug_printf(const char *fmt, ...) {
     char temp[50];
     snprintf(temp, 50, "debug_out_%d", my_rank());
     debf = fopen(temp, "w");
-    if (!debf) abort("Unable to open debug output %s\n", temp);
+    if (!debf) meep::abort("Unable to open debug output %s\n", temp);
   }
   vfprintf(debf, fmt, ap);
   fflush(debf);
@@ -672,7 +760,7 @@ void begin_critical_section(int tag) {
     MPI_Status status;
     int recv_tag = tag - 1; /* initialize to wrong value */
     MPI_Recv(&recv_tag, 1, MPI_INT, process_rank - 1, tag, mycomm, &status);
-    if (recv_tag != tag) abort("invalid tag received in begin_critical_section");
+    if (recv_tag != tag) meep::abort("invalid tag received in begin_critical_section");
   }
 #else
   UNUSED(tag);
@@ -717,12 +805,12 @@ void end_critical_section(int tag) {
 int divide_parallel_processes(int numgroups) {
 #ifdef HAVE_MPI
   end_divide_parallel();
-  if (numgroups > count_processors()) abort("numgroups > count_processors");
+  if (numgroups > count_processors()) meep::abort("numgroups > count_processors");
   int mygroup = (my_rank() * numgroups) / count_processors();
   MPI_Comm_split(MPI_COMM_WORLD, mygroup, my_rank(), &mycomm);
   return mygroup;
 #else
-  if (numgroups != 1) abort("cannot divide processes in non-MPI mode");
+  if (numgroups != 1) meep::abort("cannot divide processes in non-MPI mode");
   return 0;
 #endif
 }

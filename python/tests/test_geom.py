@@ -348,12 +348,12 @@ class TestMedium(unittest.TestCase):
         sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=valid_sources[0],
                             extra_materials=[mat])
         fregion = mp.FluxRegion(center=mp.Vector3(0, 1), size=mp.Vector3(2, 2), direction=mp.X)
-        sim.add_flux(18, 6, 2, fregion)
+        sim.add_flux(18, 6, 2, fregion, decimation_factor=1)
         check_warnings(sim)
 
         # Invalid geometry material
         sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=valid_sources[0], geometry=geom)
-        sim.add_flux(18, 6, 2, fregion)
+        sim.add_flux(18, 6, 2, fregion, decimation_factor=1)
         check_warnings(sim)
 
     def test_transform(self):

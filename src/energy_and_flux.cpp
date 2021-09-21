@@ -77,7 +77,7 @@ double fields::field_energy_in_box(component c, const volume &where) {
     cs[1] = direction_component(Bx, component_direction(c));
   }
   else
-    abort("invalid field component in field_energy_in_box");
+    meep::abort("invalid field component in field_energy_in_box");
 
   return real(integrate(2, cs, dot_integrand, 0, where)) * 0.5;
 }
@@ -178,7 +178,7 @@ void fields::restore_magnetic_fields() {
 double fields::thermo_energy_in_box(const volume &where) {
   long double sum = 0.0;
   (void)where; // unused
-  abort("thermo_energy_in_box no longer supported");
+  meep::abort("thermo_energy_in_box no longer supported");
   return sum_to_all(sum);
 }
 
@@ -199,7 +199,7 @@ double fields::flux_in_box_wrongH(direction d, const volume &where) {
       else
         cE[0] = Ex, cE[1] = Ey, cH[0] = Hy, cH[1] = Hx;
       break;
-    case NO_DIRECTION: abort("cannot get flux in NO_DIRECTION");
+    case NO_DIRECTION: meep::abort("cannot get flux in NO_DIRECTION");
   }
 
   long double sum = 0.0;
@@ -220,9 +220,9 @@ double fields::flux_in_box(direction d, const volume &where) {
 }
 
 flux_vol *fields::add_flux_vol(direction d, const volume &where) {
-  if (where.dim != gv.dim) abort("invalid dimensionality in add_flux_vol");
+  if (where.dim != gv.dim) meep::abort("invalid dimensionality in add_flux_vol");
   if (d == NO_DIRECTION || coordinate_mismatch(gv.dim, d))
-    abort("invalid direction in add_flux_vol");
+    meep::abort("invalid direction in add_flux_vol");
   return new flux_vol(this, d, where);
 }
 
