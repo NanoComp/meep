@@ -31,7 +31,6 @@ class ConnectivityConstraint(object):
         else:
             self.alpha0 = -np.log(thresh)/min(nx, nz)
 
-
     def forward(self, rho_vector):
         self.rho_vector = rho_vector
         # gradient and -div operator
@@ -79,13 +78,13 @@ class ConnectivityConstraint(object):
 
         self.Td_p = (1 - self.T)**self.p
         self.Td = (sum(self.Td_p * self.rho_vec)/sum(self.rho_vec))**(1/self.p)
-
         return self.Td
 
     def adjoint(self):
         T_p1 = -(self.T-1) ** (self.p-1)
         dg_dT = self.Td**(1-self.p) * (T_p1*self.rho_vec)/sum(self.rho_vec)
         return self.solver(csr_matrix(self.A.transpose()), dg_dT)
+
     def calculate_grad(self):
         dg_dp = np.zeros(self.n)
         dg_dp[:-self.nx*self.ny] = (self.Td_p*sum(self.rho_vec))/sum(self.rho_vec)**2
@@ -108,7 +107,6 @@ class ConnectivityConstraint(object):
         drhoz[0,0]=0
         drhoz = kron(drhoz,eye(self.nx*self.ny))
         dAz =  (1-self.zeta)*self.k0*self.dz * drhoz.multiply(gzTz)
-
         d_damping = self.k0*self.alpha**2*diags(-self.T, shape=(self.m, self.n))
 
         self.grad = dg_dp + self.adjoint().reshape(1, -1) * csr_matrix( - dAz - dAx - dAy - d_damping)
@@ -118,6 +116,7 @@ class ConnectivityConstraint(object):
         Td = self.forward(rho_vector)
         grad = self.calculate_grad()
         return Td-self.thresh, grad
+
     def calculate_fd_grad(self, rho_vector, num, db=1e-4):
         fdidx = np.random.choice(self.n, num)
         fdgrad = []
@@ -129,6 +128,7 @@ class ConnectivityConstraint(object):
             fdgrad.append((fp-fm)/(2*db))
             rho_vector[k]+=db
         return fdidx, fdgrad
+        
     def calculate_all_fd_grad(self, rho_vector, db=1e-4):
         fdgrad = []
         for k in range(self.n):
