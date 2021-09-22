@@ -1,12 +1,11 @@
-from __future__ import division
-
+import meep as mp
+from utils import ApproxComparisonTestCase
 import math
 import unittest
 import numpy as np
-import meep as mp
 
 
-class TestReflAngular(unittest.TestCase):
+class TestReflAngular(ApproxComparisonTestCase):
 
     def test_refl_angular(self):
         resolution = 100
@@ -42,7 +41,7 @@ class TestReflAngular(unittest.TestCase):
                             resolution=resolution)
 
         refl_fr = mp.FluxRegion(center=mp.Vector3(z=-0.25 * sz))
-        refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+        refl = sim.add_flux(fcen, df, nfreq, refl_fr, decimation_factor=1)
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(z=-0.5 * sz + dpml), 1e-9))
 
@@ -60,7 +59,7 @@ class TestReflAngular(unittest.TestCase):
                             dimensions=dimensions,
                             resolution=resolution)
 
-        refl = sim.add_flux(fcen, df, nfreq, refl_fr)
+        refl = sim.add_flux(fcen, df, nfreq, refl_fr, decimation_factor=1)
         sim.load_minus_flux_data(refl, empty_data)
 
         sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(z=-0.5 * sz + dpml), 1e-9))
@@ -121,7 +120,8 @@ class TestReflAngular(unittest.TestCase):
             (2.4999999999999987, -4.3484671364929225e-6),
         ]
 
-        np.testing.assert_allclose(expected, list(zip(freqs, refl_flux)), rtol=1e-6)
+        tol = 1e-7 if mp.is_single_precision() else 1e-8
+        self.assertClose(expected, list(zip(freqs, refl_flux)), epsilon=tol)
 
 
 if __name__ == '__main__':

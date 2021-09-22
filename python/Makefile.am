@@ -38,6 +38,7 @@ TESTS =                                   \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_solver.py         \
+		$(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_jax.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
@@ -88,7 +89,7 @@ TESTS =                                   \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
-  PY_LOG_COMPILER = coverage run -a --omit=$(top_srcdir)/python/tests/*,${HOME}/virtualenv/*,$(top_srcdir)/python/examples/*
+  PY_LOG_COMPILER = coverage run -a --source=$(top_srcdir)/python/meep --omit=$(top_srcdir)/python/tests/*,$(top_srcdir)/python/examples/*,$(top_srcdir)/python/meep/materials.py
 else
   PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 endif

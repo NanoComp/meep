@@ -297,7 +297,7 @@ void attempt(const char *name, int allright) {
   if (allright)
     master_printf("Passed %s\n", name);
   else
-    abort("Failed %s!\n", name);
+    meep::abort("Failed %s!\n", name);
 }
 
 int main(int argc, char **argv) {

@@ -1,8 +1,9 @@
-import unittest
 import meep as mp
-import numpy as np
+from utils import ApproxComparisonTestCase
+import unittest
 
-class TestHoleyWvgCavity(unittest.TestCase):
+
+class TestHoleyWvgCavity(ApproxComparisonTestCase):
 
     def setUp(self):
         eps = 13
@@ -70,7 +71,8 @@ class TestHoleyWvgCavity(unittest.TestCase):
         m = h.modes[0]
         res = [m.freq, m.decay, m.Q, abs(m.amp), m.amp.real, m.amp.imag]
 
-        np.testing.assert_allclose(expected, res)
+        tol = 1e-6 if mp.is_single_precision() else 1e-8
+        self.assertClose(expected, res, epsilon=tol)
 
     def test_transmission_spectrum(self):
         expected = [
@@ -132,7 +134,8 @@ class TestHoleyWvgCavity(unittest.TestCase):
         freg = mp.FluxRegion(center=mp.Vector3((0.5 * self.sx) - self.dpml - 0.5),
                              size=mp.Vector3(0, 2 * self.w))
 
-        trans = self.sim.add_flux(self.fcen, self.df, self.nfreq, freg)
+        trans = self.sim.add_flux(self.fcen, self.df, self.nfreq, freg,
+                                  decimation_factor=1)
 
         self.sim.run(
             until_after_sources=mp.stop_when_fields_decayed(
@@ -141,8 +144,10 @@ class TestHoleyWvgCavity(unittest.TestCase):
 
         res = zip(mp.get_flux_freqs(trans), mp.get_fluxes(trans))
 
+        tol = 1e-8 if mp.is_single_precision() else 1e-10
         for e, r in zip(expected, res):
-            np.testing.assert_allclose(e, r)
+            self.assertClose(e, r, epsilon=tol)
+
 
 
 if __name__ == '__main__':

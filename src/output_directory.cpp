@@ -79,7 +79,7 @@ FILE *create_output_file(const char *dirname, const char *fname) {
   char n[buflen];
   snprintf(n, buflen, "%s/%s", dirname, fname);
   FILE *o = master_fopen(n, "w");
-  if (!o) abort("Unable to create file %s!\n", n);
+  if (!o) meep::abort("Unable to create file %s!\n", n);
   return o;
 }
 
@@ -151,7 +151,7 @@ got_tmpdir:
   strcat(strcpy(outdirname, tmpdir), meeptemplate);
 
   if (am_master() && !mkdtemp(outdirname)) {
-    abort("failed to create temporary output directory \"%s\"", outdirname);
+    meep::abort("failed to create temporary output directory \"%s\"", outdirname);
   }
   broadcast(0, outdirname, len);
   return outdirname;

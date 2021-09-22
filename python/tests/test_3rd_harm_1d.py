@@ -1,11 +1,8 @@
-from __future__ import division
-
 import unittest
 import meep as mp
-import numpy as np
+from utils import ApproxComparisonTestCase
 
-
-class Test3rdHarm1d(unittest.TestCase):
+class Test3rdHarm1d(ApproxComparisonTestCase):
 
     def setUp(self):
         self.sz = 100
@@ -37,9 +34,9 @@ class Test3rdHarm1d(unittest.TestCase):
                                  dimensions=dimensions)
 
         fr = mp.FluxRegion(mp.Vector3(0, 0, (0.5 * self.sz) - self.dpml - 0.5))
-        self.trans = self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr)
-        self.trans1 = self.sim.add_flux(fcen, 0, 1, fr)
-        self.trans3 = self.sim.add_flux(3 * fcen, 0, 1, fr)
+        self.trans = self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr, decimation_factor=1)
+        self.trans1 = self.sim.add_flux(fcen, 0, 1, fr, decimation_factor=1)
+        self.trans3 = self.sim.add_flux(3 * fcen, 0, 1, fr, decimation_factor=1)
 
     def test_3rd_harm_1d(self):
 
@@ -53,7 +50,8 @@ class Test3rdHarm1d(unittest.TestCase):
 
         harmonics = [self.k, self.amp, mp.get_fluxes(self.trans1)[0], mp.get_fluxes(self.trans3)[0]]
 
-        np.testing.assert_allclose(expected_harmonics, harmonics)
+        tol = 3e-5 if mp.is_single_precision() else 1e-7
+        self.assertClose(expected_harmonics, harmonics, epsilon=tol)
 
 
 if __name__ == '__main__':

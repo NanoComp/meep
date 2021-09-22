@@ -15,6 +15,8 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <array>
+#include <map>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -60,28 +62,64 @@ void fields::step() {
     chunks[i]->s->update_condinv();
 
   calc_sources(time()); // for B sources
-  step_db(B_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateB);
+    step_db(B_stuff);
+  }
   step_source(B_stuff);
-  step_boundaries(B_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingB);
+    step_boundaries(B_stuff);
+  }
   calc_sources(time() + 0.5 * dt); // for integrated H sources
-  update_eh(H_stuff);
-  step_boundaries(WH_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateH);
+    update_eh(H_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingWH);
+    step_boundaries(WH_stuff);
+  }
   update_pols(H_stuff);
-  step_boundaries(PH_stuff);
-  step_boundaries(H_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingPH);
+    step_boundaries(PH_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingH);
+    step_boundaries(H_stuff);
+  }
 
   if (fluxes) fluxes->update_half();
 
   calc_sources(time() + 0.5 * dt); // for D sources
-  step_db(D_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateD);
+    step_db(D_stuff);
+  }
   step_source(D_stuff);
-  step_boundaries(D_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingD);
+    step_boundaries(D_stuff);
+  }
   calc_sources(time() + dt); // for integrated E sources
-  update_eh(E_stuff);
-  step_boundaries(WE_stuff);
+  {
+    auto step_timer = with_timing_scope(FieldUpdateE);
+    update_eh(E_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingWE);
+    step_boundaries(WE_stuff);
+  }
   update_pols(E_stuff);
-  step_boundaries(PE_stuff);
-  step_boundaries(E_stuff);
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingPE);
+    step_boundaries(PE_stuff);
+  }
+  {
+    auto step_timer = with_timing_scope(BoundarySteppingE);
+    step_boundaries(E_stuff);
+  }
 
   if (fluxes) fluxes->update();
   t += 1;
@@ -94,13 +132,16 @@ void fields::step() {
     synchronized_magnetic_fields = save_synchronized_magnetic_fields;
   }
 
+  changed_materials = false; // any material changes were handled in connect_chunks()
+
   if (!std::isfinite(get_field(D_EnergyDensity, gv.center(), false)))
-    abort("simulation fields are NaN or Inf");
+    meep::abort("simulation fields are NaN or Inf");
 }
 
 void fields::phase_material() {
   bool changed = false;
   if (is_phasing()) {
+    CHUNK_OPENMP
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->is_mine()) {
         chunks[i]->phase_material(phasein_time);
@@ -128,93 +169,147 @@ void fields_chunk::phase_material(int phasein_time) {
   }
 }
 
+void fields::process_incoming_chunk_data(field_type ft, const chunk_pair &comm_pair) {
+  am_now_working_on(Boundaries);
+  int this_chunk_idx = comm_pair.second;
+  const int pair_idx = chunk_pair_to_index(comm_pair);
+  const realnum *pair_comm_block = static_cast<realnum *>(comm_blocks[ft][pair_idx]);
+
+  {
+    const comms_key key = {ft, CONNECT_PHASE, comm_pair};
+    size_t num_transfers = get_comm_size(key) / 2; // Two realnums per complex
+    if (num_transfers) {
+      const std::complex<realnum> *pair_comm_block_complex =
+          reinterpret_cast<const std::complex<realnum> *>(pair_comm_block);
+      const std::vector<realnum *> &incoming_connection =
+          chunks[this_chunk_idx]->connections_in.at(key);
+      const std::vector<std::complex<realnum> > &connection_phase_for_ft =
+          chunks[this_chunk_idx]->connection_phases[key];
+
+      for (size_t n = 0; n < num_transfers; ++n) {
+        std::complex<realnum> temp = connection_phase_for_ft[n] * pair_comm_block_complex[n];
+        *(incoming_connection[2 * n]) = temp.real();
+        *(incoming_connection[2 * n + 1]) = temp.imag();
+      }
+      pair_comm_block += 2 * num_transfers;
+    }
+  }
+
+  {
+    const comms_key key = {ft, CONNECT_NEGATE, comm_pair};
+    const size_t num_transfers = get_comm_size(key);
+    if (num_transfers) {
+      const std::vector<realnum *> &incoming_connection =
+          chunks[this_chunk_idx]->connections_in.at(key);
+      for (size_t n = 0; n < num_transfers; ++n) {
+        *(incoming_connection[n]) = -pair_comm_block[n];
+      }
+      pair_comm_block += num_transfers;
+    }
+  }
+
+  {
+    const comms_key key = {ft, CONNECT_COPY, comm_pair};
+    const size_t num_transfers = get_comm_size(key);
+    if (num_transfers) {
+      const std::vector<realnum *> &incoming_connection =
+          chunks[this_chunk_idx]->connections_in.at(key);
+      for (size_t n = 0; n < num_transfers; ++n) {
+        *(incoming_connection[n]) = pair_comm_block[n];
+      }
+    }
+  }
+  finished_working();
+}
+
 void fields::step_boundaries(field_type ft) {
   connect_chunks(); // re-connect if !chunk_connections_valid
 
-  // Do the metals first!
-  for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
+  {
+    // Initiate receive operations as early as possible.
+    std::unique_ptr<comms_manager> manager = create_comms_manager();
 
-  /* Note that the copying of data to/from buffers is order-sensitive,
-     and must be kept consistent with the code in boundaries.cpp.
-     In particular, we require that boundaries.cpp set up the connections
-     array so that all of the connections for process i come before all
-     of the connections for process i' for i < i'  */
+    const auto &sequence = comms_sequence_for_field[ft];
+    for (const comms_operation &op : sequence.receive_ops) {
+      if (chunks[op.other_chunk_idx]->is_mine()) { continue; }
+      chunk_pair comm_pair{op.other_chunk_idx, op.my_chunk_idx};
+      comms_manager::receive_callback cb = [this, ft, comm_pair]() {
+        process_incoming_chunk_data(ft, comm_pair);
+      };
+      manager->receive_real_async(comm_blocks[ft][op.pair_idx], static_cast<int>(op.transfer_size),
+                                  op.other_proc_id, op.tag, cb);
+    }
 
-  // First copy outgoing data to buffers...
-  am_now_working_on(Boundaries);
-  for (int j = 0; j < num_chunks; j++)
-    if (chunks[j]->is_mine()) {
-      int wh[3] = {0, 0, 0};
-      for (int i = 0; i < num_chunks; i++) {
-        const int pair = j + i * num_chunks;
-        size_t n0 = 0;
-        for (int ip = 0; ip < 3; ip++) {
-          for (size_t n = 0; n < comm_sizes[ft][ip][pair]; n++)
-            comm_blocks[ft][pair][n0 + n] = *(chunks[j]->connections[ft][ip][Outgoing][wh[ip]++]);
-          n0 += comm_sizes[ft][ip][pair];
+    // Do the metals first!
+    for (int i = 0; i < num_chunks; i++)
+      if (chunks[i]->is_mine()) chunks[i]->zero_metal(ft);
+
+    // Copy outgoing data into buffers while following the predefined sequence of comms operations.
+    // Trigger the asynchronous send immediately once the outgoing comms buffer has been filled.
+    am_now_working_on(Boundaries);
+
+    for (const comms_operation &op : sequence.send_ops) {
+      const std::pair<int, int> comm_pair{op.my_chunk_idx, op.other_chunk_idx};
+      const int pair_idx = op.pair_idx;
+
+      realnum *outgoing_comm_block = comm_blocks[ft][pair_idx];
+      for (connect_phase ip : all_connect_phases) {
+        const comms_key key = {ft, ip, comm_pair};
+        const size_t pair_comm_size = get_comm_size(key);
+        if (pair_comm_size) {
+          const std::vector<realnum *> &outgoing_connection =
+              chunks[op.my_chunk_idx]->connections_out.at(key);
+          for (size_t n = 0; n < pair_comm_size; ++n) {
+            outgoing_comm_block[n] = *(outgoing_connection[n]);
+          }
+          outgoing_comm_block += pair_comm_size;
         }
       }
+      if (chunks[op.other_chunk_idx]->is_mine()) { continue; }
+      manager->send_real_async(comm_blocks[ft][pair_idx], static_cast<int>(op.transfer_size),
+                               op.other_proc_id, op.tag);
     }
-  finished_working();
 
-  am_now_working_on(MpiOneTime);
-  boundary_communications(ft);
-  finished_working();
-
-  // Finally, copy incoming data to the fields themselves, multiplying phases:
-  am_now_working_on(Boundaries);
-  for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) {
-      int wh[3] = {0, 0, 0};
-      for (int j = 0; j < num_chunks; j++) {
-        const int pair = j + i * num_chunks;
-        connect_phase ip = CONNECT_PHASE;
-        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; n += 2, wh[ip] += 2) {
-          const double phr = real(chunks[i]->connection_phases[ft][wh[ip] / 2]);
-          const double phi = imag(chunks[i]->connection_phases[ft][wh[ip] / 2]);
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]]) =
-              phr * comm_blocks[ft][pair][n] - phi * comm_blocks[ft][pair][n + 1];
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip] + 1]) =
-              phr * comm_blocks[ft][pair][n + 1] + phi * comm_blocks[ft][pair][n];
-        }
-        size_t n0 = comm_sizes[ft][ip][pair];
-        ip = CONNECT_NEGATE;
-        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; ++n)
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++]) = -comm_blocks[ft][pair][n0 + n];
-        n0 += comm_sizes[ft][ip][pair];
-        ip = CONNECT_COPY;
-        for (size_t n = 0; n < comm_sizes[ft][ip][pair]; ++n)
-          *(chunks[i]->connections[ft][ip][Incoming][wh[ip]++]) = comm_blocks[ft][pair][n0 + n];
+    // Process local transfers, which do not depend on a communication mechanism across nodes.
+    for (const comms_operation &op : sequence.receive_ops) {
+      if (chunks[op.other_chunk_idx]->is_mine()) {
+        process_incoming_chunk_data(ft, {op.other_chunk_idx, op.my_chunk_idx});
       }
     }
-  finished_working();
+    finished_working();
 
+    am_now_working_on(MpiOneTime);
+    // Let the communication manager drop out of scope to complete all outstanding requests.
+    // As data is received, the installed callback handles copying the data from the comm buffer
+    // back into the chunk field array.
+  }
+  finished_working();
 }
 
 void fields::step_source(field_type ft, bool including_integrated) {
-  if (ft != D_stuff && ft != B_stuff) abort("only step_source(D/B) is okay");
+  if (ft != D_stuff && ft != B_stuff) meep::abort("only step_source(D/B) is okay");
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->step_source(ft, including_integrated);
 }
+
 void fields_chunk::step_source(field_type ft, bool including_integrated) {
   if (doing_solve_cw && !including_integrated) return;
-  for (src_vol *sv = sources[ft]; sv; sv = sv->next) {
-    component c = direction_component(first_field_component(ft), component_direction(sv->c));
-    const realnum *cndinv = s->condinv[c][component_direction(sv->c)];
-    if ((including_integrated || !sv->t->is_integrated) && f[c][0] &&
-        ((ft == D_stuff && is_electric(sv->c)) || (ft == B_stuff && is_magnetic(sv->c)))) {
+  for (const src_vol &sv : sources[ft]) {
+    component c = direction_component(first_field_component(ft), component_direction(sv.c));
+    const realnum *cndinv = s->condinv[c][component_direction(sv.c)];
+    if ((including_integrated || !sv.t()->is_integrated) && f[c][0] &&
+        ((ft == D_stuff && is_electric(sv.c)) || (ft == B_stuff && is_magnetic(sv.c)))) {
       if (cndinv)
-        for (size_t j = 0; j < sv->npts; j++) {
-          const ptrdiff_t i = sv->index[j];
-          const complex<double> A = sv->current(j) * dt * double(cndinv[i]);
+        for (size_t j = 0; j < sv.num_points(); j++) {
+          const ptrdiff_t i = sv.index_at(j);
+          const complex<double> A = sv.current(j) * dt * double(cndinv[i]);
           f[c][0][i] -= real(A);
           if (!is_real) f[c][1][i] -= imag(A);
         }
       else
-        for (size_t j = 0; j < sv->npts; j++) {
-          const complex<double> A = sv->current(j) * dt;
-          const ptrdiff_t i = sv->index[j];
+        for (size_t j = 0; j < sv.num_points(); j++) {
+          const complex<double> A = sv.current(j) * dt;
+          const ptrdiff_t i = sv.index_at(j);
           f[c][0][i] -= real(A);
           if (!is_real) f[c][1][i] -= imag(A);
         }

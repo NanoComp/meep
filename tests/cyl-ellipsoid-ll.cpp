@@ -1,6 +1,8 @@
 /***************************************************************/
 /* simple test for libmeepgeom, modeled after meep_test.ctl    */
 /***************************************************************/
+#include <memory>
+#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -26,17 +28,22 @@ typedef std::complex<double> cdouble;
 /***************************************************************/
 bool compare_hdf5_datasets(const char *file1, const char *name1, const char *file2,
                            const char *name2, int expected_rank = 2, double rel_tol = 1.0e-4,
-                           double abs_tol = 1.0e-8) {
+                           double abs_tol = sizeof(realnum) == sizeof(float) ? 1.0e-6 : 1.0e-8) {
   h5file f1(file1, h5file::READONLY, false);
   int rank1;
-  size_t *dims1 = new size_t[expected_rank];
-  realnum *data1 = (realnum *)f1.read(name1, &rank1, dims1, expected_rank, sizeof(realnum) == sizeof(float));
+  std::vector<size_t> dims1(expected_rank);
+
+  std::unique_ptr<realnum []> data1;
+  std::unique_ptr<realnum []> data2;
+  data1.reset(static_cast<realnum *>(
+      f1.read(name1, &rank1, dims1.data(), expected_rank, sizeof(realnum) == sizeof(float))));
   if (!data1) return false;
 
   h5file f2(file2, h5file::READONLY, false);
   int rank2;
-  size_t *dims2 = new size_t[expected_rank];
-  realnum *data2 = (realnum *)f2.read(name2, &rank2, dims2, expected_rank, sizeof(realnum) == sizeof(float));
+  std::vector<size_t> dims2(expected_rank);
+  data2.reset(static_cast<realnum *>(
+      f2.read(name2, &rank2, dims2.data(), expected_rank, sizeof(realnum) == sizeof(float))));
   if (!data2) return false;
 
   if (rank1 != expected_rank || rank2 != expected_rank) return false;
@@ -154,7 +161,7 @@ int main(int argc, char *argv[]) {
     if (status)
       master_printf("Dielectric output test successful.\n");
     else
-      abort("Dielectric output error in cyl-ellipsoid-ll");
+      meep::abort("Dielectric output error in cyl-ellipsoid-ll");
   };
 
   // (run-until 23 (at-beginning output-epsilon)
@@ -181,7 +188,7 @@ int main(int argc, char *argv[]) {
     if (fabs(diff) <= RELTOL * fabs(ref_out_field))
       printf("Field component output test successful.");
     else
-      abort("field output error in cyl-ellipsoid-ll");
+      meep::abort("field output error in cyl-ellipsoid-ll");
   };
 
   return 0;

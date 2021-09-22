@@ -1,0 +1,9 @@
+autograd
+h5py
+jax
+jaxlib
+matplotlib
+numpy
+parameterized
+pytest
+scipy

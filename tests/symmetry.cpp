@@ -88,7 +88,7 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
 
 void check_unequal_layout(const fields &f1, const fields &f2) {
   if (f1.equal_layout(f2) || !f1.equal_layout(f1) || !f2.equal_layout(f2))
-    abort("fields::equal_layout did not return expected result");
+    meep::abort("fields::equal_layout did not return expected result");
 }
 
 int test_cyl_metal_mirror(double eps(const vec &)) {
@@ -917,51 +917,51 @@ int main(int argc, char **argv) {
   verbosity = 0;
   master_printf("Testing with various kinds of symmetry...\n");
 
-  if (!test_1d_periodic_mirror(one)) abort("error in test_1d_periodic_mirror vacuum\n");
+  if (!test_1d_periodic_mirror(one)) meep::abort("error in test_1d_periodic_mirror vacuum\n");
 
   // disable for parallel runs due to a bug in splitting cylindrical cell
   // with z-mirror symmetry into multiple chunks
   if ((count_processors() == 1) && !test_cyl_metal_mirror(one))
-    abort("error in test_cyl_metal_mirror vacuum\n");
+    meep::abort("error in test_cyl_metal_mirror vacuum\n");
 
-  if (!test_yperiodic_ymirror(one)) abort("error in test_yperiodic_ymirror vacuum\n");
-  if (!test_yperiodic_ymirror(rods_2d)) abort("error in test_yperiodic_ymirror rods2d\n");
+  if (!test_yperiodic_ymirror(one)) meep::abort("error in test_yperiodic_ymirror vacuum\n");
+  if (!test_yperiodic_ymirror(rods_2d)) meep::abort("error in test_yperiodic_ymirror rods2d\n");
 
-  if (!pml_twomirrors(one)) abort("error in pml_twomirrors vacuum\n");
+  if (!pml_twomirrors(one)) meep::abort("error in pml_twomirrors vacuum\n");
 
-  if (!test_origin_shift()) abort("error in test_origin_shift\n");
+  if (!test_origin_shift()) meep::abort("error in test_origin_shift\n");
 
-  if (!exact_pml_rot2x_tm(one)) abort("error in exact_pml_rot2x_tm vacuum\n");
+  if (!exact_pml_rot2x_tm(one)) meep::abort("error in exact_pml_rot2x_tm vacuum\n");
 
-  if (!test_metal_xmirror(rods_2d)) abort("error in test_metal_xmirror rods_2d\n");
+  if (!test_metal_xmirror(rods_2d)) meep::abort("error in test_metal_xmirror rods_2d\n");
 
-  if (!test_metal_xmirror(one)) abort("error in test_metal_xmirror vacuum\n");
-  if (!test_metal_ymirror(one)) abort("error in test_metal_ymirror vacuum\n");
-  if (!test_metal_ymirror(rods_2d)) abort("error in test_metal_ymirror rods_2d\n");
+  if (!test_metal_xmirror(one)) meep::abort("error in test_metal_xmirror vacuum\n");
+  if (!test_metal_ymirror(one)) meep::abort("error in test_metal_ymirror vacuum\n");
+  if (!test_metal_ymirror(rods_2d)) meep::abort("error in test_metal_ymirror rods_2d\n");
 
-  if (!test_metal_rot2y(one)) abort("error in test_metal_rot2y vacuum\n");
-  if (!test_metal_rot2y(rods_2d)) abort("error in test_metal_rot2y rods_2d\n");
+  if (!test_metal_rot2y(one)) meep::abort("error in test_metal_rot2y vacuum\n");
+  if (!test_metal_rot2y(rods_2d)) meep::abort("error in test_metal_rot2y rods_2d\n");
 
-  if (!exact_metal_rot2y(one)) abort("error in exact_metal_rot2y vacuum\n");
-  if (!exact_metal_rot2y(rods_2d)) abort("error in exact_metal_rot2y rods_2d\n");
+  if (!exact_metal_rot2y(one)) meep::abort("error in exact_metal_rot2y vacuum\n");
+  if (!exact_metal_rot2y(rods_2d)) meep::abort("error in exact_metal_rot2y rods_2d\n");
 
-  if (!exact_metal_rot4z(one)) abort("error in exact_metal_rot4z vacuum\n");
-  if (!exact_metal_rot4z(rods_2d)) abort("error in exact_metal_rot4z rods_2d\n");
+  if (!exact_metal_rot4z(one)) meep::abort("error in exact_metal_rot4z vacuum\n");
+  if (!exact_metal_rot4z(rods_2d)) meep::abort("error in exact_metal_rot4z rods_2d\n");
 
-  if (!test_3D_metal_xmirror(one)) abort("error in test_3D_metal_xmirror vacuum\n");
+  if (!test_3D_metal_xmirror(one)) meep::abort("error in test_3D_metal_xmirror vacuum\n");
 
-  if (!test_3D_metal_zmirror(one)) abort("error in test_3D_metal_zmirror vacuum\n");
+  if (!test_3D_metal_zmirror(one)) meep::abort("error in test_3D_metal_zmirror vacuum\n");
 
-  if (!test_3D_metal_odd_zmirror(one)) abort("error in test_3D_metal_odd_zmirror vacuum\n");
+  if (!test_3D_metal_odd_zmirror(one)) meep::abort("error in test_3D_metal_odd_zmirror vacuum\n");
 
   if (!test_3D_metal_rot4z(one)) {
     all_wait();
-    abort("error in test_3D_metal_rot4z vacuum\n");
+    meep::abort("error in test_3D_metal_rot4z vacuum\n");
   }
 
-  if (!test_3D_metal_rot4z_mirror(one)) abort("error in test_3D_metal_rot4z_mirror vacuum\n");
+  if (!test_3D_metal_rot4z_mirror(one)) meep::abort("error in test_3D_metal_rot4z_mirror vacuum\n");
 
-  if (!test_3D_metal_3mirror(one)) abort("error in test_3D_metal_3mirror\n");
+  if (!test_3D_metal_3mirror(one)) meep::abort("error in test_3D_metal_3mirror\n");
 
     /**************************************************************************/
     /* For the following tests, we increase the check tolerance slightly.
@@ -976,21 +976,23 @@ int main(int argc, char **argv) {
   thresh_compare = 1e-10;
 #endif
 
-  if (!nonlinear_ex(vol1d(1.0, 30.0), one)) abort("error in 1D nonlinear vacuum\n");
-  if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) abort("error in 3D nonlinear vacuum\n");
+  if (!nonlinear_ex(vol1d(1.0, 30.0), one)) meep::abort("error in 1D nonlinear vacuum\n");
+  if (sizeof(realnum) == sizeof(double)) {
+    if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) meep::abort("error in 3D nonlinear vacuum\n");
+  }
 
   // disable for parallel runs due to a bug in splitting cylindrical cell
   // with z-mirror symmetry into multiple chunks
   if ((count_processors() == 1) && (!test_cyl_metal_mirror_nonlinear(one)))
-    abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
+    meep::abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
 
-  if (!exact_metal_rot4z_nonlinear(one)) abort("error in exact_metal_rot4z nonlinear vacuum\n");
+  if (!exact_metal_rot4z_nonlinear(one)) meep::abort("error in exact_metal_rot4z nonlinear vacuum\n");
   if (!exact_metal_rot4z_nonlinear(rods_2d))
-    abort("error in exact_metal_rot4z nonlinear rods_2d\n");
+    meep::abort("error in exact_metal_rot4z nonlinear rods_2d\n");
 
   // I'm not sure why the polariton tests require increased tolerances...?
-  if (!polariton_ex(vol1d(1.0, 30.0), one)) abort("error in 1D polariton vacuum\n");
-  if (!polariton_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) abort("error in 3D polariton vacuum\n");
+  if (!polariton_ex(vol1d(1.0, 30.0), one)) meep::abort("error in 1D polariton vacuum\n");
+  if (!polariton_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) meep::abort("error in 3D polariton vacuum\n");
 
   return 0;
 }

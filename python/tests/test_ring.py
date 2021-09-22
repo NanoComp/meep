@@ -65,8 +65,10 @@ class TestRing(unittest.TestCase):
         fp = self.sim.get_field_point(mp.Ez, v)
         ep = self.sim.get_epsilon_point(v)
 
-        self.assertAlmostEqual(ep, 11.559999999999999)
-        self.assertAlmostEqual(fp, -0.08185972142450348)
+        places = 5 if mp.is_single_precision() else 7
+        self.assertAlmostEqual(ep, 11.559999999999999, places=places)
+        self.assertAlmostEqual(fp, -0.08185972142450348, places=places)
+
 
 if __name__ == '__main__':
     unittest.main()

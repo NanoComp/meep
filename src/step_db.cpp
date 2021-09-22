@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <assert.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -30,91 +31,98 @@ using namespace std;
 namespace meep {
 
 void fields::step_db(field_type ft) {
+  if (ft != B_stuff && ft != D_stuff) meep::abort("step_db only works with B/D");
+
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      if (chunks[i]->step_db(ft)) chunk_connections_valid = false;
+      if (chunks[i]->step_db(ft)) {
+        chunk_connections_valid = false;
+        assert(changed_materials);
+      }
 }
 
 bool fields_chunk::step_db(field_type ft) {
   bool allocated_u = false;
 
-  if (ft != B_stuff && ft != D_stuff) abort("bug - step_db should only be called for B or D");
+  for (const auto& sub_gv : gvs_tiled) {
+    DOCMP FOR_FT_COMPONENTS(ft, cc) {
+      if (f[cc][cmp]) {
+        const component c_p = plus_component[cc], c_m = minus_component[cc];
+        const direction d_deriv_p = plus_deriv_direction[cc];
+        const direction d_deriv_m = minus_deriv_direction[cc];
+        const direction d_c = component_direction(cc);
+        const bool have_p = have_plus_deriv[cc];
+        const bool have_m = have_minus_deriv[cc];
+        const direction dsig0 = cycle_direction(gv.dim, d_c, 1);
+        const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
+        const direction dsigu0 = cycle_direction(gv.dim, d_c, 2);
+        const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
+        ptrdiff_t stride_p = have_p ? gv.stride(d_deriv_p) : 0;
+        ptrdiff_t stride_m = have_m ? gv.stride(d_deriv_m) : 0;
+        realnum *f_p = have_p ? f[c_p][cmp] : NULL;
+        realnum *f_m = have_m ? f[c_m][cmp] : NULL;
+        realnum *the_f = f[cc][cmp];
 
-  DOCMP FOR_FT_COMPONENTS(ft, cc) {
-    if (f[cc][cmp]) {
-      const component c_p = plus_component[cc], c_m = minus_component[cc];
-      const direction d_deriv_p = plus_deriv_direction[cc];
-      const direction d_deriv_m = minus_deriv_direction[cc];
-      const direction d_c = component_direction(cc);
-      const bool have_p = have_plus_deriv[cc];
-      const bool have_m = have_minus_deriv[cc];
-      const direction dsig0 = cycle_direction(gv.dim, d_c, 1);
-      const direction dsig = s->sigsize[dsig0] > 1 ? dsig0 : NO_DIRECTION;
-      const direction dsigu0 = cycle_direction(gv.dim, d_c, 2);
-      const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
-      ptrdiff_t stride_p = have_p ? gv.stride(d_deriv_p) : 0;
-      ptrdiff_t stride_m = have_m ? gv.stride(d_deriv_m) : 0;
-      realnum *f_p = have_p ? f[c_p][cmp] : NULL;
-      realnum *f_m = have_m ? f[c_m][cmp] : NULL;
-      realnum *the_f = f[cc][cmp];
-
-      if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
-        f_cond[cc][cmp] = new realnum[gv.ntot()];
-        memset(f_cond[cc][cmp], 0, sizeof(realnum) * gv.ntot());
-      }
-      if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
-        f_u[cc][cmp] = new realnum[gv.ntot()];
-        memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
-        allocated_u = true;
-      }
-
-      if (ft == D_stuff) { // strides are opposite sign for H curl
-        stride_p = -stride_p;
-        stride_m = -stride_m;
-      }
-
-      if (gv.dim == Dcyl) switch (d_c) {
-          case R:
-            f_p = NULL; // im/r Fz term will be handled separately
-            break;
-          case P: break; // curl works normally for phi component
-          case Z: {
-            f_m = NULL; // im/r Fr term will be handled separately
-
-            /* Here we do a somewhat cool hack: the update of the z
-               component gives a 1/r d(r Fp)/dr term, rather than
-               just the derivative dg/dr expected in step_curl.
-               Rather than duplicating all of step_curl to handle
-               this bloody derivative, however, we define a new
-               array f_rderiv_int which is the integral of 1/r d(r Fp)/dr,
-               so that we can pass it to the unmodified step_curl
-               and get the correct derivative.  (More precisely,
-               the derivative and integral are replaced by differences
-               and sums, but you get the idea). */
-            if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
-            realnum ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(c_p).in_direction(R);
-            for (int iz = 0; iz <= gv.nz(); ++iz)
-              f_rderiv_int[iz] = 0;
-            int sr = gv.nz() + 1;
-            for (int ir = 1; ir <= gv.nr(); ++ir) {
-              realnum rinv = 1.0 / ((ir + ir0) - 0.5);
-              for (int iz = 0; iz <= gv.nz(); ++iz) {
-                ptrdiff_t idx = ir * sr + iz;
-                f_rderiv_int[idx] =
-                    f_rderiv_int[idx - sr] +
-                    rinv * (f_p[idx] * (ir + ir0) - f_p[idx - sr] * ((ir - 1) + ir0));
-              }
-            }
-            f_p = f_rderiv_int;
-            break;
-          }
-          default: abort("bug - non-cylindrical field component in Dcyl");
+        if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
+          f_cond[cc][cmp] = new realnum[gv.ntot()];
+          memset(f_cond[cc][cmp], 0, sizeof(realnum) * gv.ntot());
+        }
+        if (dsigu != NO_DIRECTION && !f_u[cc][cmp]) {
+          f_u[cc][cmp] = new realnum[gv.ntot()];
+          memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
+          allocated_u = true;
         }
 
-      STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, Courant, dsig, s->sig[dsig],
-                s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
-                s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
-                f_cond[cc][cmp]);
+        if (ft == D_stuff) { // strides are opposite sign for H curl
+          stride_p = -stride_p;
+          stride_m = -stride_m;
+        }
+
+        if (gv.dim == Dcyl) switch (d_c) {
+            case R:
+              f_p = NULL; // im/r Fz term will be handled separately
+              break;
+            case P: break; // curl works normally for phi component
+            case Z: {
+              f_m = NULL; // im/r Fr term will be handled separately
+
+              /* Here we do a somewhat cool hack: the update of the z
+                 component gives a 1/r d(r Fp)/dr term, rather than
+                 just the derivative dg/dr expected in step_curl.
+                 Rather than duplicating all of step_curl to handle
+                 this bloody derivative, however, we define a new
+                 array f_rderiv_int which is the integral of 1/r d(r Fp)/dr,
+                 so that we can pass it to the unmodified step_curl
+                 and get the correct derivative.  (More precisely,
+                 the derivative and integral are replaced by differences
+                 and sums, but you get the idea). */
+              if (!f_rderiv_int) f_rderiv_int = new realnum[gv.ntot()];
+              realnum ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(c_p).in_direction(R);
+              for (int iz = 0; iz <= gv.nz(); ++iz)
+                f_rderiv_int[iz] = 0;
+              int sr = gv.nz() + 1;
+              for (int ir = 1; ir <= gv.nr(); ++ir) {
+                realnum rinv = 1.0 / ((ir + ir0) - 0.5);
+                for (int iz = 0; iz <= gv.nz(); ++iz) {
+                  ptrdiff_t idx = ir * sr + iz;
+                  f_rderiv_int[idx] =
+                      f_rderiv_int[idx - sr] +
+                      rinv * (f_p[idx] * (ir + ir0) - f_p[idx - sr] * ((ir - 1) + ir0));
+                }
+              }
+              f_p = f_rderiv_int;
+              break;
+            }
+            default: meep::abort("bug - non-cylindrical field component in Dcyl");
+          }
+
+        STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m,
+                  gv, sub_gv.little_owned_corner0(cc), sub_gv.big_corner(),
+                  Courant, dsig, s->sig[dsig],
+                  s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
+                  s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
+                  f_cond[cc][cmp]);
+      }
     }
   }
 
@@ -142,7 +150,8 @@ bool fields_chunk::step_db(field_type ft) {
       const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
       const realnum betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1) *
                             (f[c_g][1 - cmp] ? (ft == D_stuff ? -1 : +1) * (2 * cmp - 1) : 1);
-      STEP_BETA(the_f, cc, g, gv, betadt, dsig, s->siginv[dsig], f_u[cc][cmp], dsigu,
+      STEP_BETA(the_f, cc, g, gv, gv.little_owned_corner0(cc), gv.big_corner(),
+                betadt, dsig, s->siginv[dsig], f_u[cc][cmp], dsigu,
                 s->siginv[dsigu], s->condinv[cc][d_c], f_cond[cc][cmp]);
     }
 

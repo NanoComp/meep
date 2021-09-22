@@ -188,8 +188,16 @@ sudo make install
 Assuming you've set your `LDFLAGS` etcetera, the configure script should find all of the libraries you've installed and, with luck, compile successfully. The `sudo` in the last command uses administrator privileges to install the binaries in standard system directories. Alternatively, you can just use `make install` if you have used `--prefix` to change the installation directory to something like your home directory. This is described below. To make sure Meep is working, you can run its test suite via:
 
 ```sh
-make check
+make check
 ```
+
+When running the test suite, the number of MPI processes is two and if OpenMP is enabled (as described further below) the number of threads is two. These default values can be overridden by passing `RUNCODE` to `make`, e.g.:
+
+```sh
+make RUNCODE="env OMP_NUM_THREADS=4 mpirun -np 3" check
+```
+
+If [`Coverage.py`](https://coverage.readthedocs.io/en/coverage-5.5/index.html) is found on your machine, the Python test suite is always run in serial mode (i.e., no MPI).
 
 Note: several of the unit tests generate output files which are written to disk. The C++ test suite in `meep/tests` outputs its files in the same subdirectory. The Python test suite in `meep/python/tests` outputs its files to a temporary system directory (i.e., /tmp, etc.).
 
@@ -242,18 +250,17 @@ By default, Meep's configure script tries to guess the gcc `-march` flag for the
 
 **`--with-openmp`**
 —
-This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multithreading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). Currently, only multi-frequency [`near2far`](Python_User_Interface.md#near-to-far-field-spectra) calculations are sped up this way, but in the future this [may be expanded](https://github.com/NanoComp/meep/issues/228) with additional OpenMP parallelism. When you run Meep, you can first set the `OMP_NUM_THREADS` environment variable to the number of threads you want OpenMP to use.
+This flag enables some experimental support for [OpenMP](https://en.wikipedia.org/wiki/OpenMP) multi-threading parallelism on multi-core machines (*instead* of MPI, or in addition to MPI if you have multiple processor cores per MPI process). When you run Meep, you should first set the environment variable `OMP_NUM_THREADS` to the number of threads you want OpenMP to use (the default is a single thread).
 
 ### Floating-Point Precision of the Fields and Materials Arrays
 
-By default, the C/C++ arrays used in Meep to store the time-domain fields ($\mathbf{E}$, $\mathbf{D}$, $\mathbf{H}$) and materials ($\varepsilon$) are defined using [double-precision floating point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Updating the fields arrays generally dominates the computational cost of the simulation because it occurs at every voxel in the cell and at every timestep. Because [discretization errors](https://en.wikipedia.org/wiki/Discretization_error) which include the discontinuous material interfaces (as described in [Subpixel Smoothing](Subpixel_Smoothing.md)) as well as the [numerical dispersion](https://en.wikipedia.org/wiki/Numerical_dispersion) of the Yee grid typically dominates the [floating-point roundoff error](https://en.wikipedia.org/wiki/Round-off_error), the fields/materials arrays can be defined using [single-precision floating point](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) to provide a significant speedup (by reducing the [memory bandwidth](https://en.wikipedia.org/wiki/Memory_bandwidth)) often without *any loss* in simulation accuracy.
+By default, the C++ arrays used in Meep to store the time-domain fields ($\mathbf{E}$, $\mathbf{D}$, $\mathbf{H}$, $\mathbf{B}$) and materials ($\varepsilon$, $\mu$) are defined using [double-precision floating point](https://en.wikipedia.org/wiki/Double-precision_floating-point_format). Updating the fields arrays generally dominates the computational cost of the simulation because it occurs at every voxel in the cell and at every timestep. Because [discretization errors](https://en.wikipedia.org/wiki/Discretization_error) which include the [discontinuous material interfaces](Subpixel_Smoothing.md) as well as the [numerical dispersion](https://en.wikipedia.org/wiki/Numerical_dispersion) of the Yee grid typically dominates the [floating-point roundoff error](https://en.wikipedia.org/wiki/Round-off_error), the fields and materials arrays can be defined using [single-precision floating point](https://en.wikipedia.org/wiki/Single-precision_floating-point_format) to provide a significant speedup by reducing the [memory bandwidth](https://en.wikipedia.org/wiki/Memory_bandwidth) often without any loss in simulation accuracy.
 
-This feature requires one to pass the `--enable-single` flag to
-the Meep `configure` script before compiling.
+This feature requires one to pass the `--enable-single` flag to the Meep `configure` script before compiling. In Python, you can determine whether the Meep module has been compiled with single-precision floating point using the boolean function `meep.is_single_precision()`.
 
-As a demonstration of the potential improvement in runtime performance, for an experiment involving [computing the light-extraction efficiency of an OLED](http://www.simpetus.com/projects.html#meep_oled) which includes PMLs, DFT flux monitors, and Lorentzian susceptibilities, the timestepping rate (s/step) for the single-precision case using 20 MPI processes was ~50% that of double precision.
+As a demonstration of the potential improvement in runtime performance, for a benchmarking experiment based on [computing the light-extraction efficiency of an OLED](https://gist.github.com/oskooi/f745c467ae54e192d5c8340eace9a780) which includes PMLs, DFT flux monitors, and Lorentzian susceptibilities (for material dispersion), the timestepping rate (s/step) for the single-precision case using 20 MPI processes was *less than half* that of double precision.
 
-The DFT fields, however, are always defined using double-precision floating point. This is intended to mitigate the accumulation of round-off error for simulations with a large number of timesteps.
+Compiling with `--enable-single` will also change the type of the DFT fields arrays from double- to single-precision floating point. Reducing the floating-point precision generally does not affect the DFT accuracy and can provide a speedup to the DFT fields updates particularly when the simulation involves large-size DFT monitors with a fine frequency mesh which is typical for the [adjoint solver](Python_Tutorials/Adjoint_Solver.md). As an example, for the same OLED benchmarking test using a single thread, the time spent on the DFT fields updates was *nearly halved* when switching from double to single precision.
 
 ### Separating Build and Source Paths
 

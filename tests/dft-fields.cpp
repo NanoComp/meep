@@ -92,7 +92,7 @@ void Run(bool Pulse, double resolution, cdouble **field_array = 0, int *array_ra
   }
   else {
     f.add_point_source(Ez, continuous_src_time(fcen, df), x0);
-    f.solve_cw(1e-8, 10000, 10);
+    f.solve_cw(sizeof(realnum) == sizeof(float) ? 1e-5 : 1e-8, 10000, 10);
     h5file *file = f.open_h5file("cw-fields", h5file::WRITE, 0, false);
     f.output_hdf5(Ez, f.v, file);
     f.output_hdf5(Hx, f.v, file);
@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
   bool verbose = false;
   for (int narg = 1; narg < argc; narg++) {
     if (!strcasecmp(argv[narg], "--resolution")) {
-      if (narg + 1 >= argc) abort("--resolution requires an argument");
+      if (narg + 1 >= argc) meep::abort("--resolution requires an argument");
       sscanf(argv[narg + 1], "%le", &resolution);
       master_printf("Setting resolution=%e.\n", resolution);
       narg++;
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
     else if (!strcasecmp(argv[narg], "--verbose"))
       verbose = true;
     else
-      abort("unknown argument %s", argv[narg]);
+      meep::abort("unknown argument %s", argv[narg]);
   }
 
   cdouble *field_array = 0;
