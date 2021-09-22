@@ -112,15 +112,18 @@ static PyObject *py_meep_src_time_object() {
 }
 
 static double py_callback_wrap(const meep::vec &v) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
     double ret = PyFloat_AsDouble(pyret);
     Py_DECREF(pyv);
     Py_XDECREF(pyret);
+    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
 static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
     double real = PyComplex_RealAsDouble(pyret);
@@ -128,12 +131,14 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     std::complex<double> ret(real, imag);
     Py_DECREF(pyv);
     Py_DECREF(pyret);
+    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
 static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
                                                const meep::vec &loc,
                                                void *data_) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     PyObject *pyv = vec2py(loc);
 
     py_field_func_data *data = (py_field_func_data *)data_;
@@ -159,45 +164,46 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);
+    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
 static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     PyObject *py_freq = PyFloat_FromDouble(freq);
     PyObject *py_mode = PyInteger_FromLong(mode);
 
     PyObject *py_result = PyObject_CallFunctionObjArgs((PyObject*)user_data, py_freq, py_mode, NULL);
 
+    meep::vec result;
+
     if (!py_result) {
         PyErr_PrintEx(0);
-        Py_DECREF(py_freq);
-        Py_DECREF(py_mode);
-        return meep::vec(0, 0, 0);
-    }
-
-    vector3 v3;
-    if (!pyv3_to_v3(py_result, &v3)) {
-        PyErr_PrintEx(0);
-        Py_DECREF(py_freq);
-        Py_DECREF(py_mode);
+        result = meep::vec(0, 0, 0);
+    } else {
+        vector3 v3;
+        if (!pyv3_to_v3(py_result, &v3)) {
+            PyErr_PrintEx(0);
+            result = meep::vec(0, 0, 0);
+        } else {
+            result = meep::vec(v3.x, v3.y, v3.z);
+        }
         Py_XDECREF(py_result);
-        return meep::vec(0, 0, 0);
     }
-
-    meep::vec result(v3.x, v3.y, v3.z);
 
     Py_DECREF(py_freq);
     Py_DECREF(py_mode);
-    Py_DECREF(py_result);
-
+    SWIG_PYTHON_THREAD_END_BLOCK;
     return result;
 }
 
 static void _do_master_printf(const char* stream_name, const char* text) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     PyObject *py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
 
     Py_XDECREF(PyObject_CallMethod(py_stream, "write", "(s)", text));
     Py_XDECREF(PyObject_CallMethod(py_stream, "flush", NULL));
+    SWIG_PYTHON_THREAD_END_BLOCK;
 }
 
 void py_master_printf_wrap(const char *s) {
@@ -248,6 +254,7 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
 
 // Wrapper for Python PML profile function
 double py_pml_profile(double u, void *f) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
@@ -258,6 +265,7 @@ double py_pml_profile(double u, void *f) {
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
     Py_XDECREF(d);
+    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
@@ -573,11 +581,13 @@ meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::di
 }
 
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
+    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
     // Return value: New reference
     PyObject *v3_class = py_vector3_object();
     PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
     PyObject *result = PyObject_Call(v3_class, args, NULL);
     Py_DECREF(args);
+    SWIG_PYTHON_THREAD_END_BLOCK;
     return result;
 }
 
@@ -593,6 +603,24 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 }
 #endif
 %}
+
+/*
+ * These methods extensively use the Python C api (especially allocation) and
+ * hence need to hold the GIL (acquire/release) for key parts of their
+ * implementaion/code. Instead, disable threading for these methods by default.
+ *
+ * TODO: If any of these methods are expensive, we can explicitly allow threads
+ * for the expensive blocks of code in these methods.
+ */
+%feature("nothreadallow") _dft_ldos_J;
+%feature("nothreadallow") _dft_ldos_F;
+%feature("nothreadallow") _dft_ldos_ldos;
+%feature("nothreadallow") _get_farfields_array;
+%feature("nothreadallow") _get_farfield;
+%feature("nothreadallow") py_do_harminv;
+%feature("nothreadallow") _get_array_slice_dimensions;
+%feature("nothreadallow") _get_gradient;
+%feature("nothreadallow") _get_dft_array;
 
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, int);
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, size_t);
@@ -867,6 +895,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     Py_DECREF(swigobj);
 }
 %}
+
 //--------------------------------------------------
 // end typemaps needed for material grid
 //--------------------------------------------------
@@ -1410,6 +1439,9 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 }
 
 %exception {
+#ifdef MEEP_SWIG_PYTHON_DEBUG
+  printf("**SWIG**: $symname\n");
+#endif
   try {
     $action
   } catch (std::runtime_error &e) {
@@ -1522,6 +1554,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
+
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 %template(DftDataVector) std::vector<meep_geom::dft_data>;
 %template(VolumeVector) std::vector<meep::volume>;
