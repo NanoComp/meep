@@ -163,8 +163,12 @@ HPPFILES=                                    \
  $(top_srcdir)/src/adjust_verbosity.hpp      \
  meep-python.hpp
 
+if MEEP_SWIG_PYTHON_THREADS
+SWIG_MEEP_FLAGS = -threads
+endif # MEEP_SWIG_PYTHON_THREADS
+
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
-	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
+	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
