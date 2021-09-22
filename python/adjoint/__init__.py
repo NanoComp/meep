@@ -13,11 +13,11 @@ from .filter_source import FilteredSource
 
 from .filters import *
 
-from .connectivity import *
-
 from . import utils
 
 try:
     from .wrapper import MeepJaxWrapper
 except ModuleNotFoundError as _:
     pass
+
+from .connectivity import *
