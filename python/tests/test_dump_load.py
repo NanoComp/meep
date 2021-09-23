@@ -153,8 +153,6 @@ class TestLoadDump(unittest.TestCase):
             p = sim.get_field_point(mp.Ez, sample_point)
             field_points[sim.meep_time()] = p.real
 
-        sim.init_sim()
-
         # Now load the fields (at t=15) and then continue to t=20
         sim.load(dump_dirname, load_structure=False, load_fields=True, single_parallel_file=single_parallel_file)
         sim.run(mp.at_every(1, get_field_point), until=5)
