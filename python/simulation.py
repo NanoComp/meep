@@ -1996,10 +1996,6 @@ class Simulation(object):
             self.loop_tile_base
         )
 
-        if self.load_fields_file:
-            self.load_fields(
-                self.load_fields_file, self.load_single_parallel_file)
-
         if self.force_all_components and self.dimensions != 1:
             self.fields.require_component(mp.Ez)
             self.fields.require_component(mp.Hz)
@@ -2019,7 +2015,11 @@ class Simulation(object):
             hook()
 
         self._is_initialized = True
-        
+
+        if self.load_fields_file:
+            self.load_fields(
+                self.load_fields_file, self.load_single_parallel_file)
+
     def using_real_fields(self):
         cond1 = self.is_cylindrical and self.m != 0
         cond2 = any([s.phase.imag for s in self.symmetries])
