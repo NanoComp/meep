@@ -6,13 +6,14 @@ Mo Chen <mochen@mit.edu>
 """
 
 import numpy as np
-from scipy.sparse.linalg import *
+from scipy.sparse.linalg import cg, spsolve
 from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix, lil_matrix
 from scipy.linalg import norm
 import matplotlib.pyplot as plt
 class ConnectivityConstraint(object):
     def __init__(self, nx, ny, nz, k0=1000, zeta=0, sp_solver=cg, alpha=None, alpha0=None, thresh=0.1, p=2):
         #zeta is to prevent singularity when damping is zero; with damping, zeta should be zero
+        #set ny=1 for 2D
         self.nx, self.ny, self.nz= nx, ny, nz
         self.n = nx*ny*nz
         self.m = nx*ny*(nz-1)
@@ -128,7 +129,7 @@ class ConnectivityConstraint(object):
             fdgrad.append((fp-fm)/(2*db))
             rho_vector[k]+=db
         return fdidx, fdgrad
-        
+
     def calculate_all_fd_grad(self, rho_vector, db=1e-4):
         fdgrad = []
         for k in range(self.n):
