@@ -222,8 +222,15 @@ private:
 };
 
 void set_dimensions(int dims);
-geom_epsilon make_geom_epsilon(meep::structure *s, geometric_object_list g, 
-                               material_type_list extra_materials);
+geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list g,
+                                 vector3 center = make_vector3(),
+                                 bool use_anisotropic_averaging = true,
+                                 double tol = DEFAULT_SUBPIXEL_TOL,
+                                 int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+                                 bool ensure_periodicity = false,
+                                 material_type _default_material = vacuum, absorber_list alist = 0,
+                                 material_type_list extra_materials = material_type_list());
+//, geometric_object_list g, material_type_list extra_materials
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  vector3 center = make_vector3(),
                                  bool use_anisotropic_averaging = true,

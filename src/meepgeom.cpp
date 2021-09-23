@@ -1876,15 +1876,12 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 
 /* create a geom_epsilon object that can persist
 if needed */
-geom_epsilon make_geom_epsilon(meep::grid_volume gv, geometric_object_list g, 
-                               material_type_list extra_materials) {
-  geom_epsilon geps(g, extra_materials, gv.pad().surroundings());
-  return geps;
-}
-
-// set global variables in libctlgeom based on data fields in s
-void init_libctl(meep::structure *s, vector3 center, bool _ensure_periodicity, 
-                 material_type _default_material) {
+geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list g, vector3 center,
+                                 bool use_anisotropic_averaging, double tol, int maxeval,
+                                 bool _ensure_periodicity, material_type _default_material,
+                                 absorber_list alist, material_type_list extra_materials) {
+  
+  // set global variables in libctlgeom based on data fields in s
   geom_initialize();
   geometry_center = center;
 
@@ -1932,6 +1929,9 @@ void init_libctl(meep::structure *s, vector3 center, bool _ensure_periodicity,
     master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
                   resolution);
   }
+
+  geom_epsilon *geps = new geom_epsilon(g, extra_materials, gv.pad().surroundings());
+  return geps;
 }
 
 /* from geom_eps objects, set all the material 
@@ -1973,19 +1973,98 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
                                  bool use_anisotropic_averaging, double tol, int maxeval,
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist, material_type_list extra_materials) {
-  init_libctl(s, center, _ensure_periodicity, _default_material);
-  geom_epsilon geps(g, extra_materials, s->gv.pad().surroundings());
-  set_materials(s, geps, alist, use_anisotropic_averaging, tol, maxeval);
+
+
+  meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, g, center, use_anisotropic_averaging, tol, 
+                                 maxeval, _ensure_periodicity, _default_material, alist,
+                                 extra_materials);
+  set_materials_from_geom_epsilon(s, *geps, center, use_anisotropic_averaging, tol, 
+                                 maxeval, _ensure_periodicity, _default_material, alist,
+                                 extra_materials);
 }
 
 /* from a previously created geom_epsilon object,
 set the materials as specified */
-void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon geps, vector3 center,
-                                 bool use_anisotropic_averaging, double tol, int maxeval,
-                                 bool _ensure_periodicity, material_type _default_material,
-                                 absorber_list alist) {
-  init_libctl(s, center, _ensure_periodicity, _default_material);
+void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon geps,
+                                 vector3 center, bool use_anisotropic_averaging,
+                                 double tol, int maxeval, bool _ensure_periodicity,
+                                 material_type _default_material, absorber_list alist,
+                                 material_type_list extra_materials) {
+  // set global variables in libctlgeom based on data fields in s
+  geom_initialize();
+  geometry_center = center;
+
+  if (_default_material->which_subclass != material_data::MATERIAL_USER &&
+      _default_material->which_subclass != material_data::PERFECT_METAL) {
+    _default_material->medium.check_offdiag_im_zero_or_abort();
+  }
+  set_default_material(_default_material);
+  ensure_periodicity = _ensure_periodicity;
+  meep::grid_volume gv = s->gv;
+  double resolution = gv.a;
+
+  int sim_dims = 3;
+  vector3 size = {0.0, 0.0, 0.0};
+  switch (s->user_volume.dim) {
+    case meep::D1:
+      sim_dims = 1;
+      size.z = s->user_volume.nz() / resolution;
+      break;
+    case meep::D2:
+      sim_dims = 2;
+      size.x = s->user_volume.nx() / resolution;
+      size.y = s->user_volume.ny() / resolution;
+      break;
+    case meep::D3:
+      sim_dims = 3;
+      size.x = s->user_volume.nx() / resolution;
+      size.y = s->user_volume.ny() / resolution;
+      size.z = s->user_volume.nz() / resolution;
+      break;
+    case meep::Dcyl:
+      sim_dims = CYLINDRICAL;
+      size.x = s->user_volume.nr() / resolution;
+      size.z = s->user_volume.nz() / resolution;
+      break;
+  };
+
+  set_dimensions(sim_dims);
+
+  geometry_lattice.size = size;
+  geometry_edge = vector3_to_vec(size) * 0.5;
+
+  if (meep::verbosity > 0) {
+    master_printf("Working in %s dimensions.\n", meep::dimension_name(s->gv.dim));
+    master_printf("Computational cell is %g x %g x %g with resolution %g\n", size.x, size.y, size.z,
+                  resolution);
+  }
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
+  if (alist) {
+    for (absorber_list_type::iterator layer = alist->begin(); layer != alist->end(); layer++) {
+      LOOP_OVER_DIRECTIONS(gv.dim, d) {
+        if (layer->direction != ALL_DIRECTIONS && layer->direction != d) continue;
+        FOR_SIDES(b) {
+          if (layer->side != ALL_SIDES && layer->side != b) continue;
+          pml_profile_thunk mythunk;
+          mythunk.func = layer->pml_profile;
+          mythunk.func_data = layer->pml_profile_data;
+          geps.set_cond_profile(d, b, layer->thickness, gv.inva * 0.5, pml_profile_wrapper,
+                                (void *)&mythunk, layer->R_asymptotic);
+        }
+      }
+    }
+  }
+
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
   set_materials(s, geps, alist, use_anisotropic_averaging, tol, maxeval);
+  s->remove_susceptibilities();
+  geps.add_susceptibilities(s);
+
+  if (meep::verbosity > 0) master_printf("-----------\n");
 }
 
 /***************************************************************/

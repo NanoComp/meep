@@ -1374,6 +1374,11 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
 
+// Typemaps for geom_epsilon object
+%typemap(out) geom_epsilon {
+    $result = PyCapsule_New($1);
+}
+
 // Typemap suite for kpoint_func
 
 %typecheck(SWIG_TYPECHECK_POINTER) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
@@ -1516,6 +1521,8 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %ignore std::vector<meep::volume>::resize;
 %ignore std::vector<meep_geom::dft_data>::vector(size_type);
 %ignore std::vector<meep_geom::dft_data>::resize;
+
+%ignore meep_geom::set_materials_from_geom_epsilon;
 
 // template instantiations
 %template(get_dft_flux_array) _get_dft_array<meep::dft_flux>;
@@ -1866,7 +1873,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     atexit.register(report_elapsed_time)
 %}
 
-%newobject create_structure_and_set_materials;
+%newobject create_structure;
+%newobject _set_materials;
 %inline %{
 
 size_t get_realnum_size() {
@@ -1877,31 +1885,31 @@ bool is_single_precision() {
   return sizeof(meep::realnum) == sizeof(float);
 }
 
-meep::structure *create_structure_and_set_materials(vector3 cell_size,
-                                                    std::vector<meep_geom::dft_data> dft_data_list_,
-                                                    std::vector<meep::volume> pml_1d_vols_,
-                                                    std::vector<meep::volume> pml_2d_vols_,
-                                                    std::vector<meep::volume> pml_3d_vols_,
-                                                    std::vector<meep::volume> absorber_vols_,
-                                                    meep::grid_volume &gv,
-                                                    const meep::boundary_region &br,
-                                                    const meep::symmetry &sym,
-                                                    int num_chunks,
-                                                    double Courant,
-                                                    bool use_anisotropic_averaging,
-                                                    double tol,
-                                                    int maxeval,
-                                                    geometric_object_list gobj_list,
-                                                    vector3 center,
-                                                    bool _ensure_periodicity,
-                                                    meep_geom::material_type _default_material,
-                                                    meep_geom::absorber_list alist,
-                                                    meep_geom::material_type_list extra_materials,
-                                                    bool split_chunks_evenly,
-                                                    bool set_materials,
-                                                    meep::structure *existing_s,
-                                                    bool output_chunk_costs,
-                                                    const meep::binary_partition *my_bp) {
+meep::structure *create_structure(vector3 cell_size,
+                                    std::vector<meep_geom::dft_data> dft_data_list_,
+                                    std::vector<meep::volume> pml_1d_vols_,
+                                    std::vector<meep::volume> pml_2d_vols_,
+                                    std::vector<meep::volume> pml_3d_vols_,
+                                    std::vector<meep::volume> absorber_vols_,
+                                    meep::grid_volume &gv,
+                                    const meep::boundary_region &br,
+                                    const meep::symmetry &sym,
+                                    int num_chunks,
+                                    double Courant,
+                                    bool use_anisotropic_averaging,
+                                    double tol,
+                                    int maxeval,
+                                    geometric_object_list gobj_list,
+                                    vector3 center,
+                                    bool _ensure_periodicity,
+                                    meep_geom::material_type _default_material,
+                                    meep_geom::absorber_list alist,
+                                    meep_geom::material_type_list extra_materials,
+                                    bool split_chunks_evenly,
+                                    bool set_materials,
+                                    meep::structure *existing_s,
+                                    bool output_chunk_costs,
+                                    const meep::binary_partition *my_bp) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1939,8 +1947,41 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     }
     s->shared_chunks = true;
 
+    return s;
+}
+meep_geom::geom_epsilon* _set_materials(meep::structure * s,
+                    vector3 cell_size,
+                    std::vector<meep_geom::dft_data> dft_data_list_,
+                    std::vector<meep::volume> pml_1d_vols_,
+                    std::vector<meep::volume> pml_2d_vols_,
+                    std::vector<meep::volume> pml_3d_vols_,
+                    std::vector<meep::volume> absorber_vols_,
+                    meep::grid_volume &gv,
+                    const meep::boundary_region &br,
+                    const meep::symmetry &sym,
+                    int num_chunks,
+                    double Courant,
+                    bool use_anisotropic_averaging,
+                    double tol,
+                    int maxeval,
+                    geometric_object_list gobj_list,
+                    vector3 center,
+                    bool _ensure_periodicity,
+                    meep_geom::material_type _default_material,
+                    meep_geom::absorber_list alist,
+                    meep_geom::material_type_list extra_materials,
+                    bool split_chunks_evenly,
+                    bool set_materials,
+                    meep_geom::geom_epsilon *existing_geps,
+                    bool output_chunk_costs,
+                    const meep::binary_partition *my_bp) {
+    
+    meep_geom::geom_epsilon *geps = existing_geps;
     if (set_materials) {
-      meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
+      geps = meep_geom::make_geom_epsilon(s,gobj_list,center, use_anisotropic_averaging, tol,
+                                             maxeval, _ensure_periodicity, _default_material,
+                                             alist, extra_materials);
+      meep_geom::set_materials_from_geom_epsilon(s, *geps, center, use_anisotropic_averaging, tol,
                                              maxeval, _ensure_periodicity, _default_material,
                                              alist, extra_materials);
     }
@@ -1971,7 +2012,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::resolution = 0;
     meep_geom::fragment_stats::split_chunks_evenly = false;
 
-    return s;
+    return geps;
 }
 
 void _get_epsilon_grid(geometric_object_list gobj_list,
