@@ -377,18 +377,33 @@ void dft_chunk::operator-=(const dft_chunk &chunk) {
   }
 }
 
-size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
-  size_t n = 0;
+size_t my_dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
+  // When writing to a sharded file, we write out only the chunks we own.
+size_t n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
     n += cur->N * cur->omega.size() * 2;
+
+  *my_start = 0;
+  return n;
+}
+
+size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
+  // If writing to a single parallel file, we are compute our chunks offset
+  // into the single-parallel-file that has all the data.
+  size_t n = my_dft_chunks_Ntotal(dft_chunks, my_start);
   *my_start = partial_sum_to_all(n) - n; // sum(n) for processes before this
   return sum_to_all(n);
 }
 
+size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start, bool single_parallel_file) {
+  return single_parallel_file ? dft_chunks_Ntotal(dft_chunks, my_start) :
+                                my_dft_chunks_Ntotal(dft_chunks, my_start);
+}
+
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix) {
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix, bool single_parallel_file) {
   size_t istart;
-  size_t n = dft_chunks_Ntotal(dft_chunks, &istart);
+  size_t n = dft_chunks_Ntotal(dft_chunks, &istart, single_parallel_file);
 
   char dataname[1024];
   snprintf(dataname, 1024,
@@ -405,13 +420,13 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   file->done_writing_chunks();
 }
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix) {
-  save_dft_hdf5(dft_chunks, component_name(c), file, dprefix);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix, bool single_parallel_file) {
+  save_dft_hdf5(dft_chunks, component_name(c), file, dprefix, single_parallel_file);
 }
 
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix) {
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix, bool single_parallel_file) {
   size_t istart;
-  size_t n = dft_chunks_Ntotal(dft_chunks, &istart);
+  size_t n = dft_chunks_Ntotal(dft_chunks, &istart, single_parallel_file);
 
   char dataname[1024];
   snprintf(dataname, 1024,
@@ -432,8 +447,8 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   }
 }
 
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix) {
-  load_dft_hdf5(dft_chunks, component_name(c), file, dprefix);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix, bool single_parallel_file) {
+  load_dft_hdf5(dft_chunks, component_name(c), file, dprefix, single_parallel_file);
 }
 
 dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_chunk *H_,

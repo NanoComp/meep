@@ -64,14 +64,15 @@ TESTS =                                   \
     $(TEST_DIR)/test_get_point.py              \
     $(TEST_DIR)/test_holey_wvg_bands.py        \
     $(TEST_DIR)/test_holey_wvg_cavity.py       \
-    $(KDOM_TEST)                          \
+    $(KDOM_TEST)                               \
     $(TEST_DIR)/test_ldos.py                   \
-    $(MDPYTEST)                           \
+    $(TEST_DIR)/test_dump_load.py              \
+    $(MDPYTEST)                                \
     $(TEST_DIR)/test_material_grid.py          \
     $(TEST_DIR)/test_medium_evaluations.py     \
-    $(MPBPYTEST)                          \
-    $(MODE_COEFFS_TEST)                   \
-    $(MODE_DECOMPOSITION_TEST)            \
+    $(MPBPYTEST)                               \
+    $(MODE_COEFFS_TEST)                        \
+    $(MODE_DECOMPOSITION_TEST)                 \
     $(TEST_DIR)/test_multilevel_atom.py        \
     $(TEST_DIR)/test_n2f_periodic.py           \
     $(TEST_DIR)/test_oblique_source.py         \
