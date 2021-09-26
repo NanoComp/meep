@@ -3,6 +3,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 import unittest
 
+
 def compute_transmittance(use_symmetry=False):
         resolution = 25
 
@@ -25,15 +26,13 @@ def compute_transmittance(use_symmetry=False):
         np.random.seed(2069588)
 
         w = np.random.rand(Nx*Ny)
-        if use_symmetry:
-                weights = w
-        else:
-                weights = 0.5*(w + np.flipud(w))
+        w = w.reshape(Nx,Ny)
+        weights = 0.5 * (w + np.fliplr(w))
 
         matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                                   mp.air,
                                   mp.Medium(index=3.5),
-                                  weights=weights.reshape(Nx,Ny),
+                                  weights=weights,
                                   grid_type='U_MEAN')
 
         geometry = [mp.Block(center=mp.Vector3(),
@@ -74,7 +73,11 @@ def compute_transmittance(use_symmetry=False):
 
         mode_coeff = sim.get_eigenmode_coefficients(mode_mon,[1],eig_parity).alpha[0,:,0][0]
 
-        return np.power(np.abs(mode_coeff),2)
+        tran = np.power(np.abs(mode_coeff),2)
+        print('tran:, {}, {}'.format("sym" if use_symmetry else "nosym", tran))
+
+        return tran
+
 
 def compute_resonant_mode(res,default_mat=False):
         cell_size = mp.Vector3(1,1,0)
@@ -163,7 +166,7 @@ class TestMaterialGrid(unittest.TestCase):
     def test_symmetry(self):
             tran_nosym = compute_transmittance(False)
             tran_sym = compute_transmittance(True)
-            self.assertAlmostEqual(tran_nosym, tran_sym, places=5)
+            self.assertAlmostEqual(tran_nosym, tran_sym)
 
 if __name__ == '__main__':
     unittest.main()
