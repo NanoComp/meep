@@ -26,8 +26,8 @@ eig_parity = mp.EVEN_Y + mp.ODD_Z
 
 design_shape = mp.Vector3(1.5,1.5)
 design_region_resolution = int(2*resolution)
-Nx = int(design_region_resolution*design_shape.x) + 1
-Ny = int(design_region_resolution*design_shape.y) + 1
+Nx = int(design_region_resolution*design_shape.x)
+Ny = int(design_region_resolution*design_shape.y)
 
 ## ensure reproducible results
 np.random.seed(9861548)
@@ -179,8 +179,8 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
 def mapping(x,filter_radius,eta,beta):
     filtered_field = mpa.conic_filter(x,
                                       filter_radius,
-                                      design_shape.x+1/design_region_resolution,
-                                      design_shape.y+1/design_region_resolution,
+                                      design_shape.x,
+                                      design_shape.y,
                                       design_region_resolution)
 
     projected_field = mpa.tanh_projection(filtered_field,beta,eta)

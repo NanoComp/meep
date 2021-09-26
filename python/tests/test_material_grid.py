@@ -11,16 +11,13 @@ def compute_transmittance(use_symmetry=False):
 
         boundary_layers = [mp.PML(thickness=1.0)]
 
-        if use_symmetry:
-                symmetries = [mp.Mirror(direction=mp.Y,phase=-1)]
-        else:
-                symmetries = []
+        symmetries = [mp.Mirror(direction=mp.Y,phase=-1)]
 
         matgrid_shape = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
 
-        Nx = int(matgrid_resolution*matgrid_shape.x) + 1
-        Ny = int(matgrid_resolution*matgrid_shape.y) + 1
+        Nx = int(matgrid_resolution*matgrid_shape.x)
+        Ny = int(matgrid_resolution*matgrid_shape.y)
 
         ## ensure reproducible results
         np.random.seed(2069588)
