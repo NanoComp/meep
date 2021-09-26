@@ -13,11 +13,11 @@ def compute_transmittance(use_symmetry=False):
 
         symmetries = [mp.Mirror(direction=mp.Y,phase=-1)]
 
-        matgrid_shape = mp.Vector3(2,2,0)
+        matgrid_size = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
 
-        Nx = int(matgrid_resolution*matgrid_shape.x)
-        Ny = int(matgrid_resolution*matgrid_shape.y)
+        Nx = int(matgrid_resolution*matgrid_size.x)
+        Ny = int(matgrid_resolution*matgrid_size.y)
 
         ## ensure reproducible results
         np.random.seed(2069588)
@@ -36,12 +36,12 @@ def compute_transmittance(use_symmetry=False):
                              size=mp.Vector3(mp.inf,1.0,mp.inf),
                              material=mp.Medium(index=3.5)),
                     mp.Block(center=mp.Vector3(),
-                             size=mp.Vector3(matgrid_shape.x,matgrid_shape.y,0),
+                             size=mp.Vector3(matgrid_size.x,matgrid_size.y,0),
                              material=matgrid)]
 
         if use_symmetry:
                 geometry.append(mp.Block(center=mp.Vector3(),
-                                         size=mp.Vector3(matgrid_shape.x,matgrid_shape.y,0),
+                                         size=mp.Vector3(matgrid_size.x,matgrid_size.y,0),
                                          material=matgrid,
                                          e2=mp.Vector3(y=-1)))
 
@@ -89,16 +89,16 @@ def compute_resonant_mode(res,default_mat=False):
 
         k_point = mp.Vector3(0.3892,0.1597,0)
 
-        matgrid_shape = mp.Vector3(1,1,0)
+        matgrid_size = mp.Vector3(1,1,0)
         matgrid_resolution = 1200
 
         # for a fixed resolution, compute the number of grid points
         # necessary which are defined on the corners of the voxels
-        Nx = int(matgrid_resolution*matgrid_shape.x) + 1
-        Ny = int(matgrid_resolution*matgrid_shape.y) + 1
+        Nx = int(matgrid_resolution*matgrid_size.x) + 1
+        Ny = int(matgrid_resolution*matgrid_size.y) + 1
 
-        x = np.linspace(-0.5*matgrid_shape.x,0.5*matgrid_shape.x,Nx)
-        y = np.linspace(-0.5*matgrid_shape.y,0.5*matgrid_shape.y,Ny)
+        x = np.linspace(-0.5*matgrid_size.x,0.5*matgrid_size.x,Nx)
+        y = np.linspace(-0.5*matgrid_size.y,0.5*matgrid_size.y,Ny)
         xv, yv = np.meshgrid(x,y)
         weights = np.sqrt(np.square(xv) + np.square(yv)) < rad
         filtered_weights = gaussian_filter(weights,
@@ -114,7 +114,7 @@ def compute_resonant_mode(res,default_mat=False):
                                   eta=0.5)
 
         geometry = [mp.Block(center=mp.Vector3(),
-                             size=mp.Vector3(matgrid_shape.x,matgrid_shape.y,0),
+                             size=mp.Vector3(matgrid_size.x,matgrid_size.y,0),
                              material=matgrid)]
 
         sim = mp.Simulation(resolution=res,

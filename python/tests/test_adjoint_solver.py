@@ -24,10 +24,10 @@ boundary_layers = [mp.PML(thickness=dpml)]
 
 eig_parity = mp.EVEN_Y + mp.ODD_Z
 
-design_shape = mp.Vector3(1.5,1.5)
+design_region_size = mp.Vector3(1.5,1.5)
 design_region_resolution = int(2*resolution)
-Nx = int(design_region_resolution*design_shape.x)
-Ny = int(design_region_resolution*design_shape.y)
+Nx = int(design_region_resolution*design_region_size.x)
+Ny = int(design_region_resolution*design_region_size.y)
 
 ## ensure reproducible results
 np.random.seed(9861548)
@@ -60,7 +60,7 @@ def forward_simulation(design_params,mon_type, frequencies=None, use_complex=Fal
                               weights=design_params.reshape(Nx,Ny))
 
     matgrid_geometry = [mp.Block(center=mp.Vector3(),
-                                 size=mp.Vector3(design_shape.x,design_shape.y,0),
+                                 size=mp.Vector3(design_region_size.x,design_region_size.y,0),
                                  material=matgrid)]
 
     geometry = waveguide_geometry + matgrid_geometry
@@ -121,7 +121,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
 
     matgrid_region = mpa.DesignRegion(matgrid,
                                       volume=mp.Volume(center=mp.Vector3(),
-                                                       size=mp.Vector3(design_shape.x,design_shape.y,0)))
+                                                       size=mp.Vector3(design_region_size.x,design_region_size.y,0)))
 
     matgrid_geometry = [mp.Block(center=matgrid_region.center,
                                  size=matgrid_region.size,
@@ -179,8 +179,8 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
 def mapping(x,filter_radius,eta,beta):
     filtered_field = mpa.conic_filter(x,
                                       filter_radius,
-                                      design_shape.x,
-                                      design_shape.y,
+                                      design_region_size.x,
+                                      design_region_size.y,
                                       design_region_resolution)
 
     projected_field = mpa.tanh_projection(filtered_field,beta,eta)
