@@ -16,14 +16,13 @@ def compute_transmittance(use_symmetry=False):
         matgrid_size = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
 
-        Nx = int(matgrid_resolution*matgrid_size.x)
-        Ny = int(matgrid_resolution*matgrid_size.y)
+        Nx = int(matgrid_resolution*matgrid_size.x) + 1
+        Ny = int(matgrid_resolution*matgrid_size.y) + 1
 
         ## ensure reproducible results
         np.random.seed(2069588)
 
-        w = np.random.rand(Nx*Ny)
-        w = w.reshape(Nx,Ny)
+        w = np.random.rand(Nx,Ny)
         weights = 0.5 * (w + np.fliplr(w))
 
         matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
