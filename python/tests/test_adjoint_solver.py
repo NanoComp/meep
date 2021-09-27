@@ -242,7 +242,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     adj_scale = (dp[None,:]@adjsol_grad).flatten()
                     fd_grad = S12_perturbed-S12_unperturbed
                     print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-                    tol = 0.02 if mp.is_single_precision() else 0.01
+                    tol = 0.04 if mp.is_single_precision() else 0.01
                     self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_gradient_backpropagation(self):
@@ -271,8 +271,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compare objective results
             print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            tol = 1e-6 if mp.is_single_precision() else 1e-14
-            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=tol)
+            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-6)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(mapping(p+dp,filter_radius,eta,beta), MonitorObject.EIGENMODE,frequencies)
