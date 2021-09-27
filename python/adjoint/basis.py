@@ -50,7 +50,7 @@ class Basis(ABC):
 
 
 class BilinearInterpolationBasis(Basis):
-    ''' 
+    '''
     Simple bilinear interpolation basis set.
     '''
     def __init__(self, resolution, symmetry=None, **kwargs):
@@ -204,7 +204,7 @@ class BilinearInterpolationBasis(Basis):
     ):
         '''
         Generates a bilinear interpolation matrix.
-        
+
         Arguments:
         rho_x ................ [N,] numpy array - original x array mapping to povided data
         rho_y ................ [N,] numpy array - original y array mapping to povided data
