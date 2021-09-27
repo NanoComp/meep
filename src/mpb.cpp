@@ -809,6 +809,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                       NULL, NULL, dp);
   finished_working();
 
+  if (global_eigenmode_data == NULL) meep::abort("MPB could not find the eigenmode");
+
   /* add_volume_source amp_fun coordinates are relative to where.center();
      this is not the default in get_eigenmode because where-relative coordinates
      are not used elsewhere, e.g. in getting mode coefficients in dft.cpp. */
