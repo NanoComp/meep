@@ -65,26 +65,26 @@ class BilinearInterpolationBasis(Basis):
             self.symmetry = symmetry
 
         if mp.X in set(self.symmetry):
-            self.Nx = int(resolution * self.volume.size.x / 2)
+            self.Nx = int((int(resolution * self.volume.size.x) + 1) / 2)
             self.rho_x = np.linspace(
                 self.volume.center.x,
                 self.volume.center.x + self.volume.size.x / 2, self.Nx)
             self.mirror_X = True
         else:
-            self.Nx = int(resolution * self.volume.size.x)
+            self.Nx = int(resolution * self.volume.size.x) + 1
             self.rho_x = np.linspace(
                 self.volume.center.x - self.volume.size.x / 2,
                 self.volume.center.x + self.volume.size.x / 2, self.Nx)
             self.mirror_X = False
 
         if mp.Y in set(self.symmetry):
-            self.Ny = int(resolution * self.volume.size.y / 2)
+            self.Ny = int((int(resolution * self.volume.size.y) + 1) / 2)
             self.rho_y = np.linspace(
                 self.volume.center.y,
                 self.volume.center.y + self.volume.size.y / 2, self.Ny)
             self.mirror_Y = True
         else:
-            self.Ny = int(resolution * self.volume.size.y)
+            self.Ny = int(resolution * self.volume.size.y) + 1
             self.rho_y = np.linspace(
                 self.volume.center.y - self.volume.size.y / 2,
                 self.volume.center.y + self.volume.size.y / 2, self.Ny)

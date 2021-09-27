@@ -98,8 +98,8 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
         The output of the 2d convolution.
     """
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
     (kx, ky) = kernel.shape
 
     # Adjust parameter space shape for symmetries
@@ -179,8 +179,8 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
@@ -229,8 +229,8 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
@@ -279,8 +279,8 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
 
     gaussian = lambda x, sigma: np.exp(-x**2 / sigma**2)
 
