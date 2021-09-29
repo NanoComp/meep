@@ -50,16 +50,16 @@ def _edge_pad(arr, pad):
 def _zero_pad(arr, pad):
 
     # fill sides
-    left = npa.tile(0, (pad[0][0], arr.shape[1]))  # left side
+    left = npa.tile(0, (pad[0][0], arr.shape[1]))   # left side
     right = npa.tile(0, (pad[0][1], arr.shape[1]))  # right side
-    top = npa.tile(0, (arr.shape[0], pad[1][0]))  # top side
-    bottom = npa.tile(0, (arr.shape[0], pad[1][1]))  # bottom side
+    top = npa.tile(0, (arr.shape[0], pad[1][0]))    # top side
+    bottom = npa.tile(0, (arr.shape[0], pad[1][1])) # bottom side
 
     # fill corners
-    top_left = npa.tile(0, (pad[0][0], pad[1][0]))  # top left
-    top_right = npa.tile(0, (pad[0][1], pad[1][0]))  # top right
+    top_left = npa.tile(0, (pad[0][0], pad[1][0]))     # top left
+    top_right = npa.tile(0, (pad[0][1], pad[1][0]))    # top right
     bottom_left = npa.tile(0, (pad[0][0], pad[1][1]))  # bottom left
-    bottom_right = npa.tile(0, (pad[0][1], pad[1][1]))  # bottom right
+    bottom_right = npa.tile(0, (pad[0][1], pad[1][1])) # bottom right
 
     out = npa.concatenate((npa.concatenate(
         (top_left, top, top_right)), npa.concatenate((left, arr, right)),
@@ -74,7 +74,7 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
     """A simple 2d filter algorithm that is differentiable with autograd.
     Uses a 2D fft approach since it is typically faster and preserves the shape
     of the input and output arrays.
-    
+
     The ffts pad the operation to prevent any circular convolution garbage.
 
     Parameters
@@ -91,15 +91,15 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
         Resolution of the design grid (not the meep simulation resolution)
     symmetries : list
         Symmetries to impose on the parameter field (either mp.X or mp.Y)
-    
+
     Returns
     -------
     array_like (2D)
         The output of the 2d convolution.
     """
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
     (kx, ky) = kernel.shape
 
     # Adjust parameter space shape for symmetries
@@ -151,8 +151,8 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
 
 
 def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
-    '''A uniform cylindrical filter [1]. Typically allows for sharper transitions. 
-    
+    '''A uniform cylindrical filter [1]. Typically allows for sharper transitions.
+
     Parameters
     ----------
     x : array_like (2D)
@@ -172,15 +172,15 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     -------
     array_like (2D)
         Filtered design parameters.
-    
+
     References
     ----------
-    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
@@ -202,7 +202,7 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
 
 def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     '''A linear conic filter, also known as a "Hat" filter in the literature [1].
-    
+
     Parameters
     ----------
     x : array_like (2D)
@@ -222,15 +222,15 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     -------
     array_like (2D)
         Filtered design parameters.
-    
+
     References
     ----------
-    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
@@ -254,7 +254,7 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
 
 def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
     '''A simple gaussian filter of the form exp(-x **2 / sigma ** 2) [1].
-    
+
     Parameters
     ----------
     x : array_like (2D)
@@ -272,15 +272,15 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
     -------
     array_like (2D)
         Filtered design parameters.
-    
+
     References
     ----------
-    [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of 
+    [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(Lx * resolution) + 1
+    Ny = int(Ly * resolution) + 1
 
     gaussian = lambda x, sigma: np.exp(-x**2 / sigma**2)
 
@@ -309,7 +309,7 @@ Erosion and dilation operators
 
 def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
     ''' Performs and exponential erosion operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -329,13 +329,13 @@ def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
     -------
     array_like
         Eroded design parameters.
-    
+
     References
     ----------
-    [1] Sigmund, O. (2007). Morphology-based black and white filters for topology optimization. 
+    [1] Sigmund, O. (2007). Morphology-based black and white filters for topology optimization.
     Structural and Multidisciplinary Optimization, 33(4-5), 401-424.
-    [2] Schevenels, M., & Sigmund, O. (2016). On the implementation and effectiveness of 
-    morphological close-open and open-close filters for topology optimization. Structural 
+    [2] Schevenels, M., & Sigmund, O. (2016). On the implementation and effectiveness of
+    morphological close-open and open-close filters for topology optimization. Structural
     and Multidisciplinary Optimization, 54(1), 15-21.
     '''
 
@@ -346,7 +346,7 @@ def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
 
 def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
     ''' Performs a exponential dilation operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -366,13 +366,13 @@ def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
     -------
     array_like
         Dilated design parameters.
-    
+
     References
     ----------
-    [1] Sigmund, O. (2007). Morphology-based black and white filters for topology optimization. 
+    [1] Sigmund, O. (2007). Morphology-based black and white filters for topology optimization.
     Structural and Multidisciplinary Optimization, 33(4-5), 401-424.
-    [2] Schevenels, M., & Sigmund, O. (2016). On the implementation and effectiveness of 
-    morphological close-open and open-close filters for topology optimization. Structural 
+    [2] Schevenels, M., & Sigmund, O. (2016). On the implementation and effectiveness of
+    morphological close-open and open-close filters for topology optimization. Structural
     and Multidisciplinary Optimization, 54(1), 15-21.
     '''
 
@@ -383,7 +383,7 @@ def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
 
 def heaviside_erosion(x, radius, beta, Lx, Ly, resolution):
     ''' Performs a heaviside erosion operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -403,11 +403,11 @@ def heaviside_erosion(x, radius, beta, Lx, Ly, resolution):
     -------
     array_like
         Eroded design parameters.
-    
+
     References
     ----------
-    [1] Guest, J. K., Prévost, J. H., & Belytschko, T. (2004). Achieving minimum length scale in topology 
-    optimization using nodal design variables and projection functions. International journal for 
+    [1] Guest, J. K., Prévost, J. H., & Belytschko, T. (2004). Achieving minimum length scale in topology
+    optimization using nodal design variables and projection functions. International journal for
     numerical methods in engineering, 61(2), 238-254.
     '''
 
@@ -417,7 +417,7 @@ def heaviside_erosion(x, radius, beta, Lx, Ly, resolution):
 
 def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
     ''' Performs a heaviside dilation operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -437,11 +437,11 @@ def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
     -------
     array_like
         Dilated design parameters.
-    
+
     References
     ----------
-    [1] Guest, J. K., Prévost, J. H., & Belytschko, T. (2004). Achieving minimum length scale in topology 
-    optimization using nodal design variables and projection functions. International journal for 
+    [1] Guest, J. K., Prévost, J. H., & Belytschko, T. (2004). Achieving minimum length scale in topology
+    optimization using nodal design variables and projection functions. International journal for
     numerical methods in engineering, 61(2), 238-254.
     '''
 
@@ -451,7 +451,7 @@ def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
 
 def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a geometric erosion operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -471,10 +471,10 @@ def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
     -------
     array_like
         Eroded design parameters.
-    
+
     References
     ----------
-    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the 
+    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
     x_hat = npa.log(x + alpha)
@@ -484,7 +484,7 @@ def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
 
 def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a geometric dilation operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -504,10 +504,10 @@ def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
     -------
     array_like
         Dilated design parameters.
-    
+
     References
     ----------
-    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the 
+    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
 
@@ -518,7 +518,7 @@ def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
 
 def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a harmonic erosion operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -538,10 +538,10 @@ def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
     -------
     array_like
         Eroded design parameters.
-    
+
     References
     ----------
-    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the 
+    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
 
@@ -552,7 +552,7 @@ def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
 
 def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution):
     ''' Performs a harmonic dilation operation.
-    
+
     Parameters
     ----------
     x : array_like
@@ -572,10 +572,10 @@ def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution):
     -------
     array_like
         Dilated design parameters.
-    
+
     References
     ----------
-    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the 
+    [1] Svanberg, K., & Svärd, H. (2013). Density filters for topology optimization based on the
     Pythagorean means. Structural and Multidisciplinary Optimization, 48(5), 859-875.
     '''
 
@@ -601,7 +601,7 @@ def tanh_projection(x, beta, eta):
     beta : float
         Thresholding parameter (0 to infinity). Dictates how "binary" the output will be.
     eta: float
-        Threshold point (0 to 1)  
+        Threshold point (0 to 1)
 
     Returns
     -------
@@ -609,7 +609,7 @@ def tanh_projection(x, beta, eta):
         Projected and flattened design parameters.
     References
     ----------
-    [1] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and robust 
+    [1] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and robust
     formulations in topology optimization. Structural and Multidisciplinary Optimization, 43(6), 767-784.
     '''
 
@@ -629,16 +629,16 @@ def heaviside_projection(x, beta, eta):
     beta : float
         Thresholding parameter (0 to infinity). Dictates how "binary" the output will be.
     eta: float
-        Threshold point (0 to 1)  
+        Threshold point (0 to 1)
 
     Returns
     -------
     array_like
         Projected and flattened design parameters.
-    
+
     References
     ----------
-    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
 
@@ -658,24 +658,24 @@ def get_threshold_wang(delta, sigma):
     '''Calculates the threshold point according to the gaussian filter radius (`sigma`) and
     the perturbation parameter (`sigma`) needed to ensure the proper length
     scale and morphological transformation according to Wang et. al. [2].
-    
+
     Parameters
     ----------
     sigma : float
         Smoothing radius (in meep units)
     delta : float
         Perturbation parameter (in meep units)
-    
+
     Returns
     -------
     float
         Threshold point (`eta`)
-    
+
     References
     ----------
-    [1] Wang, F., Jensen, J. S., & Sigmund, O. (2011). Robust topology optimization of 
+    [1] Wang, F., Jensen, J. S., & Sigmund, O. (2011). Robust topology optimization of
     photonic crystal waveguides with tailored dispersion properties. JOSA B, 28(3), 387-397.
-    [2] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of 
+    [2] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
 
@@ -685,32 +685,32 @@ def get_threshold_wang(delta, sigma):
 def get_eta_from_conic(b, R):
     ''' Extracts the eroded threshold point (`eta_e`) for a conic filter given the desired
     minimum length (`b`) and the filter radius (`R`). This only works for conic filters.
-    
+
     Note that the units for `b` and `R` can be arbitrary so long as they are consistent.
-    
+
     Results in paper were thresholded using a "tanh" Heaviside projection.
-    
+
     Parameters
     ----------
     b : float
         Desired minimum length scale.
     R : float
         Conic filter radius
-    
+
     Returns
     -------
     float
         The eroded threshold point (1-eta)
-    
+
     References
     ----------
-    [1] Qian, X., & Sigmund, O. (2013). Topological design of electromechanical actuators with 
-    robustness toward over-and under-etching. Computer Methods in Applied 
+    [1] Qian, X., & Sigmund, O. (2013). Topological design of electromechanical actuators with
+    robustness toward over-and under-etching. Computer Methods in Applied
     Mechanics and Engineering, 253, 237-251.
-    [2] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and 
-    robust formulations in topology optimization. Structural and Multidisciplinary 
+    [2] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and
+    robust formulations in topology optimization. Structural and Multidisciplinary
     Optimization, 43(6), 767-784.
-    [3] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    [3] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
 
@@ -729,28 +729,28 @@ def get_eta_from_conic(b, R):
 def get_conic_radius_from_eta_e(b, eta_e):
     """Calculates the corresponding filter radius given the minimum length scale (b)
     and the desired eroded threshold point (eta_e).
-    
+
     Parameters
     ----------
     b : float
         Desired minimum length scale.
     eta_e : float
         Eroded threshold point (1-eta)
-    
+
     Returns
     -------
     float
         Conic filter radius.
-    
+
     References
     ----------
-    [1] Qian, X., & Sigmund, O. (2013). Topological design of electromechanical actuators with 
-    robustness toward over-and under-etching. Computer Methods in Applied 
+    [1] Qian, X., & Sigmund, O. (2013). Topological design of electromechanical actuators with
+    robustness toward over-and under-etching. Computer Methods in Applied
     Mechanics and Engineering, 253, 237-251.
-    [2] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and 
-    robust formulations in topology optimization. Structural and Multidisciplinary 
+    [2] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and
+    robust formulations in topology optimization. Structural and Multidisciplinary
     Optimization, 43(6), 767-784.
-    [3] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    [3] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
     if (eta_e >= 0.5) and (eta_e < 0.75):
@@ -764,7 +764,7 @@ def get_conic_radius_from_eta_e(b, eta_e):
 
 def indicator_solid(x, c, filter_f, threshold_f, resolution):
     '''Calculates the indicator function for the void phase needed for minimum length optimization [1].
-    
+
     Parameters
     ----------
     x : array_like
@@ -777,15 +777,15 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
-    
+
     Returns
     -------
     array_like
         Indicator value
-    
+
     References
     ----------
-    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
+    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
 
@@ -804,7 +804,7 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
 
 def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
     '''Calculates the constraint function of the solid phase needed for minimum length optimization [1].
-    
+
     Parameters
     ----------
     x : array_like
@@ -817,20 +817,20 @@ def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
-    
+
     Returns
     -------
     float
         Constraint value
-    
+
     Example
     -------
     >> g_s = constraint_solid(x,c,eta_e,filter_f,threshold_f) # constraint
     >> g_s_grad = grad(constraint_solid,0)(x,c,eta_e,filter_f,threshold_f) # gradient
-    
+
     References
     ----------
-    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
+    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
 
@@ -842,7 +842,7 @@ def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
 
 def indicator_void(x, c, filter_f, threshold_f, resolution):
     '''Calculates the indicator function for the void phase needed for minimum length optimization [1].
-    
+
     Parameters
     ----------
     x : array_like
@@ -855,15 +855,15 @@ def indicator_void(x, c, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
-    
+
     Returns
     -------
     array_like
         Indicator value
-    
+
     References
     ----------
-    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
+    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
 
@@ -881,7 +881,7 @@ def indicator_void(x, c, filter_f, threshold_f, resolution):
 
 def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
     '''Calculates the constraint function of the void phase needed for minimum length optimization [1].
-    
+
     Parameters
     ----------
     x : array_like
@@ -894,20 +894,20 @@ def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
-    
+
     Returns
     -------
     float
         Constraint value
-    
+
     Example
     -------
     >> g_v = constraint_void(p,c,eta_d,filter_f,threshold_f) # constraint
     >> g_v_grad = tensor_jacobian_product(constraint_void,0)(p,c,eta_d,filter_f,threshold_f,g_s) # gradient
-    
+
     References
     ----------
-    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by 
+    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     '''
 
@@ -921,20 +921,20 @@ def gray_indicator(x):
     '''Calculates a measure of "grayness" according to [1].
 
     Lower numbers ( < 2%) indicate a good amount of binarization [1].
-    
+
     Parameters
     ----------
     x : array_like
         Filtered and thresholded design parameters (between 0 and 1)
-    
+
     Returns
     -------
     float
         Measure of "grayness" (in percent)
-    
+
     References
     ----------
-    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in 
+    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     return npa.mean(4 * x.flatten() * (1 - x.flatten())) * 100
