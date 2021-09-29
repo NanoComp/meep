@@ -450,9 +450,9 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 In particular, a useful value for `until_after_sources` or `until` is often `stop_when_field_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These top-level functions are available:
 
 @@ stop_when_fields_decayed @@
+@@ stop_when_dft_decayed @@
 @@ stop_after_walltime @@
 @@ stop_on_interrupt @@
-
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these `Simulation` methods:
 

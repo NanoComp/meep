@@ -2,6 +2,10 @@
 
 #include "meep_internals.hpp"
 
+/* This file contains routines to compute the "average" or "effective"
+   dielectric constant for a pixel, using an anisotropic averaging
+   procedure described in our papers (similar to MPB). */
+
 using namespace std;
 
 namespace meep {
@@ -226,6 +230,9 @@ breakout:
   double trivial_val[3] = {0, 0, 0};
   trivial_val[idiag] = 1.0;
   ivec shift1(unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1));
+  // TODO: make this loop thread-safe and change to PLOOP_OVER_VOL
+  // Note that we *cannot* make it thread-safe if `medium` is not thread-safe,
+  // e.g. if it calls back to Python.
   LOOP_OVER_VOL(gv, c, i) {
     double chi1invrow[3], chi1invrow_offdiag[3];
     IVEC_LOOP_ILOC(gv, here);

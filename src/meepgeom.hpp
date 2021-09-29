@@ -228,7 +228,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, double *frequencies,
                                 size_t nf, double scalegrad, const meep::volume &where,
-                                geom_box_tree geometry_tree, meep::fields *f);
+                                geom_box_tree geometry_tree, meep::fields *f, bool sim_is_cylindrical);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/

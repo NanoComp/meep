@@ -182,9 +182,24 @@ void set_zero_subnormals(bool iszero)
     _set_zero_subnormals(iszero); // This has to be done in every thread for OpenMP.
 }
 
+void setup() {
+  set_zero_subnormals(true);
+#ifdef _OPENMP
+  if (getenv("OMP_NUM_THREADS") == NULL)
+    omp_set_num_threads(1);
+#endif
+}
+
 initialize::initialize(int &argc, char **&argv) {
 #ifdef HAVE_MPI
+#ifdef _OPENMP
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
+  if (provided < MPI_THREAD_FUNNELED && omp_get_num_threads() > 1)
+      abort("MPI does not support multi-threaded execution");
+#else
   MPI_Init(&argc, &argv);
+#endif
   int major, minor;
   MPI_Get_version(&major, &minor);
   if (verbosity > 0)
@@ -199,8 +214,8 @@ initialize::initialize(int &argc, char **&argv) {
 #ifdef IGNORE_SIGFPE
   signal(SIGFPE, SIG_IGN);
 #endif
-  set_zero_subnormals(true);
   t_start = wall_time();
+  setup();
 }
 
 initialize::~initialize() {
@@ -214,6 +229,8 @@ initialize::~initialize() {
 double wall_time(void) {
 #ifdef HAVE_MPI
   return MPI_Wtime();
+#elif defined(_OPENMP)
+  return omp_get_wtime();
 #elif HAVE_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, 0);
@@ -374,6 +391,14 @@ int max_to_all(int in) {
   int out = in;
 #ifdef HAVE_MPI
   MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_MAX, mycomm);
+#endif
+  return out;
+}
+
+int min_to_all(int in) {
+  int out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in, &out, 1, MPI_INT, MPI_MIN, mycomm);
 #endif
   return out;
 }

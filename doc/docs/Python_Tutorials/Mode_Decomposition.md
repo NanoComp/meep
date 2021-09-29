@@ -439,7 +439,7 @@ for nm in range(nm_t):
   print("tran:, {:2d}, {:6.2f}, {:.8f}".format(nm,math.degrees(t_angle),Tmode))
   Tsum += Tmode
 
-print("mode-coeff:, {:.6f}, {:.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
+print("mode-coeff:, {:.6f}, {:11.6f}, {:.6f}".format(Rsum,Tsum,Rsum+Tsum))
 
 r_flux = mp.get_fluxes(refl_flux)
 t_flux = mp.get_fluxes(tran_flux)
@@ -483,7 +483,7 @@ The mode number is equivalent to the band index from the MPB calculation. The or
 The two main lines of the output are:
 
 ```
-mode-coeff:, 0.061007, 0.937897, 0.998904
+mode-coeff:,    0.061007, 0.937897, 0.998904
 poynting-flux:, 0.061063, 0.938384, 0.999447
 ```
 

@@ -121,7 +121,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                  mode,
                  forward=True,
                  kpoint_func=None,
-                 decimation_factor=1,
+                 decimation_factor=0,
                  **kwargs):
         super().__init__(sim)
         self.volume = volume
@@ -206,7 +206,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    def __init__(self, sim, volume, component, decimation_factor=1):
+    def __init__(self, sim, volume, component, decimation_factor=0):
         super().__init__(sim)
         self.volume = volume
         self.component = component
@@ -306,7 +306,7 @@ class FourierFields(ObjectiveQuantity):
 
 
 class Near2FarFields(ObjectiveQuantity):
-    def __init__(self, sim, Near2FarRegions, far_pts, decimation_factor=1):
+    def __init__(self, sim, Near2FarRegions, far_pts, decimation_factor=0):
         super().__init__(sim)
         self.Near2FarRegions = Near2FarRegions
         self.far_pts = far_pts  #list of far pts

@@ -117,7 +117,8 @@ def build_straight_wg_simulation(
       simulation,
       mp.Volume(center=center, size=monitor_size),
       mode=1,
-      forward=True) for center in monitor_centers
+      forward=True,
+      decimation_factor=1) for center in monitor_centers
   ]
   return simulation, sources, monitors, design_regions, frequencies
 

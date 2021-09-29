@@ -174,7 +174,26 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   dft_chunk_data data;
   data.c = c;
   data.vc = vc;
+
+  if (decimation_factor == 0) {
+    double tol = 1e-7;
+    double src_freq_max = 0;
+    for (src_time *s = sources; s; s = s->next) {
+      if (s->get_fwidth(tol) == 0)
+        decimation_factor = 1;
+      else
+        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth(tol));
+    }
+    double freq_max = 0;
+    for (size_t i = 0; i < Nfreq; ++i)
+      freq_max = std::max(freq_max, std::abs(freq[i]));
+    if ((freq_max > 0) && (src_freq_max > 0))
+      decimation_factor = std::max(1, int(std::floor(1/(dt*(freq_max + src_freq_max)))));
+    else
+      decimation_factor = 1;
+  }
   data.decimation_factor = decimation_factor;
+
   data.omega.resize(Nfreq);
   for (size_t i = 0; i < Nfreq; ++i)
     data.omega[i] = 2 * pi * freq[i];
@@ -230,8 +249,8 @@ void dft_chunk::update_dft(double time) {
 
   int numcmp = fc->f[c][1] ? 2 : 1;
 
-  size_t idx_dft = 0;
-  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+  PLOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    size_t idx_dft = IVEC_LOOP_COUNTER;
     double w;
     if (include_dV_and_interp_weights) {
       w = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2);
@@ -261,8 +280,82 @@ void dft_chunk::update_dft(double time) {
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] += std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
     }
+  }
+}
+
+/* Return the L2 norm of the DFTs themselves.  This is useful
+   to check whether the simulation is finished (whether all relevant fields have decayed).
+   (Collective operation.) */
+double fields::dft_norm() {
+  am_now_working_on(Other);
+  double sum = 0.0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2();
+  finished_working();
+  return std::sqrt(sum_to_all(sum));
+}
+
+double fields_chunk::dft_norm2() const {
+  double sum = 0.0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    sum += cur->norm2();
+  return sum;
+}
+
+static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
+
+double dft_chunk::norm2() const {
+  if (!fc->f[c][0]) return 0.0;
+  int numcmp = fc->f[c][1] ? 2 : 1;
+  double sum = 0.0;
+  size_t idx_dft = 0;
+  const int Nomega = omega.size();
+  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
+    for (int i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx_dft + i]);
     idx_dft++;
   }
+  return sum;
+}
+
+// return the minimum decimation factor across
+// all dft regions
+int fields::min_decimation() const {
+  int mindec = std::numeric_limits<int>::max();
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine())
+      mindec = std::min(mindec, chunks[i]->min_decimation());
+  return min_to_all(mindec);
+}
+
+int fields_chunk::min_decimation() const {
+  int mindec = std::numeric_limits<int>::max();
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    mindec = std::min(mindec, cur->get_decimation_factor());
+  return mindec;
+}
+
+// return the maximum abs(freq) over all DFT chunks
+double fields::dft_maxfreq() const {
+  double maxfreq = 0;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine())
+      maxfreq = std::max(maxfreq, chunks[i]->dft_maxfreq());
+  return max_to_all(maxfreq);
+}
+
+double fields_chunk::dft_maxfreq() const {
+  double maxomega = 0;
+  for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
+    maxomega = std::max(maxomega, cur->maxomega());
+  return maxomega / (2*meep::pi);
+}
+
+double dft_chunk::maxomega() const {
+  double maxomega = 0;
+  for (const auto& o : omega)
+    maxomega = std::max(maxomega, std::abs(o));
+  return maxomega;
 }
 
 void dft_chunk::scale_dft(complex<double> scale) {

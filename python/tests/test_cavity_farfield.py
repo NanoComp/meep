@@ -56,7 +56,8 @@ class TestCavityFarfield(ApproxComparisonTestCase):
                               size=mp.Vector3(0, d1),
                               weight=-1.0),
             mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1),
-                              size=mp.Vector3(0, d1))
+                              size=mp.Vector3(0, d1)),
+            decimation_factor=1
         )
         sim.run(until=200)
         d2 = 20

@@ -806,7 +806,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 %inline %{
-void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObject *grid_volume, PyObject *frequencies, PyObject *py_geom_list, PyObject *f) {
+void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObject *grid_volume, PyObject *frequencies, PyObject *py_geom_list, PyObject *f, bool sim_is_cylindrical) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -860,7 +860,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     meep::fields* f_c = (meep::fields *)f_v;
 
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c);
+    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c, sim_is_cylindrical);
 
     destroy_geom_box_tree(geometry_tree);
     delete l;
@@ -1802,6 +1802,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         scale_near2far_fields,
         stop_after_walltime,
         stop_on_interrupt,
+        stop_when_dft_decayed,
         stop_when_fields_decayed,
         synchronized_magnetic,
         to_appended,
