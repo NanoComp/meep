@@ -38,7 +38,7 @@ class BinaryPartitionUtilsTest(unittest.TestCase):
     ])
     def test_enumerate_leaf_nodes(self, partition, chunk_owners):
         leaf_nodes = list(bpu.enumerate_leaf_nodes(partition))
-        self.assertLen(leaf_nodes, partition.numchunks())
+        self.assertEqual(len(leaf_nodes), partition.numchunks())
         proc_ids = [node.proc_id for node in bpu.enumerate_leaf_nodes(partition)]
         self.assertEqual(proc_ids, list(chunk_owners))  # depth first ordering
 
@@ -67,8 +67,7 @@ class BinaryPartitionUtilsTest(unittest.TestCase):
                 bpu.get_total_weight(partition.right.left, weights_by_proc_id),
                 weights_by_proc_id[1] + weights_by_proc_id[4] + weights_by_proc_id[3])
         else:
-            with self.assertRaisesWithLiteralMatch(
-                    ValueError, 'Duplicate proc_ids found in chunk_layout!'):
+            with self.assertRaises(ValueError):
                 bpu.get_total_weight(partition, weights_by_proc_id)
 
     @parameterized.parameterized.expand([

@@ -72,13 +72,22 @@ class MeepTimingMeasurements:
         mean time taken for time stepping and the mean time taken for fourier
         transforming. This is zero if no simulation work has been performed.
     """
-    measurements: Dict[str, List[float]]
-    elapsed_time: float
-    num_time_steps: int
-    time_per_step: List[float]
-    dft_relative_change: List[float]
-    overlap_relative_change: List[float]
-    relative_energy: List[float]
+
+    def __init__(self,
+                 measurements: Dict[str, List[float]],
+                 elapsed_time: float,
+                 num_time_steps: int,
+                 time_per_step: List[float],
+                 dft_relative_change: List[float],
+                 overlap_relative_change: List[float],
+                 relative_energy: List[float]):
+        self.measurements = measurements
+        self.elapsed_time = elapsed_time
+        self.num_time_steps = num_time_steps
+        self.time_per_step = time_per_step
+        self.dft_relative_change = dft_relative_change
+        self.overlap_relative_change = overlap_relative_change
+        self.relative_energy = relative_energy
 
     @classmethod
     def new_from_simulation(
@@ -128,10 +137,8 @@ class MeepTimingMeasurements:
             elapsed_time=elapsed_time,
             num_time_steps=get_current_time_step(sim),
             time_per_step=time_per_step if time_per_step is not None else [],
-            dft_relative_change=dft_relative_change
-            if dft_relative_change is not None else [],
-            overlap_relative_change=overlap_relative_change
-            if overlap_relative_change is not None else [],
+            dft_relative_change=dft_relative_change if dft_relative_change is not None else [],
+            overlap_relative_change=overlap_relative_change if overlap_relative_change is not None else [],
             relative_energy=relative_energy if relative_energy is not None else [],
         )
 

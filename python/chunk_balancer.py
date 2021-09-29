@@ -3,8 +3,8 @@ import copy
 from typing import Optional, Tuple, Union
 
 import meep as mp
-import binary_partition_utils as bpu
-from timing_measurements import MeepTimingMeasurements
+from meep import binary_partition_utils as bpu
+from meep.timing_measurements import MeepTimingMeasurements
 
 import numpy as np
 
