@@ -44,7 +44,7 @@ TESTS =                                   \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
     $(TEST_DIR)/test_binary_partition_utils.py       \
-    $(BINARY_GRATING_TEST)                \
+    $(BINARY_GRATING_TEST)                     \
     $(TEST_DIR)/test_cavity_arrayslice.py      \
     $(TEST_DIR)/test_cavity_farfield.py        \
     $(TEST_DIR)/test_chunk_balancer.py         \
