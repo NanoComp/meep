@@ -91,7 +91,20 @@ Classes and functions related to the high-level Python interface to `MPB`. Addit
 
 Definition of `MPBData`, a Python class useful for `MPB` data analysis (documented [here](https://mpb.readthedocs.io/en/latest/Python_Data_Analysis_Tutorial)). This is is a Python port of the functionality available in the [`mpb-data` command line program](https://github.com/NanoComp/mpb/blob/master/utils/mpb-data.c) originally written in C.
 
-## Development and Testing
+## Development
+
+By default, the SWIG Python bindings are built with `threads` disabled (GIL is
+held for all SWIG wrapped python calls by default). You can optionally build the
+Python bindings with `threads` enabled (releasing the GIL for all SWIG wrapped
+Python calls) by passing the `--enable-swig-python-threads`
+option to the configure script.
+
+Since the bindings could be built with `threads` enabled, one needs to be
+careful to protect (acquire the GIL) code that calls back into Python or custom
+python wrapper code that uses PyAPI. Look for `SWIG_PYTHON_THREAD_SCOPED_BLOCK`
+in the SWIG interface files or the custom wrapper code for how this is done.
+
+## Testing
 
 The tests for the Python interface are located in `python/tests`. To run the whole test suite, run `make check` in the `python` build tree. During development it is more convenient to run individual tests. This can be accomplished by running `python <path_to_test>/test.py MyTestCase.test_method`. See the [Python unittest framework documentation](https://docs.python.org/3/library/unittest.html) for more info.
 
