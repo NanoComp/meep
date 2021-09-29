@@ -2313,14 +2313,15 @@ is a 1d array of `nfreq` dimensions.
 
 ### Load and Dump Simulation State
 
-The functions below add support for saving and restoring parts of the Simulation
-state to MEEP.
+The functions below add support for saving and restoring parts of the MEEP
+Simulation state.
 
-For all functions below, when dumping/loading state to/from a distributed filesystem (using say, parallel HDF5) and
-running in a MPI environment, `single_parallel_file=True` will result in
-all processes writing/reading to/from the same/single file after computing their respective
-offsets into this file. When set to `False`, each process writes/reads data for
-the chunks it owns to/from a separate, process unique file.
+For all functions below, when dumping/loading state to/from a distributed filesystem
+(using say, parallel HDF5) and running in a MPI environment, setting
+`single_parallel_file=True` will result in all processes writing/reading to/from
+the same/single file after computing their respective offsets into this file.
+When set to `False`, each process writes/reads data for the chunks it owns
+to/from a separate, process unique file.
 
 #### Load and Dump Structure
 
@@ -2440,21 +2441,6 @@ it does *not* store all the state required to re-create the `Simulation` object
 itself. Instead in expects the user to create and setup the new `Simulation`
 object to be *exactly* the same as the one the state was dumped from.
 
-
-```python
-# Setup, run and dump the simulation.
-sim1 = mp.Simulation(...)
-sim1.run(..., until=xx)
-sim1.dump(dirname, dump_structure=True, dump_fields=True, ...)
-
-...
-
-# Later in the same or a new process/run
-sim2 = mp.Simulation(<same setup as sim1>)
-sim2.init_sim()
-sim2.load(dirname, dump_structure=True, dump_fields=True, ...)
-sim2.run(...)  # continues from t=xx
-```
 <a id="Simulation.dump"></a>
 
 <div class="class_members" markdown="1">
@@ -2486,6 +2472,23 @@ Loads the specified parts of the simulation state from the directory `dirname`.
 </div>
 
 </div>
+
+Example usage:
+
+```python
+# Setup, run and dump the simulation.
+sim1 = mp.Simulation(...)
+sim1.run(..., until=xx)
+sim1.dump(dirname, dump_structure=True, dump_fields=True, ...)
+
+...
+
+# Later in the same or a new process/run
+sim2 = mp.Simulation(<same setup as sim1>)
+sim2.init_sim()
+sim2.load(dirname, dump_structure=True, dump_fields=True, ...)
+sim2.run(...)  # continues from t=xx
+```
 
 ### Frequency-Domain Solver
 
