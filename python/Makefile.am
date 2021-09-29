@@ -207,9 +207,12 @@ endif # MAINTAINER_MODE
 # specification of python source files to be byte-compiled at installation
 ######################################################################
 HL_IFACE =                  \
+    $(srcdir)/binary_partition_utils.py       \
+    $(srcdir)/chunk_balancer.py       \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
+    $(srcdir)/timing_measurements.py       \
     $(srcdir)/visualization.py  \
     $(srcdir)/materials.py  \
     $(srcdir)/verbosity_mgr.py
