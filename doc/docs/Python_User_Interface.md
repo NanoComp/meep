@@ -2685,24 +2685,44 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 <a id="stop_when_fields_decayed"></a>
 
 ```python
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
 ```
 
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
 at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
 has decayed by at least `decay_by` from its maximum previous value. In particular, it
-keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
 over that time period &mdash; in this way, it won't be fooled just because the field
-happens to go through 0 at some instant.
+happens to go through zero at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency
 components that are excited when the source turns off. High frequencies near the
 [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
 slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+
+</div>
+
+<a id="stop_when_dft_decayed"></a>
+
+```python
+def stop_when_dft_decayed(tol=1e-11,
+                      minimum_run_time=0,
+                      maximum_run_time=None):
+```
+
+<div class="function_docstring" markdown="1">
+
+Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every `dt`
+timesteps, and stops the simulation once all the field components and frequencies of *every*
+dft object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
+`dt` is determined automatically based on the frequency content in the DFT monitors.
+There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
+maximum run time `maximum_run_time` (no default).
 
 </div>
 
@@ -2733,7 +2753,6 @@ system, the simulation will abort time stepping and continue executing any code 
 follows the `run` function (e.g., outputting fields).
 
 </div>
-
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these `Simulation` methods:
 
@@ -4235,9 +4254,10 @@ class MaterialGrid(object):
 
 <div class="class_docstring" markdown="1">
 
-This class is used to specify materials interpolated from a discrete Cartesian grid. A class object is passed as the
-`material` argument of a [`Block`](#block) geometric object or the `default_material` argument of the
-[`Simulation`](#Simulation) constructor (similar to a material function).
+This class is used to specify materials interpolated from discrete points on a rectilinear grid.
+A class object is passed as the `material` argument of a [`Block`](#block) geometric object or
+the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
+[material function](#medium)).
 
 </div>
 
@@ -4263,29 +4283,43 @@ def __init__(self,
 
 Creates a `MaterialGrid` object.
 
-The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which is defined on a Cartesian grid
-by the NumPy array `weights` of size `grid_size` (a 3-tuple or `Vector3` of integers). Elements of the `weights` array must be in the
-range [0,1] where 0 is `medium1` and 1 is `medium2`. Two material types are supported: (1) frequency-independent
-isotropic $\varepsilon$ or $\mu$ and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-materials are bilinearly interpolated from the Cartesian grid to Meep's [Yee grid](Yee_Lattice.md).
+The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
+is defined on discrete points of a rectilinear grid by the NumPy array `weights` of size `grid_size`
+(a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
+depending on the `size` property of the `Block` object as shown in the following example for a 2d
+`MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
+$z$ direction. The grid points are defined at the corners of the voxels.
 
-For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying `do_averaging=True`.
-If you want to use a material grid to define a (nearly) discontinuous, piecewise-constant material that is *either* `medium1`
-or `medium2` almost everywhere, you can optionally enable a (smoothed) *projection* feature by setting the parameter `beta`
-to a positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a [level-set
-function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at $u(x)=\eta$ with a smoothing factor
-$\beta$ where $\beta=+\infty$ gives an unsmoothed, discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
-+\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$ involving the parameters `beta`
-($\beta$: bias or "smoothness" of the turn on) and `eta` ($\eta$: offset for erosion/dilation). The level set provides a general
-approach for defining a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation) grid values.
-Subpixel smoothing is fast and accurate because it exploits an analytic formulation for level-set functions.
+![](images/material_grid.png)
 
-It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining grids which are symmetric
-(e.g., mirror, rotation). One way to set this up is by overlapping a given `MaterialGrid` object with a symmetrized copy of
-itself. In the case of spatially overlapping `MaterialGrid` objects (with no intervening objects), any overlapping points are
-computed using the method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` (product),
-`"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options allow you to combine any material
-grids that overlap in space with no intervening objects.
+Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
+Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ or $\mu$
+and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
+materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
+from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
+
+For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
+`do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
+piecewise-constant material that is *either* `medium1` or `medium2` almost everywhere, you can
+optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
+positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a
+[level-set function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at
+$u(x)=\eta$ with a smoothing factor $\beta$ where $\beta=+\infty$ gives an unsmoothed,
+discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
++\tanh(\beta\times(u-\eta)))/(\tanh(\beta\times\eta)+\tanh(\beta\times(1-\eta)))$
+involving the parameters `beta` ($\beta$: bias or "smoothness" of the turn on) and `eta`
+($\eta$: offset for erosion/dilation). The level set provides a general approach for defining
+a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
+grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
+for level-set functions.
+
+It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
+grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
+given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping
+`MaterialGrid` objects (with no intervening objects), any overlapping points are computed using the
+method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` 
+(product), `"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options
+allow you to combine any material grids that overlap in space with no intervening objects.
 
 </div>
 
@@ -7491,18 +7525,18 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 <a id="stop_when_fields_decayed"></a>
 
 ```python
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
 ```
 
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
 at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
 has decayed by at least `decay_by` from its maximum previous value. In particular, it
-keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
 over that time period &mdash; in this way, it won't be fooled just because the field
-happens to go through 0 at some instant.
+happens to go through zero at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency

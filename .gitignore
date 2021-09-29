@@ -90,6 +90,7 @@ tests/convergence_cyl_waveguide
 tests/cyl-ellipsoid-ll
 tests/cylindrical
 tests/dft-fields
+tests/dump_load
 tests/flux
 tests/gdsII-3d
 tests/h5test
