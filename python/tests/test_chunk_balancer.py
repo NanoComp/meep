@@ -234,8 +234,7 @@ class DefaultChunkBalancerTest(unittest.TestCase):
 
         chunk_balancer = DefaultChunkBalancer()
 
-        chunk_balancer.adjust_chunk_layout(
-            test_sim, old_timing_measurements, sensitivity=1.0)
+        chunk_balancer.adjust_chunk_layout(test_sim, sensitivity=1.0)
 
         new_timing_measurements = MeepTimingMeasurements.new_from_simulation(
             test_sim, -1)
@@ -270,10 +269,7 @@ class DefaultChunkBalancerTest(unittest.TestCase):
         num_iterations = 25
 
         for _ in range(num_iterations):
-            timing_measurements = MeepTimingMeasurements.new_from_simulation(
-                test_sim, -1)
-            chunk_balancer.adjust_chunk_layout(
-                test_sim, timing_measurements, sensitivity=0.5)
+            chunk_balancer.adjust_chunk_layout(test_sim, sensitivity=0.5)
 
             new_timing_measurements = MeepTimingMeasurements.new_from_simulation(
                 test_sim, -1)
