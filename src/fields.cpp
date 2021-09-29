@@ -722,6 +722,15 @@ void fields::unset_solve_cw_omega() {
     chunks[i]->unset_solve_cw_omega();
 }
 
+void fields::log(const char* prefix) {
+  master_printf("%sFields State:\n", prefix);
+  master_printf("%s  a = %g, dt = %g\n", prefix, a, dt);
+  master_printf("%s  m = %g, beta = %g\n", prefix, m, beta);
+  master_printf("%s  t = %d, phasein_time = %d, is_real = %d\n", prefix, t, phasein_time, is_real);
+  master_printf("\n");
+  master_printf("%s  num_chunks = %d (shared=%d)\n", prefix, num_chunks, shared_chunks);
+}
+
 /* implement mirror boundary conditions for i outside 0..n-1: */
 int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i : i); }
 
