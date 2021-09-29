@@ -72,6 +72,7 @@ bool broadcast(int from, bool);
 double max_to_master(double); // Only returns the correct value to proc 0.
 double max_to_all(double);
 int max_to_all(int);
+int min_to_all(int);
 float sum_to_master(float);   // Only returns the correct value to proc 0.
 double sum_to_master(double); // Only returns the correct value to proc 0.
 double sum_to_all(double);

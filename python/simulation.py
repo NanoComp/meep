@@ -953,7 +953,8 @@ class Simulation(object):
                  progress_interval=4,
                  subpixel_tol=1e-4,
                  subpixel_maxeval=100000,
-                 loop_tile_base=0,
+                 loop_tile_base_db=0,
+                 loop_tile_base_eh=0,
                  ensure_periodicity=True,
                  num_chunks=0,
                  Courant=0.5,
@@ -1129,11 +1130,12 @@ class Simulation(object):
           the minimum refractive index (usually 1), and in practice $S$ should be slightly
           smaller.
 
-        + **`loop_tile_base` [`number`]** — To improve the memory locality of the step-curl
-          field updates, Meep has an experimental feature to "tile" the loop over the Yee grid
-          voxels. The splitting of this loop into tiles or subdomains involves a recursive-bisection
-          method in which the base case for the number of voxels is specified using this parameter.
-          The default value is 0 or no tiling; a typical nonzero value to try would be 10000.
+        + **`loop_tile_base_db`, `loop_tile_base_eh` [`number`]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
+          of the field updates, Meep has an experimental feature to "tile" the loops over the Yee grid
+          voxels. The splitting of the update loops for step-curl and update-eh into tiles or subdomains
+          involves a recursive-bisection method in which the base case for the number of voxels is
+          specified using these two parameters, respectively. The default value is 0 or no tiling;
+          a typical nonzero value to try would be 10000.
 
         + **`output_volume` [`Volume` class ]** — Specifies the default region of space
           that is output by the HDF5 output functions (below); see also the `Volume` class
@@ -1206,7 +1208,8 @@ class Simulation(object):
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
-        self.loop_tile_base = loop_tile_base
+        self.loop_tile_base_db = loop_tile_base_db
+        self.loop_tile_base_eh = loop_tile_base_eh
         self.ensure_periodicity = ensure_periodicity
         self.extra_materials = extra_materials
         self.default_material = default_material
@@ -1963,7 +1966,7 @@ class Simulation(object):
             self.m if self.is_cylindrical else 0,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin,
-            self.loop_tile_base
+            self.loop_tile_base_db, self.loop_tile_base_eh
         )
 
         if self.force_all_components and self.dimensions != 1:
@@ -4351,15 +4354,15 @@ def to_appended(fname, *step_funcs):
     return _to_appended
 
 
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-    or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+    or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
     at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
     has decayed by at least `decay_by` from its maximum previous value. In particular, it
-    keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+    keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
     over that time period &mdash; in this way, it won't be fooled just because the field
-    happens to go through 0 at some instant.
+    happens to go through zero at some instant.
 
     Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
     property of your source(s), to decrease the amplitude of the small high-frequency
@@ -4367,6 +4370,9 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
     [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
     slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
     """
+    if (dt is None) or (c is None) or (pt is None) or (decay_by is None):
+        raise ValueError("dt, c, pt, and decay_by are all required.")
+
     closure = {
         'max_abs': 0,
         'cur_max': 0,
@@ -4425,6 +4431,44 @@ def stop_on_interrupt():
 
     return _stop
 
+def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every `dt`
+    timesteps, and stops the simulation once all the field components and frequencies of *every*
+    dft object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
+    `dt` is determined automatically based on the frequency content in the DFT monitors.
+    There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
+    maximum run time `maximum_run_time` (no default).
+    """
+
+    # Record data in closure so that we can persistently edit
+    closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':0}
+    def _stop(_sim):
+        if _sim.fields.t == 0:
+            closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.min_decimation())
+        if maximum_run_time and _sim.round_time() > maximum_run_time:
+            return True
+        elif _sim.fields.t <= closure['dt'] + closure['t0']:
+            return False
+        else:
+            previous_fields = closure['previous_fields']
+            current_fields  = _sim.fields.dft_norm()
+            change = np.abs(previous_fields-current_fields)
+            closure['maxchange'] = max(closure['maxchange'],change)
+
+            if previous_fields == 0:
+                closure['previous_fields'] = current_fields
+                return False
+
+            closure['previous_fields'] = current_fields
+            closure['t0'] = _sim.fields.t
+            if mp.verbosity > 1:
+                fmt = "DFT fields decay(t = {0:0.2f}): {1:0.4e}"
+                print(fmt.format(_sim.meep_time(), np.real(change/closure['maxchange'])))
+            return (change/closure['maxchange']) <= tol and _sim.round_time() >= minimum_run_time
+
+    return _stop
 
 def combine_step_funcs(*step_funcs):
     """
