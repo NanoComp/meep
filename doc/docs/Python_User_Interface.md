@@ -2311,12 +2311,20 @@ is a 1d array of `nfreq` dimensions.
 </div>
 
 
-### Load and Dump Structure
+### Load and Dump Simulation State
+
+The functions below add support for saving and restoring parts of the Simulation
+state to MEEP.
+
+For all functions below, when dumping/loading state to/from a distributed filesystem (using say, parallel HDF5) and
+running in a MPI environment, `single_parallel_file=True` will result in
+all processes writing/reading to/from the same/single file after computing their respective
+offsets into this file. When set to `False`, each process writes/reads data for
+the chunks it owns to/from a separate, process unique file.
+
+#### Load and Dump Structure
 
 These functions dump the raw ε and μ data to disk and load it back for doing multiple simulations with the same materials but different sources etc. The only prerequisite is that the dump/load simulations have the same [chunks](Chunks_and_Symmetry.md) (i.e. the same grid, number of processors, symmetries, and PML). When using `split_chunks_evenly=False`, you must also dump the original chunk layout using `dump_chunk_layout` and load it into the new `Simulation` using the `chunk_layout` parameter. Currently only stores dispersive and non-dispersive $\varepsilon$ and $\mu$ but not nonlinearities. Note that loading data from a file in this way overwrites any `geometry` data passed to the `Simulation` constructor.
-
-For dump_structure and load_structure, when `single_parallel_file=True` (the default) - all chunks write to the same/single file after computing their respective offsets into this file. When set to 'False', each chunk writes writes its data to a separate file that is appropriately named by its chunk index.
-
 
 <a id="Simulation.dump_structure"></a>
 
@@ -2344,12 +2352,13 @@ def load_structure(self, fname, single_parallel_file=True):
 
 <div class="method_docstring" markdown="1">
 
-Loads a structure from the file `fname`. A file name to load can also be passed to
-the `Simulation` constructor via the `load_structure` keyword argument.
+Loads a structure from the file `fname`.
 
 </div>
 
 </div>
+
+#### Load and Dump Chunk Layout
 
 <a id="Simulation.dump_chunk_layout"></a>
 
@@ -2362,7 +2371,6 @@ def dump_chunk_layout(self, fname):
 <div class="method_docstring" markdown="1">
 
 Dumps the chunk layout to file `fname`.
-
 </div>
 
 </div>
@@ -2383,6 +2391,101 @@ flux = sim2.add_flux(...)
 sim2.load_minus_flux(...)
 sim2.run(...)
 ```
+
+#### Load and Dump Fields
+
+These functions can be used to dump (and later load) the raw fields, auxillary
+fields and the dft fields at a certain timestamp. The timestamp at which the
+dump happens is also saved so that simulation can continue from where it was saved.
+The one pre-requisite of this feature is that it needs the Simulation object to have
+been setup *exactly* the same as the one it was dumped from.
+
+<a id="Simulation.dump_fields"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def dump_fields(self, fname, single_parallel_file=True):
+```
+
+<div class="method_docstring" markdown="1">
+
+Dumps the fields to the file `fname`.
+
+</div>
+
+</div>
+
+<a id="Simulation.load_fields"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def load_fields(self, fname, single_parallel_file=True):
+```
+
+<div class="method_docstring" markdown="1">
+
+Loads a fields from the file `fname`.
+
+</div>
+
+</div>
+
+#### Checkpoint / Restore.
+
+The above dump/load related functions can be used to implement a
+checkpoint/restore *like* feature for MEEP. The caveat of this feature is that
+it does *not* store all the state required to re-create the `Simulation` object
+itself. Instead in expects the user to create and setup the new `Simulation`
+object to be *exactly* the same as the one the state was dumped from.
+
+
+```python
+# Setup, run and dump the simulation.
+sim1 = mp.Simulation(...)
+sim1.run(..., until=xx)
+sim1.dump(dirname, dump_structure=True, dump_fields=True, ...)
+
+...
+
+# Later in the same or a new process/run
+sim2 = mp.Simulation(<same setup as sim1>)
+sim2.init_sim()
+sim2.load(dirname, dump_structure=True, dump_fields=True, ...)
+sim2.run(...)  # continues from t=xx
+```
+<a id="Simulation.dump"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def dump(self, dirname, dump_structure=True, dump_fields=True, single_parallel_file=True):
+```
+
+<div class="method_docstring" markdown="1">
+
+Dumps the specified parts of the simulation state to the directory `dirname`.
+
+</div>
+
+</div>
+
+<a id="Simulation.load"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def load(self, dirname, load_structure=True, load_fields=True, single_parallel_file=True):
+```
+
+<div class="method_docstring" markdown="1">
+
+Loads the specified parts of the simulation state from the directory `dirname`.
+
+</div>
+
+</div>
 
 ### Frequency-Domain Solver
 
