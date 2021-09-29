@@ -26,6 +26,16 @@
 /*
  * In C++ we can use a scoped variable to acquire the GIL and then auto release
  * on leaving scope, making our code a bit cleaner.
+ *
+ * SWIG_PYTHON_THREAD_SCOPED_BLOCK is a macro that SWIG automatically generates
+ * wrapping a class using an RAII pattern to automatically acquire/release
+ * the GIL. See the generated meep-python.cxx for details.
+ *
+ * We could instead just explicitly call SWIG_PYTHON_THREAD_BEGIN_BLOCK and
+ * SWIG_PYTHON_THREAD_END_BLOCK everywhere - but this is error prone since we
+ * have to ensure that SWIG_PYTHON_THREAD_END_BLOCK is called before every
+ * return statement in a method.
+ *
  * NOTE: This wont work with plain-old C.
  */
 #define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
