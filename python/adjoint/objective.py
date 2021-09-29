@@ -172,7 +172,11 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         if self.kpoint_func:
             eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
         else:
-            direction = mp.Vector3(*[float(v == 0) for v in self.volume.size])
+            center_frequency = 0.5 * np.min(self.frequencies) + np.max(
+                self.frequencies)
+            direction = mp.Vector3(
+                *(np.eye(3)[self._monitor.normal_direction] *
+                  np.abs(center_frequency)))
             eig_kpoint = -1 * direction if self.forward else direction
 
         if self._frequencies.size == 1:
@@ -190,7 +194,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         source = mp.EigenModeSource(
             src,
             eig_band=self.mode,
-            direction=mp.AUTOMATIC,
+            direction=mp.NO_DIRECTION,
             eig_kpoint=eig_kpoint,
             amplitude=amp,
             eig_match_freq=True,
@@ -205,13 +209,16 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             kpoint_func = self.kpoint_func
             overlap_idx = self.kpoint_func_overlap_idx
         else:
-            direction = mp.Vector3(*[float(v == 0) for v in self.volume.size])
-            kpoint_func = lambda *not_used: direction if self.forward else -1 * direction
+            center_frequency = 0.5 * np.min(self.frequencies) + np.max(
+                self.frequencies)
+            kpoint = mp.Vector3(*(np.eye(3)[self._monitor.normal_direction] *
+                                  np.abs(center_frequency)))
+            kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
         ob = self.sim.get_eigenmode_coefficients(
             self._monitor,
             [self.mode],
-            direction=mp.AUTOMATIC,
+            direction=mp.NO_DIRECTION,
             kpoint_func=kpoint_func,
             **self.eigenmode_kwargs,
         )
