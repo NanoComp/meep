@@ -26,8 +26,8 @@ eig_parity = mp.EVEN_Y + mp.ODD_Z
 
 design_region_size = mp.Vector3(1.5,1.5)
 design_region_resolution = int(2*resolution)
-Nx = int(design_region_resolution*design_shape.x) + 1
-Ny = int(design_region_resolution*design_shape.y) + 1
+Nx = int(design_region_resolution*design_region_size.x) + 1
+Ny = int(design_region_resolution*design_region_size.y) + 1
 
 ## ensure reproducible results
 np.random.seed(9861548)
