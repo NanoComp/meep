@@ -24,10 +24,10 @@ boundary_layers = [mp.PML(thickness=dpml)]
 
 eig_parity = mp.EVEN_Y + mp.ODD_Z
 
-design_shape = mp.Vector3(1.5,1.5)
+design_region_size = mp.Vector3(1.5,1.5)
 design_region_resolution = int(2*resolution)
-Nx = int(design_region_resolution*design_shape.x)
-Ny = int(design_region_resolution*design_shape.y)
+Nx = int(design_region_resolution*design_region_size.x)
+Ny = int(design_region_resolution*design_region_size.y)
 
 ## ensure reproducible results
 np.random.seed(9861548)
@@ -53,15 +53,14 @@ sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                               eig_parity=eig_parity)]
 
 
-def forward_simulation(design_params,mon_type,frequencies=None, use_complex=False, k=False):
+def forward_simulation(design_params,mon_type, frequencies=None, use_complex=False, k=False):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
-                              weights=design_params.reshape(Nx,Ny),
-                              grid_type='U_MEAN')
+                              weights=design_params.reshape(Nx,Ny))
 
     matgrid_geometry = [mp.Block(center=mp.Vector3(),
-                                 size=mp.Vector3(design_shape.x,design_shape.y,0),
+                                 size=mp.Vector3(design_region_size.x,design_region_size.y,0),
                                  material=matgrid)]
 
     geometry = waveguide_geometry + matgrid_geometry
@@ -73,14 +72,17 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex=Fals
                         geometry=geometry,
                         force_complex_fields=use_complex,
                         k_point=k)
+
     if not frequencies:
         frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
         mode = sim.add_mode_monitor(frequencies,
-                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),size=mp.Vector3(0,sxy-2*dpml,0)),
+                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),
+                                                  size=mp.Vector3(0,sxy-2*dpml,0)),
                                     yee_grid=True,
-                                    decimation_factor=10)
+                                    decimation_factor=10,
+                                    eig_parity=eig_parity)
 
     elif mon_type.name == 'DFT':
         mode = sim.add_dft_fields([mp.Ez],
@@ -90,17 +92,17 @@ def forward_simulation(design_params,mon_type,frequencies=None, use_complex=Fals
                                   yee_grid=False,
                                   decimation_factor=10)
 
-    sim.run(until_after_sources=50)
+    sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
     if mon_type.name == 'EIGENMODE':
         coeff = sim.get_eigenmode_coefficients(mode,[1],eig_parity).alpha[0,:,0]
-        S12 = abs(coeff)**2
+        S12 = np.power(np.abs(coeff),2)
 
     elif mon_type.name == 'DFT':
         Ez2 = []
         for f in range(len(frequencies)):
             Ez_dft = sim.get_dft_array(mode, mp.Ez, f)
-            Ez2.append(abs(Ez_dft[4,10])**2)
+            Ez2.append(np.power(np.abs(Ez_dft[4,10]),2))
         Ez2 = np.array(Ez2)
 
     sim.reset_meep()
@@ -119,7 +121,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
 
     matgrid_region = mpa.DesignRegion(matgrid,
                                       volume=mp.Volume(center=mp.Vector3(),
-                                                       size=mp.Vector3(design_shape.x,design_shape.y,0)))
+                                                       size=mp.Vector3(design_region_size.x,design_region_size.y,0)))
 
     matgrid_geometry = [mp.Block(center=matgrid_region.center,
                                  size=matgrid_region.size,
@@ -143,10 +145,11 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
                                              mp.Volume(center=mp.Vector3(0.5*sxy-dpml-0.1),
                                                        size=mp.Vector3(0,sxy-2*dpml,0)),
                                              1,
-                                             decimation_factor=5)]
+                                             decimation_factor=5,
+                                             eig_parity=eig_parity)]
 
         def J(mode_mon):
-            return npa.abs(mode_mon)**2
+            return npa.power(npa.abs(mode_mon),2)
 
     elif mon_type.name == 'DFT':
         obj_list = [mpa.FourierFields(sim,
@@ -156,13 +159,13 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
                                       decimation_factor=5)]
 
         def J(mode_mon):
-            return npa.abs(mode_mon[:,4,10])**2
+            return npa.power(npa.abs(mode_mon[:,4,10]),2)
 
     opt = mpa.OptimizationProblem(
-        simulation = sim,
-        objective_functions = J,
-        objective_arguments = obj_list,
-        design_regions = [matgrid_region],
+        simulation=sim,
+        objective_functions=J,
+        objective_arguments=obj_list,
+        design_regions=[matgrid_region],
         frequencies=frequencies,
         decimation_factor=10)
 
@@ -174,7 +177,11 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
 
 
 def mapping(x,filter_radius,eta,beta):
-    filtered_field = mpa.conic_filter(x,filter_radius,design_shape.x,design_shape.y,design_region_resolution)
+    filtered_field = mpa.conic_filter(x,
+                                      filter_radius,
+                                      design_region_size.x,
+                                      design_region_size.y,
+                                      design_region_resolution)
 
     projected_field = mpa.tanh_projection(filtered_field,beta,eta)
 
@@ -249,7 +256,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             mapped_p = mapping(p,filter_radius,eta,beta)
 
             ## compute gradient using adjoint solver
-            adjsol_obj, adjsol_grad = adjoint_solver(mapped_p, MonitorObject.EIGENMODE,frequencies)
+            adjsol_obj, adjsol_grad = adjoint_solver(mapped_p, MonitorObject.EIGENMODE, frequencies)
 
             ## backpropagate the gradient
             if len(frequencies) > 1:
