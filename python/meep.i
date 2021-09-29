@@ -23,6 +23,13 @@
 #define SWIG_FILE_WITH_INIT
 #define SWIG_PYTHON_2_UNICODE
 
+/*
+ * In C++ we can use a scoped variable to acquire the GIL and then auto release
+ * on leaving scope, making our code a bit cleaner.
+ * NOTE: This wont work with plain-old C.
+ */
+#define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
+
 #include <complex>
 #include <string>
 
@@ -112,18 +119,17 @@ static PyObject *py_meep_src_time_object() {
 }
 
 static double py_callback_wrap(const meep::vec &v) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
     double ret = PyFloat_AsDouble(pyret);
     Py_DECREF(pyv);
     Py_XDECREF(pyret);
-    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
 static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
     double real = PyComplex_RealAsDouble(pyret);
@@ -131,14 +137,13 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     std::complex<double> ret(real, imag);
     Py_DECREF(pyv);
     Py_DECREF(pyret);
-    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
 static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
                                                const meep::vec &loc,
                                                void *data_) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(loc);
 
     py_field_func_data *data = (py_field_func_data *)data_;
@@ -164,12 +169,11 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
     Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);
-    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
 static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *py_freq = PyFloat_FromDouble(freq);
     PyObject *py_mode = PyInteger_FromLong(mode);
 
@@ -193,17 +197,15 @@ static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
 
     Py_DECREF(py_freq);
     Py_DECREF(py_mode);
-    SWIG_PYTHON_THREAD_END_BLOCK;
     return result;
 }
 
 static void _do_master_printf(const char* stream_name, const char* text) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
 
     Py_XDECREF(PyObject_CallMethod(py_stream, "write", "(s)", text));
     Py_XDECREF(PyObject_CallMethod(py_stream, "flush", NULL));
-    SWIG_PYTHON_THREAD_END_BLOCK;
 }
 
 void py_master_printf_wrap(const char *s) {
@@ -254,7 +256,7 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
 
 // Wrapper for Python PML profile function
 double py_pml_profile(double u, void *f) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
@@ -265,7 +267,6 @@ double py_pml_profile(double u, void *f) {
     double ret = PyFloat_AsDouble(pyret);
     Py_XDECREF(pyret);
     Py_XDECREF(d);
-    SWIG_PYTHON_THREAD_END_BLOCK;
     return ret;
 }
 
@@ -581,13 +582,12 @@ meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::di
 }
 
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
-    SWIG_PYTHON_THREAD_BEGIN_BLOCK;
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     // Return value: New reference
     PyObject *v3_class = py_vector3_object();
     PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
     PyObject *result = PyObject_Call(v3_class, args, NULL);
     Py_DECREF(args);
-    SWIG_PYTHON_THREAD_END_BLOCK;
     return result;
 }
 
