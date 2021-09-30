@@ -34,16 +34,16 @@ else
   WVG_SRC_TEST =
 endif
 
-TESTS =                                   \
+TESTS =                                        \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_solver.py         \
-		$(TEST_DIR)/test_adjoint_cyl.py            \
+    $(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_jax.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
-    $(BINARY_GRATING_TEST)                \
+    $(BINARY_GRATING_TEST)                     \
     $(TEST_DIR)/test_cavity_arrayslice.py      \
     $(TEST_DIR)/test_cavity_farfield.py        \
     $(TEST_DIR)/test_chunk_layout.py           \
@@ -51,9 +51,10 @@ TESTS =                                   \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \
-    ${DIFFRACTED_PLANEWAVE_TEST}          \
-    ${DISPERSIVE_EIGENMODE_TEST}          \
+    ${DIFFRACTED_PLANEWAVE_TEST}               \
+    ${DISPERSIVE_EIGENMODE_TEST}               \
     $(TEST_DIR)/test_divide_mpi_processes.py   \
+    $(TEST_DIR)/test_dump_load.py              \
     $(TEST_DIR)/test_eigfreq.py                \
     $(TEST_DIR)/test_faraday_rotation.py       \
     $(TEST_DIR)/test_field_functions.py        \
@@ -64,14 +65,14 @@ TESTS =                                   \
     $(TEST_DIR)/test_get_point.py              \
     $(TEST_DIR)/test_holey_wvg_bands.py        \
     $(TEST_DIR)/test_holey_wvg_cavity.py       \
-    $(KDOM_TEST)                          \
+    $(KDOM_TEST)                               \
     $(TEST_DIR)/test_ldos.py                   \
-    $(MDPYTEST)                           \
+    $(MDPYTEST)                                \
     $(TEST_DIR)/test_material_grid.py          \
     $(TEST_DIR)/test_medium_evaluations.py     \
-    $(MPBPYTEST)                          \
-    $(MODE_COEFFS_TEST)                   \
-    $(MODE_DECOMPOSITION_TEST)            \
+    $(MPBPYTEST)                               \
+    $(MODE_COEFFS_TEST)                        \
+    $(MODE_DECOMPOSITION_TEST)                 \
     $(TEST_DIR)/test_multilevel_atom.py        \
     $(TEST_DIR)/test_n2f_periodic.py           \
     $(TEST_DIR)/test_oblique_source.py         \

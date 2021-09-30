@@ -31,20 +31,20 @@ using namespace std;
 namespace meep {
 
 void fields::step_db(field_type ft) {
+  if (ft != B_stuff && ft != D_stuff) meep::abort("step_db only works with B/D");
+
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       if (chunks[i]->step_db(ft)) {
-       chunk_connections_valid = false;
-       assert(changed_materials);
+        chunk_connections_valid = false;
+        assert(changed_materials);
       }
 }
 
 bool fields_chunk::step_db(field_type ft) {
   bool allocated_u = false;
 
-  if (ft != B_stuff && ft != D_stuff) meep::abort("bug - step_db should only be called for B or D");
-
-  for (const auto& sub_gv : gvs) {
+  for (const auto& sub_gv : gvs_tiled) {
     DOCMP FOR_FT_COMPONENTS(ft, cc) {
       if (f[cc][cmp]) {
         const component c_p = plus_component[cc], c_m = minus_component[cc];

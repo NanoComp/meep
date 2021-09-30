@@ -40,7 +40,7 @@ except ImportError:
 
 verbosity = Verbosity(mp.cvar, 'meep', 1)
 
-mp.set_zero_subnormals(True)
+mp.setup()
 
 # Send output from Meep, ctlgeom, and MPB to Python's stdout
 mp.set_meep_printf_callback(mp.py_master_printf_wrap)
@@ -953,7 +953,8 @@ class Simulation(object):
                  progress_interval=4,
                  subpixel_tol=1e-4,
                  subpixel_maxeval=100000,
-                 loop_tile_base=0,
+                 loop_tile_base_db=0,
+                 loop_tile_base_eh=0,
                  ensure_periodicity=True,
                  num_chunks=0,
                  Courant=0.5,
@@ -1129,11 +1130,12 @@ class Simulation(object):
           the minimum refractive index (usually 1), and in practice $S$ should be slightly
           smaller.
 
-        + **`loop_tile_base` [`number`]** — To improve the memory locality of the step-curl
-          field updates, Meep has an experimental feature to "tile" the loop over the Yee grid
-          voxels. The splitting of this loop into tiles or subdomains involves a recursive-bisection
-          method in which the base case for the number of voxels is specified using this parameter.
-          The default value is 0 or no tiling; a typical nonzero value to try would be 10000.
+        + **`loop_tile_base_db`, `loop_tile_base_eh` [`number`]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
+          of the field updates, Meep has an experimental feature to "tile" the loops over the Yee grid
+          voxels. The splitting of the update loops for step-curl and update-eh into tiles or subdomains
+          involves a recursive-bisection method in which the base case for the number of voxels is
+          specified using these two parameters, respectively. The default value is 0 or no tiling;
+          a typical nonzero value to try would be 10000.
 
         + **`output_volume` [`Volume` class ]** — Specifies the default region of space
           that is output by the HDF5 output functions (below); see also the `Volume` class
@@ -1206,7 +1208,8 @@ class Simulation(object):
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
-        self.loop_tile_base = loop_tile_base
+        self.loop_tile_base_db = loop_tile_base_db
+        self.loop_tile_base_eh = loop_tile_base_eh
         self.ensure_periodicity = ensure_periodicity
         self.extra_materials = extra_materials
         self.default_material = default_material
@@ -1248,6 +1251,7 @@ class Simulation(object):
 
         self.load_single_parallel_file = True
         self.load_structure_file = None
+        self.load_fields_file = None
 
         self.special_kz = False
         if self.cell_size.z == 0 and self.k_point and self.k_point.z != 0:
@@ -1910,29 +1914,48 @@ class Simulation(object):
         Dumps the structure to the file `fname`.
         """
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling dump_structure")
+            raise ValueError("Structure must be initialized before calling dump_structure")
         self.structure.dump(fname, single_parallel_file)
+        print("Dumped structure to file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def load_structure(self, fname, single_parallel_file=True):
         """
-        Loads a structure from the file `fname`. A file name to load can also be passed to
-        the `Simulation` constructor via the `load_structure` keyword argument.
+        Loads a structure from the file `fname`.
         """
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling load_structure")
+            raise ValueError("Structure must be initialized before loading structure from file '%s'" % fname)
         self.structure.load(fname, single_parallel_file)
+        print("Loaded structure from file: %s (%s)" % (fname, str(single_parallel_file)))
+
+    def dump_fields(self, fname, single_parallel_file=True):
+        """
+        Dumps the fields to the file `fname`.
+        """
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before calling dump_fields")
+        self.fields.dump(fname, single_parallel_file)
+        print("Dumped fields to file: %s (%s)" % (fname, str(single_parallel_file)))
+
+    def load_fields(self, fname, single_parallel_file=True):
+        """
+        Loads a fields from the file `fname`.
+        """
+        if self.fields is None:
+            raise ValueError("Fields must be initialized before loading fields from file '%s'" % fname)
+        self.fields.load(fname, single_parallel_file)
+        print("Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def dump_chunk_layout(self, fname):
         """
         Dumps the chunk layout to file `fname`.
         """
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling load_structure")
+            raise ValueError("Structure must be initialized before calling dump_chunk_layout")
         self.structure.dump_chunk_layout(fname)
 
     def load_chunk_layout(self, br, source):
         if self.structure is None:
-            raise ValueError("Fields must be initialized before calling load_structure")
+            raise ValueError("Structure must be initialized before loading chunk layout from file '%s'" % fname)
 
         if isinstance(source, Simulation):
             vols = source.structure.get_chunk_volumes()
@@ -1954,18 +1977,22 @@ class Simulation(object):
             dump_dirname = os.path.join(dirname, 'rank%02d' % mp.my_rank())
         return dump_dirname
 
-    def dump(self, dirname, structure=True, single_parallel_file=True):
+    def dump(self, dirname, dump_structure=True, dump_fields=True, single_parallel_file=True):
         """
         Dumps simulation state.
         """
         dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
         os.makedirs(dump_dirname, exist_ok=True)
 
-        if structure:
+        if dump_structure:
             structure_dump_filename = os.path.join(dump_dirname, 'structure.h5')
             self.dump_structure(structure_dump_filename, single_parallel_file)
 
-    def load(self, dirname, structure=True, single_parallel_file=True):
+        if dump_fields:
+            fields_dump_filename = os.path.join(dump_dirname, 'fields.h5')
+            self.dump_fields(fields_dump_filename, single_parallel_file)
+
+    def load(self, dirname, load_structure=True, load_fields=True, single_parallel_file=True):
         """
         Loads simulation state.
 
@@ -1974,8 +2001,22 @@ class Simulation(object):
         """
         dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
         self.load_single_parallel_file = single_parallel_file
-        if structure:
-          self.load_structure_file = os.path.join(dump_dirname, 'structure.h5')
+
+        if load_structure:
+          load_structure_file = os.path.join(dump_dirname, 'structure.h5')
+          # If structure is already initialized, load it straight away.
+          # Otherwise, do a delayed load.
+          if self.structure:
+            self.load_structure(load_structure_file, self.load_single_parallel_file)
+          else:
+            self.load_structure_file = load_structure_file
+
+        if load_fields:
+          load_fields_file = os.path.join(dump_dirname, 'fields.h5')
+          if self.fields:
+            self.load_fields(load_fields_file, self.load_single_parallel_file)
+          else:
+            self.load_fields_file = load_fields_file
 
     def init_sim(self):
         if self._is_initialized:
@@ -2002,7 +2043,7 @@ class Simulation(object):
             self.m if self.is_cylindrical else 0,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin,
-            self.loop_tile_base
+            self.loop_tile_base_db, self.loop_tile_base_eh
         )
 
         if self.force_all_components and self.dimensions != 1:
@@ -2024,7 +2065,11 @@ class Simulation(object):
             hook()
 
         self._is_initialized = True
-        
+
+        if self.load_fields_file:
+            self.load_fields(
+                self.load_fields_file, self.load_single_parallel_file)
+
     def using_real_fields(self):
         cond1 = self.is_cylindrical and self.m != 0
         cond2 = any([s.phase.imag for s in self.symmetries])
@@ -4390,15 +4435,15 @@ def to_appended(fname, *step_funcs):
     return _to_appended
 
 
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-    or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+    or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
     at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
     has decayed by at least `decay_by` from its maximum previous value. In particular, it
-    keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+    keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
     over that time period &mdash; in this way, it won't be fooled just because the field
-    happens to go through 0 at some instant.
+    happens to go through zero at some instant.
 
     Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
     property of your source(s), to decrease the amplitude of the small high-frequency
@@ -4406,6 +4451,9 @@ def stop_when_fields_decayed(dt, c, pt, decay_by):
     [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
     slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
     """
+    if (dt is None) or (c is None) or (pt is None) or (decay_by is None):
+        raise ValueError("dt, c, pt, and decay_by are all required.")
+
     closure = {
         'max_abs': 0,
         'cur_max': 0,
@@ -4464,6 +4512,44 @@ def stop_on_interrupt():
 
     return _stop
 
+def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every `dt`
+    timesteps, and stops the simulation once all the field components and frequencies of *every*
+    dft object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
+    `dt` is determined automatically based on the frequency content in the DFT monitors.
+    There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
+    maximum run time `maximum_run_time` (no default).
+    """
+
+    # Record data in closure so that we can persistently edit
+    closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':0}
+    def _stop(_sim):
+        if _sim.fields.t == 0:
+            closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.min_decimation())
+        if maximum_run_time and _sim.round_time() > maximum_run_time:
+            return True
+        elif _sim.fields.t <= closure['dt'] + closure['t0']:
+            return False
+        else:
+            previous_fields = closure['previous_fields']
+            current_fields  = _sim.fields.dft_norm()
+            change = np.abs(previous_fields-current_fields)
+            closure['maxchange'] = max(closure['maxchange'],change)
+
+            if previous_fields == 0:
+                closure['previous_fields'] = current_fields
+                return False
+
+            closure['previous_fields'] = current_fields
+            closure['t0'] = _sim.fields.t
+            if mp.verbosity > 1:
+                fmt = "DFT fields decay(t = {0:0.2f}): {1:0.4e}"
+                print(fmt.format(_sim.meep_time(), np.real(change/closure['maxchange'])))
+            return (change/closure['maxchange']) <= tol and _sim.round_time() >= minimum_run_time
+
+    return _stop
 
 def combine_step_funcs(*step_funcs):
     """

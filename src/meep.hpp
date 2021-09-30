@@ -1114,6 +1114,8 @@ public:
   ~dft_chunk();
 
   void update_dft(double time);
+  double norm2() const;
+  double maxomega() const;
 
   void scale_dft(std::complex<double> scale);
 
@@ -1197,10 +1199,10 @@ public:
    int decimation_factor;
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
@@ -1467,7 +1469,7 @@ public:
 
   double a, Courant, dt; // resolution a, Courant number, and timestep dt=Courant/a
   grid_volume gv;
-  std::vector<grid_volume> gvs; // subdomains for cache-tiled execution of step_curl
+  std::vector<grid_volume> gvs_tiled, gvs_eh[NUM_FIELD_TYPES]; // subdomains for tiled execution
   volume v;
   double m;                        // angular dependence in cyl. coords
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
@@ -1480,7 +1482,7 @@ public:
   int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base);
+               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db);
 
   fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
@@ -1565,6 +1567,9 @@ private:
   void initialize_with_nth_tm(int n, double kz);
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
+  double dft_norm2() const;
+  double dft_maxfreq() const;
+  int min_decimation() const;
 
   void changing_structure();
 };
@@ -1711,10 +1716,11 @@ public:
   boundary_condition boundaries[2][5];
   char *outdir;
   bool components_allocated;
+  size_t loop_tile_base_db, loop_tile_base_eh;
 
   // fields.cpp methods:
   fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,
-         int loop_tile_base = 0);
+         int loop_tile_base_db = 0, int loop_tile_base_eh = 0);
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
@@ -1724,6 +1730,7 @@ public:
   void remove_susceptibilities();
   void remove_fluxes();
   void reset();
+  void log(const char* prefix = "");
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);
@@ -1739,6 +1746,15 @@ public:
   void update_eh(field_type ft, bool skip_w_components = false);
 
   volume total_volume(void) const;
+
+  // fields_dump.cpp
+  // Dump fields to specified file. If 'single_parallel_file'
+  // is 'true' (the default) - then all processes write to the same/single file
+  // file after computing their respective offsets into this file. When set to
+  // 'false', each process writes data for the chunks it owns to a separate
+  // (process unique) file.
+  void dump(const char *filename, bool single_parallel_file=true);
+  void load(const char *filename, bool single_parallel_file=true);
 
   // h5fields.cpp:
   // low-level function:
@@ -1979,6 +1995,10 @@ public:
   dft_chunk *add_dft(const volume_list *where, const std::vector<double> &freq,
                      bool include_dV = true);
   void update_dfts();
+  double dft_norm();
+  double dft_maxfreq() const;
+  int min_decimation() const;
+
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
                         bool use_symmetry = true, bool centered_grid = true,
                         int decimation_factor = 0);
@@ -2213,6 +2233,14 @@ private:
                                std::complex<double> A(const vec &), std::complex<double> amp,
                                component c0, direction d, int has_tm, int has_te);
 
+  // fields_dump.cpp
+  // Helper methods for dumping field chunks.
+  using FieldPtrGetter = std::function<realnum **(fields_chunk *, int, int)>;
+  void dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
+                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
+  void load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
+                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
+
 public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
@@ -2378,6 +2406,14 @@ private:
 
 // control whether CPU flushes subnormal values; see mympi.cpp
 void set_zero_subnormals(bool iszero);
+
+// initialize various properties of the simulation
+void setup();
+
+void split_into_tiles(grid_volume gvol, std::vector<grid_volume> *result,
+                      const size_t loop_tile_base);
+
+void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs);
 
 } /* namespace meep */
 

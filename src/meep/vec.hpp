@@ -186,20 +186,20 @@ component first_field_component(field_type ft);
          loop_ibound++)                                                                            \
   LOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-/* The following work identically to the LOOP_* macros above,
-   but employ shared memory-parallelism using OpenMP. Mainly
-   used in step_generic and a few other time-critical loops. */
+/* The following loop macros work identically to the LOOP_* macros above,
+   but employ shared memory-parallelism using OpenMP. These loops are mainly
+   used in step_generic.cpp and a few other time-critical loops.
 
-/* for the parallel implementation, we introduce 2 dummy loops, one at the begininnging
-   and one at the end, in order to "trick" openMP to allow us to define our localy variables
-   without having to change any other code in the main codebase. We can proceed to do
+   For the parallel implementation, we introduce two dummy loops, one at the beginning
+   and one at the end, in order to "trick" OpenMP to allow us to define our local variables
+   without having to change any other code anywhere else. We can then proceed to do
    a collapse over all three main loops. */
 
 #define CHUNK_OPENMP _Pragma("omp parallel for")
 
 // the most generic use case where the user
 // can specify a custom clause
-#define PLOOP_OVER_IVECS_C(gv, is, ie, idx, clause)			                                                     \
+#define PLOOP_OVER_IVECS_C(gv, is, ie, idx, clause)                                                \
 for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
                  loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
@@ -213,7 +213,7 @@ for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),       
                         (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
                         (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
                   dummy_first=0;dummy_first<1;dummy_first++)                                       \
-_Pragma(clause)     				                                                     \
+_Pragma(clause)                                                                                    \
   for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1; loop_i1++)                                        \
     for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
       for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
@@ -223,20 +223,19 @@ _Pragma(clause)     				                                                     \
 // For the main timestepping events, we know
 // we want to do a simple collapse
 #define PLOOP_OVER_IVECS(gv, is, ie, idx)                                                          \
-  /*master_printf("Entered ploop\n");*/ \
   PLOOP_OVER_IVECS_C(gv, is, ie, idx, "omp parallel for collapse(3)")
 
-#define PLOOP_OVER_VOL(gv, c, idx)                                                                  \
-  PLOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                   \
+#define PLOOP_OVER_VOL(gv, c, idx)                                                                 \
+  PLOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                  \
                   (gv).big_corner() + (gv).iyee_shift(c), idx)
 
-#define PLOOP_OVER_VOL_OWNED(gv, c, idx)                                                            \
+#define PLOOP_OVER_VOL_OWNED(gv, c, idx)                                                           \
   PLOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
 
-#define PLOOP_OVER_VOL_OWNED0(gv, c, idx)                                                           \
+#define PLOOP_OVER_VOL_OWNED0(gv, c, idx)                                                          \
   PLOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
 
-#define PLOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                         \
+#define PLOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                        \
   for (ivec loop_notowned_is((gv).dim, 0), loop_notowned_ie((gv).dim, 0);                          \
        loop_notowned_is == zero_ivec((gv).dim);)                                                   \
     for (int loop_ibound = 0;                                                                      \
