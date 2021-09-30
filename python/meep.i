@@ -1450,7 +1450,9 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 %exception {
 #ifdef MEEP_SWIG_PYTHON_DEBUG
-  printf("**SWIG**: $symname\n");
+  // NOTE: You can do fancier things like timing the calls and using that
+  // to track the most expensive calls etc.
+  master_printf("**SWIG**: $symname\n");
 #endif
   try {
     $action
