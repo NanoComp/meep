@@ -1219,6 +1219,7 @@ class Simulation(object):
         self.k_point = k_point
         self.fields = None
         self.structure = None
+        self.geps = None
         self.accurate_fields_near_cylorigin = accurate_fields_near_cylorigin
         self.m = m
         self.force_complex_fields = force_complex_fields
@@ -1678,7 +1679,6 @@ class Simulation(object):
         self.pml_vols3 = fragment_vols[3]
         self.absorber_vols = fragment_vols[4]
         self.gv = gv
-        #self.geps = mp.make_geom_epsilon(self.gv,self.geometry,self.extra_materials)
         self.structure = mp.create_structure(
             self.cell_size,
             self.dft_data_list,
@@ -1707,19 +1707,10 @@ class Simulation(object):
             self.chunk_layout if self.chunk_layout and isinstance(self.chunk_layout,mp.BinaryPartition) else None
         )
 
-        mp._set_materials(
+        self.geps = mp._set_materials(
             self.structure,
             self.cell_size,
-            self.dft_data_list,
-            self.pml_vols1,
-            self.pml_vols2,
-            self.pml_vols3,
-            self.absorber_vols,
-            gv,
-            br,
-            sym,
-            self.num_chunks,
-            self.Courant,
+            self.gv,
             self.eps_averaging,
             self.subpixel_tol,
             self.subpixel_maxeval,
@@ -1730,10 +1721,10 @@ class Simulation(object):
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False if self.chunk_layout and not isinstance(self.chunk_layout,mp.BinaryPartition) else True,
+            True,
             None,
-            True if self._output_stats is not None else False,
-            self.chunk_layout if self.chunk_layout and isinstance(self.chunk_layout,mp.BinaryPartition) else None
+            False,
+            None
         )
 
         if self._output_stats is not None:
@@ -1894,20 +1885,10 @@ class Simulation(object):
             False,
             None
         )
-
-        mp._set_materials(
+        self.geps = mp._set_materials(
             self.structure,
             self.cell_size,
-            self.dft_data_list,
-            self.pml_vols1,
-            self.pml_vols2,
-            self.pml_vols3,
-            self.absorber_vols,
             self.gv,
-            mp.boundary_region(),
-            mp.symmetry(),
-            self.num_chunks,
-            self.Courant,
             self.eps_averaging,
             self.subpixel_tol,
             self.subpixel_maxeval,
@@ -1919,7 +1900,7 @@ class Simulation(object):
             self.extra_materials,
             self.split_chunks_evenly,
             True,
-            self.structure,
+            None,
             False,
             None
         )

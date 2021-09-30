@@ -1951,16 +1951,7 @@ meep::structure *create_structure(vector3 cell_size,
 }
 meep_geom::geom_epsilon* _set_materials(meep::structure * s,
                     vector3 cell_size,
-                    std::vector<meep_geom::dft_data> dft_data_list_,
-                    std::vector<meep::volume> pml_1d_vols_,
-                    std::vector<meep::volume> pml_2d_vols_,
-                    std::vector<meep::volume> pml_3d_vols_,
-                    std::vector<meep::volume> absorber_vols_,
                     meep::grid_volume &gv,
-                    const meep::boundary_region &br,
-                    const meep::symmetry &sym,
-                    int num_chunks,
-                    double Courant,
                     bool use_anisotropic_averaging,
                     double tol,
                     int maxeval,
@@ -1976,12 +1967,16 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
                     bool output_chunk_costs,
                     const meep::binary_partition *my_bp) {
     
-    meep_geom::geom_epsilon *geps = existing_geps;
+    meep_geom::geom_epsilon *geps;
+    if (existing_geps) {
+        geps = existing_geps;
+    } else {
+        geps = meep_geom::make_geom_epsilon(s, gobj_list, center, use_anisotropic_averaging, tol,
+                                                maxeval, _ensure_periodicity, _default_material,
+                                                alist, extra_materials);
+    }
     if (set_materials) {
-      geps = meep_geom::make_geom_epsilon(s,gobj_list,center, use_anisotropic_averaging, tol,
-                                             maxeval, _ensure_periodicity, _default_material,
-                                             alist, extra_materials);
-      meep_geom::set_materials_from_geom_epsilon(s, *geps, center, use_anisotropic_averaging, tol,
+        meep_geom::set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
                                              maxeval, _ensure_periodicity, _default_material,
                                              alist, extra_materials);
     }
