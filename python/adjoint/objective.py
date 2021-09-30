@@ -172,8 +172,8 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         if self.kpoint_func:
             eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
         else:
-            center_frequency = 0.5 * np.min(self.frequencies) + np.max(
-                self.frequencies)
+            center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
+                self.frequencies))
             direction = mp.Vector3(
                 *(np.eye(3)[self._monitor.normal_direction] *
                   np.abs(center_frequency)))
@@ -209,8 +209,8 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             kpoint_func = self.kpoint_func
             overlap_idx = self.kpoint_func_overlap_idx
         else:
-            center_frequency = 0.5 * np.min(self.frequencies) + np.max(
-                self.frequencies)
+            center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
+                self.frequencies))
             kpoint = mp.Vector3(*(np.eye(3)[self._monitor.normal_direction] *
                                   np.abs(center_frequency)))
             kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
