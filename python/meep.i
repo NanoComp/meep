@@ -1972,14 +1972,12 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
     if (existing_geps) {
         geps = existing_geps;
     } else {
-        geps = meep_geom::make_geom_epsilon(s, gobj_list, center, use_anisotropic_averaging, tol,
-                                                maxeval, _ensure_periodicity, _default_material,
-                                                alist, extra_materials);
+        geps = meep_geom::make_geom_epsilon(s, &gobj_list, center, _ensure_periodicity, _default_material,
+                                                extra_materials);
     }
     if (set_materials) {
         meep_geom::set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
-                                             maxeval, _ensure_periodicity, _default_material,
-                                             alist, extra_materials);
+                                             maxeval,alist);
     }
 
     if (meep::verbosity > 1 && !split_chunks_evenly && set_materials) {

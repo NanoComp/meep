@@ -1710,7 +1710,6 @@ class Simulation(object):
             True if self._output_stats is not None else False,
             self.chunk_layout if self.chunk_layout and isinstance(self.chunk_layout,mp.BinaryPartition) else None
         )
-
         self.geps = mp._set_materials(
             self.structure,
             self.cell_size,
