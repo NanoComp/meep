@@ -1934,11 +1934,11 @@ geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g, ve
 
 /* set the materials without previously creating
 a geom_eps object */
-void set_materials_from_geometry(meep::structure *s, geometric_object_list *g, vector3 center,
+void set_materials_from_geometry(meep::structure *s, geometric_object_list g, vector3 center,
                                  bool use_anisotropic_averaging, double tol, int maxeval,
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist, material_type_list extra_materials) {
-  meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, g, center, _ensure_periodicity, 
+  meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity, 
                                   _default_material, extra_materials);
   set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol, 
                                  maxeval, alist);
