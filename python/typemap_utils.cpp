@@ -31,6 +31,10 @@
 #define PyInteger_FromLong(n) PyInt_FromLong(n)
 #endif
 
+#ifndef SWIG_PYTHON_THREAD_SCOPED_BLOCK
+#define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
+#endif
+
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
@@ -45,6 +49,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt);
 
 #if PY_MAJOR_VERSION == 2
 static char *py2_string_as_utf8(PyObject *po) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   if (PyString_Check(po)) { return PyString_AsString(po); }
   else if (PyUnicode_Check(po)) {
     PyObject *s = PyUnicode_AsUTF8String(po);
@@ -59,6 +64,7 @@ static char *py2_string_as_utf8(PyObject *po) {
 #endif
 
 static PyObject *get_meep_mod() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *meep_mod = NULL;
   if (meep_mod == NULL) { meep_mod = PyImport_ImportModule("meep"); }
@@ -66,6 +72,7 @@ static PyObject *get_meep_mod() {
 }
 
 static PyObject *get_geom_mod() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *geom_mod = NULL;
   if (geom_mod == NULL) { geom_mod = PyImport_ImportModule("meep.geom"); }
@@ -73,6 +80,7 @@ static PyObject *get_geom_mod() {
 }
 
 static PyObject *py_material_object() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value; Borrowed reference
   static PyObject *material_object = NULL;
   if (material_object == NULL) {
@@ -83,6 +91,7 @@ static PyObject *py_material_object() {
 }
 
 static PyObject *py_material_grid_object() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *material_object = NULL;
   if (material_object == NULL) {
@@ -90,9 +99,11 @@ static PyObject *py_material_grid_object() {
     material_object = PyObject_GetAttrString(geom_mod, "MaterialGrid");
   }
   return material_object;
+  ;
 }
 
 static PyObject *py_vector3_object() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *vector3_object = NULL;
   if (vector3_object == NULL) {
@@ -100,9 +111,11 @@ static PyObject *py_vector3_object() {
     vector3_object = PyObject_GetAttrString(geom_mod, "Vector3");
   }
   return vector3_object;
+  ;
 }
 
 static PyObject *py_volume_object() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *volume_object = NULL;
   if (volume_object == NULL) {
@@ -110,9 +123,11 @@ static PyObject *py_volume_object() {
     volume_object = PyObject_GetAttrString(meep_mod, "Volume");
   }
   return volume_object;
+  ;
 }
 
 static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   double x = 0, y = 0, z = 0;
 
@@ -166,9 +181,11 @@ static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
     Py_INCREF(py_callback_v3);
     return py_callback_v3;
   }
+  ;
 }
 
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_vec = vec2py(vector3_to_vec(x));
 
   PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
@@ -179,9 +196,11 @@ static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct
 
   Py_DECREF(py_vec);
   Py_DECREF(pyret);
+  ;
 }
 
 static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_vec = vec2py(vector3_to_vec(x));
 
   PyObject *pyret = PyObject_CallFunctionObjArgs((PyObject *)user_data, py_vec, NULL);
@@ -196,9 +215,11 @@ static void py_epsilon_func_wrap(vector3 x, void *user_data, medium_struct *medi
 
   Py_DECREF(py_vec);
   Py_DECREF(pyret);
+  ;
 }
 
 static std::string py_class_name_as_string(PyObject *po) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_type = PyObject_Type(po);
   PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
@@ -210,9 +231,11 @@ static std::string py_class_name_as_string(PyObject *po) {
   Py_XDECREF(name);
 
   return class_name;
+  ;
 }
 
 static int pyv3_to_v3(PyObject *po, vector3 *v) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
 
   PyObject *py_x = PyObject_GetAttrString(po, "x");
   PyObject *py_y = PyObject_GetAttrString(po, "y");
@@ -232,9 +255,11 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
   v->z = z;
 
   return 1;
+  ;
 }
 
 static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_x = PyObject_GetAttrString(po, "x");
   PyObject *py_y = PyObject_GetAttrString(po, "y");
   PyObject *py_z = PyObject_GetAttrString(po, "z");
@@ -259,9 +284,11 @@ static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
   v->z.im = z.imag();
 
   return 1;
+  ;
 }
 
 static PyObject *v3_to_pyv3(vector3 *v) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   PyObject *v3_class = py_vector3_object();
   PyObject *args = Py_BuildValue("(ddd)", v->x, v->y, v->z);
@@ -270,9 +297,11 @@ static PyObject *v3_to_pyv3(vector3 *v) {
   Py_DECREF(args);
 
   return py_v;
+  ;
 }
 
 static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   int rval = 1;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
@@ -282,9 +311,11 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
 
   Py_XDECREF(py_attr);
   return rval;
+  ;
 }
 
 static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   int rval = 1;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
@@ -294,9 +325,11 @@ static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
 
   Py_XDECREF(py_attr);
   return rval;
+  ;
 }
 
 static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
   if (!py_attr) { abort_with_stack_trace(); }
@@ -304,9 +337,11 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
   *result = PyFloat_AsDouble(py_attr);
   Py_XDECREF(py_attr);
   return 1;
+  ;
 }
 
 static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
   if (!py_attr) { abort_with_stack_trace(); }
@@ -314,9 +349,11 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
   *result = PyInteger_AsLong(py_attr);
   Py_XDECREF(py_attr);
   return 1;
+  ;
 }
 
 static int get_attr_material(PyObject *po, material_type *m) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   int rval = 1;
   PyObject *py_material = PyObject_GetAttrString(po, "material");
 
@@ -327,9 +364,11 @@ static int get_attr_material(PyObject *po, material_type *m) {
   Py_XDECREF(py_material);
 
   return rval;
+  ;
 }
 
 static int pytransition_to_transition(PyObject *py_trans, transition *trans) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
 
   int from, to;
   double trans_rate, freq, gamma, pump_rate;
@@ -355,9 +394,11 @@ static int pytransition_to_transition(PyObject *py_trans, transition *trans) {
   trans->sigma_diag.z = sigma_diag.z;
 
   return 1;
+  ;
 }
 
 static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_struct *s) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   if (!get_attr_v3(po, &s->sigma_diag, "sigma_diag") ||
       !get_attr_v3(po, &s->sigma_offdiag, "sigma_offdiag")) {
 
@@ -429,9 +470,11 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
   s->is_file = false;
 
   return 1;
+  ;
 }
 
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   if (!PyList_Check(po)) { abort_with_stack_trace(); }
 
   int length = PyList_Size(po);
@@ -442,9 +485,11 @@ static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl)
   }
 
   return 1;
+  ;
 }
 
 static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // po must be a python MaterialGrid object
 
   int rval = 1;
@@ -515,9 +560,11 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   Py_XDECREF(py_sus);
 
   return rval;
+  ;
 }
 
 static int pymaterial_to_material(PyObject *po, material_type *mt) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   material_data *md;
 
   if (PyObject_IsInstance(po, py_material_object())) {
@@ -581,9 +628,11 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   *mt = md;
 
   return 1;
+  ;
 }
 
 template <class T> static void set_v3_on_pyobj(PyObject *py_obj, const T *v3, const char *attr) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *v3_class = py_vector3_object();
   PyObject *v3_args = Py_BuildValue("(d,d,d)", v3->x, v3->y, v3->z);
   PyObject *pyv3 = PyObject_Call(v3_class, v3_args, NULL);
@@ -591,9 +640,11 @@ template <class T> static void set_v3_on_pyobj(PyObject *py_obj, const T *v3, co
 
   Py_DECREF(v3_args);
   Py_DECREF(pyv3);
+  ;
 }
 
 static PyObject *susceptibility_to_py_obj(const susceptibility_struct *s) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   PyObject *geom_mod = get_geom_mod();
 
@@ -669,9 +720,11 @@ static PyObject *susceptibility_to_py_obj(const susceptibility_struct *s) {
   Py_DECREF(py_gamma);
 
   return res;
+  ;
 }
 
 static PyObject *susceptibility_list_to_py_list(const susceptibility_list *sl) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   PyObject *res = PyList_New(sl->size());
 
@@ -680,9 +733,11 @@ static PyObject *susceptibility_list_to_py_list(const susceptibility_list *sl) {
   }
 
   return res;
+  ;
 }
 
 static PyObject *material_to_py_material(material_type mat) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   switch (mat->which_subclass) {
     case meep_geom::material_data::MEDIUM: {
@@ -724,9 +779,11 @@ static PyObject *material_to_py_material(material_type mat) {
       // Only Medium is supported at this time.
       meep::abort("Can only convert C++ medium_struct subtype %d to Python", mat->which_subclass);
   }
+  ;
 }
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   if (!get_attr_v3(po, &m->epsilon_diag, "epsilon_diag") ||
       !get_attr_v3(po, &m->mu_diag, "mu_diag")) {
 
@@ -768,9 +825,11 @@ static int pymedium_to_medium(PyObject *po, medium_struct *m) {
   }
 
   return 1;
+  ;
 }
 
 static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
 
   material_type material;
   vector3 center;
@@ -786,9 +845,11 @@ static int pysphere_to_sphere(PyObject *py_sphere, geometric_object *go) {
   *go = make_sphere(material, center, radius);
 
   return 1;
+  ;
 }
 
 static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   material_type material;
   vector3 center, axis;
   double radius, height;
@@ -804,9 +865,11 @@ static int pycylinder_to_cylinder(PyObject *py_cyl, geometric_object *cyl) {
   *cyl = make_cylinder(material, center, radius, height, axis);
 
   return 1;
+  ;
 }
 
 static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *wedge) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   geometric_object cyl;
   if (!pycylinder_to_cylinder(py_wedge, &cyl)) { return 0; }
 
@@ -830,9 +893,11 @@ static int pywedge_to_wedge(PyObject *py_wedge, geometric_object *wedge) {
   geometric_object_destroy(cyl);
 
   return 1;
+  ;
 }
 
 static int pycone_to_cone(PyObject *py_cone, geometric_object *cone) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   geometric_object cyl;
   if (!pycylinder_to_cylinder(py_cone, &cyl)) { return 0; }
 
@@ -852,9 +917,11 @@ static int pycone_to_cone(PyObject *py_cone, geometric_object *cone) {
   geometric_object_destroy(cyl);
 
   return 1;
+  ;
 }
 
 static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   material_type material;
   vector3 center, e1, e2, e3, size;
 
@@ -868,9 +935,11 @@ static int pyblock_to_block(PyObject *py_blk, geometric_object *blk) {
 
   *blk = make_block(material, center, e1, e2, e3, size);
   return 1;
+  ;
 }
 
 static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   geometric_object blk;
   if (!pyblock_to_block(py_ell, &blk)) { return 0; }
 
@@ -886,9 +955,11 @@ static int pyellipsoid_to_ellipsoid(PyObject *py_ell, geometric_object *e) {
   geometric_object_destroy(blk);
 
   return 1;
+  ;
 }
 
 static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   material_type material;
   double height, sidewall_angle;
   vector3 axis, center;
@@ -931,9 +1002,11 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
   Py_DECREF(py_vert_list);
 
   return 1;
+  ;
 }
 
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   int success = 0;
   std::string go_type = py_class_name_as_string(po);
 
@@ -962,9 +1035,11 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   }
 
   return success;
+  ;
 }
 
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   if (!PyList_Check(po)) { meep::abort("Expected a list"); }
 
   int length = PyList_Size(po);
@@ -978,9 +1053,11 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
   }
 
   return 1;
+  ;
 }
 
 static PyObject *gobj_to_py_obj(geometric_object *gobj) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   switch (gobj->which_subclass) {
     case geometric_object::PRISM: {
@@ -1023,9 +1100,11 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
       // Other geometry can be added as needed.
       meep::abort("Conversion of non-prism geometric_object to Python is not supported");
   }
+  ;
 }
 
 static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: New reference
   PyObject *py_res = PyList_New(objs->num_items);
 
@@ -1037,18 +1116,22 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
   delete[] objs->items;
 
   return py_res;
+  ;
 }
 
 void gobj_list_freearg(geometric_object_list* objs) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     for(int i = 0; i < objs->num_items; ++i) {
         material_free((material_data *)objs->items[i].material);
         delete (material_data *)objs->items[i].material;
         geometric_object_destroy(objs->items[i]);
     }
     delete[] objs->items;
+  ;
 }
 
 static std::unique_ptr<meep::binary_partition> py_bp_to_bp(PyObject *pybp) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   std::unique_ptr<meep::binary_partition> bp;
   if (pybp == Py_None) return bp;
 
@@ -1076,19 +1159,23 @@ static std::unique_ptr<meep::binary_partition> py_bp_to_bp(PyObject *pybp) {
   Py_XDECREF(left);
   Py_XDECREF(right);
   return bp;
+  ;
 }
 
 static PyObject *py_binary_partition_object() {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *bp_type = NULL;
   if (bp_type == NULL) {
     bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition");
   }
   return bp_type;
+  ;
 }
 
 // Converts a meep::binary_partition object into a Python class instance
 static PyObject *bp_to_py_bp(const meep::binary_partition *bp) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *bp_class = py_binary_partition_object();
   PyObject *args = PyTuple_New(0);  // no numbered arguments to pass
   if (bp->is_leaf()) {
@@ -1113,4 +1200,5 @@ static PyObject *bp_to_py_bp(const meep::binary_partition *bp) {
     Py_DECREF(kwargs);
     return py_bp;
   }
+  ;
 }

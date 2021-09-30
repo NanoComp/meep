@@ -32,6 +32,33 @@ fi
 AC_SUBST(MEEP_SINGLE)
 
 ##############################################################################
+# build with SWIG threads for Python
+
+AC_ARG_ENABLE(swig-python-threads,
+              [AS_HELP_STRING([--enable-swig-python-threads],[enable SWIG threads for Python bindings])],
+	            enable_swig_python_threads=$enableval, enable_swig_python_threads=no)
+if test "x$enable_swig_python_threads" = "xyes"; then
+    MEEP_SWIG_PYTHON_THREADS=1
+else
+    MEEP_SWIG_PYTHON_THREADS=0
+fi
+AC_SUBST(MEEP_SWIG_PYTHON_THREADS)
+AM_CONDITIONAL(MEEP_SWIG_PYTHON_THREADS, test "x$enable_swig_python_threads" = "xyes")
+
+##############################################################################
+# build with SWIG debugging enabled for Python
+
+AC_ARG_ENABLE(swig-python-debug,
+              [AS_HELP_STRING([--enable-swig-python-debug],[enable SWIG debug for Python bindings])],
+	            enable_swig_python_debug=$enableval, enable_swig_python_debug=no)
+if test "x$enable_swig_python_debug" = "xyes"; then
+    MEEP_SWIG_PYTHON_DEBUG=1
+else
+    MEEP_SWIG_PYTHON_DEBUG=0
+fi
+AC_SUBST(MEEP_SWIG_PYTHON_DEBUG)
+
+##############################################################################
 
 # Check for mpiCC immediately after getting C++ compiler...
 AC_PROG_CC
