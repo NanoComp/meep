@@ -285,6 +285,11 @@ class CustomSource(SourceTime):
         + **`end_time` [`number`]** — The end time for the source. Default is
           10<sup>20</sup> (never turn off).
 
+        + **`fwidth` [`number`]** — The bandwidth of the source in frequency units.
+          Default is 0. For bandwidth-limited sources, this parameter is used to
+          automatically determine the decimation factor of the time-series updates
+          of the DFT fields.
+
         + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
           current (the [dipole
           moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is
@@ -301,6 +306,7 @@ class CustomSource(SourceTime):
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
+        self.fwidth = fwidth
         self.center_frequency = center_frequency
         self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time, center_frequency)
         self.swigobj.is_integrated = self.is_integrated

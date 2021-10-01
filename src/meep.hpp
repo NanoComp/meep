@@ -1066,8 +1066,8 @@ public:
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
-  virtual double get_fwidth() const { return 0.0; };
-  virtual void set_fwidth(double fw) { (void)fw; }
+  virtual double get_fwidth() const { return fwidth; };
+  virtual void set_fwidth(double fw) { fwidth = fw; }
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
