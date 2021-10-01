@@ -81,7 +81,6 @@ def forward_simulation(design_params,mon_type, frequencies=None, use_complex=Fal
                                     mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),
                                                   size=mp.Vector3(0,sxy-2*dpml,0)),
                                     yee_grid=True,
-                                    decimation_factor=10,
                                     eig_parity=eig_parity)
 
     elif mon_type.name == 'DFT':
@@ -89,8 +88,7 @@ def forward_simulation(design_params,mon_type, frequencies=None, use_complex=Fal
                                   frequencies,
                                   center=mp.Vector3(1.25),
                                   size=mp.Vector3(0.25,1,0),
-                                  yee_grid=False,
-                                  decimation_factor=10)
+                                  yee_grid=False)
 
     sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
@@ -145,7 +143,6 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
                                              mp.Volume(center=mp.Vector3(0.5*sxy-dpml-0.1),
                                                        size=mp.Vector3(0,sxy-2*dpml,0)),
                                              1,
-                                             decimation_factor=5,
                                              eig_parity=eig_parity)]
 
         def J(mode_mon):
@@ -155,8 +152,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
         obj_list = [mpa.FourierFields(sim,
                                       mp.Volume(center=mp.Vector3(1.25),
                                                 size=mp.Vector3(0.25,1,0)),
-                                      mp.Ez,
-                                      decimation_factor=5)]
+                                      mp.Ez)]
 
         def J(mode_mon):
             return npa.power(npa.abs(mode_mon[:,4,10]),2)
@@ -166,8 +162,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
         objective_functions=J,
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
-        frequencies=frequencies,
-        decimation_factor=10)
+        frequencies=frequencies)
 
     f, dJ_du = opt([design_params])
 
@@ -213,7 +208,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04 if mp.is_single_precision() else 0.005
+            tol = 0.05 if mp.is_single_precision() else 0.005
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 

@@ -56,7 +56,7 @@ class FilteredSource(CustomSource):
 
         # bandwidth of the Nuttall window function
         tol = 1e-7
-        fwidth = nuttall_dtft_fwidth(1e-7)
+        fwidth = self.nuttall_dtft_fwidth(1e-7)
 
         # initialize super
         super(FilteredSource, self).__init__(src_func=f,
@@ -114,9 +114,9 @@ class FilteredSource(CustomSource):
     def nuttall_dtft_fwidth(self, tol):
         fwidth = 1/(self.N * self.dt)
         frq_inf = 1000*fwidth
-        na_dtft = nuttall_dtft(frq_inf, 0)
-        coeff = frq_inf**3 * np.abs(na_dtft[0]) * 1/fwidth**3
-        na_dtft_max = nuttall_dtft(0, 0)
+        na_dtft = self.nuttall_dtft(frq_inf, 0)
+        coeff = frq_inf**3 * np.abs(na_dtft) * 1/fwidth**3
+        na_dtft_max = self.nuttall_dtft(0, 0)
         return 2 * np.power(coeff / (tol * na_dtft_max), 1/3) * fwidth
 
     def dtft(self, y, f):

@@ -269,7 +269,7 @@ class CustomSource(SourceTime):
     [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
     """
 
-    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, **kwargs):
+    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, fwidth=0, **kwargs):
         """
         Construct a `CustomSource`.
 
@@ -285,11 +285,6 @@ class CustomSource(SourceTime):
         + **`end_time` [`number`]** — The end time for the source. Default is
           10<sup>20</sup> (never turn off).
 
-        + **`fwidth` [`number`]** — The bandwidth of the source in frequency units.
-          Default is 0. For bandwidth-limited sources, this parameter is used to
-          automatically determine the decimation factor of the time-series updates
-          of the DFT fields.
-
         + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
           current (the [dipole
           moment](https://en.wikipedia.org/wiki/Electric_dipole_moment)) which is
@@ -301,6 +296,11 @@ class CustomSource(SourceTime):
 
         + **`center_frequency` [`number`]** — Optional center frequency so that the
           `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
+
+        + **`fwidth` [`number`]** — Optional bandwidth in frequency units.
+          Default is 0. For bandwidth-limited sources, this parameter is used to
+          automatically determine the decimation factor of the time-series updates
+          of the DFT fields.
         """
         super(CustomSource, self).__init__(**kwargs)
         self.src_func = src_func

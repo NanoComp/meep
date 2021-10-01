@@ -68,9 +68,7 @@ def forward_simulation(design_params):
     far_x = [mp.Vector3(5,0,20)]
     mode = sim.add_near2far(
         frequencies,
-        mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0 ,(sz/2-dpml+design_z/2)/2),size=mp.Vector3(design_r,0,0), weight=+1),
-        decimation_factor=10
-    )
+        mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0 ,(sz/2-dpml+design_z/2)/2),size=mp.Vector3(design_r,0,0), weight=+1))
 
     sim.run(until_after_sources=1200)
     Er = sim.get_farfield(mode, far_x[0])
@@ -95,7 +93,7 @@ def adjoint_solver(design_params):
 
     far_x = [mp.Vector3(5,0,20)]
     NearRegions = [mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0 ,(sz/2-dpml+design_z/2)/2),size=mp.Vector3(design_r,0,0), weight=+1)]
-    FarFields = mpa.Near2FarFields(sim, NearRegions ,far_x, decimation_factor=5)
+    FarFields = mpa.Near2FarFields(sim, NearRegions ,far_x)
     ob_list = [FarFields]
 
     def J(alpha):
