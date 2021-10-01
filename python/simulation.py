@@ -1222,6 +1222,7 @@ class Simulation(object):
         self.k_point = k_point
         self.fields = None
         self.structure = None
+        self.geps = None
         self.accurate_fields_near_cylorigin = accurate_fields_near_cylorigin
         self.m = m
         self.force_complex_fields = force_complex_fields
@@ -1682,8 +1683,7 @@ class Simulation(object):
         self.pml_vols3 = fragment_vols[3]
         self.absorber_vols = fragment_vols[4]
         self.gv = gv
-
-        self.structure = mp.create_structure_and_set_materials(
+        self.structure = mp.create_structure(
             self.cell_size,
             self.dft_data_list,
             self.pml_vols1,
@@ -1709,6 +1709,25 @@ class Simulation(object):
             None,
             True if self._output_stats is not None else False,
             self.chunk_layout if self.chunk_layout and isinstance(self.chunk_layout,mp.BinaryPartition) else None
+        )
+        self.geps = mp._set_materials(
+            self.structure,
+            self.cell_size,
+            self.gv,
+            self.eps_averaging,
+            self.subpixel_tol,
+            self.subpixel_maxeval,
+            self.geometry,
+            self.geometry_center,
+            self.ensure_periodicity and not not self.k_point,
+            self.default_material,
+            absorbers,
+            self.extra_materials,
+            self.split_chunks_evenly,
+            True,
+            None,
+            False,
+            None
         )
 
         if self._output_stats is not None:
@@ -1842,7 +1861,7 @@ class Simulation(object):
         # before).
         self.structure.this.disown()
 
-        self.structure = mp.create_structure_and_set_materials(
+        self.structure = mp.create_structure(
             self.cell_size,
             self.dft_data_list,
             self.pml_vols1,
@@ -1866,6 +1885,25 @@ class Simulation(object):
             self.split_chunks_evenly,
             True,
             self.structure,
+            False,
+            None
+        )
+        self.geps = mp._set_materials(
+            self.structure,
+            self.cell_size,
+            self.gv,
+            self.eps_averaging,
+            self.subpixel_tol,
+            self.subpixel_maxeval,
+            geometry if geometry is not None else self.geometry,
+            self.geometry_center,
+            self.ensure_periodicity and not not self.k_point,
+            default_material if default_material else self.default_material,
+            absorbers,
+            self.extra_materials,
+            self.split_chunks_evenly,
+            True,
+            None,
             False,
             None
         )

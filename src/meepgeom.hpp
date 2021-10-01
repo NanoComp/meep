@@ -153,7 +153,81 @@ inline vector3 make_vector3(double x = 0.0, double y = 0.0, double z = 0.0) {
   return v;
 }
 
+typedef struct {
+  double m00, m01, m02, m11, m12, m22;
+} symm_matrix;
+
+struct pol {
+  meep_geom::susceptibility user_s;
+  struct pol *next;
+};
+
+// structure to hold a conductivity profile (for scalar absorbing layers)
+struct cond_profile {
+  double L;     // thickness
+  int N;        // number of points prof[n] from 0..N corresponding to 0..L
+  double *prof; // (NULL if none)
+};
+
+class geom_epsilon : public meep::material_function {
+  geometric_object_list geometry;
+  geom_box_tree geometry_tree;
+  geom_box_tree restricted_tree;
+
+  cond_profile cond[5][2]; // [direction][side]
+
+public:
+  geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
+  geom_epsilon(const geom_epsilon &geps1); // copy constructor
+  virtual ~geom_epsilon();
+
+  virtual void set_cond_profile(meep::direction, meep::boundary_side, double L, double dx,
+                                double (*prof)(int, double *, void *), void *, double R);
+
+  virtual void set_volume(const meep::volume &v);
+  virtual void unset_volume(void);
+
+  bool has_chi(meep::component c, int p);
+  virtual bool has_chi3(meep::component c);
+  virtual bool has_chi2(meep::component c);
+
+  double chi(meep::component c, const meep::vec &r, int p);
+  virtual double chi3(meep::component c, const meep::vec &r);
+  virtual double chi2(meep::component c, const meep::vec &r);
+
+  virtual bool has_mu();
+
+  virtual bool has_conductivity(meep::component c);
+  virtual double conductivity(meep::component c, const meep::vec &r);
+
+  virtual double chi1p1(meep::field_type ft, const meep::vec &r);
+  virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
+                               double tol, int maxeval);
+
+  void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
+                          const meep::volume &v, double tol, int maxeval, bool &fallback);
+
+  void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
+                            double tol, int maxeval);
+
+  virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
+  void add_susceptibilities(meep::structure *s);
+  void add_susceptibilities(meep::field_type ft, meep::structure *s);
+
+private:
+  void get_material_pt(material_type &material, const meep::vec &r);
+
+  material_type_list extra_materials;
+  pol *current_pol;
+};
+
 void set_dimensions(int dims);
+geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g,
+                                 vector3 center = make_vector3(),
+                                 bool ensure_periodicity = false,
+                                 material_type _default_material = vacuum,
+                                 material_type_list extra_materials = material_type_list());
+//, geometric_object_list g, material_type_list extra_materials
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  vector3 center = make_vector3(),
                                  bool use_anisotropic_averaging = true,
@@ -162,6 +236,12 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  bool ensure_periodicity = false,
                                  material_type _default_material = vacuum, absorber_list alist = 0,
                                  material_type_list extra_materials = material_type_list());
+void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
+                                 vector3 center = make_vector3(),
+                                 bool use_anisotropic_averaging = true,
+                                 double tol = DEFAULT_SUBPIXEL_TOL,
+                                 int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+                                 absorber_list alist = 0);
 
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
