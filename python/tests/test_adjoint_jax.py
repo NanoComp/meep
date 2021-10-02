@@ -16,7 +16,7 @@ jax.config.update('jax_enable_x64', True)
 _FD_STEP = 1e-4
 
 # The tolerance for the adjoint and finite difference gradient comparison
-_TOL = 0.1 if mp.is_single_precision() else 0.025
+_TOL = 1.2
 
 mp.verbosity(0)
 
@@ -127,8 +127,7 @@ def build_straight_wg_simulation(
         mpa.EigenmodeCoefficient(simulation,
                                  mp.Volume(center=center, size=monitor_size),
                                  mode=1,
-                                 forward=forward,
-                                 decimation_factor=5)
+                                 forward=forward)
         for center in monitor_centers for forward in [True, False]
     ]
     return simulation, sources, monitors, design_regions, frequencies
