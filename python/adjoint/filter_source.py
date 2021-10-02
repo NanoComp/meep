@@ -26,6 +26,10 @@ class FilteredSource(CustomSource):
         self.t = np.arange(0, dt * (self.N), dt)
         self.n = np.arange(self.N)
         f = self.func()
+
+        # frequency bandwidth of the Nuttall window function
+        fwidth = self.nuttall_bandwidth()
+
         self.bf = [
             lambda t, i=i: 0
             if t > self.T else (self.nuttall(t, self.center_frequencies) /
@@ -36,7 +40,8 @@ class FilteredSource(CustomSource):
             CustomSource(src_func=bfi,
                          center_frequency=center_frequency,
                          is_integrated=False,
-                         end_time=self.T) for bfi in self.bf
+                         end_time=self.T,
+                         fwidth=fwidth) for bfi in self.bf
         ]
 
         if time_src:
@@ -53,10 +58,6 @@ class FilteredSource(CustomSource):
 
         # estimate the impulse response using a sinc function RBN
         self.nodes, self.err = self.estimate_impulse_response(H)
-
-        # bandwidth of the Nuttall window function
-        tol = 1e-7
-        fwidth = self.nuttall_dtft_fwidth(1e-7)
 
         # initialize super
         super(FilteredSource, self).__init__(src_func=f,
@@ -108,16 +109,20 @@ class FilteredSource(CustomSource):
         a = [0.355768, 0.4873960, 0.144232, 0.012604]
         return self.cos_window_fd(a, f, f0)
 
-    ## compute the bandwidth of the Nuttall DTFT window function
-    ## given a tolerance tol for which it has decayed from its peak
-    ## value by fitting it to an asymptotic power law
-    def nuttall_dtft_fwidth(self, tol):
+    ## compute the bandwidth of the DTFT of the Nuttall window function
+    ## (magnitude) assuming it has decayed from its peak value by some
+    ## tolerance by fitting it to an asymptotic power law of the form
+    ## C * (Δf / f)^3 where C is a constant, Δf is the frequency bandwidth
+    ## of the Nuttall window, and f is the frequency
+    def nuttall_bandwidth(self):
+        tol = 1e-7
         fwidth = 1/(self.N * self.dt)
         frq_inf = 1000*fwidth
         na_dtft = self.nuttall_dtft(frq_inf, 0)
         coeff = frq_inf**3 * np.abs(na_dtft) * 1/fwidth**3
         na_dtft_max = self.nuttall_dtft(0, 0)
-        return 2 * np.power(coeff / (tol * na_dtft_max), 1/3) * fwidth
+        bw = 2 * np.power(coeff / (tol * na_dtft_max), 1/3) * fwidth
+        return bw.real
 
     def dtft(self, y, f):
         return np.matmul(

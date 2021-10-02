@@ -6541,7 +6541,7 @@ Construct a `CustomSource`.
 + **`fwidth` [`number`]** — Optional bandwidth in frequency units.
   Default is 0. For bandwidth-limited sources, this parameter is used to
   automatically determine the decimation factor of the time-series updates
-  of the DFT fields.
+  of the DFT fields monitors (if any).
 
 </div>
 

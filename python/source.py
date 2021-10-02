@@ -300,7 +300,7 @@ class CustomSource(SourceTime):
         + **`fwidth` [`number`]** — Optional bandwidth in frequency units.
           Default is 0. For bandwidth-limited sources, this parameter is used to
           automatically determine the decimation factor of the time-series updates
-          of the DFT fields.
+          of the DFT fields monitors (if any).
         """
         super(CustomSource, self).__init__(**kwargs)
         self.src_func = src_func
@@ -308,7 +308,8 @@ class CustomSource(SourceTime):
         self.end_time = end_time
         self.fwidth = fwidth
         self.center_frequency = center_frequency
-        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time, center_frequency)
+        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time,
+                                             center_frequency, fwidth)
         self.swigobj.is_integrated = self.is_integrated
 
 
