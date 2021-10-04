@@ -18,6 +18,7 @@
 #include <vector>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
+#include <csignal>
 
 namespace meep_geom {
 
@@ -2409,7 +2410,7 @@ dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
 /***************************************************************/
 
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g) {
-  geom_fix_object_list(g);
+  //geom_fix_object_list(g);
   geom_box box = gv2box(v);
   geom_box_tree geometry_tree = create_geom_box_tree0(g, box);
   return geometry_tree;
@@ -2624,13 +2625,13 @@ in row-major order (the order used by HDF5): */
 void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
                                       std::complex<double> fields_f, meep::component field_dir,
                                       vector3 p, double scalegrad, double freq,
-                                      geom_box_tree geometry_tree) {
+                                      geom_epsilon *geps, geom_box_tree geometry_tree) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
   double uval;
   int kind;
-  tp = geom_tree_search(p, geometry_tree, &oi);
+  tp = geom_tree_search(p, geps->geometry_tree, &oi);
 
   if (tp &&
       ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
@@ -2638,7 +2639,9 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
   else if (!tp && ((material_type)default_material)->which_subclass == material_data::MATERIAL_GRID)
     mg = (material_data *)default_material;
   else
+    //master_printf("material type: %d\n",((material_type)tp->objects[oi].o->material)->which_subclass);
     return; /* no material grids at this point */
+    master_printf("ALEC ok\n");
 
   // Calculate the number of material grids if we are averaging values
   if ((tp) && ((kind = mg->material_grid_kinds) == material_data::U_MEAN)) {
@@ -2702,11 +2705,23 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, double *frequencies,
                                 size_t nf, double scalegrad, const meep::volume &where,
-                                geom_box_tree geometry_tree, meep::fields *f, bool sim_is_cylindrical) {
+                                geom_epsilon *geps, meep::fields *f, bool sim_is_cylindrical) {
   int n2, n3, n4;
   double s[3][3], cen[3][3], c1, c2, c3, s1, s2, s3;
   vector3 p;
 
+  geom_box_tree geometry_tree = calculate_tree(where,geps->geometry);
+  int tree_depth, tree_nobjects;
+    geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
+    master_printf("ALEC DEBUG\n");
+    display_geometric_object_info(5, geps->geometry.items[0]);
+    display_geometric_object_info(5, geps->geometry.items[1]);
+    master_printf("min corner: %f %f %f\n",where.get_min_corner().x(),where.get_min_corner().y(),where.get_min_corner().z());
+    master_printf("max corner: %f %f %f\n",where.get_max_corner().x(),where.get_max_corner().y(),where.get_max_corner().z());
+    master_printf("Geometric object tree has depth %d "
+                  "and %d object nodes (vs. %d actual objects)\n",
+                  tree_depth, tree_nobjects, geps->geometry.num_items);
+    std::raise(SIGINT);
   // calculate cell dimensions
   meep::direction dirs[3];
   meep::vec min_max_loc[2] = {meep::vec(0,0,0),meep::vec(0,0,0)}; // extremal points in subgrid
@@ -2752,11 +2767,11 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
 
       for (int i1 = 0; i1 < nf; ++i1) {       // freq
         for (int i2 = 0; i2 < n2; ++i2) {     // z
-          for (int i4 = 0; i4 < n4; ++i4) {//y
-            for (int i3 = 0; i3 < n3; ++i3) {//x
+          for (int i4 = 0; i4 < n4; ++i4) {   // y
+            for (int i3 = 0; i3 < n3; ++i3) { // x
               p.z = i2 * s1 + c1; p.x = i3 * s2 + c2; p.y = i4 * s3 + c3;
               material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index]*p.x, fields_f[xyz_index], field_dir[c], p,
-                                               scalegrad, frequencies[i1], geometry_tree);
+                                               scalegrad, frequencies[i1], geps, geometry_tree);
               //p.x is the (2pi)r' factor from integrating in cyldrical coordinate;
               //2pi is canceled out by a overcouted factor of 2pi*r of the Near2FarRegion; See near2far.cpp
               xyz_index++;
@@ -2771,13 +2786,13 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
     c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
     s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
 
-    for (size_t i1 = 0; i1 < nf; ++i1) {       // freq
+    for (size_t i1 = 0; i1 < nf; ++i1) {    // freq
       for (int i2 = 0; i2 < n2; ++i2) {     // x
         for (int i3 = 0; i3 < n3; ++i3) {   // y
           for (int i4 = 0; i4 < n4; ++i4) { // z
             p.x = i2 * s1 + c1; p.y = i3 * s2 + c2; p.z = i4 * s3 + c3;
             material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index], fields_f[xyz_index], field_dir[c], p,
-                                             scalegrad, frequencies[i1], geometry_tree);
+                                             scalegrad, frequencies[i1], geps, geometry_tree);
             xyz_index++;
           }
         }

@@ -170,13 +170,14 @@ struct cond_profile {
 };
 
 class geom_epsilon : public meep::material_function {
-  geometric_object_list geometry;
-  geom_box_tree geometry_tree;
-  geom_box_tree restricted_tree;
-
-  cond_profile cond[5][2]; // [direction][side]
 
 public:
+  geom_box_tree geometry_tree; 
+  geom_box_tree restricted_tree;
+  geometric_object_list geometry;
+  cond_profile cond[5][2]; // [direction][side]
+
+  int temp = 1;
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
   geom_epsilon(const geom_epsilon &geps1); // copy constructor
   virtual ~geom_epsilon();
@@ -304,11 +305,11 @@ void add_interpolate_weights(double rx, double ry, double rz,
 void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
                                       std::complex<double> fields_f, meep::component field_dir,
                                       vector3 p, double scalegrad, double freq,
-                                      geom_box_tree geometry_tree);
+                                      geom_epsilon *geps, geom_box_tree geometry_tree);
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, double *frequencies,
                                 size_t nf, double scalegrad, const meep::volume &where,
-                                geom_box_tree geometry_tree, meep::fields *f, bool sim_is_cylindrical);
+                                geom_epsilon *geps, meep::fields *f, bool sim_is_cylindrical);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/

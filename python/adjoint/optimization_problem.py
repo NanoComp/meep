@@ -41,7 +41,10 @@ class DesignRegion(object):
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
         sim_is_cylindrical = (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical
-        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),geom_list,f, sim_is_cylindrical)
+        print(sim.geps)
+        print(sim.geps.temp)
+        print([g.size for g in sim.geometry])
+        mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),sim.geps,f, sim_is_cylindrical)
 
         return np.squeeze(grad).T
 
