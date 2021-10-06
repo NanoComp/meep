@@ -172,10 +172,13 @@ struct cond_profile {
 class geom_epsilon : public meep::material_function {
 
 public:
+  double u_p = 0;
   geom_box_tree geometry_tree; 
   geom_box_tree restricted_tree;
   geometric_object_list geometry;
   cond_profile cond[5][2]; // [direction][side]
+  double tol=DEFAULT_SUBPIXEL_TOL;
+  int maxeval=DEFAULT_SUBPIXEL_MAXEVAL;
 
   int temp = 1;
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
@@ -215,9 +218,8 @@ public:
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
-private:
   void get_material_pt(material_type &material, const meep::vec &r);
-
+private:
   material_type_list extra_materials;
   pol *current_pol;
 };
@@ -295,10 +297,10 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
 void get_material_tensor(const medium_struct *mm, double freq, std::complex<double> *tensor);
-double get_material_gradient(double u, std::complex<double> fields_a,
+double get_material_gradient(const meep::vec &r, std::complex<double> fields_a,
                              std::complex<double> fields_f, double freq,
-                             material_data *md, meep::component field_dir,
-                             double du = 1.0e-3);
+                             geom_epsilon *geps, meep::component field_dir,
+                             double du = 1.0e-6);
 void add_interpolate_weights(double rx, double ry, double rz,
                              double *data, int nx, int ny, int nz, int stride,
                              double scaleby, const double *udata, int ukind, double uval);

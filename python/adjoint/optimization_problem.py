@@ -13,18 +13,19 @@ class DesignRegion(object):
             design_parameters,
             volume=None,
             size=None,
-            center=mp.Vector3(),
-            MaterialGrid=None,
+            center=mp.Vector3()
     ):
         self.volume = volume if volume else mp.Volume(center=center, size=size)
         self.size = self.volume.size
         self.center = self.volume.center
         self.design_parameters = design_parameters
         self.num_design_params = design_parameters.num_params
-        self.MaterialGrid = MaterialGrid
 
     def update_design_parameters(self, design_parameters):
         self.design_parameters.update_weights(design_parameters)
+    
+    def update_beta(self,beta):
+        self.design_parameters.beta=beta
 
     def get_gradient(self, sim, fields_a, fields_f, frequencies):
         for c in range(3):
@@ -41,9 +42,6 @@ class DesignRegion(object):
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
         sim_is_cylindrical = (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical
-        print(sim.geps)
-        print(sim.geps.temp)
-        print([g.size for g in sim.geometry])
         mp._get_gradient(grad,fields_a,fields_f,vol,np.array(frequencies),sim.geps,f, sim_is_cylindrical)
 
         return np.squeeze(grad).T
@@ -489,7 +487,7 @@ class OptimizationProblem(object):
 
         return fd_gradient, fd_gradient_idx
 
-    def update_design(self, rho_vector):
+    def update_design(self, rho_vector, beta=None):
         """Update the design permittivity function.
 
         rho_vector ....... a list of numpy arrays that maps to each design region
@@ -500,6 +498,8 @@ class OptimizationProblem(object):
                     "Each vector of design variables must contain only one dimension."
                 )
             b.update_design_parameters(rho_vector[bi])
+            if beta:
+                b.update_beta(beta)
 
         self.sim.reset_meep()
         self.current_state = "INIT"

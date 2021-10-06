@@ -18,7 +18,6 @@
 #include <vector>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
-#include <csignal>
 
 namespace meep_geom {
 
@@ -633,7 +632,16 @@ void epsilon_file_material(material_data *md, vector3 p) {
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
                            const meep::volume &v) {
-  geometry = g; // don't bother making a copy, only used in one place
+  // Copy the geometry
+  int length = g.num_items;
+  geometry.num_items = length;
+  geometry.items = new geometric_object[length];
+  for (int i = 0; i < length; i++){
+    geometric_object_copy(&g.items[i],&geometry.items[i]);
+    geometry.items[i].material = new material_data();
+    static_cast<material_data*>(geometry.items[i].material)->copy_from(*(material_data *)(g.items[i].material));
+  }
+  
   extra_materials = mlist;
   current_pol = NULL;
 
@@ -678,7 +686,16 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
 
 // copy constructor
 geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
-  geometry = geps1.geometry; // TODO make a copy
+  // Copy the geometry
+  int length = geps1.geometry.num_items;
+  geometry.num_items = length;
+  geometry.items = new geometric_object[length];
+  for (int i = 0; i < length; i++){
+    geometric_object_copy(&geps1.geometry.items[i],&geometry.items[i]);
+    geometry.items[i].material = new material_data();
+    static_cast<material_data*>(geometry.items[i].material)->copy_from(*(material_data *)(geps1.geometry.items[i].material));
+  }
+
   geometry_tree = geps1.geometry_tree;
   restricted_tree = geps1.restricted_tree;
   extra_materials = geps1.extra_materials;
@@ -688,6 +705,11 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
 
 }
 geom_epsilon::~geom_epsilon() {
+  //int length = geometry.num_items;
+  //for (int i = 0; i < length; i++){
+  //  delete geometry.items[i].material;
+  //}
+  //delete[] geometry.items;
   unset_volume();
   destroy_geom_box_tree(geometry_tree);
   FOR_DIRECTIONS(d) FOR_SIDES(b) {
@@ -812,7 +834,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
 
       tp = geom_tree_search(p, restricted_tree, &oi);
       // interpolate and project onto material grid
-      u = tanh_projection(matgrid_val(p, tp, oi, md), md->beta, md->eta);
+      u = tanh_projection(matgrid_val(p, tp, oi, md)+this->u_p, md->beta, md->eta);
       // interpolate material from material grid point
       epsilon_material_grid(md, u);
 
@@ -1273,7 +1295,7 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     int oi;
     tp = geom_tree_search(p, restricted_tree, &oi);
     gradient = matgrid_grad(p, tp, oi, md);
-    uval = matgrid_val(p, tp, oi, md);
+    uval = matgrid_val(p, tp, oi, md)+this->u_p;
   }
   else {
     gradient = normal_vector(meep::type(c), v);
@@ -1610,7 +1632,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
 
     tp = geom_tree_search(p, restricted_tree, &oi);
     // interpolate and project onto material grid
-    u = tanh_projection(matgrid_val(p, tp, oi, mat), mat->beta, mat->eta);
+    u = tanh_projection(matgrid_val(p, tp, oi, mat)+this->u_p, mat->beta, mat->eta);
     epsilon_material_grid(mat, u);   // interpolate material from material grid point
     mat->medium.check_offdiag_im_zero_or_abort();
   }
@@ -1951,6 +1973,11 @@ set the materials as specified */
 void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
                                  vector3 center, bool use_anisotropic_averaging,
                                  double tol, int maxeval, absorber_list alist) {
+  
+  // store for later use in gradient calculations
+  geps->tol = tol;
+  geps->maxeval = maxeval;
+
   meep::grid_volume gv = s->gv;
   if (alist) {
     for (absorber_list_type::iterator layer = alist->begin(); layer != alist->end(); layer++) {
@@ -2490,6 +2517,50 @@ double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
   return val;
 }
 
+/* Used to calculate the permittivity tensor 
+at a particular point *after* the subpixel smoothing
+is applied (if specified). Since the current adjoint 
+formulation only works with diagonal materials,
+they must also be real.*/
+void get_chi1_tensor(const meep::vec &r, geom_epsilon* geps, double diag[3]){
+  // assemble the chi1inv tensor at the point
+  symm_matrix chi1inv;
+  symm_matrix chi1;
+  double chi1inv_row[3];
+  const double sd = 1.0; // FIXME: make user-changable?
+  meep::volume v(r);
+  LOOP_OVER_DIRECTIONS(dim, d){
+    v.set_direction_min(d, r.in_direction(d)-sd/2);
+    v.set_direction_max(d, r.in_direction(d)+sd/2);
+  }
+
+  meep::component cb[3];
+  int i = 0;
+  FOR_ELECTRIC_COMPONENTS(c){
+    cb[i] = c;
+    i++;
+  }
+
+  geps->eff_chi1inv_row(meep::Ex, chi1inv_row,
+                                        v, geps->tol, geps->maxeval);
+  chi1inv.m00 = chi1inv_row[0];
+  chi1inv.m01 = chi1inv_row[1];
+  chi1inv.m02 = chi1inv_row[2];
+  geps->eff_chi1inv_row(meep::Ey, chi1inv_row,
+                                        v, geps->tol, geps->maxeval);
+  chi1inv.m11 = chi1inv_row[1];
+  chi1inv.m12 = chi1inv_row[2];
+  geps->eff_chi1inv_row(meep::Ez, chi1inv_row,
+                                        v, geps->tol, geps->maxeval);
+  chi1inv.m22 = chi1inv_row[2];  
+
+  // invert the tensor to find chi1
+  sym_matrix_invert(&chi1, &chi1inv);
+  
+  // pull the diagonal
+  diag[0] = chi1.m00; diag[1] = chi1.m11; diag[2] = chi1.m22;
+}
+
 void get_material_tensor(const medium_struct *mm, double freq,
                          std::complex<double> *tensor) {
   /*
@@ -2520,11 +2591,11 @@ void get_material_tensor(const medium_struct *mm, double freq,
 }
 
 double get_material_gradient(
-    double u,                       // material parameter at current point
+    const meep::vec &r,             // material parameter at current point
     std::complex<double> fields_a,  // adjoint field at current point
     std::complex<double> fields_f,  // forward field at current point
     double freq,                    // frequency
-    material_data *md,              // material
+    geom_epsilon *geps,             // material
     meep::component field_dir,      // current field component
     double du                       // step size
 ) {
@@ -2533,37 +2604,16 @@ double get_material_gradient(
   has dispersion, it is either a lorentzian or drude profile.
   */
 
-  const medium_struct *mm = &(md->medium);
-  const medium_struct *m1 = &(md->medium_1);
-  const medium_struct *m2 = &(md->medium_2);
-
-  // trivial case
-  if ((mm->E_susceptibilities.size() == 0) && mm->D_conductivity_diag.x == 0 &&
-      mm->D_conductivity_diag.y == 0 && mm->D_conductivity_diag.z == 0){
-        switch (field_dir){
-          case meep::Er:
-          case meep::Ex: return (m2->epsilon_diag.x - m1->epsilon_diag.x) * (fields_a * fields_f).real();
-          case meep::Ep:
-          case meep::Ey: return (m2->epsilon_diag.y - m1->epsilon_diag.y) * (fields_a * fields_f).real();
-          case meep::Ez: return (m2->epsilon_diag.z - m1->epsilon_diag.z) * (fields_a * fields_f).real();
-          default: meep::abort("Invalid field component specified in gradient.");
-        }
-      }
-
   /* For now we do a finite difference approach to estimate the
   gradient of the system matrix `A` since it's fairly accurate,
   cheap, and easy to generalize. */
-  std::complex<double> dA_du_0[9] = {std::complex<double>(0, 0)};
-  epsilon_material_grid(md, u - du);
-  get_material_tensor(mm, freq, dA_du_0);
-
-  std::complex<double> dA_du_1[9] = {std::complex<double>(0, 0)};
-  epsilon_material_grid(md, u + du);
-  get_material_tensor(mm, freq, dA_du_1);
-
-  std::complex<double> dA_du[9] = {std::complex<double>(0, 0)};
-  for (int i = 0; i < 9; i++)
-    dA_du[i] = (dA_du_1[i] - dA_du_0[i]) / (2 * du);
+  geps->u_p = du;
+  double diag_1[3];
+  get_chi1_tensor(r, geps, diag_1);
+  geps->u_p = -du;
+  double diag_2[3];
+  get_chi1_tensor(r, geps, diag_2);
+  geps->u_p=0;
 
   int dir_idx = 0;
   if (field_dir == meep::Ex || field_dir == meep::Er)
@@ -2575,7 +2625,7 @@ double get_material_gradient(
   else
     meep::abort("Invalid adjoint field component");
 
-  std::complex<double> result = fields_a * dA_du[3 * dir_idx + dir_idx] * fields_f;
+  std::complex<double> result = fields_a * (diag_1[dir_idx] - diag_2[dir_idx]) / (2 * du) * fields_f;
   return result.real();
 }
 
@@ -2631,7 +2681,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
   material_data *mg, *mg_sum;
   double uval;
   int kind;
-  tp = geom_tree_search(p, geps->geometry_tree, &oi);
+  tp = geom_tree_search(p, geometry_tree, &oi);
 
   if (tp &&
       ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
@@ -2639,9 +2689,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
   else if (!tp && ((material_type)default_material)->which_subclass == material_data::MATERIAL_GRID)
     mg = (material_data *)default_material;
   else
-    //master_printf("material type: %d\n",((material_type)tp->objects[oi].o->material)->which_subclass);
     return; /* no material grids at this point */
-    master_printf("ALEC ok\n");
 
   // Calculate the number of material grids if we are averaging values
   if ((tp) && ((kind = mg->material_grid_kinds) == material_data::U_MEAN)) {
@@ -2682,7 +2730,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
       add_interpolate_weights(
           pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
-          get_material_gradient(uval, fields_a, fields_f, freq, mg, field_dir, 1e-6) * scalegrad,
+          get_material_gradient(vector3_to_vec(p), fields_a, fields_f, freq, geps, field_dir, 1e-6) * scalegrad,
           ucur, kind, uval);
       if (kind == material_data::U_DEFAULT) break;
       tp = geom_tree_search_next(p, tp, &oi);
@@ -2696,7 +2744,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
     double *ucur = mg->weights;
     uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
     add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
-                            get_material_gradient(uval, fields_a, fields_f, freq, mg, field_dir) *
+                            get_material_gradient(vector3_to_vec(p), fields_a, fields_f, freq, geps, field_dir) *
                                 scalegrad,
                             ucur, kind, uval);
   }
@@ -2711,17 +2759,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
   vector3 p;
 
   geom_box_tree geometry_tree = calculate_tree(where,geps->geometry);
-  int tree_depth, tree_nobjects;
-    geom_box_tree_stats(geometry_tree, &tree_depth, &tree_nobjects);
-    master_printf("ALEC DEBUG\n");
-    display_geometric_object_info(5, geps->geometry.items[0]);
-    display_geometric_object_info(5, geps->geometry.items[1]);
-    master_printf("min corner: %f %f %f\n",where.get_min_corner().x(),where.get_min_corner().y(),where.get_min_corner().z());
-    master_printf("max corner: %f %f %f\n",where.get_max_corner().x(),where.get_max_corner().y(),where.get_max_corner().z());
-    master_printf("Geometric object tree has depth %d "
-                  "and %d object nodes (vs. %d actual objects)\n",
-                  tree_depth, tree_nobjects, geps->geometry.num_items);
-    std::raise(SIGINT);
+
   // calculate cell dimensions
   meep::direction dirs[3];
   meep::vec min_max_loc[2] = {meep::vec(0,0,0),meep::vec(0,0,0)}; // extremal points in subgrid
