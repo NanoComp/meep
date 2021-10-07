@@ -306,7 +306,6 @@ static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
 
 double dft_chunk::norm2() const {
   if (!fc->f[c][0]) return 0.0;
-  int numcmp = fc->f[c][1] ? 2 : 1;
   double sum = 0.0;
   size_t idx_dft = 0;
   const int Nomega = omega.size();
