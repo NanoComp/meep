@@ -182,7 +182,7 @@ void fields::connect_chunks() {
   }
 }
 
-inline bool fields::on_metal_boundary(const ivec &here) {
+bool fields::on_metal_boundary(const ivec &here) {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (user_volume.has_boundary(High, d) &&
         here.in_direction(d) == user_volume.big_corner().in_direction(d)) {
