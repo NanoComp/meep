@@ -227,7 +227,7 @@ class GaussianSource(SourceTime):
           Default is `False`.
 
         + **`fourier_transform(f)`** — Returns the Fourier transform of the current
-          evaluated at frequency `f` ($\\omega=2\\pi f$) given by:
+          evaluated at frequency $f$ ($\\omega=2\\pi f$) given by:
           $$
           \\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}}
           \\int e^{i\\omega t}G(t)\\,dt \\equiv

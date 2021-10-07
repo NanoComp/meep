@@ -784,7 +784,7 @@ class EigenmodeData(object):
 
 class Harminv(object):
     """
-    `Harminv` is implemented as a class with a [`__call__`](#Harminv.__call__) method,
+    Harminv is implemented as a class with a [`__call__`](#Harminv.__call__) method,
     which allows it to be used as a step function that collects field data from a given
     point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract
     the frequencies, decay rates, and other information.
@@ -2792,10 +2792,10 @@ class Simulation(object):
         cell) in a grid with the given resolution (which may differ from the FDTD grid
         resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`,
         ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the
-        Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an
-        nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions
-        that =1 are omitted. The volume can optionally be specified via `center` and
-        `size`.
+        Fourier-transformed $\\mathbf{E}$ and $\\mathbf{H}$ fields on this grid. Each dataset
+        is an $n_x \\times n_y \\times n_z \\times nfreq$ 4d array of $space \\times frequency$
+        although dimensions that are equal to one are omitted. The volume can optionally be
+        specified via `center` and `size`.
         """
         if self.fields is None:
             self.init_sim()
@@ -3621,7 +3621,7 @@ class Simulation(object):
         + `group_velocity`: the group velocity of the mode in `direction`
         + `k`: the Bloch wavevector of the mode in `direction`
         + `kdom`: the dominant planewave of mode `band_num`
-        + `amplitude(point, component)`: the (complex) value of the given E or H field
+        + `amplitude(point, component)`: the (complex) value of the given $\\mathbf{E}$ or $\\mathbf{H}$ field
           `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in
           space (interpreted with Bloch-periodic boundary conditions if you give a point
           outside the original `eig_vol`).
@@ -4514,10 +4514,10 @@ def stop_on_interrupt():
 def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every `dt`
+    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every $t$
     timesteps, and stops the simulation once all the field components and frequencies of *every*
-    dft object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
-    `dt` is determined automatically based on the frequency content in the DFT monitors.
+    DFT object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
+    $t$ is determined automatically based on the frequency content in the DFT monitors.
     There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
     maximum run time `maximum_run_time` (no default).
     """

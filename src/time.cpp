@@ -81,9 +81,9 @@ std::vector<double> timing_data_vector_from_all(const time_sink_to_duration_map 
 void pt(double mean, double stddev, const char *label) {
   if (mean != 0) {
     if (stddev != 0)
-      master_printf("    %21s: %g s +/- %g s\n", label, mean, stddev);
+      master_printf("    %21s: %4.6g s +/- %4.6g s\n", label, mean, stddev);
     else
-      master_printf("    %21s: %g s\n", label, mean);
+      master_printf("    %21s: %4.6g s\n", label, mean);
   }
 }
 
@@ -179,9 +179,9 @@ void fields::print_times() {
 
     int i = 0;
     for (const auto &desc_ts : DescriptionByTimeSink) {
-      master_printf("    %21s: %g", desc_ts.second, alltimes[i * n]);
+      master_printf("    %21s: %4.6g", desc_ts.second, alltimes[i * n]);
       for (int j = 1; j < n; ++j)
-        master_printf(", %g", alltimes[i * n + j]);
+        master_printf(", %4.6g", alltimes[i * n + j]);
       master_printf("\n");
       ++i;
     }
