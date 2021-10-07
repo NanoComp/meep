@@ -239,10 +239,13 @@ import meep as mp
 from meep.chunk_balancer import ChunkBalancer
 from meep.timing_measurements import MeepTimingMeasurements
 import pickle
+import os.path
 
-# Fetch chunk layout from a previous run
-with open("path/to/chunk_layout.pkl", "rb") as f:
-    chunk_layout = pickle.load(f)
+# Fetch chunk layout from a previous run if it exists
+if os.path.exists("path/to/chunk_layout.pkl"):
+  chunk_layout = pickle.load(open("path/to/chunk_layout.pkl", "rb"))
+else:
+  chunk_layout = None
 
 sim = mp.Simulation(..., chunk_layout=chunk_layout)
 sim.init_sim()
