@@ -119,9 +119,9 @@ class FilteredSource(CustomSource):
         fwidth = 1/(self.N * self.dt)
         frq_inf = 1000*fwidth
         na_dtft = self.nuttall_dtft(frq_inf, 0)
-        coeff = frq_inf**3 * np.abs(na_dtft) * 1/fwidth**3
+        coeff = frq_inf**3 * np.abs(na_dtft)
         na_dtft_max = self.nuttall_dtft(0, 0)
-        bw = 2 * np.power(coeff / (tol * na_dtft_max), 1/3) * fwidth
+        bw = 2 * np.power(coeff / (tol * na_dtft_max), 1/3)
         return bw.real
 
     def dtft(self, y, f):
