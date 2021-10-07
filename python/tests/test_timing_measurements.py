@@ -15,11 +15,7 @@ class TimingTest(unittest.TestCase):
         )
         time_start = time.time()
         sim.run(until=5)
-        timing_measurements = timing.MeepTimingMeasurements.new_from_simulation(
-            sim=sim,
-            elapsed_time=time.time() - time_start,
-            time_per_step=[0.1],
-        )
+        timing_measurements = timing.MeepTimingMeasurements.new_from_simulation(sim)
 
         # Check for expected names after updating
         self.assertSetEqual(

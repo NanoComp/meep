@@ -93,7 +93,7 @@ class MeepTimingMeasurements:
     def new_from_simulation(
             cls,
             sim: mp.Simulation,
-            elapsed_time: float,
+            elapsed_time: Optional[float] = -1,
             time_per_step: Optional[List[float]] = None,
             dft_relative_change: Optional[List[float]] = None,
             overlap_relative_change: Optional[List[float]] = None,

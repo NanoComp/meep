@@ -189,7 +189,7 @@ The chunk balancer interface provides four main methods:
 - `adjust_chunk_layout()` is syntactic sugar which will compute a new chunk layout, apply it to the simulation object, reset the simulation, and re-initialize the simulation.
 
 ```py
-class ChunkyMonkey(abc.ABC):
+class AbstractChunkBalancer(abc.ABC):
   """Chunk balancer for dynamically load-balanced chunk layouts."""
 
   def make_initial_chunk_layout(self, sim) -> mp.BinaryPartition:
@@ -216,9 +216,9 @@ class ChunkyMonkey(abc.ABC):
 Using the chunk balancer is very straightforward, and it can typically be integrated into existing Meep simulations with only a few lines of code. Here is a simple example:
 
 ```py
-from meep.chunk_balancer import DefaultChunkBalancer
+from meep.chunk_balancer import ChunkBalancer
 
-chunk_balancer = DefaultChunkBalancer()
+chunk_balancer = ChunkBalancer()
 
 # Compute an initial chunk layout
 initial_chunk_layout = chunk_balancer.make_initial_chunk_layout()
@@ -228,9 +228,40 @@ sim.init_sim()
 
 for iteration in range(epochs):
   sim.run(...)
-  
-  # Adjust the chunk layout if needed
+  # Adjust the chunk layout for the next iteration if needed
   chunk_balancer.adjust_chunk_layout(sim, sensitivity=0.4)
+```
+
+Chunks can also be rebalanced between runs of a program by dumping and loading the chunk layout from a pickled object. For example:
+
+```py
+import meep as mp
+from meep.chunk_balancer import ChunkBalancer
+from meep.timing_measurements import MeepTimingMeasurements
+import pickle
+
+# Fetch chunk layout from a previous run
+with open("path/to/chunk_layout.pkl", "rb") as f:
+    chunk_layout = pickle.load(f)
+
+sim = mp.Simulation(..., chunk_layout=chunk_layout)
+sim.init_sim()
+sim.run(...)
+
+# Compute and save chunk layout for next run
+timings = MeepTimingMeasurements.new_from_simulation(sim)
+chunk_volumes = sim.structure.get_chunk_volumes()
+chunk_owners = sim.structure.get_chunk_owners()
+next_chunk_layout = ChunkBalancer().compute_new_chunk_layout(
+    timings,
+    chunk_layout,
+    chunk_volumes,
+    chunk_owners,
+    sensitivity=0.4)
+
+# Save chunk layout for next run
+with open("path/to/chunk_layout.pkl", "wb") as f:
+    pickle.dump(next_chunk_layout, f)
 ```
 
 ### Chunk adjustment algorithm

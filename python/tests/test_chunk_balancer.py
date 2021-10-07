@@ -7,7 +7,7 @@ import unittest
 import meep.binary_partition_utils as bpu
 
 from meep.timing_measurements import MeepTimingMeasurements, TIMING_MEASUREMENT_IDS
-from meep.chunk_balancer import DefaultChunkBalancer
+from meep.chunk_balancer import ChunkBalancer
 
 
 class MockSimulation(mp.Simulation):
@@ -200,7 +200,7 @@ class MockSimulationTest(unittest.TestCase):
         self.assertListEqual(list(chunk_owners), expected_chunk_owners)
 
 
-class DefaultChunkBalancerTest(unittest.TestCase):
+class ChunkBalancerTest(unittest.TestCase):
 
     @parameterized.parameterized.expand([
         (TEST_SIM_1, False),
@@ -210,7 +210,7 @@ class DefaultChunkBalancerTest(unittest.TestCase):
         test_sim = test_sim_constructor()
         test_sim.init_sim()
 
-        chunk_balancer = DefaultChunkBalancer()
+        chunk_balancer = ChunkBalancer()
 
         if should_raise_exception:
             with self.assertRaises(ValueError):
@@ -232,7 +232,7 @@ class DefaultChunkBalancerTest(unittest.TestCase):
         old_timing_measurements = MeepTimingMeasurements.new_from_simulation(
             test_sim, -1)
 
-        chunk_balancer = DefaultChunkBalancer()
+        chunk_balancer = ChunkBalancer()
 
         chunk_balancer.adjust_chunk_layout(test_sim, sensitivity=1.0)
 
@@ -264,7 +264,7 @@ class DefaultChunkBalancerTest(unittest.TestCase):
         test_sim = test_sim_constructor()
         test_sim.init_sim()
 
-        chunk_balancer = DefaultChunkBalancer()
+        chunk_balancer = ChunkBalancer()
 
         num_iterations = 25
 
@@ -301,7 +301,7 @@ class DefaultChunkBalancerTest(unittest.TestCase):
         chunk_volumes = sim.structure.get_chunk_volumes()
         chunk_owners = sim.structure.get_chunk_owners()
 
-        chunk_balancer = DefaultChunkBalancer()
+        chunk_balancer = ChunkBalancer()
 
         measurements = {}
         num_procs = len(test_chunk_data["time_stepping"])

@@ -9,7 +9,7 @@ from meep.timing_measurements import MeepTimingMeasurements
 import numpy as np
 
 
-class ChunkyMonkey(abc.ABC):
+class AbstractChunkBalancer(abc.ABC):
     """Abstract chunk balancer for adaptive chunk layouts in Meep simulations.
 
     This class defines interfaces for a chunk balancer, which adjusts chunk
@@ -135,7 +135,7 @@ class ChunkyMonkey(abc.ABC):
                     set(proc_ids) - set(chunk_owners)))
 
 
-class DefaultChunkBalancer(ChunkyMonkey):
+class ChunkBalancer(AbstractChunkBalancer):
     """A chunk balancer for adaptive chunk layouts in Meep simulations.
 
     This class generates initial chunk layouts using Meep's built-in scheme, and
