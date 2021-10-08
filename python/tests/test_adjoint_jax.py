@@ -16,7 +16,7 @@ jax.config.update('jax_enable_x64', True)
 _FD_STEP = 1e-4
 
 # The tolerance for the adjoint and finite difference gradient comparison
-_TOL = 1.2
+_TOL = 0.1 if mp.is_single_precision() else 0.025
 
 mp.verbosity(0)
 

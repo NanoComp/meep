@@ -112,12 +112,11 @@ class FilteredSource(CustomSource):
     ## compute the bandwidth of the DTFT of the Nuttall window function
     ## (magnitude) assuming it has decayed from its peak value by some
     ## tolerance by fitting it to an asymptotic power law of the form
-    ## C * (Δf / f)^3 where C is a constant, Δf is the frequency bandwidth
-    ## of the Nuttall window, and f is the frequency
+    ## C / f^3 where C is a constant and f is the frequency
     def nuttall_bandwidth(self):
         tol = 1e-7
         fwidth = 1/(self.N * self.dt)
-        frq_inf = 1000*fwidth
+        frq_inf = 10000*fwidth
         na_dtft = self.nuttall_dtft(frq_inf, 0)
         coeff = frq_inf**3 * np.abs(na_dtft)
         na_dtft_max = self.nuttall_dtft(0, 0)

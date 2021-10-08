@@ -208,7 +208,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.06 if mp.is_single_precision() else 0.02
+            tol = 0.04 if mp.is_single_precision() else 0.005
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
@@ -237,7 +237,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     adj_scale = (dp[None,:]@adjsol_grad).flatten()
                     fd_grad = S12_perturbed-S12_unperturbed
                     print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-                    tol = 0.04 if mp.is_single_precision() else 0.02
+                    tol = 0.04 if mp.is_single_precision() else 0.01
                     self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_gradient_backpropagation(self):
@@ -276,7 +276,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@bp_adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            self.assertClose(adj_scale,fd_grad,epsilon=0.02)
+            tol = 0.02 if mp.is_single_precision() else 0.01
+            self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
 if __name__ == '__main__':
