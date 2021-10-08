@@ -22,7 +22,7 @@ class TimingTest(unittest.TestCase):
             set(timing_measurements.measurement_names),
             set(timing.TIMING_MEASUREMENT_IDS.keys()),
         )
-        self.assertGreater(timing_measurements.elapsed_time, 0)
+        self.assertTrue(timing_measurements.elapsed_time > 0 or timing_measurements.elapsed_time == -1)
         self.assertGreater(timing_measurements.num_time_steps, 0)
         self.assertGreaterEqual(timing_measurements.comm_efficiency, 0)
         self.assertGreaterEqual(timing_measurements.comm_efficiency_one_to_one, 0)
