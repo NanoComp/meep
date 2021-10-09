@@ -1903,6 +1903,7 @@ class Simulation(object):
         """
         if self.fields is None:
             raise ValueError("Fields must be initialized before loading fields from file '%s'" % fname)
+        self._evaluate_dft_objects()
         self.fields.load(fname, single_parallel_file)
         print("Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file)))
 
