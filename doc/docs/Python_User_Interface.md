@@ -2303,7 +2303,7 @@ Simulation state.
 
 For all functions below, when dumping/loading state to/from a distributed filesystem
 (using say, parallel HDF5) and running in a MPI environment, setting
-`single_parallel_file=True` will result in all processes writing/reading to/from
+`single_parallel_file=True` (the default) will result in all processes writing/reading to/from
 the same/single file after computing their respective offsets into this file.
 When set to `False`, each process writes/reads data for the chunks it owns
 to/from a separate, process unique file.
