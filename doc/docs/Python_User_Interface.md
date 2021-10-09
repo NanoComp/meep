@@ -2426,7 +2426,7 @@ Loads a fields from the file `fname`.
 The above dump/load related functions can be used to implement a
 checkpoint/restore *like* feature for MEEP. The caveat of this feature is that
 it does *not* store all the state required to re-create the `Simulation` object
-itself. Instead in expects the user to create and setup the new `Simulation`
+itself. Instead, it expects the user to create and set up the new `Simulation`
 object to be *exactly* the same as the one the state was dumped from.
 
 @@ Simulation.dump@@
