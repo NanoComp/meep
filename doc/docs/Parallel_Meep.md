@@ -169,3 +169,139 @@ See also [FAQ/Should I expect linear speedup from the parallel Meep](FAQ.md#shou
 <center>
 ![](images/parallel_benchmark_DFT.png)
 </center>
+
+
+Dynamic Chunk Balancing
+-----------------------
+
+Since Meep's computation time is ultimately bottlenecked by the slowest-running process, it is desirable to load-balance the chunk layout such that each compute node is given an equal workload. By default, Meep uses a heuristics-based scheme to estimate the cost of a computation region based on the composition of voxel types (anisotropic, PML, etc.) However, this method of estimating the simulation time for a chunk in advance is not always accurate, a problem which is especially true for simulations run on shared-resource clusters. Meep's `chunk_balancer` module allows for a more empirical, data-driven approach for dynamically load-balancing parallel simulations. This approach uses the simulation time per node to adaptively modify the chunk layout and it implicitly corrects for heterogeneity over the simulation region and variability in background loads and job priority on shared compute resources. This approach can be especially useful for cases such as adjoint optimization, where slight variations on the same simulation are run many times over many iterations.
+
+<center>
+![](images/adaptive_chunk_layout.gif)
+</center>
+
+### Chunk balancer interface
+
+The chunk balancer interface provides four main methods:
+- `make_initial_chunk_layout()` generates the initial chunk layout for the first iteration of a simulation. By default, `None` is returned, indicating Meep should use its default chunk partitioning strategy.
+- `should_adjust_chunk_layout()` decides whether the current layout is sufficiently poorly balanced to justify the up-front cost of reallocating the field arrays when changing chunk layouts.
+- `compute_new_chunk_layout()` looks at the current chunk layout and per-process timing data to compute a new chunk layout which has chunk sizes adjusted to improve the load balance across compute nodes.
+- `adjust_chunk_layout()` is syntactic sugar which will compute a new chunk layout, apply it to the simulation object, reset the simulation, and re-initialize the simulation.
+
+```py
+class AbstractChunkBalancer(abc.ABC):
+  """Chunk balancer for dynamically load-balanced chunk layouts."""
+
+  def make_initial_chunk_layout(self, sim) -> mp.BinaryPartition:
+    """Generates an initial chunk layout for simulation."""
+
+  def should_adjust_chunk_layout(self, sim) -> bool:
+    """Is current layout imbalanced enough to justify rebuilding sim?"""
+
+  @abc.abstractmethod
+  def compute_new_chunk_layout(
+    self,
+    timing_measurements: MeepTimingMeasurements,
+    old_chunk_layout: mp.BinaryPartition,
+    chunk_volumes: Tuple[mp.grid_volume],
+    chunk_owners: np.ndarray) -> mp.BinaryPartition:
+    """Rebalance chunks to equalize simulation time for each node."""
+
+  def adjust_chunk_layout(self, sim, **kwargs) -> None:
+    """Computes a new chunk layout and applies it to sim."""
+```
+
+### Usage
+
+Using the chunk balancer is very straightforward, and it can typically be integrated into existing Meep simulations with only a few lines of code. Here is a simple example:
+
+```py
+from meep.chunk_balancer import ChunkBalancer
+
+chunk_balancer = ChunkBalancer()
+
+# Compute an initial chunk layout
+initial_chunk_layout = chunk_balancer.make_initial_chunk_layout()
+
+sim = mp.Simulation(..., chunk_layout=initial_chunk_layout)
+sim.init_sim()
+
+for iteration in range(epochs):
+  sim.run(...)
+  # Adjust the chunk layout for the next iteration if needed
+  chunk_balancer.adjust_chunk_layout(sim, sensitivity=0.4)
+```
+
+Chunks can also be rebalanced between runs of a program by dumping and loading the chunk layout from a pickled object. For example:
+
+```py
+import meep as mp
+from meep.chunk_balancer import ChunkBalancer
+from meep.timing_measurements import MeepTimingMeasurements
+import pickle
+import os.path
+
+# Fetch chunk layout from a previous run if it exists
+if os.path.exists("path/to/chunk_layout.pkl"):
+  chunk_layout = pickle.load(open("path/to/chunk_layout.pkl", "rb"))
+else:
+  chunk_layout = None
+
+sim = mp.Simulation(..., chunk_layout=chunk_layout)
+sim.init_sim()
+sim.run(...)
+
+# Compute and save chunk layout for next run
+timings = MeepTimingMeasurements.new_from_simulation(sim)
+chunk_volumes = sim.structure.get_chunk_volumes()
+chunk_owners = sim.structure.get_chunk_owners()
+next_chunk_layout = ChunkBalancer().compute_new_chunk_layout(
+    timings,
+    chunk_layout,
+    chunk_volumes,
+    chunk_owners,
+    sensitivity=0.4)
+
+# Save chunk layout for next run
+with open("path/to/chunk_layout.pkl", "wb") as f:
+    pickle.dump(next_chunk_layout, f)
+```
+
+### Chunk adjustment algorithm
+
+The default chunk adjustment algorithm recursively traverses the `BinaryPartition` object and resizes the chunk volumes of the left and right children of each node to have an equal per-node simulation time. The new chunk layout has split positions which are a weighted average of the previous iteration's chunk layout and the newly computed layout, and the `sensitivity` parameter adjusts how fast the chunk sizes are adjusted. (`sensitivity=0.0` means no adjustment, `sensitivity=1.0` means an immediate snap to the predicted split positions, and `sensitivity=0.5` is the average of the old and new layouts.) The adjustment algorithm is summarized in pseudocode below:
+
+```
+def adjust_split_pos(node):
+  for subtree in {node.left, node.right}:
+    V := Σ volume for nodes in subtree
+    t := Σ sim time for nodes in subtree
+    n := number of processes in subtree
+    l := t / n  # average load per process
+
+  Vₗ ↦ Vₗ / lₗ
+  Vᵣ ↦ Vᵣ / lᵣ
+
+  split_pos’ := dₘᵢₙ + (dₘₐₓ - dₘᵢₙ) * (Vₗ) / (Vₗ + Vᵣ)
+
+  # Adjust with sensitivity parameter
+  node.split_pos ↦ s * split_pos’ + (1-s) * node.split_pos
+
+  # Recurse through rest of the tree
+  adjust_split_pos(node.left)
+  adjust_split_pos(node.right)
+```
+
+### Load balancing results on shared clusters
+
+The following benchmarking results show load-balancing improvements from a parallel run on a shared compute cluster in a datacenter. The per-core working times (blue and orange) start of initially poorly balanced using the default `split_by_cost` scheme, but the load balancing improves over successive iterations.
+
+<center>
+![](images/chunk_balancer_timing_stats.gif)
+</center>
+
+Using the normalized standard deviation in simulation times per iteration as a proxy for load-balancing efficacy, we can see that the load balance improves over a large number of runs with varying numbers of processes:
+
+<center>
+![](images/chunk_balancer_variance.jpg)
+</center>
