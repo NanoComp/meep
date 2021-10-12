@@ -1,5 +1,25 @@
 # Meep Release Notes
 
+## Meep 1.21.0
+
+10/12/2021
+
+* Support for checkpointing structure and fields ([#1715], [#1738]).
+
+* Support for multithreading via OpenMP ([#1628]).
+
+* Support for cache-oblivious loop tiling of the E-from-D and H-from-B field updates ([#1655]).
+
+* Support for load balancing parallel simulations using timing measurements ([#1775]).
+
+* Support for automatic DFT decimation ([#1732]).
+
+* Support for adjoint gradients in cylindrical coordinates ([#1749]).
+
+* Revamped convergence criteria for DFT fields ([#1740]).
+
+* Various bugfixes ([#1593], [#1769]), performance enhancements ([#1730], [#1763]), minor improvements, and additional documentation.
+
 ## Meep 1.20.0
 
 8/11/2021
