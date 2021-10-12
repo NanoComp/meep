@@ -129,6 +129,7 @@ public:
     (void)count;
     (void)source;
     (void)tag;
+    (void)cb;
 #endif
   }
 

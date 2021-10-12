@@ -115,22 +115,39 @@ class ObjectiveQuantity(abc.ABC):
 
 
 class EigenmodeCoefficient(ObjectiveQuantity):
+    """A frequency-dependent eigenmode coefficient.
+    Attributes:
+        volume: the volume over which the eigenmode coefficient is calculated.
+        mode: the eigenmode number.
+        forward: whether the forward or backward mode coefficient is returned as
+          the result of the evaluation.
+        kpoint_func: an optional k-point function to use when evaluating the eigenmode
+          coefficient. When specified, this overrides the effect of `forward`.
+        kpoint_func_overlap_idx: the index of the mode coefficient to return when
+          specifying `kpoint_func`. When specified, this overrides the effect of
+          `forward` and should have a value of either 0 or 1.
+    """
     def __init__(self,
                  sim,
                  volume,
                  mode,
                  forward=True,
                  kpoint_func=None,
+                 kpoint_func_overlap_idx=0,
                  decimation_factor=0,
                  **kwargs):
         super().__init__(sim)
+        if kpoint_func_overlap_idx not in [0, 1]:
+            raise ValueError(
+                '`kpoint_func_overlap_idx` should be either 0 or 1, but got %d'
+                % (kpoint_func_overlap_idx, ))
         self.volume = volume
         self.mode = mode
         self.forward = forward
         self.kpoint_func = kpoint_func
+        self.kpoint_func_overlap_idx = kpoint_func_overlap_idx
         self.eigenmode_kwargs = kwargs
         self._monitor = None
-        self._normal_direction = None
         self._cscale = None
         self.decimation_factor = decimation_factor
 
@@ -142,27 +159,25 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             yee_grid=True,
             decimation_factor=self.decimation_factor,
         )
-        self._normal_direction = self._monitor.normal_direction
         return self._monitor
 
     def place_adjoint_source(self, dJ):
         dJ = np.atleast_1d(dJ)
-        direction_scalar = -1 if self.forward else 1
-        time_src = self._create_time_profile()
-        if self.kpoint_func is None:
-            if self._normal_direction == 0:
-                k0 = direction_scalar * mp.Vector3(x=1)
-            elif self._normal_direction == 1:
-                k0 = direction_scalar * mp.Vector3(y=1)
-            elif self._normal_direction == 2:
-                k0 = direction_scalar * mp.Vector3(z=1)
-        else:
-            k0 = direction_scalar * self.kpoint_func(time_src.frequency, 1)
         if dJ.ndim == 2:
             dJ = np.sum(dJ, axis=1)
-        da_dE = 0.5 * self._cscale  # scalar popping out of derivative
-
+        time_src = self._create_time_profile()
+        da_dE = 0.5 * self._cscale
         scale = self._adj_src_scale()
+
+        if self.kpoint_func:
+            eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
+        else:
+            center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
+                self.frequencies))
+            direction = mp.Vector3(
+                *(np.eye(3)[self._monitor.normal_direction] *
+                  np.abs(center_frequency)))
+            eig_kpoint = -1 * direction if self.forward else direction
 
         if self._frequencies.size == 1:
             amp = da_dE * dJ * scale
@@ -176,12 +191,11 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 self.sim.fields.dt,
             )
             amp = 1
-
         source = mp.EigenModeSource(
             src,
             eig_band=self.mode,
             direction=mp.NO_DIRECTION,
-            eig_kpoint=k0,
+            eig_kpoint=eig_kpoint,
             amplitude=amp,
             eig_match_freq=True,
             size=self.volume.size,
@@ -191,17 +205,27 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         return [source]
 
     def __call__(self):
-        direction = mp.NO_DIRECTION if self.kpoint_func else mp.AUTOMATIC
+        if self.kpoint_func:
+            kpoint_func = self.kpoint_func
+            overlap_idx = self.kpoint_func_overlap_idx
+        else:
+            center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
+                self.frequencies))
+            kpoint = mp.Vector3(*(np.eye(3)[self._monitor.normal_direction] *
+                                  np.abs(center_frequency)))
+            kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
+            overlap_idx = 0
         ob = self.sim.get_eigenmode_coefficients(
             self._monitor,
             [self.mode],
-            direction=direction,
-            kpoint_func=self.kpoint_func,
+            direction=mp.NO_DIRECTION,
+            kpoint_func=kpoint_func,
             **self.eigenmode_kwargs,
         )
-        # record eigenmode coefficients for scaling
-        self._eval = np.squeeze(ob.alpha[:, :, int(not self.forward)])
-        self._cscale = ob.cscale  # pull scaling factor
+        overlaps = ob.alpha.squeeze(axis=0)
+        assert overlaps.ndim == 2
+        self._eval = overlaps[:, overlap_idx]
+        self._cscale = ob.cscale
         return self._eval
 
 

@@ -23,6 +23,23 @@
 #define SWIG_FILE_WITH_INIT
 #define SWIG_PYTHON_2_UNICODE
 
+/*
+ * In C++ we can use a scoped variable to acquire the GIL and then auto release
+ * on leaving scope, making our code a bit cleaner.
+ *
+ * SWIG_PYTHON_THREAD_SCOPED_BLOCK is a macro that SWIG automatically generates
+ * wrapping a class using an RAII pattern to automatically acquire/release
+ * the GIL. See the generated meep-python.cxx for details.
+ *
+ * We could instead just explicitly call SWIG_PYTHON_THREAD_BEGIN_BLOCK and
+ * SWIG_PYTHON_THREAD_END_BLOCK everywhere - but this is error prone since we
+ * have to ensure that SWIG_PYTHON_THREAD_END_BLOCK is called before every
+ * return statement in a method.
+ *
+ * NOTE: This wont work with plain-old C.
+ */
+#define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
+
 #include <complex>
 #include <string>
 
@@ -112,6 +129,7 @@ static PyObject *py_meep_src_time_object() {
 }
 
 static double py_callback_wrap(const meep::vec &v) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
     double ret = PyFloat_AsDouble(pyret);
@@ -121,6 +139,7 @@ static double py_callback_wrap(const meep::vec &v) {
 }
 
 static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
     double real = PyComplex_RealAsDouble(pyret);
@@ -134,6 +153,7 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
 static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
                                                const meep::vec &loc,
                                                void *data_) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(loc);
 
     py_field_func_data *data = (py_field_func_data *)data_;
@@ -163,37 +183,35 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
 }
 
 static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *py_freq = PyFloat_FromDouble(freq);
     PyObject *py_mode = PyInteger_FromLong(mode);
 
     PyObject *py_result = PyObject_CallFunctionObjArgs((PyObject*)user_data, py_freq, py_mode, NULL);
 
+    meep::vec result;
+
     if (!py_result) {
         PyErr_PrintEx(0);
-        Py_DECREF(py_freq);
-        Py_DECREF(py_mode);
-        return meep::vec(0, 0, 0);
-    }
-
-    vector3 v3;
-    if (!pyv3_to_v3(py_result, &v3)) {
-        PyErr_PrintEx(0);
-        Py_DECREF(py_freq);
-        Py_DECREF(py_mode);
+        result = meep::vec(0, 0, 0);
+    } else {
+        vector3 v3;
+        if (!pyv3_to_v3(py_result, &v3)) {
+            PyErr_PrintEx(0);
+            result = meep::vec(0, 0, 0);
+        } else {
+            result = meep::vec(v3.x, v3.y, v3.z);
+        }
         Py_XDECREF(py_result);
-        return meep::vec(0, 0, 0);
     }
-
-    meep::vec result(v3.x, v3.y, v3.z);
 
     Py_DECREF(py_freq);
     Py_DECREF(py_mode);
-    Py_DECREF(py_result);
-
     return result;
 }
 
 static void _do_master_printf(const char* stream_name, const char* text) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *py_stream = PySys_GetObject((char*)stream_name); // arg is non-const on Python2
 
     Py_XDECREF(PyObject_CallMethod(py_stream, "write", "(s)", text));
@@ -248,6 +266,7 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
 
 // Wrapper for Python PML profile function
 double py_pml_profile(double u, void *f) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *func = (PyObject *)f;
     PyObject *d = PyFloat_FromDouble(u);
 
@@ -573,6 +592,7 @@ meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::di
 }
 
 PyObject *_get_eigenmode_Gk(meep::eigenmode_data *emdata) {
+    SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     // Return value: New reference
     PyObject *v3_class = py_vector3_object();
     PyObject *args = Py_BuildValue("(ddd)", emdata->Gk[0], emdata->Gk[1], emdata->Gk[2]);
@@ -593,6 +613,24 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 }
 #endif
 %}
+
+/*
+ * These methods extensively use the Python C api (especially allocation) and
+ * hence need to hold the GIL (acquire/release) for key parts of their
+ * implementaion/code. Instead, disable threading for these methods by default.
+ *
+ * TODO: If any of these methods are expensive, we can explicitly allow threads
+ * for the expensive blocks of code in these methods.
+ */
+%feature("nothreadallow") _dft_ldos_J;
+%feature("nothreadallow") _dft_ldos_F;
+%feature("nothreadallow") _dft_ldos_ldos;
+%feature("nothreadallow") _get_farfields_array;
+%feature("nothreadallow") _get_farfield;
+%feature("nothreadallow") py_do_harminv;
+%feature("nothreadallow") _get_array_slice_dimensions;
+%feature("nothreadallow") _get_gradient;
+%feature("nothreadallow") _get_dft_array;
 
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, int);
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, size_t);
@@ -867,6 +905,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     Py_DECREF(swigobj);
 }
 %}
+
 //--------------------------------------------------
 // end typemaps needed for material grid
 //--------------------------------------------------
@@ -1374,6 +1413,11 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
 
+// Typemaps for geom_epsilon object
+%typemap(out) geom_epsilon {
+    $result = PyCapsule_New($1);
+}
+
 // Typemap suite for kpoint_func
 
 %typecheck(SWIG_TYPECHECK_POINTER) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
@@ -1410,6 +1454,11 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 }
 
 %exception {
+#ifdef MEEP_SWIG_PYTHON_DEBUG
+  // NOTE: You can do fancier things like timing the calls and using that
+  // to track the most expensive calls etc.
+  master_printf("**SWIG**: $symname\n");
+#endif
   try {
     $action
   } catch (std::runtime_error &e) {
@@ -1517,11 +1566,14 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %ignore std::vector<meep_geom::dft_data>::vector(size_type);
 %ignore std::vector<meep_geom::dft_data>::resize;
 
+%ignore meep_geom::set_materials_from_geom_epsilon;
+
 // template instantiations
 %template(get_dft_flux_array) _get_dft_array<meep::dft_flux>;
 %template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
+
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 %template(DftDataVector) std::vector<meep_geom::dft_data>;
 %template(VolumeVector) std::vector<meep::volume>;
@@ -1867,7 +1919,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     atexit.register(report_elapsed_time)
 %}
 
-%newobject create_structure_and_set_materials;
+%newobject create_structure;
+%newobject _set_materials;
 %inline %{
 
 size_t get_realnum_size() {
@@ -1878,31 +1931,31 @@ bool is_single_precision() {
   return sizeof(meep::realnum) == sizeof(float);
 }
 
-meep::structure *create_structure_and_set_materials(vector3 cell_size,
-                                                    std::vector<meep_geom::dft_data> dft_data_list_,
-                                                    std::vector<meep::volume> pml_1d_vols_,
-                                                    std::vector<meep::volume> pml_2d_vols_,
-                                                    std::vector<meep::volume> pml_3d_vols_,
-                                                    std::vector<meep::volume> absorber_vols_,
-                                                    meep::grid_volume &gv,
-                                                    const meep::boundary_region &br,
-                                                    const meep::symmetry &sym,
-                                                    int num_chunks,
-                                                    double Courant,
-                                                    bool use_anisotropic_averaging,
-                                                    double tol,
-                                                    int maxeval,
-                                                    geometric_object_list gobj_list,
-                                                    vector3 center,
-                                                    bool _ensure_periodicity,
-                                                    meep_geom::material_type _default_material,
-                                                    meep_geom::absorber_list alist,
-                                                    meep_geom::material_type_list extra_materials,
-                                                    bool split_chunks_evenly,
-                                                    bool set_materials,
-                                                    meep::structure *existing_s,
-                                                    bool output_chunk_costs,
-                                                    const meep::binary_partition *my_bp) {
+meep::structure *create_structure(vector3 cell_size,
+                                    std::vector<meep_geom::dft_data> dft_data_list_,
+                                    std::vector<meep::volume> pml_1d_vols_,
+                                    std::vector<meep::volume> pml_2d_vols_,
+                                    std::vector<meep::volume> pml_3d_vols_,
+                                    std::vector<meep::volume> absorber_vols_,
+                                    meep::grid_volume &gv,
+                                    const meep::boundary_region &br,
+                                    const meep::symmetry &sym,
+                                    int num_chunks,
+                                    double Courant,
+                                    bool use_anisotropic_averaging,
+                                    double tol,
+                                    int maxeval,
+                                    geometric_object_list gobj_list,
+                                    vector3 center,
+                                    bool _ensure_periodicity,
+                                    meep_geom::material_type _default_material,
+                                    meep_geom::absorber_list alist,
+                                    meep_geom::material_type_list extra_materials,
+                                    bool split_chunks_evenly,
+                                    bool set_materials,
+                                    meep::structure *existing_s,
+                                    bool output_chunk_costs,
+                                    const meep::binary_partition *my_bp) {
     // Initialize fragment_stats static members (used for creating chunks in choose_chunkdivision)
     meep_geom::fragment_stats::geom = gobj_list;
     meep_geom::fragment_stats::dft_data_list = dft_data_list_;
@@ -1940,10 +1993,36 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     }
     s->shared_chunks = true;
 
+    return s;
+}
+meep_geom::geom_epsilon* _set_materials(meep::structure * s,
+                    vector3 cell_size,
+                    meep::grid_volume &gv,
+                    bool use_anisotropic_averaging,
+                    double tol,
+                    int maxeval,
+                    geometric_object_list gobj_list,
+                    vector3 center,
+                    bool _ensure_periodicity,
+                    meep_geom::material_type _default_material,
+                    meep_geom::absorber_list alist,
+                    meep_geom::material_type_list extra_materials,
+                    bool split_chunks_evenly,
+                    bool set_materials,
+                    meep_geom::geom_epsilon *existing_geps,
+                    bool output_chunk_costs,
+                    const meep::binary_partition *my_bp) {
+    
+    meep_geom::geom_epsilon *geps;
+    if (existing_geps) {
+        geps = existing_geps;
+    } else {
+        geps = meep_geom::make_geom_epsilon(s, &gobj_list, center, _ensure_periodicity, _default_material,
+                                                extra_materials);
+    }
     if (set_materials) {
-      meep_geom::set_materials_from_geometry(s, gobj_list, center, use_anisotropic_averaging, tol,
-                                             maxeval, _ensure_periodicity, _default_material,
-                                             alist, extra_materials);
+        meep_geom::set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
+                                             maxeval,alist);
     }
 
     if (meep::verbosity > 1 && !split_chunks_evenly && set_materials) {
@@ -1972,7 +2051,7 @@ meep::structure *create_structure_and_set_materials(vector3 cell_size,
     meep_geom::fragment_stats::resolution = 0;
     meep_geom::fragment_stats::split_chunks_evenly = false;
 
-    return s;
+    return geps;
 }
 
 void _get_epsilon_grid(geometric_object_list gobj_list,

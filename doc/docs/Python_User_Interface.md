@@ -1355,9 +1355,9 @@ following fields:
 
 </div>
 
-The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenModeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue ω; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
+The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenModeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue $\omega$; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
-Technically, MPB computes `ωₙ(k)` and then inverts it with Newton's method to find the wavevector `k` normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for `k` in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the `k` of band number `n` at frequency `f = ω/2π`. (By default, the **k** components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's **k** components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.) If `direction` is set to `mp.NO_DIRECTION`, then `kpoint_func` is not only the initial guess and the search direction of the **k** vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides) (not perpendicular to the flux plane).
+Technically, MPB computes $\omega_n(\mathbf{k})$ and then inverts it with Newton's method to find the wavevector $\mathbf{k}$ normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for $\mathbf{k}$ in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the $\mathbf{k}$ of band number $n$ at frequency $f=\omega/2\pi$. (By default, the $\mathbf{k}$ components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's $\mathbf{k}$ components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.) If `direction` is set to `mp.NO_DIRECTION`, then `kpoint_func` is not only the initial guess and the search direction of the $\mathbf{k}$ vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides) (not perpendicular to the flux plane).
 
 **Note:** for planewaves in homogeneous media, the `kpoints` may *not* necessarily be equivalent to the actual wavevector of the mode. This quantity is given by `kdom`.
 
@@ -1414,7 +1414,7 @@ an `EigenmodeData` instance with the following fields:
 + `group_velocity`: the group velocity of the mode in `direction`
 + `k`: the Bloch wavevector of the mode in `direction`
 + `kdom`: the dominant planewave of mode `band_num`
-+ `amplitude(point, component)`: the (complex) value of the given E or H field
++ `amplitude(point, component)`: the (complex) value of the given $\mathbf{E}$ or $\mathbf{H}$ field
   `component` (`Ex`, `Hy`, etcetera) at a particular `point` (a `Vector3`) in
   space (interpreted with Bloch-periodic boundary conditions if you give a point
   outside the original `eig_vol`).
@@ -2006,7 +2006,7 @@ Meep can compute a near-to-far-field transformation in the frequency domain as d
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
-Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* 2D<sup>2</sup>/λ, the Fraunhofer distance, where D is the largest dimension of the radiator and λ is the vacuum wavelength.
+Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* $2D^2/\lambda$, the Fraunhofer distance, where $D$ is the largest dimension of the radiator and $\lambda$ is the vacuum wavelength.
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use this `Simulation` method:
 
@@ -2041,11 +2041,11 @@ with care, as the decimated timeseries may be corrupted by
 
 </div>
 
-Each `Near2FarRegion` is identical to `FluxRegion` except for the name: in 3d, these give a set of planes (**important:** all these "near surfaces" must lie in a single *homogeneous* material with *isotropic* ε and μ &mdash; and they should *not* lie in the PML regions) surrounding the source(s) of outgoing radiation that you want to capture and convert to a far field. Ideally, these should form a closed surface, but in practice it is sufficient for the `Near2FarRegion`s to capture all of the radiation in the direction of the far-field points. **Important:** as for flux computations, each `Near2FarRegion` should be assigned a `weight` of &#177;1 indicating the direction of the outward normal relative to the +coordinate direction. So, for example, if you have six regions defining the six faces of a cube, i.e. the faces in the +x, -x, +y, -y, +z, and -z directions, then they should have weights +1, -1, +1, -1, +1, and -1 respectively. Note that, neglecting discretization errors, all near-field surfaces that enclose the same outgoing fields are equivalent and will yield the same far fields with a discretization-induced difference that vanishes with increasing resolution etc.
+Each `Near2FarRegion` is identical to `FluxRegion` except for the name: in 3d, these give a set of planes (**important:** all these "near surfaces" must lie in a single *homogeneous* material with *isotropic* ε and μ &mdash; and they should *not* lie in the PML regions) surrounding the source(s) of outgoing radiation that you want to capture and convert to a far field. Ideally, these should form a closed surface, but in practice it is sufficient for the `Near2FarRegion`s to capture all of the radiation in the direction of the far-field points. **Important:** as for flux computations, each `Near2FarRegion` should be assigned a `weight` of &#177;1 indicating the direction of the outward normal relative to the +coordinate direction. So, for example, if you have six regions defining the six faces of a cube, i.e. the faces in the $+x$, $-x$, $+y$, $-y$, $+z$, and $-z$ directions, then they should have weights +1, -1, +1, -1, +1, and -1 respectively. Note that, neglecting discretization errors, all near-field surfaces that enclose the same outgoing fields are equivalent and will yield the same far fields with a discretization-induced difference that vanishes with increasing resolution etc.
 
 After the simulation run is complete, you can compute the far fields. This is usually for a pulsed source so that the fields have decayed away and the Fourier transforms have finished accumulating.
 
-If you have Bloch-periodic boundary conditions, then the corresponding near-to-far transformation actually needs to perform a "lattice sum" of infinitely many periodic copies of the near fields.  This doesn't happen by default, which means the default `near2far` calculation may not be what you want for periodic boundary conditions.  However, if the `Near2FarRegion` spans the entire cell along the periodic directions, you can turn on an approximate lattice sum by passing `nperiods > 1`.  In particular, it then sums `2*nperiods+1` Bloch-periodic copies of the near fields whenever a far field is requested.  You can repeatedly double `nperiods` until the answer converges to your satisfaction; in general, if the far field is at a distance d, and the period is a, then you want `nperiods` to be much larger than d/a.  (Future versions of Meep may use fancier techniques like [Ewald summation](https://en.wikipedia.org/wiki/Ewald_summation) to compute the lattice sum more rapidly at large distances.)
+If you have Bloch-periodic boundary conditions, then the corresponding near-to-far transformation actually needs to perform a "lattice sum" of infinitely many periodic copies of the near fields.  This doesn't happen by default, which means the default `near2far` calculation may not be what you want for periodic boundary conditions.  However, if the `Near2FarRegion` spans the entire cell along the periodic directions, you can turn on an approximate lattice sum by passing `nperiods > 1`.  In particular, it then sums `2*nperiods+1` Bloch-periodic copies of the near fields whenever a far field is requested.  You can repeatedly double `nperiods` until the answer converges to your satisfaction; in general, if the far field is at a distance $d$, and the period is $a$, then you want `nperiods` to be much larger than $d/a$.  (Future versions of Meep may use fancier techniques like [Ewald summation](https://en.wikipedia.org/wiki/Ewald_summation) to compute the lattice sum more rapidly at large distances.)
 
 
 <a id="Simulation.get_farfield"></a>
@@ -2090,10 +2090,10 @@ distance unit), outputs the far fields in `where` (which may lie *outside* the
 cell) in a grid with the given resolution (which may differ from the FDTD grid
 resolution) to the HDF5 file as a set of twelve array datasets `ex.r`, `ex.i`,
 ..., `hz.r`, `hz.i`, giving the real and imaginary parts of the
-Fourier-transformed $E$ and $H$ fields on this grid. Each dataset is an
-nx&#215;ny&#215;nz&#215;nfreq 4d array of space&#215;frequency although dimensions
-that =1 are omitted. The volume can optionally be specified via `center` and
-`size`.
+Fourier-transformed $\mathbf{E}$ and $\mathbf{H}$ fields on this grid. Each dataset
+is an $n_x \times n_y \times n_z \times nfreq$ 4d array of $space \times frequency$
+although dimensions that are equal to one are omitted. The volume can optionally be
+specified via `center` and `size`.
 
 </div>
 
@@ -2344,8 +2344,7 @@ def load_structure(self, fname, single_parallel_file=True):
 
 <div class="method_docstring" markdown="1">
 
-Loads a structure from the file `fname`. A file name to load can also be passed to
-the `Simulation` constructor via the `load_structure` keyword argument.
+Loads a structure from the file `fname`.
 
 </div>
 
@@ -2685,24 +2684,44 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 <a id="stop_when_fields_decayed"></a>
 
 ```python
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
 ```
 
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
 at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
 has decayed by at least `decay_by` from its maximum previous value. In particular, it
-keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
 over that time period &mdash; in this way, it won't be fooled just because the field
-happens to go through 0 at some instant.
+happens to go through zero at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency
 components that are excited when the source turns off. High frequencies near the
 [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
 slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+
+</div>
+
+<a id="stop_when_dft_decayed"></a>
+
+```python
+def stop_when_dft_decayed(tol=1e-11,
+                      minimum_run_time=0,
+                      maximum_run_time=None):
+```
+
+<div class="function_docstring" markdown="1">
+
+Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every $t$
+timesteps, and stops the simulation once all the field components and frequencies of *every*
+DFT object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
+$t$ is determined automatically based on the frequency content in the DFT monitors.
+There are two optional parameters: a minimum run time `minimum_run_time` (default: 0) or a
+maximum run time `maximum_run_time` (no default).
 
 </div>
 
@@ -2733,7 +2752,6 @@ system, the simulation will abort time stepping and continue executing any code 
 follows the `run` function (e.g., outputting fields).
 
 </div>
-
 
 Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these `Simulation` methods:
 
@@ -6437,7 +6455,7 @@ Construct a `GaussianSource`.
   Default is `False`.
 
 + **`fourier_transform(f)`** — Returns the Fourier transform of the current
-  evaluated at frequency `f` ($\omega=2\pi f$) given by:
+  evaluated at frequency $f$ ($\omega=2\pi f$) given by:
   $$
   \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
   \int e^{i\omega t}G(t)\,dt \equiv
@@ -6896,7 +6914,7 @@ class Harminv(object):
 
 <div class="class_docstring" markdown="1">
 
-`Harminv` is implemented as a class with a [`__call__`](#Harminv.__call__) method,
+Harminv is implemented as a class with a [`__call__`](#Harminv.__call__) method,
 which allows it to be used as a step function that collects field data from a given
 point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract
 the frequencies, decay rates, and other information.
@@ -7506,18 +7524,18 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 <a id="stop_when_fields_decayed"></a>
 
 ```python
-def stop_when_fields_decayed(dt, c, pt, decay_by):
+def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
 ```
 
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the component `c` (e.g. `Ex`, etc.)
+or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
 at the point `pt` (a `Vector3`) and keeps running until its absolute value *squared*
 has decayed by at least `decay_by` from its maximum previous value. In particular, it
-keeps incrementing the run time by `dT` (in Meep units) and checks the maximum value
+keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
 over that time period &mdash; in this way, it won't be fooled just because the field
-happens to go through 0 at some instant.
+happens to go through zero at some instant.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency

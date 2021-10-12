@@ -988,7 +988,7 @@ public:
     return 1;
   }
   virtual std::complex<double> frequency() const { return 0.0; }
-  virtual double get_fwidth(double tol) const { return 0.0; }
+  virtual double get_fwidth(double tol) const { (void)tol; return 0.0; }
   virtual void set_frequency(std::complex<double> f) { (void)f; }
 
 private:
@@ -1031,7 +1031,7 @@ public:
   virtual src_time *clone() const { return new continuous_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
-  virtual double get_fwidth(double tol) const { return 0.0; };
+  virtual double get_fwidth(double tol) const { (void)tol; return 0.0; };
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
@@ -1064,7 +1064,7 @@ public:
   virtual src_time *clone() const { return new custom_src_time(*this); }
   virtual bool is_equal(const src_time &t) const;
   virtual std::complex<double> frequency() const { return freq; }
-  virtual double get_fwidth(double tol) const { return 0.0; };
+  virtual double get_fwidth(double tol) const { (void)tol; return 0.0; };
   virtual void set_frequency(std::complex<double> f) { freq = f; }
 
 private:
@@ -1199,10 +1199,10 @@ public:
    int decimation_factor;
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0);
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
@@ -1730,6 +1730,7 @@ public:
   void remove_susceptibilities();
   void remove_fluxes();
   void reset();
+  void log(const char* prefix = "");
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);
@@ -1745,6 +1746,15 @@ public:
   void update_eh(field_type ft, bool skip_w_components = false);
 
   volume total_volume(void) const;
+
+  // fields_dump.cpp
+  // Dump fields to specified file. If 'single_parallel_file'
+  // is 'true' (the default) - then all processes write to the same/single file
+  // file after computing their respective offsets into this file. When set to
+  // 'false', each process writes data for the chunks it owns to a separate
+  // (process unique) file.
+  void dump(const char *filename, bool single_parallel_file=true);
+  void load(const char *filename, bool single_parallel_file=true);
 
   // h5fields.cpp:
   // low-level function:
@@ -2222,6 +2232,14 @@ private:
   void add_volume_source_check(component c, const src_time &src, const volume &where,
                                std::complex<double> A(const vec &), std::complex<double> amp,
                                component c0, direction d, int has_tm, int has_te);
+
+  // fields_dump.cpp
+  // Helper methods for dumping field chunks.
+  using FieldPtrGetter = std::function<realnum **(fields_chunk *, int, int)>;
+  void dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
+                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
+  void load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
+                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
 
 public:
   // monitor.cpp

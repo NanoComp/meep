@@ -34,26 +34,29 @@ else
   WVG_SRC_TEST =
 endif
 
-TESTS =                                   \
+TESTS =                                        \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_solver.py         \
-		$(TEST_DIR)/test_adjoint_cyl.py            \
+    $(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_jax.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
-    $(BINARY_GRATING_TEST)                \
+    $(TEST_DIR)/test_binary_partition_utils.py       \
+    $(BINARY_GRATING_TEST)                     \
     $(TEST_DIR)/test_cavity_arrayslice.py      \
     $(TEST_DIR)/test_cavity_farfield.py        \
+    $(TEST_DIR)/test_chunk_balancer.py         \
     $(TEST_DIR)/test_chunk_layout.py           \
     $(TEST_DIR)/test_chunks.py                 \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \
-    ${DIFFRACTED_PLANEWAVE_TEST}          \
-    ${DISPERSIVE_EIGENMODE_TEST}          \
+    ${DIFFRACTED_PLANEWAVE_TEST}               \
+    ${DISPERSIVE_EIGENMODE_TEST}               \
     $(TEST_DIR)/test_divide_mpi_processes.py   \
+    $(TEST_DIR)/test_dump_load.py              \
     $(TEST_DIR)/test_eigfreq.py                \
     $(TEST_DIR)/test_faraday_rotation.py       \
     $(TEST_DIR)/test_field_functions.py        \
@@ -64,14 +67,14 @@ TESTS =                                   \
     $(TEST_DIR)/test_get_point.py              \
     $(TEST_DIR)/test_holey_wvg_bands.py        \
     $(TEST_DIR)/test_holey_wvg_cavity.py       \
-    $(KDOM_TEST)                          \
+    $(KDOM_TEST)                               \
     $(TEST_DIR)/test_ldos.py                   \
-    $(MDPYTEST)                           \
+    $(MDPYTEST)                                \
     $(TEST_DIR)/test_material_grid.py          \
     $(TEST_DIR)/test_medium_evaluations.py     \
-    $(MPBPYTEST)                          \
-    $(MODE_COEFFS_TEST)                   \
-    $(MODE_DECOMPOSITION_TEST)            \
+    $(MPBPYTEST)                               \
+    $(MODE_COEFFS_TEST)                        \
+    $(MODE_DECOMPOSITION_TEST)                 \
     $(TEST_DIR)/test_multilevel_atom.py        \
     $(TEST_DIR)/test_n2f_periodic.py           \
     $(TEST_DIR)/test_oblique_source.py         \
@@ -84,6 +87,7 @@ TESTS =                                   \
     $(TEST_DIR)/test_simulation.py             \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
+    $(TEST_DIR)/test_timing_measurements.py    \
     $(TEST_DIR)/test_user_defined_material.py  \
     $(TEST_DIR)/test_visualization.py          \
     $(WVG_SRC_TEST)
@@ -163,8 +167,12 @@ HPPFILES=                                    \
  $(top_srcdir)/src/adjust_verbosity.hpp      \
  meep-python.hpp
 
+if MEEP_SWIG_PYTHON_THREADS
+SWIG_MEEP_FLAGS = -threads
+endif # MEEP_SWIG_PYTHON_THREADS
+
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
-	$(SWIG) -Wextra $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
+	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
@@ -204,9 +212,12 @@ endif # MAINTAINER_MODE
 # specification of python source files to be byte-compiled at installation
 ######################################################################
 HL_IFACE =                  \
+    $(srcdir)/binary_partition_utils.py       \
+    $(srcdir)/chunk_balancer.py       \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
+    $(srcdir)/timing_measurements.py       \
     $(srcdir)/visualization.py  \
     $(srcdir)/materials.py  \
     $(srcdir)/verbosity_mgr.py
