@@ -1941,6 +1941,7 @@ class Simulation(object):
         """
         if self.fields is None:
             raise ValueError("Fields must be initialized before loading fields from file '%s'" % fname)
+        self._evaluate_dft_objects()
         self.fields.load(fname, single_parallel_file)
         print("Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file)))
 
@@ -1964,9 +1965,9 @@ class Simulation(object):
             ## source is either filename (string)
             self.structure.load_chunk_layout(source, br)
 
-    def _get_load_dump_dirname(self, dirname, single_parallel_file):
+    def get_load_dump_dirname(self, dirname, single_parallel_file):
         """
-        Get the dirname to dump simulation state to.
+        Get the (possibly rank specific) dirname to dump simulation state to.
         """
         if single_parallel_file:
             dump_dirname = dirname
@@ -1980,7 +1981,7 @@ class Simulation(object):
         """
         Dumps simulation state.
         """
-        dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
+        dump_dirname = self.get_load_dump_dirname(dirname, single_parallel_file)
         os.makedirs(dump_dirname, exist_ok=True)
 
         if dump_structure:
@@ -1998,7 +1999,7 @@ class Simulation(object):
         This should called right after the Simulation object has been created
         but before 'init_sim' is called.
         """
-        dump_dirname = self._get_load_dump_dirname(dirname, single_parallel_file)
+        dump_dirname = self.get_load_dump_dirname(dirname, single_parallel_file)
         self.load_single_parallel_file = single_parallel_file
 
         if load_structure:
