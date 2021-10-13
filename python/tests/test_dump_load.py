@@ -7,6 +7,7 @@ import warnings
 import h5py
 import numpy as np
 import meep as mp
+from utils import ApproxComparisonTestCase
 
 try:
     unicode
@@ -14,7 +15,7 @@ except NameError:
     unicode = str
 
 
-class TestLoadDump(unittest.TestCase):
+class TestLoadDump(ApproxComparisonTestCase):
 
     fname_base = re.sub(r'\.py$', '', os.path.split(sys.argv[0])[1])
     fname = fname_base + '-ez-000200.00.h5'
@@ -121,6 +122,12 @@ class TestLoadDump(unittest.TestCase):
                              symmetries=symmetries,
                              sources=[sources])
 
+        mon_dft = sim1.add_dft_fields([mp.Ez],
+                                      1.1, 0.1, 3,
+                                      center=mp.Vector3(1.2,0.4),
+                                      size=mp.Vector3(1.5,0.3),
+                                      yee_grid=True)
+
         sample_point = mp.Vector3(0.12, -0.29)
 
         dump_dirname = os.path.join(self.temp_dir, 'test_load_dump_fields')
@@ -135,8 +142,10 @@ class TestLoadDump(unittest.TestCase):
         sim1.run(mp.at_every(1, get_ref_field_point), until=15)
         sim1.dump(dump_dirname, dump_structure=True, dump_fields=True, single_parallel_file=single_parallel_file)
 
+
         # Then continue running another 5 until t=20
         sim1.run(mp.at_every(1, get_ref_field_point), until=5)
+        sim1_mon_dft = sim1.get_dft_array(mon_dft, mp.Ez, 2)
 
         # Now create a new simulation and try restoring state.
         sim = mp.Simulation(resolution=resolution,
@@ -149,6 +158,12 @@ class TestLoadDump(unittest.TestCase):
         sim.load(dump_dirname, load_structure=True, load_fields=False, single_parallel_file=single_parallel_file)
         field_points = {}
 
+        mon_dft = sim.add_dft_fields([mp.Ez],
+                                     1.1, 0.1, 3,
+                                     center=mp.Vector3(1.2,0.4),
+                                     size=mp.Vector3(1.5,0.3),
+                                     yee_grid=True)
+
         def get_field_point(sim):
             p = sim.get_field_point(mp.Ez, sample_point)
             field_points[sim.meep_time()] = p.real
@@ -159,6 +174,9 @@ class TestLoadDump(unittest.TestCase):
 
         for t, v in field_points.items():
             self.assertAlmostEqual(ref_field_points[t], v)
+
+        sim_mon_dft = sim.get_dft_array(mon_dft, mp.Ez, 2)
+        self.assertClose(sim1_mon_dft, sim_mon_dft)
 
     def test_load_dump_fields(self):
         self._load_dump_fields()
