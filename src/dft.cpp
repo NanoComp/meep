@@ -176,13 +176,12 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   data.vc = vc;
 
   if (decimation_factor == 0) {
-    double tol = 1e-7;
     double src_freq_max = 0;
     for (src_time *s = sources; s; s = s->next) {
-      if (s->get_fwidth(tol) == 0)
+      if (s->get_fwidth() == 0)
         decimation_factor = 1;
       else
-        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth(tol));
+        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth());
     }
     double freq_max = 0;
     for (size_t i = 0; i < Nfreq; ++i)

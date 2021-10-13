@@ -6627,6 +6627,7 @@ def __init__(self,
              start_time=-1e+20,
              end_time=1e+20,
              center_frequency=0,
+             fwidth=0,
              **kwargs):
 ```
 
@@ -6657,6 +6658,11 @@ Construct a `CustomSource`.
 
 + **`center_frequency` [`number`]** — Optional center frequency so that the
   `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
+
++ **`fwidth` [`number`]** — Optional bandwidth in frequency units.
+  Default is 0. For bandwidth-limited sources, this parameter is used to
+  automatically determine the decimation factor of the time-series updates
+  of the DFT fields monitors (if any).
 
 </div>
 
