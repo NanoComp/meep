@@ -489,6 +489,6 @@ The first approach in the weak-scattering (undepleted pump) approximation would 
 
 The second approach is based on a full nonlinear simulation of the Raman process. This involves modeling the populations of the atomic vibrational states corresponding to the Raman bands using [saturable gain and absorption](Materials.md#saturable-gain-and-absorption).
 
-### Does Meep support adjoint-based optimization?
+### Does Meep support photonics inverse design?
 
 Yes. Meep has an [adjoint solver](Python_Tutorials/Adjoint_Solver.md) which can be used for inverse design and density-based topology optimization in which the degrees of freedom are a grid of $\varepsilon$ voxels.  (Of course, you can always use finite differences or similar methods to compute sensitivities or gradients for other parameters, as well as derivative-free optimization methods. However, such methods become increasingly impractical for ≳ 10 parameters.)
