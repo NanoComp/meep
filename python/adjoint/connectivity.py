@@ -8,8 +8,7 @@ Mo Chen <mochen@mit.edu>
 import numpy as np
 from scipy.sparse.linalg import cg, spsolve
 from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix, lil_matrix
-from scipy.linalg import norm
-import matplotlib.pyplot as plt
+
 class ConnectivityConstraint(object):
     def __init__(self, nx, ny, nz, k0=1000, zeta=0, sp_solver=cg, alpha=None, alpha0=None, thresh=0.1, p=2):
         #zeta is to prevent singularity when damping is zero; with damping, zeta should be zero
