@@ -104,8 +104,8 @@ class TestLoadDump(ApproxComparisonTestCase):
     def test_load_dump_chunk_layout_sim(self):
         self._load_dump_structure(chunk_sim=True)
 
-    # Tests dumping/loading of fields & structure.
-    def _load_dump_fields(self, single_parallel_file=True):
+    # Tests dumping/loading of fields & structure in 2d.
+    def _load_dump_fields_2d(self, single_parallel_file=True):
         resolution = 50
         cell = mp.Vector3(5, 5)
         sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4), center=mp.Vector3(), component=mp.Ez)
@@ -178,12 +178,93 @@ class TestLoadDump(ApproxComparisonTestCase):
         sim_mon_dft = sim.get_dft_array(mon_dft, mp.Ez, 2)
         self.assertClose(sim1_mon_dft, sim_mon_dft)
 
-    def test_load_dump_fields(self):
-        self._load_dump_fields()
+    def test_load_dump_fields_2d(self):
+        self._load_dump_fields_2d()
 
     @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
-    def test_load_dump_fields_sharded(self):
-        self._load_dump_fields(single_parallel_file=False)
+    def test_load_dump_fields_sharded_2d(self):
+        self._load_dump_fields_2d(single_parallel_file=False)
+
+    # Tests dumping/loading of fields & structure in 3d.
+    def _load_dump_fields_3d(self, single_parallel_file=True):
+        resolution = 15
+        cell = mp.Vector3(2.6, 2.2, 2.3)
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4), center=mp.Vector3(), component=mp.Hx)
+        one_by_one_by_one = mp.Vector3(1, 1, 1)
+        geometry = [mp.Block(material=mp.Medium(index=2.4), center=mp.Vector3(), size=one_by_one_by_one),
+                    mp.Block(material=mp.Medium(epsilon=7.9), center=mp.Vector3(1), size=one_by_one_by_one)]
+        pml_layers = [mp.PML(0.5)]
+        symmetries = [mp.Mirror(mp.Y,phase=-1),mp.Mirror(mp.Z,phase=-1)]
+
+        sim1 = mp.Simulation(resolution=resolution,
+                             cell_size=cell,
+                             boundary_layers=pml_layers,
+                             geometry=geometry,
+                             symmetries=symmetries,
+                             sources=[sources])
+
+        mon_dft = sim1.add_dft_fields([mp.Hx],
+                                      0.9, 0.05, 4,
+                                      center=mp.Vector3(0.5,0.4,0.2),
+                                      size=mp.Vector3(1.5,0.3,0.2),
+                                      yee_grid=True)
+
+        sample_point = mp.Vector3(0.37, -0.42, 0.55)
+
+        dump_dirname = os.path.join(self.temp_dir, 'test_load_dump_fields')
+        os.makedirs(dump_dirname, exist_ok=True)
+
+        ref_field_points = {}
+        def get_ref_field_point(sim):
+            p = sim.get_field_point(mp.Hx, sample_point)
+            ref_field_points[sim.meep_time()] = p.real
+
+        # First run until t=15 and save structure/fields
+        sim1.run(mp.at_every(1, get_ref_field_point), until=15)
+        sim1.dump(dump_dirname, dump_structure=True, dump_fields=True, single_parallel_file=single_parallel_file)
+
+
+        # Then continue running another 5 until t=20
+        sim1.run(mp.at_every(1, get_ref_field_point), until=5)
+        sim1_mon_dft = sim1.get_dft_array(mon_dft, mp.Hx, 3)
+
+        # Now create a new simulation and try restoring state.
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            boundary_layers=pml_layers,
+                            sources=[sources],
+                            symmetries=symmetries,
+                            chunk_layout=sim1)
+        # Just restore structure first.
+        sim.load(dump_dirname, load_structure=True, load_fields=False, single_parallel_file=single_parallel_file)
+        field_points = {}
+
+        mon_dft = sim.add_dft_fields([mp.Hx],
+                                     0.9, 0.05, 4,
+                                     center=mp.Vector3(0.5,0.4,0.2),
+                                     size=mp.Vector3(1.5,0.3,0.2),
+                                     yee_grid=True)
+
+        def get_field_point(sim):
+            p = sim.get_field_point(mp.Hx, sample_point)
+            field_points[sim.meep_time()] = p.real
+
+        # Now load the fields (at t=15) and then continue to t=20
+        sim.load(dump_dirname, load_structure=False, load_fields=True, single_parallel_file=single_parallel_file)
+        sim.run(mp.at_every(1, get_field_point), until=5)
+
+        for t, v in field_points.items():
+            self.assertAlmostEqual(ref_field_points[t], v)
+
+        sim_mon_dft = sim.get_dft_array(mon_dft, mp.Hx, 3)
+        self.assertClose(sim1_mon_dft, sim_mon_dft)
+
+    def test_load_dump_fields_3d(self):
+        self._load_dump_fields_3d()
+
+    @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
+    def test_load_dump_fields_sharded_3d(self):
+        self._load_dump_fields_3d(single_parallel_file=False)
 
     # This assertRaisesRegex check does not play well with MPI due to the
     # underlying call to meep::abort
