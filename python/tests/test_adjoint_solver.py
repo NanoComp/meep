@@ -53,7 +53,7 @@ sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                               eig_parity=eig_parity)]
 
 
-def forward_simulation(design_params,mon_type, frequencies=None, use_complex=False, k=False):
+def forward_simulation(design_params,mon_type, frequencies=None):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -69,16 +69,14 @@ def forward_simulation(design_params,mon_type, frequencies=None, use_complex=Fal
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
                         sources=sources,
-                        geometry=geometry,
-                        force_complex_fields=use_complex,
-                        k_point=k)
+                        geometry=geometry)
 
     if not frequencies:
         frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
         mode = sim.add_mode_monitor(frequencies,
-                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),
+                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml),
                                                   size=mp.Vector3(0,sxy-2*dpml,0)),
                                     yee_grid=True,
                                     eig_parity=eig_parity)
@@ -111,7 +109,7 @@ def forward_simulation(design_params,mon_type, frequencies=None, use_complex=Fal
         return Ez2
 
 
-def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False, k=False):
+def adjoint_solver(design_params, mon_type, frequencies=None):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
                               silicon,
@@ -131,16 +129,14 @@ def adjoint_solver(design_params, mon_type, frequencies=None, use_complex=False,
                         cell_size=cell_size,
                         boundary_layers=boundary_layers,
                         sources=sources,
-                        geometry=geometry,
-                        force_complex_fields=use_complex,
-                        k_point=k)
+                        geometry=geometry)
 
     if not frequencies:
         frequencies = [fcen]
 
     if mon_type.name == 'EIGENMODE':
         obj_list = [mpa.EigenmodeCoefficient(sim,
-                                             mp.Volume(center=mp.Vector3(0.5*sxy-dpml-0.1),
+                                             mp.Volume(center=mp.Vector3(0.5*sxy-dpml),
                                                        size=mp.Vector3(0,sxy-2*dpml,0)),
                                              1,
                                              eig_parity=eig_parity)]
@@ -197,7 +193,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compare objective results
             print("|Ez|^2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
+            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-6)
 
             ## compute perturbed S12
             S12_perturbed = forward_simulation(p+dp, MonitorObject.DFT, frequencies)
@@ -215,30 +211,29 @@ class TestAdjointSolver(ApproxComparisonTestCase):
     def test_adjoint_solver_eigenmode(self):
         print("*** TESTING EIGENMODE ADJOINT FEATURES ***")
         ## test the single frequency and multi frequency case
-        for k in [False, mp.Vector3(), mp.Vector3(0.8, 0.6)]:
-            for use_complex in [True, False]:
-                for frequencies in [[fcen], [1/1.58, fcen, 1/1.53]]:
-                    ## compute gradient using adjoint solver
-                    adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.EIGENMODE, frequencies, use_complex, k)
 
-                    ## compute unperturbed S12
-                    S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE, frequencies, use_complex, k)
+        for frequencies in [[fcen], [1/1.58, fcen, 1/1.53]]:
+            ## compute gradient using adjoint solver
+            adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.EIGENMODE, frequencies)
 
-                    ## compare objective results
-                    print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
-                    self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-6)
+            ## compute unperturbed S12
+            S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE, frequencies)
 
-                    ## compute perturbed S12
-                    S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies, use_complex, k)
+            ## compare objective results
+            print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-6)
 
-                    ## compare gradients
-                    if adjsol_grad.ndim < 2:
-                        adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
-                    adj_scale = (dp[None,:]@adjsol_grad).flatten()
-                    fd_grad = S12_perturbed-S12_unperturbed
-                    print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-                    tol = 0.04 if mp.is_single_precision() else 0.01
-                    self.assertClose(adj_scale,fd_grad,epsilon=tol)
+            ## compute perturbed S12
+            S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies)
+
+            ## compare gradients
+            if adjsol_grad.ndim < 2:
+                adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
+            adj_scale = (dp[None,:]@adjsol_grad).flatten()
+            fd_grad = S12_perturbed-S12_unperturbed
+            print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+            tol = 0.04 if mp.is_single_precision() else 0.01
+            self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_gradient_backpropagation(self):
         print("*** TESTING BACKPROP FEATURES ***")
