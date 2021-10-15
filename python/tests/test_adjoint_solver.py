@@ -76,7 +76,7 @@ def forward_simulation(design_params,mon_type, frequencies=None):
 
     if mon_type.name == 'EIGENMODE':
         mode = sim.add_mode_monitor(frequencies,
-                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml),
+                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),
                                                   size=mp.Vector3(0,sxy-2*dpml,0)),
                                     yee_grid=True,
                                     eig_parity=eig_parity)
@@ -136,7 +136,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None):
 
     if mon_type.name == 'EIGENMODE':
         obj_list = [mpa.EigenmodeCoefficient(sim,
-                                             mp.Volume(center=mp.Vector3(0.5*sxy-dpml),
+                                             mp.Volume(center=mp.Vector3(0.5*sxy-dpml-0.1),
                                                        size=mp.Vector3(0,sxy-2*dpml,0)),
                                              1,
                                              eig_parity=eig_parity)]
