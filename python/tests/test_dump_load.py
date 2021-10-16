@@ -32,8 +32,8 @@ class TestLoadDump(ApproxComparisonTestCase):
     def tearDownClass(cls):
         mp.delete_directory(cls.temp_dir)
 
-    # Tests various combinations of dumping/loading structure & chunk layout.
-    def _load_dump_structure(self, chunk_file=False, chunk_sim=False, single_parallel_file=True):
+    # Tests various combinations of dumping/loading structure & chunk layout in 2d.
+    def _load_dump_structure_2d(self, chunk_file=False, chunk_sim=False, single_parallel_file=True):
         from meep.materials import Al
         resolution = 50
         cell = mp.Vector3(5, 5)
@@ -91,18 +91,91 @@ class TestLoadDump(ApproxComparisonTestCase):
         for ref_pt, pt in zip(ref_field_points, field_points):
             self.assertAlmostEqual(ref_pt, pt)
 
-    def test_load_dump_structure(self):
-        self._load_dump_structure()
+    def test_load_dump_structure_2d(self):
+        self._load_dump_structure_2d()
 
     @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
-    def test_load_dump_structure_sharded(self):
-        self._load_dump_structure(single_parallel_file=False)
+    def test_load_dump_structure_sharded_2d(self):
+        self._load_dump_structure_2d(single_parallel_file=False)
 
-    def test_load_dump_chunk_layout_file(self):
-        self._load_dump_structure(chunk_file=True)
+    def test_load_dump_chunk_layout_file_2d(self):
+        self._load_dump_structure_2d(chunk_file=True)
 
-    def test_load_dump_chunk_layout_sim(self):
-        self._load_dump_structure(chunk_sim=True)
+    def test_load_dump_chunk_layout_sim_2d(self):
+        self._load_dump_structure_2d(chunk_sim=True)
+
+    # Tests various combinations of dumping/loading structure & chunk layout in 3d.
+    def _load_dump_structure_3d(self, chunk_file=False, chunk_sim=False, single_parallel_file=True):
+        from meep.materials import aSi
+        resolution = 15
+        cell = mp.Vector3(2.3, 2.1, 2.7)
+        sources = mp.Source(src=mp.GaussianSource(2.5, fwidth=0.1), center=mp.Vector3(), component=mp.Hy)
+        one_by_one_by_one = mp.Vector3(1, 1, 1)
+        geometry = [mp.Block(material=mp.Medium(index=2.3), center=mp.Vector3(), size=one_by_one_by_one),
+                    mp.Block(material=aSi, center=mp.Vector3(1), size=one_by_one_by_one)]
+        default_material = mp.Medium(index=1.4)
+        boundary_layers = [mp.Absorber(0.2)]
+        k_point = mp.Vector3(0.4, -1.3, 0.7)
+
+        sim1 = mp.Simulation(resolution=resolution,
+                             cell_size=cell,
+                             k_point=k_point,
+                             geometry=geometry,
+                             boundary_layers=boundary_layers,
+                             default_material=default_material,
+                             sources=[sources])
+
+        sample_point = mp.Vector3(0.73, -0.33, 0.61)
+        ref_field_points = []
+
+        def get_ref_field_point(sim):
+            p = sim.get_field_point(mp.Hy, sample_point)
+            ref_field_points.append(p.real)
+
+        sim1.run(mp.at_every(5, get_ref_field_point), until=50)
+
+        dump_dirname = os.path.join(self.temp_dir, 'test_load_dump_structure')
+        sim1.dump(dump_dirname, dump_structure=True, dump_fields=False, single_parallel_file=single_parallel_file)
+
+        dump_chunk_fname = None
+        chunk_layout = None
+        if chunk_file:
+            dump_chunk_fname = os.path.join(dump_dirname, 'chunk_layout.h5')
+            sim1.dump_chunk_layout(dump_chunk_fname)
+            chunk_layout = dump_chunk_fname
+        if chunk_sim:
+            chunk_layout = sim1
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell,
+                            sources=[sources],
+                            k_point=k_point,
+                            boundary_layers=boundary_layers,
+                            chunk_layout=chunk_layout)
+        sim.load(dump_dirname, load_structure=True, load_fields=False, single_parallel_file=single_parallel_file)
+        field_points = []
+
+        def get_field_point(sim):
+            p = sim.get_field_point(mp.Hy, sample_point)
+            field_points.append(p.real)
+
+        sim.run(mp.at_every(5, get_field_point), until=50)
+
+        for ref_pt, pt in zip(ref_field_points, field_points):
+            self.assertAlmostEqual(ref_pt, pt)
+
+    def test_load_dump_structure_3d(self):
+        self._load_dump_structure_3d()
+
+    @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
+    def test_load_dump_structure_sharded_3d(self):
+        self._load_dump_structure_3d(single_parallel_file=False)
+
+    def test_load_dump_chunk_layout_file_3d(self):
+        self._load_dump_structure_3d(chunk_file=True)
+
+    def test_load_dump_chunk_layout_sim_3d(self):
+        self._load_dump_structure_3d(chunk_sim=True)
 
     # Tests dumping/loading of fields & structure in 2d.
     def _load_dump_fields_2d(self, single_parallel_file=True):
