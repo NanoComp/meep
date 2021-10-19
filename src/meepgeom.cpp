@@ -604,6 +604,8 @@ void epsilon_material_grid(material_data *md, double u) {
     // TODO: dampen the lorentzians to improve stability
     // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
     // omega_mean;
+  } else {
+     mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u)*(md->damping);
   }
 }
 
@@ -2024,12 +2026,13 @@ material_type make_file_material(const char *eps_input_file) {
 /******************************************************************************/
 /* Material grid functions                                                    */
 /******************************************************************************/
-material_type make_material_grid(bool do_averaging, double beta, double eta) {
+material_type make_material_grid(bool do_averaging, double beta, double eta, double damping) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_GRID;
   md->do_averaging = do_averaging;
   md->beta = beta;
   md->eta = eta;
+  md->damping = damping;
   return md;
 }
 

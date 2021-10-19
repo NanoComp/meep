@@ -86,6 +86,7 @@ void material_data::copy_from(const material_data &from) {
   medium_2 = from.medium_2;
   beta = from.beta;
   eta = from.eta;
+  damping = from.damping;
 }
 
 material_type_list::material_type_list() : items(NULL), num_items(0) {}

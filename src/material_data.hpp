@@ -135,6 +135,7 @@ struct material_data {
   medium_struct medium_2;
   double beta;
   double eta;
+  double damping;
   /*
   There are several possible scenarios when material grids overlap -- these
   different scenarios enable different applications.
@@ -180,7 +181,7 @@ extern material_type vacuum;
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(char *epsilon_input_file);
-material_type make_material_grid(bool do_averaging, double beta, double eta);
+material_type make_material_grid(bool do_averaging, double beta, double eta, double damping);
 void read_epsilon_file(const char *eps_input_file);
 void update_weights(material_type matgrid, double *weights);
 
