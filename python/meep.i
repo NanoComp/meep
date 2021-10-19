@@ -844,7 +844,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 %inline %{
-void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObject *grid_volume, PyObject *frequencies, meep_geom::geom_epsilon *geps, PyObject *f, bool sim_is_cylindrical) {
+void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, 
+    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies, 
+    meep_geom::geom_epsilon *geps, PyObject *fields_shapes) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -867,15 +869,15 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
     std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
 
+    // clean the forward fields array
+    PyArrayObject *pao_fields_shapes = (PyArrayObject *)fields_shapes;
+    if (!PyArray_Check(pao_fields_shapes)) meep::abort("fields shape parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields_shapes)) meep::abort("Numpy fields shape array must be C-style contiguous.");
+    if (PyArray_NDIM(pao_fields_shapes) !=1) {meep::abort("Numpy fields shape array must have 1 dimension.");}
+    size_t *fields_shapes_c = (size_t *)PyArray_DATA(pao_fields_shapes);
+
     // scalegrad not currently used
     double scalegrad = 1.0;
-
-    // clean the volume object
-    void* where;
-
-    PyObject *swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
-    SWIG_ConvertPtr(swigobj,&where,0,NULL);
-    const meep::volume* where_vol = (const meep::volume*)where;
 
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
@@ -885,15 +887,8 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     npy_intp nf = PyArray_DIMS(pao_freqs)[0];
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
-    // clean the fields pointer
-    void* f_v;
-    SWIG_ConvertPtr(f,&f_v,NULL,NULL);
-    meep::fields* f_c = (meep::fields *)f_v;
-
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol, geps,f_c, sim_is_cylindrical);
-    
-    Py_DECREF(swigobj);
+    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,fields_shapes_c,frequencies_c,scalegrad,*grid_volume,*where,geps);
 }
 %}
 

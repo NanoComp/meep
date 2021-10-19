@@ -296,22 +296,10 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
-void get_material_tensor(const medium_struct *mm, double freq, std::complex<double> *tensor);
-double get_material_gradient(const meep::vec &r, std::complex<double> fields_a,
-                             std::complex<double> fields_f, double freq,
-                             geom_epsilon *geps, meep::component field_dir,
-                             double du = 1.0e-6);
-void add_interpolate_weights(double rx, double ry, double rz,
-                             double *data, int nx, int ny, int nz, int stride,
-                             double scaleby, const double *udata, int ukind, double uval);
-void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
-                                      std::complex<double> fields_f, meep::component field_dir,
-                                      vector3 p, double scalegrad, double freq,
-                                      geom_epsilon *geps, geom_box_tree geometry_tree);
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
-                                std::complex<double> *fields_f, double *frequencies,
-                                size_t nf, double scalegrad, const meep::volume &where,
-                                geom_epsilon *geps, meep::fields *f, bool sim_is_cylindrical);
+                                std::complex<double> *fields_f, size_t fields_shapes[4],
+                                double *frequencies, double scalegrad,
+                                const meep::grid_volume &gv, meep::volume &where, geom_epsilon *geps);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/

@@ -2589,14 +2589,14 @@ void get_material_tensor(const medium_struct *mm, double freq,
     tensor[i] = a * b;
   }
 }
-
+//TODO only pull row and look at all 3 field components
 double get_material_gradient(
     const meep::vec &r,             // material parameter at current point
-    std::complex<double> fields_a,  // adjoint field at current point
-    std::complex<double> fields_f,  // forward field at current point
+    const meep::component c,
+    std::complex<double> fields_a[3],  // adjoint field at current point
+    std::complex<double> fields_f[3],  // forward field at current point
     double freq,                    // frequency
     geom_epsilon *geps,             // material
-    meep::component field_dir,      // current field component
     double du                       // step size
 ) {
   /* Note that the current implementation assumes that
@@ -2607,25 +2607,36 @@ double get_material_gradient(
   /* For now we do a finite difference approach to estimate the
   gradient of the system matrix `A` since it's fairly accurate,
   cheap, and easy to generalize. */
-  geps->u_p = du;
-  double diag_1[3];
-  get_chi1_tensor(r, geps, diag_1);
+
+  const double sd = 1.0; // FIXME: make user-changable?
+  meep::volume v(r);
+  LOOP_OVER_DIRECTIONS(dim, d){
+    v.set_direction_min(d, r.in_direction(d)-sd/2);
+    v.set_direction_max(d, r.in_direction(d)+sd/2);
+  }
+
+  double row_1[3], row_2[3];
+  std::complex<double> result = 0;
   geps->u_p = -du;
-  double diag_2[3];
-  get_chi1_tensor(r, geps, diag_2);
+  geps->eff_chi1inv_row(c, row_1, v, geps->tol, geps->maxeval);
+  geps->u_p = du;
+  geps->eff_chi1inv_row(c, row_2, v, geps->tol, geps->maxeval);
   geps->u_p=0;
 
+  for (int i=0;i<3;i++) result += (row_1[i] - row_2[i])/(2*du) * fields_f[i];
+
+
   int dir_idx = 0;
-  if (field_dir == meep::Ex || field_dir == meep::Er)
+  if (c == meep::Ex || c == meep::Er)
     dir_idx = 0;
-  else if (field_dir == meep::Ey || field_dir == meep::Ep)
+  else if (c == meep::Ey || c == meep::Ep)
     dir_idx = 1;
-  else if (field_dir == meep::Ez)
+  else if (c == meep::Ez)
     dir_idx = 2;
   else
     meep::abort("Invalid adjoint field component");
 
-  std::complex<double> result = fields_a * (diag_1[dir_idx] - diag_2[dir_idx]) / (2 * du) * fields_f;
+   result = fields_a[dir_idx] * result;
   return result.real();
 }
 
@@ -2672,16 +2683,17 @@ in row-major order (the order used by HDF5): */
 #undef U
 }
 
-void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
-                                      std::complex<double> fields_f, meep::component field_dir,
+void material_grids_addgradient_point(double *v, meep::component c,
+                                      std::complex<double> *fields_a,
+                                      std::complex<double> *fields_f,
                                       vector3 p, double scalegrad, double freq,
-                                      geom_epsilon *geps, geom_box_tree geometry_tree) {
+                                      geom_epsilon *geps) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
   double uval;
   int kind;
-  tp = geom_tree_search(p, geometry_tree, &oi);
+  tp = geom_tree_search(p, geps->geometry_tree, &oi);
 
   if (tp &&
       ((material_type)tp->objects[oi].o->material)->which_subclass == material_data::MATERIAL_GRID)
@@ -2695,7 +2707,7 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
   if ((tp) && ((kind = mg->material_grid_kinds) == material_data::U_MEAN)) {
     int matgrid_val_count = 0;
     geom_box_tree tp_sum;
-    tp_sum = geom_tree_search(p, geometry_tree, &ois);
+    tp_sum = geom_tree_search(p, geps->geometry_tree, &ois);
     mg_sum = (material_data *)tp_sum->objects[ois].o->material;
     do {
       tp_sum = geom_tree_search_next(p, tp_sum, &ois);
@@ -2725,12 +2737,12 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
     vector3 sz = mg->grid_size;
     double *vcur = v;
     double *ucur = mg->weights;
-    uval = matgrid_val(p, tp, oi, mg);
+    uval = tanh_projection(matgrid_val(p, tp, oi, mg), mg->beta, mg->eta);
     do {
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
       add_interpolate_weights(
           pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
-          get_material_gradient(vector3_to_vec(p), fields_a, fields_f, freq, geps, field_dir, 1e-6) * scalegrad,
+          get_material_gradient(vector3_to_vec(p), c, fields_a, fields_f, freq, geps, 1e-6) * scalegrad,
           ucur, kind, uval);
       if (kind == material_data::U_DEFAULT) break;
       tp = geom_tree_search_next(p, tp, &oi);
@@ -2744,100 +2756,97 @@ void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
     double *ucur = mg->weights;
     uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
     add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
-                            get_material_gradient(vector3_to_vec(p), fields_a, fields_f, freq, geps, field_dir) *
+                            get_material_gradient(vector3_to_vec(p), c, fields_a, fields_f, freq, geps, 1e-6) *
                                 scalegrad,
                             ucur, kind, uval);
   }
 }
 
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
-                                std::complex<double> *fields_f, double *frequencies,
-                                size_t nf, double scalegrad, const meep::volume &where,
-                                geom_epsilon *geps, meep::fields *f, bool sim_is_cylindrical) {
-  int n2, n3, n4;
-  double s[3][3], cen[3][3], c1, c2, c3, s1, s2, s3;
-  vector3 p;
-
-  geom_box_tree geometry_tree = calculate_tree(where,geps->geometry);
-
-  // calculate cell dimensions
-  meep::direction dirs[3];
-  meep::vec min_max_loc[2] = {meep::vec(0,0,0),meep::vec(0,0,0)}; // extremal points in subgrid
-  meep::component field_dir[3] = {meep::Ex, meep::Ey, meep::Ez};
-  if (sim_is_cylindrical) {
-    field_dir[0] = meep::Er;
-    field_dir[1] = meep::Ep;
-  }
-  size_t dims[9] = {1, 1, 1, 1, 1, 1, 1, 1, 1};
-  for (int c = 0; c < 3; c++) {
-
-    f->get_array_slice_dimensions(where, &dims[3 * c], dirs, true, false, min_max_loc,
-                                  0, field_dir[c]);
-
-    vector3 max_corner = vec_to_vector3(min_max_loc[1]);
-    double max_c_array[3] = {max_corner.x, max_corner.y, max_corner.z};
-    vector3 min_corner = vec_to_vector3(min_max_loc[0]);
-    double min_c_array[3] = {min_corner.x, min_corner.y, min_corner.z};
-
-    if (sim_is_cylindrical){
-      max_c_array[0] = max_corner.z;
-      max_c_array[1] = max_corner.x;
-      max_c_array[2] = max_corner.y;
-      min_c_array[0] = min_corner.z;
-      min_c_array[1] = min_corner.x;
-      min_c_array[2] = min_corner.y;
-    }
-
-    for (int ci = 0; ci < 3; ci++) {
-      s[c][ci] = (max_c_array[ci] - min_c_array[ci]) == 0 ? 0 : (max_c_array[ci] - min_c_array[ci]) / (dims[3 * c + ci] - 1);
-      cen[c][ci] = dims[3 * c + ci] <= 1 ? 0 : min_c_array[ci];
+                                std::complex<double> *fields_f, size_t fields_shapes[4], double *frequencies,
+                                double scalegrad, const meep::grid_volume &gv,
+                                meep::volume &where, geom_epsilon *geps) {
+  /* poach some logic from loop_in_chunks
+  that ensures we loop over the same grid
+  points that the DFT points lie on. */
+  meep::ivec *is = new meep::ivec[3];
+  meep::ivec *ie = new meep::ivec[3];
+  int c_i = 0;
+  FOR_ELECTRIC_COMPONENTS(cgrid) {
+    if (!coordinate_mismatch(gv.dim, component_direction(cgrid))) {
+      meep::vec yee_c(gv.yee_shift(meep::Centered) - gv.yee_shift(cgrid));
+      meep::ivec iyee_c(gv.iyee_shift(meep::Centered) - gv.iyee_shift(cgrid));
+      meep::volume wherec(where + yee_c);
+      is[c_i] = meep::ivec(meep::fields::vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
+      ie[c_i] = meep::ivec(meep::fields::vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
+      c_i++;
     }
   }
 
-  // Loop over component, x, y, z, and frequency dimensions
-  // TODO speed up with MPI (if needed)
-  int xyz_index = 0;
-  if (sim_is_cylindrical){
-    for (int c = 0; c < 3; c++) {             // component
-      n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
-      c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
-      s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
+  size_t nf = fields_shapes[0];
+  size_t stride = fields_shapes[1] * fields_shapes[2] * fields_shapes[3];
+#define GET_FIELDS(fields,comp,freq,idx) fields[idx + comp*fields_shapes[comp] + freq*stride]
 
-      for (int i1 = 0; i1 < nf; ++i1) {       // freq
-        for (int i2 = 0; i2 < n2; ++i2) {     // z
-          for (int i4 = 0; i4 < n4; ++i4) {   // y
-            for (int i3 = 0; i3 < n3; ++i3) { // x
-              p.z = i2 * s1 + c1; p.x = i3 * s2 + c2; p.y = i4 * s3 + c3;
-              material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index]*p.x, fields_f[xyz_index], field_dir[c], p,
-                                               scalegrad, frequencies[i1], geps, geometry_tree);
-              //p.x is the (2pi)r' factor from integrating in cyldrical coordinate;
-              //2pi is canceled out by a overcouted factor of 2pi*r of the Near2FarRegion; See near2far.cpp
-              xyz_index++;
+  // loop over frequency
+  for (size_t f_i = 0; f_i < nf; ++f_i) {
+    c_i = 0;
+    FOR_ELECTRIC_COMPONENTS(c) {
+      //master_printf("comp %d\n",c);
+      if (!coordinate_mismatch(gv.dim, component_direction(c))) {
+        LOOP_OVER_IVECS(gv, is[c_i], ie[c_i], idx) {
+          size_t idx_fields = IVEC_LOOP_COUNTER;
+          //master_printf("idx %d\n",idx_fields);
+          meep::vec p = gv.loc(c,idx);
+
+          ptrdiff_t avg1, avg2, idx_start;
+          std::complex<double> f_f_here[3], f_a_here[3];
+          ptrdiff_t locs[4] = {0,0,0,0};
+          double weight;
+          int c_local = 0, num_weights;
+          FOR_ELECTRIC_COMPONENTS(c_p) {
+            if (!coordinate_mismatch(gv.dim, component_direction(c_p))) {
+              // we need to offset to the point where our fields array starts
+              ptrdiff_t offset = gv.index(c_p, is[c_local]);
+              if (c_p == c){
+                f_f_here[c_local] = GET_FIELDS(fields_f,c_local,f_i,idx_fields-offset);
+                f_a_here[c_local] = GET_FIELDS(fields_a,c_local,f_i,idx_fields-offset);
+              }
+              else{
+                idx_start = idx + gv.yee_index(c_p);   // corner index of field component from epsilon
+                gv.cent2yee_offsets(c_p, avg1, avg2);  // index offsets for rest of n.n. of same component
+                if (avg2) {
+                  weight = 0.25; num_weights = 4;
+                  locs[0] = idx_start;
+                  locs[1] = idx_start + avg1;
+                  locs[2] = idx_start + avg2;
+                  locs[3] = idx_start + (avg1 + avg2);
+                }else if (avg1) {
+                  weight = 0.5; num_weights = 2;
+                  locs[0] = idx_start;
+                  locs[1] = idx_start + avg1;
+                }else {
+                  weight = 1.0; num_weights = 1;
+                  locs[0] = idx_start;
+                }
+                for (int current_loc=0;current_loc<num_weights;current_loc++){
+                  f_f_here[c_local] += weight * GET_FIELDS(fields_f,c_local,f_i,locs[current_loc]-offset);
+                  f_a_here[c_local] += weight * GET_FIELDS(fields_a,c_local,f_i,locs[current_loc]-offset);
+                }
+              }
+              c_local++;
             }
           }
+          // evaluate gradient point
+          material_grids_addgradient_point(v, c, f_a_here, f_f_here, vec_to_vector3(p), 
+                                          scalegrad, frequencies[f_i], geps);
         }
-      }
-    }
-  } else {
-  for (int c = 0; c < 3; c++) {             // component
-    n2 = dims[c * 3]; n3 = dims[c * 3 + 1]; n4 = dims[c * 3 + 2];
-    c1 = cen[c][0]; c2 = cen[c][1]; c3 = cen[c][2];
-    s1 = s[c][0]; s2 = s[c][1]; s3 = s[c][2];
-
-    for (size_t i1 = 0; i1 < nf; ++i1) {    // freq
-      for (int i2 = 0; i2 < n2; ++i2) {     // x
-        for (int i3 = 0; i3 < n3; ++i3) {   // y
-          for (int i4 = 0; i4 < n4; ++i4) { // z
-            p.x = i2 * s1 + c1; p.y = i3 * s2 + c2; p.z = i4 * s3 + c3;
-            material_grids_addgradient_point(v+ ng*i1, fields_a[xyz_index], fields_f[xyz_index], field_dir[c], p,
-                                             scalegrad, frequencies[i1], geps, geometry_tree);
-            xyz_index++;
-          }
-        }
+        c_i++;
       }
     }
   }
-}
+#undef GET_FIELDS
+  delete[] is;
+  delete[] ie;
 }
 
 static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {
