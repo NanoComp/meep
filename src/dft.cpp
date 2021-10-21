@@ -316,21 +316,21 @@ double dft_chunk::norm2() const {
   return sum;
 }
 
-// return the minimum decimation factor across
+// return the maximum decimation factor across
 // all dft regions
-int fields::min_decimation() const {
-  int mindec = std::numeric_limits<int>::max();
+int fields::max_decimation() const {
+  int maxdec = std::numeric_limits<int>::min();
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
-      mindec = std::min(mindec, chunks[i]->min_decimation());
-  return min_to_all(mindec);
+      maxdec = std::max(maxdec, chunks[i]->max_decimation());
+  return max_to_all(maxdec);
 }
 
-int fields_chunk::min_decimation() const {
-  int mindec = std::numeric_limits<int>::max();
+int fields_chunk::max_decimation() const {
+  int maxdec = std::numeric_limits<int>::min();
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    mindec = std::min(mindec, cur->get_decimation_factor());
-  return mindec;
+    maxdec = std::max(maxdec, cur->get_decimation_factor());
+  return maxdec;
 }
 
 // return the maximum abs(freq) over all DFT chunks
