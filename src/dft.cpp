@@ -319,7 +319,7 @@ double dft_chunk::norm2() const {
 // return the maximum decimation factor across
 // all dft regions
 int fields::max_decimation() const {
-  int maxdec = std::numeric_limits<int>::min();
+  int maxdec = 1;
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine())
       maxdec = std::max(maxdec, chunks[i]->max_decimation());
