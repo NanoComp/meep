@@ -1138,7 +1138,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
 /* repeatedly call sum_to_all to consolidate full field array  */
 /* on all cores                                                */
 /***************************************************************/
-#define BUFSIZE 1 << 16 // use 64k buffer
+#define BUFSIZE 1 << 20  // use 1M element (16 MB) buffer
       complex<double> *buf = new complex<double>[BUFSIZE];
       ptrdiff_t offset = 0;
       size_t remaining = array_size;
