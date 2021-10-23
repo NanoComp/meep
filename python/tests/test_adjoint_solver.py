@@ -177,7 +177,9 @@ def forward_simulation_complex_fields(design_params, frequencies=None):
                               weights=design_params.reshape(Nx,Ny))
 
     geometry = [mp.Block(center=mp.Vector3(),
-                         size=mp.Vector3(design_region_size.x,design_region_size.y,0),
+                         size=mp.Vector3(design_region_size.x,
+                                         design_region_size.y,
+                                         0),
                          material=matgrid)]
 
     sim = mp.Simulation(resolution=resolution,
@@ -227,6 +229,7 @@ def adjoint_solver_complex_fields(design_params, frequencies=None):
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
+                        k_point=k_point,
                         boundary_layers=[mp.PML(thickness=dpml,direction=mp.X)],
                         sources=pt_source,
                         geometry=geometry)
