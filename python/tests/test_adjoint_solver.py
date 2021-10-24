@@ -20,7 +20,8 @@ sxy = 5.0
 cell_size = mp.Vector3(sxy,sxy,0)
 
 dpml = 1.0
-boundary_layers = [mp.PML(thickness=dpml)]
+pml_xy = [mp.PML(thickness=dpml)]
+pml_x = [mp.PML(thickness=dpml,direction=mp.X)]
 
 eig_parity = mp.EVEN_Y + mp.ODD_Z
 
@@ -73,7 +74,7 @@ def forward_simulation(design_params, mon_type, frequencies=None):
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
-                        boundary_layers=boundary_layers,
+                        boundary_layers=pml_xy,
                         sources=wvg_source,
                         geometry=geometry)
 
@@ -121,7 +122,9 @@ def adjoint_solver(design_params, mon_type, frequencies=None):
 
     matgrid_region = mpa.DesignRegion(matgrid,
                                       volume=mp.Volume(center=mp.Vector3(),
-                                                       size=mp.Vector3(design_region_size.x,design_region_size.y,0)))
+                                                       size=mp.Vector3(design_region_size.x,
+                                                                       design_region_size.y,
+                                                                       0)))
 
     matgrid_geometry = [mp.Block(center=matgrid_region.center,
                                  size=matgrid_region.size,
@@ -131,7 +134,7 @@ def adjoint_solver(design_params, mon_type, frequencies=None):
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
-                        boundary_layers=boundary_layers,
+                        boundary_layers=pml_xy,
                         sources=wvg_source,
                         geometry=geometry)
 
@@ -185,7 +188,7 @@ def forward_simulation_complex_fields(design_params, frequencies=None):
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         k_point=k_point,
-                        boundary_layers=[mp.PML(thickness=dpml,direction=mp.X)],
+                        boundary_layers=pml_x,
                         sources=pt_source,
                         geometry=geometry)
 
@@ -230,7 +233,7 @@ def adjoint_solver_complex_fields(design_params, frequencies=None):
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         k_point=k_point,
-                        boundary_layers=[mp.PML(thickness=dpml,direction=mp.X)],
+                        boundary_layers=pml_x,
                         sources=pt_source,
                         geometry=geometry)
 
@@ -382,7 +385,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compare objective results
             print("Ez2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Ez2_unperturbed))
-            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=1e-3)
+            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=1e-8)
 
             ## compute perturbed |Ez|^2
             Ez2_perturbed = forward_simulation_complex_fields(p+dp, frequencies)
@@ -393,7 +396,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = Ez2_perturbed-Ez2_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04 if mp.is_single_precision() else 0.01
+            tol = 0.005 if mp.is_single_precision() else 0.0008
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
