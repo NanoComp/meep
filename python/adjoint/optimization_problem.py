@@ -29,19 +29,21 @@ class DesignRegion(object):
 
     def get_gradient(self, sim, fields_a, fields_f, frequencies):
         num_freqs = np.array(frequencies).size
-        shapes = [num_freqs]
+        shapes = []
         for c in range(3):
-            shapes.append(fields_a[c].size/num_freqs)
+            shapes.append(fields_a[c].shape)
             fields_a[c] = fields_a[c].flatten(order='C')
             fields_f[c] = fields_f[c].flatten(order='C')
+        shapes = np.asarray(shapes).flatten(order='C')
         fields_a = np.concatenate(fields_a)
         fields_f = np.concatenate(fields_f)
+        
         grad = np.zeros((num_freqs, self.num_design_params))  # preallocate
         geom_list = sim.geometry
         f = sim.fields
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
-        mp._get_gradient(grad,fields_a,fields_f,sim.gv,vol.swigobj,np.array(frequencies),sim.geps,np.array(shapes,dtype=np.int64))
+        mp._get_gradient(grad,fields_a,fields_f,sim.gv,vol.swigobj,np.array(frequencies),sim.geps,shapes)
 
         return np.squeeze(grad).T
 
@@ -77,8 +79,10 @@ class OptimizationProblem(object):
 
         self.sim = simulation
         self.components = [mp.Dx,mp.Dy,mp.Dz]
+        self.adjoint_components = [mp.Ex,mp.Ey,mp.Ez]
         if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
             self.components = [mp.Dr,mp.Dp,mp.Dz]
+            self.adjoint_components = [mp.Er,mp.Ep,mp.Ez]
 
         if isinstance(objective_functions, list):
             self.objective_functions = objective_functions

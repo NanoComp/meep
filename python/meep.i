@@ -869,11 +869,10 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f,
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
     std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
 
-    // clean the forward fields array
+    // clean shapes array
     PyArrayObject *pao_fields_shapes = (PyArrayObject *)fields_shapes;
     if (!PyArray_Check(pao_fields_shapes)) meep::abort("fields shape parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_shapes)) meep::abort("Numpy fields shape array must be C-style contiguous.");
-    if (PyArray_NDIM(pao_fields_shapes) !=1) {meep::abort("Numpy fields shape array must have 1 dimension.");}
     size_t *fields_shapes_c = (size_t *)PyArray_DATA(pao_fields_shapes);
 
     // scalegrad not currently used
