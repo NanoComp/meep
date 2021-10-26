@@ -112,7 +112,6 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
 void fields::dump(const char *filename, bool single_parallel_file) {
   if (verbosity > 0) {
     printf("creating fields output file \"%s\" (%d)...\n", filename, single_parallel_file);
-    log();
   }
 
   h5file file(filename, h5file::WRITE, single_parallel_file, !single_parallel_file);
@@ -278,9 +277,6 @@ void fields::load(const char *filename, bool single_parallel_file) {
       load_dft_hdf5(chunks[i]->dft_chunks, dataname, &file, 0, single_parallel_file);
     }
   }
-
-  if (verbosity > 0)
-    log();
 }
 
 }  // namespace meep

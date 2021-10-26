@@ -176,13 +176,12 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
   data.vc = vc;
 
   if (decimation_factor == 0) {
-    double tol = 1e-7;
     double src_freq_max = 0;
     for (src_time *s = sources; s; s = s->next) {
-      if (s->get_fwidth(tol) == 0)
+      if (s->get_fwidth() == 0)
         decimation_factor = 1;
       else
-        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth(tol));
+        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth());
     }
     double freq_max = 0;
     for (size_t i = 0; i < Nfreq; ++i)
@@ -306,7 +305,6 @@ static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
 
 double dft_chunk::norm2() const {
   if (!fc->f[c][0]) return 0.0;
-  int numcmp = fc->f[c][1] ? 2 : 1;
   double sum = 0.0;
   size_t idx_dft = 0;
   const int Nomega = omega.size();
@@ -1140,7 +1138,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
 /* repeatedly call sum_to_all to consolidate full field array  */
 /* on all cores                                                */
 /***************************************************************/
-#define BUFSIZE 1 << 16 // use 64k buffer
+#define BUFSIZE 1 << 20  // use 1M element (16 MB) buffer
       complex<double> *buf = new complex<double>[BUFSIZE];
       ptrdiff_t offset = 0;
       size_t remaining = array_size;

@@ -69,6 +69,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
                realnum dtdx, direction dsig, const RPR sig, const RPR kap,
                const RPR siginv, RPR fu, direction dsigu, const RPR sigu, const RPR kapu,
                const RPR siginvu, realnum dt, const RPR cnd, const RPR cndinv, RPR fcnd) {
+  (void) c; // currently unused
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
     SWAP(ptrdiff_t, s1, s2);
@@ -255,6 +256,7 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
 void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, const ivec is, const ivec ie, realnum betadt,
                direction dsig, const RPR siginv, RPR fu, direction dsigu, const RPR siginvu,
                const RPR cndinv, RPR fcnd) {
+  (void) c; // currently unused
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
     KSTRIDE_DEF(dsig, k, is, gv);
@@ -366,6 +368,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is,
                       const RPR g2, const RPR u, const RPR u1, const RPR u2, ptrdiff_t s,
                       ptrdiff_t s1, ptrdiff_t s2, const RPR chi2, const RPR chi3, RPR fw,
                       direction dsigw, const RPR sigw, const RPR kapw) {
+  (void) fc; // currently unused
   if (!f) return;
 
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */

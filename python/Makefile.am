@@ -43,9 +43,11 @@ TESTS =                                        \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
+    $(TEST_DIR)/test_binary_partition_utils.py       \
     $(BINARY_GRATING_TEST)                     \
     $(TEST_DIR)/test_cavity_arrayslice.py      \
     $(TEST_DIR)/test_cavity_farfield.py        \
+    $(TEST_DIR)/test_chunk_balancer.py         \
     $(TEST_DIR)/test_chunk_layout.py           \
     $(TEST_DIR)/test_chunks.py                 \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
@@ -85,6 +87,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_simulation.py             \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
+    $(TEST_DIR)/test_timing_measurements.py    \
     $(TEST_DIR)/test_user_defined_material.py  \
     $(TEST_DIR)/test_visualization.py          \
     $(WVG_SRC_TEST)
@@ -209,9 +212,12 @@ endif # MAINTAINER_MODE
 # specification of python source files to be byte-compiled at installation
 ######################################################################
 HL_IFACE =                  \
+    $(srcdir)/binary_partition_utils.py       \
+    $(srcdir)/chunk_balancer.py       \
     $(srcdir)/geom.py       \
     $(srcdir)/simulation.py \
     $(srcdir)/source.py     \
+    $(srcdir)/timing_measurements.py       \
     $(srcdir)/visualization.py  \
     $(srcdir)/materials.py  \
     $(srcdir)/verbosity_mgr.py
@@ -226,6 +232,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/optimization_problem.py  \
                   $(srcdir)/adjoint/filters.py               \
                   $(srcdir)/adjoint/filter_source.py         \
+                  $(srcdir)/adjoint/connectivity.py         \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py
 

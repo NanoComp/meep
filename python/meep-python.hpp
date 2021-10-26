@@ -8,8 +8,8 @@ namespace meep {
 class custom_py_src_time : public src_time {
 public:
   custom_py_src_time(PyObject *fun, double st = -infinity, double et = infinity,
-                     std::complex<double> f = 0)
-      : func(fun), freq(f), start_time(float(st)), end_time(float(et)) {
+                     std::complex<double> f = 0, double fw = 0)
+      : func(fun), freq(f), start_time(float(st)), end_time(float(et)), fwidth(fw) {
     SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     Py_INCREF(func);
   }
@@ -50,17 +50,19 @@ public:
     const custom_py_src_time *tp = dynamic_cast<const custom_py_src_time *>(&t);
     if (tp)
       return (tp->start_time == start_time && tp->end_time == end_time && tp->func == func &&
-              tp->freq == freq);
+              tp->freq == freq && tp->fwidth == fwidth);
     else
       return 0;
   }
   virtual std::complex<double> frequency() const { return freq; }
   virtual void set_frequency(std::complex<double> f) { freq = f; }
+  virtual double get_fwidth() const { return fwidth; };
+  virtual void set_fwidth(double fw) { fwidth = fw; }
 
 private:
   PyObject *func;
   std::complex<double> freq;
-  double start_time, end_time;
+  double start_time, end_time, fwidth;
 };
 
 } // namespace meep

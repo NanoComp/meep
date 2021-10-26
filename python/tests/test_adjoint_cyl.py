@@ -26,8 +26,8 @@ boundary_layers = [mp.PML(thickness=dpml)]
 design_region_resolution = int(2*resolution)
 design_r = 4.8
 design_z = 2
-Nx = int(design_region_resolution*design_r)
-Nz = int(design_region_resolution*design_z)
+Nr = int(design_region_resolution*design_r) + 1
+Nz = int(design_region_resolution*design_z) + 1
 
 fcen = 1/1.55
 width = 0.2
@@ -37,20 +37,20 @@ source_size    = mp.Vector3(design_r,0,0)
 src = mp.GaussianSource(frequency=fcen,fwidth=fwidth)
 source = [mp.Source(src,component=mp.Er,
                     center=source_center,
-                   size=source_size)]
+                    size=source_size)]
 
 ## random design region
-p = np.random.rand(Nx*Nz)
+p = np.random.rand(Nr*Nz)
 ## random epsilon perturbation for design region
 deps = 1e-5
-dp = deps*np.random.rand(Nx*Nz)
+dp = deps*np.random.rand(Nr*Nz)
 
 
 def forward_simulation(design_params):
-    matgrid = mp.MaterialGrid(mp.Vector3(Nx,0,Nz),
+    matgrid = mp.MaterialGrid(mp.Vector3(Nr,0,Nz),
                               SiO2,
                               Si,
-                              weights=design_params.reshape(Nx,1,Nz))
+                              weights=design_params.reshape(Nr,1,Nz))
 
     geometry = [mp.Block(center=mp.Vector3(0.1+design_r/2,0,0),
                                  size=mp.Vector3(design_r,0,design_z),
@@ -68,9 +68,8 @@ def forward_simulation(design_params):
     far_x = [mp.Vector3(5,0,20)]
     mode = sim.add_near2far(
         frequencies,
-        mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0 ,(sz/2-dpml+design_z/2)/2),size=mp.Vector3(design_r,0,0), weight=+1),
-        decimation_factor=10
-    )
+        mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0,(sz/2-dpml+design_z/2)/2),
+                          size=mp.Vector3(design_r,0,0),weight=+1))
 
     sim.run(until_after_sources=1200)
     Er = sim.get_farfield(mode, far_x[0])
@@ -81,9 +80,13 @@ def forward_simulation(design_params):
 
 def adjoint_solver(design_params):
 
-    design_variables = mp.MaterialGrid(mp.Vector3(Nx,0,Nz),SiO2,Si)
-    design_region = mpa.DesignRegion(design_variables,volume=mp.Volume(center=mp.Vector3(0.1+design_r/2,0,0), size=mp.Vector3(design_r, 0,design_z)))
-    geometry = [mp.Block(center=design_region.center, size=design_region.size, material=design_variables)]
+    design_variables = mp.MaterialGrid(mp.Vector3(Nr,0,Nz),SiO2,Si)
+    design_region = mpa.DesignRegion(design_variables,
+                                     volume=mp.Volume(center=mp.Vector3(0.1+design_r/2,0,0),
+                                                      size=mp.Vector3(design_r,0,design_z)))
+    geometry = [mp.Block(center=design_region.center,
+                         size=design_region.size,
+                         material=design_variables)]
 
     sim = mp.Simulation(cell_size=cell_size,
         boundary_layers=boundary_layers,
@@ -94,8 +97,10 @@ def adjoint_solver(design_params):
         m=m)
 
     far_x = [mp.Vector3(5,0,20)]
-    NearRegions = [mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0 ,(sz/2-dpml+design_z/2)/2),size=mp.Vector3(design_r,0,0), weight=+1)]
-    FarFields = mpa.Near2FarFields(sim, NearRegions ,far_x, decimation_factor=5)
+    NearRegions = [mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0,(sz/2-dpml+design_z/2)/2),
+                                     size=mp.Vector3(design_r,0,0),
+                                     weight=+1)]
+    FarFields = mpa.Near2FarFields(sim, NearRegions ,far_x)
     ob_list = [FarFields]
 
     def J(alpha):

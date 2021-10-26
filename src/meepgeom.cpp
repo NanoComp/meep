@@ -1195,6 +1195,7 @@ static void get_uproj_w(const matgrid_volavg *mgva, double x0, double &u_proj, d
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
+  (void)n; // unused
   double u_proj = 0, w = 0;
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   get_uproj_w(mgva, x[0], u_proj, w);
@@ -1205,12 +1206,14 @@ static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
 }
 #else
 static number matgrid_eps_func(int n, number *x, void *mgva_) {
+  (void)n; // unused
   double u_proj = 0, w = 0;
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   get_uproj_w(mgva, x[0], u_proj, w);
   return w * ((1-u_proj)*mgva->eps1 + u_proj*mgva->eps2);
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
+  (void)n; // unused
   double u_proj = 0, w = 0;
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   get_uproj_w(mgva, x[0], u_proj, w);
@@ -1961,9 +1964,9 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
                                  bool use_anisotropic_averaging, double tol, int maxeval,
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist, material_type_list extra_materials) {
-  meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity, 
+  meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity,
                                   _default_material, extra_materials);
-  set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol, 
+  set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
                                  maxeval, alist);
   delete geps;
 }

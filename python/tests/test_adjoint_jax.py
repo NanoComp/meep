@@ -127,8 +127,7 @@ def build_straight_wg_simulation(
         mpa.EigenmodeCoefficient(simulation,
                                  mp.Volume(center=center, size=monitor_size),
                                  mode=1,
-                                 forward=forward,
-                                 decimation_factor=5)
+                                 forward=forward)
         for center in monitor_centers for forward in [True, False]
     ]
     return simulation, sources, monitors, design_regions, frequencies

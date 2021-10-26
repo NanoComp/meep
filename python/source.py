@@ -227,7 +227,7 @@ class GaussianSource(SourceTime):
           Default is `False`.
 
         + **`fourier_transform(f)`** — Returns the Fourier transform of the current
-          evaluated at frequency `f` ($\\omega=2\\pi f$) given by:
+          evaluated at frequency $f$ ($\\omega=2\\pi f$) given by:
           $$
           \\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}}
           \\int e^{i\\omega t}G(t)\\,dt \\equiv
@@ -269,7 +269,7 @@ class CustomSource(SourceTime):
     [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
     """
 
-    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, **kwargs):
+    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, fwidth=0, **kwargs):
         """
         Construct a `CustomSource`.
 
@@ -296,13 +296,20 @@ class CustomSource(SourceTime):
 
         + **`center_frequency` [`number`]** — Optional center frequency so that the
           `CustomSource` can be used within an `EigenModeSource`. Defaults to 0.
+
+        + **`fwidth` [`number`]** — Optional bandwidth in frequency units.
+          Default is 0. For bandwidth-limited sources, this parameter is used to
+          automatically determine the decimation factor of the time-series updates
+          of the DFT fields monitors (if any).
         """
         super(CustomSource, self).__init__(**kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
+        self.fwidth = fwidth
         self.center_frequency = center_frequency
-        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time, center_frequency)
+        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time,
+                                             center_frequency, fwidth)
         self.swigobj.is_integrated = self.is_integrated
 
 
