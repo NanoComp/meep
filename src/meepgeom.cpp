@@ -1520,10 +1520,10 @@ bool geom_epsilon::has_conductivity(meep::component c) {
 
   for (int i = 0; i < geometry.num_items; ++i){
     if (is_medium(geometry.items[i].material, &mm) && get_cnd(c, mm)) return true;
-    if (geometry.items[i].material->which_subclass == material_data::MATERIAL_GRID){
-      if ((is_medium(geometry.items[i].material->medium_1, &mm) && get_cnd(c, mm)) ||
-         (is_medium(geometry.items[i].material->medium_2, &mm) && get_cnd(c, mm)) ||
-         (geometry.items[i].material->damping != 0)) return true;
+    if (((material_type) geometry.items[i].material)->which_subclass == material_data::MATERIAL_GRID){
+      if (get_cnd(c, &((material_type) geometry.items[i].material)->medium_1) ||
+         get_cnd(c, &((material_type) geometry.items[i].material)->medium_2) ||
+         (((material_type) geometry.items[i].material)->damping != 0)) return true;
     }
   }
 
