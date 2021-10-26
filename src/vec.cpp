@@ -1643,9 +1643,8 @@ grid_volume grid_volume::subvolume(ivec is, ivec ie) {
 
 void grid_volume::init_subvolume(ivec is, ivec ie) {
   ivec origin(dim, 0);
-  FOR_DIRECTIONS(d) { num[d] = 0; /* Yuck yuck yuck. */ }
   LOOP_OVER_DIRECTIONS(dim, d) {
-    num[d%3] = (ie - is).in_direction(d) / 2;
+    num[(int)d] = (ie - is).in_direction(d) / 2;
     origin.set_direction(d, is.in_direction(d));
   }
   num_changed();

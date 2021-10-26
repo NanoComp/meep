@@ -705,11 +705,11 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
 
 }
 geom_epsilon::~geom_epsilon() {
-  //int length = geometry.num_items;
-  //for (int i = 0; i < length; i++){
-  //  delete geometry.items[i].material;
-  //}
-  //delete[] geometry.items;
+  int length = geometry.num_items;
+  for (int i = 0; i < length; i++){
+    delete geometry.items[i].material;
+  }
+  delete[] geometry.items;
   unset_volume();
   destroy_geom_box_tree(geometry_tree);
   FOR_DIRECTIONS(d) FOR_SIDES(b) {
@@ -2860,7 +2860,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
           if (forward_c == adjoint_c){
             std::complex<double> fwd = GET_FIELDS(fields_f,ci_forward,f_i,idx_fields);
             std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, 1e-6);
-            material_grids_addgradient_point(v, vec_to_vector3(p), scalegrad*prod.real(), geps);
+            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real(), geps);
           // more complicated case requires interpolation/restriction
           }else{
             /* we need to restrict the adjoint fields to
@@ -2893,7 +2893,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd_avg = fwd1 + fwd2;
             meep::vec eps1 = gv[ieps1];
             prod = 0.5*adj*get_material_gradient(eps1, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
-            material_grids_addgradient_point(v, vec_to_vector3(eps1), scalegrad*prod.real(), geps);
+            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps1), scalegrad*prod.real(), geps);
             
             //operate on the second eps node
             fwd1_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_pa);
@@ -2903,7 +2903,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd_avg = fwd1 + fwd2;
             meep::vec eps2 = gv[ieps2];
             prod = 0.5*adj*get_material_gradient(eps2, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
-            material_grids_addgradient_point(v, vec_to_vector3(eps2), scalegrad*prod.real(), geps);
+            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps2), scalegrad*prod.real(), geps);
           }
           /**************************************/
           /**************************************/
