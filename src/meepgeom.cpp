@@ -604,9 +604,11 @@ void epsilon_material_grid(material_data *md, double u) {
     // TODO: dampen the lorentzians to improve stability
     // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
     // omega_mean;
-  } else {
-     mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u)*(md->damping);
   }
+  double fake_damping = u*(1-u)*(md->damping);
+  mm->D_conductivity_diag.x += fake_damping;
+  mm->D_conductivity_diag.y += fake_damping;
+  mm->D_conductivity_diag.z += fake_damping;
 }
 
 // return material of the point p from the file (assumed already read)
@@ -1516,8 +1518,14 @@ bool geom_epsilon::has_conductivity(meep::component c) {
     if (cond[d][b].prof) return true;
   }
 
-  for (int i = 0; i < geometry.num_items; ++i)
+  for (int i = 0; i < geometry.num_items; ++i){
     if (is_medium(geometry.items[i].material, &mm) && get_cnd(c, mm)) return true;
+    if (geometry.items[i].material->which_subclass == material_data::MATERIAL_GRID){
+      if ((is_medium(geometry.items[i].material->medium_1, &mm) && get_cnd(c, mm)) ||
+         (is_medium(geometry.items[i].material->medium_2, &mm) && get_cnd(c, mm)) ||
+         (geometry.items[i].material->damping != 0)) return true;
+    }
+  }
 
   for (int i = 0; i < extra_materials.num_items; ++i)
     if (is_medium(extra_materials.items[i], &mm) && get_cnd(c, mm)) return true;
