@@ -2796,21 +2796,23 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
                                 std::complex<double> *fields_f, size_t fields_shapes[12], double *frequencies,
                                 double scalegrad, meep::grid_volume &gv,
                                 meep::volume &where, geom_epsilon *geps) {
+  
+// only loop over field components relevant to our simulation (in the proper order)
+#define FOR_MY_COMPONENTS(c1) FOR_ELECTRIC_COMPONENTS(c1) if (!coordinate_mismatch(gv.dim, component_direction(c1)))
+
   /* poach some logic from loop_in_chunks
   that ensures we loop over the same grid
   points that the DFT points lie on. */
   meep::ivec *is = new meep::ivec[3];
   meep::ivec *ie = new meep::ivec[3];
   int c_i = 0;
-  FOR_ELECTRIC_COMPONENTS(cgrid) {
-    if (!coordinate_mismatch(gv.dim, component_direction(cgrid))) {
-      meep::vec yee_c(gv.yee_shift(meep::Centered) - gv.yee_shift(cgrid));
-      meep::ivec iyee_c(gv.iyee_shift(meep::Centered) - gv.iyee_shift(cgrid));
-      meep::volume wherec(where + yee_c);
-      is[c_i] = meep::ivec(meep::fields::vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
-      ie[c_i] = meep::ivec(meep::fields::vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
-      c_i++;
-    }
+  FOR_MY_COMPONENTS(cgrid) {
+    meep::vec yee_c(gv.yee_shift(meep::Centered) - gv.yee_shift(cgrid));
+    meep::ivec iyee_c(gv.iyee_shift(meep::Centered) - gv.iyee_shift(cgrid));
+    meep::volume wherec(where + yee_c);
+    is[c_i] = meep::ivec(meep::fields::vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
+    ie[c_i] = meep::ivec(meep::fields::vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
+    c_i++;
   }
   //calculate the number of elements in an entire block (x,y,z) for each component
   size_t nf = fields_shapes[0];
@@ -2823,8 +2825,6 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
   
 // fields dimensions are (components, nfreqs, x, y, z)
 #define GET_FIELDS(fields,comp,freq,idx) fields[comp*stride_row[comp]*nf + freq*stride_row[comp+1] + idx]
-// only loop over field components relevant to our simulation (in the proper order)
-#define FOR_MY_COMPONENTS(c1) FOR_ELECTRIC_COMPONENTS(c1) if (!coordinate_mismatch(gv.dim, component_direction(c1)))
 
   meep::ivec start_ivec;
   meep::ivec stop_ivec;
@@ -2856,11 +2856,13 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
           /**************************************/
           /*            Main Routine            */
           /**************************************/
+          double cyl_scale;
           // trivial case, no interpolation/restriction needed
           if (forward_c == adjoint_c){
             std::complex<double> fwd = GET_FIELDS(fields_f,ci_forward,f_i,idx_fields);
             std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, 1e-6);
-            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real(), geps);
+            cyl_scale = (gv.dim == meep::Dcyl) ? p.r() : 1;
+            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real()*cyl_scale, geps);
           // more complicated case requires interpolation/restriction
           }else{
             /* we need to restrict the adjoint fields to
@@ -2892,8 +2894,9 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd2 = 0.5 * GET_FIELDS(fields_f,ci_forward,f_i,fwd2_idx);
             fwd_avg = fwd1 + fwd2;
             meep::vec eps1 = gv[ieps1];
+            cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
             prod = 0.5*adj*get_material_gradient(eps1, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
-            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps1), scalegrad*prod.real(), geps);
+            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps1), scalegrad*prod.real()*cyl_scale, geps);
             
             //operate on the second eps node
             fwd1_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_pa);
@@ -2902,8 +2905,9 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd2 = 0.5 * GET_FIELDS(fields_f,ci_forward,f_i,fwd2_idx);
             fwd_avg = fwd1 + fwd2;
             meep::vec eps2 = gv[ieps2];
+            cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
             prod = 0.5*adj*get_material_gradient(eps2, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
-            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps2), scalegrad*prod.real(), geps);
+            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps2), scalegrad*prod.real()*cyl_scale, geps);
           }
           /**************************************/
           /**************************************/

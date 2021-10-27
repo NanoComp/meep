@@ -31,6 +31,10 @@ class DesignRegion(object):
         num_freqs = np.array(frequencies).size
         shapes = []
         for c in range(3):
+            if (sim.is_cylindrical or sim.dimensions == mp.CYLINDRICAL):
+                # roll r, z, and phi
+                fields_a[c] = np.transpose(fields_a[c],(0,2,3,1))
+                fields_f[c] = np.transpose(fields_f[c],(0,2,3,1))
             shapes.append(fields_a[c].shape)
             fields_a[c] = fields_a[c].flatten(order='C')
             fields_f[c] = fields_f[c].flatten(order='C')
@@ -79,10 +83,8 @@ class OptimizationProblem(object):
 
         self.sim = simulation
         self.components = [mp.Dx,mp.Dy,mp.Dz]
-        self.adjoint_components = [mp.Ex,mp.Ey,mp.Ez]
         if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
             self.components = [mp.Dr,mp.Dp,mp.Dz]
-            self.adjoint_components = [mp.Er,mp.Ep,mp.Ez]
 
         if isinstance(objective_functions, list):
             self.objective_functions = objective_functions
@@ -331,6 +333,7 @@ class OptimizationProblem(object):
                 for ic, c in enumerate(self.components):
                     for f in range(self.nf):
                         if (self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL):
+                            # FIXME probably shouldn't go here...
                             # Addtional factor of 2 for cyldrical coordinate
                             self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
                         else:
