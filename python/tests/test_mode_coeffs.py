@@ -133,7 +133,7 @@ class TestModeCoeffs(unittest.TestCase):
         max_exp, max_obs=max(p_exp), max(p_obs)
         self.assertLess(abs(max_exp-max_obs), 0.5*max(abs(max_exp),abs(max_obs)))
 
-    def test_reciprocity(self):
+    def test_reciprocity_kpoint(self):
         resolution = 40
 
         sx = 7.0
@@ -182,14 +182,100 @@ class TestModeCoeffs(unittest.TestCase):
                                                  direction=mp.NO_DIRECTION,
                                                  kpoint_func=lambda f,n: mp.Vector3(-1,0,0))
 
-        print("S11:, {}, {}".format(res_fwd.alpha[0,0,0],res_bwd.alpha[0,0,1]))
-        print("S21:, {}, {}".format(res_bwd.alpha[0,0,0],res_fwd.alpha[0,0,1]))
+        print("S11:, {}, {}".format(res_fwd.alpha[0,0,1],res_bwd.alpha[0,0,0]))
+        print("S21:, {}, {}".format(res_fwd.alpha[0,0,0],res_bwd.alpha[0,0,1]))
+
+        # |S11|^2
+        self.assertAlmostEqual(abs(res_fwd.alpha[0,0,1])**2, abs(res_bwd.alpha[0,0,0])**2, places=4)
 
         # |S21|^2
         self.assertAlmostEqual(abs(res_fwd.alpha[0,0,0])**2 / abs(res_bwd.alpha[0,0,1])**2, 1.00, places=2)
 
-        # |S11|^2
-        self.assertAlmostEqual(abs(res_fwd.alpha[0,0,1])**2, abs(res_bwd.alpha[0,0,0])**2, places=4)
+    def test_reciprocity_monitor(self):
+        resolution = 25
+
+        sx = 7.0
+        sy = 5.0
+        cell_size = mp.Vector3(sx,sy)
+
+        dpml = 1.0
+        pml_layers = [mp.PML(thickness=dpml)]
+
+        w = 1.0
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(mp.inf,w,mp.inf),
+                             material=mp.Medium(epsilon=12))]
+
+        fsrc = 0.15
+
+        # source is at the left edge of the waveguide
+        sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc),
+                                      center=mp.Vector3(x=-0.5*sx+dpml),
+                                      size=mp.Vector3(y=sy),
+                                      eig_parity=mp.EVEN_Y+mp.ODD_Z)]
+
+        symmetries = [mp.Mirror(mp.Y)]
+
+        sim = mp.Simulation(cell_size=cell_size,
+                            resolution=resolution,
+                            boundary_layers=pml_layers,
+                            sources=sources,
+                            geometry=geometry,
+                            symmetries=symmetries)
+
+        # monitor is at the right edge of the waveguide
+        tran = sim.add_mode_monitor(fsrc, 0, 1,
+                                    mp.ModeRegion(center=mp.Vector3(x=0.5*sx-dpml),
+                                                  size=mp.Vector3(y=sy)),
+                                    yee_grid=False)
+
+        sim.run(until_after_sources=50)
+
+        res_fwd = sim.get_eigenmode_coefficients(tran,
+                                                 [1],
+                                                 eig_parity=mp.EVEN_Y+mp.ODD_Z)
+
+        print("S11:, {}".format(res_fwd.alpha[0,0,1]))
+        print("S21:, {}".format(res_fwd.alpha[0,0,0]))
+
+        sim.reset_meep()
+
+        # source is at the right edge of the waveguide
+        sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc),
+                                      center=mp.Vector3(x=0.5*sx-dpml),
+                                      size=mp.Vector3(y=sy),
+                                      direction=mp.NO_DIRECTION,
+                                      eig_kpoint=mp.Vector3(-1,0,0),
+                                      eig_parity=mp.EVEN_Y+mp.ODD_Z)]
+
+        sim = mp.Simulation(cell_size=cell_size,
+                            resolution=resolution,
+                            boundary_layers=pml_layers,
+                            sources=sources,
+                            geometry=geometry,
+                            symmetries=symmetries)
+
+        # monitor is at the left edge of the waveguide
+        tran = sim.add_mode_monitor(fsrc, 0, 1,
+                                    mp.ModeRegion(center=mp.Vector3(x=-0.5*sx+dpml),
+                                                  size=mp.Vector3(y=sy)),
+                                    yee_grid=False)
+
+        sim.run(until_after_sources=50)
+
+        res_bwd = sim.get_eigenmode_coefficients(tran,
+                                                 [1],
+                                                 eig_parity=mp.EVEN_Y+mp.ODD_Z)
+
+        print("S12:, {}".format(res_bwd.alpha[0,0,1]))
+        print("S22:, {}".format(res_bwd.alpha[0,0,0]))
+
+        # |S21|^2 = |S12|^2
+        self.assertAlmostEqual(abs(res_fwd.alpha[0,0,0])**2 / abs(res_bwd.alpha[0,0,1])**2, 1.00, places=2)
+
+        # |S11|^2 = |S22|^2
+        self.assertAlmostEqual(abs(res_fwd.alpha[0,0,1])**2, abs(res_bwd.alpha[0,0,0])**2, places=2)
+
 
 if __name__ == '__main__':
     unittest.main()
