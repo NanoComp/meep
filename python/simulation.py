@@ -197,8 +197,8 @@ class PML(object):
 
         + **`side` [`side` constant ]** — Specify which side, `Low` or `High` of the
           boundary or boundaries to put PML on. e.g. if side is `Low` and direction is
-          `X`, then a PML layer is added to the $-x$ boundary. Default is the special
-          value `ALL`, which puts PML layers on both sides.
+          `meep.X`, then a PML layer is added to the $-x$ boundary. Default is the special
+          value `meep.ALL`, which puts PML layers on both sides.
 
         + **`R_asymptotic` [`number`]** — The asymptotic reflection in the limit of
           infinite resolution or infinite PML thickness, for reflections from air (an
@@ -546,7 +546,7 @@ class FieldsRegion(object):
 
 
 class DftObj(object):
-    """Wrapper around dft objects that allows delayed initialization of the structure.
+    """Wrapper around DFT objects that allows delayed initialization of the structure.
 
     When splitting the structure into chunks for parallel simulations, we want to know all
     of the details of the simulation in order to ensure that each processor gets a similar
@@ -2748,7 +2748,9 @@ class Simulation(object):
         including outside the cell and a `near2far` object, returns the computed
         (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
         of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
-        for the frequencies 1,2,…,`nfreq`.
+        in Cartesian coordinates and
+        $(E_r^1,E_\phi^1,E_z^1,H_r^1,H_\phi^1,H_z^1,E_r^2,E_\phi^2,E_z^2,H_r^2,H_\phi^2,H_z^2,...)$
+        in cylindrical coordinates for the frequencies 1,2,…,`nfreq`.
         """
         return mp._get_farfield(near2far.swigobj, py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical))
 
@@ -3541,7 +3543,8 @@ class Simulation(object):
 
         + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
           (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes
-          propagating in the forward (+) or backward (-) directions.
+          propagating in the forward (+) or backward (-) directions defined relative to
+          the mode's dominant wavevector.
         + `vgrp`: the group velocity as a NumPy array.
         + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
         + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
@@ -4515,7 +4518,7 @@ def stop_on_interrupt():
 def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every $t$
+    or `until_after_sources` parameter, that checks the `Simulation`'s DFT objects every $t$
     timesteps, and stops the simulation once all the field components and frequencies of *every*
     DFT object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
     $t$ is determined automatically based on the frequency content in the DFT monitors.
