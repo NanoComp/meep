@@ -15,6 +15,7 @@ MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 resolution = 30
 
 silicon = mp.Medium(epsilon=12)
+sapphire = mp.Medium(epsilon_diag=(10.225,10.225,9.95),epsilon_offdiag=(-0.825,-0.55*np.sqrt(3/2),0.55*np.sqrt(3/2)))
 
 sxy = 5.0
 cell_size = mp.Vector3(sxy,sxy,0)
@@ -60,10 +61,10 @@ pt_source = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
 k_point = mp.Vector3(0.23,-0.38)
 
 
-def forward_simulation(design_params, mon_type, frequencies=None):
+def forward_simulation(design_params, mon_type, frequencies=None, mat2=silicon):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
-                              silicon,
+                              mat2,
                               weights=design_params.reshape(Nx,Ny))
 
     matgrid_geometry = [mp.Block(center=mp.Vector3(),
@@ -114,10 +115,10 @@ def forward_simulation(design_params, mon_type, frequencies=None):
         return Ez2
 
 
-def adjoint_solver(design_params, mon_type, frequencies=None):
+def adjoint_solver(design_params, mon_type, frequencies=None, mat2=silicon):
     matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                               mp.air,
-                              silicon,
+                              mat2,
                               weights=np.ones((Nx,Ny)))
 
     matgrid_region = mpa.DesignRegion(matgrid,
@@ -399,6 +400,31 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             tol = 0.005 if mp.is_single_precision() else 0.0008
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
+    def test_offdiagonal(self):
+        print("*** TESTING OFFDIAGONAL COMPONENTS ***")
 
+        ## test the single frequency and multi frequency case
+        for frequencies in [[fcen], [1/1.58, fcen, 1/1.53]]:
+            ## compute gradient using adjoint solver
+            adjsol_obj, adjsol_grad = adjoint_solver(p, MonitorObject.EIGENMODE, frequencies, sapphire)
+
+            ## compute unperturbed S12
+            S12_unperturbed = forward_simulation(p, MonitorObject.EIGENMODE, frequencies, sapphire)
+
+            ## compare objective results
+            print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-6)
+
+            ## compute perturbed S12
+            S12_perturbed = forward_simulation(p+dp, MonitorObject.EIGENMODE, frequencies, sapphire)
+
+            ## compare gradients
+            if adjsol_grad.ndim < 2:
+                adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
+            adj_scale = (dp[None,:]@adjsol_grad).flatten()
+            fd_grad = S12_perturbed-S12_unperturbed
+            print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+            tol = 0.04
+            self.assertClose(adj_scale,fd_grad,epsilon=tol)
 if __name__ == '__main__':
     unittest.main()
