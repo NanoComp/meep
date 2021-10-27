@@ -34,19 +34,19 @@ class TestModeCoeffs(unittest.TestCase):
         fcen = 0.20  # > 0.5/sqrt(11) to have at least 2 modes
         df   = 0.5*fcen
 
-        source=mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
-                                  eig_band=mode_num,
-                                  size=mp.Vector3(0,sy-2*dpml,0),
-                                  center=mp.Vector3(-0.5*sx+dpml,0,0),
-                                  eig_match_freq=True,
-                                  eig_resolution=2*resolution)
+        source = mp.EigenModeSource(src=mp.GaussianSource(fcen, fwidth=df),
+                                    eig_band=mode_num,
+                                    size=mp.Vector3(0,sy-2*dpml,0),
+                                    center=mp.Vector3(-0.5*sx+dpml,0,0))
+
+        symmetries = [mp.Mirror(mp.Y, phase=1 if mode_num % 2 == 1 else -1)]
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell_size,
                             boundary_layers=boundary_layers,
                             geometry=geometry,
                             sources=[source],
-                            symmetries=[mp.Mirror(mp.Y, phase=1 if mode_num % 2 == 1 else -1)])
+                            symmetries=symmetries)
 
         xm = 0.5*sx - dpml  # x-coordinate of monitor
         mflux = sim.add_mode_monitor(fcen, df, nf, mp.ModeRegion(center=mp.Vector3(xm,0), size=mp.Vector3(0,sy-2*dpml)))
@@ -133,6 +133,63 @@ class TestModeCoeffs(unittest.TestCase):
         max_exp, max_obs=max(p_exp), max(p_obs)
         self.assertLess(abs(max_exp-max_obs), 0.5*max(abs(max_exp),abs(max_obs)))
 
+    def test_reciprocity(self):
+        resolution = 40
+
+        sx = 7.0
+        sy = 5.0
+        cell_size = mp.Vector3(sx,sy)
+
+        dpml = 1.0
+        pml_layers = [mp.PML(thickness=dpml)]
+
+        w = 1.0
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=mp.Vector3(mp.inf,w,mp.inf),
+                             material=mp.Medium(epsilon=12))]
+
+        fsrc = 0.15
+        sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc),
+                                      center=mp.Vector3(x=-0.5*sx+dpml),
+                                      size=mp.Vector3(y=sy),
+                                      eig_parity=mp.EVEN_Y+mp.ODD_Z)]
+
+        symmetries = [mp.Mirror(mp.Y)]
+
+        sim = mp.Simulation(cell_size=cell_size,
+                            resolution=resolution,
+                            boundary_layers=pml_layers,
+                            sources=sources,
+                            geometry=geometry,
+                            symmetries=symmetries)
+
+        tran = sim.add_mode_monitor(fsrc, 0, 1,
+                                    mp.ModeRegion(center=mp.Vector3(x=0.5*sx-dpml),
+                                                  size=mp.Vector3(y=sy)),
+                                    yee_grid=False)
+
+        sim.run(until_after_sources=50)
+
+        res_fwd = sim.get_eigenmode_coefficients(tran,
+                                                 [1],
+                                                 eig_parity=mp.EVEN_Y+mp.ODD_Z,
+                                                 direction=mp.NO_DIRECTION,
+                                                 kpoint_func=lambda f,n: mp.Vector3(+1,0,0))
+
+        res_bwd = sim.get_eigenmode_coefficients(tran,
+                                                 [1],
+                                                 eig_parity=mp.EVEN_Y+mp.ODD_Z,
+                                                 direction=mp.NO_DIRECTION,
+                                                 kpoint_func=lambda f,n: mp.Vector3(-1,0,0))
+
+        print("S11:, {}, {}".format(res_fwd.alpha[0,0,0],res_bwd.alpha[0,0,1]))
+        print("S21:, {}, {}".format(res_bwd.alpha[0,0,0],res_fwd.alpha[0,0,1]))
+
+        # |S21|^2
+        self.assertAlmostEqual(abs(res_fwd.alpha[0,0,0])**2 / abs(res_bwd.alpha[0,0,1])**2, 1.00, places=2)
+
+        # |S11|^2
+        self.assertAlmostEqual(abs(res_fwd.alpha[0,0,1])**2, abs(res_bwd.alpha[0,0,0])**2, places=4)
 
 if __name__ == '__main__':
     unittest.main()
