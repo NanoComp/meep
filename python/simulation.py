@@ -4527,7 +4527,7 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
     closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':0}
     def _stop(_sim):
         if _sim.fields.t == 0:
-            closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.min_decimation())
+            closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.max_decimation())
         if maximum_run_time and _sim.round_time() > maximum_run_time:
             return True
         elif _sim.fields.t <= closure['dt'] + closure['t0']:
