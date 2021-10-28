@@ -605,6 +605,10 @@ void epsilon_material_grid(material_data *md, double u) {
     // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
     // omega_mean;
   }
+  double fake_damping = u*(1-u)*(md->damping);
+  mm->D_conductivity_diag.x += fake_damping;
+  mm->D_conductivity_diag.y += fake_damping;
+  mm->D_conductivity_diag.z += fake_damping;
 }
 
 // return material of the point p from the file (assumed already read)
@@ -1507,20 +1511,26 @@ static double get_cnd(meep::component c, const medium_struct *m) {
   }
 }
 
+static bool has_conductivity(const material_type &md, meep::component c) {
+    medium_struct *mm;
+    if (is_medium(md, &mm) && get_cnd(c, mm)) return true;
+    if (md->which_subclass == material_data::MATERIAL_GRID &&
+        (get_cnd(c, &md->medium_1) || get_cnd(c, &md->medium_2) ||
+          md->damping != 0)) return true;
+    return false;
+}
+
 bool geom_epsilon::has_conductivity(meep::component c) {
   medium_struct *mm;
 
   FOR_DIRECTIONS(d) FOR_SIDES(b) {
     if (cond[d][b].prof) return true;
   }
-
   for (int i = 0; i < geometry.num_items; ++i)
-    if (is_medium(geometry.items[i].material, &mm) && get_cnd(c, mm)) return true;
-
+    if (meep_geom::has_conductivity((material_type) geometry.items[i].material, c)) return true;
   for (int i = 0; i < extra_materials.num_items; ++i)
-    if (is_medium(extra_materials.items[i], &mm) && get_cnd(c, mm)) return true;
-
-  return (is_medium(default_material, &mm) && get_cnd(c, mm) != 0);
+    if (meep_geom::has_conductivity((material_type) extra_materials.items[i], c)) return true;
+  return meep_geom::has_conductivity((material_type) default_material, c);
 }
 
 static meep::vec geometry_edge; // geometry_lattice.size / 2
@@ -2024,12 +2034,13 @@ material_type make_file_material(const char *eps_input_file) {
 /******************************************************************************/
 /* Material grid functions                                                    */
 /******************************************************************************/
-material_type make_material_grid(bool do_averaging, double beta, double eta) {
+material_type make_material_grid(bool do_averaging, double beta, double eta, double damping) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_GRID;
   md->do_averaging = do_averaging;
   md->beta = beta;
   md->eta = eta;
+  md->damping = damping;
   return md;
 }
 

@@ -581,11 +581,15 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyObject *py_eta = PyObject_GetAttrString(po, "eta");
     double eta = 0;
     if (py_eta) { eta = PyFloat_AsDouble(py_eta); }
-    md = make_material_grid(do_averaging,beta,eta);
+    PyObject *py_damping = PyObject_GetAttrString(po, "damping");
+    double damping = 0;
+    if (py_damping) { damping = PyFloat_AsDouble(py_damping); }
+    md = make_material_grid(do_averaging,beta,eta,damping);
     if (!pymaterial_grid_to_material_grid(po, md)) { return 0; }
     Py_XDECREF(py_do_averaging);
     Py_XDECREF(py_beta);
     Py_XDECREF(py_eta);
+    Py_XDECREF(py_damping);
   }
   else if (PyFunction_Check(po)) {
     PyObject *eps = PyObject_GetAttrString(po, "eps");

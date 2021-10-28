@@ -529,7 +529,7 @@ class MaterialGrid(object):
     the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
     [material function](#medium)).
     """
-    def __init__(self,grid_size,medium1,medium2,weights=None,grid_type="U_DEFAULT",do_averaging=False,beta=0,eta=0.5):
+    def __init__(self,grid_size,medium1,medium2,weights=None,grid_type="U_DEFAULT",do_averaging=False,beta=0,eta=0.5,damping=0):
         """
         Creates a `MaterialGrid` object.
 
@@ -563,11 +563,15 @@ class MaterialGrid(object):
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
         for level-set functions.
 
+        A nonzero damping term creates an artificial conductivity σ = u(1-u)*damping, which acts as
+        dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
+        damping should be proportional to 2π times the typical frequency of the problem.
+
         It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
         grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
         given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping
         `MaterialGrid` objects (with no intervening objects), any overlapping points are computed using the
-        method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` 
+        method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"`
         (product), `"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options
         allow you to combine any material grids that overlap in space with no intervening objects.
         """
@@ -586,6 +590,7 @@ class MaterialGrid(object):
         self.do_averaging = do_averaging
         self.beta = beta
         self.eta = eta
+        self.damping = damping
         if weights is None:
             self.weights = np.zeros((self.num_params,))
         elif weights.size != self.num_params:
