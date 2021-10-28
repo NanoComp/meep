@@ -136,7 +136,7 @@ class Verbosity(object):
         """
         Convenience for setting the verbosity level. This lets you set the
         global level by calling the instance like a function. For example, if
-        `verbosity` is an instance of this class, then it's value can be changed
+        `verbosity` is an instance of this class, then its value can be changed
         like this:
 
         ```
@@ -176,4 +176,3 @@ class Verbosity(object):
             self._cvars[name].verbosity = level
 
         setattr(Verbosity, name, property(_getter, _setter))
-
