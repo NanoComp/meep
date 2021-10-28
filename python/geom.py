@@ -563,6 +563,10 @@ class MaterialGrid(object):
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
         for level-set functions.
 
+        A nonzero damping term creates an artificial conductivity \sigma = u(1-u)*damping, which acts as
+        dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
+        damping should be proportional to 2π times the typical frequency of the problem.
+
         It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
         grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
         given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping

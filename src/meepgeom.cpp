@@ -1511,26 +1511,26 @@ static double get_cnd(meep::component c, const medium_struct *m) {
   }
 }
 
+static bool has_conductivity(const material_type &md, meep::component c) {
+    medium_struct *mm;
+    if (is_medium(md, &mm) && get_cnd(c, mm)) return true;
+    if (md->which_subclass == material_data::MATERIAL_GRID &&
+        (get_cnd(c, &md->medium_1) || get_cnd(c, &md->medium_2) ||
+          md->damping != 0)) return true;
+    return false;
+}
+
 bool geom_epsilon::has_conductivity(meep::component c) {
   medium_struct *mm;
 
   FOR_DIRECTIONS(d) FOR_SIDES(b) {
     if (cond[d][b].prof) return true;
   }
-
-  for (int i = 0; i < geometry.num_items; ++i){
-    if (is_medium(geometry.items[i].material, &mm) && get_cnd(c, mm)) return true;
-    if (((material_type) geometry.items[i].material)->which_subclass == material_data::MATERIAL_GRID){
-      if (get_cnd(c, &((material_type) geometry.items[i].material)->medium_1) ||
-         get_cnd(c, &((material_type) geometry.items[i].material)->medium_2) ||
-         (((material_type) geometry.items[i].material)->damping != 0)) return true;
-    }
-  }
-
+  for (int i = 0; i < geometry.num_items; ++i)
+    if (meep_geom::has_conductivity((material_type) geometry.items[i].material, c)) return true;
   for (int i = 0; i < extra_materials.num_items; ++i)
-    if (is_medium(extra_materials.items[i], &mm) && get_cnd(c, mm)) return true;
-
-  return (is_medium(default_material, &mm) && get_cnd(c, mm) != 0);
+    if (meep_geom::has_conductivity((material_type) extra_materials.items[i], c)) return true;
+  return meep_geom::has_conductivity((material_type) default_material, c);
 }
 
 static meep::vec geometry_edge; // geometry_lattice.size / 2
