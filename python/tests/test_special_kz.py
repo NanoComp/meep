@@ -91,7 +91,9 @@ class TestSpecialKz(unittest.TestCase):
 
         self.assertAlmostEqual(Rmeep_complex,Rfres,places=2)
         self.assertAlmostEqual(Rmeep_real_imag,Rfres,places=2)
-        self.assertLess(t_real_imag,t_complex)
+        
+        # the real/imag algorithm should be faster, but on CI machines performance is too variable for this to reliably hold
+        # self.assertLess(t_real_imag,t_complex) 
 
 
     def eigsrc_kz(self, kz_2d):
