@@ -4,9 +4,10 @@ import abc
 import numpy as np
 import meep as mp
 from .filter_source import FilteredSource
-from .optimization_problem import Grid
 from meep.simulation import py_v3_to_vec
+from collections import namedtuple
 
+Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
 
 class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.

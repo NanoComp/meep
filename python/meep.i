@@ -844,7 +844,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 %inline %{
-void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, 
+void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
     meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies, 
     meep_geom::geom_epsilon *geps, PyObject *fields_shapes) {
     // clean the gradient array
@@ -874,9 +874,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f,
     if (!PyArray_Check(pao_fields_shapes)) meep::abort("fields shape parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_shapes)) meep::abort("Numpy fields shape array must be C-style contiguous.");
     size_t *fields_shapes_c = (size_t *)PyArray_DATA(pao_fields_shapes);
-
-    // scalegrad not currently used
-    double scalegrad = 1.0;
 
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;

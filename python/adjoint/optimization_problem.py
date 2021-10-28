@@ -3,54 +3,7 @@ import numpy as np
 from autograd import grad, jacobian
 from collections import namedtuple
 
-Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
-YeeDims = namedtuple('YeeDims', ['Ex', 'Ey', 'Ez'])
-
-
-class DesignRegion(object):
-    def __init__(
-            self,
-            design_parameters,
-            volume=None,
-            size=None,
-            center=mp.Vector3()
-    ):
-        self.volume = volume if volume else mp.Volume(center=center, size=size)
-        self.size = self.volume.size
-        self.center = self.volume.center
-        self.design_parameters = design_parameters
-        self.num_design_params = design_parameters.num_params
-
-    def update_design_parameters(self, design_parameters):
-        self.design_parameters.update_weights(design_parameters)
-    
-    def update_beta(self,beta):
-        self.design_parameters.beta=beta
-
-    def get_gradient(self, sim, fields_a, fields_f, frequencies):
-        num_freqs = np.array(frequencies).size
-        shapes = []
-        for c in range(3):
-            if (sim.is_cylindrical or sim.dimensions == mp.CYLINDRICAL):
-                # roll r, z, and phi
-                fields_a[c] = np.transpose(fields_a[c],(0,2,3,1))
-                fields_f[c] = np.transpose(fields_f[c],(0,2,3,1))
-            shapes.append(fields_a[c].shape)
-            fields_a[c] = fields_a[c].flatten(order='C')
-            fields_f[c] = fields_f[c].flatten(order='C')
-        shapes = np.asarray(shapes).flatten(order='C')
-        fields_a = np.concatenate(fields_a)
-        fields_f = np.concatenate(fields_f)
-        
-        grad = np.zeros((num_freqs, self.num_design_params))  # preallocate
-        geom_list = sim.geometry
-        f = sim.fields
-        vol = sim._fit_volume_to_simulation(self.volume)
-        # compute the gradient
-        mp._get_gradient(grad,fields_a,fields_f,sim.gv,vol.swigobj,np.array(frequencies),sim.geps,shapes)
-
-        return np.squeeze(grad).T
-
+from . import utils, DesignRegion
 
 class OptimizationProblem(object):
     """Top-level class in the MEEP adjoint module.
@@ -82,9 +35,6 @@ class OptimizationProblem(object):
     ):
 
         self.sim = simulation
-        self.components = [mp.Dx,mp.Dy,mp.Dz]
-        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
-            self.components = [mp.Dr,mp.Dp,mp.Dz]
 
         if isinstance(objective_functions, list):
             self.objective_functions = objective_functions
@@ -216,28 +166,9 @@ class OptimizationProblem(object):
             self.forward_monitors.append(m.register_monitors(self.frequencies))
 
         # register design region
-        self.design_region_monitors = [
-            self.sim.add_dft_fields(
-                self.components,
-                self.frequencies,
-                where=dr.volume,
-                yee_grid=True,
-                decimation_factor=self.decimation_factor,
-            ) for dr in self.design_regions
-        ]
-
-        # store design region voxel parameters
-        self.design_grids = []
-        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
-            YeeDims = namedtuple('YeeDims', ['Er','Ep','Ez'])
-        else:
-            YeeDims = namedtuple('YeeDims', ['Ex','Ey','Ez'])
-        for drm in self.design_region_monitors:
-            s = [
-                self.sim.get_array_slice_dimensions(c, vol=drm.where)[0]
-                for c in self.components
-            ]
-            self.design_grids += [YeeDims(*s)]
+        self.design_region_monitors = utils.install_design_region_monitors(
+            self.sim, self.design_regions, self.frequencies, self.decimation_factor
+        )
 
     def forward_run(self):
         # set up monitors
@@ -260,16 +191,8 @@ class OptimizationProblem(object):
         if len(self.f0) == 1:
             self.f0 = self.f0[0]
 
-        # Store forward fields for each set of design variables in array (x,y,z,field_components,frequencies)
-        self.d_E = [[
-            np.zeros((self.nf, c[0], c[1], c[2]), dtype=np.complex128)
-            for c in dg
-        ] for dg in self.design_grids]
-        for nb, dgm in enumerate(self.design_region_monitors):
-            for ic, c in enumerate(self.components):
-                for f in range(self.nf):
-                    self.d_E[nb][ic][f, :, :, :] = atleast_3d(
-                        self.sim.get_dft_array(dgm, c, f))
+        # Store forward fields for each set of design variables in array
+        self.d_E = utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies)
 
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
@@ -294,11 +217,14 @@ class OptimizationProblem(object):
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
 
-        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+        # flip the m number
+        if utils._check_if_cylindrical(self.sim):
             self.sim.m = -self.sim.m
 
+        # flip the k point
         if self.sim.k_point:
             self.sim.k_point *= -1
+
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.reset_meep()
@@ -307,15 +233,9 @@ class OptimizationProblem(object):
             self.sim.change_sources(self.adjoint_sources[ar])
 
             # register design flux
-            self.design_region_monitors = [
-                self.sim.add_dft_fields(
-                    self.components,
-                    self.frequencies,
-                    where=dr.volume,
-                    yee_grid=True,
-                    decimation_factor=self.decimation_factor,
-                ) for dr in self.design_regions
-            ]
+            self.design_region_monitors = utils.install_design_region_monitors(
+            self.sim, self.design_regions, self.frequencies, self.decimation_factor
+            )
 
             # Adjoint run
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
@@ -324,26 +244,17 @@ class OptimizationProblem(object):
                 self.maximum_run_time
             ))
 
-            # Store adjoint fields for each design set of design variables in array (x,y,z,field_components,frequencies)
-            self.a_E.append([[
-                np.zeros((self.nf, c[0], c[1], c[2]), dtype=np.complex128)
-                for c in dg
-            ] for dg in self.design_grids])
-            for nb, dgm in enumerate(self.design_region_monitors):
-                for ic, c in enumerate(self.components):
-                    for f in range(self.nf):
-                        if (self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL):
-                            # FIXME probably shouldn't go here...
-                            # Addtional factor of 2 for cyldrical coordinate
-                            self.a_E[ar][nb][ic][f, :, :, :] = 2 * atleast_3d(self.sim.get_dft_array(dgm, c, f))
-                        else:
-                            self.a_E[ar][nb][ic][f, :, :, :] = atleast_3d(self.sim.get_dft_array(dgm, c, f))
-
-        if self.sim.is_cylindrical or self.sim.dimensions == mp.CYLINDRICAL:
+            # Store adjoint fields for each design set of design variables
+            self.a_E.append(utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies))
+        
+        # reset the m number
+        if utils._check_if_cylindrical(self.sim):
             self.sim.m = -self.sim.m
 
-        # update optimizer's state
+        # reset the k point
         if self.sim.k_point: self.sim.k_point *= -1
+
+        # update optimizer's state
         self.current_state = "ADJ"
 
     def calculate_gradient(self):

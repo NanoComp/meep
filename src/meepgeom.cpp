@@ -2816,22 +2816,25 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
   }
   //calculate the number of elements in an entire block (x,y,z) for each component
   size_t nf = fields_shapes[0];
-  size_t stride_row[4] = {0,1,1,1}; //first entry is a dummy entry to simplify indexing
+  size_t stride_row[3] = {1,1,1}; //first entry is a dummy entry to simplify indexing
   for (int i=0;i<3;i++) {
     for (int j=1;j<4;j++){
-      stride_row[i+1] *= fields_shapes[4*i+j];
+      stride_row[i] *= fields_shapes[4*i+j];
     }
   }
+  size_t c_start[3];
+  c_start[0] = 0; 
+  c_start[1] = nf*stride_row[0]; 
+  c_start[2] = nf*(stride_row[0]+stride_row[1]);
   
 // fields dimensions are (components, nfreqs, x, y, z)
-#define GET_FIELDS(fields,comp,freq,idx) fields[comp*stride_row[comp]*nf + freq*stride_row[comp+1] + idx]
+#define GET_FIELDS(fields,comp,freq,idx) fields[c_start[comp] + freq*stride_row[comp] + idx]
 
   meep::ivec start_ivec;
-  meep::ivec stop_ivec;
   // loop over frequency
   for (size_t f_i = 0; f_i < nf; ++f_i) {
     int ci_adjoint = 0;
-    FOR_MY_COMPONENTS(adjoint_c) {    
+    FOR_MY_COMPONENTS(adjoint_c) { 
       LOOP_OVER_IVECS(gv, is[ci_adjoint], ie[ci_adjoint], idx) {
         size_t idx_fields = IVEC_LOOP_COUNTER;
         meep::ivec ip = gv.iloc(adjoint_c,idx);
@@ -2861,7 +2864,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
           if (forward_c == adjoint_c){
             std::complex<double> fwd = GET_FIELDS(fields_f,ci_forward,f_i,idx_fields);
             std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, 1e-6);
-            cyl_scale = (gv.dim == meep::Dcyl) ? p.r() : 1;
+            cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
             material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real()*cyl_scale, geps);
           // more complicated case requires interpolation/restriction
           }else{

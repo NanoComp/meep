@@ -3,14 +3,87 @@ from typing import List, Iterable, Tuple
 import meep as mp
 import numpy as onp
 
-from . import ObjectiveQuantity, DesignRegion
+from . import ObjectiveQuantity
 
 # Meep field components used to compute adjoint sensitivities
-_ADJOINT_FIELD_COMPONENTS = [mp.Ex, mp.Ey, mp.Ez]
+_ADJOINT_FIELD_COMPONENTS = [mp.Dx, mp.Dy, mp.Dz]
+_ADJOINT_FIELD_COMPONENTS_CYL = [mp.Dr, mp.Dp, mp.Dz]
 
 # The frequency axis in the array returned by `mp._get_gradient()`
 _GRADIENT_FREQ_AXIS = 1
 
+# The returned axis order from get_dft_array in cylindrical coordinates
+_FREQ_AXIS = 0
+_RHO_AXIS = 2
+_PHI_AXIS = 3
+_Z_AXIS = 1
+
+class DesignRegion(object):
+    def __init__(
+            self,
+            design_parameters,
+            volume=None,
+            size=None,
+            center=mp.Vector3()
+    ):
+        self.volume = volume if volume else mp.Volume(center=center, size=size)
+        self.size = self.volume.size
+        self.center = self.volume.center
+        self.design_parameters = design_parameters
+        self.num_design_params = design_parameters.num_params
+
+    def update_design_parameters(self, design_parameters):
+        self.design_parameters.update_weights(design_parameters)
+    
+    def update_beta(self,beta):
+        self.design_parameters.beta=beta
+
+    def get_gradient(self, sim, fields_a, fields_f, frequencies):
+        num_freqs = onp.array(frequencies).size
+        shapes = []
+        com = _compute_components(sim)
+        scalegrad = 1
+        for ci, c in enumerate(com):
+            '''We need to correct for the rare cases that get_dft_array
+            returns a singleton element for the forward and adjoint fields.
+            This only occurs when we are in 2D and only working with a particular
+            polarization (as the other fields are never stored). Our get_gradient
+            algorithm, however, requires we pass an array of zeros with the
+            proper shape as the design_region.            
+            '''
+            s = sim.get_array_slice_dimensions(c, vol=self.volume)[0]
+            if (onp.squeeze(fields_a[ci][0,...]).size == 1):
+                fields_a[ci] = onp.zeros(onp.insert(s,0,num_freqs))
+                fields_f[ci] = onp.zeros(onp.insert(s,0,num_freqs))
+            if _check_if_cylindrical(sim):
+                '''For some reason, get_dft_array returns the field
+                components in a different order than the convention used
+                throughout meep. So, we reorder them here so we can use
+                the same field macros later in our get_gradient function.
+                '''
+                fields_a[ci] = onp.transpose(fields_a[ci],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
+                fields_f[ci] = onp.transpose(fields_f[ci],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
+            shapes.append(fields_a[ci].shape)
+            fields_a[ci] = fields_a[ci].flatten(order='C')
+            fields_f[ci] = fields_f[ci].flatten(order='C')
+        shapes = onp.asarray(shapes).flatten(order='C')
+        fields_a = onp.concatenate(fields_a)
+        fields_f = onp.concatenate(fields_f)
+        
+        grad = onp.zeros((num_freqs, self.num_design_params))  # preallocate
+        geom_list = sim.geometry
+        f = sim.fields
+        vol = sim._fit_volume_to_simulation(self.volume)
+        
+        # compute the gradient
+        mp._get_gradient(grad,scalegrad,fields_a,fields_f,sim.gv,vol.swigobj,onp.array(frequencies),sim.geps,shapes)
+        return onp.squeeze(grad).T
+
+def _check_if_cylindrical(sim):
+    return sim.is_cylindrical or (sim.dimensions == mp.CYLINDRICAL)
+
+def _compute_components(sim):
+    return _ADJOINT_FIELD_COMPONENTS_CYL if _check_if_cylindrical(sim) else _ADJOINT_FIELD_COMPONENTS
 
 def _make_at_least_nd(x: onp.ndarray, dims: int = 3) -> onp.ndarray:
     """Makes an array have at least the specified number of dimensions."""
@@ -61,15 +134,16 @@ def install_design_region_monitors(
     simulation: mp.Simulation,
     design_regions: List[DesignRegion],
     frequencies: List[float],
+    decimation_factor: int = 0
 ) -> List[mp.DftFields]:
     """Installs DFT field monitors at the design regions of the simulation."""
     design_region_monitors = [
         simulation.add_dft_fields(
-            _ADJOINT_FIELD_COMPONENTS,
+            _compute_components(simulation),
             frequencies,
             where=design_region.volume,
             yee_grid=True,
-            decimation_factor=0
+            decimation_factor=decimation_factor
         ) for design_region in design_regions
     ]
     return design_region_monitors
@@ -120,7 +194,7 @@ def gather_design_region_fields(
     fwd_fields = []
     for monitor in design_region_monitors:
         fields_by_component = []
-        for component in _ADJOINT_FIELD_COMPONENTS:
+        for component in _compute_components(simulation):
             fields_by_freq = []
             for freq_idx, _ in enumerate(frequencies):
                 fields = simulation.get_dft_array(monitor, component, freq_idx)
