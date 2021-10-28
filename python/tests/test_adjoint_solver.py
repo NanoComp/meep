@@ -31,14 +31,14 @@ Nx = int(design_region_resolution*design_region_size.x) + 1
 Ny = int(design_region_resolution*design_region_size.y) + 1
 
 ## ensure reproducible results
-np.random.seed(9861548)
+rng = np.random.RandomState(9861548)
 
 ## random design region
-p = np.random.rand(Nx*Ny)
+p = rng.rand(Nx*Ny)
 
 ## random epsilon perturbation for design region
 deps = 1e-5
-dp = deps*np.random.rand(Nx*Ny)
+dp = deps*rng.rand(Nx*Ny)
 
 w = 1.0
 waveguide_geometry = [mp.Block(material=silicon,

@@ -10,7 +10,7 @@ import unittest
 from enum import Enum
 from utils import ApproxComparisonTestCase
 
-np.random.seed(2)
+rng = np.random.RandomState(2)
 resolution = 20
 dimensions = mp.CYLINDRICAL
 m=0
@@ -40,10 +40,10 @@ source = [mp.Source(src,component=mp.Er,
                     size=source_size)]
 
 ## random design region
-p = np.random.rand(Nr*Nz)
+p = rng.rand(Nr*Nz)
 ## random epsilon perturbation for design region
 deps = 1e-5
-dp = deps*np.random.rand(Nr*Nz)
+dp = deps*rng.rand(Nr*Nz)
 
 
 def forward_simulation(design_params):
