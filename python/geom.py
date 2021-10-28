@@ -563,7 +563,7 @@ class MaterialGrid(object):
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
         for level-set functions.
 
-        A nonzero damping term creates an artificial conductivity \sigma = u(1-u)*damping, which acts as
+        A nonzero damping term creates an artificial conductivity σ = u(1-u)*damping, which acts as
         dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
         damping should be proportional to 2π times the typical frequency of the problem.
 
