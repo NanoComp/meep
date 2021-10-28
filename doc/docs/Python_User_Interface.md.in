@@ -181,6 +181,8 @@ Technically, MPB computes $\omega_n(\mathbf{k})$ and then inverts it with Newton
 
 **Note:** for planewaves in homogeneous media, the `kpoints` may *not* necessarily be equivalent to the actual wavevector of the mode. This quantity is given by `kdom`.
 
+Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic $\\varepsilon$. Any nonlinearities, magnetic responses $\\mu$ conductivities $\\sigma$, or dispersive polarizations in your materials will be *ignored* when computing the mode decomposition. PML will also be ignored.
+
 @@ Simulation.add_mode_monitor @@
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
