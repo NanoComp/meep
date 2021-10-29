@@ -1,6 +1,6 @@
 # Mode Decomposition
 
-Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure via its integration with the eigenmode solver [MPB](https://mpb.readthedocs.io). This section provides an overview of the theory and implementation of this feature. For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
+Meep contains a feature to decompose arbitrary fields into a superposition of the harmonic modes of a given structure via its integration with the eigenmode solver [MPB](https://mpb.readthedocs.io). Only dielectric structures with lossless, wavelength-independent, anisotropic $\varepsilon$ are supported by MPB. If dispersive materials are defined in Meep, only the real part of $\varepsilon$ is used. This section provides an overview of the theory and implementation of this feature. For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 [TOC]
 

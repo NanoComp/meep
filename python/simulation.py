@@ -197,8 +197,8 @@ class PML(object):
 
         + **`side` [`side` constant ]** — Specify which side, `Low` or `High` of the
           boundary or boundaries to put PML on. e.g. if side is `Low` and direction is
-          `X`, then a PML layer is added to the $-x$ boundary. Default is the special
-          value `ALL`, which puts PML layers on both sides.
+          `meep.X`, then a PML layer is added to the $-x$ boundary. Default is the special
+          value `meep.ALL`, which puts PML layers on both sides.
 
         + **`R_asymptotic` [`number`]** — The asymptotic reflection in the limit of
           infinite resolution or infinite PML thickness, for reflections from air (an
@@ -546,7 +546,7 @@ class FieldsRegion(object):
 
 
 class DftObj(object):
-    """Wrapper around dft objects that allows delayed initialization of the structure.
+    """Wrapper around DFT objects that allows delayed initialization of the structure.
 
     When splitting the structure into chunks for parallel simulations, we want to know all
     of the details of the simulation in order to ensure that each processor gets a similar
@@ -1915,7 +1915,8 @@ class Simulation(object):
         if self.structure is None:
             raise ValueError("Structure must be initialized before calling dump_structure")
         self.structure.dump(fname, single_parallel_file)
-        print("Dumped structure to file: %s (%s)" % (fname, str(single_parallel_file)))
+        if verbosity.meep > 0:
+            print("Dumped structure to file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def load_structure(self, fname, single_parallel_file=True):
         """
@@ -1924,7 +1925,8 @@ class Simulation(object):
         if self.structure is None:
             raise ValueError("Structure must be initialized before loading structure from file '%s'" % fname)
         self.structure.load(fname, single_parallel_file)
-        print("Loaded structure from file: %s (%s)" % (fname, str(single_parallel_file)))
+        if verbosity.meep > 0:
+            print("Loaded structure from file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def dump_fields(self, fname, single_parallel_file=True):
         """
@@ -1933,7 +1935,8 @@ class Simulation(object):
         if self.fields is None:
             raise ValueError("Fields must be initialized before calling dump_fields")
         self.fields.dump(fname, single_parallel_file)
-        print("Dumped fields to file: %s (%s)" % (fname, str(single_parallel_file)))
+        if verbosity.meep > 0:
+            print("Dumped fields to file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def load_fields(self, fname, single_parallel_file=True):
         """
@@ -1943,7 +1946,8 @@ class Simulation(object):
             raise ValueError("Fields must be initialized before loading fields from file '%s'" % fname)
         self._evaluate_dft_objects()
         self.fields.load(fname, single_parallel_file)
-        print("Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file)))
+        if verbosity.meep > 0:
+            print("Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file)))
 
     def dump_chunk_layout(self, fname):
         """
@@ -2426,10 +2430,11 @@ class Simulation(object):
             harminv = self.run_k_point(t, k)
             freqs = [complex(m.freq, m.decay) for m in harminv.modes]
 
-            print("freqs:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
-            print(', '.join([str(f.real) for f in freqs]))
-            print("freqs-im:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
-            print(', '.join([str(f.imag) for f in freqs]))
+            if verbosity.meep > 0:
+                print("freqs:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
+                print(', '.join([str(f.real) for f in freqs]))
+                print("freqs-im:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end='')
+                print(', '.join([str(f.imag) for f in freqs]))
 
             all_freqs.append(freqs)
 
@@ -2678,7 +2683,8 @@ class Simulation(object):
     def _display_energy(self, name, func, energys):
         if energys:
             freqs = get_energy_freqs(energys[0])
-            display_csv(self, "{}-energy".format(name), zip(freqs, *[func(f) for f in energys]))
+            if verbosity.meep > 0:
+                display_csv(self, "{}-energy".format(name), zip(freqs, *[func(f) for f in energys]))
 
     def display_electric_energy(self, *energys):
         """
@@ -2748,7 +2754,9 @@ class Simulation(object):
         including outside the cell and a `near2far` object, returns the computed
         (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
         of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
-        for the frequencies 1,2,…,`nfreq`.
+        in Cartesian coordinates and
+        $(E_r^1,E_\phi^1,E_z^1,H_r^1,H_\phi^1,H_z^1,E_r^2,E_\phi^2,E_z^2,H_r^2,H_\phi^2,H_z^2,...)$
+        in cylindrical coordinates for the frequencies 1,2,…,`nfreq`.
         """
         return mp._get_farfield(near2far.swigobj, py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical))
 
@@ -2906,7 +2914,8 @@ class Simulation(object):
         subsequent columns are the force spectra.
         """
         force_freqs = get_force_freqs(forces[0])
-        display_csv(self, 'force', zip(force_freqs, *[get_forces(f) for f in forces]))
+        if verbosity.meep > 0:
+            display_csv(self, 'force', zip(force_freqs, *[get_forces(f) for f in forces]))
 
     def load_force(self, fname, force):
         """
@@ -3043,7 +3052,8 @@ class Simulation(object):
         `fcen`/`df`/`nfreq` or `freq`. The first column are the frequencies, and
         subsequent columns are the flux spectra.
         """
-        display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
+        if verbosity.meep > 0:
+            display_csv(self, 'flux', zip(get_flux_freqs(fluxes[0]), *[get_fluxes(f) for f in fluxes]))
 
     def load_flux(self, fname, flux):
         """
@@ -3541,7 +3551,8 @@ class Simulation(object):
 
         + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
           (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes
-          propagating in the forward (+) or backward (-) directions.
+          propagating in the forward (+) or backward (-) directions defined relative to
+          the mode's dominant wavevector.
         + `vgrp`: the group velocity as a NumPy array.
         + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
         + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
@@ -4515,7 +4526,7 @@ def stop_on_interrupt():
 def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-    or `until_after_sources` parameter, that checks the `Simulation`'s dft objects every $t$
+    or `until_after_sources` parameter, that checks the `Simulation`'s DFT objects every $t$
     timesteps, and stops the simulation once all the field components and frequencies of *every*
     DFT object have decayed by at least some tolerance `tol` (default is 1e-11). The time interval
     $t$ is determined automatically based on the frequency content in the DFT monitors.
@@ -4544,7 +4555,7 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
 
             closure['previous_fields'] = current_fields
             closure['t0'] = _sim.fields.t
-            if mp.verbosity > 1:
+            if verbosity.meep > 1:
                 fmt = "DFT fields decay(t = {0:0.2f}): {1:0.4e}"
                 print(fmt.format(_sim.meep_time(), np.real(change/closure['maxchange'])))
             return (change/closure['maxchange']) <= tol and _sim.round_time() >= minimum_run_time
@@ -4647,7 +4658,8 @@ def display_run_data(sim, data_name, data):
         data_str = [data_to_str(f) for f in data]
     else:
         data_str = [data_to_str(data)]
-    print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
+    if verbosity.meep > 0:
+        print("{}{}:, {}".format(data_name, sim.run_index, ', '.join(data_str)))
 
 
 def convert_h5(rm_h5, convert_cmd, *step_funcs):
@@ -5126,7 +5138,8 @@ def dft_ldos(*args, **kwargs):
             sim.ldos_data = mp._dft_ldos_ldos(ldos)
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
-            display_csv(sim, 'ldos', zip(mp.get_ldos_freqs(ldos), sim.ldos_data))
+            if verbosity.meep > 0:
+                display_csv(sim, 'ldos', zip(mp.get_ldos_freqs(ldos), sim.ldos_data))
     return _ldos
 
 
