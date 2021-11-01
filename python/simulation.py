@@ -218,8 +218,8 @@ class PML(object):
           and the default is $f(u) = u^2$. In some cases where a very thick PML is
           required, such as in a periodic medium (where there is technically no such thing
           as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML
-          absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92,
-          2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For
+          absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92
+          (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For
           example, one can use a cubic profile $f(u) = u^3$ by specifying
           `pml_profile=lambda u: u*u*u`.
         """
@@ -275,14 +275,14 @@ class Absorber(PML):
 
     -   No true PML exists for *periodic* media, and a scalar absorber is computationally
         less expensive and generally just as good. See [Optics Express, Vol. 16, pp.
-        11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+        11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
     -   PML can lead to *divergent* fields for certain waveguides with "backward-wave"
         modes; this can readily occur in metals with surface plasmons, and a scalar
-        absorber is your only choice. See [Physical Review E, Vol. 79, 065601,
-        2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
+        absorber is your only choice. See [Physical Review E, Vol. 79, 065601
+        (2009)](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
     -   PML can fail if you have a waveguide hitting the edge of your cell *at an angle*.
-        See [J. Computational Physics, Vol. 230, pp. 2369-77,
-        2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
+        See [J. Computational Physics, Vol. 230, pp. 2369-77
+        (2011)](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
     """
 
 

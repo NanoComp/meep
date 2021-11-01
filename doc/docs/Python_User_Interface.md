@@ -1362,7 +1362,7 @@ Technically, MPB computes $\omega_n(\mathbf{k})$ and then inverts it with Newton
 
 **Note:** for planewaves in homogeneous media, the `kpoints` may *not* necessarily be equivalent to the actual wavevector of the mode. This quantity is given by `kdom`.
 
-Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic $\\varepsilon$. Any nonlinearities, magnetic responses $\\mu$ conductivities $\\sigma$, or dispersive polarizations in your materials will be *ignored* when computing the mode decomposition. PML will also be ignored.
+Note that Meep's MPB interface only supports dispersionless non-magnetic materials but it does support anisotropic $\varepsilon$. Any nonlinearities, magnetic responses $\mu$ conductivities $\sigma$, or dispersive polarizations in your materials will be *ignored* when computing the mode decomposition. PML will also be ignored.
 
 
 <a id="Simulation.add_mode_monitor"></a>
@@ -2318,11 +2318,11 @@ is a 1d array of `nfreq` dimensions.
 
 ### Load and Dump Simulation State
 
-The functions below add support for saving and restoring parts of the MEEP
-Simulation state.
+These functions add support for saving and restoring parts of the
+`Simulation` state.
 
-For all functions below, when dumping/loading state to/from a distributed filesystem
-(using say, parallel HDF5) and running in a MPI environment, setting
+For all functions listed below, when dumping/loading state to/from a distributed filesystem
+(using say, parallel HDF5) and running in an MPI environment, setting
 `single_parallel_file=True` (the default) will result in all
 processes writing/reading to/from the same/single file after computing their respective offsets into this file.
 When set to `False`, each process writes/reads data for the chunks it owns
@@ -2402,11 +2402,12 @@ sim2.run(...)
 
 #### Load and Dump Fields
 
-These functions can be used to dump (and later load) the raw fields, auxillary
-fields and the dft fields at a certain timestamp. The timestamp at which the
-dump happens is also saved so that simulation can continue from where it was saved.
-The one pre-requisite of this feature is that it needs the Simulation object to have
-been setup *exactly* the same as the one it was dumped from.
+These functions can be used to dump (and later load) the time-domain fields, auxiliary
+fields for PMLs, polarization fields (for dispersive materials), and the DFT fields
+at a certain timestamp. The timestamp at which the dump happens is also saved so that
+the simulation can continue from where it was saved. The one pre-requisite of this
+feature is that it needs the `Simulation` object to have been setup *exactly* the
+same as the one it was dumped from.
 
 
 <a id="Simulation.dump_fields"></a>
@@ -2444,7 +2445,7 @@ Loads a fields from the file `fname`.
 #### Checkpoint / Restore.
 
 The above dump/load related functions can be used to implement a
-checkpoint/restore *like* feature for MEEP. The caveat of this feature is that
+checkpoint/restore *like* feature. The caveat of this feature is that
 it does *not* store all the state required to re-create the `Simulation` object
 itself. Instead, it expects the user to create and set up the new `Simulation`
 object to be *exactly* the same as the one the state was dumped from.
@@ -2879,7 +2880,7 @@ follows the `run` function (e.g., outputting fields).
 
 </div>
 
-Finally, another run function, useful for computing ω(**k**) band diagrams, is available via these `Simulation` methods:
+Finally, another run function, useful for computing $\omega(\mathbf{k})$ band diagrams, is available via these `Simulation` methods:
 
 
 <a id="Simulation.run_k_points"></a>
@@ -4401,7 +4402,8 @@ def __init__(self,
              grid_type='U_DEFAULT',
              do_averaging=False,
              beta=0,
-             eta=0.5):
+             eta=0.5,
+             damping=0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4438,11 +4440,15 @@ a *discontinuous* function from otherwise continuously varying (via the bilinear
 grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
 for level-set functions.
 
+A nonzero damping term creates an artificial conductivity σ = u(1-u)*damping, which acts as
+dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
+damping should be proportional to 2π times the typical frequency of the problem.
+
 It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
 grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
 given `MaterialGrid` object with a symmetrized copy of itself. In the case of spatially overlapping
 `MaterialGrid` objects (with no intervening objects), any overlapping points are computed using the
-method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"` 
+method `grid_type` which is one of `"U_MIN"` (minimum of the overlapping grid values), `"U_PROD"`
 (product), `"U_MEAN"` (mean), `"U_DEFAULT"` (topmost material grid). In general, these `"U_*"` options
 allow you to combine any material grids that overlap in space with no intervening objects.
 
@@ -6010,8 +6016,8 @@ def __init__(self,
   and the default is $f(u) = u^2$. In some cases where a very thick PML is
   required, such as in a periodic medium (where there is technically no such thing
   as a true PML, only a pseudo-PML), it can be advantageous to turn on the PML
-  absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92,
-  2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For
+  absorption more smoothly. See [Optics Express, Vol. 16, pp. 11376-92
+  (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). For
   example, one can use a cubic profile $f(u) = u^3$ by specifying
   `pml_profile=lambda u: u*u*u`.
 
@@ -6046,14 +6052,14 @@ The main reason to use `Absorber` is if you have **a case in which PML fails:**
 
 -   No true PML exists for *periodic* media, and a scalar absorber is computationally
     less expensive and generally just as good. See [Optics Express, Vol. 16, pp.
-    11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+    11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 -   PML can lead to *divergent* fields for certain waveguides with "backward-wave"
     modes; this can readily occur in metals with surface plasmons, and a scalar
-    absorber is your only choice. See [Physical Review E, Vol. 79, 065601,
-    2009](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
+    absorber is your only choice. See [Physical Review E, Vol. 79, 065601
+    (2009)](http://math.mit.edu/~stevenj/papers/LohOs09.pdf).
 -   PML can fail if you have a waveguide hitting the edge of your cell *at an angle*.
-    See [J. Computational Physics, Vol. 230, pp. 2369-77,
-    2011](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
+    See [J. Computational Physics, Vol. 230, pp. 2369-77
+    (2011)](http://math.mit.edu/~stevenj/papers/OskooiJo11.pdf).
 
 </div>
 
@@ -6288,33 +6294,34 @@ def __init__(self,
 
 Construct an `EigenModeSource`.
 
-+ **`eig_band` [`integer` or `DiffractedPlanewave` class]** — Either the index *n* (1,2,3,...) of the desired band
-  ω<sub>*n*</sub>(**k**) to compute in MPB where 1 denotes the lowest-frequency
-  band at a given **k** point, and so on, or alternatively a diffracted planewave in homogeneous media.
++ **`eig_band` [`integer` or `DiffractedPlanewave` class]** — Either the index $n$
+  (1,2,3,...) of the desired band $\omega_n(\mathbf{k})$ to compute in MPB where
+  1 denotes the lowest-frequency band at a given $\mathbf{k}$ point, and so on,
+  or alternatively a diffracted planewave in homogeneous media.
 
 + **`direction` [`mp.X`, `mp.Y`, or `mp.Z;` default `mp.AUTOMATIC`],
   `eig_match_freq` [`boolean;` default `True`], `eig_kpoint` [`Vector3`]** — By
   default (if `eig_match_freq` is `True`), Meep tries to find a mode with the same
-  frequency ω<sub>*n*</sub>(**k**) as the `src` property (above), by scanning
-  **k** vectors in the given `direction` using MPB's `find_k` functionality.
+  frequency $\omega_n(\mathbf{k})$ as the `src` property (above), by scanning
+  $\mathbf{k}$ vectors in the given `direction` using MPB's `find_k` functionality.
   Alternatively, if `eig_kpoint` is supplied, it is used as an initial guess for
-  **k**. By default, `direction` is the direction normal to the source region,
+  $\mathbf{k}$. By default, `direction` is the direction normal to the source region,
   assuming `size` is $d$–1 dimensional in a $d$-dimensional simulation (e.g. a
   plane in 3d). If `direction` is set to `mp.NO_DIRECTION`, then `eig_kpoint` is
-  not only the initial guess and the search direction of the **k** vectors, but is
+  not only the initial guess and the search direction of the $\mathbf{k}$ vectors, but is
   also taken to be the direction of the waveguide, allowing you to [launch modes
   in oblique ridge waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides)
   (not perpendicular to the source plane).  If `eig_match_freq` is `False`, then the
-  **k** vector of the desired mode is specified with  `eig_kpoint` (in Meep units
+  $\mathbf{k}$ vector of the desired mode is specified with  `eig_kpoint` (in Meep units
   of 2π/(unit length)). Also, the eigenmode frequency computed by MPB overwrites
   the `frequency` parameter of the `src` property for a `GaussianSource` and
   `ContinuousSource` but not `CustomSource` (the `width` or any other parameter of
-  `src` is unchanged). By default, the **k** components in the plane of the source
+  `src` is unchanged). By default, the $\mathbf{k}$ components in the plane of the source
   region are zero.  However, if the source region spans the *entire* cell in some
   directions, and the cell has Bloch-periodic boundary conditions via the
-  `k_point` parameter, then the mode's **k** components in those directions will
+  `k_point` parameter, then the mode's $\mathbf{k}$ components in those directions will
   match `k_point` so that the mode satisfies the Meep boundary conditions,
-  regardless of `eig_kpoint`. Note that once **k** is either found by MPB, or
+  regardless of `eig_kpoint`. Note that once $\mathbf{k}$ is either found by MPB, or
   specified by `eig_kpoint`, the field profile used to create the current sources
   corresponds to the [Bloch mode](https://en.wikipedia.org/wiki/Bloch_wave),
   $\mathbf{u}_{n,\mathbf{k}}(\mathbf{r})$, multiplied by the appropriate
@@ -7221,7 +7228,7 @@ def __call__(self, level):
 
 Convenience for setting the verbosity level. This lets you set the
 global level by calling the instance like a function. For example, if
-`verbosity` is an instance of this class, then it's value can be changed
+`verbosity` is an instance of this class, then its value can be changed
 like this:
 
 ```
