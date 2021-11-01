@@ -11,8 +11,8 @@ um_scale = 1.0
 eV_um_scale = um_scale/1.23984193
 
 #------------------------------------------------------------------
-# crystalline silicon (c-Si) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77, 2011
-# based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92, 1995
+# crystalline silicon (c-Si) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77 (2011)
+# based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92 (1995)
 # wavelength range: 0.4 - 1.0 um
 
 cSi_range = mp.FreqRange(min=um_scale, max=um_scale/0.4)
@@ -231,7 +231,7 @@ Si3N4_NIR_susc = [mp.LorentzianSusceptibility(frequency=Si3N4_NIR_frq1, gamma=Si
 Si3N4_NIR = mp.Medium(epsilon=1.0, E_susceptibilities=Si3N4_NIR_susc, valid_freq_range=Si3N4_NIR_range)
 
 #------------------------------------------------------------------
-# elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83, 1998
+# elemental metals from A.D. Rakic et al., Applied Optics, Vol. 37, No. 22, pp. 5271-83 (1998)
 # wavelength range: 0.2 - 12.4 um
 
 metal_range = mp.FreqRange(min=um_scale/12.398, max=um_scale/.24797)
@@ -674,7 +674,7 @@ Ag_visible = mp.Medium(epsilon=0.0067526, E_susceptibilities=Ag_visible_susc, va
 ## WARNING: unstable; field divergence may occur
 
 # aluminum (Al)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 
 Al_visible_frq0 = 1/(0.0625841659042985*um_scale)
 Al_visible_gam0 = 1/(0.606007002962666*um_scale)
@@ -691,7 +691,7 @@ Al_visible = mp.Medium(epsilon=0.13313, E_susceptibilities=Al_visible_susc, vali
 
 #------------------------------------------------------------------
 # chroimium (Cr)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 
 Cr_visible_frq0 = 1/(0.118410119507342*um_scale)
 Cr_visible_gam0 = 1/(0.628596264869804*um_scale)
@@ -710,7 +710,7 @@ Cr_visible = mp.Medium(epsilon=2.7767, E_susceptibilities=Cr_visible_susc, valid
 ## WARNING: unstable; field divergence may occur
 
 # titanium (Ti)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 
 Ti_visible_frq0 = 1/(0.101331651921602*um_scale)
 Ti_visible_gam0 = 1/(0.365743382258719*um_scale)
@@ -882,7 +882,7 @@ InP_susc = [mp.LorentzianSusceptibility(frequency=InP_frq1, gamma=InP_gam1, sigm
 InP = mp.Medium(epsilon=7.255, E_susceptibilities=InP_susc, valid_freq_range=InP_range)
 
 #------------------------------------------------------------------
-# germanium (Ge) from N. P. Barnes and M. S. Piltch, J. Optical Society America, Vol. 69, pp. 178-180, 1979
+# germanium (Ge) from N. P. Barnes and M. S. Piltch, J. Optical Society America, Vol. 69, pp. 178-180 (1979)
 # ref: https://refractiveindex.info/?shelf=main&book=Ge&page=Icenogle
 # wavelength range: 2.5 - 12 um
 
@@ -901,7 +901,7 @@ Ge_susc = [mp.LorentzianSusceptibility(frequency=Ge_frq1, gamma=Ge_gam1, sigma=G
 Ge = mp.Medium(epsilon=9.28156, E_susceptibilities=Ge_susc, valid_freq_range=Ge_range)
 
 #------------------------------------------------------------------
-# silicon (Si) from C. D. Salzberg and J. J. Villa, , J. Optical Society America, Vol. 47, pp. 244-246, 1957
+# silicon (Si) from C. D. Salzberg and J. J. Villa, , J. Optical Society America, Vol. 47, pp. 244-246 (1957)
 # ref: https://refractiveindex.info/?shelf=main&book=Si&page=Salzberg
 # wavelength range: 1.36 - 11 um
 
@@ -924,7 +924,7 @@ Si_susc = [mp.LorentzianSusceptibility(frequency=Si_frq1, gamma=Si_gam1, sigma=S
 Si = mp.Medium(epsilon=1.0, E_susceptibilities=Si_susc, valid_freq_range=Si_range)
 
 #------------------------------------------------------------------
-# poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+# poly(methyl methacrylate) (PMMA) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7 (2009)
 # ref: https://refractiveindex.info/?shelf=organic&book=poly%28methyl_methacrylate%29&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
 
@@ -939,7 +939,7 @@ PMMA_susc = [mp.LorentzianSusceptibility(frequency=PMMA_frq1, gamma=PMMA_gam1, s
 PMMA = mp.Medium(epsilon=1.0, E_susceptibilities=PMMA_susc, valid_freq_range=PMMA_range)
 
 #------------------------------------------------------------------
-# polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+# polycarbonate (PC) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7 (2009)
 # ref: https://refractiveindex.info/?shelf=organic&book=polycarbonate&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
 
@@ -954,7 +954,7 @@ PC_susc = [mp.LorentzianSusceptibility(frequency=PC_frq1, gamma=PC_gam1, sigma=P
 PC = mp.Medium(epsilon=1.0, E_susceptibilities=PC_susc, valid_freq_range=PC_range)
 
 #------------------------------------------------------------------
-# polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+# polystyrene (PS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7 (2009)
 # ref: https://refractiveindex.info/?shelf=organic&book=polystyren&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
 
@@ -969,7 +969,7 @@ PS_susc = [mp.LorentzianSusceptibility(frequency=PS_frq1, gamma=PS_gam1, sigma=P
 PS = mp.Medium(epsilon=1.0, E_susceptibilities=PS_susc, valid_freq_range=PS_range)
 
 #------------------------------------------------------------------
-# cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7, 2009
+# cellulose (CLS) from N. Sultanova et al., Acta Physica Polonica A, Vol. 116, pp. 585-7 (2009)
 # ref: https://refractiveindex.info/?shelf=organic&book=cellulose&page=Sultanova
 # wavelength range: 0.437 - 1.052 um
 
@@ -984,7 +984,7 @@ CLS_susc = [mp.LorentzianSusceptibility(frequency=CLS_frq1, gamma=CLS_gam1, sigm
 CLS = mp.Medium(epsilon=1.0, E_susceptibilities=CLS_susc, valid_freq_range=CLS_range)
 
 #------------------------------------------------------------------
-# barium borate (BaB2O4), beta phase, from G. Tamosauskas et al., Optical Materials Express, Vol. 8, pp. 1410-18, 2018
+# barium borate (BaB2O4), beta phase, from G. Tamosauskas et al., Optical Materials Express, Vol. 8, pp. 1410-18 (2018)
 # ref: https://refractiveindex.info/?shelf=main&book=BaB2O4&page=Tamosauskas-o
 # ref: https://refractiveindex.info/?shelf=main&book=BaB2O4&page=Tamosauskas-e
 # wavelength range: 0.188 - 5.2 um
@@ -1024,7 +1024,7 @@ BaB2O4_susc_e = [mp.LorentzianSusceptibility(frequency=BaB2O4_frq1, gamma=BaB2O4
 BaB2O4 = mp.Medium(epsilon=1.0, E_susceptibilities=BaB2O4_susc_o+BaB2O4_susc_e, valid_freq_range=BaB2O4_range)
 
 #------------------------------------------------------------------
-# lithium niobate (LiNbO3) from D.E. Zelmon et al., J. Optical Society of America B, Vol. 14, pp. 3319-22, 1997
+# lithium niobate (LiNbO3) from D.E. Zelmon et al., J. Optical Society of America B, Vol. 14, pp. 3319-22 (1997)
 # ref: https://refractiveindex.info/?shelf=main&book=LiNbO3&page=Zelmon-o
 # ref: https://refractiveindex.info/?shelf=main&book=LiNbO3&page=Zelmon-e
 # wavelength range: 0.4 - 5.0 um
@@ -1064,7 +1064,7 @@ LiNbO3_susc_e = [mp.LorentzianSusceptibility(frequency=LiNbO3_frq1, gamma=LiNbO3
 LiNbO3 = mp.Medium(epsilon=1.0, E_susceptibilities=LiNbO3_susc_o+LiNbO3_susc_e, valid_freq_range=LiNbO3_range)
 
 #------------------------------------------------------------------
-# calcium tungstate (CaWO4) from W.L. Bond, J. Applied Physics, Vol. 36, pp. 1674-77, 1965
+# calcium tungstate (CaWO4) from W.L. Bond, J. Applied Physics, Vol. 36, pp. 1674-77 (1965)
 # ref: https://refractiveindex.info/?shelf=main&book=CaWO4&page=Bond-o
 # ref: https://refractiveindex.info/?shelf=main&book=CaWO4&page=Bond-e
 # wavelength range: 0.45 - 4.0 um
@@ -1096,7 +1096,7 @@ CaWO4_susc_e = [mp.LorentzianSusceptibility(frequency=CaWO4_frq1, gamma=CaWO4_ga
 CaWO4 = mp.Medium(epsilon=1.0, E_susceptibilities=CaWO4_susc_o+CaWO4_susc_e, valid_freq_range=CaWO4_range)
 
 #------------------------------------------------------------------
-# calcium carbonate (CaCO3) from G. Ghosh, Optics Communication, Vol. 163, pp. 95-102, 1999
+# calcium carbonate (CaCO3) from G. Ghosh, Optics Communication, Vol. 163, pp. 95-102 (1999)
 # ref: https://refractiveindex.info/?shelf=main&book=CaCO3&page=Ghosh-o
 # ref: https://refractiveindex.info/?shelf=main&book=CaCO3&page=Ghosh-e
 # wavelength range: 0.204 - 2.172 um
@@ -1128,7 +1128,7 @@ CaCO3_susc_e = [mp.LorentzianSusceptibility(frequency=CaCO3_frq1, gamma=CaCO3_ga
 CaCO3 = mp.Medium(epsilon_diag=mp.Vector3(1.73358749,1.73358749,1.35859695), E_susceptibilities=CaCO3_susc_o+CaCO3_susc_e, valid_freq_range=CaCO3_range)
 
 #------------------------------------------------------------------
-# silicon dioxide (SiO2) from G. Ghosh, Optics Communication, Vol. 163, pp. 95-102, 1999
+# silicon dioxide (SiO2) from G. Ghosh, Optics Communication, Vol. 163, pp. 95-102 (1999)
 # ref: https://refractiveindex.info/?shelf=main&book=SiO2&page=Ghosh-o
 # ref: https://refractiveindex.info/?shelf=main&book=SiO2&page=Ghosh-e
 # wavelength range: 0.198 - 2.0531 um
@@ -1160,7 +1160,7 @@ SiO2_susc_e = [mp.LorentzianSusceptibility(frequency=SiO2_frq1, gamma=SiO2_gam1,
 SiO2_aniso = mp.Medium(epsilon_diag=mp.Vector3(1.28604141,1.28604141,1.28851804), E_susceptibilities=SiO2_susc_o+SiO2_susc_e, valid_freq_range=SiO2_range)
 
 #------------------------------------------------------------------
-# gallium nitride (GaN), alpha phase (wurtzite), from A.S. Barker Jr. and M. Ilegems, Physical Review B, Vol. 7, pp. 743-50, 1973
+# gallium nitride (GaN), alpha phase (wurtzite), from A.S. Barker Jr. and M. Ilegems, Physical Review B, Vol. 7, pp. 743-50 (1973)
 # ref: https://refractiveindex.info/?shelf=main&book=GaN&page=Barker-o
 # ref: https://refractiveindex.info/?shelf=main&book=GaN&page=Barker-e
 # wavelength range: 0.35 - 10 um
@@ -1188,7 +1188,7 @@ GaN_susc_e = [mp.LorentzianSusceptibility(frequency=GaN_frq1, gamma=GaN_gam1, si
 GaN = mp.Medium(epsilon_diag=mp.Vector3(3.6,3.6,5.35), E_susceptibilities=GaN_susc_o+GaN_susc_e, valid_freq_range=GaN_range)
 
 #------------------------------------------------------------------
-# aluminum nitride (AlN) from J. Pastrnak and L. Roskovcova, Physica Status Solidi, Vol. 14, K5-8, 1966
+# aluminum nitride (AlN) from J. Pastrnak and L. Roskovcova, Physica Status Solidi, Vol. 14, K5-8 (1966)
 # ref: https://refractiveindex.info/?shelf=main&book=AlN&page=Pastrnak-o
 # ref: https://refractiveindex.info/?shelf=main&book=AlN&page=Pastrnak-e
 # wavelength range: 0.22 - 5 um
@@ -1220,7 +1220,7 @@ AlN_susc_e = [mp.LorentzianSusceptibility(frequency=AlN_frq1, gamma=AlN_gam1, si
 AlN_aniso = mp.Medium(epsilon_diag=mp.Vector3(3.1399,3.1399,3.0729), E_susceptibilities=AlN_susc_o+AlN_susc_e, valid_freq_range=AlN_range)
 
 #------------------------------------------------------------------
-# alumina/sapphire (Al2O3) from I.H. Malitson and M.J. Dodge, J. Optical Society of America, Vol. 62, pp. 1405, 1972
+# alumina/sapphire (Al2O3) from I.H. Malitson and M.J. Dodge, J. Optical Society of America, Vol. 62, pp. 1405 (1972)
 # ref: https://refractiveindex.info/?shelf=main&book=Al2O3&page=Malitson-o
 # ref: https://refractiveindex.info/?shelf=main&book=Al2O3&page=Malitson-e
 # wavelength range: 0.2 - 5 um
@@ -1260,7 +1260,7 @@ Al2O3_susc_e = [mp.LorentzianSusceptibility(frequency=Al2O3_frq1, gamma=Al2O3_ga
 Al2O3_aniso = mp.Medium(epsilon=1, E_susceptibilities=Al2O3_susc_o+Al2O3_susc_e, valid_freq_range=Al2O3_range)
 
 #------------------------------------------------------------------
-# yttrium oxide (Y2O3) from Y. Nigara, Japanese J. of Applied Physics, Vol. 7, pp. 404-8, 1968
+# yttrium oxide (Y2O3) from Y. Nigara, Japanese J. of Applied Physics, Vol. 7, pp. 404-8 (1968)
 # ref: https://refractiveindex.info/?shelf=main&book=Y2O3&page=Nigara
 # wavelength range: 0.25 - 9.6 um
 
@@ -1279,7 +1279,7 @@ Y2O3_susc = [mp.LorentzianSusceptibility(frequency=Y2O3_frq1, gamma=Y2O3_gam1, s
 Y2O3 = mp.Medium(epsilon=1.0, E_susceptibilities=Y2O3_susc, valid_freq_range=Y2O3_range)
 
 #------------------------------------------------------------------
-# undoped yttrium aluminum garnet (YAG) from D.E. Zelmon et al., Applied Optics, Vol. 37, 4933-5, 1998
+# undoped yttrium aluminum garnet (YAG) from D.E. Zelmon et al., Applied Optics, Vol. 37, 4933-5 (1998)
 # ref: https://refractiveindex.info/?shelf=main&book=Y3Al5O12&page=Zelmon
 # wavelength range: 0.4 - 5.0 um
 
@@ -1298,7 +1298,7 @@ YAG_susc = [mp.LorentzianSusceptibility(frequency=YAG_frq1, gamma=YAG_gam1, sigm
 YAG = mp.Medium(epsilon=1.0, E_susceptibilities=YAG_susc, valid_freq_range=YAG_range)
 
 #------------------------------------------------------------------
-# cadmium telluride (CdTe) from D.T.F. Marple, J. Applied Physics, Vol. 35, pp. 539-42, 1964
+# cadmium telluride (CdTe) from D.T.F. Marple, J. Applied Physics, Vol. 35, pp. 539-42 (1964)
 # ref: https://refractiveindex.info/?shelf=main&book=CdTe&page=Marple
 # wavelength range: 0.86 - 2.5 um
 
