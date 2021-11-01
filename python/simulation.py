@@ -1725,7 +1725,7 @@ class Simulation(object):
             self.extra_materials,
             self.split_chunks_evenly,
             True,
-            self.geps,
+            None,
             False,
             None
         )
@@ -1903,7 +1903,7 @@ class Simulation(object):
             self.extra_materials,
             self.split_chunks_evenly,
             True,
-            self.geps,
+            None,
             False,
             None
         )

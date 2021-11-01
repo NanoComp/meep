@@ -179,8 +179,7 @@ public:
   cond_profile cond[5][2]; // [direction][side]
   double tol=DEFAULT_SUBPIXEL_TOL;
   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL;
-
-  int temp = 1;
+  
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
   geom_epsilon(const geom_epsilon &geps1); // copy constructor
   virtual ~geom_epsilon();

@@ -562,7 +562,7 @@ void epsilon_material_grid(material_data *md, double u) {
   // Linearly interpolate dc epsilon values
   cinterp_tensors(m1->epsilon_diag, m1->epsilon_offdiag, m2->epsilon_diag, m2->epsilon_offdiag,
                   &mm->epsilon_diag, &mm->epsilon_offdiag, u);
-
+  
   // Interpolate resonant strength from d.p.
   vector3 zero_vec;
   zero_vec.x = zero_vec.y = zero_vec.z = 0;
@@ -604,11 +604,16 @@ void epsilon_material_grid(material_data *md, double u) {
     // TODO: dampen the lorentzians to improve stability
     // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
     // omega_mean;
+    md->trivial=false;
   }
   double fake_damping = u*(1-u)*(md->damping);
   mm->D_conductivity_diag.x += fake_damping;
   mm->D_conductivity_diag.y += fake_damping;
   mm->D_conductivity_diag.z += fake_damping;
+
+  // set the trivial flag
+  if (md->damping != 0)
+    md->trivial=false;
 }
 
 // return material of the point p from the file (assumed already read)
@@ -2451,7 +2456,7 @@ dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
 /***************************************************************/
 
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g) {
-  //geom_fix_object_list(g);
+  geom_fix_object_list(g);
   geom_box box = gv2box(v);
   geom_box_tree geometry_tree = create_geom_box_tree0(g, box);
   return geometry_tree;
@@ -2531,64 +2536,43 @@ double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
   return val;
 }
 
-/* Used to calculate the permittivity tensor 
-at a particular point *after* the subpixel smoothing
-is applied (if specified). Since the current adjoint 
-formulation only works with diagonal materials,
-they must also be real.*/
-void get_chi1_tensor(const meep::vec &r, geom_epsilon* geps, double diag[3]){
-  // assemble the chi1inv tensor at the point
-  symm_matrix chi1inv;
-  symm_matrix chi1;
-  double chi1inv_row[3];
-  const double sd = 1.0; // FIXME: make user-changable?
-  meep::volume v(r);
-  LOOP_OVER_DIRECTIONS(dim, d){
-    v.set_direction_min(d, r.in_direction(d)-sd/2);
-    v.set_direction_max(d, r.in_direction(d)+sd/2);
-  }
-
-  meep::component cb[3];
-  int i = 0;
-  FOR_ELECTRIC_COMPONENTS(c){
-    cb[i] = c;
-    i++;
-  }
-
-  geps->eff_chi1inv_row(meep::Ex, chi1inv_row,
-                                        v, geps->tol, geps->maxeval);
-  chi1inv.m00 = chi1inv_row[0];
-  chi1inv.m01 = chi1inv_row[1];
-  chi1inv.m02 = chi1inv_row[2];
-  geps->eff_chi1inv_row(meep::Ey, chi1inv_row,
-                                        v, geps->tol, geps->maxeval);
-  chi1inv.m11 = chi1inv_row[1];
-  chi1inv.m12 = chi1inv_row[2];
-  geps->eff_chi1inv_row(meep::Ez, chi1inv_row,
-                                        v, geps->tol, geps->maxeval);
-  chi1inv.m22 = chi1inv_row[2];  
-
-  // invert the tensor to find chi1
-  sym_matrix_invert(&chi1, &chi1inv);
+void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
   
-  // pull the diagonal
-  diag[0] = chi1.m00; diag[1] = chi1.m11; diag[2] = chi1.m22;
+#define m(x,y) t[x*3+y]
+#define minv(x,y) t_inv[x*3+y]
+  std::complex<double> det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
+             m(0, 1) * (m(1, 0) * m(2, 2) - m(1, 2) * m(2, 0)) +
+             m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
+  std::complex<double> invdet = 1.0 / det;
+  minv(0, 0) = (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) * invdet;
+  minv(0, 1) = (m(0, 2) * m(2, 1) - m(0, 1) * m(2, 2)) * invdet;
+  minv(0, 2) = (m(0, 1) * m(1, 2) - m(0, 2) * m(1, 1)) * invdet;
+  minv(1, 0) = (m(1, 2) * m(2, 0) - m(1, 0) * m(2, 2)) * invdet;
+  minv(1, 1) = (m(0, 0) * m(2, 2) - m(0, 2) * m(2, 0)) * invdet;
+  minv(1, 2) = (m(1, 0) * m(0, 2) - m(0, 0) * m(1, 2)) * invdet;
+  minv(2, 0) = (m(1, 0) * m(2, 1) - m(2, 0) * m(1, 1)) * invdet;
+  minv(2, 1) = (m(2, 0) * m(0, 1) - m(0, 0) * m(2, 1)) * invdet;
+  minv(2, 2) = (m(0, 0) * m(1, 1) - m(1, 0) * m(0, 1)) * invdet;
+#undef m(x,y)
+#undef minv(x,y)
 }
 
-void get_material_tensor(const medium_struct *mm, double freq,
-                         std::complex<double> *tensor) {
-  /*
-  Note that the current implementation assumes that any dispersion
-  is either a lorentzian or drude profile.
-  */
+void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3],
+  const meep::vec &r, double freq, geom_epsilon *geps) {
+  // locate the proper material
+  material_type md;
+  geps->get_material_pt(md, r);
+  const medium_struct *mm = &(md->medium);
+  std::complex<double> tensor[9], tensor_inv[9];
+
+  // loop over all the tensor components
   for (int i = 0; i < 9; i++) {
-    std::complex<double> a = std::complex<double>(1, 0);
-    std::complex<double> b = std::complex<double>(0, 0);
+    std::complex<double> a,b;
     // compute first part containing conductivity
     vector3 dummy;
     dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
-    a += std::complex<double>(0.0, conductivityCur / freq);
+    a = std::complex<double>(1.0, conductivityCur / (freq));
 
     // compute lorentzian component
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
@@ -2602,41 +2586,67 @@ void get_material_tensor(const medium_struct *mm, double freq,
     // elementwise multiply
     tensor[i] = a * b;
   }
+
+  // invert the matrix
+  invert_tensor(tensor_inv, tensor);
+  master_printf("t %f %f | tinv %f %f\n",tensor[0].real(),tensor[0].imag(),
+  tensor_inv[0].real(),tensor_inv[0].imag()
+  );
+
+  // get the row we care about
+      switch (component_direction(c)) {
+      case meep::X:
+      case meep::R:
+        chi1inv_row[0] = tensor_inv[0];
+        chi1inv_row[1] = tensor_inv[1];
+        chi1inv_row[2] = tensor_inv[2];
+        break;
+      case meep::Y:
+      case meep::P:
+        chi1inv_row[0] = tensor_inv[3];
+        chi1inv_row[1] = tensor_inv[4];
+        chi1inv_row[2] = tensor_inv[5];
+        break;
+      case meep::Z:
+        chi1inv_row[0] = tensor_inv[6];
+        chi1inv_row[1] = tensor_inv[7];
+        chi1inv_row[2] = tensor_inv[8];
+        break;
+      case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+    }
 }
-//TODO only pull row and look at all 3 field components
+
 std::complex<double> get_material_gradient(
-    const meep::vec &r,             // material parameter at current point
-    const meep::component adjoint_c,
-    const meep::component forward_c,
-    std::complex<double> fields_f,  // forward field at current point
-    double freq,                    // frequency
-    geom_epsilon *geps,             // material
-    double du                       // step size
+    const meep::vec &r,               // current point
+    const meep::component adjoint_c,  // adjoint field component
+    const meep::component forward_c,  // forward field component
+    std::complex<double> fields_f,    // forward field at current point
+    double freq,                      // frequency
+    geom_epsilon *geps,               // material
+    double du                         // step size
 ) {
-  /* Note that the current implementation assumes that
-  no materials have off-diag components and that if a material
-  has dispersion, it is either a lorentzian or drude profile.
-  */
+  /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
+  The current adjoint (λ) field component (adjoint_c)
+  determines which row of Aᵤ we care about. 
+  The current forward (x) field component (forward_c)
+  determines which column of Aᵤ we care about.
 
-  /* For now we do a finite difference approach to estimate the
-  gradient of the system matrix `A` since it's fairly accurate,
-  cheap, and easy to generalize. */
+  There are two ways we can compute the required row/
+  column of Aᵤ:
+    1. If we want to incorporate subpixel smoothing,
+    we use the eff_chi1inv_row() routine. This neglects
+    conductivities, susceptibilities, etc.
+    2. We use eff_chi1inv_row_disp() for all other cases
+    (at the expense of not accounting for subpixel smoothing,
+    if there were any).
+  
+  For now we do a finite difference approach to estimate the
+  gradient of the system matrix A since it's fairly accurate,
+  cheap, and easy to generalize.*/
 
-  const double sd = 1.0; // FIXME: make user-changable?
-  meep::volume v(r);
-  LOOP_OVER_DIRECTIONS(dim, d){
-    v.set_direction_min(d, r.in_direction(d)-sd/2);
-    v.set_direction_max(d, r.in_direction(d)+sd/2);
-  }
-
-  double row_1[3], row_2[3], dA_du[3];
-  geps->u_p = -du;
-  geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
-  geps->u_p = du;
-  geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
-  geps->u_p=0;
-
-  for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
+  // locate the proper material
+  material_type md;
+  geps->get_material_pt(md, r);
 
   int dir_idx = 0;
   if (forward_c == meep::Ex || forward_c == meep::Er)
@@ -2647,8 +2657,35 @@ std::complex<double> get_material_gradient(
     dir_idx = 2;
   else
     meep::abort("Invalid adjoint field component");
+
+  if (md->trivial){
+    const double sd = 1.0; // FIXME: make user-changable?
+    meep::volume v(r);
+    LOOP_OVER_DIRECTIONS(dim, d){
+      v.set_direction_min(d, r.in_direction(d)-sd/2);
+      v.set_direction_max(d, r.in_direction(d)+sd/2);
+    }
+    double row_1[3], row_2[3], dA_du[3];
+    geps->u_p = -du;
+    geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
+    geps->u_p = du;
+    geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
+    geps->u_p=0;
+
+    for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
+    return dA_du[dir_idx] * fields_f;
   
-  return dA_du[dir_idx] * fields_f;
+  }else{
+    std::complex<double> row_1[3], row_2[3], dA_du[3];
+    geps->u_p = -du;
+    eff_chi1inv_row_disp(adjoint_c,row_1,r,freq,geps);
+    geps->u_p = du;
+    eff_chi1inv_row_disp(adjoint_c,row_2,r,freq,geps);
+    geps->u_p=0;
+
+    for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
+    return dA_du[dir_idx] * fields_f;
+  }  
 }
 
 /* add the weights from linear_interpolate (see the linear_interpolate
@@ -2851,7 +2888,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
         meep::ivec ip = gv.iloc(adjoint_c,idx);
         meep::vec p   = gv.loc(adjoint_c,idx);
         std::complex<double> adj = GET_FIELDS(fields_a,ci_adjoint,f_i,idx_fields);
-
+        double cyl_scale;
         int ci_forward = 0;
         FOR_MY_COMPONENTS(forward_c) {
           /* we need to calculate the bounds of 
@@ -2870,14 +2907,15 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
           /**************************************/
           /*            Main Routine            */
           /**************************************/
-          double cyl_scale;
-          // trivial case, no interpolation/restriction needed
+          /********* compute -λᵀAᵤx *************/
+
+          /* trivial case, no interpolation/restriction needed        */
           if (forward_c == adjoint_c){
             std::complex<double> fwd = GET_FIELDS(fields_f,ci_forward,f_i,idx_fields);
             std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, 1e-6);
             cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
             material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real()*cyl_scale, geps);
-          // more complicated case requires interpolation/restriction
+          /* more complicated case requires interpolation/restriction */
           }else{
             /* we need to restrict the adjoint fields to
             the two nodes of interest, and interpolate
@@ -2923,10 +2961,12 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             prod = 0.5*adj*get_material_gradient(eps2, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
             material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps2), scalegrad*prod.real()*cyl_scale, geps);
           }
-          /**************************************/
-          /**************************************/
           ci_forward++;
         }
+        /********* compute λᵀbᵤ ***************/
+        /* not yet implemented/needed */
+        /**************************************/
+        /**************************************/
       }
       ci_adjoint++;
     }
