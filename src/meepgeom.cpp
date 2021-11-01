@@ -2589,9 +2589,6 @@ void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3]
 
   // invert the matrix
   invert_tensor(tensor_inv, tensor);
-  master_printf("t %f %f | tinv %f %f\n",tensor[0].real(),tensor[0].imag(),
-  tensor_inv[0].real(),tensor_inv[0].imag()
-  );
 
   // get the row we care about
       switch (component_direction(c)) {
