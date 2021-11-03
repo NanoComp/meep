@@ -99,11 +99,11 @@ class OptimizationProblem(object):
 
         self.gradient = []
 
-    def __call__(self, rho_vector=None, need_value=True, need_gradient=True):
+    def __call__(self, rho_vector=None, need_value=True, need_gradient=True, beta=None):
         """Evaluate value and/or gradient of objective function.
         """
         if rho_vector:
-            self.update_design(rho_vector=rho_vector)
+            self.update_design(rho_vector=rho_vector, beta=beta)
 
         # Run forward run if requested
         if need_value and self.current_state == "INIT":
