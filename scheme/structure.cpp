@@ -176,8 +176,9 @@ static void read_epsilon_file(const char *eps_input_file) {
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims
     epsilon_data = (double *)eps_file.read(dataname, &rank, epsilon_dims, 3, false);
-    master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", epsilon_dims[0],
-                  epsilon_dims[1], epsilon_dims[2], eps_input_file);
+    if (meep::verbosity > 0)
+      master_printf("read in %zdx%zdx%zd epsilon-input-file \"%s\"\n", epsilon_dims[0],
+                    epsilon_dims[1], epsilon_dims[2], eps_input_file);
     delete[] fname;
   }
 }
@@ -274,7 +275,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
     for (int i = 0; i < num_print; ++i) {
       display_geometric_object_info(5, geometry.items[i]);
 
-      if (geometry.items[i].material.which_subclass == MTS::MEDIUM)
+      if (geometry.items[i].material.which_subclass == MTS::MEDIUM && meep::verbosity > 0)
         printf("%*sdielectric constant epsilon diagonal = (%g,%g,%g)\n", 5 + 5, "",
                geometry.items[i].material.subclass.medium_data->epsilon_diag.x,
                geometry.items[i].material.subclass.medium_data->epsilon_diag.y,
