@@ -4,14 +4,12 @@ from scipy.ndimage import gaussian_filter
 import unittest
 
 
-def compute_transmittance(use_symmetry=False):
+def compute_transmittance(matgrid_symmetry=False):
         resolution = 25
 
         cell_size = mp.Vector3(6,6,0)
 
         boundary_layers = [mp.PML(thickness=1.0)]
-
-        symmetries = [mp.Mirror(direction=mp.Y,phase=-1)]
 
         matgrid_size = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
@@ -19,11 +17,11 @@ def compute_transmittance(use_symmetry=False):
         Nx = int(matgrid_resolution*matgrid_size.x) + 1
         Ny = int(matgrid_resolution*matgrid_size.y) + 1
 
-        ## ensure reproducible results
+        # ensure reproducible results
         rng = np.random.RandomState(2069588)
 
         w = rng.rand(Nx,Ny)
-        weights = 0.5 * (w + np.fliplr(w))
+        weights = 0.5 * (w + np.fliplr(w)) if not matgrid_symmetry else w
 
         matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                                   mp.air,
@@ -38,7 +36,7 @@ def compute_transmittance(use_symmetry=False):
                              size=mp.Vector3(matgrid_size.x,matgrid_size.y,0),
                              material=matgrid)]
 
-        if use_symmetry:
+        if matgrid_symmetry:
                 geometry.append(mp.Block(center=mp.Vector3(),
                                          size=mp.Vector3(matgrid_size.x,matgrid_size.y,0),
                                          material=matgrid,
@@ -51,14 +49,12 @@ def compute_transmittance(use_symmetry=False):
         sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                                       center=mp.Vector3(-2.0,0),
                                       size=mp.Vector3(0,4.0),
-                                      eig_band=1,
                                       eig_parity=eig_parity)]
 
         sim = mp.Simulation(resolution=resolution,
                             cell_size=cell_size,
                             boundary_layers=boundary_layers,
                             sources=sources,
-                            symmetries=symmetries,
                             geometry=geometry)
 
         mode_mon = sim.add_flux(fcen, 0, 1,
@@ -70,7 +66,7 @@ def compute_transmittance(use_symmetry=False):
         mode_coeff = sim.get_eigenmode_coefficients(mode_mon,[1],eig_parity).alpha[0,:,0][0]
 
         tran = np.power(np.abs(mode_coeff),2)
-        print('tran:, {}, {}'.format("sym" if use_symmetry else "nosym", tran))
+        print('tran:, {}, {}'.format("sym" if matgrid_symmetry else "nosym", tran))
 
         return tran
 
