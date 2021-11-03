@@ -41,31 +41,37 @@ class DesignRegion(object):
     def get_gradient(self, sim, fields_a, fields_f, frequencies):
         num_freqs = onp.array(frequencies).size
         shapes = []
-        com = _compute_components(sim)
+        '''We have the option to linear scale the gradients up front
+        using the scalegrad parameter (leftover from MPB API). Not
+        currently needed for any existing feature (but available for
+        future use)'''
         scalegrad = 1
-        for ci, c in enumerate(com):
+        for component_idx, component in enumerate(_compute_components(sim)):
             '''We need to correct for the rare cases that get_dft_array
             returns a singleton element for the forward and adjoint fields.
             This only occurs when we are in 2D and only working with a particular
-            polarization (as the other fields are never stored). Our get_gradient
-            algorithm, however, requires we pass an array of zeros with the
-            proper shape as the design_region.            
-            '''
-            s = sim.get_array_slice_dimensions(c, vol=self.volume)[0]
-            if (onp.squeeze(fields_a[ci][0,...]).size == 1):
-                fields_a[ci] = onp.zeros(onp.insert(s,0,num_freqs))
-                fields_f[ci] = onp.zeros(onp.insert(s,0,num_freqs))
+            polarization (as the other fields are never stored). For example, the
+            2D in-plane polarization consists of a single scalar Ez field 
+            (technically, meep doesn't store anything for these cases, but get_dft_array
+            still returns 0).
+            
+            Our get_gradient algorithm, however, requires we pass an array of 
+            zeros with the proper shape as the design_region.'''
+            spatial_shape = sim.get_array_slice_dimensions(component, vol=self.volume)[0]
+            if (fields_a[component_idx][0,...].size == 1):
+                fields_a[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs))
+                fields_f[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs))
             if _check_if_cylindrical(sim):
                 '''For some reason, get_dft_array returns the field
                 components in a different order than the convention used
                 throughout meep. So, we reorder them here so we can use
                 the same field macros later in our get_gradient function.
                 '''
-                fields_a[ci] = onp.transpose(fields_a[ci],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
-                fields_f[ci] = onp.transpose(fields_f[ci],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
-            shapes.append(fields_a[ci].shape)
-            fields_a[ci] = fields_a[ci].flatten(order='C')
-            fields_f[ci] = fields_f[ci].flatten(order='C')
+                fields_a[component_idx] = onp.transpose(fields_a[component_idx],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
+                fields_f[component_idx] = onp.transpose(fields_f[component_idx],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
+            shapes.append(fields_a[component_idx].shape)
+            fields_a[component_idx] = fields_a[component_idx].flatten(order='C')
+            fields_f[component_idx] = fields_f[component_idx].flatten(order='C')
         shapes = onp.asarray(shapes).flatten(order='C')
         fields_a = onp.concatenate(fields_a)
         fields_f = onp.concatenate(fields_f)

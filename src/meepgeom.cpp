@@ -2620,6 +2620,7 @@ std::complex<double> get_material_gradient(
     std::complex<double> fields_f,    // forward field at current point
     double freq,                      // frequency
     geom_epsilon *geps,               // material
+    meep::grid_volume &gv,             // simulation grid volume
     double du                         // step size
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
@@ -2659,8 +2660,8 @@ std::complex<double> get_material_gradient(
     const double sd = 1.0; // FIXME: make user-changable?
     meep::volume v(r);
     LOOP_OVER_DIRECTIONS(dim, d){
-      v.set_direction_min(d, r.in_direction(d)-sd/2);
-      v.set_direction_max(d, r.in_direction(d)+sd/2);
+      v.set_direction_min(d, r.in_direction(d) - 0.5*gv.inva*sd);
+      v.set_direction_max(d, r.in_direction(d) + 0.5*gv.inva*sd);
     }
     double row_1[3], row_2[3], dA_du[3];
     geps->u_p = -du;
@@ -2909,7 +2910,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
           /* trivial case, no interpolation/restriction needed        */
           if (forward_c == adjoint_c){
             std::complex<double> fwd = GET_FIELDS(fields_f,ci_forward,f_i,idx_fields);
-            std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, 1e-6);
+            std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, gv, 1e-6);
             cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
             material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real()*cyl_scale, geps);
           /* more complicated case requires interpolation/restriction */
@@ -2944,7 +2945,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd_avg = fwd1 + fwd2;
             meep::vec eps1 = gv[ieps1];
             cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-            prod = 0.5*adj*get_material_gradient(eps1, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
+            prod = 0.5*adj*get_material_gradient(eps1, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, gv, 1e-6);
             material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps1), scalegrad*prod.real()*cyl_scale, geps);
             
             //operate on the second eps node
@@ -2955,7 +2956,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd_avg = fwd1 + fwd2;
             meep::vec eps2 = gv[ieps2];
             cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
-            prod = 0.5*adj*get_material_gradient(eps2, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, 1e-6);
+            prod = 0.5*adj*get_material_gradient(eps2, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, gv, 1e-6);
             material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps2), scalegrad*prod.real()*cyl_scale, geps);
           }
           ci_forward++;

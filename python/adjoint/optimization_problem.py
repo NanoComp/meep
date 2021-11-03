@@ -117,13 +117,13 @@ class OptimizationProblem(object):
                 print("Starting forward run...")
                 self.forward_run()
                 print("Starting adjoint run...")
-                self.a_E = []
+                self.D_a = []
                 self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
             elif self.current_state == "FWD":
                 print("Starting adjoint run...")
-                self.a_E = []
+                self.D_a = []
                 self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
@@ -192,7 +192,7 @@ class OptimizationProblem(object):
             self.f0 = self.f0[0]
 
         # Store forward fields for each set of design variables in array
-        self.d_E = utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies)
+        self.D_f = utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies)
 
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
@@ -245,7 +245,7 @@ class OptimizationProblem(object):
             ))
 
             # Store adjoint fields for each design set of design variables
-            self.a_E.append(utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies))
+            self.D_a.append(utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies))
         
         # reset the m number
         if utils._check_if_cylindrical(self.sim):
@@ -262,8 +262,8 @@ class OptimizationProblem(object):
         self.gradient = [[
             dr.get_gradient(
                 self.sim,
-                self.a_E[ar][dri],
-                self.d_E[dri],
+                self.D_a[ar][dri],
+                self.D_f[dri],
                 self.frequencies,
             ) for dri, dr in enumerate(self.design_regions)
         ] for ar in range(len(self.objective_functions))]
