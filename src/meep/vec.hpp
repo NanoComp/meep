@@ -789,6 +789,12 @@ public:
     return result;
   };
 
+  ivec operator+(int s) const {
+    ivec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] += s;
+    return result;
+  };
+
   ivec operator+=(const ivec &a) {
     LOOP_OVER_DIRECTIONS(dim, d) t[d] += a.t[d];
     return *this;
@@ -844,6 +850,19 @@ public:
   ivec operator*(int s) const {
     ivec result = *this;
     LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= s;
+    return result;
+  };
+
+  // element-wise product
+  ivec operator*(const ivec &a) const {
+    ivec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] *= a.t[d];
+    return result;
+  };
+
+  ivec operator/(int s) const {
+    ivec result = *this;
+    LOOP_OVER_DIRECTIONS(dim, d) result.t[d] /= s;
     return result;
   };
 

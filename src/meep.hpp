@@ -1931,6 +1931,8 @@ public:
   int is_phasing();
 
   // loop_in_chunks.cpp
+  static ivec vec2diel_floor(const vec &pt, double a, const ivec &equal_shift);
+  static ivec vec2diel_ceil(const vec &pt, double a, const ivec &equal_shift);
   void loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, const volume &where,
                       component cgrid = Centered, bool use_symmetry = true,
                       bool snap_unit_dims = false);

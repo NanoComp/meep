@@ -136,6 +136,7 @@ struct material_data {
   double beta;
   double eta;
   double damping;
+  bool trivial=true;
   /*
   There are several possible scenarios when material grids overlap -- these
   different scenarios enable different applications.

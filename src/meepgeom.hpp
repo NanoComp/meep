@@ -170,13 +170,16 @@ struct cond_profile {
 };
 
 class geom_epsilon : public meep::material_function {
-  geometric_object_list geometry;
-  geom_box_tree geometry_tree;
-  geom_box_tree restricted_tree;
-
-  cond_profile cond[5][2]; // [direction][side]
 
 public:
+  double u_p = 0;
+  geom_box_tree geometry_tree; 
+  geom_box_tree restricted_tree;
+  geometric_object_list geometry;
+  cond_profile cond[5][2]; // [direction][side]
+  double tol=DEFAULT_SUBPIXEL_TOL;
+  int maxeval=DEFAULT_SUBPIXEL_MAXEVAL;
+  
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
   geom_epsilon(const geom_epsilon &geps1); // copy constructor
   virtual ~geom_epsilon();
@@ -214,9 +217,8 @@ public:
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
-private:
   void get_material_pt(material_type &material, const meep::vec &r);
-
+private:
   material_type_list extra_materials;
   pol *current_pol;
 };
@@ -293,22 +295,10 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
-void get_material_tensor(const medium_struct *mm, double freq, std::complex<double> *tensor);
-double get_material_gradient(double u, std::complex<double> fields_a,
-                             std::complex<double> fields_f, double freq,
-                             material_data *md, meep::component field_dir,
-                             double du = 1.0e-3);
-void add_interpolate_weights(double rx, double ry, double rz,
-                             double *data, int nx, int ny, int nz, int stride,
-                             double scaleby, const double *udata, int ukind, double uval);
-void material_grids_addgradient_point(double *v, std::complex<double> fields_a,
-                                      std::complex<double> fields_f, meep::component field_dir,
-                                      vector3 p, double scalegrad, double freq,
-                                      geom_box_tree geometry_tree);
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
-                                std::complex<double> *fields_f, double *frequencies,
-                                size_t nf, double scalegrad, const meep::volume &where,
-                                geom_box_tree geometry_tree, meep::fields *f, bool sim_is_cylindrical);
+                                std::complex<double> *fields_f, size_t fields_shapes[12],
+                                double *frequencies, double scalegrad,
+                                meep::grid_volume &gv, meep::volume &where, geom_epsilon *geps);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/

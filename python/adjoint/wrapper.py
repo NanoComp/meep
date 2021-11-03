@@ -99,9 +99,7 @@ class MeepJaxWrapper:
         monitors: List[EigenmodeCoefficient],
         design_regions: List[DesignRegion],
         frequencies: List[float],
-        measurement_interval: float = 50.0,
-        dft_field_components: Tuple[int, ...] = (mp.Ez, ),
-        dft_threshold: float = 1e-6,
+        dft_threshold: float = 1e-11,
         minimum_run_time: float = 0,
         maximum_run_time: float = onp.inf,
         until_after_sources: bool = True,
@@ -111,14 +109,11 @@ class MeepJaxWrapper:
         self.monitors = monitors
         self.design_regions = design_regions
         self.frequencies = frequencies
-        self.measurement_interval = measurement_interval
-        self.dft_field_components = dft_field_components
         self.dft_threshold = dft_threshold
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
         self.until_after_sources = until_after_sources
 
-        self._reset_convergence_measurement()
         self._simulate_fn = self._initialize_callable()
 
     def __call__(self, designs: List[jnp.ndarray]) -> jnp.ndarray:
@@ -140,17 +135,6 @@ class MeepJaxWrapper:
         """
         return self._simulate_fn(designs)
 
-    def _reset_convergence_measurement(self,
-                                       monitors: List[mp.DftFields] = None
-                                       ) -> None:
-        """Resets the DFT convergence measurement."""
-        if monitors is None:
-            monitors = []
-        self._dft_convergence_monitors = monitors
-        self._last_measurement_meep_time = 0.0
-        self._previous_fields = self._init_empty_dft_field_container()
-        self._dft_relative_change = []
-
     def _run_fwd_simulation(self, design_variables):
         """Runs forward simulation, returning monitor values and design region fields."""
         utils.validate_and_update_design(self.design_regions, design_variables)
@@ -165,9 +149,8 @@ class MeepJaxWrapper:
         self.simulation.init_sim()
         sim_run_args = {
             'until_after_sources' if self.until_after_sources else 'until':
-            self._simulation_run_callback
+            mp.stop_when_dft_decayed(self.dft_threshold,self.minimum_run_time,self.maximum_run_time)
         }
-        self._reset_convergence_measurement(design_region_monitors)
         self.simulation.run(**sim_run_args)
 
         monitor_values = utils.gather_monitor_values(self.monitors)
@@ -197,9 +180,8 @@ class MeepJaxWrapper:
         self.simulation.init_sim()
         sim_run_args = {
             'until_after_sources' if self.until_after_sources else 'until':
-            self._simulation_run_callback
+            mp.stop_when_dft_decayed(self.dft_threshold,self.minimum_run_time,self.maximum_run_time)
         }
-        self._reset_convergence_measurement(design_region_monitors)
         self.simulation.run(**sim_run_args)
 
         return utils.gather_design_region_fields(
@@ -254,79 +236,3 @@ class MeepJaxWrapper:
         simulate.defvjp(_simulate_fwd, _simulate_rev)
 
         return simulate
-
-    def _init_empty_dft_field_container(self) -> List[List[float]]:
-        """Initializes a nested list for storing DFT fields for convergence monitoring."""
-        num_components = len(self.dft_field_components)
-        num_monitors = len(self._dft_convergence_monitors)
-        return [[0.0 for _ in range(num_components)]
-                for _ in range(num_monitors)]
-
-    def _are_dfts_converged(self, sim: mp.Simulation) -> bool:
-        """Callback to determine whether the DFT fields are converged below the threshold."""
-        if self.dft_threshold == 0 or not self._dft_convergence_monitors or not self.dft_field_components:
-            return False
-        relative_change = []
-        current_fields = self._init_empty_dft_field_container()
-        for monitor_idx, monitor in enumerate(self._dft_convergence_monitors):
-            for component_idx, component in enumerate(
-                    self.dft_field_components):
-                previous_fields = self._previous_fields[monitor_idx][
-                    component_idx]
-                current_fields[monitor_idx][component_idx] = sim.get_dft_array(
-                    monitor,
-                    component,
-                    int(monitor.nfreqs // 2),
-                )
-                norm_previous = _norm_fn(previous_fields)
-                field_diff = previous_fields - current_fields[monitor_idx][
-                    component_idx]
-                if norm_previous != 0:
-                    relative_change.append(
-                        _norm_fn(field_diff) / norm_previous)
-                else:
-                    relative_change.append(1.0)
-        relative_change = _reduce_fn(relative_change)
-        self._dft_relative_change.append(relative_change)
-        self._previous_fields = current_fields
-        if mp.am_master() and mp.verbosity > 0:
-            print(
-                'At simulation time %.2f the relative change in the DFT fields is %.2e.'
-                % (sim.meep_time(), relative_change))
-        return relative_change < self.dft_threshold
-
-    def _simulation_run_callback(self, sim: mp.Simulation) -> bool:
-        """A callback function returning `True` when the simulation should stop.
-
-        This is a step function that gets called at each time step of the Meep
-        simulation, taking a Meep simulation object as an input and returning `True`
-        when the simulation should be terminated and returning `False` when the
-        simulation should continue. The resulting step function is designed to be
-        used with the `until` and `until_after_sources` arguments of the Meep
-        simulation `run()` routine.
-
-        Args:
-          sim: a Meep simulation object.
-
-        Returns:
-          a boolean indicating whether the simulation should be terminated.
-        """
-        current_meep_time = sim.round_time()
-        if current_meep_time <= self._last_measurement_meep_time + self.measurement_interval:
-            return False
-        if current_meep_time <= self.minimum_run_time:
-            if mp.am_master() and mp.verbosity > 0:
-                remaining_time = self.minimum_run_time - sim.round_time()
-                self._log_fn(
-                    '%.2f to go until the minimum simulation runtime is reached.'
-                    % (remaining_time, ))
-            return False
-        if current_meep_time >= self.maximum_run_time:
-            if mp.am_master() and mp.verbosity > 0:
-                self._log_fn(
-                    'Stopping the simulation because the maximum simulation run '
-                    'time of %.2f has been reached.' %
-                    (self.maximum_run_time, ))
-            return True
-        self._last_measurement_meep_time = current_meep_time
-        return self._are_dfts_converged(sim)

@@ -844,7 +844,9 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 %inline %{
-void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObject *grid_volume, PyObject *frequencies, PyObject *py_geom_list, PyObject *f, bool sim_is_cylindrical) {
+void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
+    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies, 
+    meep_geom::geom_epsilon *geps, PyObject *fields_shapes) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -867,15 +869,11 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
     std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
 
-    // scalegrad not currently used
-    double scalegrad = 1.0;
-
-    // clean the volume object
-    void* where;
-
-    PyObject *swigobj = PyObject_GetAttrString(grid_volume, "swigobj");
-    SWIG_ConvertPtr(swigobj,&where,0,NULL);
-    const meep::volume* where_vol = (const meep::volume*)where;
+    // clean shapes array
+    PyArrayObject *pao_fields_shapes = (PyArrayObject *)fields_shapes;
+    if (!PyArray_Check(pao_fields_shapes)) meep::abort("fields shape parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_fields_shapes)) meep::abort("Numpy fields shape array must be C-style contiguous.");
+    size_t *fields_shapes_c = (size_t *)PyArray_DATA(pao_fields_shapes);
 
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
@@ -885,24 +883,8 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     npy_intp nf = PyArray_DIMS(pao_freqs)[0];
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
-    // prepare a geometry_tree
-    // TODO eventually it would be nice to store the geom tree within the structure object so we don't have to recreate it here
-    geometric_object_list *l;
-    l = new geometric_object_list();
-    if (!py_list_to_gobj_list(py_geom_list,l)) meep::abort("Unable to convert geometry tree.");
-    geom_box_tree geometry_tree = calculate_tree(*where_vol,*l);
-
-    // clean the fields pointer
-    void* f_v;
-    SWIG_ConvertPtr(f,&f_v,NULL,NULL);
-    meep::fields* f_c = (meep::fields *)f_v;
-
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,frequencies_c,nf,scalegrad,*where_vol,geometry_tree,f_c, sim_is_cylindrical);
-
-    destroy_geom_box_tree(geometry_tree);
-    delete l;
-    Py_DECREF(swigobj);
+    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,fields_shapes_c,frequencies_c,scalegrad,*grid_volume,*where,geps);
 }
 %}
 
@@ -1412,11 +1394,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 
 // For some reason SWIG needs the namespaced version too
 %apply material_type_list { meep_geom::material_type_list };
-
-// Typemaps for geom_epsilon object
-%typemap(out) geom_epsilon {
-    $result = PyCapsule_New($1);
-}
 
 // Typemap suite for kpoint_func
 
