@@ -38,7 +38,7 @@ class DesignRegion(object):
     def update_beta(self,beta):
         self.design_parameters.beta=beta
 
-    def get_gradient(self, sim, fields_a, fields_f, frequencies):
+    def get_gradient(self, sim, fields_a, fields_f, frequencies, finite_difference_step):
         num_freqs = onp.array(frequencies).size
         shapes = []
         '''We have the option to linear scale the gradients up front
@@ -82,7 +82,8 @@ class DesignRegion(object):
         vol = sim._fit_volume_to_simulation(self.volume)
         
         # compute the gradient
-        mp._get_gradient(grad,scalegrad,fields_a,fields_f,sim.gv,vol.swigobj,onp.array(frequencies),sim.geps,shapes)
+        mp._get_gradient(grad,scalegrad,fields_a,fields_f,
+        sim.gv,vol.swigobj,onp.array(frequencies),sim.geps,shapes,finite_difference_step)
         return onp.squeeze(grad).T
 
 def _check_if_cylindrical(sim):

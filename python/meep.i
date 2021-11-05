@@ -846,7 +846,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %inline %{
 void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
     meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies, 
-    meep_geom::geom_epsilon *geps, PyObject *fields_shapes) {
+    meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -884,7 +884,7 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,fields_shapes_c,frequencies_c,scalegrad,*grid_volume,*where,geps);
+    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,fields_shapes_c,frequencies_c,scalegrad,*grid_volume,*where,geps,fd_step);
 }
 %}
 
