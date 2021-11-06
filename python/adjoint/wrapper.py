@@ -103,6 +103,7 @@ class MeepJaxWrapper:
         minimum_run_time: float = 0,
         maximum_run_time: float = onp.inf,
         until_after_sources: bool = True,
+        finite_difference_step: float = 1e-6
     ):
         self.simulation = simulation
         self.sources = sources
@@ -113,6 +114,7 @@ class MeepJaxWrapper:
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
         self.until_after_sources = until_after_sources
+        self.finite_difference_step = finite_difference_step
 
         self._simulate_fn = self._initialize_callable()
 
@@ -206,6 +208,7 @@ class MeepJaxWrapper:
             adj_fields,
             design_variable_shapes,
             sum_freq_partials=sum_freq_partials,
+            finite_difference_step=self.finite_difference_step
         )
 
     def _initialize_callable(

@@ -105,6 +105,7 @@ def calculate_vjps(
     adj_fields: List[List[onp.ndarray]],
     design_variable_shapes: List[Tuple[int, ...]],
     sum_freq_partials: bool = True,
+    finite_difference_step: float = 1e-6
 ) -> List[onp.ndarray]:
     """Calculates the VJP for a given set of forward and adjoint fields."""
     vjps = [
@@ -113,6 +114,7 @@ def calculate_vjps(
             adj_fields[i],
             fwd_fields[i],
             frequencies,
+            finite_difference_step,
         ) for i, design_region in enumerate(design_regions)
     ]
     if sum_freq_partials:
