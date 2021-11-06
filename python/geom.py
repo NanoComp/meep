@@ -529,7 +529,7 @@ class MaterialGrid(object):
     the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
     [material function](#medium)).
     """
-    def __init__(self,grid_size,medium1,medium2,weights=None,grid_type="U_DEFAULT",do_averaging=False,beta=0,eta=0.5,damping=0):
+    def __init__(self,grid_size,medium1,medium2,weights=None,grid_type="U_DEFAULT",do_averaging=True,beta=0,eta=0.5,damping=0):
         """
         Creates a `MaterialGrid` object.
 
