@@ -812,4 +812,14 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
 
 } // get_array_metadata
 
+std::vector<int> fields::indicate_thick_dims(const volume &where) { // indicate which dimensions have sizes larger than 1
+
+  std::vector<int> thickness_indicator = {1, 1, 1};
+  for (int nd = 0; nd < 3; nd++) {
+    direction d = direction(nd);
+    if (where.in_direction(d) == 0.0) thickness_indicator[nd] = 0; // set the entry to 0 if the size of the corresponding dimension is only 1
+  }
+  return thickness_indicator;
+}
+
 } // namespace meep

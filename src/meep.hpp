@@ -1419,7 +1419,7 @@ public:
   dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
   dft_fields(dft_chunk *chunks, const std::vector<double> &freq_, const volume &where);
   dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
-
+  std::vector<sourcedata> fourier_sourcedata(const volume &where, int* min_max_corners, std::complex<double>* dJ);
   void scale_dfts(std::complex<double> scale);
 
   void remove();
@@ -2167,6 +2167,8 @@ public:
   std::complex<double> get_field(int c, const vec &loc, bool parallel = true) const;
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
+  std::vector<int> get_corners(dft_fields fdft,component c); // get the minimum and maximum ivec values of the dft monitor
+  std::vector<int> indicate_thick_dims(const volume &where); // indicate which dimensions have sizes larger than 1
 
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();

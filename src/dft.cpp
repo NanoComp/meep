@@ -20,7 +20,7 @@
 #include <math.h>
 #include <string.h>
 #include <algorithm>
-
+#include <assert.h>
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
@@ -1373,6 +1373,93 @@ void fields::get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
 void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                                    std::complex<double> overlaps[2]) {
   get_overlap(mode1_data, mode2_data, flux, 0, overlaps);
+}
+
+std::vector<int> fields::get_corners(dft_fields fdft, component c){ // get the minimum and maximum ivec values of the dft monitor
+  volume *where = &v;
+  ivec min_corner = gv.round_vec(where->get_max_corner()) + one_ivec(gv.dim);
+  ivec max_corner = gv.round_vec(where->get_min_corner()) - one_ivec(gv.dim);
+
+  for (dft_chunk *chunk = fdft.chunks; chunk; chunk = chunk->next_in_dft) {
+    if (chunk->c != c) continue;
+    ivec isS = chunk->S.transform(chunk->is, chunk->sn) + chunk->shift;
+    ivec ieS = chunk->S.transform(chunk->ie, chunk->sn) + chunk->shift;
+    min_corner = min(min_corner, min(isS, ieS));
+    max_corner = max(max_corner, max(isS, ieS));
+  }
+  am_now_working_on(MpiAllTime);
+  max_corner = max_to_all(max_corner);
+  min_corner = -max_to_all(-min_corner); // i.e., min_to_all
+  finished_working();
+
+  std::vector<int> corners = {min_corner.x(),min_corner.y(),min_corner.z(),max_corner.x(),max_corner.y(),max_corner.z()};
+  return corners;
+}
+
+std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, int* min_max_corners, std::complex<double>* dJ){
+  if (!chunks) return std::vector<struct sourcedata>();
+  const size_t Nfreq = freq.size();
+
+  size_t nxyz[3] = {1, 1, 1}; // lengths of the dft monitor along the three dimensions
+  for (int nd = 0; nd < 3; ++nd){
+    direction d = direction(nd);
+    if (where.in_direction(d) > 0) nxyz[nd] = int((min_max_corners[nd+3]-min_max_corners[nd])/2)+1;
+  }
+  const size_t Nspace = nxyz[0]*nxyz[1]*nxyz[2]; // total number of points in the monitor
+
+  std::vector<struct sourcedata> temp;
+
+  for (dft_chunk *f = chunks; f; f = f->next_in_dft) {
+    assert(Nfreq == f->omega.size());
+    vec rshift(f->shift * (0.5 * f->fc->gv.inva));
+
+    std::vector<ptrdiff_t> idx_arr;
+    std::vector<std::complex<double> > amp_arr;
+    std::complex<double> EH0 = std::complex<double>(0,0);
+    sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
+    int xyz_ind[3] = {0,0,0}; // array indicating the position of a point relative to the minimum corner of the monitor
+
+    LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+      IVEC_LOOP_LOC(f->fc->gv, x0);
+      IVEC_LOOP_ILOC(f->fc->gv, ix0);
+      x0 = f->S.transform(x0, f->sn) + rshift;
+      ix0 = f->S.transform(ix0, f->sn) + f->shift;
+
+      double dJ_weight = 1; // weight for linear interpolation
+
+      for (int nd = 0; nd < 3; ++nd){
+        direction d = direction(nd);
+        if (where.in_direction(d) > 0) xyz_ind[nd] = int((ix0.in_direction(d)-min_max_corners[nd])/2);
+        else dJ_weight *= (1-abs(x0.in_direction(d)-where.in_direction_min(d))/(f->fc->gv.inva)); // based on distances
+      }
+      size_t space_idx = xyz_ind[0]*nxyz[1]*nxyz[2]+xyz_ind[1]*nxyz[2]+xyz_ind[2]; // index when dJ is flattened to a one-dimenional array
+
+      if (f->avg1==0 && f->avg2==0){ // yee_grid = true
+        temp_struct.idx_arr.push_back(idx);
+        for (size_t i = 0; i < Nfreq; ++i) {
+          EH0 = dJ_weight*dJ[Nspace*i+space_idx];
+          if (is_electric(temp_struct.near_fd_comp)) EH0 *= -1;
+          EH0 /= f->S.multiplicity(ix0);
+          temp_struct.amp_arr.push_back(EH0);
+        }
+      }
+      else{ // yee_grid = false
+          // four or two neighbouring points in the yee lattice are involved in calculating the value at the center of a voxel
+        size_t site_ind[4] = {idx,idx + f->avg1,idx + f->avg2,idx + f->avg1 + f->avg2};
+        for (size_t j = 0; j < 4; ++j){
+          temp_struct.idx_arr.push_back(site_ind[j]);
+          for (size_t i = 0; i < Nfreq; ++i) {
+            EH0 = dJ_weight*dJ[Nspace*i+space_idx]*0.25; // split the amplitude of the adjoint source into four parts
+            if (is_electric(temp_struct.near_fd_comp)) EH0 *= -1;
+            EH0 /= f->S.multiplicity(ix0);
+            temp_struct.amp_arr.push_back(EH0);
+          }
+        }
+      }
+    }
+    temp.push_back(temp_struct);
+  }
+  return temp;
 }
 
 } // namespace meep

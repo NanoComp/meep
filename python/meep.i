@@ -1066,6 +1066,10 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     $1 = PyList_Check($input);
 }
 
+%typemap(in) int* thickness_indicator {
+    $1 = (int *)thickness_indicator($input);
+}
+
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
@@ -1426,6 +1430,10 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
 
 %typemap(in) double* farpt_list {
     $1 = (double *)array_data($input);
+}
+
+%typemap(in) int* min_max_corners {
+    $1 = (int *)array_data($input);
 }
 
 %exception {
