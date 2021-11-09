@@ -20,7 +20,7 @@ dpml = 1
 cell_thickness = dpml+t_oxide+t_Si+t_air+dpml
 
 oxide = mp.Medium(epsilon=2.25)
-silicon=mp.Medium(epsilon=12)
+silicon = mp.Medium(epsilon=12)
 
 fcen = 1/1.55
 df = 0.2*fcen
@@ -72,9 +72,7 @@ def main(args):
 
     sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                                   volume=src_vol,
-                                  eig_band=1,
-                                  eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z,
-                                  eig_match_freq=True)]
+                                  eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z)]
 
     sim = mp.Simulation(resolution=args.res,
                         cell_size=cell.size,
