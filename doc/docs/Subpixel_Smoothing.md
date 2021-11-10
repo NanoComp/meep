@@ -18,7 +18,7 @@ However, subpixel smoothing has five limitations:
 
 4. The fields directly on the interface are still at best first-order accurate. The improved accuracy from smoothing is therefore obtained for fields evaluated off of the interface as in the [scattered Poynting flux](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) integrated over a surface away from the interface, for nonlocal properties such as [resonant frequencies](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes), and for overall integrals of fields and energies to which the interface contributes only $\mathcal{O}(\Delta x)$ of the integration domain.
 
-5. It is only valid when the `resolution` is fine enough such that the dielectric interfaces are locally flat within the voxel. At `resolution`s which are coarser than the geometric dimensions, the analytic theory breaks down and subpixel smoothing is no longer guaranteed to improve accuracy.
+5. It is only valid when the `resolution` is fine enough such that the dielectric interfaces are locally flat within most of the voxels (i.e., the radius of curvature is much larger than the resolution Δx). At `resolution`s which are coarser than the geometric dimensions, the analytic theory breaks down and subpixel smoothing is no longer guaranteed to improve accuracy.
 
 [TOC]
 
