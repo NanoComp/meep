@@ -1405,6 +1405,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
             material_free($1.items[i]);
+            delete $1.items[i];
         }
     }
     delete[] $1.items;
@@ -1511,6 +1512,7 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 // it gets garbage collected and the file gets closed.
 %newobject meep::fields::open_h5file;
 
+%newobject meep::make_output_directory;
 %newobject _get_eigenmode;
 
 %rename(_vec) meep::vec::vec;
