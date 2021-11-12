@@ -161,7 +161,7 @@ class TestVisualization(unittest.TestCase):
         sim = setup_sim() # generate 2D simulation
 
         Animate = mp.Animate2D(sim,fields=mp.Ez, realtime=False, normalize=False) # Check without normalization
-        Animate_norm = mp.Animate2D(sim,mp.Ez,realtime=False,normalize=True) # Check with normalization
+        Animate_norm = mp.Animate2D(sim, mp.Ez, realtime=False, normalize=True) # Check with normalization
 
         # test both animation objects during same run
         sim.run(

@@ -2755,8 +2755,8 @@ class Simulation(object):
         (Fourier-transformed) "far" fields at `x` as list of length 6`nfreq`, consisting
         of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
         in Cartesian coordinates and
-        $(E_r^1,E_\phi^1,E_z^1,H_r^1,H_\phi^1,H_z^1,E_r^2,E_\phi^2,E_z^2,H_r^2,H_\phi^2,H_z^2,...)$
-        in cylindrical coordinates for the frequencies 1,2,…,`nfreq`.
+        $(E_r^1,E_\\phi^1,E_z^1,H_r^1,H_\\phi^1,H_z^1,E_r^2,E_\\phi^2,E_z^2,H_r^2,H_\\phi^2,H_z^2,...)$
+        in cylindrical coordinates for the frequencies 1,2,...,`nfreq`.
         """
         return mp._get_farfield(near2far.swigobj, py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical))
 
@@ -4149,20 +4149,22 @@ class Simulation(object):
             - `alpha=0.6`: transparency of fields
             - `post_process=np.real`: post processing function to apply to fields (must be
               a function object)
-        * `frequency`: for materials with a [frequency-dependent
-          permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
-          frequency $f$ (in Meep units) of the real part of the permittivity to use in the
-          plot. Defaults to the `frequency` parameter of the [Source](#source) object.
-
         """
-        return vis.plot2D(self, ax=ax, output_plane=output_plane, fields=fields, labels=labels,
-            eps_parameters=eps_parameters, boundary_parameters=boundary_parameters,
-            source_parameters=source_parameters,monitor_parameters=monitor_parameters,
-            field_parameters=field_parameters, frequency=frequency,
-            plot_eps_flag=plot_eps_flag, plot_sources_flag=plot_sources_flag,
-            plot_monitors_flag=plot_monitors_flag, plot_boundaries_flag=plot_boundaries_flag,
-            **kwargs)
-
+        return vis.plot2D(self,
+                          ax=ax,
+                          output_plane=output_plane,
+                          fields=fields,
+                          labels=labels,
+                          eps_parameters=eps_parameters,
+                          boundary_parameters=boundary_parameters,
+                          source_parameters=source_parameters,
+                          monitor_parameters=monitor_parameters,
+                          field_parameters=field_parameters,
+                          plot_eps_flag=plot_eps_flag,
+                          plot_sources_flag=plot_sources_flag,
+                          plot_monitors_flag=plot_monitors_flag,
+                          plot_boundaries_flag=plot_boundaries_flag,
+                          **kwargs)
 
     def plot_fields(self,**kwargs):
         return vis.plot_fields(self,**kwargs)
