@@ -99,6 +99,13 @@ class ObjectiveQuantity(abc.ABC):
             scale *= 2
         return scale
 
+    def _dft_monitor_size(self,min_max_corners):
+        """Evaluates the size of the dft monitor for FourierFields."""
+        thickness_indicator = self.sim.fields.indicate_thick_dims(self.volume.swigobj)
+        raw_size = (min_max_corners[3:6]-min_max_corners[0:3])/2+np.ones(3)
+        true_size = np.array([raw_size[i]*(thickness_indicator[i]==1)+(thickness_indicator[i]==0) for i in range(3)],dtype=int)
+        return true_size
+
     def _create_time_profile(self, fwidth_frac=0.1):
         """Creates a time domain waveform for normalizing the adjoint source(s).
 
@@ -248,32 +255,29 @@ class FourierFields(ObjectiveQuantity):
         time_src = self._create_time_profile()
         sources = []
 
-        thickness_indicator = self.sim.fields.indicate_thick_dims(self.volume.swigobj)
         min_max_corners = self.sim.fields.get_corners(self._monitor.swigobj, self.component) # ivec values of the corners
-        raw_size = (min_max_corners[3:6]-min_max_corners[0:3])/2+np.ones(3)
-        true_size = np.array([raw_size[i]*(thickness_indicator[i]==1)+(thickness_indicator[i]==0) for i in range(3)],dtype=int) # monitor size
+        mon_size = self._dft_monitor_size(min_max_corners)
 
-        if np.prod(true_size)*self.num_freq == dJ.size: # The objective function J is a scalar.
+        if np.prod(mon_size)*self.num_freq == dJ.size: # The objective function J is a scalar.
             dJ = dJ.flatten()
-        elif np.prod(true_size)*self.num_freq**2 == dJ.size: # The objective function J is a vector. Each component corresponds to a frequency.
+        elif np.prod(mon_size)*self.num_freq**2 == dJ.size: # The objective function J is a vector. Each component corresponds to a frequency.
             dJ = np.sum(dJ,axis=1).flatten()
         else:
             raise ValueError('The format of J is incorrect!')
 
         self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(self.volume.swigobj, min_max_corners, dJ)
 
-        for near_data in self.all_fouriersrcdata:
-            amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
+        for fourier_data in self.all_fouriersrcdata:
+            amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
             
             if self.num_freq == 1:
-                sources += [mp.IndexedSource(time_src, near_data, scale[:,0])]
+                sources += [mp.IndexedSource(time_src, fourier_data, scale[:,0])]
             else:
                 src = FilteredSource(time_src.frequency,self._frequencies,scale,self.sim.fields.dt)
                 (num_basis, num_pts) = src.nodes.shape
                 for basis_i in range(num_basis):
-                    sources += [mp.IndexedSource(src.time_src_bf[basis_i], near_data, src.nodes[basis_i])]
-
+                    sources += [mp.IndexedSource(src.time_src_bf[basis_i], fourier_data, src.nodes[basis_i])]
         return sources
 
     def __call__(self):
@@ -340,7 +344,6 @@ class Near2FarFields(ObjectiveQuantity):
                             src.nodes[basis_i],
                         )
                     ]
-
         return sources
 
     def __call__(self):
