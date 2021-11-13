@@ -2067,7 +2067,7 @@ including outside the cell and a `near2far` object, returns the computed
 of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
 in Cartesian coordinates and
 $(E_r^1,E_\phi^1,E_z^1,H_r^1,H_\phi^1,H_z^1,E_r^2,E_\phi^2,E_z^2,H_r^2,H_\phi^2,H_z^2,...)$
-in cylindrical coordinates for the frequencies 1,2,…,`nfreq`.
+in cylindrical coordinates for the frequencies 1,2,...,`nfreq`.
 
 </div>
 
@@ -2609,7 +2609,7 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 
 ### Data Visualization
 
-This module provides basic visualization functionality for the simulation domain. The spirit of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output. The `Simulation` class provides the following methods:
+This module provides basic visualization functionality for the simulation domain. The intent of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output. The `Simulation` class provides the following methods:
 
 
 <a id="Simulation.plot2D"></a>
@@ -2648,14 +2648,18 @@ sim.run(...)
 field_func = lambda x: 20*np.log10(np.abs(x))
 import matplotlib.pyplot as plt
 sim.plot2D(fields=mp.Ez,
-        field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
-        boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
+           field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
+           boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
 plt.show()
 plt.savefig('sim_domain.png')
 ```
 
 Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function expects to be called
 on all processes, but only generates a plot on the master process.
+
+Note: The geometry function is evaluated at infinite frequency (i.e., the instantaneous response).
+Dispersive materials are ignored. To visualize dispersive materials, you can use the `get_array` or
+`output_epsilon` functions for which a `frequency` parameter can be specified.
 
 **Parameters:**
 
@@ -2713,10 +2717,6 @@ on all processes, but only generates a plot on the master process.
     - `alpha=0.6`: transparency of fields
     - `post_process=np.real`: post processing function to apply to fields (must be
       a function object)
-* `frequency`: for materials with a [frequency-dependent
-  permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
-  frequency $f$ (in Meep units) of the real part of the permittivity to use in the
-  plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
 </div>
 
@@ -6893,7 +6893,7 @@ A class used to record the fields during timestepping (i.e., a [`run`](#run-func
 function). The object is initialized prior to timestepping by specifying the
 simulation object and the field component. The object can then be passed to any
 [step-function modifier](#step-function-modifiers). For example, one can record the
-E<sub>z</sub> fields at every one time unit using:
+$E_z$ fields at every one time unit using:
 
 ```py
 animate = mp.Animate2D(sim,

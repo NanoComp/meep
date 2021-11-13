@@ -4084,14 +4084,18 @@ class Simulation(object):
         field_func = lambda x: 20*np.log10(np.abs(x))
         import matplotlib.pyplot as plt
         sim.plot2D(fields=mp.Ez,
-                field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
-                boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
+                   field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none', 'post_process':field_func},
+                   boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
         plt.show()
         plt.savefig('sim_domain.png')
         ```
 
         Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function expects to be called
         on all processes, but only generates a plot on the master process.
+
+        Note: The geometry function is evaluated at infinite frequency (i.e., the instantaneous response).
+        Dispersive materials are ignored. To visualize dispersive materials, you can use the `get_array` or
+        `output_epsilon` functions for which a `frequency` parameter can be specified.
 
         **Parameters:**
 
@@ -4166,8 +4170,8 @@ class Simulation(object):
                           plot_boundaries_flag=plot_boundaries_flag,
                           **kwargs)
 
-    def plot_fields(self,**kwargs):
-        return vis.plot_fields(self,**kwargs)
+    def plot_fields(self, **kwargs):
+        return vis.plot_fields(self, **kwargs)
 
     def plot3D(self):
         """

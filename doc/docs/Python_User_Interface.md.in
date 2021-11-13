@@ -480,7 +480,7 @@ This feature is only available if Meep is built with [libGDSII](Build_From_Sourc
 
 ### Data Visualization
 
-This module provides basic visualization functionality for the simulation domain. The spirit of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output. The `Simulation` class provides the following methods:
+This module provides basic visualization functionality for the simulation domain. The intent of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output. The `Simulation` class provides the following methods:
 
 @@ Simulation.plot2D @@
 @@ Simulation.plot3D @@

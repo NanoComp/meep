@@ -348,15 +348,15 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=0):
 
     if sim_size.x == 0:
         # Plot y on x axis, z on y axis (YZ plane)
-        extent = [ymin,ymax,zmin,zmax]
+        extent = [ymin, ymax, zmin, zmax]
         xlabel = 'Y'
         ylabel = 'Z'
         xtics = np.array([0])
-        ytics = np.linspace(ymin,ymax, grid_resolution)
-        ztics = np.linspace(zmin,zmax, grid_resolution)
+        ytics = np.linspace(ymin, ymax, grid_resolution)
+        ztics = np.linspace(zmin, zmax, grid_resolution)
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
-        extent = [xmin,xmax,zmin,zmax]
+        extent = [xmin, xmax, zmin, zmax]
         xlabel = 'X'
         ylabel = 'Z'
         xtics = np.linspace(xmin, xmax, grid_resolution)
@@ -364,7 +364,7 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=0):
         ztics = np.linspace(zmin, zmax, grid_resolution)
     elif sim_size.z == 0:
         # Plot x on x axis, y on y axis (XY plane)
-        extent = [xmin,xmax,ymin,ymax]
+        extent = [xmin, xmax, ymin, ymax]
         xlabel = 'X'
         ylabel = 'Y'
         xtics = np.linspace(xmin, xmax, grid_resolution)
@@ -431,20 +431,20 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
 
     import itertools
     for boundary in sim.boundary_layers:
-        # All 4 side are the same
+        # All four sides are the same
         if boundary.direction == mp.ALL and boundary.side == mp.ALL:
             if sim.dimensions == 1:
                 dims = [mp.X]
             elif sim.dimensions == 2:
-                dims = [mp.X,mp.Y]
+                dims = [mp.X, mp.Y]
             elif sim.dimensions == 3:
-                dims = [mp.X,mp.Y,mp.Z]
+                dims = [mp.X, mp.Y, mp.Z]
             else:
                 raise ValueError("Invalid simulation dimensions")
             for permutation in itertools.product(dims, [mp.Low, mp.High]):
                 vol = get_boundary_volumes(boundary.thickness,*permutation)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
-        # 2 sides are the same
+        # two sides are the same
         elif boundary.side == mp.ALL:
             for side in [mp.Low, mp.High]:
                 vol = get_boundary_volumes(boundary.thickness,boundary.direction,side)
@@ -494,7 +494,7 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     # user specifies a field component
     if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
-        sim_center, sim_size = get_2D_dimensions(sim,output_plane)
+        sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
         xmin = sim_center.x - sim_size.x/2
         xmax = sim_center.x + sim_size.x/2
@@ -503,22 +503,22 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
         zmin = sim_center.z - sim_size.z/2
         zmax = sim_center.z + sim_size.z/2
 
-        center = Vector3(sim_center.x,sim_center.y,sim_center.z)
-        cell_size = Vector3(sim_size.x,sim_size.y,sim_size.z)
+        center = Vector3(sim_center.x, sim_center.y, sim_center.z)
+        cell_size = Vector3(sim_size.x, sim_size.y, sim_size.z)
 
         if sim_size.x == 0:
             # Plot y on x axis, z on y axis (YZ plane)
-            extent = [ymin,ymax,zmin,zmax]
+            extent = [ymin, ymax, zmin, zmax]
             xlabel = 'Y'
             ylabel = 'Z'
         elif sim_size.y == 0:
             # Plot x on x axis, z on y axis (XZ plane)
-            extent = [xmin,xmax,zmin,zmax]
+            extent = [xmin, xmax, zmin, zmax]
             xlabel = 'X'
             ylabel = 'Z'
         elif sim_size.z == 0:
             # Plot x on x axis, y on y axis (XY plane)
-            extent = [xmin,xmax,ymin,ymax]
+            extent = [xmin, xmax, ymin, ymax]
             xlabel = 'X'
             ylabel = 'Y'
         fields = sim.get_array(center=center, size=cell_size, component=fields)
@@ -551,8 +551,8 @@ def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
 
     # validate the output plane to ensure proper 2D coordinates
     from meep.simulation import Volume
-    sim_center, sim_size = get_2D_dimensions(sim,output_plane)
-    output_plane = Volume(center=sim_center,size=sim_size)
+    sim_center, sim_size = get_2D_dimensions(sim, output_plane)
+    output_plane = Volume(center=sim_center, size=sim_size)
 
     # Plot geometry
     if plot_eps_flag:
