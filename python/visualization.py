@@ -327,7 +327,7 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
             return ax
     return ax
 
-def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=0):
+def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=None):
     # consolidate plotting parameters
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
 
@@ -344,36 +344,39 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=0):
     center = Vector3(sim_center.x, sim_center.y, sim_center.z)
     cell_size = Vector3(sim_size.x, sim_size.y, sim_size.z)
 
-    grid_resolution = resolution if resolution else sim.resolution + 1
+    grid_resolution = resolution if resolution else sim.resolution
+    Nx = int((xmax - xmin) * grid_resolution + 1)
+    Ny = int((ymax - ymin) * grid_resolution + 1)
+    Nz = int((zmax - zmin) * grid_resolution + 1)
 
     if sim_size.x == 0:
         # Plot y on x axis, z on y axis (YZ plane)
         extent = [ymin, ymax, zmin, zmax]
         xlabel = 'Y'
         ylabel = 'Z'
-        xtics = np.array([0])
-        ytics = np.linspace(ymin, ymax, grid_resolution)
-        ztics = np.linspace(zmin, zmax, grid_resolution)
+        xtics = np.array([sim_center.x])
+        ytics = np.linspace(ymin, ymax, Ny)
+        ztics = np.linspace(zmin, zmax, Nz)
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
         extent = [xmin, xmax, zmin, zmax]
         xlabel = 'X'
         ylabel = 'Z'
-        xtics = np.linspace(xmin, xmax, grid_resolution)
-        ytics = np.array([0])
-        ztics = np.linspace(zmin, zmax, grid_resolution)
+        xtics = np.linspace(xmin, xmax, Nx)
+        ytics = np.array([sim_center.y])
+        ztics = np.linspace(zmin, zmax, Nz)
     elif sim_size.z == 0:
         # Plot x on x axis, y on y axis (XY plane)
         extent = [xmin, xmax, ymin, ymax]
         xlabel = 'X'
         ylabel = 'Y'
-        xtics = np.linspace(xmin, xmax, grid_resolution)
-        ytics = np.linspace(ymin, ymax, grid_resolution)
-        ztics = np.array([0])
+        xtics = np.linspace(xmin, xmax, Nx)
+        ytics = np.linspace(ymin, ymax, Ny)
+        ztics = np.array([sim_center.z])
     else:
         raise ValueError("A 2D plane has not been specified...")
 
-    eps_data = sim.get_epsilon_grid(xtics, ytics, ztics)
+    eps_data = np.rot90(sim.get_epsilon_grid(xtics, ytics, ztics))
 
     if mp.am_master():
         if eps_parameters['contour']:
@@ -587,15 +590,20 @@ def plot3D(sim):
     if sim.dimensions < 3:
         raise ValueError("Simulation must have 3 dimensions to visualize 3D")
 
-    xtics = np.linspace(sim.geometry_center.x - 0.5*sim.cell_size.x,
-                        sim.geometry_center.x + 0.5*sim.cell_size.x,
-                        sim.cell_size.x*sim.resolution + 1)
-    ytics = np.linspace(sim.geometry_center.y - 0.5*sim.cell_size.y,
-                        sim.geometry_center.y + 0.5*sim.cell_size.y,
-                        sim.cell_size.y*sim.resolution + 1)
-    ztics = np.linspace(sim.geometry_center.z - 0.5*sim.cell_size.z,
-                        sim.geometry_center.z + 0.5*sim.cell_size.z,
-                        sim.cell_size.z*sim.resolution + 1)
+    xmin = sim.geometry_center.x - 0.5*sim.cell_size.x
+    xmax = sim.geometry_center.x + 0.5*sim.cell_size.x
+    ymin = sim.geometry_center.y - 0.5*sim.cell_size.y
+    ymax = sim.geometry_center.y + 0.5*sim.cell_size.y
+    zmin = sim.geometry_center.z - 0.5*sim.cell_size.z
+    zmax = sim.geometry_center.z + 0.5*sim.cell_size.z
+
+    Nx = int(sim.cell_size.x * sim.resolution) + 1
+    Ny = int(sim.cell_size.y * sim.resolution) + 1
+    Nz = int(sim.cell_size.z * sim.resolution) + 1
+
+    xtics = np.linspace(xmin, xmax, Nx)
+    ytics = np.linspace(ymin, ymax, Ny)
+    ztics = np.linspace(zmin, zmax, Nz)
 
     eps_data = sim.get_epsilon_grid(xtics, ytics, ztics)
     s = mlab.contour3d(eps_data, colormap="YlGnBu")
