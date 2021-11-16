@@ -32,7 +32,7 @@ class OptimizationProblem(object):
         decimation_factor=0,
         minimum_run_time=0,
         maximum_run_time=None,
-        finite_difference_step=1e-6
+        finite_difference_step=utils._FD_DEFAULT
     ):
 
         self.sim = simulation
