@@ -136,7 +136,8 @@ class ContinuousSource(SourceTime):
     """
 
     def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0,
-                 fwidth=float('inf'), cutoff=3.0, wavelength=None, **kwargs):
+                 fwidth=float('inf'), cutoff=3.0, wavelength=None,
+                 is_integrated=False, **kwargs):
         """
         Construct a `ContinuousSource`.
 
@@ -194,8 +195,8 @@ class GaussianSource(SourceTime):
     (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually
     irrelevant.
     """
-    def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0, wavelength=None,
-                 **kwargs):
+    def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0,
+                 is_integrated=False, wavelength=None, **kwargs):
         """
         Construct a `GaussianSource`.
 
@@ -269,7 +270,8 @@ class CustomSource(SourceTime):
     [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
     """
 
-    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, center_frequency=0, fwidth=0, **kwargs):
+    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, is_integrated=False,
+                 center_frequency=0, fwidth=0, **kwargs):
         """
         Construct a `CustomSource`.
 

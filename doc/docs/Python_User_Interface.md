@@ -6482,6 +6482,7 @@ def __init__(self,
              fwidth=inf,
              cutoff=3.0,
              wavelength=None,
+             is_integrated=False,
              **kwargs):
 ```
 
@@ -6556,6 +6557,7 @@ def __init__(self,
              fwidth=inf,
              start_time=0,
              cutoff=5.0,
+             is_integrated=False,
              wavelength=None,
              **kwargs):
 ```
@@ -6642,6 +6644,7 @@ def __init__(self,
              src_func,
              start_time=-1e+20,
              end_time=1e+20,
+             is_integrated=False,
              center_frequency=0,
              fwidth=0,
              **kwargs):
