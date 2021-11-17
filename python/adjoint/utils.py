@@ -19,7 +19,7 @@ _PHI_AXIS = 3
 _Z_AXIS = 1
 
 # default finite difference step size when calculating Aᵤ
-_FD_DEFAULT = 1e-3
+FD_DEFAULT = 1e-3
 
 class DesignRegion(object):
     def __init__(
@@ -108,7 +108,7 @@ def calculate_vjps(
     adj_fields: List[List[onp.ndarray]],
     design_variable_shapes: List[Tuple[int, ...]],
     sum_freq_partials: bool = True,
-    finite_difference_step: float = _FD_DEFAULT
+    finite_difference_step: float = FD_DEFAULT
 ) -> List[onp.ndarray]:
     """Calculates the VJP for a given set of forward and adjoint fields."""
     vjps = [

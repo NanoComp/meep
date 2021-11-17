@@ -2695,8 +2695,8 @@ Past versions of the code only calculated dA/dε using a finite
 difference, and then multiplied by the analytic vJp (dε/du).
 With the addition of subpixel smoothing, however, the vJp became
 much more complicated and it is easier to calculate the entire gradient
-using finite differences (at the cost of slightly less gradients due to 
-roundoff).
+using finite differences (at the cost of slightly less accurate gradients 
+due to roundoff).
  */
 void add_interpolate_weights(double rx, double ry, double rz,
                              double *data, int nx, int ny, int nz, int stride,

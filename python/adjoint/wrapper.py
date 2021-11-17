@@ -103,7 +103,7 @@ class MeepJaxWrapper:
         minimum_run_time: float = 0,
         maximum_run_time: float = onp.inf,
         until_after_sources: bool = True,
-        finite_difference_step: float = utils._FD_DEFAULT
+        finite_difference_step: float = utils.FD_DEFAULT
     ):
         self.simulation = simulation
         self.sources = sources
