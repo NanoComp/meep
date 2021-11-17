@@ -1123,7 +1123,6 @@ void gobj_list_freearg(geometric_object_list* objs) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     for(int i = 0; i < objs->num_items; ++i) {
         material_free((material_data *)objs->items[i].material);
-        delete (material_data *)objs->items[i].material;
         geometric_object_destroy(objs->items[i]);
     }
     delete[] objs->items;

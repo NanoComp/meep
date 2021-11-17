@@ -33,7 +33,6 @@ static void set_default_material(material_type _default_material) {
   if (default_material != NULL) {
     if (default_material == _default_material) return;
     material_free((material_type)default_material);
-    delete (material_type)default_material;
     default_material = NULL;
   }
 
@@ -118,6 +117,7 @@ void material_free(material_type m) {
 
   delete[] m->weights;
   m->weights = NULL;
+  delete m;
 }
 
 bool material_type_equal(const material_type m1, const material_type m2) {

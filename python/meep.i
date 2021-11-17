@@ -767,7 +767,6 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %typemap(freearg) GEOMETRIC_OBJECT {
     if ($1.material) {
         material_free((material_data *)$1.material);
-        delete (material_data *)$1.material;
         geometric_object_destroy($1);
     }
 }
@@ -1001,7 +1000,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
 %typemap(freearg) material_type {
     if ($1) {
         material_free($1);
-        delete $1;
     }
 }
 
@@ -1405,7 +1403,6 @@ void _get_gradient(PyObject *grad, PyObject *fields_a, PyObject *fields_f, PyObj
     if ($1.num_items != 0) {
         for (int i = 0; i < $1.num_items; i++) {
             material_free($1.items[i]);
-            delete $1.items[i];
         }
     }
     delete[] $1.items;
@@ -2014,7 +2011,7 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
                     meep_geom::geom_epsilon *existing_geps,
                     bool output_chunk_costs,
                     const meep::binary_partition *my_bp) {
-    
+
     meep_geom::geom_epsilon *geps;
     if (existing_geps) {
         geps = existing_geps;

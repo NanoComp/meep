@@ -1630,7 +1630,6 @@ void mode_solver::clear_geometry_list() {
   if (geometry_list.num_items && geometry_list.items) {
     for(int i = 0; i < geometry_list.num_items; ++i) {
       material_free((meep_geom::material_data *)geometry_list.items[i].material);
-      delete (meep_geom::material_data *)geometry_list.items[i].material;
       geometric_object_destroy(geometry_list.items[i]);
     }
     delete[] geometry_list.items;
