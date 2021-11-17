@@ -18,6 +18,9 @@ _RHO_AXIS = 2
 _PHI_AXIS = 3
 _Z_AXIS = 1
 
+# default finite difference step size when calculating Aᵤ
+FD_DEFAULT = 1e-3
+
 class DesignRegion(object):
     def __init__(
             self,
@@ -38,7 +41,7 @@ class DesignRegion(object):
     def update_beta(self,beta):
         self.design_parameters.beta=beta
 
-    def get_gradient(self, sim, fields_a, fields_f, frequencies):
+    def get_gradient(self, sim, fields_a, fields_f, frequencies, finite_difference_step):
         num_freqs = onp.array(frequencies).size
         shapes = []
         '''We have the option to linear scale the gradients up front
@@ -82,7 +85,8 @@ class DesignRegion(object):
         vol = sim._fit_volume_to_simulation(self.volume)
         
         # compute the gradient
-        mp._get_gradient(grad,scalegrad,fields_a,fields_f,sim.gv,vol.swigobj,onp.array(frequencies),sim.geps,shapes)
+        mp._get_gradient(grad,scalegrad,fields_a,fields_f,
+        sim.gv,vol.swigobj,onp.array(frequencies),sim.geps,shapes,finite_difference_step)
         return onp.squeeze(grad).T
 
 def _check_if_cylindrical(sim):
@@ -104,6 +108,7 @@ def calculate_vjps(
     adj_fields: List[List[onp.ndarray]],
     design_variable_shapes: List[Tuple[int, ...]],
     sum_freq_partials: bool = True,
+    finite_difference_step: float = FD_DEFAULT
 ) -> List[onp.ndarray]:
     """Calculates the VJP for a given set of forward and adjoint fields."""
     vjps = [
@@ -112,6 +117,7 @@ def calculate_vjps(
             adj_fields[i],
             fwd_fields[i],
             frequencies,
+            finite_difference_step,
         ) for i, design_region in enumerate(design_regions)
     ]
     if sum_freq_partials:

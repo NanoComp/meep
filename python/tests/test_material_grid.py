@@ -27,6 +27,7 @@ def compute_transmittance(matgrid_symmetry=False):
                                   mp.air,
                                   mp.Medium(index=3.5),
                                   weights=weights,
+                                  do_averaging=False,
                                   grid_type='U_MEAN')
 
         geometry = [mp.Block(center=mp.Vector3(),

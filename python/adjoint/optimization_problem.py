@@ -31,7 +31,8 @@ class OptimizationProblem(object):
         decay_by=1e-11,
         decimation_factor=0,
         minimum_run_time=0,
-        maximum_run_time=None
+        maximum_run_time=None,
+        finite_difference_step=utils.FD_DEFAULT
     ):
 
         self.sim = simulation
@@ -87,6 +88,7 @@ class OptimizationProblem(object):
         self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
+        self.finite_difference_step = finite_difference_step # step size used in Aᵤ computation
 
         # store sources for finite difference estimations
         self.forward_sources = self.sim.sources
@@ -99,11 +101,11 @@ class OptimizationProblem(object):
 
         self.gradient = []
 
-    def __call__(self, rho_vector=None, need_value=True, need_gradient=True):
+    def __call__(self, rho_vector=None, need_value=True, need_gradient=True, beta=None):
         """Evaluate value and/or gradient of objective function.
         """
         if rho_vector:
-            self.update_design(rho_vector=rho_vector)
+            self.update_design(rho_vector=rho_vector, beta=beta)
 
         # Run forward run if requested
         if need_value and self.current_state == "INIT":
@@ -265,6 +267,7 @@ class OptimizationProblem(object):
                 self.D_a[ar][dri],
                 self.D_f[dri],
                 self.frequencies,
+                self.finite_difference_step
             ) for dri, dr in enumerate(self.design_regions)
         ] for ar in range(len(self.objective_functions))]
 

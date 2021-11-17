@@ -2620,8 +2620,10 @@ std::complex<double> get_material_gradient(
     std::complex<double> fields_f,    // forward field at current point
     double freq,                      // frequency
     geom_epsilon *geps,               // material
-    meep::grid_volume &gv,             // simulation grid volume
-    double du                         // step size
+    meep::grid_volume &gv,            // simulation grid volume
+    double du,                        // step size
+    double *u,                        // matgrid
+    int idx                           // matgrid index
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
   The current adjoint (λ) field component (adjoint_c)
@@ -2664,45 +2666,60 @@ std::complex<double> get_material_gradient(
       v.set_direction_max(d, r.in_direction(d) + 0.5*gv.inva*sd);
     }
     double row_1[3], row_2[3], dA_du[3];
-    geps->u_p = -du;
+    double orig = u[idx];
+    u[idx] -= du;
     geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
-    geps->u_p = du;
+    u[idx] += 2*du;
     geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
-    geps->u_p=0;
+    u[idx] = orig;
 
     for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
     return dA_du[dir_idx] * fields_f;
   
   }else{
+    double orig = u[idx];
     std::complex<double> row_1[3], row_2[3], dA_du[3];
-    geps->u_p = -du;
+    u[idx] -= du;
     eff_chi1inv_row_disp(adjoint_c,row_1,r,freq,geps);
-    geps->u_p = du;
+    u[idx] += 2*du;
     eff_chi1inv_row_disp(adjoint_c,row_2,r,freq,geps);
-    geps->u_p=0;
+    u[idx] = orig;
 
     for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
     return dA_du[dir_idx] * fields_f;
   }  
 }
 
-/* add the weights from linear_interpolate (see the linear_interpolate
-   function in fields.cpp) to data ... this has to be changed if
-   linear_interpolate is changed!! ...also multiply by scaleby
-   etc. for different gradient types */
-
+/* A brute force approach to calculating Aᵤ using finite differences.
+Past versions of the code only calculated dA/dε using a finite
+difference, and then multiplied by the analytic vJp (dε/du).
+With the addition of subpixel smoothing, however, the vJp became
+much more complicated and it is easier to calculate the entire gradient
+using finite differences (at the cost of slightly less accurate gradients 
+due to roundoff).
+ */
 void add_interpolate_weights(double rx, double ry, double rz,
                              double *data, int nx, int ny, int nz, int stride,
-                             double scaleby, const double *udata, int ukind, double uval) {
+                             double scaleby, double *udata, int ukind, double uval,
+                             meep::vec r, geom_epsilon *geps, 
+                             meep::component adjoint_c, meep::component forward_c,
+                                      std::complex<double> fwd, std::complex<double> adj,
+                                      double freq, meep::grid_volume &gv, double du
+                             ) {
   int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz, u;
 
   meep::map_coordinates(rx, ry, rz, nx, ny, nz,
                         x1, y1, z1, x2, y2, z2,
                         dx, dy, dz);
+  int x_list[2] = {x1,x2}, y_list[2] = {y1,y2}, z_list[2] = {z1,z2};
+  int lx = (x1 == x2) ? 1 : 2;
+  int ly = (y1 == y2) ? 1 : 2;
+  int lz = (z1 == z2) ? 1 : 2;
 
 /* define a macro to give us data(x,y,z) on the grid,
 in row-major order (the order used by HDF5): */
+#define IDX(x,y,z) (((x)*ny + (y)) * nz + (z)) * stride
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 #define U(x, y, z) (udata[(((x)*ny + (y)) * nz + (z)) * stride])
 
@@ -2716,22 +2733,28 @@ in row-major order (the order used by HDF5): */
   if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
   if (ukind == material_data::U_PROD) scaleby *= uval / u;
 
-  D(x1, y1, z1) += (1.0 - dx) * (1.0 - dy) * (1.0 - dz) * scaleby;
-  D(x2, y1, z1) += dx * (1.0 - dy) * (1.0 - dz) * scaleby;
-  D(x1, y2, z1) += (1.0 - dx) * dy * (1.0 - dz) * scaleby;
-  D(x2, y2, z1) += dx * dy * (1.0 - dz) * scaleby;
-  D(x1, y1, z2) += (1.0 - dx) * (1.0 - dy) * dz * scaleby;
-  D(x2, y1, z2) += dx * (1.0 - dy) * dz * scaleby;
-  D(x1, y2, z2) += (1.0 - dx) * dy * dz * scaleby;
-  D(x2, y2, z2) += dx * dy * dz * scaleby;
+  for (int xi=0;xi<lx;xi++){
+    for (int yi=0;yi<ly;yi++){
+      for (int zi=0;zi<lz;zi++){
+        int x=x_list[xi], y=y_list[yi], z=z_list[zi];
+        int u_idx = IDX(x,y,z);
+        std::complex<double> prod = adj*get_material_gradient(
+          r,adjoint_c,forward_c,fwd,freq,geps,gv,du,udata,u_idx);
+        D(x, y, z) += prod.real() * scaleby;
+      }
+    }
+  }
 
+#undef IDX
 #undef D
 #undef U
 }
 
-void material_grids_addgradient_point(double *v,
-                                      vector3 p, double scalegrad,
-                                      geom_epsilon *geps) {
+void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, geom_epsilon *geps,
+                                      meep::component adjoint_c, meep::component forward_c,
+                                      std::complex<double> fwd, std::complex<double> adj,
+                                      double freq, meep::grid_volume &gv, double tol                                      
+                                      ) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
@@ -2786,8 +2809,10 @@ void material_grids_addgradient_point(double *v,
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
       add_interpolate_weights(
           pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
-          scalegrad,
-          ucur, kind, uval);
+          scalegrad,ucur, kind, uval,
+          vector3_to_vec(p),geps,adjoint_c,forward_c,
+          fwd,adj,freq,gv,tol
+          );
       if (kind == material_data::U_DEFAULT) break;
       tp = geom_tree_search_next(p, tp, &oi);
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
@@ -2800,8 +2825,9 @@ void material_grids_addgradient_point(double *v,
     double *ucur = mg->weights;
     uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
     add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
-                            scalegrad,
-                            ucur, kind, uval);
+                            scalegrad, ucur, kind, uval,
+                            vector3_to_vec(p),geps,adjoint_c,forward_c,
+                            fwd,adj,freq,gv,tol);
   }
 }
 
@@ -2841,7 +2867,7 @@ ptrdiff_t get_idx_from_ivec(meep::ndim dim, meep::ivec c1, ptrdiff_t *the_stride
 void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fields_a,
                                 std::complex<double> *fields_f, size_t fields_shapes[12], double *frequencies,
                                 double scalegrad, meep::grid_volume &gv,
-                                meep::volume &where, geom_epsilon *geps) {
+                                meep::volume &where, geom_epsilon *geps, double du) {
   
 // only loop over field components relevant to our simulation (in the proper order)
 #define FOR_MY_COMPONENTS(c1) FOR_ELECTRIC_COMPONENTS(c1) if (!coordinate_mismatch(gv.dim, component_direction(c1)))
@@ -2910,15 +2936,17 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
           /* trivial case, no interpolation/restriction needed        */
           if (forward_c == adjoint_c){
             std::complex<double> fwd = GET_FIELDS(fields_f,ci_forward,f_i,idx_fields);
-            std::complex<double> prod = adj * get_material_gradient(p, adjoint_c, forward_c, fwd, frequencies[f_i], geps, gv, 1e-6);
             cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
-            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(p), scalegrad*prod.real()*cyl_scale, geps);
+            material_grids_addgradient_point(
+              v+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
+              adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
           /* more complicated case requires interpolation/restriction */
           }else{
             /* we need to restrict the adjoint fields to
-            the two nodes of interest, and interpolate
-            the forward fields to the same two nodes. Then
-            we perform our inner product at these nodes
+            the two nodes of interest (which requires a factor
+            of 0.5 to scale), and interpolate the forward fields 
+            to the same two nodes (which requires another factor of 0.5). 
+            Then we perform our inner product at these nodes.
             */            
             std::complex<double> fwd_avg, fwd1, fwd2, prod;
             ptrdiff_t fwd1_idx, fwd2_idx;
@@ -2945,8 +2973,9 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd_avg = fwd1 + fwd2;
             meep::vec eps1 = gv[ieps1];
             cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-            prod = 0.5*adj*get_material_gradient(eps1, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, gv, 1e-6);
-            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps1), scalegrad*prod.real()*cyl_scale, geps);
+            material_grids_addgradient_point(
+              v+ng*f_i, vec_to_vector3(eps1), scalegrad*cyl_scale, geps,
+              adjoint_c, forward_c, fwd_avg, 0.5*adj, frequencies[f_i], gv, du);
             
             //operate on the second eps node
             fwd1_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_pa);
@@ -2956,8 +2985,9 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
             fwd_avg = fwd1 + fwd2;
             meep::vec eps2 = gv[ieps2];
             cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
-            prod = 0.5*adj*get_material_gradient(eps2, adjoint_c, forward_c, fwd_avg, frequencies[f_i], geps, gv, 1e-6);
-            material_grids_addgradient_point(v+ng*f_i, vec_to_vector3(eps2), scalegrad*prod.real()*cyl_scale, geps);
+            material_grids_addgradient_point(
+              v+ng*f_i, vec_to_vector3(eps2), scalegrad*cyl_scale, geps,
+              adjoint_c, forward_c, fwd_avg, 0.5*adj, frequencies[f_i], gv, du);
           }
           ci_forward++;
         }
