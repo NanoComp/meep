@@ -2,7 +2,7 @@
 # Chunks and Symmetry
 ---
 
-As described in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf),
+As described in [Computer Physics Communications, Vol. 181, pp. 687-702 (2010)](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf),
 Meep subdivides geometries into **chunks**. Each chunk is a contiguous region of space &mdash; a line, rectangle, or parallelepiped for 1d/2d/3d Cartesian geometries, or an annular section in a cylindrical geometry&mdash;whose sizes are automatically determined by `libmeep.` In [parallel calculations](Parallel_Meep.md), each chunk is assigned, in its entirety, to precisely one process &mdash; that is, no chunk exists partly on one processor and partly on another.
 
 Many internal operations in Meep consist of looping over points in the
@@ -105,7 +105,7 @@ each own 4 chunks, while processes 1, 3, 4, and 6 each own 2 chunks.
 
 Meep's approach to handling symmetries is discussed
 from the user's perspective in [Exploiting Symmetry](Exploiting_Symmetry.md)
-and from a high-level algorithmic perspective in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
+and from a high-level algorithmic perspective in [Computer Physics Communications, Vol. 181, pp. 687-702 (2010)](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf).
 
 The following is a brief synopsis of the implementation of this feature.
 

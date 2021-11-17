@@ -2,7 +2,7 @@
 # C++ Developer Information
 ---
 
-An overview of Meep's inner workings is provided in [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
+An overview of Meep's inner workings is provided in [Computer Physics Communications, Vol. 181, pp. 687-702 (2010)](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). This page is a supplement which provides a description of the source code.
 
 For additional details, see [Chunks and Symmetry](Chunks_and_Symmetry.md)
 
