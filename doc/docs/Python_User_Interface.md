@@ -2442,7 +2442,7 @@ Loads a fields from the file `fname`.
 
 </div>
 
-#### Checkpoint / Restore.
+#### Checkpoint and Restore
 
 The above dump/load related functions can be used to implement a
 checkpoint/restore *like* feature. The caveat of this feature is that
@@ -2512,7 +2512,7 @@ sim2.run(...)  # continues from t=xx
 
 ### Frequency-Domain Solver
 
-Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702, 2010](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., [ring resonators](Python_Tutorials/Frequency_Domain_Solver.md)) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source (using the default `width` of zero for no transient turn-on), time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy.
+Meep contains a frequency-domain solver that computes the fields produced in a geometry in response to a [continuous-wave (CW) source](https://en.wikipedia.org/wiki/Continuous_wave). This is based on an [iterative linear solver](https://en.wikipedia.org/wiki/Iterative_method) instead of time-stepping. For details, see Section 5.3 ("Frequency-domain solver") of [Computer Physics Communications, Vol. 181, pp. 687-702 (2010)](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf). Benchmarking results have shown that in many instances, such as cavities (e.g., [ring resonators](Python_Tutorials/Frequency_Domain_Solver.md)) with long-lived resonant modes, this solver converges much faster than simply running an equivalent time-domain simulation with a CW source (using the default `width` of zero for no transient turn-on), time-stepping until all transient effects from the source turn-on have disappeared, especially if the fields are desired to a very high accuracy.
 
 To use the frequency-domain solver, simply define a `ContinuousSource` with the desired frequency and [initialize the fields and geometry](#initializing-the-structure-and-fields) via `init_sim()`:
 
@@ -3598,7 +3598,8 @@ current simulation time.
   fetching the same slice repeatedly at different times).
 
 + `frequency`: optional frequency point over which the average eigenvalue of the
-  $\varepsilon$ and $\mu$ tensors are evaluated (defaults to 0).
+  $\varepsilon$ and $\mu$ tensors are evaluated. Defaults to 0 which is the
+  instantaneous $\varepsilon$.
 
 + `snap`: By default, the elements of the grid slice are obtained using a bilinear
   interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
@@ -5699,6 +5700,9 @@ Construct a `Prism`.
   bottom) of the resulting 3d prism so that the coordinates of the `vertices` are
   shifted accordingly.
 
++ **`sidewall_angle` [`number`]** — The sidewall angle of the prism in units of
+  radians. Default is 0.
+
 </div>
 
 </div>
@@ -6478,6 +6482,7 @@ def __init__(self,
              fwidth=inf,
              cutoff=3.0,
              wavelength=None,
+             is_integrated=False,
              **kwargs):
 ```
 
@@ -6552,6 +6557,7 @@ def __init__(self,
              fwidth=inf,
              start_time=0,
              cutoff=5.0,
+             is_integrated=False,
              wavelength=None,
              **kwargs):
 ```
@@ -6638,6 +6644,7 @@ def __init__(self,
              src_func,
              start_time=-1e+20,
              end_time=1e+20,
+             is_integrated=False,
              center_frequency=0,
              fwidth=0,
              **kwargs):

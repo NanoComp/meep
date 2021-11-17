@@ -1165,6 +1165,9 @@ class Prism(GeometricObject):
           [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and
           bottom) of the resulting 3d prism so that the coordinates of the `vertices` are
           shifted accordingly.
+
+        + **`sidewall_angle` [`number`]** — The sidewall angle of the prism in units of
+          radians. Default is 0.
         """
 
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon

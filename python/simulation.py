@@ -3342,7 +3342,8 @@ class Simulation(object):
           fetching the same slice repeatedly at different times).
 
         + `frequency`: optional frequency point over which the average eigenvalue of the
-          $\\varepsilon$ and $\\mu$ tensors are evaluated (defaults to 0).
+          $\\varepsilon$ and $\\mu$ tensors are evaluated. Defaults to 0 which is the
+          instantaneous $\\varepsilon$.
 
         + `snap`: By default, the elements of the grid slice are obtained using a bilinear
           interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
