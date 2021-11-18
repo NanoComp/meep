@@ -261,7 +261,85 @@ def adjoint_solver_complex_fields(design_params, frequencies=None):
     sim.reset_meep()
 
     return f, dJ_du
+    
+def forward_simulation_damping(design_params, frequencies=None, mat2=silicon):
+    matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
+                              mp.air,
+                              mat2,
+                              weights=design_params.reshape(Nx,Ny),
+                              damping = 3.14*fcen)
 
+    matgrid_geometry = [mp.Block(center=mp.Vector3(),
+                                 size=mp.Vector3(design_region_size.x,design_region_size.y,0),
+                                 material=matgrid)]
+
+    geometry = waveguide_geometry + matgrid_geometry
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=pml_xy,
+                        sources=wvg_source,
+                        geometry=geometry)
+
+    if not frequencies:
+        frequencies = [fcen]
+
+    mode = sim.add_mode_monitor(frequencies,
+                                    mp.ModeRegion(center=mp.Vector3(0.5*sxy-dpml-0.1),
+                                                  size=mp.Vector3(0,sxy-2*dpml,0)),
+                                    yee_grid=True,
+                                    eig_parity=eig_parity)
+
+    sim.run(until_after_sources=mp.stop_when_dft_decayed())
+
+
+    coeff = sim.get_eigenmode_coefficients(mode,[1],eig_parity).alpha[0,:,0]
+    S12 = np.power(np.abs(coeff),2)
+    sim.reset_meep()
+    return S12
+
+def adjoint_solver_damping(design_params, frequencies=None, mat2=silicon):
+    matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
+                              mp.air,
+                              mat2,
+                              weights=np.ones((Nx,Ny)),
+                              damping = 3.14*fcen)
+    matgrid_region = mpa.DesignRegion(matgrid,
+                                      volume=mp.Volume(center=mp.Vector3(), size=mp.Vector3(design_region_size.x, design_region_size.y, 0)))
+
+    matgrid_geometry = [mp.Block(center=matgrid_region.center,
+                                 size=matgrid_region.size,
+                                 material=matgrid)]
+
+    geometry = waveguide_geometry + matgrid_geometry
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=pml_xy,
+                        sources=wvg_source,
+                        geometry=geometry)
+
+    if not frequencies:
+        frequencies = [fcen]
+
+    obj_list = [mpa.EigenmodeCoefficient(sim, mp.Volume(center=mp.Vector3(0.5*sxy-dpml-0.1),
+                                        size=mp.Vector3(0,sxy-2*dpml,0)), 1, eig_parity=eig_parity)]
+
+    def J(mode_mon):
+        return npa.power(npa.abs(mode_mon),2)
+
+
+    opt = mpa.OptimizationProblem(
+        simulation=sim,
+        objective_functions=J,
+        objective_arguments=obj_list,
+        design_regions=[matgrid_region],
+        frequencies=frequencies)
+
+    f, dJ_du = opt([design_params])
+
+    sim.reset_meep()
+    return f, dJ_du
 
 def mapping(x,filter_radius,eta,beta):
     filtered_field = mpa.conic_filter(x,
@@ -402,6 +480,32 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             fd_grad = Ez2_perturbed-Ez2_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
             tol = 0.005 if mp.is_single_precision() else 0.0008
+            self.assertClose(adj_scale,fd_grad,epsilon=tol)
+            
+    def test_damping(self):
+        print("*** TESTING CONDUCTIVITIES ***")
+
+        for frequencies in [[1/1.58, fcen, 1/1.53]]:
+            ## compute gradient using adjoint solver
+            adjsol_obj, adjsol_grad = adjoint_solver_damping(p, frequencies)
+
+            ## compute unperturbed S12
+            S12_unperturbed = forward_simulation_damping(p, frequencies)
+
+            ## compare objective results
+            print("S12 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+            self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-6)
+
+            ## compute perturbed S12
+            S12_perturbed = forward_simulation_damping(p+dp, frequencies)
+
+            ## compare gradients
+            if adjsol_grad.ndim < 2:
+                adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
+            adj_scale = (dp[None,:]@adjsol_grad).flatten()
+            fd_grad = S12_perturbed-S12_unperturbed
+            print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+            tol = 0.06 if mp.is_single_precision() else 0.03
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_offdiagonal(self):

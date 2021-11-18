@@ -2572,7 +2572,7 @@ void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3]
     vector3 dummy;
     dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
-    a = std::complex<double>(1.0, conductivityCur / (freq));
+    a = std::complex<double>(1.0, conductivityCur / (2*meep::pi*freq));
 
     // compute lorentzian component
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
@@ -2610,6 +2610,23 @@ void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3]
         chi1inv_row[2] = tensor_inv[8];
         break;
       case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+    }
+}
+
+std::complex<double> cond_cmp(meep::component c, const meep::vec &r, double freq, geom_epsilon *geps) {
+  // locate the proper material
+  material_type md;
+  geps->get_material_pt(md, r);
+  const medium_struct *mm = &(md->medium);
+
+  // get the row we care about
+      switch (component_direction(c)) {
+      case meep::X:
+      case meep::R: return std::complex<double>(1.0, mm->D_conductivity_diag.x / (2*meep::pi*freq));
+      case meep::Y:
+      case meep::P: return std::complex<double>(1.0, mm->D_conductivity_diag.y / (2*meep::pi*freq));
+      case meep::Z: return std::complex<double>(1.0, mm->D_conductivity_diag.z / (2*meep::pi*freq));
+      case meep::NO_DIRECTION: meep::abort("Invalid adjoint field component");
     }
 }
 
@@ -2686,7 +2703,7 @@ std::complex<double> get_material_gradient(
     u[idx] = orig;
 
     for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
-    return dA_du[dir_idx] * fields_f;
+    return dA_du[dir_idx] * fields_f  * cond_cmp(forward_c,r,freq,geps);
   }  
 }
 
@@ -2912,6 +2929,11 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<double> *fiel
         meep::ivec ip = gv.iloc(adjoint_c,idx);
         meep::vec p   = gv.loc(adjoint_c,idx);
         std::complex<double> adj = GET_FIELDS(fields_a,ci_adjoint,f_i,idx_fields);
+        
+        material_type md;
+        geps->get_material_pt(md, p);
+        if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
+        
         double cyl_scale;
         int ci_forward = 0;
         FOR_MY_COMPONENTS(forward_c) {
