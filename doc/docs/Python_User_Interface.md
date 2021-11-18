@@ -676,16 +676,21 @@ frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 <div class="class_members" markdown="1">
 
 ```python
-def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None):
+def get_epsilon_grid(self,
+                     xtics=None,
+                     ytics=None,
+                     ztics=None,
+                     frequency=0):
 ```
 
 <div class="method_docstring" markdown="1">
 
 Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
-grid anywhere within the cell volume, compute the trace of the $\varepsilon$ tensor from the `geometry`
-exactly at each grid point. (For [`MaterialGrid`](#materialgrid)s, the $\varepsilon$ at each grid
-point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly also
-projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
+grid anywhere within the cell volume, compute the trace of the $\varepsilon(f)$ tensor at frequency
+$f$ (in Meep units) from the `geometry` exactly at each grid point. `frequency` defaults to 0 which is
+the instantaneous $\varepsilon$. (For [`MaterialGrid`](#materialgrid)s, the $\varepsilon$ at each
+grid point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly
+also projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
 $\varepsilon$ by bilinearly interpolating from the nearest Yee grid points. This function is useful for
 sampling the material geometry to any arbitrary resolution. The return value is a NumPy array with shape
 equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
@@ -2627,6 +2632,7 @@ def plot2D(self,
            source_parameters=None,
            monitor_parameters=None,
            field_parameters=None,
+           frequency=None,
            resolution=None,
            plot_eps_flag=True,
            plot_sources_flag=True,
@@ -2724,6 +2730,10 @@ specify a `frequency` parameter for evaluating the complex $\varepsilon$.
     - `alpha=0.6`: transparency of fields
     - `post_process=np.real`: post processing function to apply to fields (must be
       a function object)
+* `frequency`: for materials with a [frequency-dependent
+  permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
+  frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+  plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
 </div>
 
@@ -4408,7 +4418,7 @@ def __init__(self,
              medium2,
              weights=None,
              grid_type='U_DEFAULT',
-             do_averaging=False,
+             do_averaging=True,
              beta=0,
              eta=0.5,
              damping=0):
