@@ -2225,18 +2225,19 @@ class Simulation(object):
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_mu(v3,frequency)
 
-    def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None):
+    def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None, frequency=0):
         """
         Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
-        grid anywhere within the cell volume, compute the trace of the $\\varepsilon$ tensor from the `geometry`
-        exactly at each grid point. (For [`MaterialGrid`](#materialgrid)s, the $\\varepsilon$ at each grid
-        point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly also
-        projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
+        grid anywhere within the cell volume, compute the trace of the $\\varepsilon(f)$ tensor at frequency
+        $f$ (in Meep units) from the `geometry` exactly at each grid point. `frequency` defaults to 0 which is
+        the instantaneous $\\varepsilon$. (For [`MaterialGrid`](#materialgrid)s, the $\\varepsilon$ at each
+        grid point is computed using bilinear interpolation from the nearest `MaterialGrid` points and possibly
+        also projected to form a level set.) Note that this is different from `get_epsilon_point` which computes
         $\\varepsilon$ by bilinearly interpolating from the nearest Yee grid points. This function is useful for
         sampling the material geometry to any arbitrary resolution. The return value is a NumPy array with shape
         equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapsed.
         """
-        grid_vals = np.squeeze(np.empty((len(xtics), len(ytics), len(ztics))))
+        grid_vals = np.squeeze(np.empty((len(xtics), len(ytics), len(ztics)), dtype=np.complex128))
         gv = self._create_grid_volume(False)
         mp._get_epsilon_grid(self.geometry,
                              self.extra_materials,
@@ -2247,7 +2248,8 @@ class Simulation(object):
                              len(xtics), xtics,
                              len(ytics), ytics,
                              len(ztics), ztics,
-                             grid_vals)
+                             grid_vals,
+                             frequency)
         return grid_vals
 
     def get_filename_prefix(self):
@@ -4068,7 +4070,7 @@ class Simulation(object):
     def plot2D(self, ax=None, output_plane=None, fields=None, labels=False,
                eps_parameters=None, boundary_parameters=None,
                source_parameters=None, monitor_parameters=None,
-               field_parameters=None, resolution=None,
+               field_parameters=None, frequency=None, resolution=None,
                plot_eps_flag=True, plot_sources_flag=True,
                plot_monitors_flag=True, plot_boundaries_flag=True,
                **kwargs):
@@ -4160,6 +4162,10 @@ class Simulation(object):
             - `alpha=0.6`: transparency of fields
             - `post_process=np.real`: post processing function to apply to fields (must be
               a function object)
+        * `frequency`: for materials with a [frequency-dependent
+          permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
+          frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+          plot. Defaults to the `frequency` parameter of the [Source](#source) object.
         """
         return vis.plot2D(self,
                           ax=ax,
@@ -4171,6 +4177,7 @@ class Simulation(object):
                           source_parameters=source_parameters,
                           monitor_parameters=monitor_parameters,
                           field_parameters=field_parameters,
+                          frequency=frequency,
                           resolution=resolution,
                           plot_eps_flag=plot_eps_flag,
                           plot_sources_flag=plot_sources_flag,

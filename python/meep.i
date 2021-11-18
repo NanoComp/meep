@@ -1097,12 +1097,12 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     $1 = (double *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* grid_vals {
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* grid_vals {
     $1 = is_array($input);
 }
 
-%typemap(in, fragment="NumPy_Macros") double* grid_vals {
-    $1 = (double *)array_data($input);
+%typemap(in, fragment="NumPy_Macros") std::complex<double>* grid_vals {
+    $1 = (std::complex<double> *)array_data($input);
 }
 
 // typemap for solve_cw:
@@ -2041,7 +2041,8 @@ void _get_epsilon_grid(geometric_object_list gobj_list,
                        int nx, double *xtics,
                        int ny, double *ytics,
                        int nz, double *ztics,
-                       double *grid_vals) {
+                       std::complex<double> *grid_vals,
+                       double frequency) {
      meep_geom::get_epsilon_grid(gobj_list,
                                  mlist,
                                  _default_material,
@@ -2052,7 +2053,8 @@ void _get_epsilon_grid(geometric_object_list gobj_list,
                                  nx, xtics,
                                  ny, ytics,
                                  nz, ztics,
-                                 grid_vals);
+                                 grid_vals,
+                                 frequency);
 }
 
 %}
