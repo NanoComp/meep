@@ -334,7 +334,8 @@ def adjoint_solver_damping(design_params, frequencies=None, mat2=silicon):
         objective_functions=J,
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
-        frequencies=frequencies)
+        frequencies=frequencies,
+        minimum_run_time=150)
 
     f, dJ_du = opt([design_params])
 
