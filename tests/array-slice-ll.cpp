@@ -139,7 +139,6 @@ int main(int argc, char *argv[]) {
   meep_geom::material_type vacuum = meep_geom::vacuum;
   auto material_deleter = [](meep_geom::material_data *m) {
     meep_geom::material_free(m);
-    delete m;
   };
   std::unique_ptr<meep_geom::material_data, decltype(material_deleter)> dielectric(
       meep_geom::make_dielectric(eps), material_deleter);
