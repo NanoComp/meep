@@ -1025,11 +1025,11 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
 /* if where is non-null, only field components inside *where   */
 /* are processed.                                              */
 /***************************************************************/
-complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
-                                              component c, const char *HDF5FileName, complex<double> **pfield_array,
-                                              int *array_rank, size_t *array_dims, direction *array_dirs,
-                                              void *mode1_data, void *mode2_data, component c_conjugate,
-                                              bool *first_component, bool retain_interp_weights) {
+complex<realnum> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
+                                               component c, const char *HDF5FileName, complex<realnum> **pfield_array,
+                                               int *array_rank, size_t *array_dims, direction *array_dirs,
+                                               void *mode1_data, void *mode2_data, component c_conjugate,
+                                               bool *first_component, bool retain_interp_weights) {
 
   /***************************************************************/
   /***************************************************************/
@@ -1099,17 +1099,17 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   /* buffer for process-local contributions to HDF5 output files,*/
   /* like h5_output_data::buf in h5fields.cpp                    */
   /***************************************************************/
-  double *buffer = 0;
-  complex<double> *field_array = 0;
+  realnum *buffer = 0;
+  complex<realnum> *field_array = 0;
   int reim_max = 0;
   if (HDF5FileName) {
-    buffer = new double[bufsz];
+    buffer = new realnum[bufsz];
     reim_max = 1;
   }
   else if (pfield_array)
-    *pfield_array = field_array = (array_size ? new complex<double>[array_size] : 0);
+    *pfield_array = field_array = (array_size ? new complex<realnum>[array_size] : 0);
 
-  complex<double> overlap = 0.0;
+  complex<realnum> overlap = 0.0;
   for (int reim = 0; reim <= reim_max; reim++) {
     h5file *file = 0;
     if (HDF5FileName) {
@@ -1118,7 +1118,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
       char dataname[100];
       snprintf(dataname, 100, "%s_%i.%c", component_name(c), num_freq, reim ? 'i' : 'r');
       file->create_or_extend_data(dataname, rank, dims, false /* append_data */,
-                                  false /* single_precision */);
+                                  sizeof(realnum) == sizeof(float) /* single_precision */);
     }
 
     for (int ncl = 0; ncl < num_chunklists; ncl++)
@@ -1139,7 +1139,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
 /* on all cores                                                */
 /***************************************************************/
 #define BUFSIZE 1 << 20  // use 1M element (16 MB) buffer
-      complex<double> *buf = new complex<double>[BUFSIZE];
+      complex<realnum> *buf = new complex<realnum>[BUFSIZE];
       ptrdiff_t offset = 0;
       size_t remaining = array_size;
       while (remaining != 0) {
@@ -1147,7 +1147,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
         am_now_working_on(MpiAllTime);
         sum_to_all(field_array + offset, buf, size);
         finished_working();
-        memcpy(field_array + offset, buf, size * sizeof(complex<double>));
+        memcpy(field_array + offset, buf, size * sizeof(complex<realnum>));
         remaining -= size;
         offset += size;
       }
@@ -1169,46 +1169,46 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
 /***************************************************************/
 /* routines for fetching arrays of dft fields                  */
 /***************************************************************/
-complex<double> *collapse_array(complex<double> *array, int *rank, size_t dims[3], direction dirs[3], volume where);
+complex<realnum> *collapse_array(complex<realnum> *array, int *rank, size_t dims[3], direction dirs[3], volume where);
 
-complex<double> *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
-                                       size_t dims[3]) {
+complex<realnum> *fields::get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
+                                        size_t dims[3]) {
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  complex<double> *array;
+  complex<realnum> *array;
   direction dirs[3];
   process_dft_component(chunklists, 2, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, flux.where);
 }
 
-complex<double> *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank,
-                                       size_t dims[3]) {
+complex<realnum> *fields::get_dft_array(dft_force force, component c, int num_freq, int *rank,
+                                        size_t dims[3]) {
   dft_chunk *chunklists[3];
   chunklists[0] = force.offdiag1;
   chunklists[1] = force.offdiag2;
   chunklists[2] = force.diag;
-  complex<double> *array;
+  complex<realnum> *array;
   direction dirs[3];
   process_dft_component(chunklists, 3, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, force.where);
 }
 
-complex<double> *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
-                                       size_t dims[3]) {
+complex<realnum> *fields::get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
+                                        size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = n2f.F;
-  complex<double> *array;
+  complex<realnum> *array;
   direction dirs[3];
   process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, n2f.where);
 }
 
-complex<double> *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
-                                       size_t dims[3]) {
+complex<realnum> *fields::get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
+                                        size_t dims[3]) {
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
-  complex<double> *array;
+  complex<realnum> *array;
   direction dirs[3];
   process_dft_component(chunklists, 1, num_freq, c, 0, &array, rank, dims, dirs);
   return collapse_array(array, rank, dims, dirs, fdft.where);
@@ -1255,7 +1255,7 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
                               0, Ex, &first_component);
       }
       else {
-        complex<double> *array = 0;
+        complex<realnum> *array = 0;
         int rank;
         size_t dims[3];
         direction dirs[3];
