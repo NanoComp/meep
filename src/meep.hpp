@@ -1126,7 +1126,7 @@ public:
   // fields::process_dft_component
   std::complex<realnum> process_dft_component(int rank, direction *ds, ivec min_corner,
                                               ivec max_corner, int num_freq, h5file *file,
-                                              double *buffer, int reim,
+                                              realnum *buffer, int reim,
                                               std::complex<realnum> *field_array, void *mode1_data,
                                               void *mode2_data, int ic_conjugate,
                                               bool retain_interp_weights, fields *parent);
@@ -1812,33 +1812,33 @@ public:
   // of the correct size.
   // otherwise, a new buffer is allocated and returned; it
   // must eventually be caller-deallocated via delete[].
-  double *get_array_slice(const volume &where, std::vector<component> components,
-                          field_rfunction rfun, void *fun_data, double *slice = 0,
-                          double frequency = 0,
-                          bool snap = false);
+  realnum *get_array_slice(const volume &where, std::vector<component> components,
+                           field_rfunction rfun, void *fun_data, realnum *slice = 0,
+                           double frequency = 0,
+                           bool snap = false);
 
-  std::complex<double> *get_complex_array_slice(const volume &where,
-                                                std::vector<component> components,
-                                                field_function fun, void *fun_data,
-                                                std::complex<double> *slice = 0,
-                                                double frequency = 0,
-                                                bool snap = false);
+  std::complex<realnum> *get_complex_array_slice(const volume &where,
+                                                 std::vector<component> components,
+                                                 field_function fun, void *fun_data,
+                                                 std::complex<realnum> *slice = 0,
+                                                 double frequency = 0,
+                                                 bool snap = false);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
   // derived component.)
-  double *get_array_slice(const volume &where, component c, double *slice = 0,
-                          double frequency = 0, bool snap = false);
-  double *get_array_slice(const volume &where, derived_component c, double *slice = 0,
-                          double frequency = 0, bool snap = false);
-  std::complex<double> *get_complex_array_slice(const volume &where, component c,
-                                                std::complex<double> *slice = 0,
-                                                double frequency = 0,
-                                                bool snap = false);
+  realnum *get_array_slice(const volume &where, component c, realnum *slice = 0,
+                           double frequency = 0, bool snap = false);
+  realnum *get_array_slice(const volume &where, derived_component c, realnum *slice = 0,
+                           double frequency = 0, bool snap = false);
+  std::complex<realnum> *get_complex_array_slice(const volume &where, component c,
+                                                 std::complex<realnum> *slice = 0,
+                                                 double frequency = 0,
+                                                 bool snap = false);
 
   // like get_array_slice, but for *sources* instead of fields
-  std::complex<double> *get_source_slice(const volume &where, component source_slice_component,
-                                         std::complex<double> *slice = 0);
+  std::complex<realnum> *get_source_slice(const volume &where, component source_slice_component,
+                                          std::complex<realnum> *slice = 0);
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where, std::vector<component> components,

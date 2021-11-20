@@ -230,7 +230,7 @@ int main(int argc, char *argv[]) {
     //
     rank = f.get_array_slice_dimensions(v1d, dims1D, dirs1D, true, false);
     if (rank != 1 || dims1D[0] != NX) meep::abort("incorrect dimensions for 1D slice");
-    std::unique_ptr<std::complex<double> []> slice1d(f.get_complex_array_slice(v1d, Hz, 0, 0, true));
+    std::unique_ptr<std::complex<realnum> []> slice1d(f.get_complex_array_slice(v1d, Hz, 0, 0, true));
     std::vector<std::complex<realnum>> slice1d_realnum;
     for (int i = 0; i < NX; ++i)
       slice1d_realnum.emplace_back(slice1d[i]);
@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
 
     rank = f.get_array_slice_dimensions(v2d, dims2D, dirs2D, true, false);
     if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) meep::abort("incorrect dimensions for 2D slice");
-    std::unique_ptr<double []> slice2d(f.get_array_slice(v2d, Sy, 0, 0, true));
+    std::unique_ptr<realnum []> slice2d(f.get_array_slice(v2d, Sy, 0, 0, true));
     std::unique_ptr<realnum[]> slice2d_realnum(new realnum[NX * NY]);
     for (int i = 0; i < NX * NY; ++i)
       slice2d_realnum[i] = static_cast<realnum>(slice2d[i]);

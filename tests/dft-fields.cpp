@@ -15,7 +15,7 @@
 
 using namespace meep;
 
-typedef std::complex<double> cdouble;
+typedef std::complex<realnum> cdouble;
 
 vector3 v3(double x, double y = 0.0, double z = 0.0) {
   vector3 v;
@@ -178,8 +178,8 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
   for (int d = 1; d < rank1; d++)
     length *= dims1[d];
 
-  double max_abs1 = 0.0, max_abs2 = 0.0;
-  double max_arg1 = 0.0, max_arg2 = 0.0;
+  realnum max_abs1 = 0.0, max_abs2 = 0.0;
+  realnum max_arg1 = 0.0, max_arg2 = 0.0;
   for (size_t n = 0; n < length; n++) {
     cdouble z1 = cdouble(rdata1[n], idata1[n]);
     if (abs(z1) > max_abs1) {

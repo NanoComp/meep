@@ -859,11 +859,11 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 /***************************************************************/
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
-complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
-                                                 int num_freq, h5file *file, double *buffer, int reim,
-                                                 complex<double> *field_array, void *mode1_data, void *mode2_data,
-                                                 int ic_conjugate, bool retain_interp_weights,
-                                                 fields *parent) {
+complex<realnum> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
+                                                  int num_freq, h5file *file, realnum *buffer, int reim,
+                                                  complex<realnum> *field_array, void *mode1_data, void *mode2_data,
+                                                  int ic_conjugate, bool retain_interp_weights,
+                                                  fields *parent) {
 
   if ((num_freq < 0) || (num_freq > static_cast<int>(omega.size())-1))
     meep::abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
@@ -923,7 +923,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
   /***************************************************************/
   vec rshift(shift * (0.5 * fc->gv.inva));
   int chunk_idx = 0;
-  complex<double> integral = 0.0;
+  complex<realnum> integral = 0.0;
   component c_conjugate = (component)(ic_conjugate >= 0 ? ic_conjugate : -ic_conjugate);
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     IVEC_LOOP_LOC(fc->gv, loc);
