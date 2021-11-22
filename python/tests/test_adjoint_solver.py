@@ -343,6 +343,19 @@ def adjoint_solver_damping(design_params, frequencies=None, mat2=silicon):
     sim.reset_meep()
     return f, dJ_du
 
+    opt = mpa.OptimizationProblem(
+        simulation=sim,
+        objective_functions=J,
+        objective_arguments=obj_list,
+        design_regions=[matgrid_region],
+        frequencies=frequencies,
+        minimum_run_time=150)
+
+    f, dJ_du = opt([design_params])
+
+    sim.reset_meep()
+    return f, dJ_du
+
 def mapping(x,filter_radius,eta,beta):
     filtered_field = mpa.conic_filter(x,
                                       filter_radius,
