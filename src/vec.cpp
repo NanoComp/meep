@@ -1479,13 +1479,13 @@ volume_list *symmetry::reduce(const volume_list *gl) const {
 
 /***************************************************************************/
 
-static double poynting_fun(const complex<double> *fields, const vec &loc, void *data_) {
+static realnum poynting_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return (real(conj(fields[0]) * fields[1]) - real(conj(fields[2]) * fields[3]));
 }
 
-static double energy_fun(const complex<double> *fields, const vec &loc, void *data_) {
+static realnum energy_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc; // unused
   int nfields = *((int *)data_) / 2;
   double sum = 0;

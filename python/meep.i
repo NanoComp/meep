@@ -150,9 +150,9 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     return ret;
 }
 
-static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
-                                               const meep::vec &loc,
-                                               void *data_) {
+static std::complex<meep::realnum> py_field_func_wrap(const std::complex<meep::realnum> *fields,
+                                                      const meep::vec &loc,
+                                                      void *data_) {
     SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(loc);
 
@@ -175,7 +175,7 @@ static std::complex<double> py_field_func_wrap(const std::complex<double> *field
 
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
-    std::complex<double> ret(real, imag);
+    std::complex<meep::realnum> ret(real, imag);
     Py_DECREF(pyv);
     Py_DECREF(pyret);
     Py_DECREF(py_args);

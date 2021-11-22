@@ -101,7 +101,7 @@ typedef struct {
   // temporary internal storage buffers
   component *cS;
   complex<double> *ph;
-  complex<double> *fields;
+  complex<realnum> *fields;
   ptrdiff_t *offsets;
 
   double frequency;
@@ -119,13 +119,13 @@ typedef struct {
 } array_slice_data;
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
-static complex<double> default_field_func(const complex<double> *fields, const vec &loc, void *data_) {
+static complex<realnum> default_field_func(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return fields[0];
 }
 
-static double default_field_rfunc(const complex<double> *fields, const vec &loc, void *data_) {
+static realnum default_field_rfunc(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return real(fields[0]);
@@ -310,18 +310,19 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   // Otherwise proceed to compute the function of field components to be   //
   // tabulated on the slice, exactly as in fields::integrate.              //
   //-----------------------------------------------------------------------//
-  double *slice = 0;
-  complex<double> *zslice = 0;
+  realnum *slice = 0;
+  complex<realnum> *zslice = 0;
   bool complex_data = (data->rfun == 0);
   if (complex_data)
-    zslice = (complex<double> *)data->vslice;
+    zslice = (complex<realnum> *)data->vslice;
   else
-    slice = (double *)data->vslice;
+    slice = (realnum *)data->vslice;
 
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   double frequency = data->frequency;
-  complex<double> *fields = data->fields, *ph = data->ph;
+  complex<realnum> *fields = data->fields;
+  complex<double> *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
   ptrdiff_t ieos[6];
@@ -619,7 +620,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   int num_components = components.size();
   data.cS = new component[num_components];
   data.ph = new complex<double>[num_components];
-  data.fields = new complex<double>[num_components];
+  data.fields = new complex<realnum>[num_components];
   data.offsets = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
   data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] =

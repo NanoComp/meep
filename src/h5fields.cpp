@@ -48,7 +48,7 @@ typedef struct {
   const component *components;
   component *cS;
   complex<double> *ph;
-  complex<double> *fields;
+  complex<realnum> *fields;
   ptrdiff_t *offsets;
   double frequency;
   int ninveps;
@@ -143,7 +143,8 @@ static void h5_output_chunkloop(fields_chunk *fc, int ichnk, component cgrid, iv
 
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
-  complex<double> *fields = data->fields, *ph = data->ph;
+  complex<realnum> *fields = data->fields;
+  complex<double> *ph = data->ph;
   double frequency = data->frequency;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
@@ -267,7 +268,7 @@ void fields::output_hdf5(h5file *file, const char *dataname, int num_fields,
   data.components = components;
   data.cS = new component[num_fields];
   data.ph = new complex<double>[num_fields];
-  data.fields = new complex<double>[num_fields];
+  data.fields = new complex<realnum>[num_fields];
   data.fun = fun;
   data.fun_data_ = fun_data_;
 
@@ -351,7 +352,7 @@ typedef struct {
   void *fun_data_;
 } rintegrand_data;
 
-static complex<double> rintegrand_fun(const complex<double> *fields, const vec &loc, void *data_) {
+static complex<realnum> rintegrand_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
   rintegrand_data *data = (rintegrand_data *)data_;
   return data->fun(fields, loc, data->fun_data_);
 }
@@ -374,7 +375,7 @@ void fields::output_hdf5(const char *dataname, int num_fields, const component *
 
 /***************************************************************************/
 
-static complex<double> component_fun(const complex<double> *fields, const vec &loc, void *data_) {
+static complex<realnum> component_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return fields[0];

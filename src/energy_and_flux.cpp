@@ -58,7 +58,7 @@ double fields::field_energy_in_box(const volume &where) {
   return electric_energy_in_box(where) + cur_step_magnetic_energy;
 }
 
-static complex<double> dot_integrand(const complex<double> *fields, const vec &loc, void *data_) {
+static complex<realnum> dot_integrand(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;
   (void)data_; // unused;
   return real(conj(fields[0]) * fields[1]);
@@ -249,8 +249,8 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
    is more expensive and requires us to know the boundary orientation, and
    does not seem worth the trouble at this point. */
 
-static complex<double> dot3_max_integrand(const complex<double> *fields, const vec &loc,
-                                          void *data_) {
+static complex<realnum> dot3_max_integrand(const complex<realnum> *fields, const vec &loc,
+                                           void *data_) {
   (void)loc;
   (void)data_; // unused;
   return (real(conj(fields[0]) * fields[3]) + real(conj(fields[1]) * fields[4]) +
@@ -294,8 +294,8 @@ double fields::modal_volume_in_box(const volume &where) {
 
 typedef double (*fx_func)(const vec &);
 
-static complex<double> dot_fx_integrand(const complex<double> *fields, const vec &loc,
-                                        void *data_) {
+static complex<realnum> dot_fx_integrand(const complex<realnum> *fields, const vec &loc,
+                                         void *data_) {
   fx_func fx = (fx_func)data_;
   return (real(conj(fields[0]) * fields[1]) * fx(loc));
 }
