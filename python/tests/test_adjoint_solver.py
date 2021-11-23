@@ -467,8 +467,6 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compute unperturbed |Ez|^2
             Ez2_unperturbed = forward_simulation_complex_fields(p, frequencies)
-            self.assertEqual(Ez2_unperturbed.dtype,
-                             np.float32 if mp.is_single_precision() else np.float64)
 
             ## compare objective results
             print("Ez2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Ez2_unperturbed))
