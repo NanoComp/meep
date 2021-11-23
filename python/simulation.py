@@ -3405,7 +3405,10 @@ class Simulation(object):
             arr = np.require(arr, requirements=['C', 'W'])
 
         else:
-            arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
+            if mp.is_single_precision():
+                arr = np.zeros(dims, dtype=np.complex64 if cmplx else np.float32)
+            else:
+                arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
 
         if np.iscomplexobj(arr):
             self.fields.get_complex_array_slice(v, component, arr, frequency, snap)

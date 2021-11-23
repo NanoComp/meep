@@ -444,12 +444,12 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     std::complex<meep::realnum> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
     if (dft_arr == NULL) { // this can happen e.g. if component c vanishes by symmetry
-         std::complex<meep::realnum> d[1] = {std::complex<meep::realnum>(0,0)};
-         return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, d);
+      std::complex<double> d[1] = {std::complex<double>(0,0)};
+      return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, d);
     }
 
     if (rank == 0) // singleton results
-         return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, dft_arr);
+      return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, dft_arr);
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
@@ -1025,7 +1025,7 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     $1 = (size_t *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") meep::realnum* slice {
     $1 = is_array($input);
 }
 
@@ -1033,7 +1033,7 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     $1 = (meep::realnum *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* slice {
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<meep::realnum>* slice {
     $1 = is_array($input);
 }
 
@@ -1558,11 +1558,6 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
 %template(DoubleVector) std::vector<double>;
 
 // use NumPy arrays for returning common std::vector types:
-%typemap(out) std::vector<float> {
-    npy_intp vec_len = (npy_intp) $1.size();
-    $result = PyArray_SimpleNew(1, &vec_len, NPY_FLOAT);
-    memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(float));
-}
 %typemap(out) std::vector<double> {
     npy_intp vec_len = (npy_intp) $1.size();
     $result = PyArray_SimpleNew(1, &vec_len, NPY_DOUBLE);
@@ -1585,12 +1580,6 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
 
 %include "std_complex.i"
 %template(ComplexVector) std::vector<std::complex<double> >;
-
-%typemap(out) std::vector<std::complex<float> > {
-    npy_intp vec_len = (npy_intp) $1.size();
-    $result = PyArray_SimpleNew(1, &vec_len, NPY_COMPLEX64);
-    memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(float) * 2);
-}
 
 %typemap(out) std::vector<std::complex<double> > {
     npy_intp vec_len = (npy_intp) $1.size();
