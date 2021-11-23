@@ -43,7 +43,7 @@ constexpr size_t ARRAY_TO_ALL_BUFSIZE = 1 << 16; // Use (64k * 8 bytes) of buffe
 /* repeatedly call sum_to_all to consolidate all entries of    */
 /* an array on all cores.                                      */
 /* array: in/out ptr to the data                               */
-/* array_size: data size in multiples of sizeof(double)        */
+/* array_size: data size in multiples of sizeof(realnum)       */
 /***************************************************************/
 realnum *array_to_all(realnum *array, size_t array_size) {
 #ifdef HAVE_MPI

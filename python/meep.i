@@ -844,8 +844,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %inline %{
 void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
-    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies, 
-    meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
+                   meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies,
+                   meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -859,14 +859,14 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
-    std::complex<double> *fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
+    std::complex<meep::realnum> *fields_a_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_a);
 
     // clean the forward fields array
     PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
     if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
-    std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
+    std::complex<meep::realnum> *fields_f_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_f);
 
     // clean shapes array
     PyArrayObject *pao_fields_shapes = (PyArrayObject *)fields_shapes;

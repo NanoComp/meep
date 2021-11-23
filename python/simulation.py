@@ -3465,7 +3465,7 @@ class Simulation(object):
         dim_sizes = np.zeros(3, dtype=np.uintp)
         mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True, False)
         dims = [s for s in dim_sizes if s != 0]
-        arr = np.zeros(dims, dtype=np.complex128)
+        arr = np.zeros(dims, dtype=np.complex64 if mp.is_single_precision() else np.complex128)
         self.fields.get_source_slice(v, component, arr)
         return arr
 

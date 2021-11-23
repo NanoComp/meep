@@ -175,7 +175,8 @@ class UtilsTest(unittest.TestCase):
         for value in design_region_fields[0]:
             self.assertIsInstance(value, onp.ndarray)
             self.assertEqual(value.ndim, 4)  # dims: freq, x, y, pad
-            self.assertEqual(value.dtype, onp.complex128)
+            self.assertEqual(value.dtype,
+                             onp.complex64 if mp.is_single_precision() else onp.complex128)
 
 
 class WrapperTest(ApproxComparisonTestCase):

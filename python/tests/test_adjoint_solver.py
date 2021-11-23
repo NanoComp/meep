@@ -15,7 +15,8 @@ MonitorObject = Enum('MonitorObject', 'EIGENMODE DFT')
 resolution = 30
 
 silicon = mp.Medium(epsilon=12)
-sapphire = mp.Medium(epsilon_diag=(10.225,10.225,9.95),epsilon_offdiag=(-0.825,-0.55*np.sqrt(3/2),0.55*np.sqrt(3/2)))
+sapphire = mp.Medium(epsilon_diag=(10.225,10.225,9.95),
+                     epsilon_offdiag=(-0.825,-0.55*np.sqrt(3/2),0.55*np.sqrt(3/2)))
 
 sxy = 5.0
 cell_size = mp.Vector3(sxy,sxy,0)
@@ -469,7 +470,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compare objective results
             print("Ez2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Ez2_unperturbed))
-            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=1e-8)
+            tol = 1e-7 if mp.is_single_precision() else 1e-8
+            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=tol)
 
             ## compute perturbed |Ez|^2
             Ez2_perturbed = forward_simulation_complex_fields(p+dp, frequencies)
