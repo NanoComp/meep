@@ -3335,7 +3335,9 @@ class Simulation(object):
         + `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return
           real-valued data (default).
 
-        + `arr`: optional field to pass a pre-allocated NumPy array of the correct size,
+        + `arr`: optional parameter to pass a pre-allocated NumPy array of the correct size and
+          type (either `numpy.float32` or `numpy.float64` depending on the [floating-point precision
+          of the fields and materials](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays))
           which will be overwritten with the field/material data instead of allocating a
           new array.  Normally, this will be the array returned from a previous call to
           `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when
@@ -3419,7 +3421,8 @@ class Simulation(object):
 
     def get_dft_array(self, dft_obj, component, num_freq):
         """
-        Returns the Fourier-transformed fields as a NumPy array.
+        Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
+        or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays).
 
         **Parameters:**
 

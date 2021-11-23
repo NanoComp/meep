@@ -467,11 +467,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compute unperturbed |Ez|^2
             Ez2_unperturbed = forward_simulation_complex_fields(p, frequencies)
+            self.assertEqual(Ez2_unperturbed.dtype,
+                             np.float32 if mp.is_single_precision() else np.float64)
 
             ## compare objective results
             print("Ez2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Ez2_unperturbed))
-            tol = 1e-7 if mp.is_single_precision() else 1e-8
-            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=tol)
+            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=1e-6)
 
             ## compute perturbed |Ez|^2
             Ez2_perturbed = forward_simulation_complex_fields(p+dp, frequencies)
@@ -508,7 +509,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.06 if mp.is_single_precision() else 0.03
+            tol = 0.13 if mp.is_single_precision() else 0.03
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_offdiagonal(self):
@@ -535,7 +536,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = S12_perturbed-S12_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04
+            tol = 0.06 if mp.is_single_precision() else 0.04
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 if __name__ == '__main__':
     unittest.main()

@@ -3591,7 +3591,9 @@ current simulation time.
 + `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return
   real-valued data (default).
 
-+ `arr`: optional field to pass a pre-allocated NumPy array of the correct size,
++ `arr`: optional parameter to pass a pre-allocated NumPy array of the correct size and
+  type (either `numpy.float32` or `numpy.float64` depending on the [floating-point precision
+  of the fields and materials](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays))
   which will be overwritten with the field/material data instead of allocating a
   new array.  Normally, this will be the array returned from a previous call to
   `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when
@@ -3644,7 +3646,8 @@ def get_dft_array(self, dft_obj, component, num_freq):
 
 <div class="method_docstring" markdown="1">
 
-Returns the Fourier-transformed fields as a NumPy array.
+Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
+or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays).
 
 **Parameters:**
 
@@ -4401,7 +4404,7 @@ def __init__(self,
              medium2,
              weights=None,
              grid_type='U_DEFAULT',
-             do_averaging=False,
+             do_averaging=True,
              beta=0,
              eta=0.5,
              damping=0):
