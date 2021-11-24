@@ -47,7 +47,9 @@ default_eps_parameters = {
         'cmap':'binary',
         'alpha':1.0,
         'contour':False,
-        'contour_linewidth':1
+        'contour_linewidth':1,
+        'frequency':None,
+        'resolution':None
     }
 
 default_boundary_parameters = {
@@ -327,9 +329,26 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
             return ax
     return ax
 
-def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=None, frequency=0):
+def plot_eps(sim, ax, output_plane=None, eps_parameters=None):
     # consolidate plotting parameters
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
+
+    # Determine a frequency to plot all epsilon
+    if eps_parameters['frequency'] is None:
+        try:
+            # Continuous sources
+            eps_parameters['frequency'] = sim.sources[0].frequency
+        except:
+            try:
+                # Gaussian sources
+                eps_parameters['frequency'] = sim.sources[0].src.frequency
+            except:
+                try:
+                    # Custom sources
+                    eps_parameters['frequency'] = sim.sources[0].src.center_frequency
+                except:
+                    # No sources
+                    eps_parameters['frequency'] = 0
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
@@ -344,7 +363,7 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=None, f
     center = Vector3(sim_center.x, sim_center.y, sim_center.z)
     cell_size = Vector3(sim_size.x, sim_size.y, sim_size.z)
 
-    grid_resolution = resolution if resolution else sim.resolution
+    grid_resolution = eps_parameters['resolution'] if eps_parameters['resolution'] else sim.resolution
     Nx = int((xmax - xmin) * grid_resolution + 1)
     Ny = int((ymax - ymin) * grid_resolution + 1)
     Nz = int((zmax - zmin) * grid_resolution + 1)
@@ -376,7 +395,7 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, resolution=None, f
     else:
         raise ValueError("A 2D plane has not been specified...")
 
-    eps_data = np.rot90(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, frequency)))
+    eps_data = np.rot90(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters['frequency'])))
 
     if mp.am_master():
         if eps_parameters['contour']:
@@ -543,31 +562,14 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
 def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
            eps_parameters=None, boundary_parameters=None,
            source_parameters=None, monitor_parameters=None,
-           field_parameters=None, frequency=None, resolution=None,
-           plot_eps_flag=True, plot_sources_flag=True,
-           plot_monitors_flag=True, plot_boundaries_flag=True):
+           field_parameters=None, plot_eps_flag=True,
+           plot_sources_flag=True, plot_monitors_flag=True,
+           plot_boundaries_flag=True):
 
     # Ensure a figure axis exists
     if ax is None and mp.am_master():
         from matplotlib import pyplot as plt
         ax = plt.gca()
-
-    # Determine a frequency to plot all epsilon
-    if frequency is None:
-        try:
-            # Continuous sources
-            frequency = sim.sources[0].frequency
-        except:
-            try:
-                # Gaussian sources
-                frequency = sim.sources[0].src.frequency
-            except:
-                try:
-                    # Custom sources
-                    frequency = sim.sources[0].src.center_frequency
-                except:
-                    # No sources
-                    frequency = 0
 
     # validate the output plane to ensure proper 2D coordinates
     from meep.simulation import Volume
@@ -577,8 +579,7 @@ def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
     # Plot geometry
     if plot_eps_flag:
         ax = plot_eps(sim, ax, output_plane=output_plane,
-                      eps_parameters=eps_parameters, resolution=resolution,
-                      frequency=frequency)
+                      eps_parameters=eps_parameters)
 
     # Plot boundaries
     if plot_boundaries_flag:

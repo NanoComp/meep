@@ -2632,8 +2632,6 @@ def plot2D(self,
            source_parameters=None,
            monitor_parameters=None,
            field_parameters=None,
-           frequency=None,
-           resolution=None,
            plot_eps_flag=True,
            plot_sources_flag=True,
            plot_monitors_flag=True,
@@ -2660,17 +2658,12 @@ plt.show()
 plt.savefig('sim_domain.png')
 ```
 If you just want to quickly visualize the simulation domain without the fields (i.e., when
-debugging your simulation), there is no need to invoke the `run` function prior to calling
+setting up your simulation), there is no need to invoke the `run` function prior to calling
 `plot2D`. Just define the `Simulation` object followed by any DFT monitors and then
 invoke `plot2D`.
 
 Note: When running a [parallel simulation](Parallel_Meep.md), the `plot2D` function expects
 to be called on all processes, but only generates a plot on the master process.
-
-Note: The geometry function is evaluated at infinite frequency (i.e., the instantaneous response).
-Dispersive materials containing complex, wavelength-dependent $\varepsilon$ are ignored. To
-visualize dispersive materials, you can use the `get_array` or `output_epsilon` functions and
-specify a `frequency` parameter for evaluating the complex $\varepsilon$.
 
 **Parameters:**
 
@@ -2692,8 +2685,12 @@ specify a `frequency` parameter for evaluating the complex $\varepsilon$.
     - `alpha=1.0`: transparency of geometry
     - `contour=False`: if `True`, plot a contour of the geometry rather than its image
     - `contour_linewidth=1`: line width of the contour lines if `contour=True`
-    - `resolution=None`: the resolution to sample the $\varepsilon$ grid. Defaults to the
-       `resolution` of the `Simulation` object.
+    - `frequency=None`: for materials with a [frequency-dependent
+      permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
+      frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+      plot. Defaults to the `frequency` parameter of the [Source](#source) object.
+    - `resolution=None`: the resolution of the $\varepsilon$ grid. Defaults to the
+      `resolution` of the `Simulation` object.
 * `boundary_parameters`: a `dict` of optional plotting parameters that override
   the default parameters for the boundary layers.
     - `alpha=1.0`: transparency of boundary layers
@@ -2730,10 +2727,6 @@ specify a `frequency` parameter for evaluating the complex $\varepsilon$.
     - `alpha=0.6`: transparency of fields
     - `post_process=np.real`: post processing function to apply to fields (must be
       a function object)
-* `frequency`: for materials with a [frequency-dependent
-  permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
-  frequency $f$ (in Meep units) of the real part of the permittivity to use in the
-  plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
 </div>
 
