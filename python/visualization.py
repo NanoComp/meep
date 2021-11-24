@@ -334,25 +334,24 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
 
     # Determine a frequency to plot all epsilon
+    if frequency is not None:
+        warnings.warn('The frequency parameter of plot2D has been deprecated. Use the frequency key of the eps_parameters dictionary instead.')
+        eps_parameters['frequency'] = frequency
     if eps_parameters['frequency'] is None:
-        if frequency is None:
+        try:
+            # Continuous sources
+            eps_parameters['frequency'] = sim.sources[0].frequency
+        except:
             try:
-                # Continuous sources
-                eps_parameters['frequency'] = sim.sources[0].frequency
+                # Gaussian sources
+                eps_parameters['frequency'] = sim.sources[0].src.frequency
             except:
                 try:
-                    # Gaussian sources
-                    eps_parameters['frequency'] = sim.sources[0].src.frequency
+                    # Custom sources
+                    eps_parameters['frequency'] = sim.sources[0].src.center_frequency
                 except:
-                    try:
-                        # Custom sources
-                        eps_parameters['frequency'] = sim.sources[0].src.center_frequency
-                    except:
-                        # No sources
-                        eps_parameters['frequency'] = 0
-        else:
-            warnings.warn('The frequency parameter of plot2D has been deprecated. Use the frequency key of the eps_parameters dictionary instead.')
-            eps_parameters['frequency'] = frequency
+                    # No sources
+                    eps_parameters['frequency'] = 0
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
