@@ -387,10 +387,14 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
         extent = [xmin, xmax, zmin, zmax]
+<<<<<<< HEAD
         if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
             xlabel = 'R'
         else:
             xlabel = "X"
+=======
+        xlabel = 'X'
+>>>>>>> plot geometry for dispersive materials without initializing structure object (#1827)
         ylabel = 'Z'
         xtics = np.linspace(xmin, xmax, Nx)
         ytics = np.array([sim_center.y])
@@ -422,7 +426,11 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
     # consolidate plotting parameters
     boundary_parameters = default_boundary_parameters if boundary_parameters is None else dict(default_boundary_parameters, **boundary_parameters)
 
+<<<<<<< HEAD
     def get_boundary_volumes(thickness, direction, side, cylindrical=False):
+=======
+    def get_boundary_volumes(thickness, direction, side):
+>>>>>>> plot geometry for dispersive materials without initializing structure object (#1827)
         from meep.simulation import Volume
 
         thickness = boundary.thickness
@@ -555,10 +563,14 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
         elif sim_size.y == 0:
             # Plot x on x axis, z on y axis (XZ plane)
             extent = [xmin, xmax, zmin, zmax]
+<<<<<<< HEAD
             if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
                 xlabel = 'R'
             else:
                 xlabel = "X"
+=======
+            xlabel = 'X'
+>>>>>>> plot geometry for dispersive materials without initializing structure object (#1827)
             ylabel = 'Z'
         elif sim_size.z == 0:
             # Plot x on x axis, y on y axis (XY plane)
