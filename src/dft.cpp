@@ -859,11 +859,11 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 /***************************************************************/
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
-complex<realnum> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
-                                                  int num_freq, h5file *file, realnum *buffer, int reim,
-                                                  complex<realnum> *field_array, void *mode1_data, void *mode2_data,
-                                                  int ic_conjugate, bool retain_interp_weights,
-                                                  fields *parent) {
+complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
+                                                 int num_freq, h5file *file, realnum *buffer, int reim,
+                                                 complex<realnum> *field_array, void *mode1_data, void *mode2_data,
+                                                 int ic_conjugate, bool retain_interp_weights,
+                                                 fields *parent) {
 
   if ((num_freq < 0) || (num_freq > static_cast<int>(omega.size())-1))
     meep::abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
@@ -923,7 +923,7 @@ complex<realnum> dft_chunk::process_dft_component(int rank, direction *ds, ivec 
   /***************************************************************/
   vec rshift(shift * (0.5 * fc->gv.inva));
   int chunk_idx = 0;
-  complex<realnum> integral = 0.0;
+  complex<double> integral = 0.0;
   component c_conjugate = (component)(ic_conjugate >= 0 ? ic_conjugate : -ic_conjugate);
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
     IVEC_LOOP_LOC(fc->gv, loc);
@@ -1025,11 +1025,11 @@ complex<realnum> dft_chunk::process_dft_component(int rank, direction *ds, ivec 
 /* if where is non-null, only field components inside *where   */
 /* are processed.                                              */
 /***************************************************************/
-complex<realnum> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
-                                               component c, const char *HDF5FileName, complex<realnum> **pfield_array,
-                                               int *array_rank, size_t *array_dims, direction *array_dirs,
-                                               void *mode1_data, void *mode2_data, component c_conjugate,
-                                               bool *first_component, bool retain_interp_weights) {
+complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
+                                              component c, const char *HDF5FileName, complex<realnum> **pfield_array,
+                                              int *array_rank, size_t *array_dims, direction *array_dirs,
+                                              void *mode1_data, void *mode2_data, component c_conjugate,
+                                              bool *first_component, bool retain_interp_weights) {
 
   /***************************************************************/
   /***************************************************************/
@@ -1109,7 +1109,7 @@ complex<realnum> fields::process_dft_component(dft_chunk **chunklists, int num_c
   else if (pfield_array)
     *pfield_array = field_array = (array_size ? new complex<realnum>[array_size] : 0);
 
-  complex<realnum> overlap = 0.0;
+  complex<double> overlap = 0.0;
   for (int reim = 0; reim <= reim_max; reim++) {
     h5file *file = 0;
     if (HDF5FileName) {

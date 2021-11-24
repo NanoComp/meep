@@ -1128,12 +1128,12 @@ public:
 
   // chunk-by-chunk helper routine called by
   // fields::process_dft_component
-  std::complex<realnum> process_dft_component(int rank, direction *ds, ivec min_corner,
-                                              ivec max_corner, int num_freq, h5file *file,
-                                              realnum *buffer, int reim,
-                                              std::complex<realnum> *field_array, void *mode1_data,
-                                              void *mode2_data, int ic_conjugate,
-                                              bool retain_interp_weights, fields *parent);
+  std::complex<double> process_dft_component(int rank, direction *ds, ivec min_corner,
+                                             ivec max_corner, int num_freq, h5file *file,
+                                             realnum *buffer, int reim,
+                                             std::complex<realnum> *field_array, void *mode1_data,
+                                             void *mode2_data, int ic_conjugate,
+                                             bool retain_interp_weights, fields *parent);
 
   int get_decimation_factor() const { return decimation_factor; };
 
@@ -2081,13 +2081,13 @@ public:
   /* of DFT fields, and  evaluating overlap integrals     */
   /* flux and mode fields.)                               */
   /********************************************************/
-  std::complex<realnum> process_dft_component(dft_chunk **chunklists, int num_chunklists,
-                                              int num_freq, component c, const char *HDF5FileName,
-                                              std::complex<realnum> **field_array = 0, int *rank = 0,
-                                              size_t *dims = 0, direction *dirs = 0,
-                                              void *mode1_data = 0, void *mode2_data = 0,
-                                              component c_conjugate = Ex, bool *first_component = 0,
-                                              bool retain_interp_weights = true);
+  std::complex<double> process_dft_component(dft_chunk **chunklists, int num_chunklists,
+                                             int num_freq, component c, const char *HDF5FileName,
+                                             std::complex<realnum> **field_array = 0, int *rank = 0,
+                                             size_t *dims = 0, direction *dirs = 0,
+                                             void *mode1_data = 0, void *mode2_data = 0,
+                                             component c_conjugate = Ex, bool *first_component = 0,
+                                             bool retain_interp_weights = true);
 
   // output DFT fields to HDF5 file
   void output_dft_components(dft_chunk **chunklists, int num_chunklists, volume dft_volume,
