@@ -41,8 +41,8 @@ typedef struct {
 } linear_integrand_data;
 
 /* integrand for integrating c + ax*x + ay*y + az*z. */
-static complex<realnum> linear_integrand(const complex<realnum> *fields, const vec &loc,
-                                         void *data_) {
+static complex<double> linear_integrand(const complex<realnum> *fields, const vec &loc,
+                                        void *data_) {
   linear_integrand_data *data = (linear_integrand_data *)data_;
 
   (void)fields; // unused

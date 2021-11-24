@@ -60,6 +60,10 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
+// Defined in array_slice.cpp
+std::complex<double> cdouble(std::complex<float> z);
+std::complex<double> cdouble(std::complex<double> z);
+
 class h5file;
 
 // Defined in monitor.cpp
@@ -1627,10 +1631,10 @@ typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid, i
                                 vec s0, vec s1, vec e0, vec e1, double dV0, double dV1, ivec shift,
                                 std::complex<double> shift_phase, const symmetry &S, int sn,
                                 void *chunkloop_data);
-typedef std::complex<realnum> (*field_function)(const std::complex<realnum> *fields, const vec &loc,
-                                                void *integrand_data_);
-typedef realnum (*field_rfunction)(const std::complex<realnum> *fields, const vec &loc,
-                                   void *integrand_data_);
+typedef std::complex<double> (*field_function)(const std::complex<realnum> *fields, const vec &loc,
+                                               void *integrand_data_);
+typedef double (*field_rfunction)(const std::complex<realnum> *fields, const vec &loc,
+                                  void *integrand_data_);
 
 field_rfunction derived_component_func(derived_component c, const grid_volume &gv, int &nfields,
                                        component cs[12]);

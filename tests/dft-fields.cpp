@@ -15,8 +15,6 @@
 
 using namespace meep;
 
-typedef std::complex<realnum> cdouble;
-
 vector3 v3(double x, double y = 0.0, double z = 0.0) {
   vector3 v;
   v.x = x;
@@ -35,7 +33,7 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void Run(bool Pulse, double resolution, cdouble **field_array = 0, int *array_rank = 0,
+void Run(bool Pulse, double resolution, std::complex<meep::realnum> **field_array = 0, int *array_rank = 0,
          size_t *array_dims = 0) {
   /***************************************************************/
   /* initialize geometry                                         */
@@ -104,7 +102,7 @@ void Run(bool Pulse, double resolution, cdouble **field_array = 0, int *array_ra
 /***************************************************************/
 /* return L2 norm of error normalized by average of L2 norms   */
 /***************************************************************/
-double compare_array_to_dataset(cdouble *field_array, int array_rank, size_t *array_dims,
+double compare_array_to_dataset(std::complex<meep::realnum> *field_array, int array_rank, size_t *array_dims,
                                 const char *file, const char *name) {
   int file_rank;
   size_t file_dims[3];
@@ -121,8 +119,8 @@ double compare_array_to_dataset(cdouble *field_array, int array_rank, size_t *ar
 
   double NormArray = 0.0, NormFile = 0.0, NormDelta = 0.0;
   for (size_t n = 0; n < file_dims[0] * file_dims[1]; n++) {
-    cdouble zArray = field_array[n];
-    cdouble zFile = cdouble(rdata[n], idata[n]);
+    std::complex<double> zArray = field_array[n];
+    std::complex<double> zFile = std::complex<double>(rdata[n], idata[n]);
     NormArray += norm(zArray);
     NormFile += norm(zFile);
     NormDelta += norm(zArray - zFile);
@@ -178,15 +176,15 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
   for (int d = 1; d < rank1; d++)
     length *= dims1[d];
 
-  realnum max_abs1 = 0.0, max_abs2 = 0.0;
-  realnum max_arg1 = 0.0, max_arg2 = 0.0;
+  double max_abs1 = 0.0, max_abs2 = 0.0;
+  double max_arg1 = 0.0, max_arg2 = 0.0;
   for (size_t n = 0; n < length; n++) {
-    cdouble z1 = cdouble(rdata1[n], idata1[n]);
+    std::complex<double> z1 = std::complex<double>(rdata1[n], idata1[n]);
     if (abs(z1) > max_abs1) {
       max_abs1 = abs(z1);
       max_arg1 = arg(z1);
     }
-    cdouble z2 = cdouble(rdata2[n], idata2[n]);
+    std::complex<double> z2 = std::complex<double>(rdata2[n], idata2[n]);
     if (abs(z2) > max_abs2) {
       max_abs2 = abs(z2);
       max_arg2 = arg(z2);
@@ -196,11 +194,11 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
 
   // second pass to get L2 norm of difference between normalized data sets
   double norm1 = 0.0, norm2 = 0.0, normdiff = 0.0;
-  cdouble phase1 = exp(-cdouble(0, 1) * max_arg1);
-  cdouble phase2 = exp(-cdouble(0, 1) * max_arg2);
+  std::complex<double> phase1 = exp(-std::complex<double>(0, 1) * max_arg1);
+  std::complex<double> phase2 = exp(-std::complex<double>(0, 1) * max_arg2);
   for (size_t n = 0; n < length; n++) {
-    cdouble z1 = phase1 * cdouble(rdata1[n], idata1[n]) / max_abs1;
-    cdouble z2 = phase2 * cdouble(rdata2[n], idata2[n]) / max_abs2;
+    std::complex<double> z1 = phase1 * std::complex<double>(rdata1[n], idata1[n]) / max_abs1;
+    std::complex<double> z2 = phase2 * std::complex<double>(rdata2[n], idata2[n]) / max_abs2;
     norm1 += norm(z1);
     norm2 += norm(z2);
     normdiff += norm(z1 - z2);
@@ -235,7 +233,7 @@ int main(int argc, char *argv[]) {
       meep::abort("unknown argument %s", argv[narg]);
   }
 
-  cdouble *field_array = 0;
+  std::complex<meep::realnum> *field_array = 0;
   int array_rank;
   size_t array_dims[3];
   Run(true, resolution, &field_array, &array_rank, array_dims);

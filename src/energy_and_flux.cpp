@@ -58,10 +58,10 @@ double fields::field_energy_in_box(const volume &where) {
   return electric_energy_in_box(where) + cur_step_magnetic_energy;
 }
 
-static complex<realnum> dot_integrand(const complex<realnum> *fields, const vec &loc, void *data_) {
+static complex<double> dot_integrand(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;
   (void)data_; // unused;
-  return real(conj(fields[0]) * fields[1]);
+  return real(conj(cdouble(fields[0])) * cdouble(fields[1]));
 }
 
 double fields::field_energy_in_box(component c, const volume &where) {
@@ -249,12 +249,13 @@ flux_vol *fields::add_flux_plane(const vec &p1, const vec &p2) {
    is more expensive and requires us to know the boundary orientation, and
    does not seem worth the trouble at this point. */
 
-static complex<realnum> dot3_max_integrand(const complex<realnum> *fields, const vec &loc,
-                                           void *data_) {
+static complex<double> dot3_max_integrand(const complex<realnum> *fields, const vec &loc,
+                                          void *data_) {
   (void)loc;
   (void)data_; // unused;
-  return (real(conj(fields[0]) * fields[3]) + real(conj(fields[1]) * fields[4]) +
-          real(conj(fields[2]) * fields[5]));
+  return (real(conj(cdouble(fields[0])) * cdouble(fields[3])) +
+          real(conj(cdouble(fields[1])) * cdouble(fields[4])) +
+          real(conj(cdouble(fields[2])) * cdouble(fields[5])));
 }
 
 double fields::electric_energy_max_in_box(const volume &where) {
@@ -294,10 +295,10 @@ double fields::modal_volume_in_box(const volume &where) {
 
 typedef double (*fx_func)(const vec &);
 
-static complex<realnum> dot_fx_integrand(const complex<realnum> *fields, const vec &loc,
-                                         void *data_) {
+static complex<double> dot_fx_integrand(const complex<realnum> *fields, const vec &loc,
+                                        void *data_) {
   fx_func fx = (fx_func)data_;
-  return (real(conj(fields[0]) * fields[1]) * fx(loc));
+  return (real(conj(cdouble(fields[0])) * cdouble(fields[1])) * fx(loc));
 }
 
 /* computes integral of f(x) * |E|^2 / integral epsilon*|E|^2 */

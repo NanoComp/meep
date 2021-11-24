@@ -352,7 +352,7 @@ typedef struct {
   void *fun_data_;
 } rintegrand_data;
 
-static complex<realnum> rintegrand_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
+static complex<double> rintegrand_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
   rintegrand_data *data = (rintegrand_data *)data_;
   return data->fun(fields, loc, data->fun_data_);
 }
@@ -375,10 +375,10 @@ void fields::output_hdf5(const char *dataname, int num_fields, const component *
 
 /***************************************************************************/
 
-static complex<realnum> component_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
+static complex<double> component_fun(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
-  return fields[0];
+  return cdouble(fields[0]);
 }
 
 void fields::output_hdf5(component c, const volume &where, h5file *file, bool append_data,

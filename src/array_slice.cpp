@@ -72,6 +72,14 @@ complex<realnum> *array_to_all(complex<realnum> *array, size_t array_size) {
 
 /***************************************************************************/
 
+std::complex<double> cdouble(std::complex<float> z) {
+  return std::complex<double>(real(z), imag(z));
+}
+
+std::complex<double> cdouble(std::complex<double> z) {
+  return z;
+}
+
 typedef struct {
 
   // information related to the volume covered by the
@@ -119,16 +127,16 @@ typedef struct {
 } array_slice_data;
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
-static complex<realnum> default_field_func(const complex<realnum> *fields, const vec &loc, void *data_) {
+static complex<double> default_field_func(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
-  return fields[0];
+  return cdouble(fields[0]);
 }
 
-static realnum default_field_rfunc(const complex<realnum> *fields, const vec &loc, void *data_) {
+static double default_field_rfunc(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
-  return real(fields[0]);
+  return real(cdouble(fields[0]));
 }
 
 /***************************************************************/

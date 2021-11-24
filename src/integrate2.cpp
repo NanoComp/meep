@@ -43,7 +43,7 @@ struct integrate_data {
   int ninvmu;
   component invmu_cs[3];
   direction invmu_ds[3];
-  complex<long double> sum;
+  complex<double> sum;
   double maxabs;
   field_function integrand;
   void *integrand_data_;
@@ -286,7 +286,7 @@ complex<double> fields::integrate2(const fields &fields2, int num_fvals1,
   if (maxabs) *maxabs = max_to_all(data.maxabs);
   data.sum = sum_to_all(data.sum);
 
-  return complex<double>(real(data.sum), imag(data.sum));
+  return cdouble(data.sum);
 }
 
 typedef struct {
@@ -294,7 +294,7 @@ typedef struct {
   void *integrand_data;
 } rfun_wrap_data;
 
-static complex<realnum> rfun_wrap(const complex<realnum> *fields, const vec &loc, void *data_) {
+static complex<double> rfun_wrap(const complex<realnum> *fields, const vec &loc, void *data_) {
   rfun_wrap_data *data = (rfun_wrap_data *)data_;
   return data->integrand(fields, loc, data->integrand_data);
 }

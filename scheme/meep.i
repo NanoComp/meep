@@ -33,9 +33,9 @@ static inline std::complex<double> my_complex_func2(double t, void *f) {
 }
 
 typedef struct { SCM func; int nf; } my_field_func_data;
-static inline std::complex<meep::realnum> my_field_func(const std::complex<meep::realnum> *fields,
-                                                        const meep::vec &loc,
-                                                        void *data_) {
+static inline std::complex<double> my_field_func(const std::complex<meep::realnum> *fields,
+                                                 const meep::vec &loc,
+                                                 void *data_) {
   my_field_func_data *data = (my_field_func_data *) data_;
   int num_items = data->nf;
   cnumber *items = new cnumber[num_items];
@@ -46,7 +46,7 @@ static inline std::complex<meep::realnum> my_field_func(const std::complex<meep:
 			      make_cnumber_list(num_items, items)));
   delete[] items;
   cnumber cret = ctl_convert_cnumber_to_c(ret);
-  return std::complex<meep::realnum>(cret.re, cret.im);
+  return std::complex<double>(cret.re, cret.im);
 }
 
 /* Unfortunately, this is not re-entrant.  Damn dynamic scoping.
