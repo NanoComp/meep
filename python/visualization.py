@@ -329,26 +329,30 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
             return ax
     return ax
 
-def plot_eps(sim, ax, output_plane=None, eps_parameters=None):
+def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     # consolidate plotting parameters
     eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
 
     # Determine a frequency to plot all epsilon
     if eps_parameters['frequency'] is None:
-        try:
-            # Continuous sources
-            eps_parameters['frequency'] = sim.sources[0].frequency
-        except:
+        if frequency is None:
             try:
-                # Gaussian sources
-                eps_parameters['frequency'] = sim.sources[0].src.frequency
+                # Continuous sources
+                eps_parameters['frequency'] = sim.sources[0].frequency
             except:
                 try:
-                    # Custom sources
-                    eps_parameters['frequency'] = sim.sources[0].src.center_frequency
+                    # Gaussian sources
+                    eps_parameters['frequency'] = sim.sources[0].src.frequency
                 except:
-                    # No sources
-                    eps_parameters['frequency'] = 0
+                    try:
+                        # Custom sources
+                        eps_parameters['frequency'] = sim.sources[0].src.center_frequency
+                    except:
+                        # No sources
+                        eps_parameters['frequency'] = 0
+        else:
+            warnings.warn('The frequency parameter of plot2D has been deprecated. Use the frequency key of the eps_parameters dictionary instead.')
+            eps_parameters['frequency'] = frequency
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
@@ -562,9 +566,9 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
 def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
            eps_parameters=None, boundary_parameters=None,
            source_parameters=None, monitor_parameters=None,
-           field_parameters=None, plot_eps_flag=True,
-           plot_sources_flag=True, plot_monitors_flag=True,
-           plot_boundaries_flag=True):
+           field_parameters=None, frequency=None,
+           plot_eps_flag=True, plot_sources_flag=True,
+           plot_monitors_flag=True, plot_boundaries_flag=True):
 
     # Ensure a figure axis exists
     if ax is None and mp.am_master():
@@ -579,7 +583,7 @@ def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
     # Plot geometry
     if plot_eps_flag:
         ax = plot_eps(sim, ax, output_plane=output_plane,
-                      eps_parameters=eps_parameters)
+                      eps_parameters=eps_parameters, frequency=frequency)
 
     # Plot boundaries
     if plot_boundaries_flag:

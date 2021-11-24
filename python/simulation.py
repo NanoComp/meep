@@ -4070,9 +4070,10 @@ class Simulation(object):
     def plot2D(self, ax=None, output_plane=None, fields=None, labels=False,
                eps_parameters=None, boundary_parameters=None,
                source_parameters=None, monitor_parameters=None,
-               field_parameters=None, plot_eps_flag=True,
-               plot_sources_flag=True, plot_monitors_flag=True,
-               plot_boundaries_flag=True, **kwargs):
+               field_parameters=None, frequency=None,
+               plot_eps_flag=True, plot_sources_flag=True,
+               plot_monitors_flag=True, plot_boundaries_flag=True,
+               **kwargs):
         """
         Plots a 2D cross section of the simulation domain using `matplotlib`. The plot
         includes the geometry, boundary layers, sources, and monitors. Fields can also be
@@ -4171,6 +4172,7 @@ class Simulation(object):
                           source_parameters=source_parameters,
                           monitor_parameters=monitor_parameters,
                           field_parameters=field_parameters,
+                          frequency=frequency,
                           plot_eps_flag=plot_eps_flag,
                           plot_sources_flag=plot_sources_flag,
                           plot_monitors_flag=plot_monitors_flag,
