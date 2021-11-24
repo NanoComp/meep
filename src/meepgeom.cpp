@@ -2557,13 +2557,11 @@ void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
 #undef minv(x,y)
 }
 
-void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3],
-  const meep::vec &r, double freq, geom_epsilon *geps) {
+void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, double freq, geom_epsilon *geps) {
   // locate the proper material
   material_type md;
   geps->get_material_pt(md, r);
   const medium_struct *mm = &(md->medium);
-  std::complex<double> tensor[9], tensor_inv[9];
 
   // loop over all the tensor components
   for (int i = 0; i < 9; i++) {
@@ -2574,7 +2572,7 @@ void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3]
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
     a = std::complex<double>(1.0, conductivityCur / (2*meep::pi*freq));
 
-    // compute lorentzian component
+    // compute lorentzian component including the instantaneous ε
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
     for (const auto &mm_susc: mm->E_susceptibilities) {
       meep::lorentzian_susceptibility sus = meep::lorentzian_susceptibility(
@@ -2586,7 +2584,12 @@ void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3]
     // elementwise multiply
     tensor[i] = a * b;
   }
+}
 
+void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3],
+  const meep::vec &r, double freq, geom_epsilon *geps) {
+  std::complex<double> tensor[9], tensor_inv[9];
+  get_chi1_tensor_disp(tensor, r, freq, geps);
   // invert the matrix
   invert_tensor(tensor_inv, tensor);
 
@@ -3050,7 +3053,8 @@ void get_epsilon_grid(geometric_object_list gobj_list,
                       int nx, const double *x,
                       int ny, const double *y,
                       int nz, const double *z,
-                      double *grid_vals) {
+                      std::complex<double> *grid_vals,
+                      double frequency) {
   double min_val[3], max_val[3];
   for (int n = 0; n < 3; ++n) {
     int ndir = (n == 0) ? nx : ((n == 1) ? ny : nz);
@@ -3066,10 +3070,17 @@ void get_epsilon_grid(geometric_object_list gobj_list,
   geom_epsilon geps(gobj_list, mlist, vol);
   for (int i = 0; i < nx; ++i)
     for (int j = 0; j < ny; ++j)
-      for (int k = 0; k < nz; ++k)
-        /* obtain the trace of the \varepsilon tensor for each
+      for (int k = 0; k < nz; ++k) {
+        /* obtain the trace of the ε tensor (dispersive or non) for each
            grid point in row-major order (the order used by NumPy) */
-        grid_vals[k + nz*(j + ny*i)] = geps.chi1p1(meep::E_stuff, meep::vec(x[i],y[j],z[k]));
+        if (frequency == 0)
+          grid_vals[k + nz*(j + ny*i)] = geps.chi1p1(meep::E_stuff, meep::vec(x[i],y[j],z[k]));
+        else {
+          std::complex<double> tensor[9];
+          get_chi1_tensor_disp(tensor, meep::vec(x[i],y[j],z[k]), frequency, &geps);
+          grid_vals[k + nz*(j + ny*i)] = (tensor[0] + tensor[4] + tensor[8]) / 3.0;
+        }
+      }
 }
 
 } // namespace meep_geom
