@@ -189,8 +189,7 @@ void check_integral(fields &f, linear_integrand_data &d, const volume &v, compon
                   d.ay, d.az, d.axy, d.ayz, d.axz, d.axyz);
 
   double sum = real(f.integrate(0, 0, linear_integrand, (void *)&d, v));
-  double tol = sizeof(meep::realnum) == sizeof(float) ? 1e-7 : 1e-9;
-  if (fabs(sum - correct_integral(v, d)) > tol * fabs(sum))
+  if (fabs(sum - correct_integral(v, d)) > 1e-9 * fabs(sum))
     meep::abort("FAILED: %0.16g instead of %0.16g\n", sum, correct_integral(v, d));
   master_printf("...PASSED.\n");
 }
