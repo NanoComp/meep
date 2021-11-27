@@ -53,7 +53,7 @@ class TestGetEpsilonGrid(ApproxComparisonTestCase):
                                  eps_averaging=False)
 
     def test_get_epsilon_grid(self):
-        grid_resolution = 3 if mp.is_single_precision() else 10
+        grid_resolution = 10
         Nx = int(grid_resolution*self.cell_size.x) + 1
         Ny = int(grid_resolution*self.cell_size.y) + 1
         xtics = np.linspace(-0.5*self.cell_size.x,0.5*self.cell_size.x,Nx)
