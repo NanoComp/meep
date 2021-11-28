@@ -1,13 +1,13 @@
 import unittest
+import parameterized
 import numpy as np
 import meep as mp
 from meep.materials import SiN, Co
-from utils import ApproxComparisonTestCase
 
-class TestGetEpsilonGrid(ApproxComparisonTestCase):
+class TestGetEpsilonGrid(unittest.TestCase):
 
     def setUp(self):
-        resolution = 100
+        resolution = 60
         self.cell_size = mp.Vector3(1.0,1.0,0)
 
         matgrid_resolution = 200
@@ -51,26 +51,24 @@ class TestGetEpsilonGrid(ApproxComparisonTestCase):
                                  cell_size=self.cell_size,
                                  geometry=geometry,
                                  eps_averaging=False)
-
-    def test_get_epsilon_grid(self):
-        grid_resolution = 10
-        Nx = int(grid_resolution*self.cell_size.x) + 1
-        Ny = int(grid_resolution*self.cell_size.y) + 1
-        xtics = np.linspace(-0.5*self.cell_size.x,0.5*self.cell_size.x,Nx)
-        ytics = np.linspace(-0.5*self.cell_size.y,0.5*self.cell_size.y,Ny)
-
-        frequency = [0, 0.3, 1.1, 1.5]
         self.sim.init_sim()
 
-        for frq in frequency:
-            eps_grid = self.sim.get_epsilon_grid(xtics,ytics,np.array([0]),frq)
-            eps_pt = []
-            for xi, xv in enumerate(xtics):
-                for yi, yv in enumerate(ytics):
-                    eps_pt.append(self.sim.get_epsilon_point(mp.Vector3(xv,yv),frq))
-                    print("eps:, {}, ({:.4f}, {:.4f}), {}, {}".format(frq,xv,yv,eps_pt[-1],eps_grid[xi,yi]))
+    @parameterized.parameterized.expand([
+        (mp.Vector3(0.2,0.2), 1.1),
+        (mp.Vector3(-0.2,0.1), 0.7),
+        (mp.Vector3(-0.2,-0.25), 0.55),
+        (mp.Vector3(0.4,0.1), 0)
+    ])
+    def test_get_epsilon_grid(self, pt, freq):
+        eps_grid = self.sim.get_epsilon_grid(np.array([pt.x]),
+                                             np.array([pt.y]),
+                                             np.array([0]),
+                                             freq)
+        eps_pt = self.sim.get_epsilon_point(pt, freq)
+        print("eps:, ({},{}), {}, {}".format(pt.x,pt.y,eps_grid,eps_pt))
+        self.assertAlmostEqual(np.real(eps_grid), np.real(eps_pt), places=6)
+        self.assertAlmostEqual(np.imag(eps_grid), np.imag(eps_pt), places=6)
 
-            self.assertClose(eps_grid, eps_pt, epsilon=1e-6)
 
 if __name__ == '__main__':
     unittest.main()
