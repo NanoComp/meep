@@ -65,6 +65,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_gaussianbeam.py           \
     $(TEST_DIR)/test_geom.py                   \
     $(TEST_DIR)/test_get_point.py              \
+    $(TEST_DIR)/test_get_epsilon_grid.py       \
     $(TEST_DIR)/test_holey_wvg_bands.py        \
     $(TEST_DIR)/test_holey_wvg_cavity.py       \
     $(KDOM_TEST)                               \
