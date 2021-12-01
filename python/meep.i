@@ -150,7 +150,7 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     return ret;
 }
 
-static std::complex<double> py_field_func_wrap(const std::complex<double> *fields,
+static std::complex<double> py_field_func_wrap(const std::complex<meep::realnum> *fields,
                                                const meep::vec &loc,
                                                void *data_) {
     SWIG_PYTHON_THREAD_SCOPED_BLOCK;
@@ -441,25 +441,25 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     // Return value: New reference
     int rank;
     size_t dims[3];
-    std::complex<double> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
+    std::complex<meep::realnum> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
-    if (dft_arr==NULL){ // this can happen e.g. if component c vanishes by symmetry
-     std::complex<double> d[1] = {std::complex<double>(0,0)};
-     return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, d);
+    if (dft_arr == NULL) { // this can happen e.g. if component c vanishes by symmetry
+      std::complex<double> d[1] = {std::complex<double>(0,0)};
+      return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, d);
     }
 
     if (rank == 0) // singleton results
-     return PyArray_SimpleNewFromData(0, 0, NPY_CDOUBLE, dft_arr);
+      return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, dft_arr);
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
     for (int i = 0; i < rank; ++i) {
-        arr_dims[i] = dims[i];       // implicit size_t -> int cast, presumed safe for individual array dimensions
-        length *= dims[i];
+         arr_dims[i] = dims[i];       // implicit size_t -> int cast, presumed safe for individual array dimensions
+         length *= dims[i];
     }
 
-    PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, NPY_CDOUBLE);
-    memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<double>) * length);
+    PyObject *py_arr = PyArray_SimpleNew(rank, arr_dims, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE);
+    memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<meep::realnum>) * length);
     delete[] dft_arr;
     if (arr_dims) delete[] arr_dims;
 
@@ -844,8 +844,8 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %inline %{
 void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
-    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies, 
-    meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
+                   meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies,
+                   meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -859,14 +859,14 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
-    std::complex<double> *fields_a_c = (std::complex<double> *)PyArray_DATA(pao_fields_a);
+    std::complex<meep::realnum> *fields_a_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_a);
 
     // clean the forward fields array
     PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
     if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
     if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
     if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
-    std::complex<double> *fields_f_c = (std::complex<double> *)PyArray_DATA(pao_fields_f);
+    std::complex<meep::realnum> *fields_f_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_f);
 
     // clean shapes array
     PyArrayObject *pao_fields_shapes = (PyArrayObject *)fields_shapes;
@@ -1025,20 +1025,20 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     $1 = (size_t *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* slice {
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") meep::realnum* slice {
     $1 = is_array($input);
 }
 
-%typemap(in, fragment="NumPy_Macros") double* slice {
-    $1 = (double *)array_data($input);
+%typemap(in, fragment="NumPy_Macros") meep::realnum* slice {
+    $1 = (meep::realnum *)array_data($input);
 }
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* slice {
+%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<meep::realnum>* slice {
     $1 = is_array($input);
 }
 
-%typemap(in) std::complex<double>* slice {
-    $1 = (std::complex<double> *)array_data($input);
+%typemap(in) std::complex<meep::realnum>* slice {
+    $1 = (std::complex<meep::realnum> *)array_data($input);
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep::component {

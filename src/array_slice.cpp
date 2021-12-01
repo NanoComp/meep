@@ -43,17 +43,17 @@ constexpr size_t ARRAY_TO_ALL_BUFSIZE = 1 << 16; // Use (64k * 8 bytes) of buffe
 /* repeatedly call sum_to_all to consolidate all entries of    */
 /* an array on all cores.                                      */
 /* array: in/out ptr to the data                               */
-/* array_size: data size in multiples of sizeof(double)        */
+/* array_size: data size in multiples of sizeof(realnum)       */
 /***************************************************************/
-double *array_to_all(double *array, size_t array_size) {
+realnum *array_to_all(realnum *array, size_t array_size) {
 #ifdef HAVE_MPI
-  double *buffer = new double[ARRAY_TO_ALL_BUFSIZE];
+  realnum *buffer = new realnum[ARRAY_TO_ALL_BUFSIZE];
   ptrdiff_t offset = 0;
   size_t remaining = array_size;
   while (remaining != 0) {
     size_t xfer_size = (remaining > ARRAY_TO_ALL_BUFSIZE ? ARRAY_TO_ALL_BUFSIZE : remaining);
     sum_to_all(array + offset, buffer, xfer_size);
-    memcpy(array + offset, buffer, xfer_size * sizeof(double));
+    memcpy(array + offset, buffer, xfer_size * sizeof(realnum));
     remaining -= xfer_size;
     offset += xfer_size;
   }
@@ -64,13 +64,21 @@ double *array_to_all(double *array, size_t array_size) {
   return array;
 }
 
-complex<double> *array_to_all(complex<double> *array, size_t array_size) {
-  return (complex<double> *)array_to_all((double *)array, 2 * array_size);
+complex<realnum> *array_to_all(complex<realnum> *array, size_t array_size) {
+  return (complex<realnum> *)array_to_all((realnum *)array, 2 * array_size);
 }
 
 } // namespace
 
 /***************************************************************************/
+
+std::complex<double> cdouble(std::complex<float> z) {
+  return std::complex<double>(real(z), imag(z));
+}
+
+std::complex<double> cdouble(std::complex<double> z) {
+  return z;
+}
 
 typedef struct {
 
@@ -101,7 +109,7 @@ typedef struct {
   // temporary internal storage buffers
   component *cS;
   complex<double> *ph;
-  complex<double> *fields;
+  complex<realnum> *fields;
   ptrdiff_t *offsets;
 
   double frequency;
@@ -119,16 +127,16 @@ typedef struct {
 } array_slice_data;
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
-static complex<double> default_field_func(const complex<double> *fields, const vec &loc, void *data_) {
+static complex<double> default_field_func(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
-  return fields[0];
+  return cdouble(fields[0]);
 }
 
-static double default_field_rfunc(const complex<double> *fields, const vec &loc, void *data_) {
+static double default_field_rfunc(const complex<realnum> *fields, const vec &loc, void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
-  return real(fields[0]);
+  return real(cdouble(fields[0]));
 }
 
 /***************************************************************/
@@ -174,7 +182,7 @@ static void get_array_slice_dimensions_chunkloop(fields_chunk *fc, int ichnk, co
 typedef struct {
   component source_component;
   ivec slice_imin, slice_imax;
-  complex<double> *slice;
+  complex<realnum> *slice;
 } source_slice_data;
 
 bool in_range(int imin, int i, int imax) { return (imin <= i && i <= imax); }
@@ -310,18 +318,19 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   // Otherwise proceed to compute the function of field components to be   //
   // tabulated on the slice, exactly as in fields::integrate.              //
   //-----------------------------------------------------------------------//
-  double *slice = 0;
-  complex<double> *zslice = 0;
+  realnum *slice = 0;
+  complex<realnum> *zslice = 0;
   bool complex_data = (data->rfun == 0);
   if (complex_data)
-    zslice = (complex<double> *)data->vslice;
+    zslice = (complex<realnum> *)data->vslice;
   else
-    slice = (double *)data->vslice;
+    slice = (realnum *)data->vslice;
 
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
   double frequency = data->frequency;
-  complex<double> *fields = data->fields, *ph = data->ph;
+  complex<realnum> *fields = data->fields;
+  complex<double> *ph = data->ph;
   const component *iecs = data->inveps_cs;
   const direction *ieds = data->inveps_ds;
   ptrdiff_t ieos[6];
@@ -515,8 +524,8 @@ bool increment(size_t *n, size_t *nMax, int rank) {
 }
 
 // data_size = 1,2 for real,complex-valued array
-double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[3], volume where,
-                       int data_size = 1) {
+realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dirs[3], volume where,
+                        int data_size = 1) {
 
   /*--------------------------------------------------------------*/
   /*- detect empty dimensions and compute rank and strides for    */
@@ -560,9 +569,9 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   /*--------------------------------------------------------------*/
   size_t reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
   size_t reduced_array_size = data_size * reduced_grid_size;
-  double *reduced_array = new double[reduced_array_size];
+  realnum *reduced_array = new realnum[reduced_array_size];
   if (!reduced_array) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
-  memset(reduced_array, 0, reduced_array_size * sizeof(double));
+  memset(reduced_array, 0, reduced_array_size * sizeof(realnum));
 
   size_t n[3] = {0, 0, 0};
   do {
@@ -581,9 +590,9 @@ double *collapse_array(double *array, int *rank, size_t dims[3], direction dirs[
   return reduced_array;
 }
 
-complex<double> *collapse_array(complex<double> *array, int *rank, size_t dims[3], direction dirs[3],
-                                volume where) {
-  return (complex<double> *)collapse_array((double *)array, rank, dims, dirs, where, 2);
+complex<realnum> *collapse_array(complex<realnum> *array, int *rank, size_t dims[3], direction dirs[3],
+                                 volume where) {
+  return (complex<realnum> *)collapse_array((realnum *)array, rank, dims, dirs, where, 2);
 }
 
 /**********************************************************************/
@@ -607,7 +616,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   int elem_size = complex_data ? 2 : 1;
   void *vslice_uncollapsed;
 
-  vslice_uncollapsed = memset(new double[slice_size * elem_size], 0, slice_size * elem_size * sizeof(double));
+  vslice_uncollapsed = memset(new realnum[slice_size * elem_size], 0, slice_size * elem_size * sizeof(realnum));
 
   data.vslice = vslice_uncollapsed;
   data.snap = snap;
@@ -619,7 +628,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   int num_components = components.size();
   data.cS = new component[num_components];
   data.ph = new complex<double>[num_components];
-  data.fields = new complex<double>[num_components];
+  data.fields = new complex<realnum>[num_components];
   data.offsets = new ptrdiff_t[2 * num_components];
   memset(data.offsets, 0, 2 * num_components * sizeof(ptrdiff_t));
   data.empty_dim[0] = data.empty_dim[1] = data.empty_dim[2] = data.empty_dim[3] =
@@ -659,19 +668,19 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, snap);
 
   if (!snap) {
-    double *slice = collapse_array((double *)vslice_uncollapsed, &rank, dims, dirs, where, elem_size);
+    realnum *slice = collapse_array((realnum *)vslice_uncollapsed, &rank, dims, dirs, where, elem_size);
     rank = get_array_slice_dimensions(where, dims, dirs, true, false, 0, &data);
     slice_size = data.slice_size;
-    vslice_uncollapsed = (double*) slice;
+    vslice_uncollapsed = (realnum*) slice;
   }
   if (vslice) {
-    memcpy(vslice, vslice_uncollapsed, slice_size * elem_size * sizeof(double));
-    delete[] (double*) vslice_uncollapsed;
+    memcpy(vslice, vslice_uncollapsed, slice_size * elem_size * sizeof(realnum));
+    delete[] (realnum*) vslice_uncollapsed;
   }
   else
     vslice = vslice_uncollapsed;
 
-  array_to_all((double *)vslice, elem_size * slice_size);
+  array_to_all((realnum *)vslice, elem_size * slice_size);
 
   delete[] data.offsets;
   delete[] data.fields;
@@ -685,48 +694,48 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
 /***************************************************************/
 /* entry points to get_array_slice                             */
 /***************************************************************/
-double *fields::get_array_slice(const volume &where, std::vector<component> components,
-                                field_rfunction rfun, void *fun_data, double *slice,
-                                double frequency, bool snap) {
-  return (double *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice,
-                                      frequency, snap);
+realnum *fields::get_array_slice(const volume &where, std::vector<component> components,
+                                 field_rfunction rfun, void *fun_data, realnum *slice,
+                                 double frequency, bool snap) {
+  return (realnum *)do_get_array_slice(where, components, 0, rfun, fun_data, (void *)slice,
+                                       frequency, snap);
 }
 
-complex<double> *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                                 field_function fun, void *fun_data, complex<double> *slice,
-                                                 double frequency, bool snap) {
-  return (complex<double> *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
-                                               frequency, snap);
+complex<realnum> *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
+                                                  field_function fun, void *fun_data, complex<realnum> *slice,
+                                                  double frequency, bool snap) {
+  return (complex<realnum> *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
+                                                frequency, snap);
 }
 
-double *fields::get_array_slice(const volume &where, component c, double *slice, double frequency,
-                                bool snap) {
+realnum *fields::get_array_slice(const volume &where, component c, realnum *slice, double frequency,
+                                 bool snap) {
   std::vector<component> components(1);
   components[0] = c;
-  return (double *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice,
-                                      frequency, snap);
+  return (realnum *)do_get_array_slice(where, components, 0, default_field_rfunc, 0, (void *)slice,
+                                       frequency, snap);
 }
 
-double *fields::get_array_slice(const volume &where, derived_component c, double *slice,
-                                double frequency, bool snap) {
+realnum *fields::get_array_slice(const volume &where, derived_component c, realnum *slice,
+                                 double frequency, bool snap) {
   int nfields;
   component carray[12];
   field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
   std::vector<component> cs(carray, carray + nfields);
-  return (double *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice,
-                                      frequency, snap);
-}
-
-complex<double> *fields::get_complex_array_slice(const volume &where, component c, complex<double> *slice,
-                                                 double frequency, bool snap) {
-  std::vector<component> components(1);
-  components[0] = c;
-  return (complex<double> *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
+  return (realnum *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice,
                                        frequency, snap);
 }
 
-complex<double> *fields::get_source_slice(const volume &where, component source_slice_component,
-                                          complex<double> *slice) {
+complex<realnum> *fields::get_complex_array_slice(const volume &where, component c, complex<realnum> *slice,
+                                                  double frequency, bool snap) {
+  std::vector<component> components(1);
+  components[0] = c;
+  return (complex<realnum> *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
+                                                frequency, snap);
+}
+
+complex<realnum> *fields::get_source_slice(const volume &where, component source_slice_component,
+                                           complex<realnum> *slice) {
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];
@@ -737,18 +746,18 @@ complex<double> *fields::get_source_slice(const volume &where, component source_
   data.source_component = source_slice_component;
   data.slice_imin = gv.round_vec(min_max_loc[0]);
   data.slice_imax = gv.round_vec(min_max_loc[1]);
-  data.slice = new complex<double>[slice_size];
+  data.slice = new complex<realnum>[slice_size];
   if (!data.slice) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
 
-  complex<double> *slice_collapsed = collapse_array(data.slice, &rank, dims, dirs, where);
+  complex<realnum> *slice_collapsed = collapse_array(data.slice, &rank, dims, dirs, where);
   rank = get_array_slice_dimensions(where, dims, dirs, true, false);
   slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
   if (slice) {
-    memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(double));
-    delete[] (complex<double>*) slice_collapsed;
+    memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(realnum));
+    delete[] (complex<realnum>*) slice_collapsed;
   }
   else
     slice = slice_collapsed;
@@ -769,7 +778,7 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
   vec min_max_loc[2]; // extremal points in subgrid
   get_array_slice_dimensions(where, dims, dirs, true, false, min_max_loc);
 
-  double *weights = get_array_slice(where, NO_COMPONENT);
+  realnum *weights = get_array_slice(where, NO_COMPONENT);
 
   /* get length and endpoints of x,y,z tics arrays */
   size_t nxyz[3] = {1, 1, 1};

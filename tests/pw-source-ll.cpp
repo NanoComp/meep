@@ -22,8 +22,6 @@
 
 using namespace meep;
 
-typedef std::complex<double> cdouble;
-
 /***************************************************************/
 /*
 ; pw-amp is a function that returns the amplitude exp(ik(x+x0)) at a
@@ -40,12 +38,12 @@ typedef struct pw_amp_data {
   vec x0;
 } pw_amp_data;
 
-cdouble pw_amp(vec x, void *UserData) {
+std::complex<double> pw_amp(vec x, void *UserData) {
   pw_amp_data *data = (pw_amp_data *)UserData;
   vec k = data->k;
   vec x0 = data->x0;
 
-  const cdouble II(0.0, 1.0);
+  const std::complex<double> II(0.0, 1.0);
   return exp(II * (k & (x + x0)));
 }
 
@@ -56,10 +54,10 @@ cdouble pw_amp(vec x, void *UserData) {
 /* amplitude functions and global variables.                   */
 /***************************************************************/
 pw_amp_data pw_amp_data_left;
-cdouble pw_amp_left(const vec &x) { return pw_amp(x, (void *)&pw_amp_data_left); }
+std::complex<double> pw_amp_left(const vec &x) { return pw_amp(x, (void *)&pw_amp_data_left); }
 
 pw_amp_data pw_amp_data_bottom;
-cdouble pw_amp_bottom(const vec &x) { return pw_amp(x, (void *)&pw_amp_data_bottom); }
+std::complex<double> pw_amp_bottom(const vec &x) { return pw_amp(x, (void *)&pw_amp_data_bottom); }
 
 /***************************************************************/
 /* dummy material function needed to pass to structure( )      */

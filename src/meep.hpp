@@ -60,6 +60,10 @@ const double nan = NAN;
 const double nan = -7.0415659787563146e103; // ideally, a value never encountered in practice
 #endif
 
+// Defined in array_slice.cpp
+std::complex<double> cdouble(std::complex<float> z);
+std::complex<double> cdouble(std::complex<double> z);
+
 class h5file;
 
 // Defined in monitor.cpp
@@ -1126,8 +1130,8 @@ public:
   // fields::process_dft_component
   std::complex<double> process_dft_component(int rank, direction *ds, ivec min_corner,
                                              ivec max_corner, int num_freq, h5file *file,
-                                             double *buffer, int reim,
-                                             std::complex<double> *field_array, void *mode1_data,
+                                             realnum *buffer, int reim,
+                                             std::complex<realnum> *field_array, void *mode1_data,
                                              void *mode2_data, int ic_conjugate,
                                              bool retain_interp_weights, fields *parent);
 
@@ -1627,9 +1631,9 @@ typedef void (*field_chunkloop)(fields_chunk *fc, int ichunk, component cgrid, i
                                 vec s0, vec s1, vec e0, vec e1, double dV0, double dV1, ivec shift,
                                 std::complex<double> shift_phase, const symmetry &S, int sn,
                                 void *chunkloop_data);
-typedef std::complex<double> (*field_function)(const std::complex<double> *fields, const vec &loc,
+typedef std::complex<double> (*field_function)(const std::complex<realnum> *fields, const vec &loc,
                                                void *integrand_data_);
-typedef double (*field_rfunction)(const std::complex<double> *fields, const vec &loc,
+typedef double (*field_rfunction)(const std::complex<realnum> *fields, const vec &loc,
                                   void *integrand_data_);
 
 field_rfunction derived_component_func(derived_component c, const grid_volume &gv, int &nfields,
@@ -1812,33 +1816,33 @@ public:
   // of the correct size.
   // otherwise, a new buffer is allocated and returned; it
   // must eventually be caller-deallocated via delete[].
-  double *get_array_slice(const volume &where, std::vector<component> components,
-                          field_rfunction rfun, void *fun_data, double *slice = 0,
-                          double frequency = 0,
-                          bool snap = false);
+  realnum *get_array_slice(const volume &where, std::vector<component> components,
+                           field_rfunction rfun, void *fun_data, realnum *slice = 0,
+                           double frequency = 0,
+                           bool snap = false);
 
-  std::complex<double> *get_complex_array_slice(const volume &where,
-                                                std::vector<component> components,
-                                                field_function fun, void *fun_data,
-                                                std::complex<double> *slice = 0,
-                                                double frequency = 0,
-                                                bool snap = false);
+  std::complex<realnum> *get_complex_array_slice(const volume &where,
+                                                 std::vector<component> components,
+                                                 field_function fun, void *fun_data,
+                                                 std::complex<realnum> *slice = 0,
+                                                 double frequency = 0,
+                                                 bool snap = false);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
   // derived component.)
-  double *get_array_slice(const volume &where, component c, double *slice = 0,
-                          double frequency = 0, bool snap = false);
-  double *get_array_slice(const volume &where, derived_component c, double *slice = 0,
-                          double frequency = 0, bool snap = false);
-  std::complex<double> *get_complex_array_slice(const volume &where, component c,
-                                                std::complex<double> *slice = 0,
-                                                double frequency = 0,
-                                                bool snap = false);
+  realnum *get_array_slice(const volume &where, component c, realnum *slice = 0,
+                           double frequency = 0, bool snap = false);
+  realnum *get_array_slice(const volume &where, derived_component c, realnum *slice = 0,
+                           double frequency = 0, bool snap = false);
+  std::complex<realnum> *get_complex_array_slice(const volume &where, component c,
+                                                 std::complex<realnum> *slice = 0,
+                                                 double frequency = 0,
+                                                 bool snap = false);
 
   // like get_array_slice, but for *sources* instead of fields
-  std::complex<double> *get_source_slice(const volume &where, component source_slice_component,
-                                         std::complex<double> *slice = 0);
+  std::complex<realnum> *get_source_slice(const volume &where, component source_slice_component,
+                                          std::complex<realnum> *slice = 0);
 
   // master routine for all above entry points
   void *do_get_array_slice(const volume &where, std::vector<component> components,
@@ -2079,7 +2083,7 @@ public:
   /********************************************************/
   std::complex<double> process_dft_component(dft_chunk **chunklists, int num_chunklists,
                                              int num_freq, component c, const char *HDF5FileName,
-                                             std::complex<double> **field_array = 0, int *rank = 0,
+                                             std::complex<realnum> **field_array = 0, int *rank = 0,
                                              size_t *dims = 0, direction *dirs = 0,
                                              void *mode1_data = 0, void *mode2_data = 0,
                                              component c_conjugate = Ex, bool *first_component = 0,
@@ -2095,14 +2099,14 @@ public:
   void output_dft(dft_fields fdft, const char *HDF5FileName);
 
   // get array of DFT field values
-  std::complex<double> *get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
-                                      size_t dims[3]);
-  std::complex<double> *get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
-                                      size_t dims[3]);
-  std::complex<double> *get_dft_array(dft_force force, component c, int num_freq, int *rank,
-                                      size_t dims[3]);
-  std::complex<double> *get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
-                                      size_t dims[3]);
+  std::complex<realnum> *get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
+                                       size_t dims[3]);
+  std::complex<realnum> *get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
+                                       size_t dims[3]);
+  std::complex<realnum> *get_dft_array(dft_force force, component c, int num_freq, int *rank,
+                                       size_t dims[3]);
+  std::complex<realnum> *get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
+                                       size_t dims[3]);
 
   // overlap integrals between eigenmode fields and DFT flux fields
   void get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int num_freq,

@@ -33,9 +33,9 @@ static inline std::complex<double> my_complex_func2(double t, void *f) {
 }
 
 typedef struct { SCM func; int nf; } my_field_func_data;
-static inline std::complex<double> my_field_func(const std::complex<double> *fields,
-					    const meep::vec &loc,
-					    void *data_) {
+static inline std::complex<double> my_field_func(const std::complex<meep::realnum> *fields,
+                                                 const meep::vec &loc,
+                                                 void *data_) {
   my_field_func_data *data = (my_field_func_data *) data_;
   int num_items = data->nf;
   cnumber *items = new cnumber[num_items];
