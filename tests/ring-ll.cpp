@@ -21,8 +21,6 @@
 
 using namespace meep;
 
-typedef std::complex<double> cdouble;
-
 vector3 v3(double x, double y = 0.0, double z = 0.0) {
   vector3 v;
   v.x = x;
@@ -109,7 +107,7 @@ int main(int argc, char *argv[]) {
 
   double T = 300.0;
   double stop_time = f.round_time() + T;
-  std::vector<cdouble> fieldData;
+  std::vector<std::complex<double>> fieldData;
   vec eval_pt(r + 0.1, 0.0);
   while (f.round_time() < stop_time) {
     f.step();
@@ -117,7 +115,7 @@ int main(int argc, char *argv[]) {
   };
 
 #define MAXBANDS 100
-  cdouble amp[MAXBANDS];
+  std::complex<double> amp[MAXBANDS];
   double freq_re[MAXBANDS];
   double freq_im[MAXBANDS];
   double err[MAXBANDS];
@@ -137,8 +135,8 @@ int main(int argc, char *argv[]) {
   int ref_bands = 3;
   double ref_freq_re[3] = {1.1807e-01, 1.4716e-01, 1.7525e-01};
   double ref_freq_im[3] = {-7.6133e-04, -2.1156e-04, -5.2215e-05};
-  cdouble ref_amp[3] = {cdouble(-8.28e-04, -1.34e-03), cdouble(1.23e-03, -1.25e-02),
-                        cdouble(2.83e-03, -6.52e-04)};
+  std::complex<double> ref_amp[3] = {std::complex<double>(-8.28e-04, -1.34e-03), std::complex<double>(1.23e-03, -1.25e-02),
+                        std::complex<double>(2.83e-03, -6.52e-04)};
   if (bands != 3) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
   for (int nb = 0; nb < bands; nb++)
     if (fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||

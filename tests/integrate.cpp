@@ -41,7 +41,7 @@ typedef struct {
 } linear_integrand_data;
 
 /* integrand for integrating c + ax*x + ay*y + az*z. */
-static complex<double> linear_integrand(const complex<double> *fields, const vec &loc,
+static complex<double> linear_integrand(const complex<realnum> *fields, const vec &loc,
                                         void *data_) {
   linear_integrand_data *data = (linear_integrand_data *)data_;
 
@@ -190,7 +190,7 @@ void check_integral(fields &f, linear_integrand_data &d, const volume &v, compon
 
   double sum = real(f.integrate(0, 0, linear_integrand, (void *)&d, v));
   if (fabs(sum - correct_integral(v, d)) > 1e-9 * fabs(sum))
-    meep::abort("FAILED: %0.16g instead of %0.16g\n", (double)sum, correct_integral(v, d));
+    meep::abort("FAILED: %0.16g instead of %0.16g\n", sum, correct_integral(v, d));
   master_printf("...PASSED.\n");
 }
 

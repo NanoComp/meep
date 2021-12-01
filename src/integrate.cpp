@@ -29,7 +29,7 @@ struct integrate_data {
   const component *components;
   component *cS;
   complex<double> *ph;
-  complex<double> *fvals;
+  complex<realnum> *fvals;
   ptrdiff_t *offsets;
   int ninveps;
   component inveps_cs[3];
@@ -37,7 +37,7 @@ struct integrate_data {
   int ninvmu;
   component invmu_cs[3];
   direction invmu_ds[3];
-  complex<long double> sum;
+  complex<double> sum;
   double maxabs;
   field_function integrand;
   void *integrand_data_;
@@ -51,7 +51,8 @@ static void integrate_chunkloop(fields_chunk *fc, int ichunk, component cgrid, i
   integrate_data *data = (integrate_data *)data_;
   ptrdiff_t *off = data->offsets;
   component *cS = data->cS;
-  complex<double> *fvals = data->fvals, *ph = data->ph;
+  complex<realnum> *fvals = data->fvals;
+  complex<double> *ph = data->ph;
   complex<long double> sum = 0.0;
   double maxabs = 0;
   const component *iecs = data->inveps_cs;
@@ -146,7 +147,7 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   data.components = components;
   data.cS = new component[num_fvals];
   data.ph = new complex<double>[num_fvals];
-  data.fvals = new complex<double>[num_fvals];
+  data.fvals = new complex<realnum>[num_fvals];
   data.sum = 0;
   data.maxabs = 0;
   data.integrand = integrand;
@@ -196,14 +197,15 @@ complex<double> fields::integrate(int num_fvals, const component *components,
   if (maxabs) *maxabs = max_to_all(data.maxabs);
   data.sum = sum_to_all(data.sum);
 
-  return complex<double>(real(data.sum), imag(data.sum));
+  return cdouble(data.sum);
 }
 
 typedef struct {
   field_rfunction integrand;
   void *integrand_data;
 } rfun_wrap_data;
-static complex<double> rfun_wrap(const complex<double> *fvals, const vec &loc, void *data_) {
+
+static complex<double> rfun_wrap(const complex<realnum> *fvals, const vec &loc, void *data_) {
   rfun_wrap_data *data = (rfun_wrap_data *)data_;
   return data->integrand(fvals, loc, data->integrand_data);
 }
@@ -231,11 +233,11 @@ double fields::max_abs(int num_fvals, const component *components, field_rfuncti
   return max_abs(num_fvals, components, rfun_wrap, &data, where);
 }
 
-static complex<double> return_the_field(const complex<double> *fields, const vec &loc,
-                                        void *integrand_data_) {
+static complex<double> return_the_field(const complex<realnum> *fields, const vec &loc,
+                                         void *integrand_data_) {
   (void)integrand_data_;
   (void)loc; // unused
-  return fields[0];
+  return cdouble(fields[0]);
 }
 
 double fields::max_abs(int c, const volume &where) {

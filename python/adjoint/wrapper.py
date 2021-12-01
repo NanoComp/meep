@@ -229,7 +229,9 @@ class MeepJaxWrapper:
         def _simulate_rev(res, monitor_values_grad):
             """Runs adjoint simulation, returning VJP of design wrt monitor values."""
             fwd_fields = jax.tree_map(
-                lambda x: onp.asarray(x, dtype=onp.complex128), res[0])
+                lambda x: onp.asarray(x,
+                                      dtype=onp.complex64 if mp.is_single_precision() else onp.complex128),
+                res[0])
             design_variable_shapes = res[1]
             adj_fields = self._run_adjoint_simulation(monitor_values_grad)
             vjps = self._calculate_vjps(fwd_fields, adj_fields,

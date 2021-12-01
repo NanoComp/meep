@@ -37,14 +37,14 @@ class DesignRegion(object):
 
     def update_design_parameters(self, design_parameters):
         self.design_parameters.update_weights(design_parameters)
-    
+
     def update_beta(self,beta):
         self.design_parameters.beta=beta
 
     def get_gradient(self, sim, fields_a, fields_f, frequencies, finite_difference_step):
         num_freqs = onp.array(frequencies).size
         shapes = []
-        '''We have the option to linear scale the gradients up front
+        '''We have the option to linearly scale the gradients up front
         using the scalegrad parameter (leftover from MPB API). Not
         currently needed for any existing feature (but available for
         future use)'''
@@ -54,16 +54,18 @@ class DesignRegion(object):
             returns a singleton element for the forward and adjoint fields.
             This only occurs when we are in 2D and only working with a particular
             polarization (as the other fields are never stored). For example, the
-            2D in-plane polarization consists of a single scalar Ez field 
+            2D in-plane polarization consists of a single scalar Ez field
             (technically, meep doesn't store anything for these cases, but get_dft_array
             still returns 0).
-            
-            Our get_gradient algorithm, however, requires we pass an array of 
+
+            Our get_gradient algorithm, however, requires we pass an array of
             zeros with the proper shape as the design_region.'''
             spatial_shape = sim.get_array_slice_dimensions(component, vol=self.volume)[0]
             if (fields_a[component_idx][0,...].size == 1):
-                fields_a[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs))
-                fields_f[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs))
+                fields_a[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs),
+                                                    dtype=onp.float32 if mp.is_single_precision() else onp.float64)
+                fields_f[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs),
+                                                    dtype=onp.float32 if mp.is_single_precision() else onp.float64)
             if _check_if_cylindrical(sim):
                 '''For some reason, get_dft_array returns the field
                 components in a different order than the convention used
@@ -78,15 +80,16 @@ class DesignRegion(object):
         shapes = onp.asarray(shapes).flatten(order='C')
         fields_a = onp.concatenate(fields_a)
         fields_f = onp.concatenate(fields_f)
-        
+
         grad = onp.zeros((num_freqs, self.num_design_params))  # preallocate
         geom_list = sim.geometry
         f = sim.fields
         vol = sim._fit_volume_to_simulation(self.volume)
-        
+
         # compute the gradient
         mp._get_gradient(grad,scalegrad,fields_a,fields_f,
-        sim.gv,vol.swigobj,onp.array(frequencies),sim.geps,shapes,finite_difference_step)
+                         sim.gv,vol.swigobj,onp.array(frequencies),
+                         sim.geps,shapes,finite_difference_step)
         return onp.squeeze(grad).T
 
 def _check_if_cylindrical(sim):
@@ -203,7 +206,7 @@ def gather_design_region_fields(
       fairly awkward to inspect directly.  Their primary use case is supporting
       gradient calculations.
     """
-    fwd_fields = []
+    design_region_fields = []
     for monitor in design_region_monitors:
         fields_by_component = []
         for component in _compute_components(simulation):
@@ -212,8 +215,8 @@ def gather_design_region_fields(
                 fields = simulation.get_dft_array(monitor, component, freq_idx)
                 fields_by_freq.append(_make_at_least_nd(fields))
             fields_by_component.append(onp.stack(fields_by_freq))
-        fwd_fields.append(fields_by_component)
-    return fwd_fields
+        design_region_fields.append(fields_by_component)
+    return design_region_fields
 
 
 def validate_and_update_design(
@@ -258,7 +261,7 @@ def create_adjoint_sources(
         monitors: Iterable[ObjectiveQuantity],
         monitor_values_grad: onp.ndarray) -> List[mp.Source]:
     monitor_values_grad = onp.asarray(monitor_values_grad,
-                                      dtype=onp.complex128)
+                                      dtype=onp.complex64 if mp.is_single_precision() else onp.complex128)
     if not onp.any(monitor_values_grad):
         raise RuntimeError(
             'The gradient of all monitor values is zero, which '
@@ -273,7 +276,7 @@ def create_adjoint_sources(
     for monitor_idx, monitor in enumerate(monitors):
         # `dj` for each monitor will have a shape of (num frequencies,)
         dj = onp.asarray(monitor_values_grad[monitor_idx],
-                         dtype=onp.complex128)
+                         dtype=onp.complex64 if mp.is_single_precision() else onp.complex128)
         if onp.any(dj):
             adjoint_sources += monitor.place_adjoint_source(dj)
     assert adjoint_sources
