@@ -170,7 +170,11 @@ geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, 
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
 
   int num_vertices = polygon.size() / 2;
+<<<<<<< HEAD
   std::unique_ptr<vector3[]> vertices(new vector3[num_vertices]);
+=======
+  auto vertices = std::make_unique<vector3[]>(num_vertices);
+>>>>>>> Fix memory leaks (#1839)
   for (int nv = 0; nv < num_vertices; nv++) {
     vertices[nv].x = polygon[2 * nv + 0];
     vertices[nv].y = polygon[2 * nv + 1];
