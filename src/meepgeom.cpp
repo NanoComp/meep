@@ -716,7 +716,8 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
 geom_epsilon::~geom_epsilon() {
   int length = geometry.num_items;
   for (int i = 0; i < length; i++){
-    delete geometry.items[i].material;
+    material_free((material_type)geometry.items[i].material);
+    geometric_object_destroy(geometry.items[i]);
   }
   delete[] geometry.items;
   unset_volume();
