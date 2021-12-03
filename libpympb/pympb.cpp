@@ -676,7 +676,7 @@ void mode_solver::init(int p, bool reset_fields, geometric_object_list *geometry
                        meep_geom::material_data *_default_material) {
   int have_old_fields = 0;
 
-  default_material = _default_material;
+  set_default_material(_default_material);
 
   n[0] = grid_size.x;
   n[1] = grid_size.y;
@@ -909,7 +909,9 @@ void mode_solver::reset_epsilon(geometric_object_list *geometry) {
   };
 
   if (!epsilon_input_file.empty()) {
-    default_material = meep_geom::make_file_material(epsilon_input_file.c_str());
+    meep_geom::material_type material = meep_geom::make_file_material(epsilon_input_file.c_str());
+    set_default_material(material);
+    material_free(material);
   }
 
   // TODO: support mu_input_file
