@@ -2933,26 +2933,10 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum
         size_t idx_fields = IVEC_LOOP_COUNTER;
         meep::ivec ip = gv.iloc(adjoint_c,idx);
         meep::vec p   = gv.loc(adjoint_c,idx);
-<<<<<<< HEAD
-<<<<<<< HEAD
         std::complex<double> adj = GET_FIELDS(fields_a, ci_adjoint, f_i, idx_fields);
         material_type md;
         geps->get_material_pt(md, p);
         if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
-=======
-        std::complex<double> adj = GET_FIELDS(fields_a,ci_adjoint,f_i,idx_fields);
-        
-        material_type md;
-        geps->get_material_pt(md, p);
-        if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
-        
->>>>>>> Fix adjoint gradient with conductivities (#1830)
-=======
-        std::complex<double> adj = GET_FIELDS(fields_a, ci_adjoint, f_i, idx_fields);
-        material_type md;
-        geps->get_material_pt(md, p);
-        if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
->>>>>>> support for single-precision floating point for fields array functions (#1833)
         double cyl_scale;
         int ci_forward = 0;
         FOR_MY_COMPONENTS(forward_c) {
@@ -2989,11 +2973,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum
             to the same two nodes (which requires another factor of 0.5).
             Then we perform our inner product at these nodes.
             */
-<<<<<<< HEAD
             std::complex<double> fwd_avg, fwd1, fwd2;
-=======
-            std::complex<double> fwd_avg, fwd1, fwd2, prod;
->>>>>>> support for single-precision floating point for fields array functions (#1833)
             ptrdiff_t fwd1_idx, fwd2_idx;
 
             //identify the first corner of the forward fields
