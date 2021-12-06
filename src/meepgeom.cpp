@@ -480,6 +480,7 @@ double material_grid_val(vector3 p, material_data *md) {
 
 static double tanh_projection(double u, double beta, double eta) {
   if (beta == 0) return u;
+  if ((beta == std::numeric_limits<double>::infinity()) && (u == 0.5)) return 1.0; // 0*∞ is undefined, so let's just assign 1 here
   double tanh_beta_eta = tanh(beta*eta);
   return (tanh_beta_eta + tanh(beta*(u-eta))) /
     (tanh_beta_eta + tanh(beta*(1-eta)));
