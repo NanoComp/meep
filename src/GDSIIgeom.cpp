@@ -144,7 +144,7 @@ geometric_object_list get_GDSII_prisms(material_type material, const char *GDSII
   for (int np = 0; np < num_prisms; np++) {
     dVec polygon = polygons[np];
     int num_vertices = polygon.size() / 2;
-    auto vertices = std::make_unique<vector3[]>(num_vertices);
+    std::unique_ptr<vector3[]> vertices(new vector3[num_vertices]);
     for (int nv = 0; nv < num_vertices; nv++) {
       vertices[nv].x = polygon[2 * nv + 0];
       vertices[nv].y = polygon[2 * nv + 1];
@@ -170,7 +170,7 @@ geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, 
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
 
   int num_vertices = polygon.size() / 2;
-  auto vertices = std::make_unique<vector3[]>(num_vertices);
+  std::unique_ptr<vector3[]> vertices(new vector3[num_vertices]);
   for (int nv = 0; nv < num_vertices; nv++) {
     vertices[nv].x = polygon[2 * nv + 0];
     vertices[nv].y = polygon[2 * nv + 1];
