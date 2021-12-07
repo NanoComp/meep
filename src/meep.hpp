@@ -625,11 +625,11 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0) const;
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
-                                   double frequency = 0) const;
-  std::complex<double> get_inveps(component c, direction d, const ivec &iloc,
-                                  double frequency = 0) const {
+  std::complex<realnum> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0) const;
+  std::complex<realnum> get_chi1inv(component, direction, const ivec &iloc,
+                                    double frequency = 0) const;
+  std::complex<realnum> get_inveps(component c, direction d, const ivec &iloc,
+                                   double frequency = 0) const {
     return get_chi1inv(c, d, iloc, frequency);
   }
   double max_eps() const;
@@ -877,20 +877,20 @@ public:
                          boundary_region &br);
 
   // monitor.cpp
-  std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
-                                   bool parallel = true) const;
-  std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
-                                   bool parallel = true) const;
-  std::complex<double> get_inveps(component c, direction d, const ivec &origloc,
-                                  double frequency = 0) const {
+  std::complex<realnum> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
+                                    bool parallel = true) const;
+  std::complex<realnum> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
+                                    bool parallel = true) const;
+  std::complex<realnum> get_inveps(component c, direction d, const ivec &origloc,
+                                   double frequency = 0) const {
     return get_chi1inv(c, d, origloc, frequency);
   }
-  std::complex<double> get_inveps(component c, direction d, const vec &loc,
-                                  double frequency = 0) const {
+  std::complex<realnum> get_inveps(component c, direction d, const vec &loc,
+                                   double frequency = 0) const {
     return get_chi1inv(c, d, loc, frequency);
   }
-  std::complex<double> get_eps(const vec &loc, double frequency = 0) const;
-  std::complex<double> get_mu(const vec &loc, double frequency = 0) const;
+  std::complex<realnum> get_eps(const vec &loc, double frequency = 0) const;
+  std::complex<realnum> get_mu(const vec &loc, double frequency = 0) const;
   double max_eps() const;
   double estimated_cost(int process = my_rank());
   // Returns the binary partition that was used to partition the volume into chunks. The returned
@@ -1087,12 +1087,12 @@ public:
   ~monitor_point();
   vec loc;
   double t;
-  std::complex<double> f[NUM_FIELD_COMPONENTS];
+  std::complex<realnum> f[NUM_FIELD_COMPONENTS];
   monitor_point *next;
 
-  std::complex<double> get_component(component);
-  double poynting_in_direction(direction d);
-  double poynting_in_direction(vec direction_v);
+  std::complex<realnum> get_component(component);
+  realnum poynting_in_direction(direction d);
+  realnum poynting_in_direction(vec direction_v);
 
   // When called with only its first four arguments, fourier_transform
   // performs an FFT on its monitor points, putting the frequencies in f
@@ -1103,11 +1103,11 @@ public:
   //
   // Note that in either case, fourier_transform assumes that the monitor
   // points are all equally spaced in time.
-  void fourier_transform(component w, std::complex<double> **a, std::complex<double> **f,
+  void fourier_transform(component w, std::complex<realnum> **a, std::complex<realnum> **f,
                          int *numout, double fmin = 0.0, double fmax = 0.0, int maxbands = 100);
   // harminv works much like fourier_transform, except that it is not yet
   // implemented.
-  void harminv(component w, std::complex<double> **a, std::complex<double> **f, int *numout,
+  void harminv(component w, std::complex<realnum> **a, std::complex<realnum> **f, int *numout,
                double fmin, double fmax, int maxbands);
 };
 
@@ -1506,10 +1506,10 @@ public:
 
   double last_source_time();
   // monitor.cpp
-  std::complex<double> get_field(component, const ivec &) const;
+  std::complex<realnum> get_field(component, const ivec &) const;
 
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
-                                   double frequency = 0) const;
+  std::complex<realnum> get_chi1inv(component, direction, const ivec &iloc,
+                                    double frequency = 0) const;
   // Returns the vector of sources volumes for field type `ft`.
   const std::vector<src_vol> &get_sources(field_type ft) const { return sources[ft]; }
   // Adds a source volume of field type `ft` and takes ownership of `src`.
@@ -2153,19 +2153,19 @@ public:
   dft_near2far add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
                                 int decimation_factor = 0, int Nperiods = 1);
   // monitor.cpp
-  std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
-                                   bool parallel = true) const;
-  std::complex<double> get_inveps(component c, direction d, const vec &loc,
-                                  double frequency = 0) const {
+  std::complex<realnum> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
+                                    bool parallel = true) const;
+  std::complex<realnum> get_inveps(component c, direction d, const vec &loc,
+                                   double frequency = 0) const {
     return get_chi1inv(c, d, loc, frequency);
   }
-  std::complex<double> get_eps(const vec &loc, double frequency = 0) const;
-  std::complex<double> get_mu(const vec &loc, double frequency = 0) const;
+  std::complex<realnum> get_eps(const vec &loc, double frequency = 0) const;
+  std::complex<realnum> get_mu(const vec &loc, double frequency = 0) const;
   void get_point(monitor_point *p, const vec &) const;
   monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
-  std::complex<double> get_field(int c, const vec &loc, bool parallel = true) const;
-  std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
+  std::complex<realnum> get_field(int c, const vec &loc, bool parallel = true) const;
+  std::complex<realnum> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
 
   // energy_and_flux.cpp
@@ -2252,9 +2252,9 @@ private:
 
 public:
   // monitor.cpp
-  std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
-                                   bool parallel = true) const;
+  std::complex<realnum> get_field(component c, const ivec &iloc, bool parallel = true) const;
+  std::complex<realnum> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
+                                    bool parallel = true) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp
@@ -2337,8 +2337,8 @@ void trash_output_directory(const char *dirname);
 void delete_directory(const char *path);
 FILE *create_output_file(const char *dirname, const char *fname);
 
-int do_harminv(std::complex<double> *data, int n, double dt, double fmin, double fmax, int maxbands,
-               std::complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL,
+int do_harminv(std::complex<realnum> *data, int n, double dt, double fmin, double fmax, int maxbands,
+               std::complex<realnum> *amps, double *freq_re, double *freq_im, double *errors = NULL,
                double spectral_density = 1.1, double Q_thresh = 50, double rel_err_thresh = 1e20,
                double err_thresh = 0.01, double rel_amp_thresh = -1, double amp_thresh = -1);
 

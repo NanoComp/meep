@@ -564,6 +564,14 @@ size_t partial_sum_to_all(size_t in) {
   return out;
 }
 
+complex<float> sum_to_all(complex<float> in) {
+  complex<float> out = in;
+#ifdef HAVE_MPI
+  MPI_Allreduce(&in, &out, 2, MPI_FLOAT, MPI_SUM, mycomm);
+#endif
+  return out;
+}
+
 complex<double> sum_to_all(complex<double> in) {
   complex<double> out = in;
 #ifdef HAVE_MPI

@@ -281,46 +281,46 @@ double py_pml_profile(double u, void *f) {
 }
 
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
-                     double spectral_density, double Q_thresh, double rel_err_thresh,
-                     double err_thresh, double rel_amp_thresh, double amp_thresh) {
+                        double spectral_density, double Q_thresh, double rel_err_thresh,
+                        double err_thresh, double rel_amp_thresh, double amp_thresh) {
     // Return value: New reference
 
-    std::complex<double> *amp = new std::complex<double>[maxbands];
-    double *freq_re = new double[maxbands];
-    double *freq_im = new double[maxbands];
-    double *freq_err = new double[maxbands];
+  std::complex<meep::realnum> *amp = new std::complex<meep::realnum>[maxbands];
+  double *freq_re = new double[maxbands];
+  double *freq_im = new double[maxbands];
+  double *freq_err = new double[maxbands];
 
-    Py_ssize_t n = PyList_Size(vals);
-    std::complex<double> *items = new std::complex<double>[n];
+  Py_ssize_t n = PyList_Size(vals);
+  std::complex<meep::realnum> *items = new std::complex<meep::realnum>[n];
 
-    for(int i = 0; i < n; i++) {
-        Py_complex py_c = PyComplex_AsCComplex(PyList_GetItem(vals, i));
-        std::complex<double> c(py_c.real, py_c.imag);
-        items[i] = c;
-    }
+  for(int i = 0; i < n; i++) {
+    Py_complex py_c = PyComplex_AsCComplex(PyList_GetItem(vals, i));
+    std::complex<meep::realnum> c(py_c.real, py_c.imag);
+    items[i] = c;
+  }
 
-    maxbands = do_harminv(items, n, dt, f_min, f_max, maxbands, amp,
-                          freq_re, freq_im, freq_err, spectral_density, Q_thresh,
-                          rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
+  maxbands = do_harminv(items, n, dt, f_min, f_max, maxbands, amp,
+                        freq_re, freq_im, freq_err, spectral_density, Q_thresh,
+                        rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
 
-    PyObject *res = PyList_New(maxbands);
+  PyObject *res = PyList_New(maxbands);
 
-    for(int i = 0; i < maxbands; i++) {
-        Py_complex pyfreq = {freq_re[i], freq_im[i]};
-        Py_complex pyamp = {amp[i].real(), amp[i].imag()};
-        Py_complex pyfreq_err = {freq_err[i], 0};
+  for(int i = 0; i < maxbands; i++) {
+    Py_complex pyfreq = {freq_re[i], freq_im[i]};
+    Py_complex pyamp = {amp[i].real(), amp[i].imag()};
+    Py_complex pyfreq_err = {freq_err[i], 0};
 
-        PyObject *pyobj = Py_BuildValue("(DDD)", &pyfreq, &pyamp, &pyfreq_err);
-        PyList_SetItem(res, i, pyobj);
-    }
+    PyObject *pyobj = Py_BuildValue("(DDD)", &pyfreq, &pyamp, &pyfreq_err);
+    PyList_SetItem(res, i, pyobj);
+  }
 
-    delete[] freq_err;
-    delete[] freq_im;
-    delete[] freq_re;
-    delete[] amp;
-    delete[] items;
+  delete[] freq_err;
+  delete[] freq_im;
+  delete[] freq_re;
+  delete[] amp;
+  delete[] items;
 
-    return res;
+  return res;
 }
 
 // Wrapper around meep::dft_near2far::farfield

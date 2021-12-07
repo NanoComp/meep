@@ -87,6 +87,7 @@ void sum_to_all(const std::complex<float> *in, std::complex<float> *out, int siz
 void sum_to_master(const std::complex<float> *in, std::complex<float> *out, int size);
 void sum_to_master(const std::complex<double> *in, std::complex<double> *out, int size);
 long double sum_to_all(long double);
+std::complex<float> sum_to_all(std::complex<float> in);
 std::complex<double> sum_to_all(std::complex<double> in);
 std::complex<long double> sum_to_all(std::complex<long double> in);
 int sum_to_all(int);
