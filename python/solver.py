@@ -86,9 +86,9 @@ class ModeSolver(object):
                  target_freq=0.0,
                  tolerance=1.0e-7,
                  num_bands=1,
-                 k_points=[],
+                 k_points=None,
                  ensure_periodicity=True,
-                 geometry=[],
+                 geometry=None,
                  geometry_lattice=mp.Lattice(),
                  geometry_center=mp.Vector3(0, 0, 0),
                  default_material=mp.Medium(epsilon=1),
@@ -104,8 +104,8 @@ class ModeSolver(object):
         self.mode_solver = None
         self.resolution = resolution
         self.eigensolver_flags = eigensolver_flags
-        self.k_points = k_points
-        self.geometry = geometry
+        self.k_points = k_points if k_points else []
+        self.geometry = geometry if geometry else []
         self.geometry_lattice = geometry_lattice
         self.geometry_center = mp.Vector3(*geometry_center)
         self.default_material = default_material
@@ -1228,7 +1228,7 @@ def output_tot_pwr(ms, which_band):
     ms.output_field_to_file(-1, ms.get_filename_prefix() + 'tot.')
 
 
-def output_dpwr_in_objects(output_func, min_energy, objects=[]):
+def output_dpwr_in_objects(output_func, min_energy, objects=None):
     """
     The following function returns an output function that calls output_func for
     bands with D energy in objects > min-energy. For example,
@@ -1236,7 +1236,8 @@ def output_dpwr_in_objects(output_func, min_energy, objects=[]):
     output function that would spit out the D field for bands with at least %20
     of their D energy in some-object.
     """
-
+    if objects is None:
+        objects = []
     def _output(ms, which_band):
         ms.get_dfield(which_band, False)
         ms.compute_field_energy()
