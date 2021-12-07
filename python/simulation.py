@@ -935,18 +935,18 @@ class Simulation(object):
     def __init__(self,
                  cell_size,
                  resolution,
-                 geometry=[],
-                 sources=[],
+                 geometry=None,
+                 sources=None,
                  eps_averaging=True,
                  dimensions=3,
-                 boundary_layers=[],
-                 symmetries=[],
+                 boundary_layers=None,
+                 symmetries=None,
                  force_complex_fields=False,
                  default_material=mp.Medium(),
                  m=0,
                  k_point=False,
                  kz_2d="complex",
-                 extra_materials=[],
+                 extra_materials=None,
                  material_function=None,
                  epsilon_func=None,
                  epsilon_input_file='',
@@ -1198,12 +1198,12 @@ class Simulation(object):
         """
 
         self.cell_size = Vector3(*cell_size)
-        self.geometry = geometry
-        self.sources = sources
+        self.geometry = geometry if geometry else []
+        self.sources = sources if sources else []
         self.resolution = resolution
         self.dimensions = dimensions
-        self.boundary_layers = boundary_layers
-        self.symmetries = symmetries
+        self.boundary_layers = boundary_layers if boundary_layers else []
+        self.symmetries = symmetries if symmetries else []
         self.geometry_center = Vector3(*geometry_center)
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
@@ -1211,7 +1211,7 @@ class Simulation(object):
         self.loop_tile_base_db = loop_tile_base_db
         self.loop_tile_base_eh = loop_tile_base_eh
         self.ensure_periodicity = ensure_periodicity
-        self.extra_materials = extra_materials
+        self.extra_materials = extra_materials if extra_materials else []
         self.default_material = default_material
         self.epsilon_input_file = epsilon_input_file
         self.num_chunks = chunk_layout.numchunks() if isinstance(chunk_layout,mp.BinaryPartition) else num_chunks
