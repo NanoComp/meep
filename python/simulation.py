@@ -4545,7 +4545,7 @@ def stop_on_interrupt():
 
     return _stop
 
-def stop_when_dft_decayed(tol=6e-7, minimum_run_time=0, maximum_run_time=None):
+def stop_when_dft_decayed(tol=7.5e-7, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
     or `until_after_sources` parameter, that checks the `Simulation`'s DFT objects every $t$
