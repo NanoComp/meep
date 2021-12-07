@@ -99,7 +99,7 @@ class MeepJaxWrapper:
         monitors: List[EigenmodeCoefficient],
         design_regions: List[DesignRegion],
         frequencies: List[float],
-        dft_threshold: float = 1e-11,
+        dft_threshold: float = 6e-7,
         minimum_run_time: float = 0,
         maximum_run_time: float = onp.inf,
         until_after_sources: bool = True,

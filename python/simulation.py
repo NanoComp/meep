@@ -4545,7 +4545,7 @@ def stop_on_interrupt():
 
     return _stop
 
-def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
+def stop_when_dft_decayed(tol=6e-7, minimum_run_time=0, maximum_run_time=None):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
     or `until_after_sources` parameter, that checks the `Simulation`'s DFT objects every $t$
@@ -4557,7 +4557,7 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
     """
 
     # Record data in closure so that we can persistently edit
-    closure = {'previous_fields':0, 't0':0, 'dt':0, 'maxchange':0}
+    closure = {'t0':0, 'dt':0, 'maxchange':0}
     def _stop(_sim):
         if _sim.fields.t == 0:
             closure['dt'] = max(1/_sim.fields.dft_maxfreq()/_sim.fields.dt,_sim.fields.max_decimation())
@@ -4566,16 +4566,8 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
         elif _sim.fields.t <= closure['dt'] + closure['t0']:
             return False
         else:
-            previous_fields = closure['previous_fields']
-            current_fields  = _sim.fields.dft_norm()
-            change = np.abs(previous_fields-current_fields)
+            change = _sim.fields.dft_time_fields_norm()
             closure['maxchange'] = max(closure['maxchange'],change)
-
-            if previous_fields == 0:
-                closure['previous_fields'] = current_fields
-                return False
-
-            closure['previous_fields'] = current_fields
             closure['t0'] = _sim.fields.t
             if verbosity.meep > 1:
                 fmt = "DFT fields decay(t = {0:0.2f}): {1:0.4e}"

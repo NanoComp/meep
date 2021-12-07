@@ -166,7 +166,8 @@ def adjoint_solver(design_params, mon_type, frequencies=None, mat2=silicon):
         objective_functions=J,
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
-        frequencies=frequencies)
+        frequencies=frequencies,
+        minimum_run_time=150)
 
     f, dJ_du = opt([design_params])
 
@@ -255,7 +256,8 @@ def adjoint_solver_complex_fields(design_params, frequencies=None):
         objective_functions=J,
         objective_arguments=obj_list,
         design_regions=[matgrid_region],
-        frequencies=frequencies)
+        frequencies=frequencies,
+        minimum_run_time=150)
 
     f, dJ_du = opt([design_params])
 
@@ -470,7 +472,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compare objective results
             print("Ez2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Ez2_unperturbed))
-            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=1e-6)
+            self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=2e-6)
 
             ## compute perturbed |Ez|^2
             Ez2_perturbed = forward_simulation_complex_fields(p+dp, frequencies)
