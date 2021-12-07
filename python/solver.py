@@ -86,9 +86,9 @@ class ModeSolver(object):
                  target_freq=0.0,
                  tolerance=1.0e-7,
                  num_bands=1,
-                 k_points=[],
+                 k_points=None,
                  ensure_periodicity=True,
-                 geometry=[],
+                 geometry=None,
                  geometry_lattice=mp.Lattice(),
                  geometry_center=mp.Vector3(0, 0, 0),
                  default_material=mp.Medium(epsilon=1),
@@ -104,8 +104,8 @@ class ModeSolver(object):
         self.mode_solver = None
         self.resolution = resolution
         self.eigensolver_flags = eigensolver_flags
-        self.k_points = k_points
-        self.geometry = geometry
+        self.k_points = k_points if k_points else []
+        self.geometry = geometry if geometry else []
         self.geometry_lattice = geometry_lattice
         self.geometry_center = mp.Vector3(*geometry_center)
         self.default_material = default_material

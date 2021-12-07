@@ -313,8 +313,8 @@ class Medium(object):
                  epsilon_offdiag=Vector3(),
                  mu_diag=Vector3(1, 1, 1),
                  mu_offdiag=Vector3(),
-                 E_susceptibilities=[],
-                 H_susceptibilities=[],
+                 E_susceptibilities=None,
+                 H_susceptibilities=None,
                  E_chi2_diag=Vector3(),
                  E_chi3_diag=Vector3(),
                  H_chi2_diag=Vector3(),
@@ -425,8 +425,8 @@ class Medium(object):
         self.epsilon_offdiag = Vector3(*epsilon_offdiag)
         self.mu_diag = Vector3(*mu_diag)
         self.mu_offdiag = Vector3(*mu_offdiag)
-        self.E_susceptibilities = E_susceptibilities
-        self.H_susceptibilities = H_susceptibilities
+        self.E_susceptibilities = E_susceptibilities if E_susceptibilities else []
+        self.H_susceptibilities = H_susceptibilities if H_susceptibilities else []
         self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else Vector3(*E_chi2_diag)
         self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else Vector3(*E_chi3_diag)
         self.H_chi2_diag = Vector3(*H_chi2_diag)
@@ -842,10 +842,10 @@ class MultilevelAtom(Susceptibility):
     atomic level. See [Materials/Saturable Gain and
     Absorption](Materials.md#saturable-gain-and-absorption).
     """
-    def __init__(self, initial_populations=[], transitions=[], **kwargs):
+    def __init__(self, initial_populations=None, transitions=None, **kwargs):
         super(MultilevelAtom, self).__init__(**kwargs)
-        self.initial_populations = initial_populations
-        self.transitions = transitions
+        self.initial_populations = initial_populations if initial_populations else []
+        self.transitions = transitions if transitions else []
 
 
 class Transition(object):
