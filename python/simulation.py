@@ -4569,6 +4569,8 @@ def stop_when_dft_decayed(tol=6e-7, minimum_run_time=0, maximum_run_time=None):
             change = _sim.fields.dft_time_fields_norm()
             closure['maxchange'] = max(closure['maxchange'],change)
             closure['t0'] = _sim.fields.t
+            if closure['maxchange'] == 0:
+                return False
             if verbosity.meep > 1:
                 fmt = "DFT fields decay(t = {0:0.2f}): {1:0.4e}"
                 print(fmt.format(_sim.meep_time(), np.real(change/closure['maxchange'])))
