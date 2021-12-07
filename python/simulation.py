@@ -1201,7 +1201,7 @@ class Simulation(object):
         self.geometry = geometry if geometry else []
         self.sources = sources if sources else []
         self.resolution = resolution
-        self.dimensions = dimensions           
+        self.dimensions = dimensions
         self.boundary_layers = boundary_layers if boundary_layers else []
         self.symmetries = symmetries if symmetries else []
         self.geometry_center = Vector3(*geometry_center)

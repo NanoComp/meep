@@ -1228,7 +1228,7 @@ def output_tot_pwr(ms, which_band):
     ms.output_field_to_file(-1, ms.get_filename_prefix() + 'tot.')
 
 
-def output_dpwr_in_objects(output_func, min_energy, objects=None):
+def output_dpwr_in_objects(output_func, min_energy, objects=[]):
     """
     The following function returns an output function that calls output_func for
     bands with D energy in objects > min-energy. For example,
@@ -1236,8 +1236,7 @@ def output_dpwr_in_objects(output_func, min_energy, objects=None):
     output function that would spit out the D field for bands with at least %20
     of their D energy in some-object.
     """
-    if objects is None:
-        objects = []
+
     def _output(ms, which_band):
         ms.get_dfield(which_band, False)
         ms.compute_field_energy()
