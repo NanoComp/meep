@@ -63,9 +63,9 @@ class DesignRegion(object):
             spatial_shape = sim.get_array_slice_dimensions(component, vol=self.volume)[0]
             if (fields_a[component_idx][0,...].size == 1):
                 fields_a[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs),
-                                                    dtype=onp.float32 if mp.is_single_precision() else onp.float64)
+                                                    dtype=onp.complex64 if mp.is_single_precision() else onp.complex128)
                 fields_f[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs),
-                                                    dtype=onp.float32 if mp.is_single_precision() else onp.float64)
+                                                    dtype=onp.complex64 if mp.is_single_precision() else onp.complex128)
             if _check_if_cylindrical(sim):
                 '''For some reason, get_dft_array returns the field
                 components in a different order than the convention used
