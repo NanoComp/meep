@@ -480,6 +480,7 @@ double material_grid_val(vector3 p, material_data *md) {
 
 static double tanh_projection(double u, double beta, double eta) {
   if (beta == 0) return u;
+  if (u == eta) return 0.5; // avoid NaN when beta is Inf
   double tanh_beta_eta = tanh(beta*eta);
   return (tanh_beta_eta + tanh(beta*(u-eta))) /
     (tanh_beta_eta + tanh(beta*(1-eta)));
