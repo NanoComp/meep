@@ -55,7 +55,7 @@ int check_cyl(double sr, double sz, double a) {
   for (int i = 0; i < N; ++i) {
     double rr = dr * i;
     vec x = veccyl(rr, 0.5 * sz);
-    F[i] = f.get_field(c, x) * phase;
+    F[i] = cdouble(f.get_field(c, x)) * phase;
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
     F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
     double d = abs(F0[i] - F[i]);
@@ -150,7 +150,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
       for (int i = 0; i < N; ++i) {
         double s = xmax / 4 + dx * i;
         vec x = dim == D2 ? vec(s, 0.5 * s) : vec(s, 0.5 * s, 0.3 * s);
-        F[i] = f.get_field(c, x) * phase;
+        F[i] = cdouble(f.get_field(c, x)) * phase;
         (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c0, 1.0);
         F0[i] = EH[EHcomp[c]];
         if (c1 != NO_COMPONENT) {

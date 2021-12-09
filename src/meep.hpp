@@ -67,7 +67,7 @@ std::complex<double> cdouble(std::complex<double> z);
 class h5file;
 
 // Defined in monitor.cpp
-void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]);
+void matrix_invert(std::complex<realnum> (&Vinv)[9], std::complex<realnum> (&V)[9]);
 
 // Defined in dft.cpp
 std::vector<double> linspace(double freq_min, double freq_max, size_t Nfreq);
@@ -1107,7 +1107,7 @@ public:
                          int *numout, double fmin = 0.0, double fmax = 0.0, int maxbands = 100);
   // harminv works much like fourier_transform, except that it is not yet
   // implemented.
-  void harminv(component w, std::complex<realnum> **a, std::complex<realnum> **f, int *numout,
+  void harminv(component w, std::complex<double> **a, std::complex<double> **f, int *numout,
                double fmin, double fmax, int maxbands);
 };
 
@@ -2337,8 +2337,8 @@ void trash_output_directory(const char *dirname);
 void delete_directory(const char *path);
 FILE *create_output_file(const char *dirname, const char *fname);
 
-int do_harminv(std::complex<realnum> *data, int n, double dt, double fmin, double fmax, int maxbands,
-               std::complex<realnum> *amps, double *freq_re, double *freq_im, double *errors = NULL,
+int do_harminv(std::complex<double> *data, int n, double dt, double fmin, double fmax, int maxbands,
+               std::complex<double> *amps, double *freq_re, double *freq_im, double *errors = NULL,
                double spectral_density = 1.1, double Q_thresh = 50, double rel_err_thresh = 1e20,
                double err_thresh = 0.01, double rel_amp_thresh = -1, double amp_thresh = -1);
 

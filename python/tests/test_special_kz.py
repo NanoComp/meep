@@ -145,8 +145,9 @@ class TestSpecialKz(unittest.TestCase):
         ez2 = sim.get_field_point(mp.Ez, mp.Vector3(2.3,-5.7,4.8+d))
         ratio_ez = ez2/ez1
         phase_diff = cmath.exp(1j*2*cmath.pi*kz*d)
-        self.assertAlmostEqual(ratio_ez.real,phase_diff.real,places=10)
-        self.assertAlmostEqual(ratio_ez.imag,phase_diff.imag,places=10)
+        tol = 6 if mp.is_single_precision() else 10
+        self.assertAlmostEqual(ratio_ez.real,phase_diff.real,places=tol)
+        self.assertAlmostEqual(ratio_ez.imag,phase_diff.imag,places=tol)
 
     def test_eigsrc_kz(self):
         self.eigsrc_kz("complex")

@@ -52,17 +52,17 @@ void harmonics(double freq, double chi2, double chi3, double J, double &A2, doub
   dft_flux d3 = f.add_dft_flux(Z, volume(fpt), 3 * freq, 3 * freq, 1, true, true,
                                1 /* decimation_factor */);
 
-  double emax = 0;
+  realnum emax = 0;
 
   while (f.time() < f.last_source_time()) {
     emax = max(emax, abs(f.get_field(Ex, fpt)));
     f.step();
   }
   do {
-    double emaxcur = 0;
+    realnum emaxcur = 0;
     double T = f.time() + 50;
     while (f.time() < T) {
-      double e = abs(f.get_field(Ex, fpt));
+      realnum e = abs(f.get_field(Ex, fpt));
       emax = max(emax, e);
       emaxcur = max(emaxcur, e);
       f.step();

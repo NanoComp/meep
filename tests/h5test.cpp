@@ -148,7 +148,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
           vec loc2(f.S.transform(loc, sn));
           int cs2 = f.S.transform(file_c, sn);
           complex<double> ph2 = f.S.phase_shift(cs2, -sn);
-          double diff2 = fabs(get_reim(f.get_field(cs2, loc2) * ph2, reim) - h5data[idx]);
+          double diff2 = fabs(get_reim(cdouble(f.get_field(cs2, loc2)) * ph2, reim) - h5data[idx]);
           if (diff2 < diff) {
             loc = loc2;
             cs = cs2;
@@ -158,7 +158,7 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
         }
 
         double err =
-            compare(h5data[idx], get_reim(f.get_field(cs, loc) * ph, reim), name, i0, i1, 0);
+          compare(h5data[idx], get_reim(cdouble(f.get_field(cs, loc)) * ph, reim), name, i0, i1, 0);
         err_max = max<double>(err, err_max);
         data_min = min<double>(data_min, h5data[idx]);
         data_max = max<double>(data_max, h5data[idx]);
@@ -259,7 +259,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
             vec loc2(f.S.transform(loc, sn));
             int cs2 = f.S.transform(file_c, sn);
             complex<double> ph2 = f.S.phase_shift(cs2, -sn);
-            double diff2 = fabs(get_reim(f.get_field(cs2, loc2) * ph2, reim) - h5data[idx]);
+            double diff2 = fabs(get_reim(cdouble(f.get_field(cs2, loc2)) * ph2, reim) - h5data[idx]);
             if (diff2 < diff) {
               loc = loc2;
               cs = cs2;
@@ -269,7 +269,7 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
           }
 
           double err =
-              compare(h5data[idx], get_reim(f.get_field(cs, loc) * ph, reim), name, i0, i1, i2);
+            compare(h5data[idx], get_reim(cdouble(f.get_field(cs, loc)) * ph, reim), name, i0, i1, i2);
           err_max = max(err, err_max);
           data_min = min<double>(data_min, h5data[idx]);
           data_max = max<double>(data_max, h5data[idx]);

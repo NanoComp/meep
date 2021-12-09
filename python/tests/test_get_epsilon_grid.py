@@ -66,8 +66,9 @@ class TestGetEpsilonGrid(unittest.TestCase):
                                              freq)
         eps_pt = self.sim.get_epsilon_point(pt, freq)
         print("eps:, ({},{}), {}, {}".format(pt.x,pt.y,eps_grid,eps_pt))
-        self.assertAlmostEqual(np.real(eps_grid), np.real(eps_pt), places=6)
-        self.assertAlmostEqual(np.imag(eps_grid), np.imag(eps_pt), places=6)
+        tol = 2 if mp.is_single_precision() else 6
+        self.assertAlmostEqual(np.real(eps_grid), np.real(eps_pt), places=tol)
+        self.assertAlmostEqual(np.imag(eps_grid), np.imag(eps_pt), places=tol)
 
 
 if __name__ == '__main__':

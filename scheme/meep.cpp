@@ -30,11 +30,11 @@ ctlio::cvector3_list do_harminv(ctlio::cnumber_list vals, double dt, double fmin
                                 int maxbands, double spectral_density, double Q_thresh,
                                 double rel_err_thresh, double err_thresh, double rel_amp_thresh,
                                 double amp_thresh) {
-  complex<meep::realnum> *amp = new complex<meep::realnum>[maxbands];
+  complex<double> *amp = new complex<double>[maxbands];
   double *freq_re = new double[maxbands];
   double *freq_im = new double[maxbands];
   double *freq_err = new double[maxbands];
-  maxbands = do_harminv(reinterpret_cast<complex<meep::realnum> *>(vals.items), vals.num_items, dt, fmin,
+  maxbands = do_harminv(reinterpret_cast<complex<double> *>(vals.items), vals.num_items, dt, fmin,
                         fmax, maxbands, amp, freq_re, freq_im, freq_err, spectral_density, Q_thresh,
                         rel_err_thresh, err_thresh, rel_amp_thresh, amp_thresh);
   ctlio::cvector3_list res;

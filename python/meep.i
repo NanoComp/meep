@@ -285,17 +285,17 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
                         double err_thresh, double rel_amp_thresh, double amp_thresh) {
     // Return value: New reference
 
-  std::complex<meep::realnum> *amp = new std::complex<meep::realnum>[maxbands];
+  std::complex<double> *amp = new std::complex<double>[maxbands];
   double *freq_re = new double[maxbands];
   double *freq_im = new double[maxbands];
   double *freq_err = new double[maxbands];
 
   Py_ssize_t n = PyList_Size(vals);
-  std::complex<meep::realnum> *items = new std::complex<meep::realnum>[n];
+  std::complex<double> *items = new std::complex<double>[n];
 
   for(int i = 0; i < n; i++) {
     Py_complex py_c = PyComplex_AsCComplex(PyList_GetItem(vals, i));
-    std::complex<meep::realnum> c(py_c.real, py_c.imag);
+    std::complex<double> c(py_c.real, py_c.imag);
     items[i] = c;
   }
 
@@ -654,8 +654,8 @@ void set_ctl_printf_callback(void (*callback)(const char *s));
 void set_mpb_printf_callback(void (*callback)(const char *s));
 
 PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, int maxbands,
-                     double spectral_density, double Q_thresh, double rel_err_thresh,
-                     double err_thresh, double rel_amp_thresh, double amp_thresh);
+                        double spectral_density, double Q_thresh, double rel_err_thresh,
+                        double err_thresh, double rel_amp_thresh, double amp_thresh);
 
 PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
 PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where, double resolution);

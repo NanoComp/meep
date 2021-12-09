@@ -149,7 +149,9 @@ int test_simple_metallic(double eps(const vec &), int splitting) {
   return 1;
 }
 
-static bool issmall(std::complex<double> x) { return abs(x) < 1e-16; }
+static bool issmall(std::complex<realnum> x) {
+  return abs(x) < (sizeof(realnum) == sizeof(float) ? 1e-8 : 1e-16);
+}
 
 int test_r_equals_zero(double eps(const vec &)) {
   double a = 10.0;

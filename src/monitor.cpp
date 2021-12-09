@@ -48,8 +48,8 @@ monitor_point::~monitor_point() {
   if (next) delete next;
 }
 
-inline complex<realnum> getcm(const realnum *const f[2], size_t i) {
-  return complex<realnum>(f[0][i], f[1][i]);
+inline std::complex<realnum> getcm(const realnum *const f[2], size_t i) {
+  return std::complex<realnum>(f[0][i], f[1][i]);
 }
 
 void fields::get_point(monitor_point *pt, const vec &loc) const {
@@ -63,7 +63,7 @@ void fields::get_point(monitor_point *pt, const vec &loc) const {
   }
 }
 
-complex<realnum> fields::get_field(int c, const vec &loc, bool parallel) const {
+std::complex<realnum> fields::get_field(int c, const vec &loc, bool parallel) const {
   return (is_derived(c) ? get_field(derived_component(c), loc, parallel)
                         : get_field(component(c), loc, parallel));
 }
@@ -124,7 +124,7 @@ double fields::get_field(derived_component c, const vec &loc, bool parallel) con
   }
 }
 
-complex<realnum> fields::get_field(component c, const vec &loc, bool parallel) const {
+std::complex<realnum> fields::get_field(component c, const vec &loc, bool parallel) const {
   switch (c) {
     case Dielectric: return get_eps(loc);
     case Permeability: return get_mu(loc);
@@ -132,7 +132,7 @@ complex<realnum> fields::get_field(component c, const vec &loc, bool parallel) c
     default:
       ivec ilocs[8];
       double w[8];
-      complex<realnum> res = 0.0;
+      std::complex<realnum> res = 0.0;
       gv.interpolate(c, loc, ilocs, w);
       for (int argh = 0; argh < 8 && w[argh]; argh++)
         res += realnum(w[argh]) * get_field(c, ilocs[argh], false);
@@ -142,7 +142,7 @@ complex<realnum> fields::get_field(component c, const vec &loc, bool parallel) c
   }
 }
 
-complex<realnum> fields::get_field(component c, const ivec &origloc, bool parallel) const {
+std::complex<realnum> fields::get_field(component c, const ivec &origloc, bool parallel) const {
   ivec iloc = origloc;
   complex<double> kphase = 1.0;
   locate_point_in_user_volume(&iloc, &kphase);
@@ -150,22 +150,22 @@ complex<realnum> fields::get_field(component c, const ivec &origloc, bool parall
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         complex<double> ps = S.phase_shift(c, sn);
-        complex<realnum> val = complex<realnum>(real(ps),imag(ps)) * complex<realnum>(real(kphase),imag(kphase)) *
+        std::complex<realnum> val = std::complex<realnum>(real(ps),imag(ps)) * std::complex<realnum>(real(kphase),imag(kphase)) *
                                chunks[i]->get_field(S.transform(c, sn), S.transform(iloc, sn));
         return parallel ? sum_to_all(val) : val;
       }
   return 0.0;
 }
 
-complex<realnum> fields_chunk::get_field(component c, const ivec &iloc) const {
+std::complex<realnum> fields_chunk::get_field(component c, const ivec &iloc) const {
   if (is_mine())
     return f[c][0] ? (f[c][1] ? getcm(f[c], gv.index(c, iloc)) : f[c][0][gv.index(c, iloc)]) : 0.0;
   else
     return 0.0;
 }
 
-complex<realnum> fields::get_chi1inv(component c, direction d, const ivec &origloc, double frequency,
-                                     bool parallel) const {
+std::complex<realnum> fields::get_chi1inv(component c, direction d, const ivec &origloc, double frequency,
+                                          bool parallel) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
   locate_point_in_user_volume(&iloc, &aaack);
@@ -173,33 +173,33 @@ complex<realnum> fields::get_chi1inv(component c, direction d, const ivec &origl
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
-        complex<realnum> val =
+        std::complex<realnum> val =
             chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), frequency) *
-            complex<realnum>(ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1,
+            std::complex<realnum>(ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1,
                             0);
         return parallel ? sum_to_all(val) : val;
       }
   return d == component_direction(c) ? 1.0 : 0; // default to vacuum outside computational cell
 }
 
-complex<realnum> fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
-                                           double frequency) const {
+std::complex<realnum> fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
+                                                double frequency) const {
   return s->get_chi1inv(c, d, iloc, frequency);
 }
 
-complex<realnum> fields::get_chi1inv(component c, direction d, const vec &loc, double frequency,
-                                     bool parallel) const {
+std::complex<realnum> fields::get_chi1inv(component c, direction d, const vec &loc, double frequency,
+                                          bool parallel) const {
   ivec ilocs[8];
   double w[8];
-  complex<realnum> res(0.0, 0.0);
+  std::complex<realnum> res(0.0, 0.0);
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
     res += realnum(w[argh]) * get_chi1inv(c, d, ilocs[argh], frequency, false);
   return parallel ? sum_to_all(res) : res;
 }
 
-complex<realnum> fields::get_eps(const vec &loc, double frequency) const {
-  complex<realnum> tr(0.0, 0.0);
+std::complex<realnum> fields::get_eps(const vec &loc, double frequency) const {
+  std::complex<realnum> tr(0.0, 0.0);
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -207,11 +207,11 @@ complex<realnum> fields::get_eps(const vec &loc, double frequency) const {
       ++nc;
     }
   }
-  return complex<realnum>(nc, 0) / sum_to_all(tr);
+  return std::complex<realnum>(nc, 0) / sum_to_all(tr);
 }
 
-complex<realnum> fields::get_mu(const vec &loc, double frequency) const {
-  complex<realnum> tr(0.0, 0.0);
+std::complex<realnum> fields::get_mu(const vec &loc, double frequency) const {
+  std::complex<realnum> tr(0.0, 0.0);
   int nc = 0;
   FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -219,19 +219,19 @@ complex<realnum> fields::get_mu(const vec &loc, double frequency) const {
       ++nc;
     }
   }
-  return complex<realnum>(nc, 0) / sum_to_all(tr);
+  return std::complex<realnum>(nc, 0) / sum_to_all(tr);
 }
 
-complex<realnum> structure::get_chi1inv(component c, direction d, const ivec &origloc,
-                                        double frequency, bool parallel) const {
+std::complex<realnum> structure::get_chi1inv(component c, direction d, const ivec &origloc,
+                                             double frequency, bool parallel) const {
   ivec iloc = origloc;
   for (int sn = 0; sn < S.multiplicity(); sn++)
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
-        complex<realnum> val =
+        std::complex<realnum> val =
             chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), frequency) *
-            complex<realnum>((ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1),
+            std::complex<realnum>((ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1),
                             0);
         return parallel ? sum_to_all(val) : val;
       }
@@ -259,9 +259,9 @@ void matrix_invert(std::complex<realnum> (&Vinv)[9], std::complex<realnum> (&V)[
   Vinv[2 + 3 * 2] = realnum(1.0) / det * (V[0 + 3 * 0] * V[1 + 3 * 1] - V[0 + 3 * 1] * V[1 + 3 * 0]);
 }
 
-complex<realnum> structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx,
-                                                    double frequency) const {
-  complex<realnum> res(0.0, 0.0);
+std::complex<realnum> structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx,
+                                                         double frequency) const {
+  std::complex<realnum> res(0.0, 0.0);
   if (is_mine()) {
     if (frequency == 0)
       return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
@@ -355,24 +355,24 @@ complex<realnum> structure_chunk::get_chi1inv_at_pt(component c, direction d, in
   return res;
 }
 
-complex<realnum> structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
-                                              double frequency) const {
+std::complex<realnum> structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
+                                                   double frequency) const {
   return get_chi1inv_at_pt(c, d, gv.index(c, iloc), frequency);
 }
 
-complex<realnum> structure::get_chi1inv(component c, direction d, const vec &loc, double frequency,
-                                        bool parallel) const {
+std::complex<realnum> structure::get_chi1inv(component c, direction d, const vec &loc, double frequency,
+                                             bool parallel) const {
   ivec ilocs[8];
   double w[8];
-  complex<realnum> res(0.0, 0.0);
+  std::complex<realnum> res(0.0, 0.0);
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
     res += realnum(w[argh]) * get_chi1inv(c, d, ilocs[argh], frequency, false);
   return parallel ? sum_to_all(res) : res;
 }
 
-complex<realnum> structure::get_eps(const vec &loc, double frequency) const {
-  complex<realnum> tr(0.0, 0.0);
+std::complex<realnum> structure::get_eps(const vec &loc, double frequency) const {
+  std::complex<realnum> tr(0.0, 0.0);
   int nc = 0;
   FOR_ELECTRIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -380,11 +380,11 @@ complex<realnum> structure::get_eps(const vec &loc, double frequency) const {
       ++nc;
     }
   }
-  return complex<realnum>(nc, 0) / sum_to_all(tr);
+  return std::complex<realnum>(nc, 0) / sum_to_all(tr);
 }
 
-complex<realnum> structure::get_mu(const vec &loc, double frequency) const {
-  complex<realnum> tr(0.0, 0.0);
+std::complex<realnum> structure::get_mu(const vec &loc, double frequency) const {
+  std::complex<realnum> tr(0.0, 0.0);
   int nc = 0;
   FOR_MAGNETIC_COMPONENTS(c) {
     if (gv.has_field(c)) {
@@ -392,7 +392,7 @@ complex<realnum> structure::get_mu(const vec &loc, double frequency) const {
       ++nc;
     }
   }
-  return complex<realnum>(nc, 0) / sum_to_all(tr);
+  return std::complex<realnum>(nc, 0) / sum_to_all(tr);
 }
 
 monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {
@@ -402,17 +402,17 @@ monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) co
   return p;
 }
 
-complex<realnum> monitor_point::get_component(component w) { return f[w]; }
+std::complex<realnum> monitor_point::get_component(component w) { return f[w]; }
 
 realnum monitor_point::poynting_in_direction(direction d) {
   direction d1 = cycle_direction(loc.dim, d, 1);
   direction d2 = cycle_direction(loc.dim, d, 2);
 
   // below Ex and Hx are used just to say that we want electric or magnetic component
-  complex<realnum> E1 = get_component(direction_component(Ex, d1));
-  complex<realnum> E2 = get_component(direction_component(Ex, d2));
-  complex<realnum> H1 = get_component(direction_component(Hx, d1));
-  complex<realnum> H2 = get_component(direction_component(Hx, d2));
+  std::complex<realnum> E1 = get_component(direction_component(Ex, d1));
+  std::complex<realnum> E2 = get_component(direction_component(Ex, d2));
+  std::complex<realnum> H1 = get_component(direction_component(Hx, d1));
+  std::complex<realnum> H2 = get_component(direction_component(Hx, d2));
 
   return (real(E1) * real(H2) - real(E2) * real(H1)) + (imag(E1) * imag(H2) - imag(E2) * imag(H1));
 }
@@ -425,7 +425,7 @@ realnum monitor_point::poynting_in_direction(vec dir) {
   return result;
 }
 
-void monitor_point::fourier_transform(component w, complex<realnum> **a, complex<realnum> **f,
+void monitor_point::fourier_transform(component w, std::complex<realnum> **a, std::complex<realnum> **f,
                                       int *numout, double fmin, double fmax, int maxbands) {
   int n = 1;
   monitor_point *p = next;
@@ -437,12 +437,12 @@ void monitor_point::fourier_transform(component w, complex<realnum> **a, complex
     p = p->next;
   }
   p = this;
-  complex<realnum> *d = new complex<realnum>[n];
+  std::complex<realnum> *d = new std::complex<realnum>[n];
   for (int i = 0; i < n; i++, p = p->next) {
     d[i] = p->get_component(w);
   }
   if (fmin > 0.0) { // Get rid of any static fields_chunk!
-    complex<realnum> mean = 0.0;
+    std::complex<realnum> mean = 0.0;
     for (int i = 0; i < n; i++)
       mean += d[i];
     mean /= n;
@@ -458,8 +458,8 @@ void monitor_point::fourier_transform(component w, complex<realnum> **a, complex
     fmax = (n - 1) * (1.0 / (tmax - tmin));
   }
 #endif
-    *a = new complex<realnum>[maxbands];
-    *f = new complex<realnum>[maxbands];
+    *a = new std::complex<realnum>[maxbands];
+    *f = new std::complex<realnum>[maxbands];
     *numout = maxbands;
     delete[] d;
     for (int i = 0; i < maxbands; i++) {
@@ -469,7 +469,7 @@ void monitor_point::fourier_transform(component w, complex<realnum> **a, complex
       p = this;
       while (p) {
         double inside = 2 * pi * real((*f)[i]) * p->t;
-        (*a)[i] += p->get_component(w) * complex<realnum>(cos(inside), sin(inside));
+        (*a)[i] += p->get_component(w) * std::complex<realnum>(cos(inside), sin(inside));
         p = p->next;
       }
       (*a)[i] /= (tmax - tmin);
@@ -478,7 +478,7 @@ void monitor_point::fourier_transform(component w, complex<realnum> **a, complex
   }
   else {
     *numout = n;
-    *a = new complex<realnum>[n];
+    *a = new std::complex<realnum>[n];
     *f = d;
     fftw_complex *in = (fftw_complex *)d, *out = (fftw_complex *)*a;
     fftw_plan p;
@@ -500,7 +500,7 @@ void monitor_point::fourier_transform(component w, complex<realnum> **a, complex
 #endif
 }
 
-void monitor_point::harminv(component w, complex<realnum> **a, complex<realnum> **f, int *numout,
+void monitor_point::harminv(component w, complex<double> **a, complex<double> **f, int *numout,
                             double fmin, double fmax, int maxbands) {
   int n = 1;
   monitor_point *p = next;
@@ -512,17 +512,17 @@ void monitor_point::harminv(component w, complex<realnum> **a, complex<realnum> 
     p = p->next;
   }
   p = this;
-  complex<realnum> *d = new complex<realnum>[n];
+  complex<double> *d = new complex<double>[n];
   for (int i = 0; i < n; i++, p = p->next) {
     d[i] = p->get_component(w);
   }
-  *a = new complex<realnum>[n];
+  *a = new complex<double>[n];
   double *f_re = new double[n];
   double *f_im = new double[n];
   *numout = do_harminv(d, n, (tmax - tmin) / (n - 1), fmin, fmax, maxbands, *a, f_re, f_im, NULL);
-  *f = new complex<realnum>[*numout];
+  *f = new complex<double>[*numout];
   for (int i = 0; i < *numout; i++)
-    (*f)[i] = complex<realnum>(f_re[i], f_im[i]);
+    (*f)[i] = complex<double>(f_re[i], f_im[i]);
   delete[] f_re;
   delete[] f_im;
   delete[] d;
