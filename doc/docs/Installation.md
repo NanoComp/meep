@@ -137,16 +137,20 @@ The first steps are:
 
 ```sh
 brew doctor
-brew install homebrew/science/hdf5 homebrew/science/openblas guile fftw h5utils
+brew install hdf5 guile fftw gsl libpng autoconf automake libtool swig
+```
+If you don't have your own Python installation (e.g. via [miniforge](https://github.com/conda-forge/miniforge)), you should install `numpy` and `matplotlib`:
+```sh
+pip3 install numpy matplotlib
 ```
 
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
 ```sh
-./configure && make && make install
+./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" && make && make install
 ```
 
-Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
+Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
 
 You are done, and can now run Meep (Scheme interface) just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 
