@@ -147,7 +147,7 @@ pip3 install numpy matplotlib scipy autograd
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
 ```sh
-./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" PYTHON=python3 && make && make install
+./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" PYTHON=python3 && make && sudo make install
 ```
 
 Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
