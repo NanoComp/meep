@@ -843,7 +843,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 %inline %{
-void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
+void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f,
                    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies,
                    meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
     // clean the gradient array
@@ -1997,7 +1997,7 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
                                                 extra_materials);
     }
     if (set_materials) {
-        meep_geom::set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
+        meep_geom::set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
                                              maxeval,alist);
     }
 
