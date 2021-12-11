@@ -131,7 +131,7 @@ Since [macOS](https://en.wikipedia.org/wiki/macOS) is, at its heart, a Unix syst
 
 The first steps are:
 
--   Install [Xcode](https://en.wikipedia.org/wiki/Xcode), the development/compiler package from Apple, free from the [Apple Xcode web page](https://developer.apple.com/xcode/).
+-   Install [Xcode](https://en.wikipedia.org/wiki/Xcode), the development/compiler package from Apple: type `xcode-select --install` in the [Terminal](https://en.wikipedia.org/wiki/Terminal_(macOS)).
 -   Install Homebrew: download from the [Homebrew site](http://brew.sh/) and follow the instructions there.
 -   Run the following commands in the terminal to compile and install the prerequisites. This may take a while to complete because it will install lots of other stuff first
 
