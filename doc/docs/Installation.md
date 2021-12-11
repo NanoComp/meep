@@ -150,7 +150,7 @@ Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [
 ./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" PYTHON=python3 && make && sudo make install
 ```
 
-Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
+Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).  Note that if you are installing from a `git clone` rather than from a release `.tar.gz` file, you will need to first run `sh autogen.sh`, and you should add `--enable-maintainer-mode` to the `configure` arguments.
 
 You are done, and can now run Meep (Scheme interface) just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 
