@@ -132,7 +132,6 @@ int main(int argc, char *argv[]) {
                   imag(amp[nb]), err[nb]);
 
   // test comparison with expected values
-<<<<<<< HEAD
   double err_tol = 1.0e-5;
   int ref_bands = 4;
   double ref_freq_re[4] = {1.1807e-01, 1.4470e-01, 1.4715e-01, 1.7525e-01};
@@ -142,14 +141,6 @@ int main(int argc, char *argv[]) {
                                      std::complex<double>(+3.99e-02,+4.09e-02),
                                      std::complex<double>(-1.98e-03,-1.43e-02)};
   if (bands != ref_bands) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
-=======
-  int ref_bands = 3;
-  double ref_freq_re[3] = {1.1807e-01, 1.4716e-01, 1.7525e-01};
-  double ref_freq_im[3] = {-7.6133e-04, -2.1156e-04, -5.2215e-05};
-  std::complex<double> ref_amp[3] = {std::complex<double>(-8.28e-04, -1.34e-03), std::complex<double>(1.23e-03, -1.25e-02),
-                        std::complex<double>(2.83e-03, -6.52e-04)};
-  if (bands != 3) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
->>>>>>> support for single-precision floating point for fields array functions (#1833)
   for (int nb = 0; nb < bands; nb++)
     if ((fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
          fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
