@@ -139,9 +139,9 @@ The first steps are:
 brew doctor
 brew install hdf5 guile fftw gsl libpng autoconf automake libtool swig
 ```
-If you don't have your own Python installation (e.g. via [miniforge](https://github.com/conda-forge/miniforge)), you should install `numpy` and `matplotlib`:
+If you don't have your own Python installation (e.g. via [miniforge](https://github.com/conda-forge/miniforge)), you should install `numpy` and `matplotlib` and other packages used by Meep and its tests:
 ```sh
-pip3 install numpy matplotlib
+pip3 install numpy matplotlib scipy autograd
 ```
 
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
