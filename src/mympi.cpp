@@ -171,6 +171,8 @@ static void _set_zero_subnormals(bool iszero)
     else
       state &= ~flags;
     _mm_setcsr(state);
+#else
+  (void) iszero; // unused
 #endif
 }
 void set_zero_subnormals(bool iszero)
