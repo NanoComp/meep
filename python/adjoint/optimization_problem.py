@@ -168,8 +168,8 @@ class OptimizationProblem(object):
             self.forward_monitors.append(m.register_monitors(self.frequencies))
 
         # register design region
-        self.design_region_monitors = utils.install_design_region_monitors(
-            self.sim, self.design_regions, self.frequencies, self.decimation_factor
+        self.forward_design_region_monitors = utils.install_design_region_monitors(
+            self.sim, self.design_regions, self.frequencies, self.decimation_factor, True
         )
 
     def forward_run(self):
@@ -194,7 +194,7 @@ class OptimizationProblem(object):
             self.f0 = self.f0[0]
 
         # Store forward fields for each set of design variables in array
-        self.D_f = utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies)
+        self.D_f = utils.gather_design_region_fields(self.sim,self.forward_design_region_monitors,self.frequencies)
 
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
@@ -229,15 +229,17 @@ class OptimizationProblem(object):
 
         for ar in range(len(self.objective_functions)):
             # Reset the fields
-            self.sim.reset_meep()
+            self.sim.restart_fields()
+            self.sim.clear_dft_monitors()
 
             # Update the sources
             self.sim.change_sources(self.adjoint_sources[ar])
 
-            # register design flux
+            # register design dft fields
             self.design_region_monitors = utils.install_design_region_monitors(
             self.sim, self.design_regions, self.frequencies, self.decimation_factor
             )
+            self.sim._evaluate_dft_objects()
 
             # Adjoint run
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(

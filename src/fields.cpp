@@ -181,7 +181,11 @@ fields_chunk::~fields_chunk() {
   delete[] f_rderiv_int;
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
-    delete dft_chunks;
+    // keep the dft chunk in memory for adjoint calculations
+    if (dft_chunks->persist)
+      dft_chunks->fc = NULL;
+    else
+      delete dft_chunks;
     dft_chunks = nxt;
   }
   FOR_FIELD_TYPES(ft) {

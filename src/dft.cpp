@@ -51,6 +51,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   bool empty_dim[5];
   dft_chunk *dft_chunks;
   int decimation_factor;
+  bool persist;
 };
 
 dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_,
@@ -69,6 +70,8 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   e1 = e1_;
   dV0 = dV0_;
   dV1 = dV1_;
+
+  persist = data->persist;
 
   c = c_;
 
@@ -159,7 +162,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
                            complex<double> extra_weight, bool use_centered_grid,
-                           int vc, int decimation_factor) {
+                           int vc, int decimation_factor, bool persist) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -172,6 +175,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
           "add_dft");
 
   dft_chunk_data data;
+  data.persist = persist;
   data.c = c;
   data.vc = vc;
 
@@ -211,13 +215,13 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
 }
 
 dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> &freq,
-                           bool include_dV_and_interp_weights) {
+                           bool include_dV_and_interp_weights, bool persist) {
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) meep::abort("derived_component invalid for dft");
     complex<double> stored_weight = where->weight;
     chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
-                     stored_weight, chunks);
+                     stored_weight, chunks, persist);
     where = where->next;
   }
   return chunks;
@@ -842,7 +846,7 @@ void dft_fields::remove() {
 
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
                                   const double *freq, size_t Nfreq, bool use_centered_grid,
-                                  int decimation_factor) {
+                                  int decimation_factor, bool persist) {
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
@@ -851,7 +855,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
   for (int nc = 0; nc < num_components; nc++)
     chunks = add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights,
                      stored_weight, chunks, sqrt_dV_and_interp_weights, extra_weight,
-                     use_centered_grid, 0, decimation_factor);
+                     use_centered_grid, 0, decimation_factor, persist);
 
   return dft_fields(chunks, freq, Nfreq, where);
 }

@@ -2544,7 +2544,7 @@ class Simulation(object):
 
     def add_dft_fields(self, *args, **kwargs):
         """
-        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0)` ##sig
+        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0, persist=False)` ##sig
 
         Given a list of field components `cs`, compute the Fourier transform of these
         fields for `nfreq` equally spaced frequencies covering the frequency range
@@ -2571,18 +2571,19 @@ class Simulation(object):
         size = kwargs.get('size', None)
         yee_grid = kwargs.get('yee_grid', False)
         decimation_factor = kwargs.get('decimation_factor', 0)
+        persist = kwargs.get('persist', False)
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
         use_centered_grid = not yee_grid
         dftf = DftFields(self._add_dft_fields, [
             components, where, center_v3, size_v3, freq, use_centered_grid,
-            decimation_factor
+            decimation_factor,persist
         ])
         self.dft_objects.append(dftf)
         return dftf
 
     def _add_dft_fields(self, components, where, center, size, freq,
-                        use_centered_grid, decimation_factor):
+                        use_centered_grid, decimation_factor, persist):
         if self.fields is None:
             self.init_sim()
         try:
@@ -2590,7 +2591,7 @@ class Simulation(object):
         except ValueError:
             where = self.fields.total_volume()
         return self.fields.add_dft_fields(components, where, freq,
-                                          use_centered_grid, decimation_factor)
+                                          use_centered_grid, decimation_factor, persist)
 
     def output_dft(self, dft_fields, fname):
         """
@@ -3825,6 +3826,15 @@ class Simulation(object):
         else:
             self._is_initialized = False
             self.init_sim()
+    
+    def clear_dft_monitors(self):
+        """
+        Remove all of the dft monitors from the simulation.
+        """
+        for m in self.dft_objects:
+            if isinstance(m,DftFields) and (not m.chunks.persist):
+                m.remove()
+        self.dft_objects = []
 
     def run(self, *step_funcs, **kwargs):
         """
