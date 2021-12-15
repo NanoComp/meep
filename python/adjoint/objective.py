@@ -258,6 +258,7 @@ class FourierFields(ObjectiveQuantity):
         min_max_corners = self.sim.fields.get_corners(self._monitor.swigobj, self.component) # ivec values of the corners
         mon_size = self._dft_monitor_size(min_max_corners)
 
+        dJ = dJ.astype(np.complex128)
         if np.prod(mon_size)*self.num_freq == dJ.size: # The objective function J is a scalar.
             dJ = dJ.flatten()
         elif np.prod(mon_size)*self.num_freq**2 == dJ.size: # The objective function J is a vector. Each component corresponds to a frequency.
