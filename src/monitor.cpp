@@ -178,7 +178,7 @@ complex<double> fields::get_chi1inv(component c, direction d, const ivec &origlo
                             0);
         return parallel ? sum_to_all(val) : val;
       }
-  return d == component_direction(c) ? 1.0 : 0; // default to vacuum outside computational cell
+  return d == component_direction(c) && (parallel || am_master()) ? 1.0 : 0; // default to vacuum outside computational cell
 }
 
 complex<double> fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
