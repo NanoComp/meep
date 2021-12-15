@@ -159,7 +159,7 @@ class TestMaterialGrid(unittest.TestCase):
     def test_symmetry(self):
             tran_nosym = compute_transmittance(False)
             tran_sym = compute_transmittance(True)
-            self.assertAlmostEqual(tran_nosym, tran_sym)
+            self.assertAlmostEqual(tran_nosym, tran_sym, places=6)
 
 if __name__ == '__main__':
     unittest.main()
