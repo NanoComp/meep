@@ -1396,7 +1396,7 @@ std::vector<int> fields::get_corners(dft_fields fdft, component c){ // get the m
   return corners;
 }
 
-std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, int* min_max_corners, std::complex<double>* dJ){
+std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, const int* min_max_corners, const std::complex<double>* dJ){
   if (!chunks) return std::vector<struct sourcedata>();
   const size_t Nfreq = freq.size();
 

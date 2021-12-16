@@ -1382,7 +1382,7 @@ public:
   int periodic_n[2];
   double periodic_k[2], period[2];
 
-  std::vector<sourcedata> near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ);
+  std::vector<sourcedata> near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, const std::complex<double>* dJ);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1419,7 +1419,7 @@ public:
   dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
   dft_fields(dft_chunk *chunks, const std::vector<double> &freq_, const volume &where);
   dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
-  std::vector<sourcedata> fourier_sourcedata(const volume &where, int* min_max_corners, std::complex<double>* dJ);
+  std::vector<sourcedata> fourier_sourcedata(const volume &where, const int* min_max_corners, const std::complex<double>* dJ);
   void scale_dfts(std::complex<double> scale);
 
   void remove();
