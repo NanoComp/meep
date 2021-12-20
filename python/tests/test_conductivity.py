@@ -33,6 +33,10 @@ class TestConductivity(unittest.TestCase):
                                       eig_parity=mp.EVEN_Y+mp.ODD_Z)]
 
         # ref: https://en.wikipedia.org/wiki/Mathematical_descriptions_of_opacity
+        # Note that this is the loss of a planewave, which is only approximately
+        # the loss of a waveguide mode.  In principle, we could compute the latter
+        # semi-analytically if we wanted to run this unit test to greater accuracy
+        # (e.g. to test convergence with resolution).
         n_eff = np.sqrt(12.) + 1j * (1/fsrc) * (dB_cm_to_dB_um * att_coeff) / (4 * np.pi)
         eps_eff = n_eff * n_eff
         # ref: https://meep.readthedocs.io/en/latest/Materials/#conductivity-and-complex
