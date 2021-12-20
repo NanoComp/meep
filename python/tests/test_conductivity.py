@@ -2,13 +2,15 @@ import unittest
 import numpy as np
 import meep as mp
 
+dB_cm_to_dB_um = 1e-4
+
 class TestConductivity(unittest.TestCase):
 
     def wvg_flux(self, res, att_coeff):
         """
         Computes the Poynting flux in a single-mode waveguide at two
         locations (5 and 10 μm) downstream from the source given the
-        grid resolution res (pixels/μm) and material attenutation
+        grid resolution res (pixels/μm) and material attenuation
         coefficient att_coeff (dB/cm).
         """
 
@@ -20,16 +22,18 @@ class TestConductivity(unittest.TestCase):
 
         fsrc = 0.15 # frequency (in vacuum)
 
-        # note: MPB only computes modes of lossless materials and thus when
-        #       when att_coeff > 0, the launched waveguide mode is inaccurate.
-        #       The inaccuracy increases with increasing att_coeff.
+        # note: MPB can only compute modes of lossless material systems.
+        #       The imaginary part of ε is ignored and the launched
+        #       waveguide mode is therefore inaccurate. For small values
+        #       of imag(ε) (which is proportional to att_coeff), this
+        #       inaccuracy tends to be insignificant.
         sources = [mp.EigenModeSource(src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc),
                                       center=mp.Vector3(-5.),
                                       size=mp.Vector3(y=10.),
                                       eig_parity=mp.EVEN_Y+mp.ODD_Z)]
 
         # ref: https://en.wikipedia.org/wiki/Mathematical_descriptions_of_opacity
-        n_eff = np.sqrt(12.) + 1j * (1/fsrc) * (1e-4 * att_coeff) / (4 * np.pi)
+        n_eff = np.sqrt(12.) + 1j * (1/fsrc) * (dB_cm_to_dB_um * att_coeff) / (4 * np.pi)
         eps_eff = n_eff * n_eff
         # ref: https://meep.readthedocs.io/en/latest/Materials/#conductivity-and-complex
         sigma_D = 2 * np.pi * fsrc * np.imag(eps_eff) / np.real(eps_eff)
@@ -50,6 +54,7 @@ class TestConductivity(unittest.TestCase):
                              0,
                              1,
                              mp.FluxRegion(center=mp.Vector3(x=0.), size=mp.Vector3(y=10.)))
+
         tran2 = sim.add_flux(fsrc,
                              0,
                              1,
@@ -65,22 +70,22 @@ class TestConductivity(unittest.TestCase):
 
         # compute the incident flux for a lossless waveguide
         incident_flux1, incident_flux2 = self.wvg_flux(res, 0.)
-        self.assertAlmostEqual(incident_flux1/incident_flux2, 1.0, places=2)
+        self.assertAlmostEqual(incident_flux1/incident_flux2, 1., places=2)
         print("incident_flux:, {} (measured), 1.0 (expected)".format(incident_flux2/incident_flux1))
 
         # compute the flux for a lossy waveguide
-        att_coeff = 37. # dB/cm
+        att_coeff = 37.46 # dB/cm
         attenuated_flux1, attenuated_flux2 = self.wvg_flux(res, att_coeff)
 
         L1 = 5.
-        expected_att1 = np.exp(-att_coeff * 1e-4 * L1)
+        expected_att1 = np.exp(-att_coeff * dB_cm_to_dB_um * L1)
         self.assertAlmostEqual(attenuated_flux1/incident_flux2, expected_att1, places=2)
         print("flux:, {}, {:.6f} (measured), {:.6f} (expected)".format(L1,
                                                                        attenuated_flux1/incident_flux2,
                                                                        expected_att1))
 
         L2 = 10.
-        expected_att2 = np.exp(-att_coeff * 1e-4 * L2)
+        expected_att2 = np.exp(-att_coeff * dB_cm_to_dB_um * L2)
         self.assertAlmostEqual(attenuated_flux2/incident_flux2, expected_att2, places=2)
         print("flux:, {}, {:.6f} (measured), {:.6f} (expected)".format(L2,
                                                                        attenuated_flux2/incident_flux2,
