@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
       fabs(fFinal - fFinal_ref) > 1.0e-6 * fabs(fFinal_ref)) {
     master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n", f50, tFinal, fFinal);
     master_printf(" should be:\n");
-    master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n", f50, tFinal, fFinal);
+    master_printf("{f50, tFinal, fFinal}={%e,%e,%e}\n", f50_ref, tFinal_ref, fFinal_ref);
     meep::abort("Test failed.");
   }
   else if (verbose)
