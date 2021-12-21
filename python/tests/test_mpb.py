@@ -408,6 +408,7 @@ class TestModeSolver(unittest.TestCase):
     def test_compute_field_energy(self):
         ms = self.init_solver()
         ms.run_te()
+        mpb.fix_hfield_phase(ms, 8)
         ms.get_dfield(8)
         field_pt = ms.get_field_point(mp.Vector3(0.5, 0.5))
         bloch_field_pt = ms.get_bloch_field_point(mp.Vector3(0.5, 0.5))
@@ -701,8 +702,10 @@ class TestModeSolver(unittest.TestCase):
         def get_dpwr(ms, band):
             dpwr.append(ms.get_dpwr(band))
 
-        ms.run(mpb.output_at_kpoint(mp.Vector3(0, 0.625, 0.375), mpb.fix_dfield_phase,
-                                    mpb.output_dpwr, get_dpwr))
+        ms.run(mpb.output_at_kpoint(mp.Vector3(0, 0.625, 0.375),
+                                    mpb.fix_dfield_phase,
+                                    mpb.output_dpwr,
+                                    get_dpwr))
 
         expected_brd = [
             ((0.0, mp.Vector3(0.0, 0.0, 0.0)),
@@ -812,7 +815,8 @@ class TestModeSolver(unittest.TestCase):
         ms.tolerance = 1e-12
 
         ms.run_tm(mpb.output_at_kpoint(k_points[len(k_points) // 2]),
-                  mpb.fix_efield_phase, mpb.output_efield_z)
+                  mpb.fix_efield_phase,
+                  mpb.output_efield_z)
 
         ref_fn = 'line-defect-e.k04.b12.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
@@ -973,8 +977,9 @@ class TestModeSolver(unittest.TestCase):
         ms.tolerance = 1e-12
         ms.filename_prefix = self.filename_prefix
 
-        ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3), mpb.fix_efield_phase,
-                  mpb.output_efield_z))
+        ms.run_tm(mpb.output_at_kpoint(mp.Vector3(1 / -3, 1 / 3),
+                                       mpb.fix_efield_phase,
+                                       mpb.output_efield_z))
 
         ref_fn = 'tri-rods-e.k11.b08.z.tm.h5'
         ref_path = os.path.join(self.data_dir, ref_fn)
