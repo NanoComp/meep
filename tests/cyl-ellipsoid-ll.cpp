@@ -129,7 +129,11 @@ int main(int argc, char *argv[]) {
   //    (make ellipsoid (center 0 0 0) (size 1 2 infinity)
   //                   (material air))))
   double n = 3.5; // index of refraction
-  meep_geom::material_type dielectric = meep_geom::make_dielectric(n * n);
+  auto material_deleter = [](meep_geom::material_data *m) {
+    meep_geom::material_free(m);
+  };
+  std::unique_ptr<meep_geom::material_data, decltype(material_deleter)> dielectric(
+      meep_geom::make_dielectric(n * n), material_deleter);
   geometric_object objects[2];
   vector3 center = {0.0, 0.0, 0.0};
   double radius = 3.0;
@@ -138,7 +142,7 @@ int main(int argc, char *argv[]) {
   vector3 yhat = {0.0, 1.0, 0.0};
   vector3 zhat = {0.0, 0.0, 1.0};
   vector3 size = {1.0, 2.0, 1.0e20};
-  objects[0] = make_cylinder(dielectric, center, radius, height, zhat);
+  objects[0] = make_cylinder(dielectric.get(), center, radius, height, zhat);
   objects[1] = make_ellipsoid(meep_geom::vacuum, center, xhat, yhat, zhat, size);
   geometric_object_list g = {2, objects};
   meep_geom::set_materials_from_geometry(&the_structure, g);
@@ -190,6 +194,10 @@ int main(int argc, char *argv[]) {
     else
       meep::abort("field output error in cyl-ellipsoid-ll");
   };
+
+  for (int n = 0; n < 2; n++) {
+    geometric_object_destroy(objects[n]);
+  }
 
   return 0;
 }
