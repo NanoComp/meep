@@ -164,6 +164,7 @@ int main(int argc, char *argv[]) {
   geometric_object_list g = {no, objects};
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
+
   /***************************************************************/
   /* add source and timestep until source has finished (no later)*/
   /***************************************************************/
