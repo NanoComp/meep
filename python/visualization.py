@@ -50,6 +50,7 @@ default_eps_parameters = {
         'contour':False,
         'contour_linewidth':1,
         'discrete':False,
+        'discrete_eps_levels':None,
         'frequency':None,
         'resolution':None
     }
@@ -426,9 +427,12 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
         if eps_parameters['contour']:
             ax.contour(eps_data, 0, colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
         elif eps_parameters['discrete']:
-            norm, cmap = discretize_colormap(eps_parameters['discrete_eps_levels'], eps_parameters['cmap'])
-            del eps_parameters['cmap']
-            ax.imshow(eps_data, extent=extent, norm=norm, cmap=cmap, **filter_dict(eps_parameters, ax.imshow))
+            if eps_parameters['discrete_eps_levels'].any() == None:
+                eps_parameters['discrete_eps_levels'] = [np.min(eps_data), np.max(eps_data)]
+            if colors == 
+            norm, eps_parameters['cmap'] = discretize_colormap(eps_parameters['discrete_eps_levels'], eps_parameters['cmap'])
+            #del eps_parameters['cmap']
+            ax.imshow(eps_data, extent=extent, norm=norm, **filter_dict(eps_parameters, ax.imshow))
         else:
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
