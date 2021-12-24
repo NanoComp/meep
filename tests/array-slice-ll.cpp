@@ -164,7 +164,6 @@ int main(int argc, char *argv[]) {
   geometric_object_list g = {no, objects};
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
-
   /***************************************************************/
   /* add source and timestep until source has finished (no later)*/
   /***************************************************************/
@@ -247,6 +246,10 @@ int main(int argc, char *argv[]) {
     master_printf("2D: rel error %e\n", RelErr2D);
 
   }; // if (write_files) ... else ...
+
+  for (int n = 0; n < no; n++) {
+    geometric_object_destroy(objects[n]);
+  }
 
   return 0;
 }
