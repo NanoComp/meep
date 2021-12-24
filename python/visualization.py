@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 import warnings
+from matplotlib import colors
 
 import numpy as np
 
@@ -48,6 +49,7 @@ default_eps_parameters = {
         'alpha':1.0,
         'contour':False,
         'contour_linewidth':1,
+        'discrete':False,
         'frequency':None,
         'resolution':None
     }
@@ -398,11 +400,35 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     else:
         raise ValueError("A 2D plane has not been specified...")
 
+    print()
     eps_data = np.rot90(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters['frequency'])))
+
+    def discretize_colormap(eps_levels, cmap, tol=1E-6):
+        from matplotlib.colors import BoundaryNorm, ListedColormap
+        from matplotlib.cm import ScalarMappable, get_cmap
+        # Format epsilon list to get levels
+        epsilons_unique_sorted = np.sort(np.unique(np.array(eps_levels)))
+        eps_intervals = 0.5 * (epsilons_unique_sorted[1:] + epsilons_unique_sorted[:-1])
+        # Convert to color interval bounds for thresholding
+        bounds = [np.min(epsilons_unique_sorted) - tol] # Substract some small quantity
+        for interval in eps_intervals:
+            bounds.append(interval)
+        bounds.append(np.max(epsilons_unique_sorted + tol))  # Add some small quantity
+        # Discretize existing colormap according to number of levels
+        colors = get_cmap(cmap)(np.linspace(0,1,len(epsilons_unique_sorted)))
+        newcmap = ListedColormap(colors)
+        # Return imshow objects
+        norm = BoundaryNorm(bounds, len(epsilons_unique_sorted))
+        cmap = ScalarMappable(cmap=newcmap, norm=norm).get_cmap()
+        return norm, cmap
 
     if mp.am_master():
         if eps_parameters['contour']:
             ax.contour(eps_data, 0, colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
+        elif eps_parameters['discrete']:
+            norm, cmap = discretize_colormap(eps_parameters['discrete_eps_levels'], eps_parameters['cmap'])
+            del eps_parameters['cmap']
+            ax.imshow(eps_data, extent=extent, norm=norm, cmap=cmap, **filter_dict(eps_parameters, ax.imshow))
         else:
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
