@@ -402,7 +402,6 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     else:
         raise ValueError("A 2D plane has not been specified...")
 
-    print()
     eps_data = np.rot90(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters['frequency'])))
 
     def threshold_eps(eps_levels, tol=1E-6):
