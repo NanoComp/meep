@@ -50,7 +50,8 @@ default_eps_parameters = {
         'contour':False,
         'contour_linewidth':1,
         'discrete':False,
-        'discrete_eps_levels':None,
+        'discrete_eps_levels':[],
+        'discrete_eps_colors':[],
         'frequency':None,
         'resolution':None
     }
@@ -404,35 +405,45 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     print()
     eps_data = np.rot90(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters['frequency'])))
 
-    def discretize_colormap(eps_levels, cmap, tol=1E-6):
+    def threshold_eps(eps_levels, tol=1E-6):
+        eps_unique_sorted = np.sort(np.unique(np.array(eps_levels)))
+        eps_midpoints = 0.5 * (eps_unique_sorted[1:] + eps_unique_sorted[:-1])
+        # Create color thresholds from boundaries and midpoints
+        thresholds = [np.min(eps_unique_sorted) - tol]
+        for interval in eps_midpoints:
+            thresholds.append(interval)
+        thresholds.append(np.max(eps_unique_sorted + tol))
+        return eps_unique_sorted, thresholds
+
+    def threshold_colors(eps_unique_sorted, thresholds, colors):
         from matplotlib.colors import BoundaryNorm, ListedColormap
         from matplotlib.cm import ScalarMappable, get_cmap
-        # Format epsilon list to get levels
-        epsilons_unique_sorted = np.sort(np.unique(np.array(eps_levels)))
-        eps_intervals = 0.5 * (epsilons_unique_sorted[1:] + epsilons_unique_sorted[:-1])
-        # Convert to color interval bounds for thresholding
-        bounds = [np.min(epsilons_unique_sorted) - tol] # Substract some small quantity
-        for interval in eps_intervals:
-            bounds.append(interval)
-        bounds.append(np.max(epsilons_unique_sorted + tol))  # Add some small quantity
-        # Discretize existing colormap according to number of levels
-        colors = get_cmap(cmap)(np.linspace(0,1,len(epsilons_unique_sorted)))
         newcmap = ListedColormap(colors)
-        # Return imshow objects
-        norm = BoundaryNorm(bounds, len(epsilons_unique_sorted))
+        norm = BoundaryNorm(thresholds, len(eps_unique_sorted))
         cmap = ScalarMappable(cmap=newcmap, norm=norm).get_cmap()
         return norm, cmap
 
     if mp.am_master():
+        # Contour plotting
         if eps_parameters['contour']:
             ax.contour(eps_data, 0, colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
+        # Discrete color plotting
         elif eps_parameters['discrete']:
-            if eps_parameters['discrete_eps_levels'].any() == None:
+            # Obtain thresholds from provided list of indices to plot
+            if len(eps_parameters['discrete_eps_levels']) == 0: # understands both list and numpy array
                 eps_parameters['discrete_eps_levels'] = [np.min(eps_data), np.max(eps_data)]
-            if colors == 
-            norm, eps_parameters['cmap'] = discretize_colormap(eps_parameters['discrete_eps_levels'], eps_parameters['cmap'])
-            #del eps_parameters['cmap']
+            eps_parameters['discrete_eps_levels'], thresholds = threshold_eps(eps_parameters['discrete_eps_levels'], tol=1E-6)
+            # Generate color mapping to levels
+            if len(eps_parameters['discrete_eps_colors']) == 0: # understands both list and numpy array
+                from matplotlib.cm import get_cmap
+                colors = get_cmap(eps_parameters['cmap'])(np.linspace(0,1,len(eps_parameters['discrete_eps_levels'])))
+                norm, eps_parameters['cmap'] = threshold_colors(eps_parameters['discrete_eps_levels'], thresholds, colors)
+            else:
+                assert len(eps_parameters['discrete_eps_colors']) >= len(eps_parameters['discrete_eps_levels'])
+                norm, eps_parameters['cmap'] = threshold_colors(eps_parameters['discrete_eps_levels'], thresholds, eps_parameters['discrete_eps_colors'])
+            # Plots data with discrete color levels
             ax.imshow(eps_data, extent=extent, norm=norm, **filter_dict(eps_parameters, ax.imshow))
+        # Continuous color plotting
         else:
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
