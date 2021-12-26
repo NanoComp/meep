@@ -402,7 +402,7 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
 
     if mp.am_master():
         if eps_parameters['contour']:
-            ax.contour(eps_data, 0, colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
+            ax.contour(eps_data, 0, levels=np.unique(eps_data), colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
         else:
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
