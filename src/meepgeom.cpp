@@ -2880,148 +2880,22 @@ ptrdiff_t get_idx_from_ivec(meep::ndim dim, meep::ivec c1, ptrdiff_t *the_stride
   return idx;
 }
 
-void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum> *fields_a,
-                                std::complex<meep::realnum> *fields_f, size_t fields_shapes[12],
+void material_grids_addgradient(double *v, size_t ng, meep::dft_fields **fields_a, meep::dft_fields **fields_f,
                                 double *frequencies, double scalegrad, meep::grid_volume &gv,
                                 meep::volume &where, geom_epsilon *geps, double du) {
-
-// only loop over field components relevant to our simulation (in the proper order)
-#define FOR_MY_COMPONENTS(c1) FOR_ELECTRIC_COMPONENTS(c1) if (!coordinate_mismatch(gv.dim, component_direction(c1)))
-
-  /* poach some logic from loop_in_chunks
-  that ensures we loop over the same grid
-  points that the DFT points lie on. */
-  meep::ivec *is = new meep::ivec[3];
-  meep::ivec *ie = new meep::ivec[3];
-  int c_i = 0;
-  FOR_MY_COMPONENTS(cgrid) {
-    meep::vec yee_c(gv.yee_shift(meep::Centered) - gv.yee_shift(cgrid));
-    meep::ivec iyee_c(gv.iyee_shift(meep::Centered) - gv.iyee_shift(cgrid));
-    meep::volume wherec(where + yee_c);
-    is[c_i] = meep::ivec(meep::fields::vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
-    ie[c_i] = meep::ivec(meep::fields::vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
-    c_i++;
-  }
-  //calculate the number of elements in an entire block (x,y,z) for each component
-  size_t nf = fields_shapes[0];
-  size_t stride_row[3] = {1,1,1}; //first entry is a dummy entry to simplify indexing
-  for (int i=0;i<3;i++) {
-    for (int j=1;j<4;j++){
-      stride_row[i] *= fields_shapes[4*i+j];
+  
+  
+  for (int i=0;i<3;i++){
+    meep::dft_chunk* current_chunk = fields_a[i]->chunks;
+    printf("chunk: %d\n",current_chunk);
+    int chunk=0;
+    while(current_chunk){
+      printf("proc %d forward comp %d chunk %d: %f\n",meep::my_rank(),i,chunk,current_chunk->maxomega());
+      current_chunk = current_chunk->next_in_chunk;
+      chunk++;
     }
   }
-  size_t c_start[3];
-  c_start[0] = 0;
-  c_start[1] = nf*stride_row[0];
-  c_start[2] = nf*(stride_row[0]+stride_row[1]);
 
-// fields dimensions are (components, nfreqs, x, y, z)
-#define GET_FIELDS(fields,comp,freq,idx) fields[c_start[comp] + freq*stride_row[comp] + idx]
-
-  meep::ivec start_ivec;
-  // loop over frequency
-  for (size_t f_i = 0; f_i < nf; ++f_i) {
-    int ci_adjoint = 0;
-    FOR_MY_COMPONENTS(adjoint_c) {
-      LOOP_OVER_IVECS(gv, is[ci_adjoint], ie[ci_adjoint], idx) {
-        size_t idx_fields = IVEC_LOOP_COUNTER;
-        meep::ivec ip = gv.iloc(adjoint_c,idx);
-        meep::vec p   = gv.loc(adjoint_c,idx);
-        std::complex<double> adj = GET_FIELDS(fields_a, ci_adjoint, f_i, idx_fields);
-        material_type md;
-        geps->get_material_pt(md, p);
-        if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
-        double cyl_scale;
-        int ci_forward = 0;
-        FOR_MY_COMPONENTS(forward_c) {
-          /* we need to calculate the bounds of
-          the forward fields (in space) so that we
-          can properly index into the fields array
-          later */
-          meep::ivec isf = is[ci_forward];
-          meep::ivec ief = ie[ci_forward];
-          // the actual starting index, as if we were running another LOOP_OVER_IVECS
-          ptrdiff_t idx0_f = (isf - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 + \
-                             (isf - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 + \
-                             (isf - (gv).little_corner()).yucky_val(2) / 2 * loop_s3;
-          start_ivec = gv.iloc(forward_c,idx0_f);
-          ptrdiff_t the_stride[5];
-          set_strides(gv.dim, the_stride, isf,ief);
-          /**************************************/
-          /*            Main Routine            */
-          /**************************************/
-          /********* compute -λᵀAᵤx *************/
-
-          /* trivial case, no interpolation/restriction needed        */
-          if (forward_c == adjoint_c) {
-            std::complex<double> fwd = GET_FIELDS(fields_f, ci_forward, f_i, idx_fields);
-            cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
-            material_grids_addgradient_point(
-                v+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
-          /* more complicated case requires interpolation/restriction */
-          } else {
-            /* we need to restrict the adjoint fields to
-            the two nodes of interest (which requires a factor
-            of 0.5 to scale), and interpolate the forward fields
-            to the same two nodes (which requires another factor of 0.5).
-            Then we perform our inner product at these nodes.
-            */
-            std::complex<double> fwd_avg, fwd1, fwd2, prod;
-            ptrdiff_t fwd1_idx, fwd2_idx;
-
-            //identify the first corner of the forward fields
-            meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
-
-            //identify the other three corners
-            meep::ivec unit_a  = unit_ivec(gv.dim,component_direction(adjoint_c));
-            meep::ivec unit_f  = unit_ivec(gv.dim,component_direction(forward_c));
-            meep::ivec fwd_pa  = (fwd_p + unit_a*2);
-            meep::ivec fwd_pf  = (fwd_p - unit_f*2);
-            meep::ivec fwd_paf = (fwd_p + unit_a*2 - unit_f*2);
-
-            //identify the two eps points
-            meep::ivec ieps1 = (fwd_p + fwd_pf) / 2;
-            meep::ivec ieps2 = (fwd_pa + fwd_paf) / 2;
-
-            //operate on the first eps node
-            fwd1_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_p);
-            fwd1 = 0.5 * meep::cdouble(GET_FIELDS(fields_f, ci_forward, f_i, fwd1_idx));
-            fwd2_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_pf);
-            fwd2 = 0.5 * meep::cdouble(GET_FIELDS(fields_f, ci_forward, f_i, fwd2_idx));
-            fwd_avg = fwd1 + fwd2;
-            meep::vec eps1 = gv[ieps1];
-            cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-            material_grids_addgradient_point(
-                v+ng*f_i, vec_to_vector3(eps1), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd_avg, 0.5*adj, frequencies[f_i], gv, du);
-
-            //operate on the second eps node
-            fwd1_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_pa);
-            fwd1 = 0.5 * meep::cdouble(GET_FIELDS(fields_f, ci_forward, f_i, fwd1_idx));
-            fwd2_idx = get_idx_from_ivec(gv.dim, start_ivec, the_stride, fwd_paf);
-            fwd2 = 0.5 * meep::cdouble(GET_FIELDS(fields_f, ci_forward, f_i, fwd2_idx));
-            fwd_avg = fwd1 + fwd2;
-            meep::vec eps2 = gv[ieps2];
-            cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
-            material_grids_addgradient_point(
-                v+ng*f_i, vec_to_vector3(eps2), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd_avg, 0.5*adj, frequencies[f_i], gv, du);
-          }
-          ci_forward++;
-        }
-        /********* compute λᵀbᵤ ***************/
-        /* not yet implemented/needed */
-        /**************************************/
-        /**************************************/
-      }
-      ci_adjoint++;
-    }
-  }
-#undef GET_FIELDS
-#undef FOR_MY_COMPONENTS
-  delete[] is;
-  delete[] ie;
 }
 
 

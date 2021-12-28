@@ -517,7 +517,7 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
-    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
+    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Dx, mp.Dy, mp.Dz, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
         sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 

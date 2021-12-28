@@ -2541,6 +2541,11 @@ class Simulation(object):
         for dft in self.dft_objects:
             if dft.swigobj is None:
                 dft.swigobj = dft.func(*dft.args)
+                if isinstance(dft,DftFields) and (dft.chunks) and (dft.chunks.persist):
+                    print("hack")
+                    dft.swigobj.thisown = 0
+                    dft.swigobj.chunks.thisown = 0 # correct for python ownership
+
 
     def add_dft_fields(self, *args, **kwargs):
         """
@@ -3832,7 +3837,7 @@ class Simulation(object):
         Remove all of the dft monitors from the simulation.
         """
         for m in self.dft_objects:
-            if isinstance(m,DftFields) and (not m.chunks.persist):
+            if isinstance(m,DftFields) and (m.chunks) and (not m.chunks.persist):
                 m.remove()
         self.dft_objects = []
 

@@ -845,7 +845,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 %inline %{
 void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
                    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies,
-                   meep_geom::geom_epsilon *geps, PyObject *fields_shapes, double fd_step) {
+                   meep_geom::geom_epsilon *geps, double fd_step) {
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -855,24 +855,30 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     npy_intp ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
     // clean the adjoint fields array
-    PyArrayObject *pao_fields_a = (PyArrayObject *)fields_a;
-    if (!PyArray_Check(pao_fields_a)) meep::abort("adjoint fields parameter must be numpy array.");
-    if (!PyArray_ISCARRAY(pao_fields_a)) meep::abort("Numpy adjoint fields array must be C-style contiguous.");
-    if (PyArray_NDIM(pao_fields_a) !=1) {meep::abort("Numpy adjoint fields array must have 1 dimension.");}
-    std::complex<meep::realnum> *fields_a_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_a);
+    if (!PyList_Check(fields_a)) meep::abort("adjoint fields parameter must be a list.");
+    if (PyList_Size(fields_a) !=3) {meep::abort("adjoint fields list must have a length of 3.");}
+    meep::dft_fields *adjoint_fields[3];
+    for (Py_ssize_t i=0;i<3;i++){
+        PyObject *swig_obj = NULL;
+        void *tmp_ptr = 0;
+        int tmp_res = 0;
+        swig_obj = PyObject_GetAttrString(PyList_GetItem(fields_a,i),"swigobj");
+        tmp_res = SWIG_ConvertPtr(swig_obj, &tmp_ptr, $descriptor(meep::dft_fields *), 0);
+        Py_XDECREF(swig_obj);
+        if(!SWIG_IsOK(tmp_res)) {
+            SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
+        }
+        adjoint_fields[i]  = reinterpret_cast<meep::dft_fields *>(tmp_ptr);
+        master_printf("a chunk: %d %zu\n",i,adjoint_fields[i]->chunks);
+    }
+        
 
     // clean the forward fields array
-    PyArrayObject *pao_fields_f = (PyArrayObject *)fields_f;
-    if (!PyArray_Check(pao_fields_f)) meep::abort("forward fields parameter must be numpy array.");
-    if (!PyArray_ISCARRAY(pao_fields_f)) meep::abort("Numpy forward fields array must be C-style contiguous.");
-    if (PyArray_NDIM(pao_fields_f) !=1) {meep::abort("Numpy forward fields array must have 1 dimension.");}
-    std::complex<meep::realnum> *fields_f_c = (std::complex<meep::realnum> *)PyArray_DATA(pao_fields_f);
-
-    // clean shapes array
-    PyArrayObject *pao_fields_shapes = (PyArrayObject *)fields_shapes;
-    if (!PyArray_Check(pao_fields_shapes)) meep::abort("fields shape parameter must be numpy array.");
-    if (!PyArray_ISCARRAY(pao_fields_shapes)) meep::abort("Numpy fields shape array must be C-style contiguous.");
-    size_t *fields_shapes_c = (size_t *)PyArray_DATA(pao_fields_shapes);
+    if (!PyList_Check(fields_f)) meep::abort("forward fields parameter must be a list.");
+    if (PyList_Size(fields_f) !=3) {meep::abort("forward fields list must have a length of 3.");}
+    meep::dft_fields *forward_fields[3];
+    for (Py_ssize_t i=0;i<3;i++)
+        forward_fields[i] = (meep::dft_fields *)PyObject_GetAttrString(PyList_GetItem(fields_f,i),"swigobj");
 
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
@@ -883,7 +889,7 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,ng,fields_a_c,fields_f_c,fields_shapes_c,frequencies_c,scalegrad,*grid_volume,*where,geps,fd_step);
+    meep_geom::material_grids_addgradient(grad_c,ng,adjoint_fields,forward_fields,frequencies_c,scalegrad,*grid_volume,*where,geps,fd_step);
 }
 %}
 
