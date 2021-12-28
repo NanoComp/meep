@@ -189,7 +189,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
         }
 
         if (f[ec][cmp] != f[dc][cmp])
-          STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, gvs_eh[ft][i].little_owned_corner(ec), gvs_eh[ft][i].big_corner(),
+          STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, gvs_eh[ft][i].little_owned_corner0(ec), gvs_eh[ft][i].big_corner(),
                            dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
                            s->chi1inv[ec][d_ec], dmp[dc_1][cmp] ? s->chi1inv[ec][d_1] : NULL,
                            dmp[dc_2][cmp] ? s->chi1inv[ec][d_2] : NULL, s_ec, s_1, s_2, s->chi2[ec],
