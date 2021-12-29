@@ -604,7 +604,11 @@ void structure::load(const char *filename, bool single_parallel_file) {
           }
           else {
             if (n != ntot) meep::abort("grid size mismatch %zd vs %zd in structure::load", n, ntot);
-            if (!chunks[i]->chi1inv[c][d]) chunks[i]->chi1inv[c][d] = new realnum[ntot];
+            if (chunks[i]->chi1inv[c][d]) {
+              delete[] chunks[i]->chi1inv[c][d];
+              chunks[i]->chi1inv[c][d] = NULL;
+            }
+            chunks[i]->chi1inv[c][d] = new realnum[ntot];
             my_ntot += ntot;
           }
         }
