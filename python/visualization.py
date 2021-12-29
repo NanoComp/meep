@@ -189,14 +189,19 @@ def get_2D_dimensions(sim, output_plane):
     elif sim.output_volume:
         plane_center, plane_size = mp.get_center_and_size(sim.output_volume)
     else:
-        plane_center, plane_size = (sim.geometry_center, sim.cell_size)
+        if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+            plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size) 
+        else:
+            plane_center, plane_size = (sim.geometry_center, sim.cell_size)
     plane_volume = Volume(center=plane_center,size=plane_size)
 
     if plane_size.x != 0 and plane_size.y != 0 and plane_size.z != 0:
         raise ValueError("Plane volume must be 2D (a plane).")
-
-    check_volume = Volume(center=sim.geometry_center, size=sim.cell_size)
-
+    if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+        center = sim.geometry_center+mp.Vector3(sim.cell_size.x/2)
+        check_volume = mp.Volume(center=center, size = sim.cell_size)
+    else:
+        check_volume = Volume(center=sim.geometry_center, size=sim.cell_size)
     vertices = intersect_volume_volume(check_volume, plane_volume)
 
     if len(vertices) == 0:
@@ -382,7 +387,10 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
         extent = [xmin, xmax, zmin, zmax]
-        xlabel = 'X'
+        if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+            xlabel = 'R'
+        else:
+            xlabel = "X"
         ylabel = 'Z'
         xtics = np.linspace(xmin, xmax, Nx)
         ytics = np.array([sim_center.y])
@@ -414,13 +422,13 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
     # consolidate plotting parameters
     boundary_parameters = default_boundary_parameters if boundary_parameters is None else dict(default_boundary_parameters, **boundary_parameters)
 
-    def get_boundary_volumes(thickness, direction, side):
+    def get_boundary_volumes(thickness, direction, side, cylindrical=False):
         from meep.simulation import Volume
 
         thickness = boundary.thickness
 
         # Get domain measurements
-        sim_center, sim_size = (sim.geometry_center, sim.cell_size)
+        sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
         xmin = sim_center.x - sim_size.x/2
         xmax = sim_center.x + sim_size.x/2
@@ -434,22 +442,22 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
         cell_z = sim.cell_size.z
 
         if direction == mp.X and side == mp.Low:
-            return Volume(center=Vector3(xmin+thickness/2,sim.geometry_center.y,sim.geometry_center.z),
+            return Volume(center=Vector3(xmin+thickness/2,sim_center.y,sim_center.z),
             size=Vector3(thickness,cell_y,cell_z))
         elif direction == mp.X and side == mp.High:
-            return Volume(center=Vector3(xmax-thickness/2,sim.geometry_center.y,sim.geometry_center.z),
+            return Volume(center=Vector3(xmax-thickness/2,sim_center.y,sim_center.z),
             size=Vector3(thickness,cell_y,cell_z))
         elif direction == mp.Y and side == mp.Low:
-            return Volume(center=Vector3(sim.geometry_center.x,ymin+thickness/2,sim.geometry_center.z),
+            return Volume(center=Vector3(sim_center.x,ymin+thickness/2,sim_center.z),
             size=Vector3(cell_x,thickness,cell_z))
         elif direction == mp.Y and side == mp.High:
-            return Volume(center=Vector3(sim.geometry_center.x,ymax-thickness/2,sim.geometry_center.z),
+            return Volume(center=Vector3(sim_center.x,ymax-thickness/2,sim_center.z),
             size=Vector3(cell_x,thickness,cell_z))
         elif direction == mp.Z and side == mp.Low:
-            return Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,zmin+thickness/2),
+            return Volume(center=Vector3(sim_center.x,sim_center.y,zmin+thickness/2),
             size=Vector3(cell_x,cell_y,thickness))
         elif direction == mp.Z and side == mp.High:
-            return Volume(center=Vector3(sim.geometry_center.x,sim.geometry_center.y,zmax-thickness/2),
+            return Volume(center=Vector3(sim_center.x,sim_center.y,zmax-thickness/2),
             size=Vector3(cell_x,cell_y,thickness))
         else:
             raise ValueError("Invalid boundary type")
@@ -460,6 +468,8 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
         if boundary.direction == mp.ALL and boundary.side == mp.ALL:
             if sim.dimensions == 1:
                 dims = [mp.X]
+            elif sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical:
+                dims = [mp.X, mp.Z]
             elif sim.dimensions == 2:
                 dims = [mp.X, mp.Y]
             elif sim.dimensions == 3:
@@ -467,15 +477,21 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
             else:
                 raise ValueError("Invalid simulation dimensions")
             for permutation in itertools.product(dims, [mp.Low, mp.High]):
+                if (permutation[0] == mp.X) and (permutation[1] == mp.Low):
+                    continue
                 vol = get_boundary_volumes(boundary.thickness,*permutation)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
         # two sides are the same
         elif boundary.side == mp.ALL:
             for side in [mp.Low, mp.High]:
+                if (boundary.direction == mp.X) and (side == mp.Low):
+                    continue
                 vol = get_boundary_volumes(boundary.thickness,boundary.direction,side)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
         # only one side
-        else:
+        else:                
+            if (boundary.direction == mp.X) and (boundary.side == mp.Low):
+                continue
             vol = get_boundary_volumes(boundary.thickness,boundary.direction,boundary.side)
             ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
     return ax
@@ -517,7 +533,7 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
-    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz]:
+    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
         sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
@@ -539,7 +555,10 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
         elif sim_size.y == 0:
             # Plot x on x axis, z on y axis (XZ plane)
             extent = [xmin, xmax, zmin, zmax]
-            xlabel = 'X'
+            if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+                xlabel = 'R'
+            else:
+                xlabel = "X"
             ylabel = 'Z'
         elif sim_size.z == 0:
             # Plot x on x axis, y on y axis (XY plane)
@@ -556,10 +575,10 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     # Either plot the field, or return the array
     if ax:
         if mp.am_master():
-            ax.imshow(np.rot90(fields), extent=extent, **filter_dict(field_parameters,ax.imshow))
+            ax.imshow(np.flipud(fields), extent=extent, **filter_dict(field_parameters,ax.imshow))
         return ax
     else:
-        return np.rot90(fields)
+        return np.flipud(fields)
     return ax
 
 def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
