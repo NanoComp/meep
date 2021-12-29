@@ -571,14 +571,15 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
 
 
     fields = field_parameters['post_process'](fields)
+    fields = np.flipud(fields) if ((sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical) else np.rot90(fields)
 
     # Either plot the field, or return the array
     if ax:
         if mp.am_master():
-            ax.imshow(np.flipud(fields), extent=extent, **filter_dict(field_parameters,ax.imshow))
+            ax.imshow(fields, extent=extent, **filter_dict(field_parameters,ax.imshow))
         return ax
     else:
-        return np.flipud(fields)
+        return fields
     return ax
 
 def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
