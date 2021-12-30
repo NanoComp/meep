@@ -181,7 +181,7 @@ class TestLoadDump(ApproxComparisonTestCase):
     def _load_dump_fields_2d(self, single_parallel_file=True):
         resolution = 50
         cell = mp.Vector3(5, 5)
-        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4), center=mp.Vector3(), component=mp.Ez)
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4, cutoff=0), center=mp.Vector3(), component=mp.Ez)
         one_by_one = mp.Vector3(1, 1, mp.inf)
         geometry = [mp.Block(material=mp.Medium(index=3.2), center=mp.Vector3(), size=one_by_one),
                     mp.Block(material=mp.Medium(epsilon=13), center=mp.Vector3(1), size=one_by_one)]
@@ -262,7 +262,7 @@ class TestLoadDump(ApproxComparisonTestCase):
     def _load_dump_fields_3d(self, single_parallel_file=True):
         resolution = 15
         cell = mp.Vector3(2.6, 2.2, 2.3)
-        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4), center=mp.Vector3(), component=mp.Hx)
+        sources = mp.Source(src=mp.GaussianSource(1, fwidth=0.4, cutoff=0), center=mp.Vector3(), component=mp.Hx)
         one_by_one_by_one = mp.Vector3(1, 1, 1)
         geometry = [mp.Block(material=mp.Medium(index=2.4), center=mp.Vector3(), size=one_by_one_by_one),
                     mp.Block(material=mp.Medium(epsilon=7.9), center=mp.Vector3(1), size=one_by_one_by_one)]

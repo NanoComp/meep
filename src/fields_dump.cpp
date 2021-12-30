@@ -184,16 +184,12 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
           size_t n = num_f[(chunk_i * NUM_FIELD_COMPONENTS + c) * 2 + d];
           realnum **f = field_ptr_getter(chunks[i], c, d);
           if (n == 0) {
-            delete[] * f;
+            delete[] *f;
             *f = NULL;
           } else {
             if (n != ntot)
               meep::abort("grid size mismatch %zd vs %zd in fields::load", n, ntot);
-            if (*f) {
-              delete[] * f;
-              *f = NULL;
-            }
-            *f = new realnum[ntot];
+            if (!(*f)) *f = new realnum[ntot];
             my_ntot += ntot;
           }
         }
