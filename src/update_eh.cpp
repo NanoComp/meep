@@ -164,7 +164,7 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
         direction dsigw = s->sigsize[dsigw0] > 1 ? dsigw0 : NO_DIRECTION;
 
         // lazily allocate any E/H fields that are needed (H==B initially)
-        if (i == 0 && f[ec][cmp] == f[dc][cmp] && !f[dc][cmp] &&
+        if (i == 0 && f[ec][cmp] == f[dc][cmp] &&
             (s->chi1inv[ec][d_ec] || have_f_minus_p || dsigw != NO_DIRECTION)) {
           f[ec][cmp] = new realnum[gv.ntot()];
           memcpy(f[ec][cmp], f[dc][cmp], gv.ntot() * sizeof(realnum));
