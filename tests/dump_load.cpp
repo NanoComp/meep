@@ -169,7 +169,6 @@ int test_periodic(double eps(const vec &), int splitting, const char *tmpdir) {
   double ttot = 17.0;
 
   grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
-  structure s1(gv, eps);
   structure s(gv, eps, no_pml(), identity(), splitting);
 
   std::string filename_prefix =
