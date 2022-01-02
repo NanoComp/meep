@@ -726,10 +726,6 @@ geom_epsilon::~geom_epsilon() {
   FOR_DIRECTIONS(d) FOR_SIDES(b) {
     if (cond[d][b].prof) delete[] cond[d][b].prof;
   }
-  if (default_material != NULL) {
-    material_free((material_type)default_material);
-    default_material = NULL;
-  }
 }
 
 void geom_epsilon::set_cond_profile(meep::direction dir, meep::boundary_side side, double L,

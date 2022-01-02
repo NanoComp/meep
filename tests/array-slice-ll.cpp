@@ -251,6 +251,10 @@ int main(int argc, char *argv[]) {
   for (int n = 0; n < no; n++) {
     geometric_object_destroy(objects[n]);
   }
+  if (default_material != NULL) {
+    meep_geom::material_free((meep_geom::material_type)default_material);
+    default_material = NULL;
+  }
 
   return 0;
 }
