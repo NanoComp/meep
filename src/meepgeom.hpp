@@ -253,6 +253,7 @@ vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
 void set_default_material(material_type _default_material);
+void unset_default_material(void);
 void epsilon_material_grid(material_data *md, double u);
 void epsilon_file_material(material_data *md, vector3 p);
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);
