@@ -43,6 +43,13 @@ void set_default_material(material_type _default_material) {
   }
 }
 
+void unset_default_material(void) {
+  if (default_material != NULL) {
+    material_free((material_type)default_material);
+    default_material = NULL;
+  }
+}
+
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2) {
   return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
           vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) && vector3_equal(s1.bias, s2.bias) &&
