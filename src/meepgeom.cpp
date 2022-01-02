@@ -43,6 +43,13 @@ void set_default_material(material_type _default_material) {
   }
 }
 
+void unset_default_material(void) {
+  if (default_material != NULL) {
+    material_free((material_type)default_material);
+    default_material = NULL;
+  }
+}
+
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2) {
   return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
           vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) && vector3_equal(s1.bias, s2.bias) &&
@@ -761,7 +768,8 @@ void geom_epsilon::set_volume(const meep::volume &v) {
   unset_volume();
 
   geom_box box = gv2box(v);
-  restricted_tree = create_geom_box_tree0(geometry, box);
+  if (!restricted_tree)
+    restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
 static void material_epsmu(meep::field_type ft, material_type material, symm_matrix *epsmu,
@@ -1918,8 +1926,8 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 /* create a geom_epsilon object that can persist
 if needed */
 geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g, vector3 center,
-                                 bool _ensure_periodicity, material_type _default_material,
-                                 material_type_list extra_materials) {
+                                bool _ensure_periodicity, material_type _default_material,
+                                material_type_list extra_materials) {
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
   geometry_center = center;
@@ -1980,17 +1988,17 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist, material_type_list extra_materials) {
   meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity,
-                                  _default_material, extra_materials);
+                                                               _default_material, extra_materials);
   set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
-                                 maxeval, alist);
+                                  maxeval, alist);
   delete geps;
 }
 
 /* from a previously created geom_epsilon object,
 set the materials as specified */
 void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
-                                 bool use_anisotropic_averaging,
-                                 double tol, int maxeval, absorber_list alist) {
+                                     bool use_anisotropic_averaging,
+                                     double tol, int maxeval, absorber_list alist) {
 
   // store for later use in gradient calculations
   geps->tol = tol;
@@ -2007,7 +2015,7 @@ void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
           mythunk.func = layer->pml_profile;
           mythunk.func_data = layer->pml_profile_data;
           geps->set_cond_profile(d, b, layer->thickness, gv.inva * 0.5, pml_profile_wrapper,
-                                (void *)&mythunk, layer->R_asymptotic);
+                                 (void *)&mythunk, layer->R_asymptotic);
         }
       }
     }
