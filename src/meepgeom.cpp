@@ -768,7 +768,7 @@ static void material_epsmu(meep::field_type ft, material_type material, symm_mat
                            symm_matrix *epsmu_inv) {
 
   material_data *md = material;
-  if (ft == meep::E_stuff) switch (md->which_subclass) {
+  if (ft == meep::E_stuff || ft == meep::D_stuff) switch (md->which_subclass) {
 
       case material_data::MEDIUM:
       case material_data::MATERIAL_FILE:
@@ -2671,11 +2671,11 @@ std::complex<double> get_material_gradient(
   geps->get_material_pt(md, r);
 
   int dir_idx = 0;
-  if (forward_c == meep::Ex || forward_c == meep::Er)
+  if (forward_c == meep::Dx || forward_c == meep::Dr)
     dir_idx = 0;
-  else if (forward_c == meep::Ey || forward_c == meep::Ep)
+  else if (forward_c == meep::Dy || forward_c == meep::Dp)
     dir_idx = 1;
-  else if (forward_c == meep::Ez)
+  else if (forward_c == meep::Dz)
     dir_idx = 2;
   else
     meep::abort("Invalid adjoint field component");
@@ -2880,23 +2880,116 @@ ptrdiff_t get_idx_from_ivec(meep::ndim dim, meep::ivec c1, ptrdiff_t *the_stride
   return idx;
 }
 
-void material_grids_addgradient(double *v, size_t ng, meep::dft_fields **fields_a, meep::dft_fields **fields_f,
+void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<meep::dft_fields *> fields_a, std::vector<meep::dft_fields *> fields_f,
                                 double *frequencies, double scalegrad, meep::grid_volume &gv,
                                 meep::volume &where, geom_epsilon *geps, double du) {
-  
-  
+  /* ------------------------------------------------------------ */
+  // initialize local gradient array
+  /* ------------------------------------------------------------ */
+  double *v_local = new double[ng*nf];
+  for (int i = 0; i < ng*nf; i++) {
+    v_local[i] = 0;
+  }
+
+  /* ------------------------------------------------------------ */
+  // store chunk info
+  /* ------------------------------------------------------------ */
+  std::vector<std::vector<meep::dft_chunk*>> adjoint_dft_chunks;
+  std::vector<std::vector<meep::dft_chunk*>> forward_dft_chunks;
   for (int i=0;i<3;i++){
-    meep::dft_chunk* current_chunk = fields_a[i]->chunks;
-    printf("chunk: %d\n",current_chunk);
-    int chunk=0;
-    while(current_chunk){
-      printf("proc %d forward comp %d chunk %d: %f\n",meep::my_rank(),i,chunk,current_chunk->maxomega());
-      current_chunk = current_chunk->next_in_chunk;
-      chunk++;
+    std::vector<meep::dft_chunk*> c_adjoint_dft_chunks;
+    std::vector<meep::dft_chunk*> c_forward_dft_chunks;
+    meep::dft_chunk *current_adjoint_chunk = fields_a[i]->chunks;
+    meep::dft_chunk *current_forward_chunk = fields_f[i]->chunks;
+    while(current_adjoint_chunk) {
+      c_adjoint_dft_chunks.push_back(current_adjoint_chunk);
+      current_adjoint_chunk = current_adjoint_chunk->next_in_dft;
+    }
+    while(current_forward_chunk) {
+      c_forward_dft_chunks.push_back(current_forward_chunk);
+      current_forward_chunk = current_forward_chunk->next_in_dft;
+    }
+    if (c_adjoint_dft_chunks.size() != c_forward_dft_chunks.size())
+      meep::abort("The number of adjoint chunks (%d) is not equal to the number of forward chunks (%d).\n",
+        c_adjoint_dft_chunks.size(),c_forward_dft_chunks.size());
+    adjoint_dft_chunks.push_back(c_adjoint_dft_chunks);
+    forward_dft_chunks.push_back(c_forward_dft_chunks);
+  }
+
+  /* ------------------------------------------------------------ */
+  // Begin looping
+  /* ------------------------------------------------------------ */
+
+  // loop over frequency
+  for (size_t f_i = 0; f_i < nf; ++f_i) {
+    // loop over adjoint components
+    for (int ci_adjoint=0; ci_adjoint<3; ci_adjoint++){
+      int num_chunks = adjoint_dft_chunks[ci_adjoint].size();
+      if (num_chunks == 0)
+        continue;
+      // loop over each chunk
+      for (int cur_chunk=0;cur_chunk<num_chunks;cur_chunk++){
+        meep::component adjoint_c = adjoint_dft_chunks[ci_adjoint][cur_chunk]->c;
+        master_printf("====================CHUNKS==================  %d\n",adjoint_dft_chunks[ci_adjoint][cur_chunk]->N);      
+        // loop over each point of interest
+        LOOP_OVER_IVECS(gv,adjoint_dft_chunks[ci_adjoint][cur_chunk]->is,adjoint_dft_chunks[ci_adjoint][cur_chunk]->ie,idx){
+          size_t idx_fields = IVEC_LOOP_COUNTER;
+          meep::ivec ip = gv.iloc(adjoint_c,idx);
+          meep::vec p   = gv.loc(adjoint_c,idx);
+          printf("idx_fields: %d idx: %d x: %f y: %f\n",idx_fields,idx,p.x(),p.y());
+          std::complex<meep::realnum> adj = adjoint_dft_chunks[ci_adjoint][cur_chunk]->dft[nf * idx_fields + f_i];
+          material_type md;
+          geps->get_material_pt(md, p);
+          if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
+          double cyl_scale;      
+          // loop over each forward component
+          for (int ci_forward=0; ci_forward<3; ci_forward++){
+            if (forward_dft_chunks[ci_forward].size() == 0)
+              continue;
+            meep::component forward_c = forward_dft_chunks[ci_forward][cur_chunk]->c;
+            /**************************************/
+            /*            Main Routine            */
+            /**************************************/
+            /********* compute -λᵀAᵤx *************/
+
+            /* trivial case, no interpolation/restriction needed        */
+            if (forward_c == adjoint_c) {
+              std::complex<double> fwd = forward_dft_chunks[ci_forward][cur_chunk]->dft[nf * idx_fields + f_i];
+              cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
+              material_grids_addgradient_point(
+                v_local+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
+                adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
+            }
+            /* more complicated case requires interpolation/restriction */
+            else {
+
+            }
+          }
+        }
+      }
     }
   }
 
-}
+  /* ------------------------------------------------------------ */
+  // Broadcast results
+  /* ------------------------------------------------------------ */
+  meep::sum_to_all(v_local, v, ng*nf);
+
+  /* ------------------------------------------------------------ */
+  // cleanup
+  /* ------------------------------------------------------------ */
+  // clear the array used for local sum to all
+  delete[] v_local;
+  
+  // clear all the dft data structures
+  for (int i=0;i<3;i++){
+    for (int ii=0;i<adjoint_dft_chunks[i].size();i++){
+      delete adjoint_dft_chunks[i][ii];
+      delete forward_dft_chunks[i][ii];
+    }
+  }
+
+} // material_grids_addgradient
 
 
 static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {

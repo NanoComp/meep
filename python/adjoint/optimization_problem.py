@@ -191,9 +191,6 @@ class OptimizationProblem(object):
         if len(self.f0) == 1:
             self.f0 = self.f0[0]
         
-        for k in range(3):
-            print("first forward ",k,self.forward_design_region_monitors[0][k].swigobj.chunks)
-        
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
 
@@ -248,9 +245,11 @@ class OptimizationProblem(object):
                 self.maximum_run_time
             ))
 
-            for k in range(3):
-                print("1.second forward ",k,self.forward_design_region_monitors[0][k].swigobj.chunks)
-                print("first adjoint ",k,self.adjoint_design_region_monitors[0][0][k].swigobj.chunks)
+            '''self.sim.visualize_chunks()
+            import matplotlib.pyplot as plt
+            if mp.am_master():
+                plt.show()
+            quit()'''
 
         # reset the m number
         if utils._check_if_cylindrical(self.sim):
@@ -264,9 +263,6 @@ class OptimizationProblem(object):
 
     def calculate_gradient(self):
         # Iterate through all design regions and calculate gradient
-        for k in range(3):
-            print("second forward ",k,self.forward_design_region_monitors[0][k].swigobj.chunks)
-            print("second adjoint ",k,self.adjoint_design_region_monitors[0][0][k].swigobj.chunks)
         self.gradient = [[
             dr.get_gradient(
                 self.sim,

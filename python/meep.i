@@ -843,9 +843,12 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 
 %inline %{
-void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObject *fields_f, 
+void _get_gradient(PyObject *grad, double scalegrad, 
+                    meep::dft_fields *fields_a_0, meep::dft_fields *fields_a_1, meep::dft_fields *fields_a_2,
+                    meep::dft_fields *fields_f_0, meep::dft_fields *fields_f_1, meep::dft_fields *fields_f_2,
                    meep::grid_volume *grid_volume, meep::volume *where, PyObject *frequencies,
                    meep_geom::geom_epsilon *geps, double fd_step) {
+    
     // clean the gradient array
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -854,32 +857,24 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     double *grad_c = (double *)PyArray_DATA(pao_grad);
     npy_intp ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
-    // clean the adjoint fields array
-    if (!PyList_Check(fields_a)) meep::abort("adjoint fields parameter must be a list.");
-    if (PyList_Size(fields_a) !=3) {meep::abort("adjoint fields list must have a length of 3.");}
-    meep::dft_fields *adjoint_fields[3];
+    // clean the adjoint fields object
+    //if (!PyList_Check(fields_a)) meep::abort("adjoint fields parameter must be a list.");
+    //if (PyList_Size(fields_a) !=3) {meep::abort("adjoint fields list must have a length of 3.");}
+    std::vector<meep::dft_fields *> adjoint_fields = {fields_a_0,fields_a_1,fields_a_2};
+    /*
     for (Py_ssize_t i=0;i<3;i++){
-        PyObject *swig_obj = NULL;
-        void *tmp_ptr = 0;
-        int tmp_res = 0;
-        swig_obj = PyObject_GetAttrString(PyList_GetItem(fields_a,i),"swigobj");
-        tmp_res = SWIG_ConvertPtr(swig_obj, &tmp_ptr, $descriptor(meep::dft_fields *), 0);
-        Py_XDECREF(swig_obj);
-        if(!SWIG_IsOK(tmp_res)) {
-            SWIG_exception_fail(SWIG_ArgError(tmp_res), "Couldn't convert Python object to meep::src_time");
-        }
-        adjoint_fields[i]  = reinterpret_cast<meep::dft_fields *>(tmp_ptr);
-        master_printf("a chunk: %d %zu\n",i,adjoint_fields[i]->chunks);
-    }
-        
+        adjoint_fields.push_back((meep::dft_fields *)PyObject_GetAttrString(PyList_GetItem(fields_a,i),"swigobj"));
+    }  
+    */ 
 
-    // clean the forward fields array
-    if (!PyList_Check(fields_f)) meep::abort("forward fields parameter must be a list.");
-    if (PyList_Size(fields_f) !=3) {meep::abort("forward fields list must have a length of 3.");}
-    meep::dft_fields *forward_fields[3];
+    // clean the forward fields object
+    //if (!PyList_Check(fields_f)) meep::abort("forward fields parameter must be a list.");
+    //if (PyList_Size(fields_f) !=3) {meep::abort("forward fields list must have a length of 3.");}
+    std::vector<meep::dft_fields *> forward_fields = {fields_f_0,fields_f_1,fields_f_2};
+    /*
     for (Py_ssize_t i=0;i<3;i++)
-        forward_fields[i] = (meep::dft_fields *)PyObject_GetAttrString(PyList_GetItem(fields_f,i),"swigobj");
-
+        forward_fields.push_back((meep::dft_fields *)PyObject_GetAttrString(PyList_GetItem(fields_f,i),"swigobj"));
+    */
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
     if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
@@ -889,7 +884,8 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     if (PyArray_DIMS(pao_grad)[0] != nf) meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",PyArray_DIMS(pao_grad)[0],nf);
 
     // calculate the gradient
-    meep_geom::material_grids_addgradient(grad_c,ng,adjoint_fields,forward_fields,frequencies_c,scalegrad,*grid_volume,*where,geps,fd_step);
+    meep_geom::material_grids_addgradient(grad_c,ng,nf,adjoint_fields,forward_fields,frequencies_c,scalegrad,*grid_volume,*where,geps,fd_step);
+    
 }
 %}
 

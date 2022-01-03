@@ -2541,10 +2541,6 @@ class Simulation(object):
         for dft in self.dft_objects:
             if dft.swigobj is None:
                 dft.swigobj = dft.func(*dft.args)
-                if isinstance(dft,DftFields) and (dft.chunks) and (dft.chunks.persist):
-                    print("hack")
-                    dft.swigobj.thisown = 0
-                    dft.swigobj.chunks.thisown = 0 # correct for python ownership
 
 
     def add_dft_fields(self, *args, **kwargs):

@@ -50,11 +50,10 @@ class DesignRegion(object):
         scalegrad = 1
         grad = onp.zeros((num_freqs, self.num_design_params))  # preallocate
         vol = sim._fit_volume_to_simulation(self.volume)
-        for k in range(3):
-            print("adjoint ",k,fields_a[k].swigobj.chunks)
-            print("forward ",k,fields_f[k].swigobj.chunks)
         # compute the gradient
-        mp._get_gradient(grad,scalegrad,fields_a,fields_f,
+        mp._get_gradient(grad,scalegrad,
+                            fields_a[0].swigobj,fields_a[1].swigobj,fields_a[2].swigobj,
+                            fields_f[0].swigobj,fields_f[1].swigobj,fields_f[2].swigobj,
                          sim.gv,vol.swigobj,onp.array(frequencies),
                          sim.geps,finite_difference_step)
         return onp.squeeze(grad).T
