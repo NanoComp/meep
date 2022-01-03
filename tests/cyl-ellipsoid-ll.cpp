@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
   geometric_object objects[2];
   vector3 center = {0.0, 0.0, 0.0};
   double radius = 3.0;
-  double height = 1.0e20;
+  double height = meep_geom::ENORMOUS;
   vector3 xhat = {1.0, 0.0, 0.0};
   vector3 yhat = {0.0, 1.0, 0.0};
   vector3 zhat = {0.0, 0.0, 1.0};
