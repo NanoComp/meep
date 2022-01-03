@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   gv.center_origin();
 
   // (set! symmetries (list (make mirror-sym (direction Y))))
-  symmetry sym=mirror(Y, gv);
+  symmetry sym = mirror(Y, gv);
 
   // (set! pml-layers (list (make pml (thickness dpml))))
   // ; exploit the mirror symmetry in structure+source:
@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
                   imag(amp[nb]), err[nb]);
 
   // test comparison with expected values
+  double err_tol = 1.0e-5;
   int ref_bands = 4;
   double ref_freq_re[4] = {1.1807e-01, 1.4470e-01, 1.4715e-01, 1.7525e-01};
   double ref_freq_im[4] = {-7.5657e-04, -8.9843e-04, -2.2172e-04, -5.0267e-05};
@@ -141,9 +142,9 @@ int main(int argc, char *argv[]) {
                                      std::complex<double>(-1.98e-03,-1.43e-02)};
   if (bands != ref_bands) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
   for (int nb = 0; nb < bands; nb++)
-    if (fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
-        fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
-        abs(amp[nb] - ref_amp[nb]) > 1.0e-2 * abs(ref_amp[nb]))
+    if ((fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
+         fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
+         abs(amp[nb] - ref_amp[nb]) > 1.0e-2 * abs(ref_amp[nb])) && (err[nb] < err_tol))
       meep::abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= "
                   "{%e,%e,%e,%e}\n",
                   nb, freq_re[nb], freq_im[nb], real(amp[nb]), imag(amp[nb]), ref_freq_re[nb],
