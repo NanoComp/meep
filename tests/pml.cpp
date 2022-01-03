@@ -210,7 +210,7 @@ int check_pml2d(double eps(const vec &), component c, double conductivity, bool 
 int check_pmlcyl(double eps(const vec &)) {
   double freq = 1.0, dpml = 1.0;
   complex<double> ft = 0.0, ft2 = 0.0;
-  double prev_refl_const = 0.0, refl_const = 0.0;
+  double refl_const = 0.0;
   double sr = 5.0 + dpml, sz = 1.0 + 2 * dpml;
   double sr2 = 5.0 + dpml * 2, sz2 = 1.0 + 2 * dpml * 2;
   vec fpt = veccyl(sr - dpml - 0.1, 0);
@@ -239,7 +239,6 @@ int check_pmlcyl(double eps(const vec &)) {
     }
     refl_const = pow(abs(ft - ft2), 2.0) / pow(abs(ft2), 2.0);
     master_printf("reflcyl:, %g, %g\n", res, refl_const);
-    prev_refl_const = refl_const;
   }
   master_printf("passed cylindrical PML check.\n");
   return 0;
