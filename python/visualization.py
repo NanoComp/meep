@@ -620,7 +620,7 @@ def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
                            labels=labels, monitor_parameters=monitor_parameters)
 
     # Plot fields
-    if fields:
+    if fields is not None:
         ax = plot_fields(sim, ax, fields, output_plane=output_plane,
                          field_parameters=field_parameters)
 
