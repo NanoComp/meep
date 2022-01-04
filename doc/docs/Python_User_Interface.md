@@ -4395,10 +4395,9 @@ class MaterialGrid(object):
 
 <div class="class_docstring" markdown="1">
 
-This class is used to specify materials interpolated from discrete points on a rectilinear grid.
-A class object is passed as the `material` argument of a [`Block`](#block) geometric object or
-the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
-[material function](#medium)).
+This class is used to specify materials on a rectilinear grid. A class object is passed
+as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
+argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
 
 </div>
 
@@ -4426,18 +4425,19 @@ def __init__(self,
 Creates a `MaterialGrid` object.
 
 The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
-is defined on discrete points of a rectilinear grid by the NumPy array `weights` of size `grid_size`
-(a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
-depending on the `size` property of the `Block` object as shown in the following example for a 2d
-`MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
-$z$ direction. The grid points are defined at the corners of the voxels.
+is defined on a rectilinear grid by the NumPy array `weights` of size `grid_size` (a 3-tuple or
+`Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform depending
+on the `size` property of the `Block` object as shown in the following example for a 2d `MaterialGrid`
+with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the $z$ direction.
+The grid points are defined at the corners of the voxels.
 
 ![](images/material_grid.png)
 
 Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
+The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
 Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ or $\mu$
-and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
+and (2) `LorentzianSusceptibility` (only the `sigma` parameter is interpolated). `medium1` and
+`medium2` must both be the same type. The materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
 from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
 
 For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
