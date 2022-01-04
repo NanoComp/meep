@@ -1581,6 +1581,7 @@ private:
   double dft_norm2() const;
   double dft_maxfreq() const;
   int max_decimation() const;
+  void clear_dft_monitors();
 
   void changing_structure();
 };
@@ -2011,6 +2012,7 @@ public:
   double dft_norm();
   double dft_maxfreq() const;
   int max_decimation() const;
+  void clear_dft_monitors();
 
   dft_flux add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
                         bool use_symmetry = true, bool centered_grid = true,

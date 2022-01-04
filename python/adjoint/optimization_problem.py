@@ -227,7 +227,6 @@ class OptimizationProblem(object):
             # Reset the fields
             self.sim.restart_fields()
             self.sim.clear_dft_monitors()
-            #self.sim.reset_meep()
 
             # Update the sources
             self.sim.change_sources(self.adjoint_sources[ar])
@@ -244,12 +243,6 @@ class OptimizationProblem(object):
                 self.minimum_run_time,
                 self.maximum_run_time
             ))
-
-            '''self.sim.visualize_chunks()
-            import matplotlib.pyplot as plt
-            if mp.am_master():
-                plt.show()
-            quit()'''
 
         # reset the m number
         if utils._check_if_cylindrical(self.sim):

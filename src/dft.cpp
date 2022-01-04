@@ -1379,4 +1379,23 @@ void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux 
   get_overlap(mode1_data, mode2_data, flux, 0, overlaps);
 }
 
+/* deregister all of the remaining dft monitors
+from the fields object. Note that this does not
+delete the underlying dft_chunks! (useful for 
+adjoint calculations, where we want to keep
+the chunk data around) */
+void fields::clear_dft_monitors() {
+for (int i = 0; i < num_chunks; i++)
+  if (chunks[i]->is_mine() && chunks[i]->dft_chunks) chunks[i]->clear_dft_monitors();
+}
+
+void fields_chunk::clear_dft_monitors() {
+  dft_chunk *cur, *next;
+  do {
+    next = dft_chunks->next_in_chunk;
+    dft_chunks = NULL;
+  } while(next);
+}
+
+
 } // namespace meep

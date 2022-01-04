@@ -2892,7 +2892,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
   }
 
   /* ------------------------------------------------------------ */
-  // store chunk info
+  // store chunk info in vectors for simplicity
   /* ------------------------------------------------------------ */
   std::vector<std::vector<meep::dft_chunk*>> adjoint_dft_chunks;
   std::vector<std::vector<meep::dft_chunk*>> forward_dft_chunks;
@@ -2922,39 +2922,44 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
   // loop over frequency
   for (size_t f_i = 0; f_i < nf; ++f_i) {
+    
     // loop over adjoint components
     for (int ci_adjoint=0; ci_adjoint<3; ci_adjoint++){
       int num_chunks = adjoint_dft_chunks[ci_adjoint].size();
-      if (num_chunks == 0)
-        continue;
+      if (num_chunks == 0) continue;
+      
       // loop over each chunk
       for (int cur_chunk=0;cur_chunk<num_chunks;cur_chunk++){
-        meep::component adjoint_c = adjoint_dft_chunks[ci_adjoint][cur_chunk]->c;
-        master_printf("====================CHUNKS==================  %d\n",adjoint_dft_chunks[ci_adjoint][cur_chunk]->N);      
+        meep::dft_chunk* adj_chunk = adjoint_dft_chunks[ci_adjoint][cur_chunk];
+        meep::component adjoint_c = adj_chunk->c;
+              
         // loop over each point of interest
-        LOOP_OVER_IVECS(gv,adjoint_dft_chunks[ci_adjoint][cur_chunk]->is,adjoint_dft_chunks[ci_adjoint][cur_chunk]->ie,idx){
-          size_t idx_fields = IVEC_LOOP_COUNTER;
+        LOOP_OVER_IVECS(gv,adj_chunk->is,adj_chunk->ie,idx){
+          size_t idx_fields = IVEC_LOOP_COUNTER;          
           meep::ivec ip = gv.iloc(adjoint_c,idx);
           meep::vec p   = gv.loc(adjoint_c,idx);
-          printf("idx_fields: %d idx: %d x: %f y: %f\n",idx_fields,idx,p.x(),p.y());
-          std::complex<meep::realnum> adj = adjoint_dft_chunks[ci_adjoint][cur_chunk]->dft[nf * idx_fields + f_i];
+          std::complex<meep::realnum> adj = adj_chunk->dft[nf*idx_fields+f_i];
           material_type md;
           geps->get_material_pt(md, p);
           if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
           double cyl_scale;      
+          
           // loop over each forward component
           for (int ci_forward=0; ci_forward<3; ci_forward++){
             if (forward_dft_chunks[ci_forward].size() == 0)
               continue;
-            meep::component forward_c = forward_dft_chunks[ci_forward][cur_chunk]->c;
+            meep::dft_chunk* fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
+            meep::component forward_c = fwd_chunk->c;
+            
             /**************************************/
             /*            Main Routine            */
             /**************************************/
+            
             /********* compute -λᵀAᵤx *************/
 
             /* trivial case, no interpolation/restriction needed        */
             if (forward_c == adjoint_c) {
-              std::complex<double> fwd = forward_dft_chunks[ci_forward][cur_chunk]->dft[nf * idx_fields + f_i];
+              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf*idx_fields+f_i];
               cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
               material_grids_addgradient_point(
                 v_local+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,

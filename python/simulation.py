@@ -3833,8 +3833,10 @@ class Simulation(object):
         Remove all of the dft monitors from the simulation.
         """
         for m in self.dft_objects:
-            if isinstance(m,DftFields) and (m.chunks) and (not m.chunks.persist):
+            if not (isinstance(m,DftFields) and (m.chunks) and (m.chunks.persist)):
                 m.remove()
+        self.fields.clear_dft_monitors()
+
         self.dft_objects = []
 
     def run(self, *step_funcs, **kwargs):
