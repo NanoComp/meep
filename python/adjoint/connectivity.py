@@ -72,7 +72,10 @@ class ConnectivityConstraint(object):
         damping = self.k0*self.alpha**2*diags(1-rho_vector[:-self.nx*self.ny]) + diags([self.alpha0**2], shape=(self.m, self.m))
         self.A = eq + damping
         self.damping = damping
-        self.T, sinfo = self.solver(csr_matrix(self.A), rhs)
+        if self.solver == spsolve:
+            self.T = self.solver(csr_matrix(self.A), rhs)
+        else:
+            self.T, sinfo = self.solver(csr_matrix(self.A), rhs)
         #exclude last row of rho and calculate weighted average of temperature
         self.rho_vec = rho_vector[:-self.nx*self.ny]
 
@@ -83,7 +86,10 @@ class ConnectivityConstraint(object):
     def adjoint(self):
         T_p1 = -(self.T-1) ** (self.p-1)
         dg_dT = self.Td**(1-self.p) * (T_p1*self.rho_vec)/sum(self.rho_vec)
-        return self.solver(csr_matrix(self.A.transpose()), dg_dT)
+        if self.solver == spsolve:
+            return self.solver(csr_matrix(self.A.transpose()), dg_dT)
+        aT, _ = self.solver(csr_matrix(self.A.transpose()), dg_dT)
+        return aT
 
     def calculate_grad(self):
         dg_dp = np.zeros(self.n)
@@ -109,7 +115,7 @@ class ConnectivityConstraint(object):
         dAz =  (1-self.zeta)*self.k0*self.dz * drhoz.multiply(gzTz)
         d_damping = self.k0*self.alpha**2*diags(-self.T, shape=(self.m, self.n))
 
-        self.grad = dg_dp + self.adjoint().reshape(1, -1) * csr_matrix( - dAz - dAx - dAy - d_damping)
+        self.grad = dg_dp + self.adjoint().reshape(1, -1) * csr_matrix(dAz + dAx + dAy + d_damping)
         return self.grad[0]
 
     def __call__(self, rho_vector):
