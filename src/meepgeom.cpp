@@ -2947,7 +2947,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
               to the same two nodes (which requires another factor of 0.5).
               Then we perform our inner product at these nodes.
               */
-              std::complex<double> fwd_avg, fwd1, fwd2;
+              std::complex<meep::realnum> fwd_avg, fwd1, fwd2;
               ptrdiff_t fwd1_idx, fwd2_idx;
 
               //identify the first corner of the forward fields
@@ -2965,9 +2965,9 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
               //operate on the first eps node
               fwd1_idx = gv_fwd.index(forward_c,fwd_p);
-              fwd1 = 0.5 * fwd_chunk->dft[nf*fwd1_idx+f_i];
+              fwd1 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
               fwd2_idx = gv_fwd.index(forward_c,fwd_pf);
-              fwd2 = 0.5 * fwd_chunk->dft[nf*fwd2_idx+f_i];
+              fwd2 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i];
               fwd_avg = fwd1 + fwd2;
               meep::vec eps1 = gv[ieps1];
               cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
@@ -2977,9 +2977,9 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
               
               //operate on the second eps node
               fwd1_idx = gv_fwd.index(forward_c,fwd_pa);
-              fwd1 = 0.5 * fwd_chunk->dft[nf*fwd1_idx+f_i];
+              fwd1 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
               fwd2_idx = gv_fwd.index(forward_c,fwd_paf);
-              fwd2 = 0.5 * fwd_chunk->dft[nf*fwd2_idx+f_i];
+              fwd2 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i];
               fwd_avg = fwd1 + fwd2;
               meep::vec eps2 = gv[ieps2];
               cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
