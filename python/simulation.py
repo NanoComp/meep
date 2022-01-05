@@ -2573,18 +2573,19 @@ class Simulation(object):
         yee_grid = kwargs.get('yee_grid', False)
         decimation_factor = kwargs.get('decimation_factor', 0)
         persist = kwargs.get('persist', False)
+        expand = kwargs.get('expand', False)
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
         use_centered_grid = not yee_grid
         dftf = DftFields(self._add_dft_fields, [
             components, where, center_v3, size_v3, freq, use_centered_grid,
-            decimation_factor,persist
+            decimation_factor,persist,expand
         ])
         self.dft_objects.append(dftf)
         return dftf
 
     def _add_dft_fields(self, components, where, center, size, freq,
-                        use_centered_grid, decimation_factor, persist):
+                        use_centered_grid, decimation_factor, persist, expand):
         if self.fields is None:
             self.init_sim()
         try:
@@ -2592,7 +2593,7 @@ class Simulation(object):
         except ValueError:
             where = self.fields.total_volume()
         return self.fields.add_dft_fields(components, where, freq,
-                                          use_centered_grid, decimation_factor, persist)
+                                          use_centered_grid, decimation_factor, persist, expand)
 
     def output_dft(self, dft_fields, fname):
         """

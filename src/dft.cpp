@@ -52,6 +52,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   dft_chunk *dft_chunks;
   int decimation_factor;
   bool persist;
+  bool expand;
 };
 
 dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_,
@@ -72,6 +73,19 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   dV1 = dV1_;
 
   persist = data->persist;
+
+  /* for adjoint calculations, we want to pad
+  (or expand) the dimensions of the dft region
+  to account for boundary effects. We will pad
+  by 1 pixel in each dimension, while ensuring
+  we don't step outside of the chunk loop itself
+  */
+  if(data->expand){
+    is_old = is_;
+    ie_old = ie_;
+    is = max(is-one_ivec(fc->gv.dim)*2,fc->gv.little_corner());
+    ie = min(ie+one_ivec(fc->gv.dim)*2,fc->gv.big_corner());
+  }
 
   c = c_;
 
@@ -162,7 +176,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
                            complex<double> extra_weight, bool use_centered_grid,
-                           int vc, int decimation_factor, bool persist) {
+                           int vc, int decimation_factor, bool persist, bool expand) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -176,6 +190,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
 
   dft_chunk_data data;
   data.persist = persist;
+  data.expand = expand;
   data.c = c;
   data.vc = vc;
 
@@ -215,13 +230,13 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
 }
 
 dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> &freq,
-                           bool include_dV_and_interp_weights, bool persist) {
+                           bool include_dV_and_interp_weights, bool persist, bool expand) {
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) meep::abort("derived_component invalid for dft");
     complex<double> stored_weight = where->weight;
     chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
-                     stored_weight, chunks, persist);
+                     stored_weight, chunks, persist, expand);
     where = where->next;
   }
   return chunks;
@@ -846,7 +861,7 @@ void dft_fields::remove() {
 
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
                                   const double *freq, size_t Nfreq, bool use_centered_grid,
-                                  int decimation_factor, bool persist) {
+                                  int decimation_factor, bool persist, bool expand) {
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
@@ -855,7 +870,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
   for (int nc = 0; nc < num_components; nc++)
     chunks = add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights,
                      stored_weight, chunks, sqrt_dV_and_interp_weights, extra_weight,
-                     use_centered_grid, 0, decimation_factor, persist);
+                     use_centered_grid, 0, decimation_factor, persist, expand);
 
   return dft_fields(chunks, freq, Nfreq, where);
 }
@@ -1386,15 +1401,7 @@ adjoint calculations, where we want to keep
 the chunk data around) */
 void fields::clear_dft_monitors() {
 for (int i = 0; i < num_chunks; i++)
-  if (chunks[i]->is_mine() && chunks[i]->dft_chunks) chunks[i]->clear_dft_monitors();
-}
-
-void fields_chunk::clear_dft_monitors() {
-  dft_chunk *cur, *next;
-  do {
-    next = dft_chunks->next_in_chunk;
-    dft_chunks = NULL;
-  } while(next);
+  if (chunks[i]->is_mine() && chunks[i]->dft_chunks) chunks[i]->dft_chunks = NULL;
 }
 
 

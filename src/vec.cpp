@@ -1644,13 +1644,14 @@ grid_volume grid_volume::subvolume(ivec is, ivec ie) {
 
 void grid_volume::init_subvolume(ivec is, ivec ie) {
   ivec origin(dim, 0);
+  for (int i=0;i<3;i++) num[i] = 0;
   LOOP_OVER_DIRECTIONS(dim, d) {
-    num[(int)d] = (ie - is).in_direction(d) / 2;
+    num[(int)d] = (ie - is).in_direction(d)/2;
     origin.set_direction(d, is.in_direction(d));
   }
   num_changed();
-  center_origin();
-  shift_origin(origin);
+  //center_origin();
+  set_origin(origin);
 }
 
 } // namespace meep

@@ -1190,7 +1190,7 @@ public:
 
   // parameters passed from field_integrate:
   fields_chunk *fc;
-  ivec is, ie;
+  ivec is, ie, is_old, ie_old;
   vec s0, s1, e0, e1;
   double dV0, dV1;
   bool empty_dim[5];          // which directions correspond to empty dimensions in original volume
@@ -1581,7 +1581,6 @@ private:
   double dft_norm2() const;
   double dft_maxfreq() const;
   int max_decimation() const;
-  void clear_dft_monitors();
 
   void changing_structure();
 };
@@ -1974,26 +1973,26 @@ public:
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0, int decimation_factor = 0, bool persist = false) {
+                     int vc = 0, int decimation_factor = 0, bool persist = false, bool expand = false) {
     return add_dft(c, where, linspace(freq_min, freq_max, Nfreq), include_dV_and_interp_weights,
                    stored_weight, chunk_next, sqrt_dV_and_interp_weights, extra_weight,
-                   use_centered_grid, vc, decimation_factor, persist);
+                   use_centered_grid, vc, decimation_factor, persist, expand);
   }
   dft_chunk *add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
                      bool include_dV_and_interp_weights = true,
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0, int decimation_factor = 0, bool persist = false);
+                     int vc = 0, int decimation_factor = 0, bool persist = false, bool expand = false);
   dft_chunk *add_dft(component c, const volume &where, const std::vector<double>& freq,
                      bool include_dV_and_interp_weights = true,
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
-                     int vc = 0, int decimation_factor = 0, bool persist = false) {
+                     int vc = 0, int decimation_factor = 0, bool persist = false, bool expand = false) {
     return add_dft(c, where, freq.data(), freq.size(), include_dV_and_interp_weights, stored_weight,
                    chunk_next, sqrt_dV_and_interp_weights, extra_weight, use_centered_grid, vc,
-                   decimation_factor, persist);
+                   decimation_factor, persist, expand);
   }
   dft_chunk *add_dft_pt(component c, const vec &where, double freq_min, double freq_max,
                         int Nfreq) {
@@ -2007,7 +2006,7 @@ public:
     return add_dft(where, linspace(freq_min, freq_max, Nfreq), include_dV, persist);
   }
   dft_chunk *add_dft(const volume_list *where, const std::vector<double> &freq,
-                     bool include_dV = true, bool persist = false);
+                     bool include_dV = true, bool persist = false, bool expand = false);
   void update_dfts();
   double dft_norm();
   double dft_maxfreq() const;
@@ -2065,19 +2064,19 @@ public:
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             double freq_min, double freq_max, int Nfreq,
-                            bool use_centered_grid = true, int decimation_factor = 0, bool persist = false) {
+                            bool use_centered_grid = true, int decimation_factor = 0, bool persist = false, bool expand=false) {
     return add_dft_fields(components, num_components, where, linspace(freq_min, freq_max, Nfreq),
-                          use_centered_grid, decimation_factor, persist);
+                          use_centered_grid, decimation_factor, persist, expand);
   }
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             const std::vector<double> &freq, bool use_centered_grid = true,
-                            int decimation_factor = 0, bool persist = false) {
+                            int decimation_factor = 0, bool persist = false, bool expand=false) {
     return add_dft_fields(components, num_components, where, freq.data(), freq.size(),
-                          use_centered_grid, decimation_factor, persist);
+                          use_centered_grid, decimation_factor, persist, expand);
   }
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             const double *freq, size_t Nfreq, bool use_centered_grid = true,
-                            int decimation_factor = 0, bool persist = false);
+                            int decimation_factor = 0, bool persist = false, bool expand=false);
 
   /********************************************************/
   /* process_dft_component is an intermediate-level       */

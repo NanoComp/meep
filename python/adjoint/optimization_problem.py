@@ -167,7 +167,7 @@ class OptimizationProblem(object):
 
         # register design region
         self.forward_design_region_monitors = utils.install_design_region_monitors(
-            self.sim, self.design_regions, self.frequencies, self.decimation_factor, True
+            self.sim, self.design_regions, self.frequencies, self.decimation_factor
         )
 
     def forward_run(self):
@@ -233,7 +233,7 @@ class OptimizationProblem(object):
 
             # register design dft fields
             self.adjoint_design_region_monitors.append(utils.install_design_region_monitors(
-            self.sim, self.design_regions, self.frequencies, self.decimation_factor, True
+            self.sim, self.design_regions, self.frequencies, self.decimation_factor
             ))
             self.sim._evaluate_dft_objects()
 
