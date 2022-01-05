@@ -552,9 +552,10 @@ class MaterialGrid(object):
 
         Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
         The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
-        Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ or $\\mu$
-        and (2) `LorentzianSusceptibility` (only the `sigma` parameter is interpolated). `medium1` and
-        `medium2` must both be the same type. The materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
+        Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ (`epsilon_diag` and
+        `epsilon_offdiag` parameters are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and
+        `sigma_offdiag` parameters are interpolated). `medium1` and `medium2` must both be the same type.
+        The materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
         from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
 
         For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
@@ -572,9 +573,9 @@ class MaterialGrid(object):
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
         for level-set functions.
 
-        A nonzero damping term creates an artificial conductivity σ = u(1-u)*damping, which acts as
-        dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
-        damping should be proportional to 2π times the typical frequency of the problem.
+        A nonzero `damping` term creates an artificial conductivity $\\sigma = u(1-u)*$`damping`, which acts as
+        dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
+        `damping` should be proportional to $2\\pi$ times the typical frequency of the problem.
 
         It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
         grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a

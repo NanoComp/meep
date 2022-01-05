@@ -40,7 +40,7 @@ source = [mp.Source(src,component=mp.Er,
                     size=source_size)]
 
 ## random design region
-p = rng.rand(Nr*Nz)
+p = 0.5*rng.rand(Nr*Nz)
 ## random epsilon perturbation for design region
 deps = 1e-5
 dp = deps*rng.rand(Nr*Nz)
