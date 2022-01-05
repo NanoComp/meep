@@ -36,7 +36,7 @@ Ny = int(design_region_resolution*design_region_size.y) + 1
 rng = np.random.RandomState(9861548)
 
 ## random design region
-p = rng.rand(Nx*Ny)
+p = 0.5*rng.rand(Nx*Ny)
 
 ## random epsilon perturbation for design region
 deps = 1e-5
@@ -372,20 +372,16 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             print("|Ez|^2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Ez2_unperturbed))
             self.assertClose(adjsol_obj,Ez2_unperturbed,epsilon=1e-6)
 
-            ## the DFT fields finite differences are more sensitive in single precision
-            deps_dft = 1e-4 if mp.is_single_precision() else 1e-5
-            dp_dft = deps_dft*rng.rand(Nx*Ny)
-
             ## compute perturbed Ez2
-            Ez2_perturbed = forward_simulation(p+dp_dft, MonitorObject.DFT, frequencies)
+            Ez2_perturbed = forward_simulation(p+dp, MonitorObject.DFT, frequencies)
 
             ## compare gradients
             if adjsol_grad.ndim < 2:
                 adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
-            adj_scale = (dp_dft[None,:]@adjsol_grad).flatten()
+            adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = Ez2_perturbed-Ez2_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.0461 if mp.is_single_precision() else 0.005
+            tol = 0.04 if mp.is_single_precision() else 0.006
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
@@ -481,9 +477,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = Ez2_perturbed-Ez2_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.005 if mp.is_single_precision() else 0.0008
+            tol = 0.012 if mp.is_single_precision() else 0.002
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
-            
+
     def test_damping(self):
         print("*** TESTING CONDUCTIVITIES ***")
 
