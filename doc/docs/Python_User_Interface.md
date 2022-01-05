@@ -4435,11 +4435,11 @@ The grid points are defined at the corners of the voxels.
 
 Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
 The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
-Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ (`epsilon_diag` and
-`epsilon_offdiag` parameters are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and
-`sigma_offdiag` parameters are interpolated). `medium1` and `medium2` must both be the same type.
-The materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
-from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
+Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ (`epsilon_diag`
+and `epsilon_offdiag` are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and `sigma_offdiag`
+are interpolated). `medium1` and `medium2` must both be the same type. The materials are
+[bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation) from the rectilinear
+grid to Meep's [Yee grid](Yee_Lattice.md).
 
 For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
 `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
@@ -4500,7 +4500,7 @@ class Susceptibility(object):
 <div class="class_docstring" markdown="1">
 
 Parent class for various dispersive susceptibility terms, parameterized by an
-anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+anisotropic amplitude $\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
 
 </div>
 
@@ -4519,13 +4519,13 @@ def __init__(self,
 
 <div class="method_docstring" markdown="1">
 
-+ **`sigma` [`number`]** — The scale factor σ.
++ **`sigma` [`number`]** — The scale factor $\sigma$.
 
-You can also specify an anisotropic σ tensor by using the property `sigma_diag`
-which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+You can also specify an anisotropic $\sigma$ tensor by using the property `sigma_diag`
+which takes three numbers or a `Vector3` to give the $\sigma_n$ tensor diagonal, and
 `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
 `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
-corresponds to a σ tensor
+corresponds to a $\sigma$ tensor
 
 \begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
 
@@ -4546,7 +4546,7 @@ class LorentzianSusceptibility(Susceptibility):
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
 oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with
-the parameters (in addition to σ):
+the parameters (in addition to $\sigma$):
 
 </div>
 
@@ -4564,7 +4564,7 @@ def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 
 + **`frequency` [`number`]** — The resonance frequency $f_n = \omega_n / 2\pi$.
 
-+ **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\pi$.
++ **`gamma` [`number`]** — The resonance loss rate $\gamma_n / 2\pi$.
 
 Note: multiple objects with identical values for the `frequency` and `gamma` but
 different `sigma` will appear as a *single* Lorentzian susceptibility term in the
@@ -4586,7 +4586,7 @@ class DrudeSusceptibility(Susceptibility):
 <div class="class_docstring" markdown="1">
 
 Specifies a single dispersive susceptibility of Drude form. See [Material
-Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\sigma$):
 
 </div>
 
@@ -4603,9 +4603,9 @@ def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 <div class="method_docstring" markdown="1">
 
 + **`frequency` [`number`]** — The frequency scale factor $f_n = \omega_n / 2\pi$
-  which multiplies σ (not a resonance frequency).
+  which multiplies $\sigma$ (not a resonance frequency).
 
-+ **`gamma` [`number`]** — The loss rate $γ_n / 2\pi$.
++ **`gamma` [`number`]** — The loss rate $\gamma_n / 2\pi$.
 
 </div>
 
@@ -4646,13 +4646,13 @@ def __init__(self,
 
 <div class="method_docstring" markdown="1">
 
-+ **`sigma` [`number`]** — The scale factor σ.
++ **`sigma` [`number`]** — The scale factor $\sigma$.
 
-You can also specify an anisotropic σ tensor by using the property `sigma_diag`
-which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+You can also specify an anisotropic $\sigma$ tensor by using the property `sigma_diag`
+which takes three numbers or a `Vector3` to give the $\sigma_n$ tensor diagonal, and
 `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
 `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
-corresponds to a σ tensor
+corresponds to a $\sigma$ tensor
 
 \begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
 

@@ -528,6 +528,13 @@ class MaterialGrid(object):
     as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
     argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
     """
+    def check_weights(self, w):
+        if np.amin(w) < 0. or np.amax(w) > 1.:
+            warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
+            return np.clip(w, 0., 1.)
+        else:
+            return w
+
     def __init__(self,
                  grid_size,
                  medium1,
@@ -552,11 +559,11 @@ class MaterialGrid(object):
 
         Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
         The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
-        Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ (`epsilon_diag` and
-        `epsilon_offdiag` parameters are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and
-        `sigma_offdiag` parameters are interpolated). `medium1` and `medium2` must both be the same type.
-        The materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
-        from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
+        Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ (`epsilon_diag`
+        and `epsilon_offdiag` are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and `sigma_offdiag`
+        are interpolated). `medium1` and `medium2` must both be the same type. The materials are
+        [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation) from the rectilinear
+        grid to Meep's [Yee grid](Yee_Lattice.md).
 
         For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
         `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
@@ -606,10 +613,7 @@ class MaterialGrid(object):
         elif weights.size != self.num_params:
             raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(weights.size,self.grid_size))
         else:
-            if np.amin(weights) < 0. or np.amax(weights) > 1.:
-                warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
-                weights = np.clip(weights, 0., 1.)
-            self.weights = weights.flatten().astype(np.float64)
+            self.weights = self.check_weights(weights).flatten().astype(np.float64)
 
         grid_type_dict = {
             "U_MIN":0,
@@ -622,31 +626,29 @@ class MaterialGrid(object):
         self.grid_type = grid_type_dict[grid_type]
 
         self.swigobj = None
-    def update_weights(self,x):
+
+    def update_weights(self, x):
         """
         Reset the `weights` to `x`.
         """
         if x.size != self.num_params:
             raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(self.weights.size,self.grid_size))
-        if np.amin(x) < 0. or np.amax(x) > 1.:
-            warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
-            x = np.clip(x, 0., 1.)
-        self.weights[:] = x.flatten().astype(np.float64)
+        self.weights[:] = self.check_weights(x).flatten().astype(np.float64)
 
 class Susceptibility(object):
     """
     Parent class for various dispersive susceptibility terms, parameterized by an
-    anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+    anisotropic amplitude $\\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
     """
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
         """
-        + **`sigma` [`number`]** — The scale factor σ.
+        + **`sigma` [`number`]** — The scale factor $\\sigma$.
 
-        You can also specify an anisotropic σ tensor by using the property `sigma_diag`
-        which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+        You can also specify an anisotropic $\\sigma$ tensor by using the property `sigma_diag`
+        which takes three numbers or a `Vector3` to give the $\\sigma_n$ tensor diagonal, and
         `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
         `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
-        corresponds to a σ tensor
+        corresponds to a $\\sigma$ tensor
 
         \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
         """
@@ -664,13 +666,13 @@ class LorentzianSusceptibility(Susceptibility):
     """
     Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
     oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with
-    the parameters (in addition to σ):
+    the parameters (in addition to $\\sigma$):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
         + **`frequency` [`number`]** — The resonance frequency $f_n = \\omega_n / 2\\pi$.
 
-        + **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\\pi$.
+        + **`gamma` [`number`]** — The resonance loss rate $\\gamma_n / 2\\pi$.
 
         Note: multiple objects with identical values for the `frequency` and `gamma` but
         different `sigma` will appear as a *single* Lorentzian susceptibility term in the
@@ -691,14 +693,14 @@ class LorentzianSusceptibility(Susceptibility):
 class DrudeSusceptibility(Susceptibility):
     """
     Specifies a single dispersive susceptibility of Drude form. See [Material
-    Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+    Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\\sigma$):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
         + **`frequency` [`number`]** — The frequency scale factor $f_n = \\omega_n / 2\\pi$
-          which multiplies σ (not a resonance frequency).
+          which multiplies $\\sigma$ (not a resonance frequency).
 
-        + **`gamma` [`number`]** — The loss rate $γ_n / 2\\pi$.
+        + **`gamma` [`number`]** — The loss rate $\\gamma_n / 2\\pi$.
         """
         super(DrudeSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
