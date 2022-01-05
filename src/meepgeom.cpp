@@ -2905,14 +2905,15 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
       for (int cur_chunk=0;cur_chunk<num_chunks;cur_chunk++){
         meep::dft_chunk* adj_chunk = adjoint_dft_chunks[ci_adjoint][cur_chunk];
         meep::component adjoint_c = adj_chunk->c;
-        meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is,adj_chunk->ie);
+        meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is,adj_chunk->ie,adjoint_c);
 
         // loop over forward components
         for (int ci_forward=0; ci_forward<3; ci_forward++){
           if (forward_dft_chunks[ci_forward].size() == 0) continue;
           meep::dft_chunk* fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
-          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie);
           meep::component forward_c = fwd_chunk->c;
+          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie,forward_c);
+          
 
           // loop over each point of interest
           LOOP_OVER_IVECS(gv,adj_chunk->is_old,adj_chunk->ie_old,idx){

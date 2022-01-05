@@ -1006,8 +1006,8 @@ class grid_volume {
 public:
   grid_volume(){};
 
-  grid_volume subvolume(ivec is, ivec ie);
-  void init_subvolume(ivec is, ivec ie);
+  grid_volume subvolume(ivec is, ivec ie, component c);
+  void init_subvolume(ivec is, ivec ie, component c);
 
   ndim dim;
   double a, inva /* = 1/a */;
