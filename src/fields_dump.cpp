@@ -184,12 +184,17 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
           size_t n = num_f[(chunk_i * NUM_FIELD_COMPONENTS + c) * 2 + d];
           realnum **f = field_ptr_getter(chunks[i], c, d);
           if (n == 0) {
-            delete[] * f;
+            delete[] *f;
             *f = NULL;
           } else {
             if (n != ntot)
               meep::abort("grid size mismatch %zd vs %zd in fields::load", n, ntot);
-            *f = new realnum[ntot];
+            // here we need to allocate the fields array for H in the PML region
+            // because of H = B in fields_chunk::alloc_f whereby H is lazily
+            // allocated in fields_chunk::update_eh during the first timestep
+            const direction d_c = component_direction(c);
+            if (!(*f) || (*f && is_magnetic(component(c)) && chunks[i]->s->sigsize[d_c] > 1))
+              *f = new realnum[ntot];
             my_ntot += ntot;
           }
         }

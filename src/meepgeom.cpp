@@ -43,6 +43,13 @@ void set_default_material(material_type _default_material) {
   }
 }
 
+void unset_default_material(void) {
+  if (default_material != NULL) {
+    material_free((material_type)default_material);
+    default_material = NULL;
+  }
+}
+
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2) {
   return (vector3_equal(s1.sigma_diag, s2.sigma_diag) &&
           vector3_equal(s1.sigma_offdiag, s2.sigma_offdiag) && vector3_equal(s1.bias, s2.bias) &&
@@ -563,7 +570,7 @@ void epsilon_material_grid(material_data *md, double u) {
   // Linearly interpolate dc epsilon values
   cinterp_tensors(m1->epsilon_diag, m1->epsilon_offdiag, m2->epsilon_diag, m2->epsilon_offdiag,
                   &mm->epsilon_diag, &mm->epsilon_offdiag, u);
-  
+
   // Interpolate resonant strength from d.p.
   vector3 zero_vec;
   zero_vec.x = zero_vec.y = zero_vec.z = 0;
@@ -651,7 +658,7 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
     geometry.items[i].material = new material_data();
     static_cast<material_data*>(geometry.items[i].material)->copy_from(*(material_data *)(g.items[i].material));
   }
-  
+
   extra_materials = mlist;
   current_pol = NULL;
 
@@ -761,7 +768,8 @@ void geom_epsilon::set_volume(const meep::volume &v) {
   unset_volume();
 
   geom_box box = gv2box(v);
-  restricted_tree = create_geom_box_tree0(geometry, box);
+  if (!restricted_tree)
+    restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
 static void material_epsmu(meep::field_type ft, material_type material, symm_matrix *epsmu,
@@ -1551,8 +1559,6 @@ static bool has_conductivity(const material_type &md, meep::component c) {
 }
 
 bool geom_epsilon::has_conductivity(meep::component c) {
-  medium_struct *mm;
-
   FOR_DIRECTIONS(d) FOR_SIDES(b) {
     if (cond[d][b].prof) return true;
   }
@@ -1920,8 +1926,8 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 /* create a geom_epsilon object that can persist
 if needed */
 geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g, vector3 center,
-                                 bool _ensure_periodicity, material_type _default_material,
-                                 material_type_list extra_materials) {
+                                bool _ensure_periodicity, material_type _default_material,
+                                material_type_list extra_materials) {
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
   geometry_center = center;
@@ -1982,18 +1988,18 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist, material_type_list extra_materials) {
   meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity,
-                                  _default_material, extra_materials);
-  set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
-                                 maxeval, alist);
+                                                               _default_material, extra_materials);
+  set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
+                                  maxeval, alist);
   delete geps;
 }
 
 /* from a previously created geom_epsilon object,
 set the materials as specified */
 void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
-                                 vector3 center, bool use_anisotropic_averaging,
-                                 double tol, int maxeval, absorber_list alist) {
-  
+                                     bool use_anisotropic_averaging,
+                                     double tol, int maxeval, absorber_list alist) {
+
   // store for later use in gradient calculations
   geps->tol = tol;
   geps->maxeval = maxeval;
@@ -2009,7 +2015,7 @@ void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
           mythunk.func = layer->pml_profile;
           mythunk.func_data = layer->pml_profile_data;
           geps->set_cond_profile(d, b, layer->thickness, gv.inva * 0.5, pml_profile_wrapper,
-                                (void *)&mythunk, layer->R_asymptotic);
+                                 (void *)&mythunk, layer->R_asymptotic);
         }
       }
     }
@@ -2539,7 +2545,7 @@ double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
 }
 
 void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
-  
+
 #define m(x,y) t[x*3+y]
 #define minv(x,y) t_inv[x*3+y]
   std::complex<double> det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
@@ -2555,8 +2561,8 @@ void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
   minv(2, 0) = (m(1, 0) * m(2, 1) - m(2, 0) * m(1, 1)) * invdet;
   minv(2, 1) = (m(2, 0) * m(0, 1) - m(0, 0) * m(2, 1)) * invdet;
   minv(2, 2) = (m(0, 0) * m(1, 1) - m(1, 0) * m(0, 1)) * invdet;
-#undef m(x,y)
-#undef minv(x,y)
+#undef m
+#undef minv
 }
 
 void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, double freq, geom_epsilon *geps) {
@@ -2649,7 +2655,7 @@ std::complex<double> get_material_gradient(
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
   The current adjoint (λ) field component (adjoint_c)
-  determines which row of Aᵤ we care about. 
+  determines which row of Aᵤ we care about.
   The current forward (x) field component (forward_c)
   determines which column of Aᵤ we care about.
 
@@ -2661,7 +2667,7 @@ std::complex<double> get_material_gradient(
     2. We use eff_chi1inv_row_disp() for all other cases
     (at the expense of not accounting for subpixel smoothing,
     if there were any).
-  
+
   For now we do a finite difference approach to estimate the
   gradient of the system matrix A since it's fairly accurate,
   cheap, and easy to generalize.*/

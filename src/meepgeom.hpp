@@ -173,13 +173,13 @@ class geom_epsilon : public meep::material_function {
 
 public:
   double u_p = 0;
-  geom_box_tree geometry_tree; 
+  geom_box_tree geometry_tree;
   geom_box_tree restricted_tree;
   geometric_object_list geometry;
   cond_profile cond[5][2]; // [direction][side]
   double tol=DEFAULT_SUBPIXEL_TOL;
   int maxeval=DEFAULT_SUBPIXEL_MAXEVAL;
-  
+
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
   geom_epsilon(const geom_epsilon &geps1); // copy constructor
   virtual ~geom_epsilon();
@@ -239,7 +239,6 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  material_type _default_material = vacuum, absorber_list alist = 0,
                                  material_type_list extra_materials = material_type_list());
 void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
-                                 vector3 center = make_vector3(),
                                  bool use_anisotropic_averaging = true,
                                  double tol = DEFAULT_SUBPIXEL_TOL,
                                  int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
@@ -254,6 +253,7 @@ vector3 vec_to_vector3(const meep::vec &pt);
 meep::vec vector3_to_vec(const vector3 v3);
 
 void set_default_material(material_type _default_material);
+void unset_default_material(void);
 void epsilon_material_grid(material_data *md, double u);
 void epsilon_file_material(material_data *md, vector3 p);
 bool susceptibility_equal(const susceptibility &s1, const susceptibility &s2);

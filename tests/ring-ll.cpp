@@ -45,24 +45,21 @@ int main(int argc, char *argv[]) {
   double n = 3.4; // index of waveguide
   double w = 1.0; // width of waveguide
   double r = 1.0; // inner radius of ring
+  double height = meep_geom::ENORMOUS;
 
-  double pad = 4;  // padding between waveguide and edge of PML
-  double dpml = 2; // thickness of PML
+  double pad = 4.0;  // padding between waveguide and edge of PML
+  double dpml = 2.0; // thickness of PML
 
   double sxy = 2.0 * (r + w + pad + dpml); // cell size
   double resolution = 10.0;
 
   // (set-param! resolution 10)
   // (set! geometry-lattice (make lattice (size sxy sxy no-size)))
-  geometry_lattice.size.x = sxy;
-  geometry_lattice.size.y = sxy;
-  geometry_lattice.size.z = 0.0;
   grid_volume gv = voltwo(sxy, sxy, resolution);
   gv.center_origin();
 
   // (set! symmetries (list (make mirror-sym (direction Y))))
-  // symmetry sym=mirror(Y, gv);
-  symmetry sym = identity();
+  symmetry sym = mirror(Y, gv);
 
   // (set! pml-layers (list (make pml (thickness dpml))))
   // ; exploit the mirror symmetry in structure+source:
@@ -76,12 +73,16 @@ int main(int argc, char *argv[]) {
   //		(radius (+ r w)) (material (make dielectric (index n))))
   // 	(make cylinder (center 0 0) (height infinity)
   // 		(radius r) (material air))))
-  meep_geom::material_type dielectric = meep_geom::make_dielectric(n * n);
+  auto material_deleter = [](meep_geom::material_data *m) {
+    meep_geom::material_free(m);
+  };
+  std::unique_ptr<meep_geom::material_data, decltype(material_deleter)> dielectric(
+      meep_geom::make_dielectric(n*n), material_deleter);
   geometric_object objects[2];
   vector3 v3zero = {0.0, 0.0, 0.0};
   vector3 zaxis = {0.0, 0.0, 1.0};
-  objects[0] = make_cylinder(dielectric, v3zero, r + w, meep_geom::ENORMOUS, zaxis);
-  objects[1] = make_cylinder(meep_geom::vacuum, v3zero, r, meep_geom::ENORMOUS, zaxis);
+  objects[0] = make_cylinder(dielectric.get(), v3zero, r + w, height, zaxis);
+  objects[1] = make_cylinder(meep_geom::vacuum, v3zero, r, height, zaxis);
   geometric_object_list g = {2, objects};
   meep_geom::set_materials_from_geometry(&the_structure, g);
   fields f(&the_structure);
@@ -96,8 +97,7 @@ int main(int argc, char *argv[]) {
   double fcen = 0.15; // ; pulse center frequency
   double df = 0.1;    // ; df
   gaussian_src_time src(fcen, df);
-  volume v(vec(r + 0.1, 0.0), vec(0.0, 0.0));
-  f.add_volume_source(Ez, src, v);
+  f.add_point_source(Ez, src, vec(r + 0.1, 0.0));
 
   // (run-sources+ 300
   // 	(at-beginning output-epsilon)
@@ -132,22 +132,23 @@ int main(int argc, char *argv[]) {
                   imag(amp[nb]), err[nb]);
 
   // test comparison with expected values
-  int ref_bands = 3;
-  double ref_freq_re[3] = {1.1807e-01, 1.4716e-01, 1.7525e-01};
-  double ref_freq_im[3] = {-7.6133e-04, -2.1156e-04, -5.2215e-05};
-  std::complex<double> ref_amp[3] = {std::complex<double>(-8.28e-04, -1.34e-03), std::complex<double>(1.23e-03, -1.25e-02),
-                        std::complex<double>(2.83e-03, -6.52e-04)};
-  if (bands != 3) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
+  double err_tol = 1.0e-5;
+  int ref_bands = 4;
+  double ref_freq_re[4] = {1.1807e-01, 1.4470e-01, 1.4715e-01, 1.7525e-01};
+  double ref_freq_im[4] = {-7.5657e-04, -8.9843e-04, -2.2172e-04, -5.0267e-05};
+  std::complex<double> ref_amp[4] = {std::complex<double>(-6.40e-03,-2.81e-03),
+                                     std::complex<double>(-1.42e-04,+6.78e-04),
+                                     std::complex<double>(+3.99e-02,+4.09e-02),
+                                     std::complex<double>(-1.98e-03,-1.43e-02)};
+  if (bands != ref_bands) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
   for (int nb = 0; nb < bands; nb++)
-    if (fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
-        fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
-        abs(amp[nb] - ref_amp[nb]) > 1.0e-2 * abs(ref_amp[nb])
-
-    )
+    if ((fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
+         fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
+         abs(amp[nb] - ref_amp[nb]) > 1.0e-2 * abs(ref_amp[nb])) && (err[nb] < err_tol))
       meep::abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= "
-            "{%e,%e,%e,%e}\n",
-            nb, freq_re[nb], freq_im[nb], real(amp[nb]), imag(amp[nb]), ref_freq_re[nb],
-            ref_freq_im[nb], real(ref_amp[nb]), imag(ref_amp[nb]));
+                  "{%e,%e,%e,%e}\n",
+                  nb, freq_re[nb], freq_im[nb], real(amp[nb]), imag(amp[nb]), ref_freq_re[nb],
+                  ref_freq_im[nb], real(ref_amp[nb]), imag(ref_amp[nb]));
 
   master_printf("all harminv results match reference values\n");
 
@@ -167,6 +168,11 @@ int main(int argc, char *argv[]) {
 
   // this seems to be necessary to prevent failures
   all_wait();
+
+  for (int n = 0; n < 2; n++) {
+    geometric_object_destroy(objects[n]);
+  }
+  meep_geom::unset_default_material();
 
   // success if we made it here
   return 0;

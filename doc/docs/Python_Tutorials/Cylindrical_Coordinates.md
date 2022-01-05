@@ -536,14 +536,29 @@ sim = mp.Simulation(cell_size=cell_size,
                     m=-1)
 
 ## near-field monitor
-n2f_obj = sim.add_near2far(frq_cen, 0, 1,
-                           mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),size=mp.Vector3(sr-dpml)),
-                           mp.Near2FarRegion(center=mp.Vector3(sr-dpml,0,0.5*sz-0.5*(dsub+zh+dpad)),size=mp.Vector3(z=dsub+zh+dpad)))
+n2f_obj = sim.add_near2far(frq_cen,
+                           0,
+                           1,
+                           mp.Near2FarRegion(center=mp.Vector3(0.5*(sr-dpml),0,0.5*sz-dpml),
+                                             size=mp.Vector3(sr-dpml)),
+                           mp.Near2FarRegion(center=mp.Vector3(sr-dpml,0,0.5*sz-dpml-0.5*(dsub+zh+dpad)),
+                                             size=mp.Vector3(z=dsub+zh+dpad)))
+
+sim.plot2D()
+if mp.am_master():
+    plt.savefig("zone_plate_epsilon.png",bbox_inches='tight',dpi=150)
 
 sim.run(until_after_sources=100)
 
-ff_r = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(0.5*(sr-dpml),0,-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(sr-dpml))
-ff_z = sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),size=mp.Vector3(z=spot_length))
+ff_r = sim.get_farfields(n2f_obj,
+                         ff_res,
+                         center=mp.Vector3(0.5*(sr-dpml),0,-0.5*sz+dpml+dsub+zh+focal_length),
+                         size=mp.Vector3(sr-dpml))
+
+ff_z = sim.get_farfields(n2f_obj,
+                         ff_res,
+                         center=mp.Vector3(z=-0.5*sz+dpml+dsub+zh+focal_length),
+                         size=mp.Vector3(z=spot_length))
 
 E2_r = np.absolute(ff_r['Ex'])**2+np.absolute(ff_r['Ey'])**2+np.absolute(ff_r['Ez'])**2
 E2_z = np.absolute(ff_z['Ex'])**2+np.absolute(ff_z['Ey'])**2+np.absolute(ff_z['Ez'])**2

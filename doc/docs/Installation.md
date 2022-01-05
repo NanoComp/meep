@@ -131,22 +131,26 @@ Since [macOS](https://en.wikipedia.org/wiki/macOS) is, at its heart, a Unix syst
 
 The first steps are:
 
--   Install [Xcode](https://en.wikipedia.org/wiki/Xcode), the development/compiler package from Apple, free from the [Apple Xcode web page](https://developer.apple.com/xcode/).
+-   Install [Xcode](https://en.wikipedia.org/wiki/Xcode), the development/compiler package from Apple: type `xcode-select --install` in the [Terminal](https://en.wikipedia.org/wiki/Terminal_(macOS)).
 -   Install Homebrew: download from the [Homebrew site](http://brew.sh/) and follow the instructions there.
 -   Run the following commands in the terminal to compile and install the prerequisites. This may take a while to complete because it will install lots of other stuff first
 
 ```sh
 brew doctor
-brew install homebrew/science/hdf5 homebrew/science/openblas guile fftw h5utils
+brew install hdf5 guile fftw gsl libpng autoconf automake libtool swig
+```
+If you don't have your own Python installation (e.g. via [miniforge](https://github.com/conda-forge/miniforge)), you should install `numpy` and `matplotlib` and other packages used by Meep and its tests:
+```sh
+HDF5_DIR="$(brew --prefix hdf5)" pip3 install numpy matplotlib scipy autograd jax parameterized h5py
 ```
 
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
 ```sh
-./configure && make && make install
+./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" PYTHON=python3 && make && sudo make install
 ```
 
-Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).
+Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).  Note that if you are installing from a `git clone` rather than from a release `.tar.gz` file, you will need to first run `sh autogen.sh`, and you should add `--enable-maintainer-mode` to the `configure` arguments.
 
 You are done, and can now run Meep (Scheme interface) just by typing `meep`. You can run `make check` in the meep directory if you want to perform a self-test.
 

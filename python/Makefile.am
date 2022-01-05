@@ -43,13 +43,14 @@ TESTS =                                        \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
-    $(TEST_DIR)/test_binary_partition_utils.py       \
+    $(TEST_DIR)/test_binary_partition_utils.py \
     $(BINARY_GRATING_TEST)                     \
     $(TEST_DIR)/test_cavity_arrayslice.py      \
     $(TEST_DIR)/test_cavity_farfield.py        \
     $(TEST_DIR)/test_chunk_balancer.py         \
     $(TEST_DIR)/test_chunk_layout.py           \
     $(TEST_DIR)/test_chunks.py                 \
+    $(TEST_DIR)/test_conductivity.py           \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \

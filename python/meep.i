@@ -1999,7 +1999,7 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
                                                 extra_materials);
     }
     if (set_materials) {
-        meep_geom::set_materials_from_geom_epsilon(s, geps, center, use_anisotropic_averaging, tol,
+        meep_geom::set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
                                              maxeval,alist);
     }
 
