@@ -2883,7 +2883,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
       current_forward_chunk = current_forward_chunk->next_in_dft;
     }
     if (c_adjoint_dft_chunks.size() != c_forward_dft_chunks.size())
-      meep::abort("The number of adjoint chunks (%d) is not equal to the number of forward chunks (%d).\n",
+      meep::abort("The number of adjoint chunks (%ld) is not equal to the number of forward chunks (%ld).\n",
         c_adjoint_dft_chunks.size(),c_forward_dft_chunks.size());
     adjoint_dft_chunks.push_back(c_adjoint_dft_chunks);
     forward_dft_chunks.push_back(c_forward_dft_chunks);
@@ -2914,11 +2914,11 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie,forward_c);
           
-
           // loop over each point of interest
           LOOP_OVER_IVECS(gv,adj_chunk->is_old,adj_chunk->ie_old,idx){
             meep::ivec ip = gv.iloc(adjoint_c,idx);
-            size_t idx_adj =  gv_adj.index(adjoint_c,ip);    
+            size_t idx_adj =  gv_adj.index(adjoint_c,ip);
+            if (idx_adj >= adj_chunk->N) continue;     
             meep::vec p  = gv.loc(adjoint_c,idx);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf*idx_adj+f_i];
             material_type md;
@@ -2966,27 +2966,27 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
               //operate on the first eps node
               fwd1_idx = gv_fwd.index(forward_c,fwd_p);
-              fwd1 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
+              fwd1 = ((fwd1_idx >= adj_chunk->N) || (fwd1_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
               fwd2_idx = gv_fwd.index(forward_c,fwd_pf);
-              fwd2 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i];
+              fwd2 = ((fwd2_idx >= adj_chunk->N) || (fwd2_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i]; 
               fwd_avg = fwd1 + fwd2;
               meep::vec eps1 = gv[ieps1];
               cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
               material_grids_addgradient_point(
                 v_local+ng*f_i, vec_to_vector3(eps1), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd_avg, 0.5*adj, frequencies[f_i], gv, du);
+                adjoint_c, forward_c, fwd_avg, std::complex<meep::realnum>(0.5,0)*adj, frequencies[f_i], gv, du);
               
               //operate on the second eps node
               fwd1_idx = gv_fwd.index(forward_c,fwd_pa);
-              fwd1 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
+              fwd1 = ((fwd1_idx >= adj_chunk->N) || (fwd1_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
               fwd2_idx = gv_fwd.index(forward_c,fwd_paf);
-              fwd2 = std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i];
+              fwd2 = ((fwd2_idx >= adj_chunk->N) || (fwd2_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i];
               fwd_avg = fwd1 + fwd2;
               meep::vec eps2 = gv[ieps2];
               cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
               material_grids_addgradient_point(
                 v_local+ng*f_i, vec_to_vector3(eps2), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd_avg, 0.5*adj, frequencies[f_i], gv, du);
+                adjoint_c, forward_c, fwd_avg, std::complex<meep::realnum>(0.5,0)*adj, frequencies[f_i], gv, du);
             }
             /********* compute λᵀbᵤ ***************/
             /* not yet implemented/needed */

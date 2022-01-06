@@ -143,7 +143,7 @@ class MeepJaxWrapper:
         self.simulation.reset_meep()
         self.simulation.change_sources(self.sources)
         utils.register_monitors(self.monitors, self.frequencies)
-        design_region_monitors = utils.install_design_region_monitors(
+        fwd_design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
             self.frequencies,
@@ -156,13 +156,8 @@ class MeepJaxWrapper:
         self.simulation.run(**sim_run_args)
 
         monitor_values = utils.gather_monitor_values(self.monitors)
-        fwd_fields = utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
         return (jnp.asarray(monitor_values),
-                jax.tree_map(jnp.asarray, fwd_fields))
+                fwd_design_region_monitors)
 
     def _run_adjoint_simulation(self, monitor_values_grad):
         """Runs adjoint simulation, returning design region fields."""
@@ -174,7 +169,7 @@ class MeepJaxWrapper:
                                                        monitor_values_grad)
         self.simulation.reset_meep()
         self.simulation.change_sources(adjoint_sources)
-        design_region_monitors = utils.install_design_region_monitors(
+        adj_design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
             self.frequencies,
@@ -186,11 +181,7 @@ class MeepJaxWrapper:
         }
         self.simulation.run(**sim_run_args)
 
-        return utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
+        return adj_design_region_monitors
 
     def _calculate_vjps(
         self,
@@ -228,13 +219,10 @@ class MeepJaxWrapper:
 
         def _simulate_rev(res, monitor_values_grad):
             """Runs adjoint simulation, returning VJP of design wrt monitor values."""
-            fwd_fields = jax.tree_map(
-                lambda x: onp.asarray(x,
-                                      dtype=onp.complex64 if mp.is_single_precision() else onp.complex128),
-                res[0])
+            fwd_design_region_monitors = res[0]
             design_variable_shapes = res[1]
-            adj_fields = self._run_adjoint_simulation(monitor_values_grad)
-            vjps = self._calculate_vjps(fwd_fields, adj_fields,
+            adj_design_region_monitors = self._run_adjoint_simulation(monitor_values_grad)
+            vjps = self._calculate_vjps(fwd_design_region_monitors, adj_design_region_monitors,
                                         design_variable_shapes)
             return ([jnp.asarray(vjp) for vjp in vjps], )
 

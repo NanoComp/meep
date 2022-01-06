@@ -74,6 +74,8 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 
   persist = data->persist;
 
+  c = c_;
+
   /* for adjoint calculations, we want to pad
   (or expand) the dimensions of the dft region
   to account for boundary effects. We will pad
@@ -86,8 +88,6 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
     is = max(is-one_ivec(fc->gv.dim)*2,fc->gv.little_corner());
     ie = min(ie+one_ivec(fc->gv.dim)*2,fc->gv.big_corner());
   }
-
-  c = c_;
 
   if (use_centered_grid)
     fc->gv.yee2cent_offsets(c, avg1, avg2);
