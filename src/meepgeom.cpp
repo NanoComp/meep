@@ -2959,7 +2959,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum
           /********* compute -λᵀAᵤx *************/
 
           /* trivial case, no interpolation/restriction needed        */
-          if (forward_c == adjoint_c) {
+          if (forward_c == adjoint_c || !md->do_averaging) {
             std::complex<double> fwd = GET_FIELDS(fields_f, ci_forward, f_i, idx_fields);
             cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
             material_grids_addgradient_point(
