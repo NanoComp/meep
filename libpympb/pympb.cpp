@@ -879,7 +879,8 @@ void mode_solver::init_epsilon(geometric_object_list *geometry_in) {
     b0.high.x += tmp_size.x / mdata->nx;
     b0.high.y += tmp_size.y / mdata->ny;
     b0.high.z += tmp_size.z / mdata->nz;
-    if (!geometry_tree) geometry_tree = create_geom_box_tree0(geometry_list, b0);
+    if (geometry_tree != NULL) destroy_geom_box_tree(geometry_tree);
+    geometry_tree = create_geom_box_tree0(geometry_list, b0);
   }
 
   if (verbose && meep::am_master()) {
