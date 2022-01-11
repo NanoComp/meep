@@ -411,6 +411,21 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
         ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
+        
+        if (sn>0){
+          for (int sm = sn-1; sm >= 0; --sm){//for previous transformations
+            component cSm = S.transform(cgrid, -sm);
+            ivec _iscoSm(S.transform(gvu.little_owned_corner(cSm), sm));
+            ivec _iecoSm(S.transform(gvu.big_owned_corner(cSm), sm));
+            ivec iscoSm(min(_iscoSm, _iecoSm)), iecoSm(max(_iscoSm, _iecoSm));
+            LOOP_OVER_DIRECTIONS(gvu.dim, d){
+              if (iecoSm.in_direction(d) == iscoS.in_direction(d)) {
+                iscoS.set_direction(d, iecoSm.in_direction(d)+2);
+                iecoS.set_direction(d, iecoS.in_direction(d)+2);
+              }
+            }
+          }
+        }
 
         // intersect the chunk points with is and ie volume (shifted):
         ivec iscS(max(is - shifti, iscoS));
