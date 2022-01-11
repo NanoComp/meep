@@ -412,7 +412,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
         ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
         
-        if (sn>0){
+        if (false && sn>0){
           for (int sm = sn-1; sm >= 0; --sm){//for previous transformations
             component cSm = S.transform(cgrid, -sm);
             ivec _iscoSm(S.transform(gvu.little_owned_corner(cSm), sm));
