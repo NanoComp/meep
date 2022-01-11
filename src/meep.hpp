@@ -2169,6 +2169,7 @@ public:
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
   std::vector<int> get_corners(dft_fields fdft,component c); // get the minimum and maximum ivec values of the dft monitor
   std::vector<int> indicate_thick_dims(const volume &where); // indicate which dimensions have sizes larger than 1
+  size_t *get_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec *min_corner, ivec *max_corner, size_t *array_size, size_t *bufsz, int *rank, direction *ds, int *array_rank=0, size_t *array_dims=0, direction *array_dirs=0);
 
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();

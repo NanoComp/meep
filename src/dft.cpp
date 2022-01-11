@@ -985,6 +985,59 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
   return integral;
 }
 
+// get various variables that are needed by complex<double> fields::process_dft_component
+size_t *fields::get_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec *min_corner, ivec *max_corner, size_t *array_size, size_t *bufsz, int *rank, direction *ds, int *array_rank, size_t *array_dims, direction *array_dirs){
+  /***************************************************************/
+  /* get statistics on the volume slice **************************/
+  /***************************************************************/
+  volume *where = &v; // use full volume of fields
+  *bufsz = 0;
+  *min_corner = gv.round_vec(where->get_max_corner()) + one_ivec(gv.dim);
+  *max_corner = gv.round_vec(where->get_min_corner()) - one_ivec(gv.dim);
+  for (int ncl = 0; ncl < num_chunklists; ncl++)
+    for (dft_chunk *chunk = chunklists[ncl]; chunk; chunk = chunk->next_in_dft) {
+      if (chunk->c != c) continue;
+      ivec isS = chunk->S.transform(chunk->is, chunk->sn) + chunk->shift;
+      ivec ieS = chunk->S.transform(chunk->ie, chunk->sn) + chunk->shift;
+      *min_corner = min(*min_corner, min(isS, ieS));
+      *max_corner = max(*max_corner, max(isS, ieS));
+      size_t this_bufsz = 1;
+      LOOP_OVER_DIRECTIONS(chunk->fc->gv.dim, d) {
+        this_bufsz *= (chunk->ie.in_direction(d) - chunk->is.in_direction(d)) / 2 + 1;
+      }
+      *bufsz = std::max(*bufsz, this_bufsz);
+    }
+  am_now_working_on(MpiAllTime);
+  *max_corner = max_to_all(*max_corner);
+  *min_corner = -max_to_all(-*min_corner); // i.e., min_to_all
+  finished_working();
+
+  /***************************************************************/
+  /***************************************************************/
+  /***************************************************************/
+  *rank = 0;
+  size_t *dims = new size_t[3];
+  *array_size = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    if (*rank >= 3) meep::abort("too many dimensions in process_dft_component");
+    size_t n = std::max(0, ((*max_corner).in_direction(d) - (*min_corner).in_direction(d)) / 2 + 1);
+
+    if (n > 1) {
+      ds[*rank] = d;
+      dims[(*rank)++] = n;
+      (*array_size) *= n;
+    }
+  }
+  if (array_rank) {
+    *array_rank = *rank;
+    for (int d = 0; d < *rank; d++) {
+      if (array_dims) array_dims[d] = dims[d];
+      if (array_dirs) array_dirs[d] = ds[d];
+    }
+  }
+  return dims;
+}
+
 /***************************************************************/
 /* low-level [actually intermediate-level, since it calls      */
 /* dft_chunk::process_dft_component(), which is the true       */
@@ -1041,55 +1094,12 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
     c = chunklists[0]->c;
   }
 
-  /***************************************************************/
-  /* get statistics on the volume slice **************************/
-  /***************************************************************/
-  volume *where = &v; // use full volume of fields
-  size_t bufsz = 0;
-  ivec min_corner = gv.round_vec(where->get_max_corner()) + one_ivec(gv.dim);
-  ivec max_corner = gv.round_vec(where->get_min_corner()) - one_ivec(gv.dim);
-  for (int ncl = 0; ncl < num_chunklists; ncl++)
-    for (dft_chunk *chunk = chunklists[ncl]; chunk; chunk = chunk->next_in_dft) {
-      if (chunk->c != c) continue;
-      ivec isS = chunk->S.transform(chunk->is, chunk->sn) + chunk->shift;
-      ivec ieS = chunk->S.transform(chunk->ie, chunk->sn) + chunk->shift;
-      min_corner = min(min_corner, min(isS, ieS));
-      max_corner = max(max_corner, max(isS, ieS));
-      size_t this_bufsz = 1;
-      LOOP_OVER_DIRECTIONS(chunk->fc->gv.dim, d) {
-        this_bufsz *= (chunk->ie.in_direction(d) - chunk->is.in_direction(d)) / 2 + 1;
-      }
-      bufsz = std::max(bufsz, this_bufsz);
-    }
-  am_now_working_on(MpiAllTime);
-  max_corner = max_to_all(max_corner);
-  min_corner = -max_to_all(-min_corner); // i.e., min_to_all
-  finished_working();
-
-  /***************************************************************/
-  /***************************************************************/
-  /***************************************************************/
-  int rank = 0;
-  size_t dims[3];
+  ivec min_corner, max_corner;
+  int rank;
   direction ds[3];
-  size_t array_size = 1;
-  LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (rank >= 3) meep::abort("too many dimensions in process_dft_component");
-    size_t n = std::max(0, (max_corner.in_direction(d) - min_corner.in_direction(d)) / 2 + 1);
+  size_t array_size, bufsz;
+  size_t *dims = get_dims(chunklists, num_chunklists, c, &min_corner, &max_corner, &array_size, &bufsz, &rank, ds, array_rank, array_dims, array_dirs);
 
-    if (n > 1) {
-      ds[rank] = d;
-      dims[rank++] = n;
-      array_size *= n;
-    }
-  }
-  if (array_rank) {
-    *array_rank = rank;
-    for (int d = 0; d < rank; d++) {
-      if (array_dims) array_dims[d] = dims[d];
-      if (array_dirs) array_dirs[d] = ds[d];
-    }
-  }
   if (rank == 0) {
     if (pfield_array) *pfield_array = 0;
     return 0.0; // no chunks with the specified component on this processor
