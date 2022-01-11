@@ -253,12 +253,12 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
 /* Integration weights at boundaries (c.f. long comment at top).   */
 /* This code was formerly part of loop_in_chunks, now refactored   */
 /* as a separate routine so we can call it from get_array_metadata.*/
-void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie,
+void compute_boundary_weights(grid_volume gv, const volume &where, ivec &is, ivec &ie,
                               bool snap_empty_dimensions, vec &s0, vec &e0, vec &s1, vec &e1) {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
     double w0, w1;
-    w0 = 1. - wherec.in_direction_min(d) * gv.a + 0.5 * is.in_direction(d);
-    w1 = 1. + wherec.in_direction_max(d) * gv.a - 0.5 * ie.in_direction(d);
+    w0 = 1. - where.in_direction_min(d) * gv.a + 0.5 * is.in_direction(d);
+    w1 = 1. + where.in_direction_max(d) * gv.a - 0.5 * ie.in_direction(d);
     if (ie.in_direction(d) >= is.in_direction(d) + 3 * 2) {
       s0.set_direction(d, w0 * w0 / 2);
       s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2);
@@ -271,14 +271,15 @@ void compute_boundary_weights(grid_volume gv, volume &wherec, ivec &is, ivec &ie
       e0.set_direction(d, w1 * w1 / 2);
       e1.set_direction(d, s1.in_direction(d));
     }
-    else if (wherec.in_direction_min(d) == wherec.in_direction_max(d)) {
+    else if (where.in_direction_min(d) == where.in_direction_max(d)) {
       if (snap_empty_dimensions) {
         if (w0 > w1)
           ie.set_direction(d, is.in_direction(d));
         else
           is.set_direction(d, ie.in_direction(d));
-        wherec.set_direction_min(d, is.in_direction(d) * (0.5 * gv.inva));
-        wherec.set_direction_max(d, is.in_direction(d) * (0.5 * gv.inva));
+        // shouldn't be necessary to change where:
+        // where.set_direction_min(d, is.in_direction(d) * (0.5 * gv.inva));
+        // where.set_direction_max(d, is.in_direction(d) * (0.5 * gv.inva));
         w0 = w1 = 1.0;
       }
       s0.set_direction(d, w0);
@@ -347,36 +348,23 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
   if (cgrid == Permeability) cgrid = Centered;
 
-  /*
-    We handle looping on an arbitrary component grid by shifting
-    to the centered grid and then shifting back.  The looping
-    coordinates are internally calculated on the odd-indexed
-    "centered grid", which has the virtue that it is disjoint for
-    each chunk and each chunk has enough information to interpolate all
-    of its field components onto this grid without communication.
-    Another virtue of this grid is that it is invariant under all of
-    our symmetry transformations, so we can uniquely decide which
-    transformed chunk gets to loop_in_chunks which grid point.
-  */
+  /* Find the corners (is and ie) of the smallest bounding box for
+     wherec, on the grid of odd-coordinate ivecs (i.e. the
+     "dielectric/centered grid") and then shift back to the yee grid for c. */
   vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
   ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
   volume wherec(where + yee_c);
-
-  /* Find the corners (is and ie) of the smallest bounding box for
-     wherec, on the grid of odd-coordinate ivecs (i.e. the
-     "epsilon grid"). */
-  ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)));
-  ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)));
+  ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
+  ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
 
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
-  compute_boundary_weights(gv, wherec, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
+  compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
 
   // loop over symmetry transformations of the chunks:
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
     component cS = S.transform(cgrid, -sn);
-    ivec iyee_cS(S.transform_unshifted(iyee_c, -sn));
-
     volume gvS = S.transform(gv.surroundings(), sn);
+
     vec L(gv.dim);
     ivec iL(gv.dim);
 
@@ -387,16 +375,16 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
       iL.set_direction(d, iabs(ilattice_vector(dS).in_direction(dS)));
     }
 
-    // figure out range of lattice shifts for which gvS intersects wherec:
+    // figure out range of lattice shifts for which gvS intersects where:
     ivec min_ishift(gv.dim), max_ishift(gv.dim);
     LOOP_OVER_DIRECTIONS(gv.dim, d) {
       if (boundaries[High][S.transform(d, -sn).d] == Periodic) {
         min_ishift.set_direction(
             d,
-            int(floor((wherec.in_direction_min(d) - gvS.in_direction_max(d)) / L.in_direction(d))));
+            int(floor((where.in_direction_min(d) - gvS.in_direction_max(d)) / L.in_direction(d))));
         max_ishift.set_direction(
             d,
-            int(ceil((wherec.in_direction_max(d) - gvS.in_direction_min(d)) / L.in_direction(d))));
+            int(ceil((where.in_direction_max(d) - gvS.in_direction_min(d)) / L.in_direction(d))));
       }
       else {
         min_ishift.set_direction(d, 0);
@@ -418,25 +406,16 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
       for (int i = 0; i < num_chunks; ++i) {
         if (!chunks[i]->is_mine()) continue;
-        // Chunk looping boundaries:
-        volume vS(gv.dim);
+        // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
+        grid_volume gvu(use_symmetry ? chunks[i]->gv.unpad(gv) : chunks[i]->gv);
+        ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
+        ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
+        ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
 
-        if (use_symmetry)
-          vS = S.transform(chunks[i]->v, sn);
-        else {
-          /* If we're not using symmetry, it's because (as in src_vol)
-             we don't care about correctly counting the points in the
-             grid_volume.  Rather, we just want to make sure to get *all*
-             of the chunk points that intersect where.  Hence, add a little
-             padding to make sure we don't miss any points due to rounding. */
-          vec pad(one_ivec(gv.dim) * gv.inva * 1e-3);
-          vS = volume(chunks[i]->gv.loc(Centered, 0) - pad,
-                      chunks[i]->gv.loc(Centered, chunks[i]->gv.ntot() - 1) + pad);
-        }
-
-        ivec iscS(max(is - shifti, vec2diel_ceil(vS.get_min_corner(), gv.a, one_ivec(gv.dim) * 2)));
-        ivec iecS(min(ie - shifti, vec2diel_floor(vS.get_max_corner(), gv.a, zero_ivec(gv.dim))));
-        if (iscS <= iecS) {
+        // intersect the chunk points with is and ie volume (shifted):
+        ivec iscS(max(is - shifti, iscoS));
+        ivec iecS(min(ie - shifti, iecoS));
+        if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
           ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
           vec s0c(gv.dim, 1.0), s1c(gv.dim, 1.0), e0c(gv.dim, 1.0), e1c(gv.dim, 1.0);
@@ -496,15 +475,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
           // Determine integration "volumes" dV0 and dV1;
           double dV0 = 1.0, dV1 = 0.0;
           LOOP_OVER_DIRECTIONS(gv.dim, d) {
-            if (wherec.in_direction(d) > 0.0) dV0 *= gv.inva;
+            if (where.in_direction(d) > 0.0) dV0 *= gv.inva;
           }
           if (gv.dim == Dcyl) {
             dV1 = dV0 * 2 * pi * gv.inva;
             dV0 *= 2 * pi *
-                   fabs((S.transform(chunks[i]->gv[isc], sn) + shift - yee_c).in_direction(R));
+                   fabs((S.transform(chunks[i]->gv[isc], sn) + shift).in_direction(R));
           }
 
-          chunkloop(chunks[i], i, cS, isc - iyee_cS, iec - iyee_cS, s0c, s1c, e0c, e1c, dV0, dV1,
+          chunkloop(chunks[i], i, cS, isc, iec, s0c, s1c, e0c, e1c, dV0, dV1,
                     shifti, ph, S, sn, chunkloop_data);
         }
       }

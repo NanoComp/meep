@@ -1,20 +1,20 @@
 // -*- C++ -*-
-/* Copyright (C) 2005-2021 Massachusetts Institute of Technology
-%
-%  This program is free software; you can redistribute it and/or modify
-%  it under the terms of the GNU General Public License as published by
-%  the Free Software Foundation; either version 2, or (at your option)
-%  any later version.
-%
-%  This program is distributed in the hope that it will be useful,
-%  but WITHOUT ANY WARRANTY; without even the implied warranty of
-%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%  GNU General Public License for more details.
-%
-%  You should have received a copy of the GNU General Public License
-%  along with this program; if not, write to the Free Software Foundation,
-%  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*/
+/* Copyright (C) 2005-2021 Massachusetts Institute of Technology.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #ifndef MEEP_VEC_H
 #define MEEP_VEC_H
@@ -53,7 +53,7 @@ enum component {
   Permeability,
   NO_COMPONENT
 };
-#define Centered Dielectric // better name for centered "dielectric" grid
+const component Centered = Dielectric; // better name for centered "dielectric" grid
 enum derived_component {
   Sx = 100,
   Sy,
@@ -1095,6 +1095,7 @@ public:
   }
 
   ivec little_owned_corner(component c) const;
+  ivec big_owned_corner(component c) const { return big_corner() - iyee_shift(c); }
   bool owns(const ivec &) const;
   volume surroundings() const;
   volume interior() const;
@@ -1119,6 +1120,8 @@ public:
     gv.pad_self(d);
     return gv;
   }
+  grid_volume unpad() const;
+  grid_volume unpad(const grid_volume &gv0) const;
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
@@ -1166,6 +1169,7 @@ private:
   }
   int num[3];
   ptrdiff_t the_stride[5];
+  bool is_padded[5];
   size_t the_ntot;
 };
 
