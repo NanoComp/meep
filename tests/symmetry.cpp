@@ -927,11 +927,11 @@ int main(int argc, char **argv) {
   if (!test_yperiodic_ymirror(one)) meep::abort("error in test_yperiodic_ymirror vacuum\n");
   if (!test_yperiodic_ymirror(rods_2d)) meep::abort("error in test_yperiodic_ymirror rods2d\n");
 
-  //if (!pml_twomirrors(one)) meep::abort("error in pml_twomirrors vacuum\n");
+  if (!pml_twomirrors(one)) meep::abort("error in pml_twomirrors vacuum\n");
 
   if (!test_origin_shift()) meep::abort("error in test_origin_shift\n");
 
-  //if (!exact_pml_rot2x_tm(one)) meep::abort("error in exact_pml_rot2x_tm vacuum\n");
+  if (!exact_pml_rot2x_tm(one)) meep::abort("error in exact_pml_rot2x_tm vacuum\n");
 
   if (!test_metal_xmirror(rods_2d)) meep::abort("error in test_metal_xmirror rods_2d\n");
 
