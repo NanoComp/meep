@@ -1,5 +1,17 @@
 # Meep Release Notes
 
+## Meep 1.22.0
+
+1/11/2022
+
+* Support for anisotropic materials and subpixel smoothing in adjoint gradients ([#1780], [#1801]).
+
+* Support for damping property in `MaterialGrid` ([#1804]).
+
+* Support for cylindrical coordinates in `plot2D` ([#1873]).
+
+* Various bugfixes ([#1796], [#1830], [#1849], [#1860]), performance enhancements ([#1826], [#1839], [#1871], [#1872], [#1877]), and additional unit tests and documentation.
+
 ## Meep 1.21.0
 
 10/12/2021
