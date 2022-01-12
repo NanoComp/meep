@@ -412,20 +412,36 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
         ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
         
-        if (false && sn>0){
+        std::set<direction> overlap_d;
+        for (int j = 0; j < num_chunks; ++j) {
+          if (!chunks[j]->is_mine()) continue;
+          // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
+          grid_volume gvuj(use_symmetry ? chunks[j]->gv.unpad(gv) : chunks[j]->gv);
+          ivec _iscoSj(S.transform(gvuj.little_owned_corner(cS), sn));
+          ivec _iecoSj(S.transform(gvuj.big_owned_corner(cS), sn));
+          ivec iscoSj(min(_iscoSj, _iecoSj)), iecoSj(max(_iscoSj, _iecoSj)); // fix ordering due to to transform
+          
+        if (sn>0){
           for (int sm = sn-1; sm >= 0; --sm){//for previous transformations
             component cSm = S.transform(cgrid, -sm);
-            ivec _iscoSm(S.transform(gvu.little_owned_corner(cSm), sm));
-            ivec _iecoSm(S.transform(gvu.big_owned_corner(cSm), sm));
+            
+            ivec _iscoSm(S.transform(gvuj.little_owned_corner(cSm), sm));
+            ivec _iecoSm(S.transform(gvuj.big_owned_corner(cSm), sm));
             ivec iscoSm(min(_iscoSm, _iecoSm)), iecoSm(max(_iscoSm, _iecoSm));
-            LOOP_OVER_DIRECTIONS(gvu.dim, d){
-              if (iecoSm.in_direction(d) == iscoS.in_direction(d)) {
-                iscoS.set_direction(d, iecoSm.in_direction(d)+2);
-                iecoS.set_direction(d, iecoS.in_direction(d)+2);
+            
+            LOOP_OVER_DIRECTIONS(gvuj.dim, d){
+              if (iecoSm.in_direction(d) == iscoSj.in_direction(d)) {
+                overlap_d.insert(d);
               }
-            }
+            }            
           }
         }
+      }
+      for (std::set<direction>::iterator set_i=overlap_d.begin();set_i!=overlap_d.end();++set_i){
+        iscoS.set_direction(*set_i, iscoS.in_direction(*set_i)+2);
+        iecoS.set_direction(*set_i, iecoS.in_direction(*set_i)+2);
+      }
+      overlap_d.clear();
 
         // intersect the chunk points with is and ie volume (shifted):
         ivec iscS(max(is - shifti, iscoS));
