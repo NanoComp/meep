@@ -1189,7 +1189,7 @@ class Prism(GeometricObject):
         """
 
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
-        original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
+        original_center = centroid + axis*(0.5*height)               # center as computed from vertices, height, axis
         if center is not None and len(vertices):
             center = Vector3(*center)
             # translate vertices to center prism at requested center
