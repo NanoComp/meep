@@ -4414,7 +4414,7 @@ def __init__(self,
              medium2,
              weights=None,
              grid_type='U_DEFAULT',
-             do_averaging=True,
+             do_averaging=False,
              beta=0,
              eta=0.5,
              damping=0):
