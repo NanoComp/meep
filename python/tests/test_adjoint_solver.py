@@ -381,7 +381,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = Ez2_perturbed-Ez2_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.04 if mp.is_single_precision() else 0.006
+            tol = 0.07 if mp.is_single_precision() else 0.006
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 
@@ -477,7 +477,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adj_scale = (dp[None,:]@adjsol_grad).flatten()
             fd_grad = Ez2_perturbed-Ez2_unperturbed
             print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-            tol = 0.012 if mp.is_single_precision() else 0.002
+            tol = 0.018 if mp.is_single_precision() else 0.002
             self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
     def test_damping(self):
