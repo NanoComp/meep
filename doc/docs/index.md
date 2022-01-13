@@ -50,9 +50,11 @@ For a list of topics, see the left navigation sidebar. For new users, the most i
 
 This documentation is for the master branch of the [source repository](Download.md#github-source-repository). Note that certain features described in this documentation may therefore be *unavailable* if you are using a [tagged release](https://github.com/NanoComp/meep/releases).
 
-### Mailing Lists
+### Discussion Forum
 
-Subscribe to the read-only [meep-announce mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-announce) to receive notifications of updates and releases. Subscribe to the [meep-discuss mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for discussions regarding using Meep. The [meep-discuss archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) includes all postings since 2006 spanning a large number and variety of discussion topics related to installation, setting up simulations, post-processing output, etc. The list archives can also be accessed using a [newsgroup reader](https://en.wikipedia.org/wiki/List_of_Usenet_newsreaders) via the NNTP interface address: `news.gmane.io/gmane.comp.science.electromagnetism.meep.general`.
+For questions regarding setting up simulations, analyzing results, installation, etc., use the [Discussions](https://github.com/NanoComp/meep/discussions) page on GitHub.
+
+As an additional resource, archives of the [meep-discuss mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/), which is no longer active, are available which include postings from 2006-2021. These archives can also be accessed using a [newsgroup reader](https://en.wikipedia.org/wiki/List_of_Usenet_newsreaders) via the NNTP interface address: `news.gmane.io/gmane.comp.science.electromagnetism.meep.general`.
 
 ### Bug Reports and Feature Requests
 
