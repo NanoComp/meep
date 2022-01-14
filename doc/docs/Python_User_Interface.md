@@ -5699,7 +5699,7 @@ Construct a `Prism`.
 + **`vertices` [list of `Vector3`]** — The vertices that make up the prism. They
   must lie in a plane that's perpendicular to the `axis`. Note that infinite
   lengths are not supported. To simulate infinite geometry, just extend the edge
-  of the prism beyond the cell.
+  of the prism beyond the cell. Duplicate entries will be removed.
 
 + **`height` [`number`]** — The prism thickness, extruded in the direction of
   `axis`. `mp.inf` can be used for infinite height. No default value.

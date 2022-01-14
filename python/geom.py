@@ -1168,7 +1168,7 @@ class Prism(GeometricObject):
         + **`vertices` [list of `Vector3`]** — The vertices that make up the prism. They
           must lie in a plane that's perpendicular to the `axis`. Note that infinite
           lengths are not supported. To simulate infinite geometry, just extend the edge
-          of the prism beyond the cell.
+          of the prism beyond the cell. Duplicate entries will be removed.
 
         + **`height` [`number`]** — The prism thickness, extruded in the direction of
           `axis`. `mp.inf` can be used for infinite height. No default value.
@@ -1187,6 +1187,7 @@ class Prism(GeometricObject):
         + **`sidewall_angle` [`number`]** — The sidewall angle of the prism in units of
           radians. Default is 0.
         """
+        vertices = self.unique_vertices(vertices)
 
         centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
         original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
@@ -1204,6 +1205,14 @@ class Prism(GeometricObject):
 
         super(Prism, self).__init__(center=center, **kwargs)
 
+    def unique_vertices(self, v):
+        uniq_v = []
+
+        for w in v:
+            if w not in uniq_v:
+                uniq_v.append(w)
+
+        return uniq_v
 
 class Matrix(object):
     """
