@@ -220,7 +220,7 @@ class OptimizationProblem(object):
 
         # flip the k point
         if self.sim.k_point:
-            self.sim.k_point *= -1
+            self.sim.change_k_point(-1*self.sim.k_point)
 
         self.adjoint_design_region_monitors = []
         for ar in range(len(self.objective_functions)):

@@ -152,32 +152,6 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(monitor_values.shape,
                          (len(self.monitors), len(self.frequencies)))
 
-    def test_design_region_monitor_helpers(self):
-        design_region_monitors = mpa.utils.install_design_region_monitors(
-            self.simulation,
-            self.design_regions,
-            self.frequencies,
-        )
-        self.simulation.run(until=100)
-        design_region_fields = mpa.utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
-
-        self.assertIsInstance(design_region_fields, list)
-        self.assertEqual(len(design_region_fields), len(self.design_regions))
-
-        self.assertIsInstance(design_region_fields[0], list)
-        self.assertEqual(len(design_region_fields[0]),
-                         len(mpa.utils._ADJOINT_FIELD_COMPONENTS))
-
-        for value in design_region_fields[0]:
-            self.assertIsInstance(value, onp.ndarray)
-            self.assertEqual(value.ndim, 4)  # dims: freq, x, y, pad
-            self.assertEqual(value.dtype,
-                             onp.complex64 if mp.is_single_precision() else onp.complex128)
-
 
 class WrapperTest(ApproxComparisonTestCase):
     @parameterized.parameterized.expand([

@@ -2909,7 +2909,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
         // loop over forward components
         for (int ci_forward=0; ci_forward<3; ci_forward++){
-          if (forward_dft_chunks[ci_forward].size() == 0) continue;
+          if ((forward_dft_chunks[ci_forward].size() == 0) || cur_chunk>(forward_dft_chunks[ci_forward].size()-1)) continue;
           meep::dft_chunk* fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie,forward_c);
@@ -2917,8 +2917,8 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
           // loop over each point of interest
           LOOP_OVER_IVECS(gv,adj_chunk->is_old,adj_chunk->ie_old,idx){
             meep::ivec ip = gv.iloc(adjoint_c,idx);
-            size_t idx_adj =  gv_adj.index(adjoint_c,ip);
-            if (idx_adj >= adj_chunk->N) continue;     
+            size_t idx_adj =  gv_adj.index(adjoint_c,ip); 
+            if (idx_adj >= adj_chunk->N) meep::abort("index %d larger than limit %d\n",idx_adj,adj_chunk->N);    
             meep::vec p  = gv.loc(adjoint_c,idx);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf*idx_adj+f_i];
             material_type md;
@@ -2939,9 +2939,16 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
               material_grids_addgradient_point(
                 v_local+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
                 adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
-            }
             /* more complicated case requires interpolation/restriction */
-            else {
+            } else if (
+                      md->do_averaging ||                         /* account for subpixel smoothing     */
+                      !is_material_grid(md) ||                    /* account for edge effects of mg     */
+                     (md->medium_1.epsilon_offdiag.x.re != 0) ||  /* account for offdiagonal components */
+                     (md->medium_1.epsilon_offdiag.y.re != 0) ||
+                     (md->medium_1.epsilon_offdiag.z.re != 0) ||
+                     (md->medium_2.epsilon_offdiag.x.re != 0) ||
+                     (md->medium_2.epsilon_offdiag.y.re != 0) ||
+                     (md->medium_2.epsilon_offdiag.z.re != 0)) {
               /* we need to restrict the adjoint fields to
               the two nodes of interest (which requires a factor
               of 0.5 to scale), and interpolate the forward fields
