@@ -1,5 +1,17 @@
 # Meep Release Notes
 
+## Meep 1.22.0
+
+1/11/2022
+
+* Support for anisotropic materials and subpixel smoothing in adjoint gradients ([#1780], [#1801]).
+
+* Support for damping property in `MaterialGrid` ([#1804]).
+
+* Support for cylindrical coordinates in `plot2D` ([#1873]).
+
+* Various bugfixes ([#1796], [#1830], [#1849], [#1860]), performance enhancements ([#1826], [#1839], [#1871], [#1872], [#1877]), and additional unit tests and documentation.
+
 ## Meep 1.21.0
 
 10/12/2021
@@ -1010,3 +1022,16 @@ Meep 1.0.1
 [#1763]: https://github.com/NanoComp/meep/issues/1763
 [#1769]: https://github.com/NanoComp/meep/issues/1769
 [#1775]: https://github.com/NanoComp/meep/issues/1775
+[#1780]: https://github.com/NanoComp/meep/issues/1780
+[#1796]: https://github.com/NanoComp/meep/issues/1796
+[#1801]: https://github.com/NanoComp/meep/issues/1801
+[#1804]: https://github.com/NanoComp/meep/issues/1804
+[#1826]: https://github.com/NanoComp/meep/issues/1826
+[#1830]: https://github.com/NanoComp/meep/issues/1830
+[#1839]: https://github.com/NanoComp/meep/issues/1839
+[#1849]: https://github.com/NanoComp/meep/issues/1849
+[#1860]: https://github.com/NanoComp/meep/issues/1860
+[#1871]: https://github.com/NanoComp/meep/issues/1871
+[#1872]: https://github.com/NanoComp/meep/issues/1872
+[#1873]: https://github.com/NanoComp/meep/issues/1873
+[#1877]: https://github.com/NanoComp/meep/issues/1877
