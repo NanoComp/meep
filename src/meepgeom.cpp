@@ -2875,10 +2875,12 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
     meep::dft_chunk *current_adjoint_chunk = fields_a[i]->chunks;
     meep::dft_chunk *current_forward_chunk = fields_f[i]->chunks;
     while(current_adjoint_chunk) {
+      if (current_adjoint_chunk->omega.size() != nf) meep::abort("Supplied frequencies %d don't match dft frequencies %d\n",nf,current_adjoint_chunk->omega.size());
       c_adjoint_dft_chunks.push_back(current_adjoint_chunk);
       current_adjoint_chunk = current_adjoint_chunk->next_in_dft;
     }
     while(current_forward_chunk) {
+      if (current_forward_chunk->omega.size() != nf) meep::abort("Supplied frequencies %d don't match dft frequencies %d\n",nf,current_forward_chunk->omega.size());
       c_forward_dft_chunks.push_back(current_forward_chunk);
       current_forward_chunk = current_forward_chunk->next_in_dft;
     }
@@ -2894,7 +2896,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
   /* ------------------------------------------------------------ */
 
   // loop over frequency
-  for (size_t f_i = 0; f_i < nf; ++f_i) {
+  for (size_t f_i = 0; f_i < nf; f_i++) {
     
     // loop over adjoint components
     for (int ci_adjoint=0; ci_adjoint<3; ci_adjoint++){
@@ -2909,7 +2911,8 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
         // loop over forward components
         for (int ci_forward=0; ci_forward<3; ci_forward++){
-          if ((forward_dft_chunks[ci_forward].size() == 0) || cur_chunk>(forward_dft_chunks[ci_forward].size()-1)) continue;
+          size_t num_f_chunks = forward_dft_chunks[ci_forward].size();
+          if ((num_f_chunks == 0) || (cur_chunk>=num_f_chunks)) continue;
           meep::dft_chunk* fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie,forward_c);

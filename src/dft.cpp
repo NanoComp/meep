@@ -73,6 +73,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   dV1 = dV1_;
 
   persist = data->persist;
+  expand = data->expand;
 
   c = c_;
 
@@ -82,7 +83,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   by 1 pixel in each dimension, while ensuring
   we don't step outside of the chunk loop itself
   */
-  if(data->expand){
+  if(expand){
     is_old = is_;
     ie_old = ie_;
     is = max(is-one_ivec(fc->gv.dim)*2,fc->gv.little_corner());
@@ -308,30 +309,52 @@ double fields::dft_norm() {
   am_now_working_on(Other);
   double sum = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2();
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2(gv);
   finished_working();
   return std::sqrt(sum_to_all(sum));
 }
 
-double fields_chunk::dft_norm2() const {
+double fields_chunk::dft_norm2(grid_volume fgv) const {
   double sum = 0.0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    sum += cur->norm2();
+    sum += cur->norm2(fgv);
   return sum;
 }
 
 static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
 
-double dft_chunk::norm2() const {
+double dft_chunk::norm2(grid_volume fgv) const {
   if (!fc->f[c][0]) return 0.0;
   double sum = 0.0;
-  size_t idx_dft = 0;
-  const int Nomega = omega.size();
-  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-    for (int i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx_dft + i]);
-    idx_dft++;
+  size_t idx_dft;
+  const size_t Nomega = omega.size();
+  /* looping over chunks that have been "expanded"
+  for adjoint calculations requires some care. Namely,
+  we want to make sure we don't double count the padding
+  and can replicate results with different chunk combinations.
+  */
+  if (expand) {
+    grid_volume subgv = fgv.subvolume(is,ie,c);
+    LOOP_OVER_IVECS(fgv, is_old, ie_old, idx) {
+      idx_dft = subgv.index(c,fgv.iloc(c,idx));
+      if ((idx_dft < 0) || idx_dft > N) continue;
+      for (size_t i = 0; i < Nomega; ++i)
+          sum += sqr(dft[Nomega * idx_dft + i]);
+    } 
+  } 
+  /* note we place the if outside of the
+  loop to avoid branching. This routine gets
+  called a lot, so let's try to stay efficient
+  (at the expense of uglier code).
+   */
+  else{
+    LOOP_OVER_IVECS(fgv, is, ie, idx) {
+     idx_dft = IVEC_LOOP_COUNTER;
+     for (size_t i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx_dft + i]); 
+    }
   }
+
   return sum;
 }
 

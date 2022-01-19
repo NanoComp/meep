@@ -1121,7 +1121,7 @@ public:
   ~dft_chunk();
 
   void update_dft(double time);
-  double norm2() const;
+  double norm2(grid_volume fgv) const;
   double maxomega() const;
 
   void scale_dft(std::complex<double> scale);
@@ -1145,6 +1145,7 @@ public:
   // decide whether to "persist" after fields class
   // is deleted (e.g. for adjoint calculations)
   bool persist = false;
+  bool expand = false;
 
   component c; // component to DFT (possibly transformed by symmetry)
 
@@ -1578,7 +1579,7 @@ private:
   void initialize_with_nth_tm(int n, double kz);
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
-  double dft_norm2() const;
+  double dft_norm2(grid_volume fgv) const;
   double dft_maxfreq() const;
   int max_decimation() const;
 

@@ -858,23 +858,11 @@ void _get_gradient(PyObject *grad, double scalegrad,
     npy_intp ng = PyArray_DIMS(pao_grad)[1]; // number of design parameters
 
     // clean the adjoint fields object
-    //if (!PyList_Check(fields_a)) meep::abort("adjoint fields parameter must be a list.");
-    //if (PyList_Size(fields_a) !=3) {meep::abort("adjoint fields list must have a length of 3.");}
     std::vector<meep::dft_fields *> adjoint_fields = {fields_a_0,fields_a_1,fields_a_2};
-    /*
-    for (Py_ssize_t i=0;i<3;i++){
-        adjoint_fields.push_back((meep::dft_fields *)PyObject_GetAttrString(PyList_GetItem(fields_a,i),"swigobj"));
-    }  
-    */ 
 
     // clean the forward fields object
-    //if (!PyList_Check(fields_f)) meep::abort("forward fields parameter must be a list.");
-    //if (PyList_Size(fields_f) !=3) {meep::abort("forward fields list must have a length of 3.");}
     std::vector<meep::dft_fields *> forward_fields = {fields_f_0,fields_f_1,fields_f_2};
-    /*
-    for (Py_ssize_t i=0;i<3;i++)
-        forward_fields.push_back((meep::dft_fields *)PyObject_GetAttrString(PyList_GetItem(fields_f,i),"swigobj"));
-    */
+
     // clean the frequencies array
     PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
     if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
