@@ -138,7 +138,7 @@ class DiffractedPlanewave(object):
         """
         Construct a `DiffractedPlanewave`.
 
-        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
         + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\\mathcal{S}$ and $\\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
@@ -2725,7 +2725,7 @@ class Simulation(object):
         `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_energy` in a simulation of the same
         dimensions for both the cell and the energy regions with the same number of
-        processors.
+        processors and chunk layout.
         """
         if self.fields is None:
             self.init_sim()
@@ -2822,7 +2822,7 @@ class Simulation(object):
         `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_near2far` in a simulation of *the same
         dimensions* for both the cell and the near2far regions with the same number of
-        processors.
+        processors and chunk layout.
         """
         if self.fields is None:
             self.init_sim()
@@ -2862,7 +2862,7 @@ class Simulation(object):
         values currently there) from the `NearToFarData` object `n2fdata`. You must load
         from an object that was created by `get_near2far_data` in a simulation of the same
         dimensions (for both the cell and the flux regions) with the same number of
-        processors.
+        processors and chunk layout.
         """
         mp._load_dft_data(near2far.F, n2fdata.F)
 
@@ -2926,7 +2926,7 @@ class Simulation(object):
         `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_force` in a simulation of the same
         dimensions for both the cell and the force regions with the same number of
-        processors.
+        processors and chunk layout.
         """
         if self.fields is None:
             self.init_sim()
@@ -2967,7 +2967,8 @@ class Simulation(object):
         Load the Fourier-transformed fields into the given force object (replacing any
         values currently there) from the `ForceData` object `fdata`. You must load from an
         object that was created by `get_force_data` in a simulation of the same dimensions
-        (for both the cell and the flux regions) with the same number of processors.
+        (for both the cell and the flux regions) with the same number of processors and
+        chunk layout.
         """
         mp._load_dft_data(force.offdiag1, fdata.offdiag1)
         mp._load_dft_data(force.offdiag2, fdata.offdiag2)
@@ -3064,7 +3065,7 @@ class Simulation(object):
         `.h5` suffix (the current filename-prefix is prepended automatically). You must
         load from a file that was saved by `save_flux` in a simulation of the same
         dimensions (for both the cell and the flux regions) with the same number of
-        processors.
+        processors and chunk layout.
         """
         if self.fields is None:
             self.init_sim()
@@ -3112,7 +3113,8 @@ class Simulation(object):
         Load the Fourier-transformed fields into the given flux object (replacing any
         values currently there) from the `FluxData` object `fdata`. You must load from an
         object that was created by `get_flux_data` in a simulation of the same dimensions
-        (for both the cell and the flux regions) with the same number of processors.
+        (for both the cell and the flux regions) with the same number of processors and
+        chunk layout.
         """
         mp._load_dft_data(flux.E, fdata.E)
         mp._load_dft_data(flux.H, fdata.H)
