@@ -1432,10 +1432,6 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
     $1 = (double *)array_data($input);
 }
 
-%typemap(in) int* min_max_corners {
-    $1 = (int *)array_data($input);
-}
-
 %exception {
 #ifdef MEEP_SWIG_PYTHON_DEBUG
   // NOTE: You can do fancier things like timing the calls and using that

@@ -312,7 +312,16 @@ class OptimizationProblem(object):
         '''
         if filter is None:
             filter = lambda x: x
-        if num_gradients > self.num_design_params[design_variables_idx]:
+        if num_gradients < self.num_design_params[design_variables_idx]:
+            # randomly choose indices to loop estimate
+            fd_gradient_idx = np.random.choice(
+                self.num_design_params[design_variables_idx],
+                num_gradients,
+                replace=False,
+            )
+        elif num_gradients == self.num_design_params[design_variables_idx]:
+            fd_gradient_idx = range(self.num_design_params[design_variables_idx])
+        else:
             raise ValueError(
                 "The requested number of gradients must be less than or equal to the total number of design parameters."
             )
@@ -323,13 +332,6 @@ class OptimizationProblem(object):
 
         # preallocate result vector
         fd_gradient = []
-
-        # randomly choose indices to loop estimate
-        fd_gradient_idx = np.random.choice(
-            self.num_design_params[design_variables_idx],
-            num_gradients,
-            replace=False,
-        )
 
         for k in fd_gradient_idx:
 

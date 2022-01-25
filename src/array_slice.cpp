@@ -524,15 +524,17 @@ bool increment(size_t *n, size_t *nMax, int rank) {
 }
 
 // get the dimensions of reduced arrays
-size_t *reduce_array_dimensions(int full_rank, int *reduced_rank, size_t dims[3], direction dirs[3], volume where, size_t stride[3], size_t reduced_stride[3], direction reduced_dirs[3], size_t *reduced_grid_size) {
-  size_t *reduced_dims = new size_t[3];
+size_t *reduce_array_dimensions(volume where, int full_rank, int &reduced_rank, size_t &reduced_grid_size, size_t dims[3], size_t stride[3], size_t reduced_stride[3], direction dirs[3], direction reduced_dirs[3]) {
 
+  size_t *reduced_dims = new size_t[3];
+  reduced_rank = 0;
+  stride[0] = stride[1] = stride[2] = reduced_stride[0] = reduced_stride[1] = reduced_stride[2] = 1;
   for (int r = 0; r < full_rank; r++) {
     if (where.in_direction(dirs[r]) == 0.0)
       reduced_stride[r] = 0; // degenerate dimension, to be collapsed
     else {
-      reduced_dirs[*reduced_rank] = dirs[r];
-      reduced_dims[(*reduced_rank)++] = dims[r];
+      reduced_dirs[reduced_rank] = dirs[r];
+      reduced_dims[reduced_rank++] = dims[r];
     }
   }
   /*--------------------------------------------------------------*/
@@ -543,12 +545,12 @@ size_t *reduce_array_dimensions(int full_rank, int *reduced_rank, size_t dims[3]
   else if (full_rank == 3) {
     stride[0] = dims[1] * dims[2];
     stride[1] = dims[2];
-    if (*reduced_rank == 2)
+    if (reduced_rank == 2)
       reduced_stride[reduced_stride[0] != 0 ? 0 : 1] = reduced_dims[1];
   }
 
   /*--------------------------------------------------------------*/
-  *reduced_grid_size = reduced_dims[0] * (*reduced_rank == 2 ? reduced_dims[1] : 1);
+  reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
   return reduced_dims;
 }
 
@@ -561,11 +563,11 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
   /*- collapsed array                                             */
   /*--------------------------------------------------------------*/
   int full_rank = *rank;
-  size_t reduced_stride[3] = {1, 1, 1}, stride[3] = {1, 1, 1}; // the latter for non-reduced array strides
+  size_t reduced_stride[3], stride[3]; // the latter for non-reduced array strides
   direction reduced_dirs[3];
   size_t reduced_grid_size;
-  int reduced_rank = 0;
-  size_t *reduced_dims = reduce_array_dimensions(full_rank, &reduced_rank, dims, dirs, where, stride, reduced_stride, reduced_dirs, &reduced_grid_size);
+  int reduced_rank;
+  size_t *reduced_dims = reduce_array_dimensions(where, full_rank, reduced_rank, reduced_grid_size, dims, stride, reduced_stride, dirs, reduced_dirs);
 
   if (full_rank == 0) return array;
   if (reduced_rank==0) {
@@ -820,15 +822,5 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
   return xyzw;
 
 } // get_array_metadata
-
-std::vector<int> fields::indicate_thick_dims(const volume &where) { // indicate which dimensions have sizes larger than 1
-
-  std::vector<int> thickness_indicator = {1, 1, 1};
-  for (int nd = 0; nd < 3; nd++) {
-    direction d = direction(nd);
-    if (where.in_direction(d) == 0.0) thickness_indicator[nd] = 0; // set the entry to 0 if the size of the corresponding dimension is only 1
-  }
-  return thickness_indicator;
-}
 
 } // namespace meep

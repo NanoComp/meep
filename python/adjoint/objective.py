@@ -99,13 +99,6 @@ class ObjectiveQuantity(abc.ABC):
             scale *= 2
         return scale
 
-    def _dft_monitor_size(self,min_max_corners):
-        """Evaluates the size of the dft monitor for FourierFields."""
-        thickness_indicator = self.sim.fields.indicate_thick_dims(self.volume.swigobj)
-        raw_size = (min_max_corners[3:6]-min_max_corners[0:3])/2+np.ones(3)
-        true_size = np.array([raw_size[i]*(thickness_indicator[i]==1)+(thickness_indicator[i]==0) for i in range(3)],dtype=int)
-        return true_size
-
     def _create_time_profile(self, fwidth_frac=0.1):
         """Creates a time domain waveform for normalizing the adjoint source(s).
 
@@ -255,9 +248,7 @@ class FourierFields(ObjectiveQuantity):
         time_src = self._create_time_profile()
         sources = []
 
-        min_max_corners = self.sim.fields.get_corners(self._monitor.swigobj, self.component) # ivec values of the corners
-        mon_size = self._dft_monitor_size(min_max_corners)
-
+        mon_size = self.sim.fields.dft_monitor_size(self._monitor.swigobj, self.volume.swigobj, self.component)
         dJ = dJ.astype(np.complex128)
         if np.prod(mon_size)*self.num_freq == dJ.size: # The objective function J is a scalar.
             dJ = dJ.flatten()
@@ -266,7 +257,7 @@ class FourierFields(ObjectiveQuantity):
         else:
             raise ValueError('The format of J is incorrect!')
 
-        self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(self.volume.swigobj, min_max_corners, dJ)
+        self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(self.volume.swigobj, self.component, self.sim.fields, dJ)
 
         for fourier_data in self.all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
