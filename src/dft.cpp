@@ -1407,7 +1407,6 @@ std::vector<int> fields::dft_monitor_size(dft_fields fdft, const volume &where, 
 }
 
 std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, component c, fields &f, const std::complex<double>* dJ){
-  if (!chunks) return std::vector<struct sourcedata>();
   const size_t Nfreq = freq.size();
 
   ivec min_corner, max_corner;
@@ -1420,6 +1419,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
   size_t *dims = f.get_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs);
   size_t *reduced_dims = reduce_array_dimensions(where, rank, reduced_rank, reduced_grid_size, dims, stride, reduced_stride, dirs, reduced_dirs);
   size_t monitor_array[3] = {1, 1, 1}; // lengths of the dft monitor along the three dimensions
+  for (int nd = 0; nd < 3; ++nd) if (nd < reduced_rank) monitor_array[nd] = reduced_dims[nd];
   const size_t monitor_size = monitor_array[0]*monitor_array[1]*monitor_array[2]; // total number of points in the monitor
 
   std::vector<struct sourcedata> temp;
