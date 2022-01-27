@@ -1072,6 +1072,7 @@ grid_volume grid_volume::split_at_fraction(bool side_high, int split_pt, int spl
 
 // Halve the grid_volume for symmetry exploitation...must contain icenter!
 grid_volume grid_volume::halve(direction d) const {
+  grid_volume retval(*this);
   // note that icenter-io is always even by construction of grid_volume::icenter
   /*retval.set_num_direction(d, (icenter().in_direction(d) - io.in_direction(d)) / 2);
   retval.is_halved[d]=true;
