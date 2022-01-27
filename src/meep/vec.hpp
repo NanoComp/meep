@@ -1216,12 +1216,13 @@ public:
   void operator=(const symmetry &);
   bool operator==(const symmetry &) const;
   bool operator!=(const symmetry &S) const { return !(*this == S); };
+  ivec i_symmetry_point;
 
 private:
   signed_direction S[5];
   std::complex<double> ph;
   vec symmetry_point;
-  ivec i_symmetry_point;
+  //ivec i_symmetry_point;
   int g; // g is the multiplicity of the symmetry.
   symmetry *next;
   friend symmetry r_to_minus_r_symmetry(double m);
