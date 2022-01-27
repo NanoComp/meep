@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex>
+#include <climits>
 
 #include "meep_internals.hpp"
 #include "meepgeom.hpp"
