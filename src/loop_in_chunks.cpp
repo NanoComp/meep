@@ -417,16 +417,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec isym(gvu.dim, INT_MAX);
         bool gvu_is_halved[3] = {false, false, false};
         
-          bool break_this[3];
-          for (int dd = 0; dd < 3; dd++) {
-            const direction d = (direction)dd;
-            break_this[dd] = false;
-            for (int n = 0; n < S.multiplicity(); n++)
-              if (has_direction(gv.dim, d) &&
-                  (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
-                if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
-                  master_printf("Padding %s to even number of grid points.\n", direction_name(d));
-                break_this[dd] = true;
+        bool break_this[3];
+        for (int dd = 0; dd < 3; dd++) {
+          const direction d = (direction)dd;
+          break_this[dd] = false;
+          for (int n = 0; n < S.multiplicity(); n++)
+            if (has_direction(gv.dim, d) && (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
+              if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
+                master_printf("Padding %s to even number of grid points.\n", direction_name(d));
+              break_this[dd] = true;
               }
           }
           int break_mult = 1;
@@ -435,8 +434,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
             if (break_this[d]) {
               break_mult *= 2;
               if (verbosity > 0)
-                master_printf("Halving computational cell along direction %s\n",
-                              direction_name(direction(d)));
+                master_printf("Halving computational cell along direction %s\n",direction_name(direction(d)));
               gvu_is_halved[d] = true;
             }
           }
@@ -446,20 +444,9 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
             if (gvu_is_halved[d]) isym.set_direction(d, S.i_symmetry_point.in_direction(d) - off_sym_shift);
           }
         }
-      }
-      
-      for (std::set<direction>::iterator set_i=overlap_d.begin();set_i!=overlap_d.end();++set_i){
-        iscoS.set_direction(*set_i, iscoS.in_direction(*set_i)+2);
-        iecoS.set_direction(*set_i, iecoS.in_direction(*set_i)+2);
-      }
-      overlap_d.clear();
 
         ivec iscS(max(is - shifti, iscoS));
-        ivec chunk_corner(gvu.little_owned_corner(cgrid));
-        LOOP_OVER_DIRECTIONS(gv.dim, d) {
-          if ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)) iecoS.set_direction(d, min(isym, iecoS).in_direction(d));  
-        } 
-        ivec iecS( min(ie - shifti, iecoS));
+        ivec iecS(min(isym, min(ie - shifti, iecoS)));
                 
         if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
