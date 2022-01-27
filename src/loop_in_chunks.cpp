@@ -447,6 +447,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
           }
         }
       }
+      
       for (std::set<direction>::iterator set_i=overlap_d.begin();set_i!=overlap_d.end();++set_i){
         iscoS.set_direction(*set_i, iscoS.in_direction(*set_i)+2);
         iecoS.set_direction(*set_i, iecoS.in_direction(*set_i)+2);
