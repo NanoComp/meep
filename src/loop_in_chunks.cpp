@@ -18,7 +18,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <set>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -357,12 +356,14 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   volume wherec(where + yee_c);
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
+  //printf("is (%i, %i, %i), ie (%i, %i, %i), component %s \n",is.x(),is.y(),is.z(), ie.x(),ie.y(),ie.z(),component_name(cgrid));
 
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
 
   // loop over symmetry transformations of the chunks:
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
+    //printf(" sym sn %i of %i \n", sn, (use_symmetry ? S.multiplicity() : 1));
     component cS = S.transform(cgrid, -sn);
     volume gvS = S.transform(gv.surroundings(), sn);
 
@@ -395,6 +396,31 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
     // loop over lattice shifts
     ivec ishift(min_ishift);
+    
+    ivec lowerboundary(gv.dim, INT_MAX);
+    if (use_symmetry && S.multiplicity() > 1){
+      for (int sm = 0; sm < (use_symmetry ? S.multiplicity() : 1); ++sm) {
+        component cSm = S.transform(cgrid, -sm);
+        for (int i = 0; i < num_chunks; ++i) {
+          if (!chunks[i]->is_mine()) continue;
+          // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
+          grid_volume gvu2(use_symmetry ? chunks[i]->gv.unpad(gv) : chunks[i]->gv);
+          ivec _iscoS2(S.transform(gvu2.little_owned_corner(cSm), sm));
+          ivec _iecoS2(S.transform(gvu2.big_owned_corner(cSm), sm));
+          //printf("_iscoS2 (%i, %i, %i), _iecoS2 (%i, %i, %i), component %s\n", _iscoS2.x(), _iscoS2.y(),_iscoS2.z(),_iecoS2.x(), _iecoS2.y(),_iecoS2.z(), component_name(cSm)); 
+          lowerboundary = min(lowerboundary, min(_iscoS2, _iecoS2));
+        }
+      }
+      LOOP_OVER_DIRECTIONS(gv.dim, d){
+        int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? 0 : 2);
+        //printf("isym (%i, %i, %i) \n",isym.x(), isym.y(),isym.z());
+        if (ishift.in_direction(d) != 0) lowerboundary.set_direction(d, lowerboundary.in_direction(d) + off_sym_shift);
+        //printf("isym (%i, %i, %i) \n",isym.x(), isym.y(),isym.z());
+      }
+    }
+    
+
+    
     do {
       complex<double> ph = 1.0;
       vec shift(gv.dim, 0.0);
@@ -404,6 +430,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
         ph *= pow(eikna[d], ishift.in_direction(d));
       }
+      //printf("  ishift (%i, %i, %i), shifti (%i, %i, %i) \n",ishift.x(),ishift.y(),ishift.z(), shifti.x(),shifti.y(),shifti.z());
 
       for (int i = 0; i < num_chunks; ++i) {
         if (!chunks[i]->is_mine()) continue;
@@ -411,9 +438,33 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         grid_volume gvu(use_symmetry ? chunks[i]->gv.unpad(gv) : chunks[i]->gv);
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
-        ivec iscoS(min(_iscoS, _iecoS)), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
+        ivec iscoS(max(lowerboundary, min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
         
-        std::set<direction> overlap_d;
+        
+        
+        /*
+        if (false && sn>0){
+          for (int sm = sn-1; sm >= 0; --sm){
+            component cSm = S.transform(cgrid, -sm);
+            ivec _iscoSm(S.transform(gvu.little_owned_corner(cSm), sm));
+            ivec _iecoSm(S.transform(gvu.big_owned_corner(cSm), sm));
+            ivec iscoSm(min(_iscoSm, _iecoSm)), iecoSm(max(_iscoSm, _iecoSm));
+            LOOP_OVER_DIRECTIONS(gvu.dim, d){
+              if (iecoSm.in_direction(d) == iscoS.in_direction(d)) {
+                iscoS.set_direction(d, iecoSm.in_direction(d)+2);
+                //iecoS.set_direction(d, iecoS.in_direction(d)+2);
+              }
+              //if (iscoSm.in_direction(d) == iecoS.in_direction(d)) iecoS.set_direction(d, iscoSm.in_direction(d)-2);
+            }         
+          }    
+        }
+        */
+        
+        //if (!use_symmetry) printf("no symmetry, iscoS (%i, %i, %i), iecoS (%i, %i, %i), component %s\n", iscoS.x(), iscoS.y(),iscoS.z(), iecoS.x(), iecoS.y(),iecoS.z(), component_name(cS)); 
+        //if (use_symmetry) printf("before: symmetry sn %i, iscoS (%i, %i, %i), iecoS (%i, %i, %i), component %s\n", sn, iscoS.x(), iscoS.y(),iscoS.z(), iecoS.x(), iecoS.y(),iecoS.z(), component_name(cS));
+        
+        
+        /*std::set<direction> overlap_d;
         for (int j = 0; j < num_chunks; ++j) {
           if (!chunks[j]->is_mine()) continue;
           // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
@@ -429,24 +480,104 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
             ivec _iscoSm(S.transform(gvuj.little_owned_corner(cSm), sm));
             ivec _iecoSm(S.transform(gvuj.big_owned_corner(cSm), sm));
             ivec iscoSm(min(_iscoSm, _iecoSm)), iecoSm(max(_iscoSm, _iecoSm));
+            //printf("symmetry sm %i, iscoSm %i, iecoSm %i, component %s\n", sm, iscoSm.z(), iecoSm.z(), component_name(cSm));
             
             LOOP_OVER_DIRECTIONS(gvuj.dim, d){
               if (iecoSm.in_direction(d) == iscoSj.in_direction(d)) {
                 overlap_d.insert(d);
+                //iscoS.set_direction(d, iecoSm.in_direction(d)+2);
+                //iecoS.set_direction(d, iecoS.in_direction(d)+2);
               }
-            }            
+              //if (iscoSm.in_direction(d) == iecoS.in_direction(d)) iecoS.set_direction(d, iscoSm.in_direction(d)-2);
+            }
+            
+            
           }
         }
       }
+      
       for (std::set<direction>::iterator set_i=overlap_d.begin();set_i!=overlap_d.end();++set_i){
         iscoS.set_direction(*set_i, iscoS.in_direction(*set_i)+2);
         iecoS.set_direction(*set_i, iecoS.in_direction(*set_i)+2);
       }
       overlap_d.clear();
-
+    
+      if (sn>0){
+        for (int sm = sn-1; sm >= 0; --sm){//for previous transformations
+          component cSm = S.transform(cgrid, -sm);
+          
+          ivec _iscoSm(S.transform(gvu.little_owned_corner(cSm), sm));
+          ivec _iecoSm(S.transform(gvu.big_owned_corner(cSm), sm));
+          ivec iscoSm(min(_iscoSm, _iecoSm)), iecoSm(max(_iscoSm, _iecoSm));
+          //printf("symmetry sm %i, iscoSm %i, iecoSm %i, component %s\n", sm, iscoSm.z(), iecoSm.z(), component_name(cSm));
+          
+          LOOP_OVER_DIRECTIONS(gvu.dim, d){
+            if (iscoSm.in_direction(d) <= iecoS.in_direction(d)) {
+              iecoS.set_direction(d, iscoSm.in_direction(d)-2);
+            }
+            //if (iscoSm.in_direction(d) == iecoS.in_direction(d)) iecoS.set_direction(d, iscoSm.in_direction(d)-2);
+          }
+        }
+      }
+      */
+      
+        //if (use_symmetry) printf(" after: symmetry sn %i, iscoS (%i, %i, %i), iecoS (%i, %i, %i), component %s\n", sn, iscoS.x(), iscoS.y(),iscoS.z(), iecoS.x(), iecoS.y(),iecoS.z(), component_name(cS));
+        
+        ivec isym(gvu.dim, INT_MAX);
+        //printf("infty %i", -meep::infinity);
+        //printf("isym (%i, %i, %i) \n",isym.x(), isym.y(),isym.z());
+        bool gvu_is_halved[3] = {false, false, false};
+        
+          bool break_this[3];
+          for (int dd = 0; dd < 3; dd++) {
+            const direction d = (direction)dd;
+            break_this[dd] = false;
+            for (int n = 0; n < S.multiplicity(); n++)
+              if (has_direction(gv.dim, d) &&
+                  (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
+                if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
+                  master_printf("Padding %s to even number of grid points.\n", direction_name(d));
+                break_this[dd] = true;
+              }
+          }
+          int break_mult = 1;
+          for (int d = 0; d < 3; d++) {
+            if (break_mult == S.multiplicity()) break_this[d] = false;
+            if (break_this[d]) {
+              break_mult *= 2;
+              if (verbosity > 0)
+                master_printf("Halving computational cell along direction %s\n",
+                              direction_name(direction(d)));
+              gvu_is_halved[d] = true;
+            }
+          }
+        if (sn!=0){
+          LOOP_OVER_DIRECTIONS(gvu.dim, d){
+            
+            int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? gv.iyee_shift(cgrid).in_direction(d)+2 : 2);
+            //printf("isym (%i, %i, %i) \n",isym.x(), isym.y(),isym.z());
+            if (gvu_is_halved[d]) isym.set_direction(d, S.i_symmetry_point.in_direction(d) - off_sym_shift);
+            //printf("isym (%i, %i, %i) \n",isym.x(), isym.y(),isym.z());
+          }
+        }
+        //ivec isym= (iyee!=0?yee:2) along half directions,-infty else
         // intersect the chunk points with is and ie volume (shifted):
+        //printf("    iscoS (%i, %i, %i), iecoS (%i, %i, %i)\n", iscoS.x(), iscoS.y(),iscoS.z(), iecoS.x(), iecoS.y(),iecoS.z()); 
+        //printf("    isym (%i, %i, %i)\n", isym.x(), isym.y(),isym.z());
+        //printf("component %s, iyee (%i, %i, %i) \n",component_name(cgrid), gv.iyee_shift(cgrid).x(), gv.iyee_shift(cgrid).y(),gv.iyee_shift(cgrid).z());
+        //ivec iscS(max(isym,max(is - shifti, iscoS)));
         ivec iscS(max(is - shifti, iscoS));
-        ivec iecS(min(ie - shifti, iecoS));
+        ivec iecS(min(isym, min(ie - shifti, iecoS)));
+        //printf("    use-isym: iscS (%i, %i, %i), iecS (%i, %i, %i)\n",iscS.x(), iscS.y(),iscS.z(), iecS.x(), iecS.y(),iecS.z());
+        
+        
+        //max(iscS, sym)
+        //printf("symmetry? %i\n", (S.multiplicity()>1));
+        //printf("    no-isym: iscS (%i, %i, %i), iecS (%i, %i, %i)\n",iscS0.x(), iscS0.y(),iscS0.z(), iecS.x(), iecS.y(),iecS.z());
+        
+        //ivec iscS(max(is - shifti, iscoS));
+        //ivec iecS(min(ie - shifti, iecoS));
+                
         if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
           ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
