@@ -12,7 +12,11 @@ Referencing
 
 We request that you cite the following technical reference in any work for which you used Meep:
 
-- A. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, [MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008), Computer Physics Communications, Vol. 181, pp. 687-702 (2010) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)).
+- A. Oskooi, D. Roundy, M. Ibanescu, P. Bermel, J.D. Joannopoulos, and S.G. Johnson, “[MEEP: A flexible free-software package for electromagnetic simulations by the FDTD method](http://dx.doi.org/doi:10.1016/j.cpc.2009.11.008),” *Computer Physics Communications*, Vol. 181, pp. 687-702 (2010) ([pdf](http://ab-initio.mit.edu/~oskooi/papers/Oskooi10.pdf)).
+
+If you use Meep's adjoint topology-optimization facilities, you should additionally cite:
+
+- A. M. Hammond, A. Oskooi, M. Chen, Z. Lin, S. G. Johnson, and S. E. Ralph, “[High-performance hybrid time/frequency-domain topology optimization for large-scale photonics inverse design](https://doi.org/10.1364/OE.442074),” *Optics Express*, vol. 30, no. 3, pp. 4467–4491 (2022).
 
 If you want a one-sentence description of the algorithm for inclusion in a publication, we recommend something like:
 
