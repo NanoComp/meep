@@ -87,8 +87,8 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size: meep.geom.Vector3,
-             resolution: float,
+             cell_size: meep.geom.Vector3 = None,
+             resolution: float = None,
              geometry: List[meep.geom.GeometricObject] = None,
              sources: List[meep.source.Source] = None,
              eps_averaging: bool = True,

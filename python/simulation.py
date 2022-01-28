@@ -935,8 +935,8 @@ class Simulation(object):
     control various parameters of the Meep computation.
     """
     def __init__(self,
-                 cell_size: Vector3,
-                 resolution: float,
+                 cell_size: Vector3 = None,
+                 resolution: float = None,
                  geometry: List[GeometricObject] = None,
                  sources: List[Source] = None,
                  eps_averaging: bool = True,
