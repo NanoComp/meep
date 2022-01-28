@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, print_function
 
+from typing import Callable, List, Tuple, Union
+
 import functools
 import math
 import numbers
@@ -21,8 +23,8 @@ except ImportError:
 import numpy as np
 
 import meep as mp
-from meep.geom import Vector3, init_do_averaging
-from meep.source import EigenModeSource, GaussianBeamSource, IndexedSource, check_positive
+from meep.geom import Vector3, init_do_averaging, GeometricObject, Medium
+from meep.source import Source, EigenModeSource, GaussianBeamSource, IndexedSource, check_positive
 import meep.visualization as vis
 from meep.verbosity_mgr import Verbosity
 
@@ -933,40 +935,40 @@ class Simulation(object):
     control various parameters of the Meep computation.
     """
     def __init__(self,
-                 cell_size,
-                 resolution,
-                 geometry=None,
-                 sources=None,
-                 eps_averaging=True,
-                 dimensions=3,
-                 boundary_layers=None,
-                 symmetries=None,
-                 force_complex_fields=False,
-                 default_material=mp.Medium(),
-                 m=0,
-                 k_point=False,
-                 kz_2d="complex",
-                 extra_materials=None,
-                 material_function=None,
-                 epsilon_func=None,
-                 epsilon_input_file='',
-                 progress_interval=4,
-                 subpixel_tol=1e-4,
-                 subpixel_maxeval=100000,
-                 loop_tile_base_db=0,
-                 loop_tile_base_eh=0,
-                 ensure_periodicity=True,
-                 num_chunks=0,
-                 Courant=0.5,
-                 accurate_fields_near_cylorigin=False,
-                 filename_prefix=None,
-                 output_volume=None,
-                 output_single_precision=False,
-                 geometry_center=mp.Vector3(),
-                 force_all_components=False,
-                 split_chunks_evenly=True,
-                 chunk_layout=None,
-                 collect_stats=False):
+                 cell_size: Vector3,
+                 resolution: float,
+                 geometry: List[GeometricObject] = None,
+                 sources: List[Source] = None,
+                 eps_averaging: bool = True,
+                 dimensions: int = 3,
+                 boundary_layers: List[PML] = None,
+                 symmetries: List[Symmetry] = None,
+                 force_complex_fields: bool = False,
+                 default_material: Medium = mp.Medium(),
+                 m: int = 0,
+                 k_point: bool = False,
+                 kz_2d = "complex",
+                 extra_materials: List[Medium] = None,
+                 material_function = None,
+                 epsilon_func = None,
+                 epsilon_input_file: str = '',
+                 progress_interval: float = 4.,
+                 subpixel_tol: float = 1e-4,
+                 subpixel_maxeval: int = 100000,
+                 loop_tile_base_db: int = 0,
+                 loop_tile_base_eh: int = 0,
+                 ensure_periodicity: bool = True,
+                 num_chunks: int = 0,
+                 Courant: float = 0.5,
+                 accurate_fields_near_cylorigin: bool = False,
+                 filename_prefix: str = None,
+                 output_volume: Volume = None,
+                 output_single_precision: bool = False,
+                 geometry_center: Vector3 = Vector3(),
+                 force_all_components: bool = False,
+                 split_chunks_evenly: bool = True,
+                 chunk_layout = None,
+                 collect_stats: bool = False):
         """
         All `Simulation` attributes are described in further detail below. In brackets
         after each variable is the type of value that it should hold. The classes, complex
