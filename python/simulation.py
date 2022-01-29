@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import division, print_function
 
-from typing import Callable, List, Tuple, Union
+from typing import Callable, List, Tuple, Union, Optional
 
 import functools
 import math
@@ -170,6 +170,7 @@ class DiffractedPlanewave(object):
         return self._p
 
 DefaultPMLProfile = lambda u: u * u
+Vector3Type = Union[Vector3, Tuple[float, ...], Tuple[int, ...]]
 
 class PML(object):
     """
@@ -935,24 +936,24 @@ class Simulation(object):
     control various parameters of the Meep computation.
     """
     def __init__(self,
-                 cell_size: Vector3 = None,
-                 resolution: float = None,
-                 geometry: List[GeometricObject] = None,
-                 sources: List[Source] = None,
+                 cell_size: Vector3Type = None,
+                 resolution: Union[float, int] = None,
+                 geometry: Optional[List[GeometricObject]] = None,
+                 sources: Optional[List[Source]] = None,
                  eps_averaging: bool = True,
                  dimensions: int = 3,
-                 boundary_layers: List[PML] = None,
-                 symmetries: List[Symmetry] = None,
+                 boundary_layers: Optional[List[PML]] = None,
+                 symmetries: Optional[List[Symmetry]] = None,
                  force_complex_fields: bool = False,
                  default_material: Medium = mp.Medium(),
                  m: int = 0,
                  k_point: bool = False,
                  kz_2d = "complex",
-                 extra_materials: List[Medium] = None,
-                 material_function = None,
-                 epsilon_func = None,
+                 extra_materials: Optional[List[Medium]] = None,
+                 material_function: Optional[Callable[[Vector3Type], Medium]] = None,
+                 epsilon_func: Optional[Callable[[Vector3Type], float]] = None,
                  epsilon_input_file: str = '',
-                 progress_interval: float = 4.,
+                 progress_interval: float = 4.0,
                  subpixel_tol: float = 1e-4,
                  subpixel_maxeval: int = 100000,
                  loop_tile_base_db: int = 0,
@@ -961,10 +962,10 @@ class Simulation(object):
                  num_chunks: int = 0,
                  Courant: float = 0.5,
                  accurate_fields_near_cylorigin: bool = False,
-                 filename_prefix: str = None,
-                 output_volume: Volume = None,
+                 filename_prefix: Optional[str] = None,
+                 output_volume: Optional[Volume] = None,
                  output_single_precision: bool = False,
-                 geometry_center: Vector3 = Vector3(),
+                 geometry_center: Vector3Type = Vector3(),
                  force_all_components: bool = False,
                  split_chunks_evenly: bool = True,
                  chunk_layout = None,
@@ -997,7 +998,7 @@ class Simulation(object):
 
         + **`boundary_layers` [ list of `PML` class ]** — Specifies the
           [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to
-          none.
+          none (empty list).
 
         + **`cell_size` [ `Vector3` ]** — Specifies the size of the cell which is centered
           on the origin of the coordinate system. Any sizes of 0 imply a
