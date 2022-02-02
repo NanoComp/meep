@@ -936,7 +936,7 @@ class Simulation(object):
     control various parameters of the Meep computation.
     """
     def __init__(self,
-                 cell_size: Vector3Type = None,
+                 cell_size: Optional[Vector3Type] = None,
                  resolution: Union[float, int] = None,
                  geometry: Optional[List[GeometricObject]] = None,
                  sources: Optional[List[Source]] = None,
@@ -946,9 +946,9 @@ class Simulation(object):
                  symmetries: Optional[List[Symmetry]] = None,
                  force_complex_fields: bool = False,
                  default_material: Medium = mp.Medium(),
-                 m: int = 0,
-                 k_point: bool = False,
-                 kz_2d = "complex",
+                 m: Union[float, int] = 0,
+                 k_point: Union[Vector3Type, bool] = False,
+                 kz_2d: str = "complex",
                  extra_materials: Optional[List[Medium]] = None,
                  material_function: Optional[Callable[[Vector3Type], Medium]] = None,
                  epsilon_func: Optional[Callable[[Vector3Type], float]] = None,
