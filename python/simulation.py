@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, print_function, annotations
+from __future__ import division, print_function
 
 from typing import Callable, List, Tuple, Union, Optional
 
@@ -968,7 +968,7 @@ class Simulation(object):
                  geometry_center: Vector3Type = Vector3(),
                  force_all_components: bool = False,
                  split_chunks_evenly: bool = True,
-                 chunk_layout: Optional[str, Simulation, BinaryPartition] = None,
+                 chunk_layout = None,
                  collect_stats: bool = False):
         """
         All `Simulation` attributes are described in further detail below. In brackets
