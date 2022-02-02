@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, print_function
+from __future__ import division, print_function, annotations
 
 from typing import Callable, List, Tuple, Union, Optional
 
@@ -937,7 +937,7 @@ class Simulation(object):
     """
     def __init__(self,
                  cell_size: Optional[Vector3Type] = None,
-                 resolution: Union[float, int] = None,
+                 resolution: float = None,
                  geometry: Optional[List[GeometricObject]] = None,
                  sources: Optional[List[Source]] = None,
                  eps_averaging: bool = True,
@@ -946,14 +946,14 @@ class Simulation(object):
                  symmetries: Optional[List[Symmetry]] = None,
                  force_complex_fields: bool = False,
                  default_material: Medium = mp.Medium(),
-                 m: Union[float, int] = 0,
+                 m: float = 0,
                  k_point: Union[Vector3Type, bool] = False,
                  kz_2d: str = "complex",
                  extra_materials: Optional[List[Medium]] = None,
                  material_function: Optional[Callable[[Vector3Type], Medium]] = None,
                  epsilon_func: Optional[Callable[[Vector3Type], float]] = None,
                  epsilon_input_file: str = '',
-                 progress_interval: float = 4.0,
+                 progress_interval: float = 4,
                  subpixel_tol: float = 1e-4,
                  subpixel_maxeval: int = 100000,
                  loop_tile_base_db: int = 0,
@@ -968,7 +968,7 @@ class Simulation(object):
                  geometry_center: Vector3Type = Vector3(),
                  force_all_components: bool = False,
                  split_chunks_evenly: bool = True,
-                 chunk_layout = None,
+                 chunk_layout: Optional[str, Simulation, BinaryPartition] = None,
                  collect_stats: bool = False):
         """
         All `Simulation` attributes are described in further detail below. In brackets
