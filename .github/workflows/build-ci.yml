@@ -127,7 +127,7 @@ jobs:
 
     - name: Install coverage
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
-      run: pip install coverage==4.5.4
+      run: pip install coverage
 
     - name: Install mpi4py
       if: ${{ matrix.enable-mpi && steps.cache.outputs.cache-hit != true }}
