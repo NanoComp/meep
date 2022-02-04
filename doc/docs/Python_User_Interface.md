@@ -87,40 +87,40 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size,
-             resolution,
-             geometry=None,
-             sources=None,
-             eps_averaging=True,
-             dimensions=3,
-             boundary_layers=None,
-             symmetries=None,
-             force_complex_fields=False,
-             default_material=Medium(),
-             m=0,
-             k_point=False,
-             kz_2d='complex',
-             extra_materials=None,
-             material_function=None,
-             epsilon_func=None,
-             epsilon_input_file='',
-             progress_interval=4,
-             subpixel_tol=0.0001,
-             subpixel_maxeval=100000,
-             loop_tile_base_db=0,
-             loop_tile_base_eh=0,
-             ensure_periodicity=True,
-             num_chunks=0,
-             Courant=0.5,
-             accurate_fields_near_cylorigin=False,
-             filename_prefix=None,
-             output_volume=None,
-             output_single_precision=False,
-             geometry_center=Vector3<0.0, 0.0, 0.0>,
-             force_all_components=False,
-             split_chunks_evenly=True,
+             cell_size: Union[meep.geom.Vector3, Tuple[float, ...], Tuple[int, ...], NoneType] = None,
+             resolution: float = None,
+             geometry: Optional[List[meep.geom.GeometricObject]] = None,
+             sources: Optional[List[meep.source.Source]] = None,
+             eps_averaging: bool = True,
+             dimensions: int = 3,
+             boundary_layers: Optional[List[meep.simulation.PML]] = None,
+             symmetries: Optional[List[meep.simulation.Symmetry]] = None,
+             force_complex_fields: bool = False,
+             default_material: meep.geom.Medium = Medium(),
+             m: float = 0,
+             k_point: Union[meep.geom.Vector3, Tuple[float, ...], Tuple[int, ...], bool] = False,
+             kz_2d: str = 'complex',
+             extra_materials: Optional[List[meep.geom.Medium]] = None,
+             material_function: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...], Tuple[int, ...]]], meep.geom.Medium]] = None,
+             epsilon_func: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...], Tuple[int, ...]]], float]] = None,
+             epsilon_input_file: str = '',
+             progress_interval: float = 4,
+             subpixel_tol: float = 0.0001,
+             subpixel_maxeval: int = 100000,
+             loop_tile_base_db: int = 0,
+             loop_tile_base_eh: int = 0,
+             ensure_periodicity: bool = True,
+             num_chunks: int = 0,
+             Courant: float = 0.5,
+             accurate_fields_near_cylorigin: bool = False,
+             filename_prefix: Optional[str] = None,
+             output_volume: Optional[meep.simulation.Volume] = None,
+             output_single_precision: bool = False,
+             geometry_center: Union[meep.geom.Vector3, Tuple[float, ...], Tuple[int, ...]] = Vector3<0.0, 0.0, 0.0>,
+             force_all_components: bool = False,
+             split_chunks_evenly: bool = True,
              chunk_layout=None,
-             collect_stats=False):
+             collect_stats: bool = False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -152,7 +152,7 @@ Python. `Vector3` is a `meep` class.
 
 + **`boundary_layers` [ list of `PML` class ]** — Specifies the
   [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to
-  none.
+  none (empty list).
 
 + **`cell_size` [ `Vector3` ]** — Specifies the size of the cell which is centered
   on the origin of the coordinate system. Any sizes of 0 imply a
