@@ -1,7 +1,5 @@
 # Python port of meep/examples/ring.ctl
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
-from __future__ import division
-
 import unittest
 import meep as mp
 

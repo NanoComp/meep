@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 import glob
 import math
 import os

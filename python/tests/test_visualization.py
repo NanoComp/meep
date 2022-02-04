@@ -1,11 +1,8 @@
-
-# visualization.py - Tests the visualization module. Checks 2D 
+# visualization.py - Tests the visualization module. Checks 2D
 # plotting of a waveguide with several sources, monitors, and
 # boundary conditions. Checks for subdomain plots.
 #
 # Also tests the animation run function, mp4 output, jshtml output, and git output.
-
-from __future__ import division
 
 import unittest
 from subprocess import call
