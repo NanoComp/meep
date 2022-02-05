@@ -181,6 +181,7 @@ jobs:
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
       run: |
         pushd python/ &&
+        coverage combine &&
         coverage report -i &&
         coverage xml -i &&
         popd
