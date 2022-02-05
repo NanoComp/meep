@@ -167,7 +167,7 @@ jobs:
       if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
       run: |
         pushd python/ &&
-        make ${MKCHECKFLAGS} check &&
+        { make ${MKCHECKFLAGS} check || cat test-suite.log; } &&
         popd
 
     - name: Run make distcheck
