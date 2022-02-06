@@ -1,5 +1,3 @@
-from __future__ import division
-
 import unittest
 import meep as mp
 import math
@@ -30,7 +28,7 @@ class TestKdom(unittest.TestCase):
       k = mp.Vector3(0,0,0)
       eig_parity += mp.EVEN_Y
       symmetries = [mp.Mirror(mp.Y)]
-  
+
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         k_point=k,

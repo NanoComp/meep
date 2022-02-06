@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, print_function
+from __future__ import annotations
 
 from typing import Callable, List, Tuple, Union, Optional
 
@@ -170,7 +170,7 @@ class DiffractedPlanewave(object):
         return self._p
 
 DefaultPMLProfile = lambda u: u * u
-Vector3Type = Union[Vector3, Tuple[float, ...], Tuple[int, ...]]
+Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 class PML(object):
     """
@@ -968,7 +968,7 @@ class Simulation(object):
                  geometry_center: Vector3Type = Vector3(),
                  force_all_components: bool = False,
                  split_chunks_evenly: bool = True,
-                 chunk_layout = None,
+                 chunk_layout: Optional[str, Simulation, BinaryPartition] = None,
                  collect_stats: bool = False):
         """
         All `Simulation` attributes are described in further detail below. In brackets
