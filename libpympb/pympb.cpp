@@ -117,6 +117,15 @@ void matrix3x3_to_arr(mpb_real arr[3][3], matrix3x3 m) {
 
 cnumber cscalar2cnumber(scalar_complex cs) { return make_cnumber(CSCALAR_RE(cs), CSCALAR_IM(cs)); }
 
+cvector3 cscalar32cvector3(const scalar_complex *cs)
+{
+     cvector3 v;
+     v.x = cscalar2cnumber(cs[0]);
+     v.y = cscalar2cnumber(cs[1]);
+     v.z = cscalar2cnumber(cs[2]);
+     return v;
+}
+
 // Return a string describing the current parity, used for frequency and filename
 // prefixes
 const char *parity_string(maxwell_data *d) {
@@ -1699,22 +1708,41 @@ std::vector<mpb_real> mode_solver::get_output_k() {
   return output_k;
 }
 
+/* get_val returns process-specific output for HAVE_MPI: if the "point" (ix, iy, iz; stride)
+   is on the local process, the value of data at that point is returned; otherwise (i.e.
+   point is not on local process) 0.0 is returned: calls to get_val should therefore be
+   followed by sum-reduction via mpi_allreduce_1(..) in the caller (as in interp_val) */
 mpb_real mode_solver::get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
                               mpb_real *data, int stride, int conjugate) {
-  // #ifdef HAVE_MPI
-  //      CHECK(0, "get-*-point not yet implemented for MPI!");
-  // #else
-  (void)nx;
-  (void)last_dim_size;
-  (void)conjugate;
-  return data[(((ix * ny) + iy) * nz + iz) * stride];
-  // #endif
+  #ifdef HAVE_MPI
+	  /* due to real-space xy=>yx transposition in MPI configuration, we need to
+	     do a little extra work here; see details e.g. in XYZ_LOOP macro */
+    int local_ny = mdata->local_ny; /* dim of local process over y-indices */
+    int local_y_start = mdata->local_y_start;
+    int local_iy = iy - local_y_start;
+	  mpb_real val = 0; /* reduce local processes over this variable later */
+
+	  /* check if local_iy is in the current process' data block */
+    if (local_iy >= 0 && local_iy < local_ny) { 
+         val = data[(((local_iy * nx) + ix) * nz + iz) * stride]; /* note transposition in x and y indices */
+	  }
+
+  #else /* no MPI */
+    mpb_real val = data[(((ix * ny) + iy) * nz + iz) * stride];
+  #endif
+
+  // TODO: this is in MPB's implementation, but seems to cause issues here - why?
+  // if (conjugate)
+  //   return -val;
+  // else
+  //   return val;
+  return val;
 }
 
 mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
                                  mpb_real *data, int stride, int conjugate) {
   double ipart;
-  mpb_real rx, ry, rz, dx, dy, dz;
+  mpb_real rx, ry, rz, dx, dy, dz, v;
   int x, y, z, x2, y2, z2;
 
   mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
@@ -1750,12 +1778,13 @@ mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim
 
 #define D(x, y, z) (get_val(x, y, z, nx, ny, nz, last_dim_size, data, stride, conjugate))
 
-  return (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
-           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
-              (1.0 - dz) +
-          ((D(x, y, z2) * (1.0 - dx) + D(x2, y, z2) * dx) * (1.0 - dy) +
-           (D(x, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
-              dz);
+     v = (((D(x,y,z)   * (1.0-dx) + D(x2,y,z)   * dx) * (1.0-dy) +
+           (D(x,y2,z)  * (1.0-dx) + D(x2,y2,z)  * dx) * dy         ) * (1.0-dz) +
+          ((D(x,y,z2)  * (1.0-dx) + D(x2,y,z2)  * dx) * (1.0-dy) +
+           (D(x,y2,z2) * (1.0-dx) + D(x2,y2,z2) * dx) * dy         ) * dz);
+
+     mpi_allreduce_1(&v, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
+     return v;
 
 #undef D
 }
@@ -1819,18 +1848,20 @@ mpb_real mode_solver::get_energy_point(vector3 p) {
   return f_interp_val(p, mdata, (mpb_real *)curfield, 1, 0);
 }
 
-cvector3 mode_solver::get_bloch_field_point(vector3 p) {
-  scalar_complex field[3];
-  cvector3 F;
-
+void mode_solver::get_bloch_field_point_(scalar_complex field[3], vector3 p) {
   CHECK(curfield && strchr("dhbecv", curfield_type),
         "field must be must be loaded before get-*field*-point");
   field[0] = f_interp_cval(p, mdata, &curfield[0].re, 6);
   field[1] = f_interp_cval(p, mdata, &curfield[1].re, 6);
   field[2] = f_interp_cval(p, mdata, &curfield[2].re, 6);
-  F.x = cscalar2cnumber(field[0]);
-  F.y = cscalar2cnumber(field[1]);
-  F.z = cscalar2cnumber(field[2]);
+}
+
+cvector3 mode_solver::get_bloch_field_point(vector3 p) {
+  scalar_complex field[3];
+  cvector3 F;
+
+  get_bloch_field_point_(field, p);
+  F = cscalar32cvector3(field);
   return F;
 }
 
@@ -1858,9 +1889,7 @@ cvector3 mode_solver::get_field_point(vector3 p) {
     CASSIGN_MULT(field[2], field[2], phase);
   }
 
-  F.x = cscalar2cnumber(field[0]);
-  F.y = cscalar2cnumber(field[1]);
-  F.z = cscalar2cnumber(field[2]);
+  F = cscalar32cvector3(field);
 
   return F;
 }
@@ -2680,4 +2709,167 @@ bool with_hermitian_epsilon() {
   return false;
 #endif
 }
+
+
+/* --- port of mpb's mpb/transform.c --- */
+
+/* If `curfield` is the real-space D-field (of band-index i), computes the overlap 
+ *       ∫ Eᵢ†(r){W|w}Dᵢ(r) dr  =  ∫ Eᵢ†(r)(WDᵢ)({W|w}⁻¹r) dr,
+ * for a symmetry operation {W|w} with rotation W and translation w; each specified 
+ * in the lattice basis. The vector fields Eᵢ and Dᵢ include Bloch phases.
+ * If `curfield` is the real-space B-field, the overlap
+ *       ∫ Hᵢ†(r){W|w}Bᵢ(r) dr  =  det(W) ∫ Hᵢ†(r)(WBᵢ)({W|w}⁻¹r) dr,
+ * is computed instead. Note that a factor det(W) is then included since B & H are
+ * pseudovectors. As a result, the computed symmetry expectation values are
+ * independent of whether the D- or B-field is used.
+ * No other choices for `curfield` are allowed: to set `curfield` to the real-space
+ * B- or D-field use the `get_bfield` and `get_dfield` Python functions (_without_
+ * the Bloch included) or the `get_bfield` and `get_dfield` C functions.
+ * Usually, it will be more convenient to use the wrapper `compute_symmetry(i, W, w)`
+ * which defaults to the B-field (since μ = 1 usually) and takes a band-index `i`.     */
+cnumber mode_solver::transformed_overlap(matrix3x3 W, vector3 w)
+{
+  int n1, n2, n3;
+  mpb_real s1, s2, s3, c1, c2, c3;
+  cnumber integral = {0,0}, integral_sum;
+
+  number detW;
+  vector3 kvector = cur_kvector;
+  matrix3x3 invW, Wc;
+
+  if (!curfield || !strchr("db", curfield_type)) {
+    meep::master_fprintf(stderr, "The D or B field must be loaded first.\n");
+    return integral;
+  }
+
+  #ifndef SCALAR_COMPLEX
+    CHECK(0, "transformed_overlap(..) is not yet implemented for mpbi");
+    /* NOTE: Not completely sure why the current implementation does not work for mpbi
+     * (i.e for assumed-inversion): one clue is that running this with mpbi and the
+     * error-check off gives symmetry eigenvalues whose norm are ≈(ni÷2+1)/ni (where
+     * ni=n1=n2=n3) instead of near-unity (as they should be). This suggests we are not
+     * counting the number of grid points correctly somehow: I think the root issue is
+     * that we use the LOOP_XYZ macro, which has special handling for mbpi (i.e. only
+     * "visits" the "inversion-reduced" part of the unitcell): but here, we actually
+     * really want to (or at least assume to) visit _all_ the points in the unitcell.     */
+  #endif
+  #ifdef false /* HAVE_MPI; but Python interface of MPB does not run under MPI */
+    CHECK(0, "transformed_overlap(..) is not yet implemented for MPI");
+    /* NOTE: It seems there's some racey stuff going on with the MPI implementation,
+     * unfortunately, so it doesn't end giving consistent (or even meaningful) results.
+     * The issue could be that both `LOOP_XYZ` is distributed over workers _and_ that
+     * `get_bloch_field_point_` also is (via the interpolation). I'm imagining that such
+     * a naive "nested parallelism" doesn't jive here.
+     * Long story short: disable it for now.                                              */
+  #endif
+
+  /* prepare before looping ... */
+  n1 = mdata->nx; n2 = mdata->ny; n3 = mdata->nz;
+
+  s1 = geometry_lattice.size.x / n1; /* pixel spacings */
+  s2 = geometry_lattice.size.y / n2;
+  s3 = geometry_lattice.size.z / n3;
+  c1 = n1 <= 1 ? 0 : geometry_lattice.size.x * 0.5; /* offsets (negative) */
+  c2 = n2 <= 1 ? 0 : geometry_lattice.size.y * 0.5;
+  c3 = n3 <= 1 ? 0 : geometry_lattice.size.z * 0.5;
+
+  detW = matrix3x3_determinant(W);
+  if (fabs(fabs(detW) - 1.0) > 1e-12) {
+    meep::master_fprintf(stderr, "valid symmetry operations {W|w} must have |det(W)| = 1\n");
+    return integral;
+  }
+  invW = matrix3x3_inverse(W);
+  /* W is specified in the lattice basis, but field *vectors* evaluated in real-space
+   * are in a Cartesian basis: when we transform the vector components, we must account
+   * for this difference. We transform W to a Cartesian basis Wc = RWR⁻¹ (with
+   * R = geometry_lattice.basis, a matrix w/ columns of Cartesian basis vectors) and
+   * then use Wc to transform vector fields.                                           */
+  Wc = matrix3x3_mult(matrix3x3_mult(geometry_lattice.basis, W),
+                      matrix3x3_inverse(geometry_lattice.basis));
+
+  /* hoist rescalings outside the loop (maybe licm takes care of it, but do it anyway) */
+  kvector.x *= TWOPI/(geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x);
+  kvector.y *= TWOPI/(geometry_lattice.size.y == 0 ? 1e-20 : geometry_lattice.size.y);
+  kvector.z *= TWOPI/(geometry_lattice.size.z == 0 ? 1e-20 : geometry_lattice.size.z);
+
+  /* loop over coordinates (introduces int vars `i1`, `i2`, `i3`, `xyz_index`) */
+  LOOP_XYZ(mdata) { /* implies two opening braces `{{` */
+    vector3 p, pt;
+    scalar_complex F[3], Ft[3], Ftemp[3], integrand, phase;
+    double deltaphi;
+
+    /* current lattice coordinate */
+    p.x = i1 * s1 - c1;
+    p.y = i2 * s2 - c2;
+    p.z = i3 * s3 - c3;
+
+    /* transformed coordinate pt = {W|w}⁻¹p = W⁻¹(p-w) since {W|w}⁻¹={W⁻¹|-W⁻¹w} */
+    pt = matrix3x3_vector3_mult(invW, vector3_minus(p, w));
+
+    /* Bloch field value at transformed coordinate pt: interpolation is needed to 
+     * ensure generality in the case of fractional translations.                  */
+    get_bloch_field_point_(Ftemp, pt); /* assign `Ftemp` to field at `pt` (without eⁱᵏʳ factor) */
+
+    /* define `Ft` as the vector components of `Ftemp` transformed by `Wc`; we just
+     * write out the matrix-product manually here, for both real & imag parts       */
+    Ft[0].re = Wc.c0.x*Ftemp[0].re + Wc.c1.x*Ftemp[1].re + Wc.c2.x*Ftemp[2].re;
+    Ft[0].im = Wc.c0.x*Ftemp[0].im + Wc.c1.x*Ftemp[1].im + Wc.c2.x*Ftemp[2].im;
+    Ft[1].re = Wc.c0.y*Ftemp[0].re + Wc.c1.y*Ftemp[1].re + Wc.c2.y*Ftemp[2].re;
+    Ft[1].im = Wc.c0.y*Ftemp[0].im + Wc.c1.y*Ftemp[1].im + Wc.c2.y*Ftemp[2].im;
+    Ft[2].re = Wc.c0.z*Ftemp[0].re + Wc.c1.z*Ftemp[1].re + Wc.c2.z*Ftemp[2].re;
+    Ft[2].im = Wc.c0.z*Ftemp[0].im + Wc.c1.z*Ftemp[1].im + Wc.c2.z*Ftemp[2].im;
+
+    /* get the Bloch field value at current point `p` (without eⁱᵏʳ factor).
+     * We multiply the input field `F` (either B or D-field) with μ⁻¹ or ε⁻¹ to get
+     * H- or E-fields, as the relevant overlap is ⟨F|Ft⟩ = ⟨H|Bt⟩ or ⟨E|Dt⟩, with
+     * t-postscript denoting a field transformed by {W|w}. Here, we essentially
+     * adapt some boiler-plate code from compute_field_energy_internal in fields.c   */
+    if (curfield_type == 'd') {
+        assign_symmatrix_vector(F, mdata->eps_inv[xyz_index], curfield+3*xyz_index);
+    }
+    else if (curfield_type == 'b' && mdata->mu_inv != NULL) {
+        assign_symmatrix_vector(F, mdata->mu_inv[xyz_index],  curfield+3*xyz_index);
+    }
+    else {
+        F[0] = curfield[3*xyz_index];
+        F[1] = curfield[3*xyz_index+1];
+        F[2] = curfield[3*xyz_index+2];
+    }
+
+    /* inner product of F and Ft={W|w}F in Bloch form */
+    CASSIGN_CONJ_MULT(integrand, F[0], Ft[0]);  /* add adjoint(F)*Ft to integrand */
+    CACCUMULATE_SUM_CONJ_MULT(integrand, F[1], Ft[1]);
+    CACCUMULATE_SUM_CONJ_MULT(integrand, F[2], Ft[2]);
+  
+    /* include Bloch phases */
+    deltaphi = kvector.x*(pt.x-p.x) + kvector.y*(pt.y-p.y) + kvector.z*(pt.z-p.z);
+    CASSIGN_SCALAR(phase, cos(deltaphi), sin(deltaphi));
+
+    /* add integrand-contribution to integral */
+    integral.re += CSCALAR_MULT_RE(integrand, phase);
+    integral.im += CSCALAR_MULT_IM(integrand, phase);
+  }}}
+
+  integral.re *= vol / H.N;
+  integral.im *= vol / H.N;
+
+  mpi_allreduce(&integral, &integral_sum, 2, number, MPI_DOUBLE, MPI_SUM, mpb_comm);
+
+  if (curfield_type == 'b') {  /* H & B are pseudovectors => transform includes det(W) */
+    integral_sum.re *= detW;
+    integral_sum.im *= detW;
+  }
+
+  return integral_sum;
+}
+
+
+cnumber mode_solver::compute_symmetry(int which_band, matrix3x3 W, vector3 w) {
+  cnumber symval;
+  get_bfield(which_band); // _without_ Bloch phase
+  symval = transformed_overlap(W, w);
+
+  return symval;
+}
+
 } // namespace meep_mpb

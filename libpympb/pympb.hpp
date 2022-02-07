@@ -175,6 +175,7 @@ struct mode_solver {
   cmatrix3x3 get_epsilon_inverse_tensor_point(vector3 p);
   mpb_real get_energy_point(vector3 p);
   cvector3 get_field_point(vector3 p);
+  void get_bloch_field_point_(scalar_complex field[3], vector3 p);
   cvector3 get_bloch_field_point(vector3 p);
 
   void multiply_bloch_phase(std::complex<double> *cdata = NULL);
@@ -194,6 +195,9 @@ struct mode_solver {
                                  field_integral_energy_func energy_func, void *py_func);
 
   vector3 get_dominant_planewave(int band);
+
+  cnumber transformed_overlap(matrix3x3 W, vector3 w);
+  cnumber compute_symmetry(int which_band, matrix3x3 W, vector3 w);
 
 private:
   int kpoint_index;
