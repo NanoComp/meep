@@ -1708,35 +1708,18 @@ std::vector<mpb_real> mode_solver::get_output_k() {
   return output_k;
 }
 
-/* get_val returns process-specific output for HAVE_MPI: if the "point" (ix, iy, iz; stride)
-   is on the local process, the value of data at that point is returned; otherwise (i.e.
-   point is not on local process) 0.0 is returned: calls to get_val should therefore be
-   followed by sum-reduction via mpi_allreduce_1(..) in the caller (as in interp_val) */
 mpb_real mode_solver::get_val(int ix, int iy, int iz, int nx, int ny, int nz, int last_dim_size,
                               mpb_real *data, int stride, int conjugate) {
-  #ifdef HAVE_MPI
-	  /* due to real-space xy=>yx transposition in MPI configuration, we need to
-	     do a little extra work here; see details e.g. in XYZ_LOOP macro */
-    int local_ny = mdata->local_ny; /* dim of local process over y-indices */
-    int local_y_start = mdata->local_y_start;
-    int local_iy = iy - local_y_start;
-	  mpb_real val = 0; /* reduce local processes over this variable later */
-
-	  /* check if local_iy is in the current process' data block */
-    if (local_iy >= 0 && local_iy < local_ny) { 
-         val = data[(((local_iy * nx) + ix) * nz + iz) * stride]; /* note transposition in x and y indices */
-	  }
-
-  #else /* no MPI */
-    mpb_real val = data[(((ix * ny) + iy) * nz + iz) * stride];
-  #endif
-
-  // TODO: this is in MPB's implementation, but seems to cause issues here - why?
-  // if (conjugate)
-  //   return -val;
-  // else
-  //   return val;
-  return val;
+  // #ifndef SCALAR_COMPLEX
+  //   CHECK(0, "get-*-point not yet implemented for mpbi!");
+  // #endif
+  // #ifdef HAVE_MPI
+  //   CHECK(0, "get-*-point not yet implemented for MPI!");
+  // #endif
+  (void)nx;
+  (void)last_dim_size;
+  (void)conjugate;
+  return data[(((ix * ny) + iy) * nz + iz) * stride];
 }
 
 mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
@@ -2742,26 +2725,27 @@ cnumber mode_solver::transformed_overlap(matrix3x3 W, vector3 w)
     return integral;
   }
 
-  #ifndef SCALAR_COMPLEX
-    CHECK(0, "transformed_overlap(..) is not yet implemented for mpbi");
-    /* NOTE: Not completely sure why the current implementation does not work for mpbi
-     * (i.e for assumed-inversion): one clue is that running this with mpbi and the
-     * error-check off gives symmetry eigenvalues whose norm are ≈(ni÷2+1)/ni (where
-     * ni=n1=n2=n3) instead of near-unity (as they should be). This suggests we are not
-     * counting the number of grid points correctly somehow: I think the root issue is
-     * that we use the LOOP_XYZ macro, which has special handling for mbpi (i.e. only
-     * "visits" the "inversion-reduced" part of the unitcell): but here, we actually
-     * really want to (or at least assume to) visit _all_ the points in the unitcell.     */
-  #endif
-  #ifdef false /* HAVE_MPI; but Python interface of MPB does not run under MPI */
-    CHECK(0, "transformed_overlap(..) is not yet implemented for MPI");
-    /* NOTE: It seems there's some racey stuff going on with the MPI implementation,
-     * unfortunately, so it doesn't end giving consistent (or even meaningful) results.
-     * The issue could be that both `LOOP_XYZ` is distributed over workers _and_ that
-     * `get_bloch_field_point_` also is (via the interpolation). I'm imagining that such
-     * a naive "nested parallelism" doesn't jive here.
-     * Long story short: disable it for now.                                              */
-  #endif
+  /* Python interface of MPB does not run under mpbi or MPI */
+  // #ifndef SCALAR_COMPLEX
+  //   CHECK(0, "transformed_overlap(..) is not yet implemented for mpbi");
+  //   /* NOTE: Not completely sure why the current implementation does not work for mpbi
+  //    * (i.e for assumed-inversion): one clue is that running this with mpbi and the
+  //    * error-check off gives symmetry eigenvalues whose norm are ≈(ni÷2+1)/ni (where
+  //    * ni=n1=n2=n3) instead of near-unity (as they should be). This suggests we are not
+  //    * counting the number of grid points correctly somehow: I think the root issue is
+  //    * that we use the LOOP_XYZ macro, which has special handling for mbpi (i.e. only
+  //    * "visits" the "inversion-reduced" part of the unitcell): but here, we actually
+  //    * really want to (or at least assume to) visit _all_ the points in the unitcell.     */
+  // #endif
+  // #ifdef HAVE_MPI
+  //   CHECK(0, "transformed_overlap(..) is not yet implemented for MPI");
+  //   /* NOTE: It seems there's some racey stuff going on with the MPI implementation,
+  //    * unfortunately, so it doesn't end giving consistent (or even meaningful) results.
+  //    * The issue could be that both `LOOP_XYZ` is distributed over workers _and_ that
+  //    * `get_bloch_field_point_` also is (via the interpolation). I'm imagining that such
+  //    * a naive "nested parallelism" doesn't jive here.
+  //    * Long story short: disable it for now.                                              */
+  // #endif
 
   /* prepare before looping ... */
   n1 = mdata->nx; n2 = mdata->ny; n3 = mdata->nz;
