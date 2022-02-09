@@ -2168,7 +2168,7 @@ public:
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
   std::vector<int> dft_monitor_size(dft_fields fdft, const volume &where, component c);
-  size_t *get_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz, int &rank, direction *ds, int *array_rank=0, size_t *array_dims=0, direction *array_dirs=0);
+  void get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz, int &rank, direction *ds, size_t *dims, int *array_rank=0, size_t *array_dims=0, direction *array_dirs=0);
 
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();

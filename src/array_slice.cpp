@@ -523,35 +523,31 @@ bool increment(size_t *n, size_t *nMax, int rank) {
   return true;
 }
 
-// get the dimensions of reduced arrays
-size_t *reduce_array_dimensions(volume where, int full_rank, int &reduced_rank, size_t &reduced_grid_size, size_t dims[3], size_t stride[3], size_t reduced_stride[3], direction dirs[3], direction reduced_dirs[3]) {
+// get the dimensions of reduced arrays (i.e., arrays collapsed along empty dimensions of original volume)
+void reduce_array_dimensions(volume where, int rank, size_t dims[3], direction dirs[3], size_t stride[3], int &reduced_rank, size_t reduced_dims[3], direction reduced_dirs[3], size_t reduced_stride[3]) {
 
-  size_t *reduced_dims = new size_t[3];
   reduced_rank = 0;
-  stride[0] = stride[1] = stride[2] = reduced_stride[0] = reduced_stride[1] = reduced_stride[2] = 1;
-  for (int r = 0; r < full_rank; r++) {
+  reduced_dims[0] = reduced_dims[1] = reduced_dims[2] = stride[0] = stride[1] = stride[2] =
+      reduced_stride[0] = reduced_stride[1] = reduced_stride[2] = 1;
+  for (int r = 0; r < rank; r++) {
     if (where.in_direction(dirs[r]) == 0.0)
       reduced_stride[r] = 0; // degenerate dimension, to be collapsed
     else {
       reduced_dirs[reduced_rank] = dirs[r];
-      reduced_dims[reduced_rank++] = dims[r];
+      reduced_dims[reduced_rank++] = dims[r]; // reduced_dims is the size of the array after collapsing
     }
   }
   /*--------------------------------------------------------------*/
   /*- set up strides into full and reduced arrays                 */
   /*--------------------------------------------------------------*/
-  if (full_rank == 2)
+  if (rank == 2)
     stride[0] = dims[1]; // rstride is already all set in this case
-  else if (full_rank == 3) {
+  else if (rank == 3) {
     stride[0] = dims[1] * dims[2];
     stride[1] = dims[2];
     if (reduced_rank == 2)
       reduced_stride[reduced_stride[0] != 0 ? 0 : 1] = reduced_dims[1];
   }
-
-  /*--------------------------------------------------------------*/
-  reduced_grid_size = reduced_dims[0] * (reduced_rank == 2 ? reduced_dims[1] : 1);
-  return reduced_dims;
 }
 
 // data_size = 1,2 for real,complex-valued array
@@ -563,11 +559,11 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
   /*- collapsed array                                             */
   /*--------------------------------------------------------------*/
   int full_rank = *rank;
-  size_t reduced_stride[3], stride[3]; // the latter for non-reduced array strides
+  size_t reduced_dims[3], reduced_stride[3], stride[3]; // the latter for non-reduced array strides
   direction reduced_dirs[3];
   size_t reduced_grid_size;
   int reduced_rank;
-  size_t *reduced_dims = reduce_array_dimensions(where, full_rank, reduced_rank, reduced_grid_size, dims, stride, reduced_stride, dirs, reduced_dirs);
+  reduce_array_dimensions(where, full_rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs, reduced_stride);
 
   if (full_rank == 0) return array;
   if (reduced_rank==0) {
@@ -579,6 +575,7 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
   /*--------------------------------------------------------------*/
   /*- allocate reduced array and compress full array into it     -*/
   /*--------------------------------------------------------------*/
+  reduced_grid_size = reduced_dims[0]*reduced_dims[1]*reduced_dims[2];
   size_t reduced_array_size = data_size * reduced_grid_size;
   realnum *reduced_array = new realnum[reduced_array_size];
   if (!reduced_array) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);

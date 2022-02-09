@@ -250,12 +250,21 @@ class FourierFields(ObjectiveQuantity):
 
         mon_size = self.sim.fields.dft_monitor_size(self._monitor.swigobj, self.volume.swigobj, self.component)
         dJ = dJ.astype(np.complex128)
-        if np.prod(mon_size)*self.num_freq == dJ.size: # The objective function J is a scalar.
-            dJ = dJ.flatten()
-        elif np.prod(mon_size)*self.num_freq**2 == dJ.size: # The objective function J is a vector. Each component corresponds to a frequency.
-            dJ = np.sum(dJ,axis=1).flatten()
-        else:
+        if np.prod(mon_size)*self.num_freq != dJ.size and np.prod(mon_size)*self.num_freq**2 != dJ.size:
             raise ValueError('The format of J is incorrect!')
+
+        # The objective function J is a vector. Each component corresponds to a frequency.
+        if np.prod(mon_size)*self.num_freq**2 == dJ.size and self.num_freq > 1:
+            dJ = np.sum(dJ,axis=1)
+        '''The adjoint solver requires the objective function
+        to be scalar valued with regard to objective arguments
+        and position, but the function may be vector valued
+        with regard to frequency. In this case, the Jacobian
+        will be of the form [F,F,...] where F is the number of
+        frequencies. Because of linearity, we can sum across the
+        second frequency dimension to calculate a frequency
+        scale factor for each point (rather than a scale vector).
+        '''
 
         self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(self.volume.swigobj, self.component, self.sim.fields, dJ)
 
@@ -302,7 +311,7 @@ class Near2FarFields(ObjectiveQuantity):
         sources = []
         if dJ.ndim == 4:
             dJ = np.sum(dJ, axis=0)
-        dJ = dJ.flatten()
+
         farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
         far_pt0 = self.far_pts[0]
         far_pt_vec = py_v3_to_vec(
