@@ -398,27 +398,6 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
     // loop over lattice shifts
     ivec ishift(min_ishift);
     
-    ivec lowerboundary(gv.dim, INT_MAX);
-    if (use_symmetry && S.multiplicity() > 1){
-      for (int sm = 0; sm < (use_symmetry ? S.multiplicity() : 1); ++sm) {
-        component cSm = S.transform(cgrid, -sm);
-        for (int i = 0; i < num_chunks; ++i) {
-          if (!chunks[i]->is_mine()) continue;
-          // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
-          grid_volume gvu2(use_symmetry ? chunks[i]->gv.unpad(gv) : chunks[i]->gv);
-          ivec _iscoS2(S.transform(gvu2.little_owned_corner(cSm), sm));
-          ivec _iecoS2(S.transform(gvu2.big_owned_corner(cSm), sm));
-          lowerboundary = min(lowerboundary, min(_iscoS2, _iecoS2));
-        }
-      }
-      LOOP_OVER_DIRECTIONS(gv.dim, d){
-        int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? 0 : 2);
-        if (ishift.in_direction(d) != 0) lowerboundary.set_direction(d, lowerboundary.in_direction(d) + off_sym_shift);
-      }
-    }
-    
-
-    
     do {
       complex<double> ph = 1.0;
       vec shift(gv.dim, 0.0);
@@ -428,27 +407,26 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
         ph *= pow(eikna[d], ishift.in_direction(d));
       }
-      
       for (int i = 0; i < num_chunks; ++i) {
         if (!chunks[i]->is_mine()) continue;
-        // Chunk looping boundaries for owned points, shifted to centered grid and transformed:
-        grid_volume gvu(use_symmetry ? chunks[i]->gv.unpad(gv) : chunks[i]->gv);
+        grid_volume gvu(chunks[i]->gv);
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
-        ivec iscoS(max(lowerboundary, min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
-        
+        ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
+              
         ivec isym(gvu.dim, INT_MAX);
         bool gvu_is_halved[3] = {false, false, false};
         
-        bool break_this[3];
-        for (int dd = 0; dd < 3; dd++) {
-          const direction d = (direction)dd;
-          break_this[dd] = false;
-          for (int n = 0; n < S.multiplicity(); n++)
-            if (has_direction(gv.dim, d) && (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
-              if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
-                master_printf("Padding %s to even number of grid points.\n", direction_name(d));
-              break_this[dd] = true;
+          bool break_this[3];
+          for (int dd = 0; dd < 3; dd++) {
+            const direction d = (direction)dd;
+            break_this[dd] = false;
+            for (int n = 0; n < S.multiplicity(); n++)
+              if (has_direction(gv.dim, d) &&
+                  (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
+                if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
+                  master_printf("Padding %s to even number of grid points.\n", direction_name(d));
+                break_this[dd] = true;
               }
           }
           int break_mult = 1;
@@ -457,19 +435,24 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
             if (break_this[d]) {
               break_mult *= 2;
               if (verbosity > 0)
-                master_printf("Halving computational cell along direction %s\n",direction_name(direction(d)));
+                master_printf("Halving computational cell along direction %s\n",
+                              direction_name(direction(d)));
               gvu_is_halved[d] = true;
             }
           }
-        if (sn!=0){
-          LOOP_OVER_DIRECTIONS(gvu.dim, d){  
+        if (use_symmetry && sn!=0){
+          LOOP_OVER_DIRECTIONS(gvu.dim, d){      
             int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? gv.iyee_shift(cgrid).in_direction(d)+2 : 2);
             if (gvu_is_halved[d]) isym.set_direction(d, S.i_symmetry_point.in_direction(d) - off_sym_shift);
           }
         }
 
         ivec iscS(max(is - shifti, iscoS));
-        ivec iecS(min(isym, min(ie - shifti, iecoS)));
+        ivec chunk_corner(gvu.little_owned_corner(cgrid));
+        LOOP_OVER_DIRECTIONS(gv.dim, d) {
+          if ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)) iecoS.set_direction(d, min(isym, iecoS).in_direction(d));  
+        } 
+        ivec iecS( min(ie - shifti, iecoS));
                 
         if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
