@@ -693,53 +693,133 @@ In 3d, the procedure is very similar, but a little more effort is required to di
 Far-Field Profile of a Cavity
 -----------------------------
 
-For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb). The structure is shown at the bottom of the left image below.
+For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide (a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)) and demonstrate that these fields are *exactly* equivalent to the actual DFT fields at the same location. A schematic of the simulation setup generated using [`plot2D`](../Python_User_Interface.md#data-visualization) is shown below.
 
 ![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
-To set this up, we simply remove the last portion of [examples/holey-wvg-cavity.py](https://github.com/NanoComp/meep/blob/master/python/examples/holey-wvg-cavity.py), beginning right after the line:
+The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb).
 
 ```py
-sim.symmetries.append(mp.Mirror(mp.Y, phase=-1))
-sim.symmetries.append(mp.Mirror(mp.X, phase=-1))
-```
+import meep as mp
+import numpy as np
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 
-and insert the following lines:
 
-```py
-d1 = 0.2
+resolution = 20                    # pixels/μm
+
+fcen = 0.25                        # pulse center frequency
+df = 0.2                           # pulse width (in frequency)
+
+eps = 13                           # dielectric constant of waveguide
+w = 1.2                            # width of waveguide
+r = 0.36                           # radius of holes
+d = 1.4                            # defect spacing (ordinary spacing = 1)
+N = 3                              # number of holes on either side of defect
+
+dpad = 32                          # padding between last hole and PML edge
+dpml = 0.5/(fcen-0.5*df)           # PML thickness (> half the largest wavelength)
+sx = 2*(dpad+dpml+N) + d - 1       # size of cell in x direction
+
+d1 = 0.2                           # y-distance from waveguide edge to near2far surface
+d2 = 2.0                           # y-distance from near2far surface to far-field line
+sy = w + 2*(d1+d2+dpml)            # size of cell in y direction (perpendicular to wvg.)
+
+cell = mp.Vector3(sx,sy,0)
+
+geometry = [mp.Block(center=mp.Vector3(),
+                     size=mp.Vector3(mp.inf, w, mp.inf),
+                     material=mp.Medium(epsilon=eps))]
+
+for i in range(N):
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)))
+
+pml_layers = [mp.PML(dpml)]
+
+sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
+                     component=mp.Hz,
+                     center=mp.Vector3())]
+
+symmetries = [mp.Mirror(mp.X, phase=-1),
+              mp.Mirror(mp.Y, phase=-1)]
 
 sim = mp.Simulation(cell_size=cell,
                     geometry=geometry,
-                    sources=[sources],
+                    sources=sources,
                     symmetries=symmetries,
-                    boundary_layers=[pml_layers],
+                    boundary_layers=pml_layers,
                     resolution=resolution)
 
 nearfield = sim.add_near2far(
     fcen, 0, 1,
-    mp.Near2FarRegion(mp.Vector3(0, 0.5 * w + d1), size=mp.Vector3(2 * dpml - sx)),
-    mp.Near2FarRegion(mp.Vector3(-0.5 * sx + dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1), weight=-1.0),
-    mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1))
+    mp.Near2FarRegion(mp.Vector3(0, 0.5*w + d1),
+                      size=mp.Vector3(sx - 2*dpml)),
+    mp.Near2FarRegion(mp.Vector3(-0.5*sx + dpml, 0.5*w + 0.5*d1),
+                      size=mp.Vector3(0, d1),
+                      weight=-1.0),
+    mp.Near2FarRegion(mp.Vector3(0.5*sx - dpml, 0.5*w + 0.5*d1),
+                      size=mp.Vector3(0, d1)),
 )
+
+mon = sim.add_dft_fields(
+    [mp.Hz],
+    fcen,
+    0,
+    1,
+    center=mp.Vector3(0, 0.5*w + d1 + d2),
+    size=mp.Vector3(sx - 2*(dpad+dpml), 0)
+)
+
+sim.run(until_after_sources=mp.stop_when_dft_decayed())
+
+sim.plot2D()
+if mp.am_master():
+    plt.savefig(f'cavity_farfield_plot2D_dpad{dpad}_{d1}_{d2}.png',bbox_inches='tight',dpi=150)
+
+Hz_mon = sim.get_dft_array(mon, mp.Hz, 0)
+
+(x,y,z,w) = sim.get_array_metadata(dft_cell=mon)
+
+ff = []
+for xc in x:
+    ff_pt = sim.get_farfield(nearfield, mp.Vector3(xc,y[0]))
+    ff.append(ff_pt[5])
+ff = np.array(ff)
+
+if mp.am_master():
+    plt.figure()
+    plt.subplot(1,3,1)
+    plt.plot(np.real(Hz_mon),'bo-',label='DFT')
+    plt.plot(np.real(ff),'ro-',label='N2F')
+    plt.legend()
+    plt.xlabel('array index')
+    plt.ylabel('real(Hz)')
+
+    plt.subplot(1,3,2)
+    plt.plot(np.imag(Hz_mon),'bo-',label='DFT')
+    plt.plot(np.imag(ff),'ro-',label='N2F')
+    plt.legend()
+    plt.xlabel('array index')
+    plt.ylabel('imag(Hz)')
+
+    plt.subplot(1,3,3)
+    plt.plot(np.abs(Hz_mon),'bo-',label='DFT')
+    plt.plot(np.abs(ff),'ro-',label='N2F')
+    plt.legend()
+    plt.xlabel('array index')
+    plt.ylabel('|Hz|')
+
+    plt.suptitle(f'comparison of near2far and actual DFT fields\n dpad={dpad}, d1={d1}, d2={d2}')
+    plt.subplots_adjust(wspace=0.6)
+    plt.savefig(f'test_Hz_dft_vs_n2f_res{resolution}_dpad{dpad}_d1{d1}_d2{d2}.png',
+                bbox_inches='tight',
+                dpi=150)
 ```
 
-We are creating a "near" bounding surface, consisting of three separate regions surrounding the cavity, that captures *all* outgoing waves in the top-half of the cell. Note that the $x$-normal surface on the left has a `weight` of -1 corresponding to the direction of the *outward normal* vector relative to the $x$ direction so that the far-field spectra is correctly computed from the outgoing fields, similar to the flux and force features. The parameter `d1` is the distance between the edge of the waveguide and the bounding surface, as shown in the schematic above, and we will demonstrate that changing this parameter does not change the far-field spectra which we compute at a single frequency corresponding to the cavity mode.
+We are creating a "near" bounding surface, consisting of three separate regions surrounding the cavity, that captures *all* outgoing waves in the top-half of the cell. Note that the $x$-normal surface on the left has a `weight` of -1 corresponding to the direction of the *outward normal* vector relative to the $x$ direction so that the far-field spectra is correctly computed from the outgoing fields, similar to the flux and force features. The parameter `d1` is the distance between the edge of the waveguide and the bounding surface, as shown in the schematic above, and you can verify that changing this parameter does not change the far-field spectra which we compute at a single frequency corresponding to the cavity mode.
 
-We then time step the fields until they have sufficiently decayed away as the cell is surrounded by PMLs, and output the far-field spectra over a rectangular area that lies *outside* of the cell:
+In this example, to demonstrate agreement between the far fields and DFT fields, the cell size in the *x* direction needs to be sufficiently large in order for the near-field monitor to capture all the outgoing fields.
 
-```py
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Hz, mp.Vector3(0.12, -0.37), 1e-8))
-
-d2 = 20
-h = 4
-
-sim.output_farfields(nearfield, "spectra-{}-{}-{}".format(d1, d2, h), resolution,
-                     mp.Volume(mp.Vector3(0, (0.5 * w) + d2 + (0.5 * h)), size=mp.Vector3(sx - 2 * dpml, h)))
-```
-
-The first item to note is that the far-field region is located *outside* of the cell, although in principle it can be located anywhere. The second is that the far-field spectra can be interpolated onto a spatial grid that has any given resolution but in this example we used the same resolution as the simulation. Note that the simulation itself used purely real fields but the output, given its analytical nature, contains complex fields. Finally, given that the far-field spectra is derived from the Fourier-transformed fields which includes an arbitrary constant factor, we should expect an overall scale and phase difference in the results obtained using the near-to-far-field feature with those from a corresponding simulation involving the full computational volume. The key point is that the results will be qualitatively but not quantitatively identical. The data will be written out to an HDF5 file having a filename prefix with the values of the three main parameters. This file will includes the far-field spectra for all six field components, including real and imaginary parts.
-
-We run the above modified control file and in post-processing create an image of the real and imaginary parts of $H_z$ over the far-field region which is shown in insets (a) above. For comparison, we compute the steady-state fields using a larger cell that contains within it the far-field region. This involves a continuous source and complex fields. Results are shown in figure (b) above. The difference in the relative phases among any two points within each of the two field spectra is zero, which can be confirmed numerically. Also, as would be expected, it can be shown that increasing `d1` does not change the far-field spectra as long as the results are sufficiently converged. This indicates that discretization effects are irrelevant.
-
-In general, it is tricky to interpret the overall scale and phase of the far fields, because it is related to the scaling of the Fourier transforms of the near fields. It is simplest to use the `near2far` feature in situations where the overall scaling is irrelevant, e.g. when you are computing a ratio of fields in two simulations, or a fraction of the far field in some region, etcetera.
+![center|Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity.png)
