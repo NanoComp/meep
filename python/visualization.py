@@ -38,7 +38,7 @@ default_monitor_parameters = {
 default_field_parameters = {
         'interpolation':'spline36',
         'cmap':'RdBu',
-        'alpha':0.6,
+        'alpha':0.8,
         'post_process':np.real
         }
 
@@ -86,7 +86,7 @@ def filter_dict(dict_to_filter, func_with_kwargs):
     try:
         # Python3 ...
         sig = inspect.signature(func_with_kwargs)
-        filter_keys = [param.name for param in sig.parameters.values() if param.kind == param.POSITIONAL_OR_KEYWORD]
+        filter_keys = [param.name for param in sig.parameters.values()]
     except:
         # Python2 ...
         filter_keys = inspect.getargspec(func_with_kwargs)[0]
