@@ -1725,7 +1725,7 @@ mpb_real mode_solver::get_val(int ix, int iy, int iz, int nx, int ny, int nz, in
 mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim_size,
                                  mpb_real *data, int stride, int conjugate) {
   double ipart;
-  mpb_real rx, ry, rz, dx, dy, dz, v;
+  mpb_real rx, ry, rz, dx, dy, dz;
   int x, y, z, x2, y2, z2;
 
   mpb_real latx = geometry_lattice.size.x == 0 ? 1e-20 : geometry_lattice.size.x;
@@ -1761,13 +1761,12 @@ mpb_real mode_solver::interp_val(vector3 p, int nx, int ny, int nz, int last_dim
 
 #define D(x, y, z) (get_val(x, y, z, nx, ny, nz, last_dim_size, data, stride, conjugate))
 
-     v = (((D(x,y,z)   * (1.0-dx) + D(x2,y,z)   * dx) * (1.0-dy) +
-           (D(x,y2,z)  * (1.0-dx) + D(x2,y2,z)  * dx) * dy         ) * (1.0-dz) +
-          ((D(x,y,z2)  * (1.0-dx) + D(x2,y,z2)  * dx) * (1.0-dy) +
-           (D(x,y2,z2) * (1.0-dx) + D(x2,y2,z2) * dx) * dy         ) * dz);
-
-     mpi_allreduce_1(&v, mpb_real, SCALAR_MPI_TYPE, MPI_SUM, mpb_comm);
-     return v;
+  return (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
+           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
+              (1.0 - dz) +
+          ((D(x, y, z2) * (1.0 - dx) + D(x2, y, z2) * dx) * (1.0 - dy) +
+           (D(x, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
+              dz);
 
 #undef D
 }
