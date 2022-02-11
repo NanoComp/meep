@@ -884,6 +884,7 @@ class ModeSolver(object):
 
     def solve_kpoint(self, k):
         self.mode_solver.solve_kpoint(k)
+        self.freqs = self.get_freqs()
 
     def run_parity(self, p, reset_fields, *band_functions):
         if self.random_fields and self.randomize_fields not in band_functions:
@@ -922,11 +923,10 @@ class ModeSolver(object):
             for i, k in enumerate(k_split[1]):
                 self.current_k = k
                 solve_kpoint_time = time.time()
-                self.mode_solver.solve_kpoint(k)
+                self.solve_kpoint(k)
                 self.iterations = self.mode_solver.get_iterations()
                 if verbosity.mpb > 0:
                     print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
-                self.freqs = self.get_freqs()
                 self.all_freqs[i, :] = np.array(self.freqs)
                 self.band_range_data = self.update_band_range_data(self.band_range_data,
                                                                    self.freqs, k)
