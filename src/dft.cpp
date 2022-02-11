@@ -1383,7 +1383,7 @@ void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux 
 }
 
 // return the size of the dft monitor
-std::vector<int> fields::dft_monitor_size(dft_fields fdft, const volume &where, component c){
+std::vector<size_t> fields::dft_monitor_size(dft_fields fdft, const volume &where, component c){
   ivec min_corner, max_corner;
   int rank, reduced_rank;
   direction dirs[3], reduced_dirs[3];
@@ -1393,7 +1393,7 @@ std::vector<int> fields::dft_monitor_size(dft_fields fdft, const volume &where, 
 
   get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs, dims);
   reduce_array_dimensions(where, rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs, reduced_stride);
-  std::vector<int> reduced_dims_vec = {reduced_dims[0], reduced_dims[1], reduced_dims[2]};
+  std::vector<size_t> reduced_dims_vec = {reduced_dims[0], reduced_dims[1], reduced_dims[2]};
 
   return reduced_dims_vec;
 }
@@ -1451,7 +1451,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
       }
       else{ // yee_grid = false
           // four or two neighbouring points in the yee lattice are involved in calculating the value at the center of a voxel
-        size_t site_ind[4] = {idx,idx + f->avg1,idx + f->avg2,idx + f->avg1 + f->avg2};
+        ptrdiff_t site_ind[4] = {idx,idx + f->avg1,idx + f->avg2,idx + f->avg1 + f->avg2};
         for (size_t j = 0; j < 4; ++j){
           temp_struct.idx_arr.push_back(site_ind[j]);
           for (size_t i = 0; i < Nfreq; ++i) {
