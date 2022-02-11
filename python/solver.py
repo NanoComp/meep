@@ -1126,6 +1126,18 @@ class ModeSolver(object):
     def get_dominant_planewave(self, band):
         return self.mode_solver.get_dominant_planewave(band)
 
+    def transformed_overlap(self, W, w):
+        return self.mode_solver.transformed_overlap(W, w)
+
+    def compute_symmetry(self, band, W, w):
+        return self.mode_solver.compute_symmetry(band, W, w)
+   
+    def compute_symmetries(self, W, w):
+        symvals = []
+        for band in range(1, self.num_bands+1):
+            symvals.append(self.mode_solver.compute_symmetry(band, W, w))
+        return symvals
+
 
 # Predefined output functions (functions of the band index), for passing to `run`
 
