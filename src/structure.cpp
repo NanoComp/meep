@@ -516,7 +516,7 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   grid_volume pml_volume = gv;
   pml_volume.set_num_direction(d, int(dx * user_volume.a + 1 + 0.5)); // FIXME: exact value?
   const int v_to_user_shift =
-      (user_volume.big_corner().in_direction(d) - gv.big_corner().in_direction(d)) / 2;
+      (gv.big_corner().in_direction(d) - user_volume.big_corner().in_direction(d)) / 2;
       
   if (b == High){
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d) -
