@@ -1433,9 +1433,9 @@ class TestModeSolver(unittest.TestCase):
         ms.run()
 
         # inversion symmetry
-        W = mp.Matrix([-1,0,0], [0,-1,0], [0,0,-1])
+        Wi = mp.Matrix([-1,0,0], [0,-1,0], [0,0,-1])
         w = mp.Vector3(0,0,0)
-        symeigs = ms.compute_symmetries(W, w) 
+        symeigs = ms.compute_symmetries(Wi, w) 
         symeigs_expected = [1,1,1,-1,-1,-1]
         for i in range(0,5):
             self.assertAlmostEqual(symeigs[i].real, symeigs_expected[i], places=3)
@@ -1445,14 +1445,20 @@ class TestModeSolver(unittest.TestCase):
         # "preloaded" bfield
         for i in range(0,5):
             ms.get_bfield(i+1, bloch_phase=False)
-            symeig_bfield = ms.transformed_overlap(W, w)
+            symeig_bfield = ms.transformed_overlap(Wi, w)
             self.assertAlmostEqual(symeigs[i].real, symeig_bfield.real, places=3)
             self.assertAlmostEqual(symeigs[i].imag, symeig_bfield.imag, places=3)
 
             ms.get_dfield(i+1, bloch_phase=False)
-            symeig_dfield = ms.transformed_overlap(W, w)
+            symeig_dfield = ms.transformed_overlap(Wi, w)
             self.assertAlmostEqual(symeigs[i].real, symeig_dfield.real, places=3)
             self.assertAlmostEqual(symeigs[i].imag, symeig_dfield.imag, places=3)
+
+        # 2-fold symmetry (across MPI xy-transposition dimensions)
+        W2 = mp.Matrix([-1,0,0], [0,1,0], [0,0,-1])
+        symeigs = ms.compute_symmetries(W2, w)
+        self.assertAlmostEqual(sum(symeigs[0:3]), -1+0j, places=3)
+        self.assertAlmostEqual(sum(symeigs[3:6]), -1+0j, places=3)
 
         # mirror symmetry: compare with run_zeven & run_zodd 
         ms.k_points = [mp.Vector3(0,0,0)] # must be at Γ cf. https://github.com/NanoComp/mpb/issues/114
