@@ -6,15 +6,15 @@ TEST_DIR = tests
 # material_dispersion.py test must be excluded from test suite for MPI build
 if WITH_MPI
   MDPYTEST=
-  MPBPYTEST=
 else
   MDPYTEST=$(TEST_DIR)/test_material_dispersion.py
+endif # WITH_MPI
+
 if WITH_MPB
   MPBPYTEST=$(TEST_DIR)/test_mpb.py
 else
   MPBPYTEST=
 endif # WITH_MPB
-endif # WITH_MPI
 
 if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/test_binary_grating.py
