@@ -40,6 +40,16 @@ extern "C" int mpb_verbosity = 2;
 
 typedef mpb_real real; // needed for the CASSIGN macros below
 
+// support version < 1.12 of MPB
+#ifndef CASSIGN_CONJ_MULT
+#define CASSIGN_CONJ_MULT(a, b, c) { \
+     real bbbb_re = (b).re, bbbb_im = (b).im; \
+     real cccc_re = (c).re, cccc_im = (c).im; \
+     CASSIGN_SCALAR(a, bbbb_re * cccc_re + bbbb_im * cccc_im, \
+              bbbb_re * cccc_im - bbbb_im * cccc_re); \
+}
+#endif
+
 // TODO: Support MPI
 #define mpi_allreduce(sb, rb, n, ctype, t, op, comm)                                               \
   {                                                                                                \
@@ -2695,9 +2705,9 @@ bool with_hermitian_epsilon() {
 
 /* --- port of mpb's mpb/transform.c --- */
 
-/* If `curfield` is the real-space D-field (of band-index i), computes the overlap 
+/* If `curfield` is the real-space D-field (of band-index i), computes the overlap
  *       ∫ Eᵢ†(r){W|w}Dᵢ(r) dr  =  ∫ Eᵢ†(r)(WDᵢ)({W|w}⁻¹r) dr,
- * for a symmetry operation {W|w} with rotation W and translation w; each specified 
+ * for a symmetry operation {W|w} with rotation W and translation w; each specified
  * in the lattice basis. The vector fields Eᵢ and Dᵢ include Bloch phases.
  * If `curfield` is the real-space B-field, the overlap
  *       ∫ Hᵢ†(r){W|w}Bᵢ(r) dr  =  det(W) ∫ Hᵢ†(r)(WBᵢ)({W|w}⁻¹r) dr,
@@ -2789,7 +2799,7 @@ cnumber mode_solver::transformed_overlap(matrix3x3 W, vector3 w)
     /* transformed coordinate pt = {W|w}⁻¹p = W⁻¹(p-w) since {W|w}⁻¹={W⁻¹|-W⁻¹w} */
     pt = matrix3x3_vector3_mult(invW, vector3_minus(p, w));
 
-    /* Bloch field value at transformed coordinate pt: interpolation is needed to 
+    /* Bloch field value at transformed coordinate pt: interpolation is needed to
      * ensure generality in the case of fractional translations.                  */
     get_bloch_field_point_(Ftemp, pt); /* assign `Ftemp` to field at `pt` (without eⁱᵏʳ factor) */
 
@@ -2823,7 +2833,7 @@ cnumber mode_solver::transformed_overlap(matrix3x3 W, vector3 w)
     CASSIGN_CONJ_MULT(integrand, F[0], Ft[0]);  /* add adjoint(F)*Ft to integrand */
     CACCUMULATE_SUM_CONJ_MULT(integrand, F[1], Ft[1]);
     CACCUMULATE_SUM_CONJ_MULT(integrand, F[2], Ft[2]);
-  
+
     /* include Bloch phases */
     deltaphi = kvector.x*(pt.x-p.x) + kvector.y*(pt.y-p.y) + kvector.z*(pt.z-p.z);
     CASSIGN_SCALAR(phase, cos(deltaphi), sin(deltaphi));
