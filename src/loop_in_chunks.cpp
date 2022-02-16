@@ -364,10 +364,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
   // loop over symmetry transformations of the chunks:
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
-    //printf(" sym sn %i of %i \n", sn, (use_symmetry ? S.multiplicity() : 1));
     component cS = S.transform(cgrid, -sn);
     volume gvS = S.transform(gv.surroundings(), sn);
-
     vec L(gv.dim);
     ivec iL(gv.dim);
 
@@ -397,7 +395,6 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
     // loop over lattice shifts
     ivec ishift(min_ishift);
-    
     do {
       complex<double> ph = 1.0;
       vec shift(gv.dim, 0.0);
@@ -407,6 +404,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         shifti.set_direction(d, iL.in_direction(d) * ishift.in_direction(d));
         ph *= pow(eikna[d], ishift.in_direction(d));
       }
+
       for (int i = 0; i < num_chunks; ++i) {
         if (!chunks[i]->is_mine()) continue;
         grid_volume gvu(chunks[i]->gv);
