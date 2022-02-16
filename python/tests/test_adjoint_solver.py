@@ -328,6 +328,7 @@ def adjoint_solver_damping(design_params, frequencies=None, mat2=silicon):
 
     def J(mode_mon):
         return npa.power(npa.abs(mode_mon),2)
+        
 
     opt = mpa.OptimizationProblem(
         simulation=sim,
