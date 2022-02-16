@@ -1021,6 +1021,43 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
   return true;
 }
 
+double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta,
+  material_type &mat, material_type &mat_behind){
+  /* Lets assume that the "background material" is void (u=0) and that the
+  "foreground material is solid (u=1)". The fill fraction then describes
+  the amount of foreground material inhabits the cell.
+
+  The analytic volume expressions for the end cap only specify the fill fraction
+  of the cap relative to the whole sphere... but we don't know what the cap 
+  actually is (solid or void). So we need a little extra logic to sort that out.
+  
+  Occasionally, our distance to the nearest interface is outside the current
+  sphere, which means we don't need to do any averaging (the fill is 1). Again,
+  we don't know if that we means we are in void or solid, however, until we look
+  at u. Then we can determine whether the fill is 0 or 1. To make things easy, we'll
+  always assume the cap is solid.
+  */
+  double rel_fill;
+  if (abs(d) > abs(r)){
+    mat_behind = mat;
+    return -1.0; // garbage fill
+  } else {
+    if (dim == meep::D1)
+      rel_fill = (r-d)/(2*r);
+    else if (dim == meep::D2 || dim == meep::Dcyl){
+      rel_fill = (1/(r*r*meep::pi)) * (r*r*std::acos(d/r)-d*std::sqrt(r*r-d*d));
+    }
+    else if (dim == meep::D3)
+      rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
+  }
+
+  if (u <= eta){
+    return rel_fill;
+  }else{
+    return 1-rel_fill;
+  }
+}
+
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                    double tol, int maxeval) {
   symm_matrix meps_inv;
@@ -1059,6 +1096,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   material_type mat, mat_behind;
   symm_matrix meps;
   vector3 p, shiftby, normal;
+  double fill;
   fallback = false;
 
   if (maxeval == 0) {
@@ -1072,15 +1110,35 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
 
   if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
     get_material_pt(mat, v.center());
-    if (mat && (mat->which_subclass == material_data::MATERIAL_USER ||
-                mat->which_subclass == material_data::MATERIAL_GRID)
-        && mat->do_averaging) {
+    if (mat && (mat->which_subclass == material_data::MATERIAL_USER)) {
       fallback = true;
       return;
+    }
+    else if(mat && (mat->which_subclass == material_data::MATERIAL_GRID)){
+      // debug
+      //if (mat_behind)
+      //  printf("c %d | mat %d | behind %d | (x,y) (%f,%f) \n",c,mat->which_subclass,mat_behind->which_subclass,v.center().x(),v.center().y());
+      // proceed
     }
     else {
       goto trivial;
     }
+  }
+
+  if (mat->which_subclass == material_data::MATERIAL_GRID){
+    int oi;
+    geom_box_tree tp = geom_tree_search(p, restricted_tree, &oi);
+    
+    meep::vec normal_vec(matgrid_grad(p, tp, oi, mat));
+    double nabsinv = 1.0 / meep::abs(normal_vec);
+    LOOP_OVER_DIRECTIONS(normal_vec.dim, k) { normal_vec.set_direction(k,normal_vec.in_direction(k)*nabsinv); }
+    
+    double uval = matgrid_val(p, tp, oi, mat)+this->u_p;
+    double d = (mat->eta-uval) * nabsinv;
+    double r = v.diameter()/2;
+    
+    fill = get_material_grid_fill(normal_vec.dim,d,r,uval,mat->eta,mat,mat_behind);
+    normal = vec_to_vector3(normal_vec);
   }
 
   /* check for trivial case of only one object/material */
@@ -1089,14 +1147,17 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   // it doesn't make sense to average metals (electric or magnetic)
   if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
 
-  normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
-  if (normal.x == 0 && normal.y == 0 && normal.z == 0)
-    goto noavg; // couldn't get normal vector for this point, punt
-  geom_box pixel = gv2box(v);
-  pixel.low = vector3_minus(pixel.low, shiftby);
-  pixel.high = vector3_minus(pixel.high, shiftby);
+  if (mat->which_subclass != material_data::MATERIAL_GRID) {
+    normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+    if (normal.x == 0 && normal.y == 0 && normal.z == 0)
+      goto noavg; // couldn't get normal vector for this point, punt
+    
+    geom_box pixel = gv2box(v);
+    pixel.low = vector3_minus(pixel.low, shiftby);
+    pixel.high = vector3_minus(pixel.high, shiftby);
 
-  double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+    fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+  }
 
   material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symm_matrix eps2, epsinv2;
