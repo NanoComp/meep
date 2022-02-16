@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2021 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2022 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -2965,8 +2965,14 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum
             material_grids_addgradient_point(
                 v+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
                 adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
-          /* more complicated case requires interpolation/restriction */
-          } else {
+          /* anisotropic materials require interpolation/restriction */
+          } else if (md->do_averaging ||
+                     md->medium_1.epsilon_offdiag.x.re != 0 ||
+                     md->medium_1.epsilon_offdiag.y.re != 0 ||
+                     md->medium_1.epsilon_offdiag.z.re != 0 ||
+                     md->medium_2.epsilon_offdiag.x.re != 0 ||
+                     md->medium_2.epsilon_offdiag.y.re != 0 ||
+                     md->medium_2.epsilon_offdiag.z.re != 0) {
             /* we need to restrict the adjoint fields to
             the two nodes of interest (which requires a factor
             of 0.5 to scale), and interpolate the forward fields

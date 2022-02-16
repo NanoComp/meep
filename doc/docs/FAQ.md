@@ -19,7 +19,7 @@ Meep was originally developed as part of graduate research at MIT. The project h
 
 ### Where can I ask questions regarding Meep?
 
-There is a public [mailing list](http://ab-initio.mit.edu/cgi-bin/mailman/listinfo/meep-discuss) for users to discuss issues pertaining to setting up simulations, post-processing output, installation, etc. A useful place to start is the [list archives](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/) which includes all postings (6500+) since 2006 spanning a variety of topics. Bug reports and new feature requests should be filed as a [GitHub issue](https://github.com/NanoComp/meep/issues). However, do not use issues as a general help desk if you do not understand something (use the mailing list instead).
+The [Discussions](https://github.com/NanoComp/meep/discussions) page on GitHub can be used to ask questions regarding setting up simulations, analyzing results, installation, etc. Bug reports and new feature requests should be filed as an [issue](https://github.com/NanoComp/meep/issues) on GitHub. However, do not use issues as a general help desk if you do not understand something (use the Discussions instead).
 
 ### How can I contribute to the Meep project?
 

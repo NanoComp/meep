@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
   // their reference values
   double f50_ref = -5.090114e-01;
   double tFinal_ref = 9.195000e+01;
-  double fFinal_ref = 1.624782e-07;
+  double fFinal_ref = sizeof(realnum) == sizeof(float) ? 1.413336e-07 : 1.624782e-07;
   if (fabs(f50 - f50_ref) > 1.0e-6 * fabs(f50_ref) ||
       fabs(tFinal - tFinal_ref) > 1.0e-6 * fabs(tFinal_ref) ||
       fabs(fFinal - fFinal_ref) > 1.0e-6 * fabs(fFinal_ref)) {
@@ -121,4 +121,8 @@ int main(int argc, char *argv[]) {
   }
   else if (verbose)
     master_printf("Test successful.\n");
+
+  meep_geom::unset_default_material();
+
+  return 0;
 }

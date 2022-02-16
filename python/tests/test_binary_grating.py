@@ -1,5 +1,3 @@
-from __future__ import division
-
 import unittest
 import meep as mp
 import math
@@ -9,7 +7,7 @@ import numpy as np
 class TestEigCoeffs(unittest.TestCase):
 
   def run_binary_grating_oblique(self, theta):
-  
+
     resolution = 30        # pixels/um
 
     dpml = 1.0             # PML thickness
@@ -25,7 +23,7 @@ class TestEigCoeffs(unittest.TestCase):
     cell_size = mp.Vector3(sx,sy,0)
 
     # replace anisotropic PML with isotropic Absorber to attenuate parallel-directed fields of oblique source
-    abs_layers = [mp.Absorber(thickness=dpml,direction=mp.X)] 
+    abs_layers = [mp.Absorber(thickness=dpml,direction=mp.X)]
 
     wvl = 0.5              # center wavelength
     fcen = 1/wvl           # center frequency
@@ -46,7 +44,7 @@ class TestEigCoeffs(unittest.TestCase):
       k = mp.Vector3(0,0,0)
       symmetries = [mp.Mirror(mp.Y)]
       eig_parity += mp.EVEN_Y
-  
+
     def pw_amp(k,x0):
       def _pw_amp(x):
         return cmath.exp(1j*2*math.pi*k.dot(x+x0))
@@ -71,7 +69,7 @@ class TestEigCoeffs(unittest.TestCase):
     refl_flux = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=refl_pt, size=mp.Vector3(0,sy,0)))
 
     sim.run(until_after_sources=100)
-  
+
     input_flux = mp.get_fluxes(refl_flux)
     input_flux_data = sim.get_flux_data(refl_flux)
 

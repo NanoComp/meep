@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2021 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2022 Massachusetts Institute of Technology
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1555,6 +1555,7 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
 %template(VolumeVector) std::vector<meep::volume>;
 %template(GridVolumeVector) std::vector<meep::grid_volume>;
 %template(IntVector) std::vector<int>;
+%template(Size_t_Vector) std::vector<size_t>;
 %template(DoubleVector) std::vector<double>;
 
 // use NumPy arrays for returning common std::vector types:

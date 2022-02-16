@@ -182,17 +182,17 @@ class UtilsTest(unittest.TestCase):
 class WrapperTest(ApproxComparisonTestCase):
     @parameterized.parameterized.expand([
         ('1500_1550bw_01relative_gaussian_port1',
-         onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0, 0),
+         onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 0.5, 0),
         ('1550_1600bw_02relative_gaussian_port1',
-         onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 1.0, 0),
+         onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 0.5, 0),
         ('1500_1600bw_03relative_gaussian_port1',
-         onp.linspace(1 / 1.50, 1 / 1.60, 4).tolist(), 0.3, 1.0, 0),
+         onp.linspace(1 / 1.50, 1 / 1.60, 4).tolist(), 0.3, 0.5, 0),
         ('1500_1550bw_01relative_gaussian_port2',
-         onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 1.0, 1),
+         onp.linspace(1 / 1.50, 1 / 1.55, 3).tolist(), 0.1, 0.5, 1),
         ('1550_1600bw_02relative_gaussian_port2',
-         onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 1.0, 1),
+         onp.linspace(1 / 1.55, 1 / 1.60, 3).tolist(), 0.2, 0.5, 1),
         ('1500_1600bw_03relative_gaussian_port2',
-         onp.linspace(1 / 1.50, 1 / 1.60, 4).tolist(), 0.3, 1.0, 1),
+         onp.linspace(1 / 1.50, 1 / 1.60, 4).tolist(), 0.3, 0.5, 1),
     ])
     def test_wrapper_gradients(self, _, frequencies, gaussian_rel_width,
                                design_variable_fill_value, excite_port_idx):

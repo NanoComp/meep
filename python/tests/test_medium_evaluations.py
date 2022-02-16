@@ -3,11 +3,9 @@
 # Checks materials with lorentizian, drude, and non uniform diagonals.
 # The extracted values are compared against actual datapoints pulled from
 #   refractiveindex.info.
-# TODO: 
+# TODO:
 #  * check materials with off diagonal components
 #  * check magnetic profiles
-
-from __future__ import division
 
 import unittest
 import meep as mp

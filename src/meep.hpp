@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2021 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2022 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -1382,7 +1382,7 @@ public:
   int periodic_n[2];
   double periodic_k[2], period[2];
 
-  std::vector<sourcedata> near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ);
+  std::vector<sourcedata> near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, const std::complex<double>* dJ);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1419,7 +1419,7 @@ public:
   dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
   dft_fields(dft_chunk *chunks, const std::vector<double> &freq_, const volume &where);
   dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
-
+  std::vector<sourcedata> fourier_sourcedata(const volume &where, component c, fields &f, const std::complex<double>* dJ);
   void scale_dfts(std::complex<double> scale);
 
   void remove();
@@ -2167,6 +2167,8 @@ public:
   std::complex<double> get_field(int c, const vec &loc, bool parallel = true) const;
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
+  std::vector<size_t> dft_monitor_size(dft_fields fdft, const volume &where, component c);
+  void get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz, int &rank, direction *ds, size_t *dims, int *array_rank=0, size_t *array_dims=0, direction *array_dirs=0);
 
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();

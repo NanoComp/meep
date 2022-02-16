@@ -1,13 +1,13 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([meep],[m4_esyscmd(./version.sh 1.22.0-beta)])
+AC_INIT([meep],[m4_esyscmd(./version.sh 1.22.0)])
 AC_CONFIG_SRCDIR(src/step.cpp)
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="26:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="27:0:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -146,14 +146,6 @@ fi
 # More checks
 
 LT_INIT
-
-AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
-if test -z "$LATEX2HTML"; then
-    AC_MSG_WARN([Cannot find latex2html in your path!])
-    # FIXME: use standard 'missing' script from automake
-    LATEX2HTML='echo not running latex2html...'
-fi
-AC_SUBST(LATEX2HTML)
 
 AC_CHECK_LIB(m, sin)
 
