@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-
 import warnings
-
 import meep as mp
 from meep.geom import Vector3, check_nonnegative
 

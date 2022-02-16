@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2021 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2022 Massachusetts Institute of Technology
 %
 %  This program is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 #include <vector>
 #include <string.h>
 #include "meep.hpp"
+
+using namespace std;
 
 namespace meep {
 
@@ -166,5 +168,11 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
              const vec &x0, component c0, std::complex<double> f0);
 void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
               const vec &x0, component c0, std::complex<double> f0, double m, double tol);
+
+// functions in array_slice.cpp:
+
+complex<realnum> *collapse_array(complex<realnum> *array, int *rank, size_t dims[3], direction dirs[3], volume where);
+
+void reduce_array_dimensions(volume where, int full_rank, size_t dims[3], direction dirs[3], size_t stride[3], int &reduced_rank, size_t reduced_dims[3], direction reduced_dirs[3], size_t reduced_stride[3]);
 
 } // namespace meep

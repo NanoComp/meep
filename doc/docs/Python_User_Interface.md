@@ -87,40 +87,40 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size,
-             resolution,
-             geometry=None,
-             sources=None,
-             eps_averaging=True,
-             dimensions=3,
-             boundary_layers=None,
-             symmetries=None,
-             force_complex_fields=False,
-             default_material=Medium(),
-             m=0,
-             k_point=False,
-             kz_2d='complex',
-             extra_materials=None,
-             material_function=None,
-             epsilon_func=None,
-             epsilon_input_file='',
-             progress_interval=4,
-             subpixel_tol=0.0001,
-             subpixel_maxeval=100000,
-             loop_tile_base_db=0,
-             loop_tile_base_eh=0,
-             ensure_periodicity=True,
-             num_chunks=0,
-             Courant=0.5,
-             accurate_fields_near_cylorigin=False,
-             filename_prefix=None,
-             output_volume=None,
-             output_single_precision=False,
-             geometry_center=Vector3<0.0, 0.0, 0.0>,
-             force_all_components=False,
-             split_chunks_evenly=True,
-             chunk_layout=None,
-             collect_stats=False):
+             cell_size: 'Optional[Vector3Type]' = None,
+             resolution: 'float' = None,
+             geometry: 'Optional[List[GeometricObject]]' = None,
+             sources: 'Optional[List[Source]]' = None,
+             eps_averaging: 'bool' = True,
+             dimensions: 'int' = 3,
+             boundary_layers: 'Optional[List[PML]]' = None,
+             symmetries: 'Optional[List[Symmetry]]' = None,
+             force_complex_fields: 'bool' = False,
+             default_material: 'Medium' = Medium(),
+             m: 'float' = 0,
+             k_point: 'Union[Vector3Type, bool]' = False,
+             kz_2d: 'str' = 'complex',
+             extra_materials: 'Optional[List[Medium]]' = None,
+             material_function: 'Optional[Callable[[Vector3Type], Medium]]' = None,
+             epsilon_func: 'Optional[Callable[[Vector3Type], float]]' = None,
+             epsilon_input_file: 'str' = '',
+             progress_interval: 'float' = 4,
+             subpixel_tol: 'float' = 0.0001,
+             subpixel_maxeval: 'int' = 100000,
+             loop_tile_base_db: 'int' = 0,
+             loop_tile_base_eh: 'int' = 0,
+             ensure_periodicity: 'bool' = True,
+             num_chunks: 'int' = 0,
+             Courant: 'float' = 0.5,
+             accurate_fields_near_cylorigin: 'bool' = False,
+             filename_prefix: 'Optional[str]' = None,
+             output_volume: 'Optional[Volume]' = None,
+             output_single_precision: 'bool' = False,
+             geometry_center: 'Vector3Type' = Vector3<0.0, 0.0, 0.0>,
+             force_all_components: 'bool' = False,
+             split_chunks_evenly: 'bool' = True,
+             chunk_layout: 'Optional[str, Simulation, BinaryPartition]' = None,
+             collect_stats: 'bool' = False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -152,7 +152,7 @@ Python. `Vector3` is a `meep` class.
 
 + **`boundary_layers` [ list of `PML` class ]** — Specifies the
   [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to
-  none.
+  none (empty list).
 
 + **`cell_size` [ `Vector3` ]** — Specifies the size of the cell which is centered
   on the origin of the coordinate system. Any sizes of 0 imply a
@@ -1228,7 +1228,7 @@ values currently there) from an HDF5 file of the given `filename` without the
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_flux` in a simulation of the same
 dimensions (for both the cell and the flux regions) with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -1286,7 +1286,8 @@ def load_flux_data(self, flux, fdata):
 Load the Fourier-transformed fields into the given flux object (replacing any
 values currently there) from the `FluxData` object `fdata`. You must load from an
 object that was created by `get_flux_data` in a simulation of the same dimensions
-(for both the cell and the flux regions) with the same number of processors.
+(for both the cell and the flux regions) with the same number of processors and
+chunk layout.
 
 </div>
 
@@ -1479,7 +1480,7 @@ def __init__(self, g=None, axis=None, s=None, p=None):
 
 Construct a `DiffractedPlanewave`.
 
-+ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
++ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
 + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
@@ -1693,7 +1694,7 @@ values currently there) from an HDF5 file of the given `filename` without the
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_energy` in a simulation of the same
 dimensions for both the cell and the energy regions with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -1861,7 +1862,7 @@ values currently there) from an HDF5 file of the given `filename` without the
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_force` in a simulation of the same
 dimensions for both the cell and the force regions with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -1920,7 +1921,8 @@ def load_force_data(self, force, fdata):
 Load the Fourier-transformed fields into the given force object (replacing any
 values currently there) from the `ForceData` object `fdata`. You must load from an
 object that was created by `get_force_data` in a simulation of the same dimensions
-(for both the cell and the flux regions) with the same number of processors.
+(for both the cell and the flux regions) with the same number of processors and
+chunk layout.
 
 </div>
 
@@ -2195,7 +2197,7 @@ any values currently there) from an HDF5 file of the given `filename` without th
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_near2far` in a simulation of *the same
 dimensions* for both the cell and the near2far regions with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -2256,7 +2258,7 @@ Load the Fourier-transformed fields into the `near2far` object (replacing any
 values currently there) from the `NearToFarData` object `n2fdata`. You must load
 from an object that was created by `get_near2far_data` in a simulation of the same
 dimensions (for both the cell and the flux regions) with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -4395,10 +4397,9 @@ class MaterialGrid(object):
 
 <div class="class_docstring" markdown="1">
 
-This class is used to specify materials interpolated from discrete points on a rectilinear grid.
-A class object is passed as the `material` argument of a [`Block`](#block) geometric object or
-the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
-[material function](#medium)).
+This class is used to specify materials on a rectilinear grid. A class object is passed
+as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
+argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
 
 </div>
 
@@ -4415,7 +4416,7 @@ def __init__(self,
              medium2,
              weights=None,
              grid_type='U_DEFAULT',
-             do_averaging=True,
+             do_averaging=False,
              beta=0,
              eta=0.5,
              damping=0):
@@ -4426,19 +4427,21 @@ def __init__(self,
 Creates a `MaterialGrid` object.
 
 The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
-is defined on discrete points of a rectilinear grid by the NumPy array `weights` of size `grid_size`
-(a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
-depending on the `size` property of the `Block` object as shown in the following example for a 2d
-`MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
-$z$ direction. The grid points are defined at the corners of the voxels.
+is defined on a rectilinear grid by the NumPy array `weights` of size `grid_size` (a 3-tuple or
+`Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform depending
+on the `size` property of the `Block` object as shown in the following example for a 2d `MaterialGrid`
+with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the $z$ direction.
+The grid points are defined at the corners of the voxels.
 
 ![](images/material_grid.png)
 
 Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
-Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ or $\mu$
-and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
-from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
+The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
+Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ (`epsilon_diag`
+and `epsilon_offdiag` are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and `sigma_offdiag`
+are interpolated). `medium1` and `medium2` must both be the same type. The materials are
+[bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation) from the rectilinear
+grid to Meep's [Yee grid](Yee_Lattice.md).
 
 For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
 `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
@@ -4455,9 +4458,9 @@ a *discontinuous* function from otherwise continuously varying (via the bilinear
 grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
 for level-set functions.
 
-A nonzero damping term creates an artificial conductivity σ = u(1-u)*damping, which acts as
-dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
-damping should be proportional to 2π times the typical frequency of the problem.
+A nonzero `damping` term creates an artificial conductivity $\sigma = u(1-u)*$`damping`, which acts as
+dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
+`damping` should be proportional to $2\pi$ times the typical frequency of the problem.
 
 It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
 grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
@@ -4499,7 +4502,7 @@ class Susceptibility(object):
 <div class="class_docstring" markdown="1">
 
 Parent class for various dispersive susceptibility terms, parameterized by an
-anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+anisotropic amplitude $\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
 
 </div>
 
@@ -4518,13 +4521,13 @@ def __init__(self,
 
 <div class="method_docstring" markdown="1">
 
-+ **`sigma` [`number`]** — The scale factor σ.
++ **`sigma` [`number`]** — The scale factor $\sigma$.
 
-You can also specify an anisotropic σ tensor by using the property `sigma_diag`
-which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+You can also specify an anisotropic $\sigma$ tensor by using the property `sigma_diag`
+which takes three numbers or a `Vector3` to give the $\sigma_n$ tensor diagonal, and
 `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
 `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
-corresponds to a σ tensor
+corresponds to a $\sigma$ tensor
 
 \begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
 
@@ -4545,7 +4548,7 @@ class LorentzianSusceptibility(Susceptibility):
 
 Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
 oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with
-the parameters (in addition to σ):
+the parameters (in addition to $\sigma$):
 
 </div>
 
@@ -4563,7 +4566,7 @@ def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 
 + **`frequency` [`number`]** — The resonance frequency $f_n = \omega_n / 2\pi$.
 
-+ **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\pi$.
++ **`gamma` [`number`]** — The resonance loss rate $\gamma_n / 2\pi$.
 
 Note: multiple objects with identical values for the `frequency` and `gamma` but
 different `sigma` will appear as a *single* Lorentzian susceptibility term in the
@@ -4585,7 +4588,7 @@ class DrudeSusceptibility(Susceptibility):
 <div class="class_docstring" markdown="1">
 
 Specifies a single dispersive susceptibility of Drude form. See [Material
-Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\sigma$):
 
 </div>
 
@@ -4602,9 +4605,9 @@ def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 <div class="method_docstring" markdown="1">
 
 + **`frequency` [`number`]** — The frequency scale factor $f_n = \omega_n / 2\pi$
-  which multiplies σ (not a resonance frequency).
+  which multiplies $\sigma$ (not a resonance frequency).
 
-+ **`gamma` [`number`]** — The loss rate $γ_n / 2\pi$.
++ **`gamma` [`number`]** — The loss rate $\gamma_n / 2\pi$.
 
 </div>
 
@@ -4645,13 +4648,13 @@ def __init__(self,
 
 <div class="method_docstring" markdown="1">
 
-+ **`sigma` [`number`]** — The scale factor σ.
++ **`sigma` [`number`]** — The scale factor $\sigma$.
 
-You can also specify an anisotropic σ tensor by using the property `sigma_diag`
-which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+You can also specify an anisotropic $\sigma$ tensor by using the property `sigma_diag`
+which takes three numbers or a `Vector3` to give the $\sigma_n$ tensor diagonal, and
 `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
 `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
-corresponds to a σ tensor
+corresponds to a $\sigma$ tensor
 
 \begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
 

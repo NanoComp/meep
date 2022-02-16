@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-
 import functools
 import math
 import numbers
@@ -524,29 +522,46 @@ class Medium(object):
 
 class MaterialGrid(object):
     """
-    This class is used to specify materials interpolated from discrete points on a rectilinear grid.
-    A class object is passed as the `material` argument of a [`Block`](#block) geometric object or
-    the `default_material` argument of the [`Simulation`](#Simulation) constructor (similar to a
-    [material function](#medium)).
+    This class is used to specify materials on a rectilinear grid. A class object is passed
+    as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
+    argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
     """
-    def __init__(self,grid_size,medium1,medium2,weights=None,grid_type="U_DEFAULT",do_averaging=True,beta=0,eta=0.5,damping=0):
+    def check_weights(self, w):
+        if np.amin(w) < 0. or np.amax(w) > 1.:
+            warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
+            return np.clip(w, 0., 1.)
+        else:
+            return w
+
+    def __init__(self,
+                 grid_size,
+                 medium1,
+                 medium2,
+                 weights=None,
+                 grid_type="U_DEFAULT",
+                 do_averaging=False,
+                 beta=0,
+                 eta=0.5,
+                 damping=0):
         """
         Creates a `MaterialGrid` object.
 
         The input are two materials `medium1` and `medium2` along with a weight function $u(x)$ which
-        is defined on discrete points of a rectilinear grid by the NumPy array `weights` of size `grid_size`
-        (a 3-tuple or `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform
-        depending on the `size` property of the `Block` object as shown in the following example for a 2d
-        `MaterialGrid` with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the
-        $z$ direction. The grid points are defined at the corners of the voxels.
+        is defined on a rectilinear grid by the NumPy array `weights` of size `grid_size` (a 3-tuple or
+        `Vector3` of integers $N_x$,$N_y$,$N_z$). The resolution of the grid may be nonuniform depending
+        on the `size` property of the `Block` object as shown in the following example for a 2d `MaterialGrid`
+        with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the $z$ direction.
+        The grid points are defined at the corners of the voxels.
 
         ![](images/material_grid.png)
 
         Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
-        Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ or $\\mu$
-        and (2) `LorentzianSusceptibility`. `medium1` and `medium2` must both be the same type. The
-        materials are [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation)
-        from the rectilinear grid to Meep's [Yee grid](Yee_Lattice.md).
+        The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
+        Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ (`epsilon_diag`
+        and `epsilon_offdiag` are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and `sigma_offdiag`
+        are interpolated). `medium1` and `medium2` must both be the same type. The materials are
+        [bilinearly interpolated](https://en.wikipedia.org/wiki/Bilinear_interpolation) from the rectilinear
+        grid to Meep's [Yee grid](Yee_Lattice.md).
 
         For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabled by specifying
         `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
@@ -563,9 +578,9 @@ class MaterialGrid(object):
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
         for level-set functions.
 
-        A nonzero damping term creates an artificial conductivity σ = u(1-u)*damping, which acts as
-        dissipation loss that penalize intermediate pixel values of non-binarized structures. The value of
-        damping should be proportional to 2π times the typical frequency of the problem.
+        A nonzero `damping` term creates an artificial conductivity $\\sigma = u(1-u)*$`damping`, which acts as
+        dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
+        `damping` should be proportional to $2\\pi$ times the typical frequency of the problem.
 
         It is possible to overlap any number of different `MaterialGrid`s. This can be useful for defining
         grids which are symmetric (e.g., mirror, rotation). One way to set this up is by overlapping a
@@ -596,7 +611,7 @@ class MaterialGrid(object):
         elif weights.size != self.num_params:
             raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(weights.size,self.grid_size))
         else:
-            self.weights = weights.flatten().astype(np.float64)
+            self.weights = self.check_weights(weights).flatten().astype(np.float64)
 
         grid_type_dict = {
             "U_MIN":0,
@@ -609,28 +624,29 @@ class MaterialGrid(object):
         self.grid_type = grid_type_dict[grid_type]
 
         self.swigobj = None
-    def update_weights(self,x):
+
+    def update_weights(self, x):
         """
         Reset the `weights` to `x`.
         """
         if x.size != self.num_params:
             raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(self.weights.size,self.grid_size))
-        self.weights[:]=x.flatten().astype(np.float64)
+        self.weights[:] = self.check_weights(x).flatten().astype(np.float64)
 
 class Susceptibility(object):
     """
     Parent class for various dispersive susceptibility terms, parameterized by an
-    anisotropic amplitude σ. See [Material Dispersion](Materials.md#material-dispersion).
+    anisotropic amplitude $\\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
     """
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
         """
-        + **`sigma` [`number`]** — The scale factor σ.
+        + **`sigma` [`number`]** — The scale factor $\\sigma$.
 
-        You can also specify an anisotropic σ tensor by using the property `sigma_diag`
-        which takes three numbers or a `Vector3` to give the σ$_n$ tensor diagonal, and
+        You can also specify an anisotropic $\\sigma$ tensor by using the property `sigma_diag`
+        which takes three numbers or a `Vector3` to give the $\\sigma_n$ tensor diagonal, and
         `sigma_offdiag` which specifies the offdiagonal elements (defaults to 0). That is,
         `sigma_diag=mp.Vector3(a, b, c)` and `sigma_offdiag=mp.Vector3(u, v, w)`
-        corresponds to a σ tensor
+        corresponds to a $\\sigma$ tensor
 
         \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
         """
@@ -648,13 +664,13 @@ class LorentzianSusceptibility(Susceptibility):
     """
     Specifies a single dispersive susceptibility of Lorentzian (damped harmonic
     oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with
-    the parameters (in addition to σ):
+    the parameters (in addition to $\\sigma$):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
         + **`frequency` [`number`]** — The resonance frequency $f_n = \\omega_n / 2\\pi$.
 
-        + **`gamma` [`number`]** — The resonance loss rate $γ_n / 2\\pi$.
+        + **`gamma` [`number`]** — The resonance loss rate $\\gamma_n / 2\\pi$.
 
         Note: multiple objects with identical values for the `frequency` and `gamma` but
         different `sigma` will appear as a *single* Lorentzian susceptibility term in the
@@ -675,14 +691,14 @@ class LorentzianSusceptibility(Susceptibility):
 class DrudeSusceptibility(Susceptibility):
     """
     Specifies a single dispersive susceptibility of Drude form. See [Material
-    Dispersion](Materials.md#material-dispersion), with the parameters (in addition to σ):
+    Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\\sigma$):
     """
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
         + **`frequency` [`number`]** — The frequency scale factor $f_n = \\omega_n / 2\\pi$
-          which multiplies σ (not a resonance frequency).
+          which multiplies $\\sigma$ (not a resonance frequency).
 
-        + **`gamma` [`number`]** — The loss rate $γ_n / 2\\pi$.
+        + **`gamma` [`number`]** — The loss rate $\\gamma_n / 2\\pi$.
         """
         super(DrudeSusceptibility, self).__init__(**kwargs)
         self.frequency = frequency
@@ -1231,10 +1247,10 @@ class Matrix(object):
         self.c1 = Vector3(*c1)
         self.c2 = Vector3(*c2)
         self.c3 = Vector3(*c3)
-        if c1 == c2 == c3 == Vector3():
-            self.c1 = Vector3(diag.x,offdiag.x,offdiag.y)
-            self.c2 = Vector3(np.conj(offdiag.x),diag.y,offdiag.z)
-            self.c3 = Vector3(np.conj(offdiag.y),np.conj(offdiag.z),diag.z)
+        if np.all(c1 == c2) and np.all(c2 == c3) and np.all(c3 == Vector3()):
+            self.c1 = Vector3(diag[0], offdiag[0], offdiag[1])
+            self.c2 = Vector3(np.conj(offdiag[0]), diag[1], offdiag[2])
+            self.c3 = Vector3(np.conj(offdiag[1]), np.conj(offdiag[2]), diag[2])
 
     def __getitem__(self, i):
         return self.row(i)

@@ -477,20 +477,20 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
             else:
                 raise ValueError("Invalid simulation dimensions")
             for permutation in itertools.product(dims, [mp.Low, mp.High]):
-                if (permutation[0] == mp.X) and (permutation[1] == mp.Low):
+                if ((permutation[0] == mp.X) and (permutation[1] == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
                     continue
                 vol = get_boundary_volumes(boundary.thickness,*permutation)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
         # two sides are the same
         elif boundary.side == mp.ALL:
             for side in [mp.Low, mp.High]:
-                if (boundary.direction == mp.X) and (side == mp.Low):
+                if ((boundary.direction == mp.X) and (side == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
                     continue
                 vol = get_boundary_volumes(boundary.thickness,boundary.direction,side)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
         # only one side
         else:                
-            if (boundary.direction == mp.X) and (boundary.side == mp.Low):
+            if ((boundary.direction == mp.X) and (boundary.side == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
                 continue
             vol = get_boundary_volumes(boundary.thickness,boundary.direction,boundary.side)
             ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
@@ -620,7 +620,7 @@ def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
                            labels=labels, monitor_parameters=monitor_parameters)
 
     # Plot fields
-    if fields:
+    if fields is not None:
         ax = plot_fields(sim, ax, fields, output_plane=output_plane,
                          field_parameters=field_parameters)
 

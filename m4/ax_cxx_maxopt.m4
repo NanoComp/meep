@@ -33,7 +33,7 @@ AC_ARG_ENABLE(portable-binary, [AS_HELP_STRING([--disable-portable-binary], [ena
 	acx_maxopt_portable=$enableval, acx_maxopt_portable=yes)
 
 # Try to determine "good" native compiler flags if none specified via CXXFLAGS
-if test "$ac_test_CXXFLAGS" != "set"; then
+if test "x$ac_test_CXXFLAGS" != "xset" -a "x$ac_test_CXXFLAGS" != "xy"; then
   CXXFLAGS=""
   case $ax_cv_cxx_compiler_vendor in
     dec) CXXFLAGS="-w0 -O5 -tune host" # -ansi_alias -ansi_args -fp_reorder ?

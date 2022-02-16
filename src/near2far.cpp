@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2021 Massachusetts Institute of Technology.
+/* Copyright (C) 2005-2022 Massachusetts Institute of Technology.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -642,7 +642,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
 }
 
 //Modified from farfield_lowlevel
-std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, std::complex<double>* dJ) {
+std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, const std::complex<double>* dJ) {
   if (x_0.dim != D3 && x_0.dim != D2 && x_0.dim != Dcyl)
     meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x_0.dim == D2 ? green2d : green3d;
