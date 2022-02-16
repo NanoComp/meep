@@ -1031,15 +1031,15 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
   of the cap relative to the whole sphere... but we don't know what the cap 
   actually is (solid or void). So we need a little extra logic to sort that out.
   
-  Occasionally, our distance to the nearest interface is outside the current
-  sphere, which means we don't need to do any averaging (the fill is 1). Again,
-  we don't know if that we means we are in void or solid, however, until we look
-  at u. Then we can determine whether the fill is 0 or 1. To make things easy, we'll
-  always assume the cap is solid.
+  Occasionally, the distance to the nearest interface is outside the current
+  sphere, which means we don't need to do any averaging (the fill is 0 or 1). Again,
+  we don't know if that means we are in void or solid, however, until we look
+  at u. To make things easy, we'll assume the cap is solid until the end, when we
+  can verify.
   */
   double rel_fill;
   if (abs(d) > abs(r)){
-    mat_behind = mat;
+    mat_behind = mat; // set materials to be equal so that no averaging is performed later
     return -1.0; // garbage fill
   } else {
     if (dim == meep::D1)
@@ -1052,9 +1052,9 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
   }
 
   if (u <= eta){
-    return rel_fill;
+    return rel_fill;   // center is void, so cap must be sold
   }else{
-    return 1-rel_fill;
+    return 1-rel_fill; // center is solid, so cap must be void
   }
 }
 
