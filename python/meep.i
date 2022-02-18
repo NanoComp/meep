@@ -1514,8 +1514,6 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
 %ignore material_type_equal;
 %ignore is_variable;
 %ignore is_variable;
-%ignore is_file;
-%ignore is_file;
 %ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;

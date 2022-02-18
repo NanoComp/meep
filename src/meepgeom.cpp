@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <vector>
+#include <csignal>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
 
@@ -287,14 +288,21 @@ bool is_material_grid(material_type mt) {
 }
 bool is_material_grid(void *md) { return is_material_grid((material_type)md); }
 
-bool is_variable(material_type mt) {
-  return (mt->which_subclass == material_data::MATERIAL_USER) ||
-         (mt->which_subclass == material_data::MATERIAL_GRID);
-}
-bool is_variable(void *md) { return is_variable((material_type)md); }
+// return whether mt is spatially varying
+bool is_variable(material_type mt, bool include_mg) {
+  /* sometimes we don't want to consider a material grid as a 
+  "variable material", so we can use the include_mg flag
+  to exclude that corner case. The defauly behavior (include_mg=true)
+  assumes that a material grid is indeed a variable material. */
 
-bool is_file(material_type md) { return (md->which_subclass == material_data::MATERIAL_FILE); }
-bool is_file(void *md) { return is_file((material_type)md); }
+  if (!include_mg && is_material_grid(mt))
+    return false;
+  else
+    return (mt && ((mt->which_subclass == material_data::MATERIAL_USER) ||
+                 (mt->which_subclass == material_data::MATERIAL_GRID) ||
+                 (mt->which_subclass == material_data::MATERIAL_FILE)));
+}
+bool is_variable(void *md, bool include_mg) { return is_variable((material_type)md, include_mg); }
 
 bool is_medium(material_type md, medium_struct **m) {
   if (md->which_subclass == material_data::MEDIUM) {
@@ -306,24 +314,29 @@ bool is_medium(material_type md, medium_struct **m) {
 
 bool is_medium(void *md, medium_struct **m) { return is_medium((material_type)md, m); }
 
+// note: is_metal assumes that eval_material_pt has already been called for variable materials
 bool is_metal(meep::field_type ft, const material_type *material) {
   material_data *md = *material;
   if (ft == meep::E_stuff) switch (md->which_subclass) {
       case material_data::MEDIUM:
+      case material_data::MATERIAL_USER:
+      case material_data::MATERIAL_FILE:
       case material_data::MATERIAL_GRID:
         return (md->medium.epsilon_diag.x < 0 || md->medium.epsilon_diag.y < 0 ||
                 md->medium.epsilon_diag.z < 0);
       case material_data::PERFECT_METAL: return true;
-      default: meep::abort("unknown material type"); return false;
+      default: meep::abort("unknown material type in is_metal"); return false;
     }
   else
     switch (md->which_subclass) {
       case material_data::MEDIUM:
+      case material_data::MATERIAL_USER:
+      case material_data::MATERIAL_FILE:
       case material_data::MATERIAL_GRID:
         return (md->medium.mu_diag.x < 0 || md->medium.mu_diag.y < 0 || md->medium.mu_diag.z < 0);
       case material_data::PERFECT_METAL:
         return false; // is an electric conductor, but not a magnetic conductor
-      default: meep::abort("unknown material type"); return false;
+      default: meep::abort("unknown material type in is_metal"); return false;
     }
 }
 
@@ -356,7 +369,7 @@ vector3 to_geom_object_coords_VJP(vector3 v, const geometric_object *o) {
 }
 
 meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_object *o) {
-  if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
+  if (!is_material_grid(md)) {meep::abort("Invalid material grid detected.\n"); }
 
   meep::vec gradient(zero_vec(dim));
   double *data = md->weights;
@@ -455,6 +468,7 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   // iterate through object tree at current point
   if (tp) {
     do {
+      printf("entered %d\n",is_material_grid((material_data *)tp->objects[oi].o->material));
       gradient += material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
                                      (material_data *)tp->objects[oi].o->material,
                                      tp->objects[oi].o);
@@ -802,7 +816,7 @@ static void material_epsmu(meep::field_type ft, material_type material, symm_mat
         epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
         break;
 
-      default: meep::abort("unknown material type");
+      default: meep::abort("unknown material type in epsmu");
     }
   else
     switch (md->which_subclass) {
@@ -830,7 +844,7 @@ static void material_epsmu(meep::field_type ft, material_type material, symm_mat
         epsmu_inv->m01 = epsmu_inv->m02 = epsmu_inv->m12 = 0.0;
         break;
 
-      default: meep::abort("unknown material type");
+      default: meep::abort("unknown material type in epsmu");
     }
 }
 
@@ -842,26 +856,31 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
   boolean inobject;
   material =
       (material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
-  material_data *md = material;
+  eval_material_pt(material, p);
+}
 
-  switch (md->which_subclass) {
+// evaluate the material at the given point p if necessary — this is needed if
+// the material is variable (a grid, function, or file); otherwise it is a no-op.
+void geom_epsilon::eval_material_pt(material_type &material, vector3 p) {
+  switch (material->which_subclass) {
     // material grid: interpolate onto user specified material grid to get properties at r
-    case material_data::MATERIAL_GRID:
+    case material_data::MATERIAL_GRID: {
       double u;
       int oi;
       geom_box_tree tp;
 
       tp = geom_tree_search(p, restricted_tree, &oi);
       // interpolate and project onto material grid
-      u = tanh_projection(matgrid_val(p, tp, oi, md)+this->u_p, md->beta, md->eta);
+      u = tanh_projection(matgrid_val(p, tp, oi, material)+this->u_p, material->beta, material->eta);
       // interpolate material from material grid point
-      epsilon_material_grid(md, u);
+      epsilon_material_grid(material, u);
 
       return;
+    }
     // material read from file: interpolate to get properties at r
     case material_data::MATERIAL_FILE:
-      if (md->epsilon_data)
-        epsilon_file_material(md, p);
+      if (material->epsilon_data)
+        epsilon_file_material(material, p);
       else
         material = (material_type)default_material;
       return;
@@ -872,16 +891,16 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
     // the user's function only needs to fill in whatever is
     // different from vacuum.
     case material_data::MATERIAL_USER:
-      md->medium = medium_struct();
-      md->user_func(p, md->user_data, &(md->medium));
-      md->medium.check_offdiag_im_zero_or_abort();
+      material->medium = medium_struct();
+      material->user_func(p, material->user_data, &(material->medium));
+      material->medium.check_offdiag_im_zero_or_abort();
       return;
 
     // position-independent material or metal: there is nothing to do
     case material_data::MEDIUM:
     case material_data::PERFECT_METAL: return;
 
-    default: meep::abort("unknown material type");
+    default: meep::abort("unknown material type in eval_material_pt");
   };
 }
 
@@ -906,7 +925,7 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
 }
 
 /* Find frontmost object in v, along with the constant material behind it.
-   Returns false if material behind the object is not constant.
+   Returns false if more than two objects & materials intersect the pixel.
 
    Requires moderately horrifying logic to figure things out properly,
    stolen from MPB. */
@@ -1001,6 +1020,8 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
     p2 = p1;
     shiftby2 = shiftby1;
   }
+    //if ((o1 && is_variable(o1->material)) || (o2 && is_variable(o2->material)))
+    //return false;
 
   if (id1 >= id2) {
     *o_front = o1;
@@ -1010,7 +1031,8 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
     if (id1 == id2) {
       mat_behind = mat1;
       p_behind = p1;
-    } else {
+    }
+    else {
       mat_behind = mat2;
       p_behind = p2;
     }
@@ -1027,7 +1049,7 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
 }
 
 double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta,
-  bool &mg_averaging){
+  bool *mg_averaging){
   /* Lets assume that the "background material" is void (u=0) and that the
   "foreground material is solid (u=1)". The fill fraction then describes
   the amount of foreground material inhabits the cell.
@@ -1044,7 +1066,7 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
   */
   double rel_fill;
   if (abs(d) > abs(r)){
-    mg_averaging = false;
+    *mg_averaging = false;
     return -1.0; // garbage fill
   } else {
     if (dim == meep::D1)
@@ -1056,7 +1078,7 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
       rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
   }
 
-  mg_averaging = true;
+  *mg_averaging = true;
   if (u <= eta){
     return rel_fill;   // center is void, so cap must be sold
   }else{
@@ -1107,7 +1129,10 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   fallback = false;
   bool mg_averaging = false;
 
-  if (maxeval == 0) {
+  if (maxeval == 0 ||
+      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind) &&
+      !is_material_grid(mat))
+      ) {
   noavg:
     get_material_pt(mat, v.center());
   trivial:
@@ -1116,29 +1141,23 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     return;
   }
 
-  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
-    get_material_pt(mat, v.center());
-    if (mat && (mat->which_subclass == material_data::MATERIAL_USER)) {
-      fallback = true;
-      return;
-    }
-    else if(mat && (mat->which_subclass == material_data::MATERIAL_GRID)){
-      // debug
-      //if (mat_behind)
-      //  printf("c %d | mat %d | behind %d | (x,y) (%f,%f) \n",c,mat->which_subclass,mat_behind->which_subclass,v.center().x(),v.center().y());
-      // proceed
-    }
-    else {
-      goto trivial;
-    }
+  // for variable materials with do_averaging == true, switch over to slow fallback integration method
+  // for material grids, however, we have to do some more logic first... so let's exclude them from
+  // our check (the false in is_variable)
+  if ((is_variable(mat,false) && mat->do_averaging) || (is_variable(mat_behind,false) && mat_behind->do_averaging)) {
+    fallback = true;
+    return;
   }
 
-  // it doesn't make sense to average metals (electric or magnetic)
-  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
-
-  if (mat->which_subclass == material_data::MATERIAL_GRID){
+  /* if we have a material grid, we need to calculate the fill fraction,
+  normal vector, etc. we also need to determine if we really need
+  to do any averaging, or if the current pixel is smooth enough
+  to just evaluate */
+  if (is_material_grid(mat)){
     int oi;
+    printf("start\n");
     geom_box_tree tp = geom_tree_search(p, restricted_tree, &oi);
+    printf("o %d\n",oi);
     
     meep::vec normal_vec(matgrid_grad(p, tp, oi, mat));
     double nabsinv = 1.0 / meep::abs(normal_vec);
@@ -1148,25 +1167,38 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     double d = (mat->eta-uval) * nabsinv;
     double r = v.diameter()/2;
     
-    fill = get_material_grid_fill(normal_vec.dim,d,r,uval,mat->eta,mat,mat_behind);
+    fill = get_material_grid_fill(normal_vec.dim,d,r,uval,mat->eta,&mg_averaging);
     normal = vec_to_vector3(normal_vec);
   }
 
-  /* check for trivial case of only one object/material */
-  if (material_type_equal(mat, mat_behind)){
-    // we are at an interface within the grid and need to average
-    if ((mat->which_subclass != material_data::MATERIAL_GRID) && (mg_averaging)) {
+  /* check for trivial case of only one object/material
+   in the case of the material grid, make sure we don't need
+   to do any interface averaging within.
+   */
+  if (material_type_equal(mat, mat_behind)) {
+    if (is_variable(mat) && !mg_averaging) {
+      eval_material_pt(mat, vec_to_vector3(v.center()));
+      goto trivial;
+    } else if(is_material_grid(mat) && mg_averaging){
 
-    // we are far from an interface, so we can just sample the grid at this point
-    }else if ((mat->which_subclass != material_data::MATERIAL_GRID) && (!mg_averaging)) {
-
-    }else {
-      // no material grids, so no averaging
+    } else{
       goto trivial;
     }
-  } 
+  /* Evaluate materials in case they are variable.  This allows us to do fast subpixel averaging
+    at the boundary of an object with a variable material, while remaining accurate enough if the
+    material is continuous over the pixel.  (We make a first-order error by averaging as if the material
+    were constant, but only in a boundary layer of thickness 1/resolution, so the net effect should
+    still be second-order.) */   
+  } else{
+    eval_material_pt(mat, p_mat);
+    eval_material_pt(mat_behind, p_mat_behind);
+    if (material_type_equal(mat, mat_behind)) goto trivial;
+  }
 
-  if (mat->which_subclass != material_data::MATERIAL_GRID) {
+  // it doesn't make sense to average metals (electric or magnetic)
+  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
+
+  if (!is_material_grid(mat)) {
     normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
     if (normal.x == 0 && normal.y == 0 && normal.z == 0)
       goto noavg; // couldn't get normal vector for this point, punt
@@ -2132,6 +2164,7 @@ material_type make_user_material(user_material_func user_func, void *user_data, 
 material_type make_file_material(const char *eps_input_file) {
   material_data *md = new material_data();
   md->which_subclass = material_data::MATERIAL_FILE;
+  md->do_averaging = false;
 
   md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
   if (eps_input_file && eps_input_file[0]) { // file specified

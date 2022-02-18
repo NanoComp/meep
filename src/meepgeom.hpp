@@ -220,6 +220,7 @@ public:
   void get_material_pt(material_type &material, const meep::vec &r);
 private:
   material_type_list extra_materials;
+  void eval_material_pt(material_type &material, vector3 p);
   pol *current_pol;
 };
 
@@ -264,10 +265,8 @@ void material_free(material_type m);
 bool material_type_equal(const material_type m1, const material_type m2);
 bool is_material_grid(material_type mt);
 bool is_material_grid(void *md);
-bool is_variable(material_type mt);
-bool is_variable(void *md);
-bool is_file(material_type md);
-bool is_file(void *md);
+bool is_variable(material_type mt, bool include_mg = true);
+bool is_variable(void *md, bool include_mg = true);
 bool is_medium(material_type md, medium_struct **m);
 bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
