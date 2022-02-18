@@ -912,10 +912,11 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
    stolen from MPB. */
 static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree, vector3 &pcenter,
                              const geometric_object **o_front, vector3 &shiftby_front,
-                             material_type &mat_front, material_type &mat_behind) {
+                             material_type &mat_front, material_type &mat_behind,
+                             vector3 &p_front, vector3 &p_behind) {
   vector3 p;
   const geometric_object *o1 = 0, *o2 = 0;
-  vector3 shiftby1 = {0, 0, 0}, shiftby2 = {0, 0, 0};
+  vector3 shiftby1 = {0, 0, 0}, shiftby2 = {0, 0, 0}, p1 = {0,0,0}, p2 = {0,0,0};
   geom_box pixel;
   material_type mat1 = vacuum, mat2 = vacuum;
   int id1 = -1, id2 = -1;
@@ -977,6 +978,7 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
       shiftby1 = shiftby;
       id1 = id;
       mat1 = mat;
+      p1 = q;
     }
     else if (id2 == -1 ||
              ((id >= id1 && id >= id2) && (id1 == id2 || material_type_equal(mat1, mat2)))) {
@@ -984,6 +986,7 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
       shiftby2 = shiftby;
       id2 = id;
       mat2 = mat;
+      p2 = q;
     }
     else if (!(id1 < id2 && (id1 == id || material_type_equal(mat1, mat))) &&
              !(id2 < id1 && (id2 == id || material_type_equal(mat2, mat))))
@@ -995,34 +998,36 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
     id2 = id1;
     o2 = o1;
     mat2 = mat1;
+    p2 = p1;
     shiftby2 = shiftby1;
   }
-
-  if ((o1 && is_variable(o1->material)) || (o2 && is_variable(o2->material)) ||
-      ((is_variable(default_material) || is_file(default_material)) &&
-       (!o1 || is_file(o1->material) || !o2 || is_file(o2->material))))
-    return false;
 
   if (id1 >= id2) {
     *o_front = o1;
     shiftby_front = shiftby1;
     mat_front = mat1;
-    if (id1 == id2)
+    p_front = p1;
+    if (id1 == id2) {
       mat_behind = mat1;
-    else
+      p_behind = p1;
+    } else {
       mat_behind = mat2;
+      p_behind = p2;
+    }
   }
   if (id2 > id1) {
     *o_front = o2;
     shiftby_front = shiftby2;
     mat_front = mat2;
+    p_front = p2;
     mat_behind = mat1;
+    p_behind = p1;
   }
   return true;
 }
 
 double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta,
-  material_type &mat, material_type &mat_behind){
+  bool &mg_averaging){
   /* Lets assume that the "background material" is void (u=0) and that the
   "foreground material is solid (u=1)". The fill fraction then describes
   the amount of foreground material inhabits the cell.
@@ -1039,7 +1044,7 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
   */
   double rel_fill;
   if (abs(d) > abs(r)){
-    mat_behind = mat; // set materials to be equal so that no averaging is performed later
+    mg_averaging = false;
     return -1.0; // garbage fill
   } else {
     if (dim == meep::D1)
@@ -1051,6 +1056,7 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
       rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
   }
 
+  mg_averaging = true;
   if (u <= eta){
     return rel_fill;   // center is void, so cap must be sold
   }else{
@@ -1094,10 +1100,12 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
                                       bool &fallback) {
   const geometric_object *o;
   material_type mat, mat_behind;
+  vector3 p_mat, p_mat_behind;
   symm_matrix meps;
   vector3 p, shiftby, normal;
   double fill;
   fallback = false;
+  bool mg_averaging = false;
 
   if (maxeval == 0) {
   noavg:
@@ -1125,6 +1133,9 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     }
   }
 
+  // it doesn't make sense to average metals (electric or magnetic)
+  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
+
   if (mat->which_subclass == material_data::MATERIAL_GRID){
     int oi;
     geom_box_tree tp = geom_tree_search(p, restricted_tree, &oi);
@@ -1142,10 +1153,18 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   }
 
   /* check for trivial case of only one object/material */
-  if (material_type_equal(mat, mat_behind)) goto trivial;
+  if (material_type_equal(mat, mat_behind)){
+    // we are at an interface within the grid and need to average
+    if ((mat->which_subclass != material_data::MATERIAL_GRID) && (mg_averaging)) {
 
-  // it doesn't make sense to average metals (electric or magnetic)
-  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
+    // we are far from an interface, so we can just sample the grid at this point
+    }else if ((mat->which_subclass != material_data::MATERIAL_GRID) && (!mg_averaging)) {
+
+    }else {
+      // no material grids, so no averaging
+      goto trivial;
+    }
+  } 
 
   if (mat->which_subclass != material_data::MATERIAL_GRID) {
     normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
