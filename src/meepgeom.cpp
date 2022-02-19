@@ -468,7 +468,6 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   // iterate through object tree at current point
   if (tp) {
     do {
-      printf("entered %d\n",is_material_grid((material_data *)tp->objects[oi].o->material));
       gradient += material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
                                      (material_data *)tp->objects[oi].o->material,
                                      tp->objects[oi].o);
@@ -1008,8 +1007,9 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
       p2 = q;
     }
     else if (!(id1 < id2 && (id1 == id || material_type_equal(mat1, mat))) &&
-             !(id2 < id1 && (id2 == id || material_type_equal(mat2, mat))))
+             !(id2 < id1 && (id2 == id || material_type_equal(mat2, mat)))){
       return false;
+      }
   }
 
   // CHECK(id1 > -1, "bug in object_of_point_in_tree?");
@@ -1020,8 +1020,6 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
     p2 = p1;
     shiftby2 = shiftby1;
   }
-    //if ((o1 && is_variable(o1->material)) || (o2 && is_variable(o2->material)))
-    //return false;
 
   if (id1 >= id2) {
     *o_front = o1;
@@ -1128,10 +1126,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   double fill;
   fallback = false;
   bool mg_averaging = false;
-
   if (maxeval == 0 ||
-      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind) &&
-      !is_material_grid(mat))
+      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind))
       ) {
   noavg:
     get_material_pt(mat, v.center());
@@ -1141,34 +1137,56 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     return;
   }
 
-  // for variable materials with do_averaging == true, switch over to slow fallback integration method
-  // for material grids, however, we have to do some more logic first... so let's exclude them from
-  // our check (the false in is_variable)
-  if ((is_variable(mat,false) && mat->do_averaging) || (is_variable(mat_behind,false) && mat_behind->do_averaging)) {
-    fallback = true;
-    return;
+  // For variable materials with do_averaging == true, switch over to slow fallback integration method.
+  // For material grids, however, we have to do some more logic first...
+  if ((is_variable(mat) && mat->do_averaging) || (is_variable(mat_behind) && mat_behind->do_averaging)) {
+    if ((!is_material_grid(mat)) && (!is_material_grid(mat_behind))){
+      fallback = true;
+      return;
+    }
   }
 
   /* if we have a material grid, we need to calculate the fill fraction,
   normal vector, etc. we also need to determine if we really need
   to do any averaging, or if the current pixel is smooth enough
-  to just evaluate */
+  to just evaluate.
+  
+  Keep in mind that if both the front and back materials are material grids,
+  we assume they are the same material grid. (all of the complicated overlapping
+  symmetry conditions are taken care of elsewhere).
+   */
+  double fill_front, fill_back;
+  vector3 normal_front, normal_back;
   if (is_material_grid(mat)){
     int oi;
-    printf("start\n");
-    geom_box_tree tp = geom_tree_search(p, restricted_tree, &oi);
-    printf("o %d\n",oi);
+    geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
     
-    meep::vec normal_vec(matgrid_grad(p, tp, oi, mat));
-    double nabsinv = 1.0 / meep::abs(normal_vec);
-    LOOP_OVER_DIRECTIONS(normal_vec.dim, k) { normal_vec.set_direction(k,normal_vec.in_direction(k)*nabsinv); }
+    meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
     
-    double uval = matgrid_val(p, tp, oi, mat)+this->u_p;
+    double nabsinv = 1.0 / meep::abs(normal_vec_front);
+    LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
+    
+    double uval = matgrid_val(p_mat, tp, oi, mat)+this->u_p;
     double d = (mat->eta-uval) * nabsinv;
     double r = v.diameter()/2;
     
-    fill = get_material_grid_fill(normal_vec.dim,d,r,uval,mat->eta,&mg_averaging);
-    normal = vec_to_vector3(normal_vec);
+    fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta,&mg_averaging);
+    normal = vec_to_vector3(normal_vec_front);
+  }
+  if (is_material_grid(mat_behind)){
+    int oi;
+    geom_box_tree tp = geom_tree_search(p_mat_behind, restricted_tree, &oi);
+    meep::vec normal_vec_behind(matgrid_grad(p_mat_behind, tp, oi, mat_behind));
+    
+    double nabsinv = 1.0 / meep::abs(normal_vec_behind);
+    LOOP_OVER_DIRECTIONS(normal_vec_behind.dim, k) { normal_vec_behind.set_direction(k,normal_vec_behind.in_direction(k)*nabsinv); }
+    
+    double uval = matgrid_val(p_mat_behind, tp, oi, mat_behind)+this->u_p;
+    double d = (mat_behind->eta-uval) * nabsinv;
+    double r = v.diameter()/2;
+    
+    fill = get_material_grid_fill(normal_vec_behind.dim,d,r,uval,mat_behind->eta,&mg_averaging);
+    normal = vec_to_vector3(normal_vec_behind);
   }
 
   /* check for trivial case of only one object/material
@@ -1198,7 +1216,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   // it doesn't make sense to average metals (electric or magnetic)
   if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
 
-  if (!is_material_grid(mat)) {
+  if (!is_material_grid(mat) || (!material_type_equal(mat, mat_behind))) {
     normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
     if (normal.x == 0 && normal.y == 0 && normal.z == 0)
       goto noavg; // couldn't get normal vector for this point, punt
@@ -3080,6 +3098,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum
                 adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
           /* anisotropic materials require interpolation/restriction */
           } else if (md->do_averaging ||
+                     !is_material_grid(md) ||
                      md->medium_1.epsilon_offdiag.x.re != 0 ||
                      md->medium_1.epsilon_offdiag.y.re != 0 ||
                      md->medium_1.epsilon_offdiag.z.re != 0 ||
