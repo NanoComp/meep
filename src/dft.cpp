@@ -939,7 +939,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
                    : c_conjugate == Permeability
                          ? parent->get_mu(loc)
                          : complex<double>(dft[omega.size() * (chunk_idx++) + num_freq]) / stored_weight);
-    if (include_dV_and_interp_weights) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
+    if (include_dV_and_interp_weights && dft_val!=0.0) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
     complex<double> mode1val = 0.0, mode2val = 0.0;
     if (mode1_data) mode1val = eigenmode_amplitude(mode1_data, loc, S.transform(c_conjugate, sn));
