@@ -604,9 +604,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     int m = 0;
     LOOP_OVER_DIRECTIONS(v.dim, dd) {
       m = dp->get_g()[dd - X];
-      ktmp = kpoint.in_direction(dd);
       if (eig_vol.in_direction(dd) != 0)
-        ktmp += m/eig_vol.in_direction(dd);
+        ktmp += kpoint.in_direction(dd) + m/eig_vol.in_direction(dd);
       k2sum += ktmp*ktmp;
     }
 
