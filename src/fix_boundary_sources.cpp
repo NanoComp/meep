@@ -9,9 +9,14 @@
 #undef SEEK_CUR
 #endif
 #include <mpi.h>
+#include <algorithm>
 #endif
 
 namespace meep {
+
+#ifdef HAVE_MPI
+static MPI_Comm mycomm = MPI_COMM_WORLD;
+#endif
 
 // data structure for sending source information from one chunk to another
 struct srcpt_info {

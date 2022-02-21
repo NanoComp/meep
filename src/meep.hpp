@@ -956,6 +956,7 @@ public:
     current_time = t.current_time;
     current_current = t.current_current;
     current_dipole = t.current_dipole;
+    id = t.id;
     if (t.next)
       next = t.next->clone();
     else
@@ -1897,7 +1898,7 @@ public:
   void require_source_components();
   void _require_component(component c, bool aniso2d);
   void require_component(component c) { _require_component(c, is_aniso2d()); sync_chunk_connections(); }
-  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix=false);
+  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix);
   void register_src_time(src_time *src);
   src_time *lookup_src_time(size_t id);
 

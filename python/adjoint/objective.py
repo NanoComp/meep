@@ -109,10 +109,12 @@ class ObjectiveQuantity(abc.ABC):
         The user may specify a scalar valued objective function across multiple frequencies (e.g. MSE) in
         which case we should check that all the frequencies fit in the specified bandwidth.
         """
-        return mp.GaussianSource(
+        srct = mp.GaussianSource(
             np.mean(self._frequencies),
             fwidth=fwidth_frac * np.mean(self._frequencies),
         )
+        self.sim.fields.register_src_time(srct.swigobj)
+        return srct
 
 
 class EigenmodeCoefficient(ObjectiveQuantity):
@@ -273,12 +275,12 @@ class FourierFields(ObjectiveQuantity):
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
             
             if self.num_freq == 1:
-                sources += [mp.IndexedSource(time_src, fourier_data, scale[:,0])]
+                sources += [mp.IndexedSource(time_src, fourier_data, scale[:,0], not self.yee_grid)]
             else:
                 src = FilteredSource(time_src.frequency,self._frequencies,scale,self.sim.fields.dt)
                 (num_basis, num_pts) = src.nodes.shape
                 for basis_i in range(num_basis):
-                    sources += [mp.IndexedSource(src.time_src_bf[basis_i], fourier_data, src.nodes[basis_i])]
+                    sources += [mp.IndexedSource(src.time_src_bf[basis_i], fourier_data, src.nodes[basis_i], not self.yee_grid)]
         return sources
 
     def __call__(self):
