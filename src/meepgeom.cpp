@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <vector>
-#include <csignal>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
 
@@ -289,20 +288,12 @@ bool is_material_grid(material_type mt) {
 bool is_material_grid(void *md) { return is_material_grid((material_type)md); }
 
 // return whether mt is spatially varying
-bool is_variable(material_type mt, bool include_mg) {
-  /* sometimes we don't want to consider a material grid as a 
-  "variable material", so we can use the include_mg flag
-  to exclude that corner case. The defauly behavior (include_mg=true)
-  assumes that a material grid is indeed a variable material. */
-
-  if (!include_mg && is_material_grid(mt))
-    return false;
-  else
+bool is_variable(material_type mt) {
     return (mt && ((mt->which_subclass == material_data::MATERIAL_USER) ||
                  (mt->which_subclass == material_data::MATERIAL_GRID) ||
                  (mt->which_subclass == material_data::MATERIAL_FILE)));
 }
-bool is_variable(void *md, bool include_mg) { return is_variable((material_type)md, include_mg); }
+bool is_variable(void *md) { return is_variable((material_type)md); }
 
 bool is_medium(material_type md, medium_struct **m) {
   if (md->which_subclass == material_data::MEDIUM) {
@@ -1047,7 +1038,7 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
 }
 
 double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta,
-  bool *mg_averaging){
+  bool *mg_averaging, bool *center_is_void){
   /* Lets assume that the "background material" is void (u=0) and that the
   "foreground material is solid (u=1)". The fill fraction then describes
   the amount of foreground material inhabits the cell.
@@ -1063,7 +1054,7 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
   can verify.
   */
   double rel_fill;
-  if (abs(d) > abs(r)){
+  if (abs(d) >= abs(r)){
     *mg_averaging = false;
     return -1.0; // garbage fill
   } else {
@@ -1078,8 +1069,10 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
 
   *mg_averaging = true;
   if (u <= eta){
+    *center_is_void = true;
     return rel_fill;   // center is void, so cap must be sold
   }else{
+    *center_is_void = false;
     return 1-rel_fill; // center is solid, so cap must be void
   }
 }
@@ -1126,9 +1119,12 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   double fill;
   fallback = false;
   bool mg_averaging = false;
+  bool center_is_void = true;
+
   if (maxeval == 0 ||
-      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind))
-      ) {
+      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind)
+      //&& !is_material_grid(mat) && !is_material_grid(mat_behind)
+  )) {
   noavg:
     get_material_pt(mat, v.center());
   trivial:
@@ -1170,7 +1166,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     double d = (mat->eta-uval) * nabsinv;
     double r = v.diameter()/2;
     
-    fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta,&mg_averaging);
+    fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta,&mg_averaging,&center_is_void);
     normal = vec_to_vector3(normal_vec_front);
   }
   if (is_material_grid(mat_behind)){
@@ -1185,7 +1181,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     double d = (mat_behind->eta-uval) * nabsinv;
     double r = v.diameter()/2;
     
-    fill = get_material_grid_fill(normal_vec_behind.dim,d,r,uval,mat_behind->eta,&mg_averaging);
+    fill = get_material_grid_fill(normal_vec_behind.dim,d,r,uval,mat_behind->eta,&mg_averaging,&center_is_void);
     normal = vec_to_vector3(normal_vec_behind);
   }
 
@@ -1194,11 +1190,22 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
    to do any interface averaging within.
    */
   if (material_type_equal(mat, mat_behind)) {
+    // no averaging is needed
     if (is_variable(mat) && !mg_averaging) {
       eval_material_pt(mat, vec_to_vector3(v.center()));
       goto trivial;
+    /* we have a material grid interface within our pixel -- let's set our foreground
+    and background materials accordingly. Based on our earlier calculations,
+    we know which material corresponds to void and which corresponds to solid. */
     } else if(is_material_grid(mat) && mg_averaging){
-
+        if (center_is_void){
+          epsilon_material_grid(mat, 0.0);
+          epsilon_material_grid(mat_behind, 1.0);
+        }else{
+          epsilon_material_grid(mat, 1.0);
+          epsilon_material_grid(mat_behind, 0.0);
+        }
+    // materials are non variable and uniform -- no need to average
     } else{
       goto trivial;
     }
