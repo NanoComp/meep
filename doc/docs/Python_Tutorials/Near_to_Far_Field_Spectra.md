@@ -135,7 +135,7 @@ plt.show()
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
 
-This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition/Phase Map of a Subwavelength Binary Grating](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an $E_z$-polarized planewave at normal incidence.
+This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition/Phase Map of a Subwavelength Binary Grating](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle (also referred to as the filling fraction), while keeping its height and periodicity fixed (1.8 μm and 0.3 μm, respectively), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The operating wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an $E_z$-polarized planewave at normal incidence.
 
 The simulation script is in [examples/metasurface_lens.py](https://github.com/NanoComp/meep/blob/master/python/examples/metasurface_lens.py). The notebook is [examples/metasurface_lens.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/metasurface_lens.ipynb).
 
@@ -145,6 +145,7 @@ The key to the script is the function `grating` with three geometric input argum
 import meep as mp
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 resolution = 50         # pixels/μm
 
@@ -791,24 +792,24 @@ ff = np.array(ff)
 if mp.am_master():
     plt.figure()
     plt.subplot(1,3,1)
-    plt.plot(np.real(Hz_mon),'bo-',label='DFT')
-    plt.plot(np.real(ff),'ro-',label='N2F')
+    plt.plot(x,np.real(Hz_mon),'bo-',label='DFT')
+    plt.plot(x,np.real(ff),'ro-',label='N2F')
     plt.legend()
-    plt.xlabel('array index')
+    plt.xlabel('$x$ (μm)')
     plt.ylabel('real(Hz)')
 
     plt.subplot(1,3,2)
-    plt.plot(np.imag(Hz_mon),'bo-',label='DFT')
-    plt.plot(np.imag(ff),'ro-',label='N2F')
+    plt.plot(x,np.imag(Hz_mon),'bo-',label='DFT')
+    plt.plot(x,np.imag(ff),'ro-',label='N2F')
     plt.legend()
-    plt.xlabel('array index')
+    plt.xlabel('$x$ (μm)')
     plt.ylabel('imag(Hz)')
 
     plt.subplot(1,3,3)
-    plt.plot(np.abs(Hz_mon),'bo-',label='DFT')
-    plt.plot(np.abs(ff),'ro-',label='N2F')
+    plt.plot(x,np.abs(Hz_mon),'bo-',label='DFT')
+    plt.plot(x,np.abs(ff),'ro-',label='N2F')
     plt.legend()
-    plt.xlabel('array index')
+    plt.xlabel('$x$ (μm)')
     plt.ylabel('|Hz|')
 
     plt.suptitle(f'comparison of near2far and actual DFT fields\n dpad={dpad}, d1={d1}, d2={d2}')
@@ -830,3 +831,7 @@ A closed near-field surface will still disagree with a brute-force far-field cal
 In this example, to demonstrate agreement between the far fields and DFT fields, there are two requirements: (1) the cell size in the $x$ direction via `dpad` needs to be sufficiently large in order to minimize the impact of the spurious radiation from the edge of the near-field surface and (2) the far-field region needs to be sufficiently close to the near-field surface to minimize discrepancies caused by numerical dispersion.
 
 ![center|Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity.png)
+
+When these two conditions are not met as in the example below, the error from the finite truncation and numerical dispersion can be large and therefore result in a significant mismatch between the far fields computed using the near-to-far field transformation versus the actual DFT fields at that location.
+
+![center|Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity_mismatch.png)
