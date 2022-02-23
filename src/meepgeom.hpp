@@ -173,6 +173,7 @@ class geom_epsilon : public meep::material_function {
 
 public:
   double u_p = 0;
+  bool use_anisotropic_averaging;
   geom_box_tree geometry_tree;
   geom_box_tree restricted_tree;
   geometric_object_list geometry;
@@ -229,7 +230,8 @@ geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g,
                                  vector3 center = make_vector3(),
                                  bool ensure_periodicity = false,
                                  material_type _default_material = vacuum,
-                                 material_type_list extra_materials = material_type_list());
+                                 material_type_list extra_materials = material_type_list(),
+                                 bool use_anisotropic_averaging = false);
 //, geometric_object_list g, material_type_list extra_materials
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  vector3 center = make_vector3(),

@@ -1037,11 +1037,8 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
   return true;
 }
 
-double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta,
-  bool *mg_averaging, bool *center_is_void){
-  /* Lets assume that the "background material" is void (u=0) and that the
-  "foreground material is solid (u=1)". The fill fraction then describes
-  the amount of foreground material inhabits the cell.
+double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta){
+  /* The fill fraction should describe the amount of u=1 material in the current pixel.
 
   The analytic volume expressions for the end cap only specify the fill fraction
   of the cap relative to the whole sphere... but we don't know what the cap 
@@ -1055,7 +1052,6 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
   */
   double rel_fill;
   if (abs(d) >= abs(r)){
-    *mg_averaging = false;
     return -1.0; // garbage fill
   } else {
     if (dim == meep::D1)
@@ -1067,13 +1063,10 @@ double get_material_grid_fill(meep::ndim dim, double d, double r, double u, doub
       rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
   }
 
-  *mg_averaging = true;
   if (u <= eta){
-    *center_is_void = true;
-    return rel_fill;   // center is void, so cap must be sold
+    return rel_fill;   // center is void, so cap must be solid
   }else{
-    *center_is_void = false;
-    return 1-rel_fill; // center is solid, so cap must be void
+    return 1-rel_fill; // center is solid, so cap must be void (and we need complement)
   }
 }
 
@@ -1118,8 +1111,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   vector3 p, shiftby, normal;
   double fill;
   fallback = false;
-  bool mg_averaging = false;
-  bool center_is_void = true;
+  bool needs_cleanup=false;
+  medium_struct *medium_1, *medium_0;
 
   if (maxeval == 0 ||
       (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind)
@@ -1142,98 +1135,78 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     }
   }
 
-  /* if we have a material grid, we need to calculate the fill fraction,
-  normal vector, etc. we also need to determine if we really need
-  to do any averaging, or if the current pixel is smooth enough
-  to just evaluate.
-  
-  Keep in mind that if both the front and back materials are material grids,
-  we assume they are the same material grid. (all of the complicated overlapping
-  symmetry conditions are taken care of elsewhere).
-   */
-  double fill_front, fill_back;
-  vector3 normal_front, normal_back;
-  if (is_material_grid(mat)){
-    int oi;
-    geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
-    
-    meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
-    
-    double nabsinv = 1.0 / meep::abs(normal_vec_front);
-    LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
-    
-    double uval = matgrid_val(p_mat, tp, oi, mat)+this->u_p;
-    double d = (mat->eta-uval) * nabsinv;
-    double r = v.diameter()/2;
-    
-    fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta,&mg_averaging,&center_is_void);
-    normal = vec_to_vector3(normal_vec_front);
-  }
-  if (is_material_grid(mat_behind)){
-    int oi;
-    geom_box_tree tp = geom_tree_search(p_mat_behind, restricted_tree, &oi);
-    meep::vec normal_vec_behind(matgrid_grad(p_mat_behind, tp, oi, mat_behind));
-    
-    double nabsinv = 1.0 / meep::abs(normal_vec_behind);
-    LOOP_OVER_DIRECTIONS(normal_vec_behind.dim, k) { normal_vec_behind.set_direction(k,normal_vec_behind.in_direction(k)*nabsinv); }
-    
-    double uval = matgrid_val(p_mat_behind, tp, oi, mat_behind)+this->u_p;
-    double d = (mat_behind->eta-uval) * nabsinv;
-    double r = v.diameter()/2;
-    
-    fill = get_material_grid_fill(normal_vec_behind.dim,d,r,uval,mat_behind->eta,&mg_averaging,&center_is_void);
-    normal = vec_to_vector3(normal_vec_behind);
-  }
-
   /* check for trivial case of only one object/material
    in the case of the material grid, make sure we don't need
    to do any interface averaging within.
    */
   if (material_type_equal(mat, mat_behind)) {
-    // no averaging is needed
-    if (is_variable(mat) && !mg_averaging) {
+    /* if we have a material grid, we need to calculate the fill fraction,
+    normal vector, etc. we also need to determine if we really need
+    to do any averaging, or if the current pixel is smooth enough
+    to just evaluate.
+    */
+    if (is_material_grid(mat)){
+      int oi;
+      geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
+      
+      meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
+      
+      double nabsinv = 1.0 / meep::abs(normal_vec_front);
+      LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
+      
+      double uval = matgrid_val(p_mat, tp, oi, mat)+this->u_p;
+      double d = (mat->eta-uval) * nabsinv;
+      double r = v.diameter()/2;
+      
+      fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta);
+      normal = vec_to_vector3(normal_vec_front);
+
+      if (fill < 0){
+        // no averaging is needed
+        eval_material_pt(mat, vec_to_vector3(v.center()));
+        goto trivial;
+      } else{
+        /* we have a material grid interface within our pixel */
+        needs_cleanup = true;
+        medium_1 = new medium_struct(mat->medium_2);
+        medium_0 = new medium_struct(mat->medium_1);
+        mat = new material_data();
+        mat_behind = new material_data();
+        mat->medium = *medium_1;
+        mat_behind->medium = *medium_0;
+      }
+    } else if(is_variable(mat)) {
+      // no averaging is needed
       eval_material_pt(mat, vec_to_vector3(v.center()));
       goto trivial;
-    /* we have a material grid interface within our pixel -- let's set our foreground
-    and background materials accordingly. Based on our earlier calculations,
-    we know which material corresponds to void and which corresponds to solid. */
-    } else if(is_material_grid(mat) && mg_averaging){
-        if (center_is_void){
-          epsilon_material_grid(mat, 0.0);
-          epsilon_material_grid(mat_behind, 1.0);
-        }else{
-          epsilon_material_grid(mat, 1.0);
-          epsilon_material_grid(mat_behind, 0.0);
-        }
     // materials are non variable and uniform -- no need to average
-    } else{
+    } else {
       goto trivial;
     }
-  /* Evaluate materials in case they are variable.  This allows us to do fast subpixel averaging
-    at the boundary of an object with a variable material, while remaining accurate enough if the
-    material is continuous over the pixel.  (We make a first-order error by averaging as if the material
-    were constant, but only in a boundary layer of thickness 1/resolution, so the net effect should
-    still be second-order.) */   
-  } else{
-    eval_material_pt(mat, p_mat);
-    eval_material_pt(mat_behind, p_mat_behind);
-    if (material_type_equal(mat, mat_behind)) goto trivial;
+  } else {
+    normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+    if (normal.x == 0 && normal.y == 0 && normal.z == 0)
+      goto noavg; // couldn't get normal vector for this point, punt
+    geom_box pixel = gv2box(v);
+    pixel.low = vector3_minus(pixel.low, shiftby);
+    pixel.high = vector3_minus(pixel.high, shiftby);
+    fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+    /* Evaluate materials in case they are variable.  This allows us to do fast subpixel averaging
+      at the boundary of an object with a variable material, while remaining accurate enough if the
+      material is continuous over the pixel.  (We make a first-order error by averaging as if the material
+      were constant, but only in a boundary layer of thickness 1/resolution, so the net effect should
+      still be second-order.) */
+    if (is_variable(mat)){
+      eval_material_pt(mat, p_mat);
+      eval_material_pt(mat_behind, p_mat_behind);
+      if (material_type_equal(mat, mat_behind)) goto trivial;
+    }
   }
 
   // it doesn't make sense to average metals (electric or magnetic)
   if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
 
-  if (!is_material_grid(mat) || (!material_type_equal(mat, mat_behind))) {
-    normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
-    if (normal.x == 0 && normal.y == 0 && normal.z == 0)
-      goto noavg; // couldn't get normal vector for this point, punt
-    
-    geom_box pixel = gv2box(v);
-    pixel.low = vector3_minus(pixel.low, shiftby);
-    pixel.high = vector3_minus(pixel.high, shiftby);
-
-    fill = box_overlap_with_object(pixel, *o, tol, maxeval);
-  }
+  /*     kotkke algorithm      */
 
   material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symm_matrix eps2, epsinv2;
@@ -1322,6 +1295,10 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
 #endif
 
   sym_matrix_invert(chi1inv_matrix, &meps);
+
+  if (needs_cleanup){
+    delete medium_0, medium_1, mat, mat_behind;
+  }
 }
 
 static int eps_ever_negative = 0;
@@ -2064,7 +2041,7 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 if needed */
 geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g, vector3 center,
                                 bool _ensure_periodicity, material_type _default_material,
-                                material_type_list extra_materials) {
+                                material_type_list extra_materials, bool _use_anisotropic_averaging) {
   // set global variables in libctlgeom based on data fields in s
   geom_initialize();
   geometry_center = center;
@@ -2115,6 +2092,7 @@ geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g, ve
   }
 
   geom_epsilon *geps = new geom_epsilon(*g, extra_materials, gv.pad().surroundings());
+  geps->use_anisotropic_averaging = _use_anisotropic_averaging;
   return geps;
 }
 
@@ -2125,7 +2103,8 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
                                  bool _ensure_periodicity, material_type _default_material,
                                  absorber_list alist, material_type_list extra_materials) {
   meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity,
-                                                               _default_material, extra_materials);
+                                                               _default_material, extra_materials,
+                                                               use_anisotropic_averaging);
   set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
                                   maxeval, alist);
   delete geps;
@@ -2833,10 +2812,11 @@ std::complex<double> get_material_gradient(
     }
     double row_1[3], row_2[3], dA_du[3];
     double orig = u[idx];
+    double maxevals = geps->use_anisotropic_averaging ? geps->maxeval : 0; // punt if no smoothing
     u[idx] -= du;
-    geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
+    geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, maxevals);
     u[idx] += 2*du;
-    geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
+    geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, maxevals);
     u[idx] = orig;
 
     for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
@@ -3104,7 +3084,7 @@ void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum
                 v+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
                 adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
           /* anisotropic materials require interpolation/restriction */
-          } else if (md->do_averaging ||
+          } else if (geps->use_anisotropic_averaging ||
                      !is_material_grid(md) ||
                      md->medium_1.epsilon_offdiag.x.re != 0 ||
                      md->medium_1.epsilon_offdiag.y.re != 0 ||
