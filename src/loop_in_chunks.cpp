@@ -357,7 +357,6 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   volume wherec(where + yee_c);
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
-  //printf("is (%i, %i, %i), ie (%i, %i, %i), component %s \n",is.x(),is.y(),is.z(), ie.x(),ie.y(),ie.z(),component_name(cgrid));
 
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
@@ -413,36 +412,9 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
               
         ivec isym(gvu.dim, INT_MAX);
-        bool gvu_is_halved[3] = {false, false, false};
-        
-          bool break_this[3];
-          for (int dd = 0; dd < 3; dd++) {
-            const direction d = (direction)dd;
-            break_this[dd] = false;
-            for (int n = 0; n < S.multiplicity(); n++)
-              if (has_direction(gv.dim, d) &&
-                  (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
-                if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
-                  master_printf("Padding %s to even number of grid points.\n", direction_name(d));
-                break_this[dd] = true;
-              }
-          }
-          int break_mult = 1;
-          for (int d = 0; d < 3; d++) {
-            if (break_mult == S.multiplicity()) break_this[d] = false;
-            if (break_this[d]) {
-              break_mult *= 2;
-              if (verbosity > 0)
-                master_printf("Halving computational cell along direction %s\n",
-                              direction_name(direction(d)));
-              gvu_is_halved[d] = true;
-            }
-          }
-        if (use_symmetry && sn!=0){
-          LOOP_OVER_DIRECTIONS(gvu.dim, d){      
-            int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? gv.iyee_shift(cgrid).in_direction(d)+2 : 2);
-            if (gvu_is_halved[d]) isym.set_direction(d, S.i_symmetry_point.in_direction(d) - off_sym_shift);
-          }
+        LOOP_OVER_DIRECTIONS(gvu.dim, d){
+          int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? gv.iyee_shift(cgrid).in_direction(d)+2 : 2);
+          isym.set_direction(d, S.i_symmetry_point.in_direction(d) - off_sym_shift);
         }
 
         ivec iscS(max(is - shifti, iscoS));
