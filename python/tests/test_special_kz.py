@@ -1,8 +1,10 @@
 import unittest
+import parameterized
 import meep as mp
 import cmath
 import math
 from time import time
+
 
 class TestSpecialKz(unittest.TestCase):
 
@@ -15,7 +17,7 @@ class TestSpecialKz(unittest.TestCase):
         cell_size = mp.Vector3(sx,sy)
         pml_layers = [mp.PML(dpml,direction=mp.X)]
 
-        fcen = 1.0 # source wavelength = 1 um
+        fcen = 1.0
 
         k_point = mp.Vector3(z=math.sin(theta)).scale(fcen)
 
@@ -63,6 +65,7 @@ class TestSpecialKz(unittest.TestCase):
         Rmeep = -refl_flux[0]/empty_flux[0]
         return Rmeep
 
+
     def test_special_kz(self):
         n1 = 1
         n2 = 3.5
@@ -73,7 +76,8 @@ class TestSpecialKz(unittest.TestCase):
 
         # compute Fresnel reflectance for P-polarization in medium n2
         # for incident planewave in medium n1 at angle theta_in
-        Rfresnel = lambda theta_in: math.fabs((n1*math.cos(theta_out(theta_in))-n2*math.cos(theta_in))/(n1*math.cos(theta_out(theta_in))+n2*math.cos(theta_in)))**2
+        Rfresnel = lambda theta_in: math.fabs((n1*math.cos(theta_out(theta_in))-n2*math.cos(theta_in))
+                                              / (n1*math.cos(theta_out(theta_in))+n2*math.cos(theta_in)))**2
 
         theta = math.radians(23)
 
@@ -94,10 +98,12 @@ class TestSpecialKz(unittest.TestCase):
         # self.assertLess(t_real_imag,t_complex) 
 
 
-    def eigsrc_kz(self, kz_2d):
-        print(kz_2d)
+    @parameterized.parameterized.expand(["complex","real/imag"])
+    def test_eigsrc_kz(self, kz_2d):
         resolution = 30 # pixels/um
+
         cell_size = mp.Vector3(14,14)
+
         pml_layers = [mp.PML(thickness=2)]
 
         geometry = [mp.Block(center=mp.Vector3(),
@@ -124,8 +130,14 @@ class TestSpecialKz(unittest.TestCase):
                             k_point=mp.Vector3(z=kz),
                             kz_2d=kz_2d)
 
-        tran = sim.add_flux(fsrc, 0, 1, mp.FluxRegion(center=mp.Vector3(x=5), size=mp.Vector3(y=14)))
+        tran = sim.add_flux(fsrc,
+                            0,
+                            1,
+                            mp.FluxRegion(center=mp.Vector3(x=5),
+                                          size=mp.Vector3(y=14)))
+
         sim.run(until_after_sources=50)
+
         res = sim.get_eigenmode_coefficients(tran,
                                              [1,2],
                                              eig_parity=mp.EVEN_Y)
@@ -145,10 +157,6 @@ class TestSpecialKz(unittest.TestCase):
         phase_diff = cmath.exp(1j*2*cmath.pi*kz*d)
         self.assertAlmostEqual(ratio_ez.real,phase_diff.real,places=10)
         self.assertAlmostEqual(ratio_ez.imag,phase_diff.imag,places=10)
-
-    def test_eigsrc_kz(self):
-        self.eigsrc_kz("complex")
-        self.eigsrc_kz("real/imag")
 
 
 if __name__ == '__main__':

@@ -292,6 +292,18 @@ static int nextpow2357(int n) {
   }
 }
 
+void special_kz_phasefix(eigenmode_data *edata, bool neg) {
+  size_t n = edata->n[0] * edata->n[1] * edata->n[2];
+  complex<mpb_real> *E = (complex<mpb_real> *)edata->fft_data_E;
+  complex<mpb_real> *H = (complex<mpb_real> *)edata->fft_data_H;
+  complex<mpb_real> im(0, neg ? -1 : 1);
+  for (size_t i = 0; i < n; ++i) {
+    E[3*i + 2] *= im; // Ez
+    H[3*i + 0] *= im; // Hx
+    H[3*i + 1] *= im; // Hy
+  }
+}
+
 /****************************************************************/
 /* call MPB to get the band_numth eigenmode at freq frequency.  */
 /*                                                              */
@@ -809,6 +821,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                       NULL, NULL, dp);
   finished_working();
 
+  if (beta != 0) special_kz_phasefix(global_eigenmode_data, true);
+
   if (global_eigenmode_data == NULL) meep::abort("MPB could not find the eigenmode");
 
   /* add_volume_source amp_fun coordinates are relative to where.center();
@@ -922,6 +936,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
         if (kdom_list) kdom_list[nb * num_freqs + nf] = vec(0.0, 0.0, 0.0);
         continue;
       }
+
+      if (beta != 0) special_kz_phasefix((eigenmode_data *) mode_data, false);
 
       double vg = get_group_velocity(mode_data);
       vec kfound = get_k(mode_data);
