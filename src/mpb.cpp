@@ -292,11 +292,11 @@ static int nextpow2357(int n) {
   }
 }
 
-void special_kz_phasefix(eigenmode_data *edata, bool neg) {
+void special_kz_phasefix(eigenmode_data *edata, bool phase_flip) {
   size_t n = edata->n[0] * edata->n[1] * edata->n[2];
   complex<mpb_real> *E = (complex<mpb_real> *)edata->fft_data_E;
   complex<mpb_real> *H = (complex<mpb_real> *)edata->fft_data_H;
-  complex<mpb_real> im(0, neg ? -1 : 1);
+  complex<mpb_real> im(0, phase_flip ? -1 : 1);
   for (size_t i = 0; i < n; ++i) {
     E[3*i + 2] *= im; // Ez
     H[3*i + 0] *= im; // Hx
@@ -821,7 +821,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                       NULL, NULL, dp);
   finished_working();
 
-  if (beta != 0) special_kz_phasefix(global_eigenmode_data, true);
+  if (is_real && beta != 0) special_kz_phasefix(global_eigenmode_data, true /* phase_flip */);
 
   if (global_eigenmode_data == NULL) meep::abort("MPB could not find the eigenmode");
 
@@ -937,7 +937,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
         continue;
       }
 
-      if (beta != 0) special_kz_phasefix((eigenmode_data *) mode_data, false);
+      if (is_real && beta != 0) special_kz_phasefix((eigenmode_data *) mode_data, false /* phase_flip */);
 
       double vg = get_group_velocity(mode_data);
       vec kfound = get_k(mode_data);

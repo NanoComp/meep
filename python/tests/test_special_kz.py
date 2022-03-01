@@ -12,17 +12,18 @@ class TestSpecialKz(unittest.TestCase):
         resolution = 100  # pixels/um
 
         dpml = 1.0
-        sx = 3+2*dpml
+        sx = 3.0 + 2*dpml
         sy = 1/resolution
         cell_size = mp.Vector3(sx,sy)
         pml_layers = [mp.PML(dpml,direction=mp.X)]
 
         fcen = 1.0
 
-        k_point = mp.Vector3(z=math.sin(theta)).scale(fcen)
+        # plane of incidence is XZ
+        k_point = mp.Vector3(1,0,0).rotate(mp.Vector3(0,1,0),theta).scale(fcen)
 
         sources = [mp.Source(mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                             component=mp.Ez,
+                             component=mp.Ez, # P-polarization
                              center=mp.Vector3(-0.5*sx+dpml),
                              size=mp.Vector3(y=sy))]
 
@@ -79,14 +80,15 @@ class TestSpecialKz(unittest.TestCase):
         Rfresnel = lambda theta_in: math.fabs((n1*math.cos(theta_out(theta_in))-n2*math.cos(theta_in))
                                               / (n1*math.cos(theta_out(theta_in))+n2*math.cos(theta_in)))**2
 
+        # angle of incident planewave; clockwise (CW) about Y axis, 0 degrees along +X axis
         theta = math.radians(23)
 
         start = time()
-        Rmeep_complex = self.refl_planar(theta, 'complex')
+        Rmeep_complex = self.refl_planar(theta, "complex")
         t_complex = time() - start
 
         start = time()
-        Rmeep_real_imag = self.refl_planar(theta, 'real/imag')
+        Rmeep_real_imag = self.refl_planar(theta, "real/imag")
         t_real_imag = time() - start
 
         Rfres = Rfresnel(theta)
@@ -94,11 +96,12 @@ class TestSpecialKz(unittest.TestCase):
         self.assertAlmostEqual(Rmeep_complex,Rfres,places=2)
         self.assertAlmostEqual(Rmeep_real_imag,Rfres,places=2)
         
-        # the real/imag algorithm should be faster, but on CI machines performance is too variable for this to reliably hold
+        # the real/imag algorithm should be faster, but on CI machines performance is too variable
+        # for this to reliably hold
         # self.assertLess(t_real_imag,t_complex) 
 
 
-    @parameterized.parameterized.expand(["complex","real/imag"])
+    @parameterized.parameterized.expand([("complex",),("real/imag",)])
     def test_eigsrc_kz(self, kz_2d):
         resolution = 30 # pixels/um
 
