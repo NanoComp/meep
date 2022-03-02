@@ -1150,6 +1150,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
       geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
       
       meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
+      if (normal_vec_front.x() == 0 && normal_vec_front.y() == 0 && normal_vec_front.z() == 0)
+        goto noavg; // couldn't get normal vector for this point, punt
       
       double nabsinv = 1.0 / meep::abs(normal_vec_front);
       LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
@@ -1297,7 +1299,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   sym_matrix_invert(chi1inv_matrix, &meps);
 
   if (needs_cleanup){
-    delete medium_0, medium_1, mat, mat_behind;
+    delete medium_0, medium_1;
+    material_free(mat); material_free(mat_behind);
   }
 }
 
