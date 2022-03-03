@@ -966,7 +966,7 @@ class Simulation(object):
                  geometry_center: Vector3Type = Vector3(),
                  force_all_components: bool = False,
                  split_chunks_evenly: bool = True,
-                 chunk_layout: Optional[str] = None,
+                 chunk_layout = None,
                  collect_stats: bool = False):
         """
         All `Simulation` attributes are described in further detail below. In brackets
