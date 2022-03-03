@@ -28,13 +28,13 @@ bash miniconda.sh -b -p <desired_prefix>
 export PATH=<desired_prefix>/bin:$PATH
 ```
 
-Next, we create a Conda environment for PyMeep to isolate it from other Python libraries that may be installed.
+Next, we create a Conda environment for PyMeep (serial version) to isolate it from other Python libraries that may be installed.
 
 ```bash
-conda create -n mp -c conda-forge pymeep
+conda create -n mp -c conda-forge pymeep pymeep-extras
 ```
 
-This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation (Python 3 for us since we installed Miniconda3), but if you want to work with Python 2, just add `python=2` to the end of the command.
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation. The optional "pymeep-extras" package contains scipy, matplotlib, autograd, and other packages necessary if you want to try out the tutorial examples.
 
 Next, we need to activate the environment before we can start using it.
 
