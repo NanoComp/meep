@@ -17,7 +17,7 @@ extern "C" int mpb_verbosity = 2;
 #endif
 
 // xyz_loop.h
-#ifndef HAVE_MPI
+// #ifndef HAVE_MPI
 #define LOOP_XYZ(md)                                                                               \
   {                                                                                                \
     int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2, i3;                                         \
@@ -25,18 +25,18 @@ extern "C" int mpb_verbosity = 2;
       for (i2 = 0; i2 < n2; ++i2)                                                                  \
         for (i3 = 0; i3 < n3; ++i3) {                                                              \
           int xyz_index = ((i1 * n2 + i2) * n3 + i3);
-#else /* HAVE_MPI */
-/* first two dimensions are transposed in MPI output: */
-#define LOOP_XYZ(md)                                                                               \
-  {                                                                                                \
-    int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2_, i3;                                        \
-    int local_n2 = md->local_ny, local_y_start = md->local_y_start;                                \
-    for (i2_ = 0; i2_ < local_n2; ++i2_)                                                           \
-      for (i1 = 0; i1 < n1; ++i1)                                                                  \
-        for (i3 = 0; i3 < n3; ++i3) {                                                              \
-          int i2 = i2_ + local_y_start;                                                            \
-          int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
-#endif /* HAVE_MPI */
+// #else /* HAVE_MPI */
+// /* first two dimensions are transposed in MPI output: */
+// #define LOOP_XYZ(md)                                                                               \
+//   {                                                                                                \
+//     int n1 = md->nx, n2 = md->ny, n3 = md->nz, i1, i2_, i3;                                        \
+//     int local_n2 = md->local_ny, local_y_start = md->local_y_start;                                \
+//     for (i2_ = 0; i2_ < local_n2; ++i2_)                                                           \
+//       for (i1 = 0; i1 < n1; ++i1)                                                                  \
+//         for (i3 = 0; i3 < n3; ++i3) {                                                              \
+//           int i2 = i2_ + local_y_start;                                                            \
+//           int xyz_index = ((i2_ * n1 + i1) * n3 + i3);
+// #endif /* HAVE_MPI */
 
 typedef mpb_real real; // needed for the CASSIGN macros below
 
