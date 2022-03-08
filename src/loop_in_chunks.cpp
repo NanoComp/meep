@@ -278,9 +278,6 @@ void compute_boundary_weights(grid_volume gv, const volume &where, ivec &is, ive
           ie.set_direction(d, is.in_direction(d));
         else
           is.set_direction(d, ie.in_direction(d));
-        // shouldn't be necessary to change where:
-        // where.set_direction_min(d, is.in_direction(d) * (0.5 * gv.inva));
-        // where.set_direction_max(d, is.in_direction(d) * (0.5 * gv.inva));
         w0 = w1 = 1.0;
       }
       s0.set_direction(d, w0);
@@ -410,7 +407,12 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
         ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
-              
+        
+        //With symmetry, the upper half of the original chunk is kept and includes one extra pixel. 
+        //When looped over all symmetries, pixels outside the lower boundary "user_volume.little_owned_corner(cgrid)" is excluded.  
+        //isym finds the lower boundary of the upper half chunk. Then in each direction that chunk isn't the upper, 
+        //checked by ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)),
+        //the end point iecoS will shift to not go beyond isym
         ivec isym(gvu.dim, INT_MAX);
         LOOP_OVER_DIRECTIONS(gvu.dim, d){
           int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? gv.iyee_shift(cgrid).in_direction(d)+2 : 2);

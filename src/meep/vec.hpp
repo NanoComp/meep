@@ -1120,8 +1120,6 @@ public:
     gv.pad_self(d);
     return gv;
   }
-  grid_volume unpad() const;
-  grid_volume unpad(const grid_volume &gv0) const;
   ivec iyee_shift(component c) const {
     ivec out = zero_ivec(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
@@ -1169,7 +1167,6 @@ private:
   }
   int num[3];
   ptrdiff_t the_stride[5];
-  bool is_padded[5];
   size_t the_ntot;
 };
 
@@ -1222,7 +1219,6 @@ private:
   signed_direction S[5];
   std::complex<double> ph;
   vec symmetry_point;
-  //ivec i_symmetry_point;
   int g; // g is the multiplicity of the symmetry.
   symmetry *next;
   friend symmetry r_to_minus_r_symmetry(double m);
