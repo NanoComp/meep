@@ -16,8 +16,11 @@
 
 #include <algorithm>
 #include <vector>
+#include <duals/dual>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
+
+namespace dlit = duals::literals;
 
 namespace meep_geom {
 
@@ -1101,115 +1104,12 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
   }
 }
 
-void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
-                                      const meep::volume &v, double tol, int maxeval,
-                                      bool &fallback) {
-  const geometric_object *o;
-  material_type mat, mat_behind;
-  vector3 p_mat, p_mat_behind;
-  symm_matrix meps;
-  vector3 p, shiftby, normal;
-  double fill;
-  fallback = false;
-  bool needs_cleanup=false;
-  medium_struct *medium_1, *medium_0;
+void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matrix meps, material_type mat, 
+  /* 
 
-  if (maxeval == 0 ||
-      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind)
-      //&& !is_material_grid(mat) && !is_material_grid(mat_behind)
-  )) {
-  noavg:
-    get_material_pt(mat, v.center());
-  trivial:
-    material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
-    material_gc(mat);
-    return;
-  }
-
-  // For variable materials with do_averaging == true, switch over to slow fallback integration method.
-  // For material grids, however, we have to do some more logic first...
-  if ((is_variable(mat) && mat->do_averaging) || (is_variable(mat_behind) && mat_behind->do_averaging)) {
-    if ((!is_material_grid(mat)) && (!is_material_grid(mat_behind))){
-      fallback = true;
-      return;
-    }
-  }
-
-  /* check for trivial case of only one object/material
-   in the case of the material grid, make sure we don't need
-   to do any interface averaging within.
-   */
-  if (material_type_equal(mat, mat_behind)) {
-    /* if we have a material grid, we need to calculate the fill fraction,
-    normal vector, etc. we also need to determine if we really need
-    to do any averaging, or if the current pixel is smooth enough
-    to just evaluate.
-    */
-    if (is_material_grid(mat)){
-      int oi;
-      geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
-      
-      meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
-      if (normal_vec_front.x() == 0 && normal_vec_front.y() == 0 && normal_vec_front.z() == 0)
-        goto noavg; // couldn't get normal vector for this point, punt
-      
-      double nabsinv = 1.0 / meep::abs(normal_vec_front);
-      LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
-      
-      double uval = matgrid_val(p_mat, tp, oi, mat)+this->u_p;
-      double d = (mat->eta-uval) * nabsinv;
-      double r = v.diameter()/2;
-      
-      fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta);
-      normal = vec_to_vector3(normal_vec_front);
-
-      if (fill < 0){
-        // no averaging is needed
-        eval_material_pt(mat, vec_to_vector3(v.center()));
-        goto trivial;
-      } else{
-        /* we have a material grid interface within our pixel */
-        needs_cleanup = true;
-        medium_1 = new medium_struct(mat->medium_2);
-        medium_0 = new medium_struct(mat->medium_1);
-        mat = new material_data();
-        mat_behind = new material_data();
-        mat->medium = *medium_1;
-        mat_behind->medium = *medium_0;
-      }
-    } else if(is_variable(mat)) {
-      // no averaging is needed
-      eval_material_pt(mat, vec_to_vector3(v.center()));
-      goto trivial;
-    // materials are non variable and uniform -- no need to average
-    } else {
-      goto trivial;
-    }
-  } else {
-    normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
-    if (normal.x == 0 && normal.y == 0 && normal.z == 0)
-      goto noavg; // couldn't get normal vector for this point, punt
-    geom_box pixel = gv2box(v);
-    pixel.low = vector3_minus(pixel.low, shiftby);
-    pixel.high = vector3_minus(pixel.high, shiftby);
-    fill = box_overlap_with_object(pixel, *o, tol, maxeval);
-    /* Evaluate materials in case they are variable.  This allows us to do fast subpixel averaging
-      at the boundary of an object with a variable material, while remaining accurate enough if the
-      material is continuous over the pixel.  (We make a first-order error by averaging as if the material
-      were constant, but only in a boundary layer of thickness 1/resolution, so the net effect should
-      still be second-order.) */
-    if (is_variable(mat)){
-      eval_material_pt(mat, p_mat);
-      eval_material_pt(mat_behind, p_mat_behind);
-      if (material_type_equal(mat, mat_behind)) goto trivial;
-    }
-  }
-
-  // it doesn't make sense to average metals (electric or magnetic)
-  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
-
-  /*     kotkke algorithm      */
-
+  */
+  
+  material_type mat_behind, vector3 normal, double fill){
   material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symm_matrix eps2, epsinv2;
   symm_matrix eps1, delta;
@@ -1297,6 +1197,114 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
 #endif
 
   sym_matrix_invert(chi1inv_matrix, &meps);
+}
+
+void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
+                                      const meep::volume &v, double tol, int maxeval,
+                                      bool &fallback) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p_mat, p_mat_behind;
+  symm_matrix meps;
+  vector3 p, shiftby, normal;
+  double fill;
+  fallback = false;
+  bool needs_cleanup=false;
+  medium_struct *medium_1, *medium_0;
+
+  if (maxeval == 0 ||
+      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind))) {
+  noavg:
+    get_material_pt(mat, v.center());
+  trivial:
+    material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
+    material_gc(mat);
+    return;
+  }
+
+  // For variable materials with do_averaging == true, switch over to slow fallback integration method.
+  // For material grids, however, we have to do some more logic first...
+  if ((is_variable(mat) && mat->do_averaging) || (is_variable(mat_behind) && mat_behind->do_averaging)) {
+    if ((!is_material_grid(mat)) && (!is_material_grid(mat_behind))){
+      fallback = true;
+      return;
+    }
+  }
+
+  /* check for trivial case of only one object/material
+   in the case of the material grid, make sure we don't need
+   to do any interface averaging within.
+   */
+  if (material_type_equal(mat, mat_behind)) {
+    /* if we have a material grid, we need to calculate the fill fraction,
+    normal vector, etc. we also need to determine if we really need
+    to do any averaging, or if the current pixel is smooth enough
+    to just evaluate.
+    */
+    if (is_material_grid(mat)){
+      int oi;
+      geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
+      
+      meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
+      if (normal_vec_front.x() == 0 && normal_vec_front.y() == 0 && normal_vec_front.z() == 0)
+        goto trivial; // couldn't get normal vector for this point
+      
+      double nabsinv = 1.0 / meep::abs(normal_vec_front);
+      LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
+      
+      double uval = matgrid_val(p_mat, tp, oi, mat)+this->u_p;
+      double d = (mat->eta-uval) * nabsinv;
+      double r = v.diameter()/2;
+      
+      fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta);
+      normal = vec_to_vector3(normal_vec_front);
+
+      if (fill < 0){
+        // no averaging is needed
+        eval_material_pt(mat, vec_to_vector3(v.center()));
+        goto trivial;
+      } else{
+        /* we have a material grid interface within our pixel */
+        needs_cleanup = true;
+        medium_1 = new medium_struct(mat->medium_2);
+        medium_0 = new medium_struct(mat->medium_1);
+        mat = new material_data();
+        mat_behind = new material_data();
+        mat->medium = *medium_1;
+        mat_behind->medium = *medium_0;
+      }
+    } else if(is_variable(mat)) {
+      // no averaging is needed
+      eval_material_pt(mat, vec_to_vector3(v.center()));
+      goto trivial;
+    // materials are non variable and uniform -- no need to average
+    } else {
+      goto trivial;
+    }
+  } else {
+    normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+    if (normal.x == 0 && normal.y == 0 && normal.z == 0)
+      goto noavg; // couldn't get normal vector for this point, punt
+    geom_box pixel = gv2box(v);
+    pixel.low = vector3_minus(pixel.low, shiftby);
+    pixel.high = vector3_minus(pixel.high, shiftby);
+    fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+    /* Evaluate materials in case they are variable.  This allows us to do fast subpixel averaging
+      at the boundary of an object with a variable material, while remaining accurate enough if the
+      material is continuous over the pixel.  (We make a first-order error by averaging as if the material
+      were constant, but only in a boundary layer of thickness 1/resolution, so the net effect should
+      still be second-order.) */
+    if (is_variable(mat)){
+      eval_material_pt(mat, p_mat);
+      eval_material_pt(mat_behind, p_mat_behind);
+      if (material_type_equal(mat, mat_behind)) goto trivial;
+    }
+  }
+
+  // it doesn't make sense to average metals (electric or magnetic)
+  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
+
+  kottke_algorithm(c,chi1inv_matrix,meps,mat,mat_behind,normal,fill);
 
   if (needs_cleanup){
     delete medium_0, medium_1;
