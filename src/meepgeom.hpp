@@ -153,8 +153,20 @@ inline vector3 make_vector3(double x = 0.0, double y = 0.0, double z = 0.0) {
   return v;
 }
 
+inline cvector3 cvector3_scale(number s, cvector3 v) {
+  return make_cvector3(vector3_scale(s,cvector3_re(v)),vector3_scale(s,cvector3_im(v)));
+}
+
+inline cvector3 cvector_zero(){
+  return make_cvector3(make_vector3(),make_vector3());
+}
+
+inline cvector3 cvector_add(cvector3 cv1, cvector3 cv2){
+  return make_cvector3(vector3_plus(cvector3_re(cv1),cvector3_re(cv2)),vector3_plus(cvector3_im(cv1),cvector3_im(cv2)));
+}
+
 typedef struct {
-  double m00, m01, m02, m11, m12, m22;
+  duals::duald m00, m01, m02, m11, m12, m22;
 } symm_matrix;
 
 struct pol {
@@ -207,6 +219,8 @@ public:
   virtual double chi1p1(meep::field_type ft, const meep::vec &r);
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                double tol, int maxeval);
+  void eff_chi1inv_row_grad(meep::component c, double chi1inv_row[3], const meep::volume &v,
+                               double tol, int maxeval, bool needs_grad);
 
   void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
                           const meep::volume &v, double tol, int maxeval, bool &fallback);
@@ -293,10 +307,8 @@ void init_libctl(material_type default_mat, bool ensure_per,
 // material grid functions
 /***************************************************************/
 void update_weights(material_type matgrid, double *weights);
-meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md);
-meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_object *o);
-double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
-double material_grid_val(vector3 p, material_data *md);
+duals::duald matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
+duals::duald material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
 void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum> *fields_a,
                                 std::complex<meep::realnum> *fields_f, size_t fields_shapes[12],

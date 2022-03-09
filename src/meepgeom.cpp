@@ -14,13 +14,14 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <iostream> 
 #include <algorithm>
 #include <vector>
-#include <duals/dual>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
 
 namespace dlit = duals::literals;
+using namespace duals::literals;
 
 namespace meep_geom {
 
@@ -124,9 +125,6 @@ void material_free(material_type m) {
   // object so will assume that the caller keeps track of its lifetime.
   delete[] m->epsilon_data;
   m->epsilon_data = NULL;
-
-  delete[] m->weights;
-  m->weights = NULL;
   delete m;
 }
 
@@ -151,9 +149,9 @@ bool material_type_equal(const material_type m1, const material_type m2) {
 /* rotate A by a unitary (real) rotation matrix R:
       RAR = transpose(R) * A * R
 */
-void sym_matrix_rotate(symm_matrix *RAR, const symm_matrix *A_, const double R[3][3]) {
+void sym_matrix_rotate(symm_matrix *RAR, const symm_matrix *A_, const duals::duald R[3][3]) {
   int i, j;
-  double A[3][3], AR[3][3];
+  duals::duald A[3][3], AR[3][3];
   A[0][0] = A_->m00;
   A[1][1] = A_->m11;
   A[2][2] = A_->m22;
@@ -176,8 +174,8 @@ void sym_matrix_rotate(symm_matrix *RAR, const symm_matrix *A_, const double R[3
 
 /* Set Vinv = inverse of V, where both V and Vinv are real-symmetric matrices.*/
 void sym_matrix_invert(symm_matrix *Vinv, const symm_matrix *V) {
-  double m00 = V->m00, m11 = V->m11, m22 = V->m22;
-  double m01 = V->m01, m02 = V->m02, m12 = V->m12;
+  duals::duald m00 = V->m00, m11 = V->m11, m22 = V->m22;
+  duals::duald m01 = V->m01, m02 = V->m02, m12 = V->m12;
 
   if (m01 == 0.0 && m02 == 0.0 && m12 == 0.0) {
     /* optimize common case of a diagonal matrix: */
@@ -187,13 +185,13 @@ void sym_matrix_invert(symm_matrix *Vinv, const symm_matrix *V) {
     Vinv->m01 = Vinv->m02 = Vinv->m12 = 0.0;
   }
   else {
-    double detinv;
+    duals::duald detinv;
 
     /* compute the determinant: */
     detinv = m00 * m11 * m22 - m02 * m11 * m02 + 2.0 * m01 * m12 * m02 - m01 * m01 * m22 -
              m12 * m12 * m00;
 
-    if (detinv == 0.0) meep::abort("singular 3x3 matrix");
+    if (detinv.rpart() == 0.0) meep::abort("singular 3x3 matrix");
 
     detinv = 1.0 / detinv;
 
@@ -209,18 +207,19 @@ void sym_matrix_invert(symm_matrix *Vinv, const symm_matrix *V) {
 
 /* Returns whether or not V is positive-definite. */
 int sym_matrix_positive_definite(symm_matrix *V) {
-  double det2, det3;
-  double m00 = V->m00, m11 = V->m11, m22 = V->m22;
+  duals::duald det2, det3;
+  duals::duald m00 = V->m00, m11 = V->m11, m22 = V->m22;
 
 #if defined(WITH_HERMITIAN_EPSILON)
-  scalar_complex m01 = V->m01, m02 = V->m02, m12 = V->m12;
+  // FIXME
+  scalar_complex m01 = V->m01.rpart(), m02 = V->m02.rpart(), m12 = V->m12.rpart();
 
   det2 = m00 * m11 - CSCALAR_NORMSQR(m01);
   det3 = det2 * m22 - m11 * CSCALAR_NORMSQR(m02) - CSCALAR_NORMSQR(m12) * m00 +
          2.0 * ((m01.re * m12.re - m01.im * m12.im) * m02.re +
                 (m01.re * m12.im + m01.im * m12.re) * m02.im);
 #else  /* real matrix */
-  double m01 = V->m01, m02 = V->m02, m12 = V->m12;
+  duals::duald m01 = V->m01, m02 = V->m02, m12 = V->m12;
 
   det2 = m00 * m11 - m01 * m01;
   det3 = det2 * m22 - m02 * m11 * m02 + 2.0 * m01 * m12 * m02 - m12 * m12 * m00;
@@ -336,37 +335,41 @@ bool is_metal(meep::field_type ft, const material_type *material) {
 
 // computes the vector-Jacobian product of the gradient of the matgrid_val function v
 // with the Jacobian of the to_geom_box_coords function for geometric_object o
-vector3 to_geom_object_coords_VJP(vector3 v, const geometric_object *o) {
+cvector3 to_geom_object_coords_VJP(cvector3 v, const geometric_object *o) {
   if (!o) { meep::abort("must pass a geometric_object to to_geom_object_coords_VJP.\n"); }
 
   switch (o->which_subclass) {
     default: {
-      vector3 po = {0, 0, 0};
+      cvector3 po = cvector_zero();
       return po;
     }
     case geometric_object::SPHERE: {
       number radius = o->subclass.sphere_data->radius;
-      return vector3_scale(0.5 / radius, v);
+      return cvector3_scale(0.5 / radius, v);
     }
     /* case geometric_object::CYLINDER:
        NOT YET IMPLEMENTED */
     case geometric_object::BLOCK: {
+      vector3 v_real = cvector3_re(v);
+      vector3 v_imag = cvector3_im(v);
+
       vector3 size = o->subclass.block_data->size;
-      if (size.x != 0.0) v.x /= size.x;
-      if (size.y != 0.0) v.y /= size.y;
-      if (size.z != 0.0) v.z /= size.z;
-      return matrix3x3_transpose_vector3_mult(o->subclass.block_data->projection_matrix, v);
+      if (size.x != 0.0) {v_real.x /= size.x; v_imag.x /= size.x;}
+      if (size.y != 0.0) {v_real.y /= size.y; v_imag.y /= size.y;}
+      if (size.z != 0.0) {v_real.z /= size.z; v_imag.z /= size.z;}
+      v_real =  matrix3x3_transpose_vector3_mult(o->subclass.block_data->projection_matrix, v_real);
+      v_imag =  matrix3x3_transpose_vector3_mult(o->subclass.block_data->projection_matrix, v_imag);
+      return make_cvector3(v_real,v_imag);
     }
     /* case geometric_object::PRISM:
        NOT YET IMPLEMENTED */
   }
 }
 
-meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_object *o) {
+cvector3 material_grid_grad(vector3 p, material_data *md, const geometric_object *o) {
   if (!is_material_grid(md)) {meep::abort("Invalid material grid detected.\n"); }
 
-  meep::vec gradient(zero_vec(dim));
-  double *data = md->weights;
+  cvector3 gradient = cvector_zero();
   int nx = md->grid_size.x;
   int ny = md->grid_size.y;
   int nz = md->grid_size.z;
@@ -398,19 +401,19 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order: */
-#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
+#define D(x, y, z) ((md->weights)[(((x)*ny + (y)) * nz + (z)) * stride])
 
-  double du_dx = (signflip_dx ? -1.0 : 1.0) *
+  duals::duald du_dx = (signflip_dx ? -1.0 : 1.0) *
     (((-D(x1, y1, z1) + D(x2, y1, z1)) * (1.0 - dy) +
       (-D(x1, y2, z1) + D(x2, y2, z1)) * dy) * (1.0 - dz) +
      ((-D(x1, y1, z2) + D(x2, y1, z2)) * (1.0 - dy) +
       (-D(x1, y2, z2) + D(x2, y2, z2)) * dy) * dz);
-  double du_dy = (signflip_dy ? -1.0 : 1.0) *
+  duals::duald du_dy = (signflip_dy ? -1.0 : 1.0) *
     ((-(D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) +
       (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx)) * (1.0 - dz) +
      (-(D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) +
       (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx)) * dz);
-  double du_dz = (signflip_dz ? -1.0 : 1.0) *
+  duals::duald du_dz = (signflip_dz ? -1.0 : 1.0) *
     (-((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
        (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) +
      ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
@@ -423,22 +426,21 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
   // respect to r2 where g(r2) is the to_geom_object_coords function (in libctl/utils/geom.c).
   // computing this quantity involves using the chain rule and thus the vector-Jacobian product
   // ∇u J where J is the Jacobian matrix of g.
-  vector3 grad_u;
-  grad_u.x = du_dx * nx;
-  grad_u.y = du_dy * ny;
-  grad_u.z = du_dz * nz;
-  if (o != NULL) {
-    vector3 grad_u_J = to_geom_object_coords_VJP(grad_u, o);
-    gradient.set_direction(meep::X, grad_u_J.x);
-    gradient.set_direction(meep::Y, grad_u_J.y);
-    gradient.set_direction(meep::Z, grad_u_J.z);
-  }
-  else {
-    gradient.set_direction(meep::X, geometry_lattice.size.x == 0 ? 0 : grad_u.x / geometry_lattice.size.x);
-    gradient.set_direction(meep::Y, geometry_lattice.size.y == 0 ? 0 : grad_u.y / geometry_lattice.size.y);
-    gradient.set_direction(meep::Z, geometry_lattice.size.z == 0 ? 0 : grad_u.z / geometry_lattice.size.z);
-  }
+  vector3 g_real = make_vector3(nx*du_dx.rpart(),ny*du_dy.rpart(),nz*du_dz.rpart());
+  vector3 g_imag = make_vector3(nx*du_dx.dpart(),ny*du_dy.dpart(),nz*du_dz.dpart());
+  cvector3 grad_u = make_cvector3(g_real,g_imag);
 
+  if (o != NULL) {
+    gradient = to_geom_object_coords_VJP(grad_u, o);
+  } else {
+    g_real = make_vector3(nx*du_dx.rpart()/ geometry_lattice.size.x,
+      ny*du_dy.rpart()/ geometry_lattice.size.y,
+      nz*du_dz.rpart()/ geometry_lattice.size.z);
+    g_imag = make_vector3(nx*du_dx.dpart()/ geometry_lattice.size.x,
+      ny*du_dy.dpart()/ geometry_lattice.size.y,
+      nz*du_dz.dpart()/ geometry_lattice.size.z);
+    gradient = make_cvector3(g_real,g_imag);
+  }
   return gradient;
 }
 
@@ -451,20 +453,20 @@ void map_lattice_coordinates(double &px, double &py, double &pz) {
     : 0.5 + (pz - geometry_center.z) / geometry_lattice.size.z;
 }
 
-meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
+cvector3 matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   if (md->material_grid_kinds == material_data::U_MIN ||
       md->material_grid_kinds == material_data::U_PROD)
     meep::abort("%s:%i:matgrid_grad does not support overlapping grids with U_MIN or U_PROD\n",__FILE__,__LINE__);
 
-  meep::vec gradient(zero_vec(dim));
+  cvector3 gradient = cvector_zero();
   int matgrid_val_count = 0;
 
   // iterate through object tree at current point
   if (tp) {
     do {
-      gradient += material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
+      gradient = cvector_add(gradient,material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
                                      (material_data *)tp->objects[oi].o->material,
-                                     tp->objects[oi].o);
+                                     tp->objects[oi].o));
       if (md->material_grid_kinds == material_data::U_DEFAULT) break;
       ++matgrid_val_count;
       tp = geom_tree_search_next(p, tp, &oi);
@@ -478,30 +480,54 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   }
 
   if (md->material_grid_kinds == material_data::U_MEAN)
-    gradient = gradient * 1.0/matgrid_val_count;
+    gradient = cvector3_scale(1.0/matgrid_val_count,gradient);
 
   return gradient;
 }
+duals::duald dual_linear_interpolate(double rx, double ry, double rz, std::vector<duals::duald> &data,
+                          int nx, int ny, int nz, int stride) {
 
-double material_grid_val(vector3 p, material_data *md) {
+  int x1, y1, z1, x2, y2, z2;
+  double dx, dy, dz;
+
+  meep::map_coordinates(rx, ry, rz, nx, ny, nz,
+                  x1, y1, z1, x2, y2, z2,
+                  dx, dy, dz);
+
+  /* define a macro to give us data(x,y,z) on the grid,
+     in row-major order (the order used by HDF5): */
+#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
+
+  return (((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
+           (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) *
+              (1.0 - dz) +
+          ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
+           (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy) *
+              dz);
+
+#undef D
+}
+duals::duald material_grid_val(vector3 p, material_data *md) {
   // given the relative location, p, interpolate the material grid point.
 
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
-  return meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
+  return dual_linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
                                   md->grid_size.y, md->grid_size.z, 1);
 
 }
 
-static double tanh_projection(double u, double beta, double eta) {
+static duals::duald tanh_projection(duals::duald u, double beta, double eta) {
   if (beta == 0) return u;
   if (u == eta) return 0.5; // avoid NaN when beta is Inf
-  double tanh_beta_eta = tanh(beta*eta);
-  return (tanh_beta_eta + tanh(beta*(u-eta))) /
+  duals::duald tanh_beta_eta = tanh(beta*eta);
+  duals::duald temp = (tanh_beta_eta + tanh(beta*(u-eta))) /
     (tanh_beta_eta + tanh(beta*(1-eta)));
+    //master_printf("temp %f %f\n",temp.rpart(),temp.dpart());
+  return temp;
 }
 
-double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
-  double uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
+duals::duald matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
+  duals::duald uprod = 1.0, umin = 1.0, usum = 0.0, udefault = 0.0, u;
   int matgrid_val_count = 0;
 
   // iterate through object tree at current point
@@ -568,7 +594,7 @@ static void interp_tensors(vector3 diag_in_1, vector3 offdiag_in_1, vector3 diag
 void epsilon_material_grid(material_data *md, double u) {
   // NOTE: assume p lies on normalized grid within (0,1)
 
-  if (!(md->weights)) meep::abort("material params were not initialized!");
+  if (md->weights.size()==0) meep::abort("material params were not initialized!");
 
   medium_struct *mm = &(md->medium);
   medium_struct *m1 = &(md->medium_1);
@@ -858,15 +884,15 @@ void geom_epsilon::eval_material_pt(material_type &material, vector3 p) {
   switch (material->which_subclass) {
     // material grid: interpolate onto user specified material grid to get properties at r
     case material_data::MATERIAL_GRID: {
-      double u;
+      duals::duald u;
       int oi;
       geom_box_tree tp;
 
       tp = geom_tree_search(p, restricted_tree, &oi);
       // interpolate and project onto material grid
-      u = tanh_projection(matgrid_val(p, tp, oi, material)+this->u_p, material->beta, material->eta);
+      u = tanh_projection(matgrid_val(p, tp, oi, material), material->beta, material->eta);
       // interpolate material from material grid point
-      epsilon_material_grid(material, u);
+      epsilon_material_grid(material, u.rpart());
 
       return;
     }
@@ -914,7 +940,7 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
   material_epsmu(ft, material, &chi1p1, &chi1p1_inv);
   material_gc(material);
 
-  return (chi1p1.m00 + chi1p1.m11 + chi1p1.m22) / 3;
+  return (chi1p1.m00.rpart() + chi1p1.m11.rpart() + chi1p1.m22.rpart()) / 3;
 }
 
 /* Find frontmost object in v, along with the constant material behind it.
@@ -1040,98 +1066,97 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
   return true;
 }
 
-double get_material_grid_fill(meep::ndim dim, double d, double r, double u, double eta){
-  /* The fill fraction should describe the amount of u=1 material in the current pixel.
-
-  The analytic volume expressions for the end cap only specify the fill fraction
-  of the cap relative to the whole sphere... but we don't know what the cap 
-  actually is (solid or void). So we need a little extra logic to sort that out.
-  
-  Occasionally, the distance to the nearest interface is outside the current
-  sphere, which means we don't need to do any averaging (the fill is 0 or 1). Again,
-  we don't know if that means we are in void or solid, however, until we look
-  at u. To make things easy, we'll assume the cap is solid until the end, when we
-  can verify.
-  */
-  double rel_fill;
-  if (abs(d) >= abs(r)){
-    return -1.0; // garbage fill
-  } else {
-    if (dim == meep::D1)
-      rel_fill = (r-d)/(2*r);
-    else if (dim == meep::D2 || dim == meep::Dcyl){
-      rel_fill = (1/(r*r*meep::pi)) * (r*r*std::acos(d/r)-d*std::sqrt(r*r-d*d));
-    }
-    else if (dim == meep::D3)
-      rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
-  }
-
-  if (u <= eta){
-    return rel_fill;   // center is void, so cap must be solid
-  }else{
-    return 1-rel_fill; // center is solid, so cap must be void (and we need complement)
-  }
-}
-
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                    double tol, int maxeval) {
+  /* for speed reasons, we need to "wrap" the 
+  actual eff_chi1inv_row_grad function below, since
+  the original eff_chi1inv_row is a virtual function
+  and doesn't play well with default arguments */
+  eff_chi1inv_row_grad(c,chi1inv_row,v,tol,maxeval,false);
+}
+void geom_epsilon::eff_chi1inv_row_grad(meep::component c, double chi1inv_row[3], const meep::volume &v,
+                                   double tol, int maxeval, bool needs_grad) {
   symm_matrix meps_inv;
   bool fallback;
   eff_chi1inv_matrix(c, &meps_inv, v, tol, maxeval, fallback);
 
   if (fallback) { fallback_chi1inv_row(c, chi1inv_row, v, tol, maxeval); }
   else {
-    switch (component_direction(c)) {
+    /* for gradient calculations, we need to return
+    the dual part of the calcuation, which corresponds 
+    to the first derivative w.r.t. u_i */
+    if (needs_grad) {
+      switch (component_direction(c)) {
       case meep::X:
       case meep::R:
-        chi1inv_row[0] = meps_inv.m00;
-        chi1inv_row[1] = meps_inv.m01;
-        chi1inv_row[2] = meps_inv.m02;
+          chi1inv_row[0] = meps_inv.m00.dpart();
+          chi1inv_row[1] = meps_inv.m01.dpart();
+          chi1inv_row[2] = meps_inv.m02.dpart();
         break;
       case meep::Y:
       case meep::P:
-        chi1inv_row[0] = meps_inv.m01;
-        chi1inv_row[1] = meps_inv.m11;
-        chi1inv_row[2] = meps_inv.m12;
+        chi1inv_row[0] = meps_inv.m01.dpart();
+        chi1inv_row[1] = meps_inv.m11.dpart();
+        chi1inv_row[2] = meps_inv.m12.dpart();
         break;
       case meep::Z:
-        chi1inv_row[0] = meps_inv.m02;
-        chi1inv_row[1] = meps_inv.m12;
-        chi1inv_row[2] = meps_inv.m22;
+        chi1inv_row[0] = meps_inv.m02.dpart();
+        chi1inv_row[1] = meps_inv.m12.dpart();
+        chi1inv_row[2] = meps_inv.m22.dpart();
         break;
       case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+      }
+    } else { // no gradient needed; standard epsilon evaluations
+      switch (component_direction(c)) {
+      case meep::X:
+      case meep::R:
+          chi1inv_row[0] = meps_inv.m00.rpart();
+          chi1inv_row[1] = meps_inv.m01.rpart();
+          chi1inv_row[2] = meps_inv.m02.rpart();
+        break;
+      case meep::Y:
+      case meep::P:
+        chi1inv_row[0] = meps_inv.m01.rpart();
+        chi1inv_row[1] = meps_inv.m11.rpart();
+        chi1inv_row[2] = meps_inv.m12.rpart();
+        break;
+      case meep::Z:
+        chi1inv_row[0] = meps_inv.m02.rpart();
+        chi1inv_row[1] = meps_inv.m12.rpart();
+        chi1inv_row[2] = meps_inv.m22.rpart();
+        break;
+      case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+      }
     }
   }
 }
 
-void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matrix meps, material_type mat, 
-  /* 
-
+void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matrix &meps, 
+  symm_matrix &eps2, cvector3 &cnormal, duals::duald fill){
+  /* Ref: " Perturbation theory for anisotropic dielectric interfaces, 
+    and application to subpixel smoothing of discretized numerical methods",
+    https://math.mit.edu/~stevenj/papers/KottkeFa08.pdf
   */
-  
-  material_type mat_behind, vector3 normal, double fill){
-  material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
-  symm_matrix eps2, epsinv2;
+
   symm_matrix eps1, delta;
-  double Rot[3][3];
-  material_epsmu(meep::type(c), mat_behind, &eps2, &epsinv2);
+  duals::duald Rot[3][3];
   eps1 = meps;
 
-  Rot[0][0] = normal.x;
-  Rot[1][0] = normal.y;
-  Rot[2][0] = normal.z;
-  if (fabs(normal.x) > 1e-2 || fabs(normal.y) > 1e-2) {
-    Rot[0][2] = normal.y;
-    Rot[1][2] = -normal.x;
+  Rot[0][0] = cnormal.x.re + 1_e*cnormal.x.im;
+  Rot[1][0] = cnormal.y.re + 1_e*cnormal.y.im;
+  Rot[2][0] = cnormal.z.re + 1_e*cnormal.z.im;
+  if (fabs(cnormal.x.re) > 1e-2 || fabs(cnormal.y.re) > 1e-2) {
+    Rot[0][2] = cnormal.y.re + 1_e*cnormal.y.im;
+    Rot[1][2] = -(cnormal.x.re + 1_e*cnormal.x.im);
     Rot[2][2] = 0;
   }
   else { /* n is not parallel to z direction, use (x x n) instead */
     Rot[0][2] = 0;
-    Rot[1][2] = -normal.z;
-    Rot[2][2] = normal.y;
+    Rot[1][2] = -(cnormal.z.re + 1_e*cnormal.z.im);
+    Rot[2][2] = cnormal.y.re + 1_e*cnormal.y.im;
   }
   { /* normalize second column */
-    double s = Rot[0][2] * Rot[0][2] + Rot[1][2] * Rot[1][2] + Rot[2][2] * Rot[2][2];
+    duals::duald s = Rot[0][2] * Rot[0][2] + Rot[1][2] * Rot[1][2] + Rot[2][2] * Rot[2][2];
     s = 1.0 / sqrt(s);
     Rot[0][2] *= s;
     Rot[1][2] *= s;
@@ -1180,7 +1205,7 @@ void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matri
 
 #define SWAP(a, b)                                                                                 \
   {                                                                                                \
-    double xxx = a;                                                                                \
+    duals::duald xxx = a;                                                                          \
     a = b;                                                                                         \
     b = xxx;                                                                                       \
   }
@@ -1199,27 +1224,114 @@ void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matri
   sym_matrix_invert(chi1inv_matrix, &meps);
 }
 
+duals::duald get_material_grid_fill(meep::ndim dim, duals::duald d, double r, duals::duald u, double eta){
+  /* The fill fraction should describe the amount of u=1 material in the current pixel.
+
+  The analytic volume expressions for the end cap only specify the fill fraction
+  of the cap relative to the whole sphere... but we don't know what the cap 
+  actually is (solid or void). So we need a little extra logic to sort that out.
+  
+  Occasionally, the distance to the nearest interface is outside the current
+  sphere, which means we don't need to do any averaging (the fill is 0 or 1). Again,
+  we don't know if that means we are in void or solid, however, until we look
+  at u. To make things easy, we'll assume the cap is solid until the end, when we
+  can verify.
+  */
+  duals::duald rel_fill;
+  if (abs(d) >= abs(r)){
+    return -1.0; // garbage fill
+  } else {
+    if (dim == meep::D1)
+      rel_fill = (r-d)/(2*r);
+    else if (dim == meep::D2 || dim == meep::Dcyl){
+      rel_fill = (1/(r*r*meep::pi)) * (r*r*acos(d/r)-d*sqrt(r*r-d*d));
+    }
+    else if (dim == meep::D3)
+      rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
+  }
+
+  if (u <= eta){
+    return rel_fill;   // center is void, so cap must be solid
+  }else{
+    return 1-rel_fill; // center is solid, so cap must be void (and we need complement)
+  }
+}
+
+void normalize_dual(cvector3 &cv){
+  duals::duald d[3], norm;
+  d[0] = cv.x.re + 1_e*cv.x.im;
+  d[1] = cv.y.re + 1_e*cv.y.im;
+  d[2] = cv.z.re + 1_e*cv.z.im;
+
+  norm = sqrt(abs(d[0])*abs(d[0]) + abs(d[1])*abs(d[1]) + abs(d[2])*abs(d[2]));
+
+  d[0] = d[0] / norm;
+  d[1] = d[1] / norm;
+  d[2] = d[2] / norm;
+
+  cv.x.re = d[0].rpart(); cv.x.im = d[0].dpart();
+  cv.y.re = d[1].rpart(); cv.y.im = d[1].dpart();
+  cv.z.re = d[2].rpart(); cv.z.im = d[2].dpart();
+}
+
+duals::duald get_distance(cvector3 &cv, duals::duald uval, double eta){
+  duals::duald d[3], norm;
+  d[0] = cv.x.re + 1_e*cv.x.im;
+  d[1] = cv.y.re + 1_e*cv.y.im;
+  d[2] = cv.z.re + 1_e*cv.z.im;
+
+  norm = sqrt(abs(d[0])*abs(d[0]) + abs(d[1])*abs(d[1]) + abs(d[2])*abs(d[2]));
+  return (eta - uval) / norm;
+}
+
+void dual_interpolate_mat(material_type mat,symm_matrix &eps, duals::duald u) {
+  duals::duald u_bar = tanh_projection(u, mat->beta, mat->eta); // projection
+  if (std::isnan(u_bar.dpart())) u_bar = u_bar.rpart(); // when beta=inf, we need to correct when gradient breaks down
+  eps.m00 = mat->medium_1.epsilon_diag.x + u_bar * (mat->medium_2.epsilon_diag.x-mat->medium_1.epsilon_diag.x);
+  eps.m11 = mat->medium_1.epsilon_diag.y + u_bar * (mat->medium_2.epsilon_diag.y-mat->medium_1.epsilon_diag.y);
+  eps.m22 = mat->medium_1.epsilon_diag.z + u_bar * (mat->medium_2.epsilon_diag.z-mat->medium_1.epsilon_diag.z);
+  eps.m01 = mat->medium_1.epsilon_offdiag.x.re + u_bar * (mat->medium_2.epsilon_offdiag.x.re-mat->medium_1.epsilon_offdiag.x.re);
+  eps.m02 = mat->medium_1.epsilon_offdiag.y.re + u_bar * (mat->medium_2.epsilon_offdiag.y.re-mat->medium_1.epsilon_offdiag.y.re);
+  eps.m12 = mat->medium_1.epsilon_offdiag.z.re + u_bar * (mat->medium_2.epsilon_offdiag.z.re-mat->medium_1.epsilon_offdiag.z.re);
+}
+
 void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
                                       const meep::volume &v, double tol, int maxeval,
                                       bool &fallback) {
   const geometric_object *o;
   material_type mat, mat_behind;
   vector3 p_mat, p_mat_behind;
-  symm_matrix meps;
-  vector3 p, shiftby, normal;
-  double fill;
+  symm_matrix meps, eps2, epsinv2;
+  vector3 p, shiftby;
+  cvector3 normal;
+  duals::duald fill, uval;
   fallback = false;
-  bool needs_cleanup=false;
-  medium_struct *medium_1, *medium_0;
+  
+  int oi;
+  geom_box_tree tp;
 
-  if (maxeval == 0 ||
-      (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind))) {
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind)
+      && (!is_material_grid(mat))) {
   noavg:
     get_material_pt(mat, v.center());
   trivial:
     material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
     material_gc(mat);
     return;
+  }
+
+  if (maxeval == 0){
+    if (is_material_grid(mat)){
+      tp = geom_tree_search(vec_to_vector3(v.center()), restricted_tree, &oi);
+      uval = matgrid_val(vec_to_vector3(v.center()), tp, oi, mat);
+    mgavg:
+      dual_interpolate_mat(mat,meps,uval);
+      sym_matrix_invert(chi1inv_matrix, &meps);
+      material_gc(mat);
+      return;
+    }else{
+      goto noavg;
+    }
   }
 
   // For variable materials with do_averaging == true, switch over to slow fallback integration method.
@@ -1242,53 +1354,57 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     to just evaluate.
     */
     if (is_material_grid(mat)){
-      int oi;
-      geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
+      tp = geom_tree_search(p_mat, restricted_tree, &oi);
+      uval = matgrid_val(p_mat, tp, oi, mat);
       
-      meep::vec normal_vec_front(matgrid_grad(p_mat, tp, oi, mat));
-      if (normal_vec_front.x() == 0 && normal_vec_front.y() == 0 && normal_vec_front.z() == 0)
-        goto trivial; // couldn't get normal vector for this point
+      normal = matgrid_grad(p_mat, tp, oi, mat);
+      if (cvector3_re(normal).x == 0 && cvector3_re(normal).y == 0 && cvector3_re(normal).z == 0)
+        /* couldn't get normal vector for this point; no averaging is needed,
+        but we still need to interpolate onto our grid using duals */
+        goto mgavg;
       
-      double nabsinv = 1.0 / meep::abs(normal_vec_front);
-      LOOP_OVER_DIRECTIONS(normal_vec_front.dim, k) { normal_vec_front.set_direction(k,normal_vec_front.in_direction(k)*nabsinv); }
+      duals::duald d = get_distance(normal, uval, mat->eta);
+      normalize_dual(normal);
       
-      double uval = matgrid_val(p_mat, tp, oi, mat)+this->u_p;
-      double d = (mat->eta-uval) * nabsinv;
       double r = v.diameter()/2;
-      
-      fill = get_material_grid_fill(normal_vec_front.dim,d,r,uval,mat->eta);
-      normal = vec_to_vector3(normal_vec_front);
-
-      if (fill < 0){
-        // no averaging is needed
-        eval_material_pt(mat, vec_to_vector3(v.center()));
-        goto trivial;
+      fill = get_material_grid_fill(v.dim,d,r,uval,mat->eta);
+      if (fill.rpart() < 0){
+        /* we are far enough away from an interface that
+        we don't need any averaging -- but we still need
+        to interpolate from the material grid */
+        goto mgavg;
       } else{
-        /* we have a material grid interface within our pixel */
-        needs_cleanup = true;
-        medium_1 = new medium_struct(mat->medium_2);
-        medium_0 = new medium_struct(mat->medium_1);
-        mat = new material_data();
-        mat_behind = new material_data();
-        mat->medium = *medium_1;
-        mat_behind->medium = *medium_0;
+        /* we have a material grid interface within our pixel.
+        we therefore need to set the two materials used for
+        averaging to our corresponding solid and voide materials.
+        */
+        medium_struct medium_1 = medium_struct(mat->medium_2);
+        medium_struct medium_0 = medium_struct(mat->medium_1);
+        material_data mat_temp = material_data();
+        material_data mat_behind_temp = material_data();
+        mat_temp.medium = medium_1;
+        mat_behind_temp.medium = medium_0;
+        material_epsmu(meep::type(c), &mat_temp, &meps, chi1inv_matrix);
+        material_epsmu(meep::type(c), &mat_behind_temp, &eps2, &epsinv2);
       }
     } else if(is_variable(mat)) {
-      // no averaging is needed
+      // no averaging is needed (not a material grid)
       eval_material_pt(mat, vec_to_vector3(v.center()));
       goto trivial;
     // materials are non variable and uniform -- no need to average
     } else {
       goto trivial;
     }
-  } else {
-    normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
-    if (normal.x == 0 && normal.y == 0 && normal.z == 0)
+  } else { // Two different materials (perhaps a m.g. and a geom object)
+    
+    vector3 normal_re = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+    if (normal_re.x == 0 && normal_re.y == 0 && normal_re.z == 0)
       goto noavg; // couldn't get normal vector for this point, punt
+    normal = make_cvector3(normal_re,make_vector3());
     geom_box pixel = gv2box(v);
     pixel.low = vector3_minus(pixel.low, shiftby);
     pixel.high = vector3_minus(pixel.high, shiftby);
-    fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+    fill = duals::duald(box_overlap_with_object(pixel, *o, tol, maxeval),0);
     /* Evaluate materials in case they are variable.  This allows us to do fast subpixel averaging
       at the boundary of an object with a variable material, while remaining accurate enough if the
       material is continuous over the pixel.  (We make a first-order error by averaging as if the material
@@ -1299,17 +1415,35 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
       eval_material_pt(mat_behind, p_mat_behind);
       if (material_type_equal(mat, mat_behind)) goto trivial;
     }
+    
+    /* to properly determine the tensors of a material 
+      that has a material grid, we need to be careful.
+      Specifically, we need to include the effects of u_i
+      in the dual part of the material tensor */
+    if (is_material_grid(mat)){
+      int oi;
+      geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
+      duals::duald uval = matgrid_val(p_mat, tp, oi, mat);
+      dual_interpolate_mat(mat,meps,uval);
+      sym_matrix_invert(chi1inv_matrix, &meps);    
+    } else {
+      material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
+    }
+    if (is_material_grid(mat_behind)){
+      int oi;
+      geom_box_tree tp = geom_tree_search(p_mat_behind, restricted_tree, &oi);
+      duals::duald uval = matgrid_val(p_mat_behind, tp, oi, mat);
+      dual_interpolate_mat(mat_behind,eps2,uval);
+      sym_matrix_invert(&epsinv2, &eps2); // not really needed
+    } else {
+      material_epsmu(meep::type(c), mat_behind, &eps2, &epsinv2);
+    }
   }
 
   // it doesn't make sense to average metals (electric or magnetic)
   if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
 
-  kottke_algorithm(c,chi1inv_matrix,meps,mat,mat_behind,normal,fill);
-
-  if (needs_cleanup){
-    delete medium_0, medium_1;
-    material_free(mat); material_free(mat_behind);
-  }
+  kottke_algorithm(c,chi1inv_matrix,meps,eps2,normal,fill);
 }
 
 static int eps_ever_negative = 0;
@@ -1328,7 +1462,7 @@ struct matgrid_volavg {
 
 static void get_uproj_w(const matgrid_volavg *mgva, double x0, double &u_proj, double &w) {
   // use a linear approximation for the material grid weights around the Yee grid point
-  u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
+  //u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
   if (mgva->dim == meep::D1)
     w = 1/(2*mgva->rad);
   else if (mgva->dim == meep::D2 || mgva->dim == meep::Dcyl)
@@ -1436,13 +1570,13 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   material_data *md = material;
   meep::vec gradient(zero_vec(v.dim));
   double uval = 0;
-
+  // TODO cleanup and remove
   if (md->which_subclass == material_data::MATERIAL_GRID) {
     geom_box_tree tp;
     int oi;
     tp = geom_tree_search(p, restricted_tree, &oi);
-    gradient = matgrid_grad(p, tp, oi, md);
-    uval = matgrid_val(p, tp, oi, md)+this->u_p;
+    //gradient = matgrid_grad(p, tp, oi, md);
+    //uval = matgrid_val(p, tp, oi, md)+this->u_p;
   }
   else {
     gradient = normal_vector(meep::type(c), v);
@@ -1455,19 +1589,19 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
       chi1p1.m11 != chi1p1.m22 || chi1p1.m00 != chi1p1.m22 || meep::abs(gradient) < 1e-8) {
     int rownum = meep::component_direction(c) % 3;
     if (rownum == 0) {
-      chi1inv_row[0] = chi1p1_inv.m00;
-      chi1inv_row[1] = chi1p1_inv.m01;
-      chi1inv_row[2] = chi1p1_inv.m02;
+      chi1inv_row[0] = chi1p1_inv.m00.rpart();
+      chi1inv_row[1] = chi1p1_inv.m01.rpart();
+      chi1inv_row[2] = chi1p1_inv.m02.rpart();
     }
     else if (rownum == 1) {
-      chi1inv_row[0] = chi1p1_inv.m01;
-      chi1inv_row[1] = chi1p1_inv.m11;
-      chi1inv_row[2] = chi1p1_inv.m12;
+      chi1inv_row[0] = chi1p1_inv.m01.rpart();
+      chi1inv_row[1] = chi1p1_inv.m11.rpart();
+      chi1inv_row[2] = chi1p1_inv.m12.rpart();
     }
     else {
-      chi1inv_row[0] = chi1p1_inv.m02;
-      chi1inv_row[1] = chi1p1_inv.m12;
-      chi1inv_row[2] = chi1p1_inv.m22;
+      chi1inv_row[0] = chi1p1_inv.m02.rpart();
+      chi1inv_row[1] = chi1p1_inv.m12.rpart();
+      chi1inv_row[2] = chi1p1_inv.m22.rpart();
     }
     return;
   }
@@ -1783,7 +1917,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
 
     tp = geom_tree_search(p, restricted_tree, &oi);
     // interpolate and project onto material grid
-    u = tanh_projection(matgrid_val(p, tp, oi, mat)+this->u_p, mat->beta, mat->eta);
+    u = tanh_projection(matgrid_val(p, tp, oi, mat), mat->beta, mat->eta).rpart();
     epsilon_material_grid(mat, u);   // interpolate material from material grid point
     mat->medium.check_offdiag_im_zero_or_abort();
   }
@@ -2215,7 +2349,9 @@ material_type make_material_grid(bool do_averaging, double beta, double eta, dou
 
 void update_weights(material_type matgrid, double *weights) {
   size_t N = matgrid->grid_size.x * matgrid->grid_size.y * matgrid->grid_size.z;
-  memcpy(matgrid->weights, weights, N * sizeof(double));
+  //memcpy(matgrid->weights, weights, N * sizeof(double));
+  for (size_t i=0;i<N;i++)
+    matgrid->weights.push_back(weights[i]);
 }
 
 /******************************************************************************/
@@ -2778,7 +2914,7 @@ std::complex<double> get_material_gradient(
     geom_epsilon *geps,               // material
     meep::grid_volume &gv,            // simulation grid volume
     double du,                        // step size
-    double *u,                        // matgrid
+    std::vector<duals::duald> &u,     // matgrid
     int idx                           // matgrid index
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
@@ -2821,25 +2957,26 @@ std::complex<double> get_material_gradient(
       v.set_direction_min(d, r.in_direction(d) - 0.5*gv.inva*sd);
       v.set_direction_max(d, r.in_direction(d) + 0.5*gv.inva*sd);
     }
-    double row_1[3], row_2[3], dA_du[3];
-    double orig = u[idx];
+    double dA_du[3];
     double maxevals = geps->use_anisotropic_averaging ? geps->maxeval : 0; // punt if no smoothing
-    u[idx] -= du;
-    geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, maxevals);
-    u[idx] += 2*du;
-    geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, maxevals);
-    u[idx] = orig;
-
-    for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
-    return dA_du[dir_idx] * fields_f;
+    /* we can calculate the gradient w.r.t. u_i using
+    a dual method. We just need to "flag" the index
+    within our weights array with a dual value
+    of "1", and the duals library will take care of the
+    rest. */
+    u[idx] += 1_e; // add dual component
+    geps->eff_chi1inv_row_grad(adjoint_c, dA_du, v, geps->tol, maxevals, true);
+    u[idx] -= 1_e; // remove dual component
+    
+    return -dA_du[dir_idx] * fields_f; // note the minus sign! (from Steven's adjoint notes)
+  
   } else {
-    double orig = u[idx];
     std::complex<double> row_1[3], row_2[3], dA_du[3];
     u[idx] -= du;
     eff_chi1inv_row_disp(adjoint_c,row_1,r,freq,geps);
     u[idx] += 2*du;
     eff_chi1inv_row_disp(adjoint_c,row_2,r,freq,geps);
-    u[idx] = orig;
+    u[idx] -= du;
 
     for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
     return dA_du[dir_idx] * fields_f  * cond_cmp(forward_c,r,freq,geps);
@@ -2855,13 +2992,14 @@ using finite differences (at the cost of slightly less accurate gradients
 due to floating-point roundoff errors). */
 void add_interpolate_weights(double rx, double ry, double rz,
                              double *data, int nx, int ny, int nz, int stride,
-                             double scaleby, double *udata, int ukind, double uval,
+                             double scaleby, std::vector<duals::duald> &udata, int ukind, duals::duald uval,
                              meep::vec r, geom_epsilon *geps,
                              meep::component adjoint_c, meep::component forward_c,
                              std::complex<double> fwd, std::complex<double> adj,
                              double freq, meep::grid_volume &gv, double du) {
   int x1, y1, z1, x2, y2, z2;
-  double dx, dy, dz, u;
+  double dx, dy, dz;
+  duals::duald u;
 
   meep::map_coordinates(rx, ry, rz, nx, ny, nz,
                         x1, y1, z1, x2, y2, z2,
@@ -2885,7 +3023,7 @@ in row-major order (the order used by HDF5): */
            dz);
 
   if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
-  if (ukind == material_data::U_PROD) scaleby *= uval / u;
+  if (ukind == material_data::U_PROD) scaleby *= uval.rpart() / u.rpart();
 
   for (int xi=0;xi<lx;xi++){
     for (int yi=0;yi<ly;yi++){
@@ -2911,7 +3049,7 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
-  double uval;
+  duals::duald uval;
   int kind;
   tp = geom_tree_search(p, geps->geometry_tree, &oi);
 
@@ -2956,12 +3094,11 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     it's up to the user to only have one unique design grid in this volume.*/
     vector3 sz = mg->grid_size;
     double *vcur = v;
-    double *ucur = mg->weights;
     uval = tanh_projection(matgrid_val(p, tp, oi, mg), mg->beta, mg->eta);
     do {
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
       add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
-                              scalegrad, ucur, kind, uval,
+                              scalegrad, mg->weights, kind, uval,
                               vector3_to_vec(p), geps, adjoint_c, forward_c,
                               fwd, adj, freq, gv, tol);
       if (kind == material_data::U_DEFAULT) break;
@@ -2973,10 +3110,9 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     map_lattice_coordinates(p.x,p.y,p.z);
     vector3 sz = mg->grid_size;
     double *vcur = v;
-    double *ucur = mg->weights;
     uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
     add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
-                            scalegrad, ucur, kind, uval,
+                            scalegrad, mg->weights, kind, uval,
                             vector3_to_vec(p), geps, adjoint_c, forward_c,
                             fwd, adj, freq, gv, tol);
   }

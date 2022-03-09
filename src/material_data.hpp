@@ -25,6 +25,7 @@
 
 #include <meep.hpp>
 #include <ctlgeom.h>
+#include "support/dual.hpp"
 
 #include "meep.hpp"
 
@@ -133,7 +134,7 @@ struct material_data {
 
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
-  double *weights;
+  std::vector<duals::duald> weights;
   medium_struct medium_1;
   medium_struct medium_2;
   double beta;
@@ -187,7 +188,7 @@ material_type make_user_material(user_material_func user_func, void *user_data);
 material_type make_file_material(char *epsilon_input_file);
 material_type make_material_grid(bool do_averaging, double beta, double eta, double damping);
 void read_epsilon_file(const char *eps_input_file);
-void update_weights(material_type matgrid, double *weights);
+void update_weights(material_type matgrid, duals::duald *weights);
 
 }; // namespace meep_geom
 
