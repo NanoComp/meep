@@ -1106,7 +1106,7 @@ template<class T> dual<T> log1p(const dual<T> & x);
 template<class T> dual<T> expm1(const dual<T> & x);
 
 ////////////////////////////////////////////////////////////////
-// added for meep usage
+// added for meep forward-diff operations
 ////////////////////////////////////////////////////////////////
 
 
@@ -1114,12 +1114,12 @@ template<class T> dual<T> expm1(const dual<T> & x);
 /// `#include <duals/dual>` to use this function.
 template<class T> dual<T> tanh(const dual<T> & x) {
   using std::tanh;
-  double sech = 1.0 / std::cosh(x.dpart());
+  T sech = 1.0 / std::cosh(x.rpart());
   return dual<T>(tanh(x.rpart()), x.dpart() * sech * sech);
 }
 
 ////////////////////////////////////////////////////////////////
-
+//
 ////////////////////////////////////////////////////////////////
 
 /// The error function.  Make sure to `#include <math.h>` before

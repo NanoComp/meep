@@ -510,7 +510,7 @@ duals::duald dual_linear_interpolate(double rx, double ry, double rz, std::vecto
 duals::duald material_grid_val(vector3 p, material_data *md) {
   // given the relative location, p, interpolate the material grid point.
 
-  if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
+  if (!is_material_grid(md)) { abort(); }
   return dual_linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
                                   md->grid_size.y, md->grid_size.z, 1);
 
@@ -520,10 +520,8 @@ static duals::duald tanh_projection(duals::duald u, double beta, double eta) {
   if (beta == 0) return u;
   if (u == eta) return 0.5; // avoid NaN when beta is Inf
   duals::duald tanh_beta_eta = tanh(beta*eta);
-  duals::duald temp = (tanh_beta_eta + tanh(beta*(u-eta))) /
+  return (tanh_beta_eta + tanh(beta*(u-eta))) /
     (tanh_beta_eta + tanh(beta*(1-eta)));
-    //master_printf("temp %f %f\n",temp.rpart(),temp.dpart());
-  return temp;
 }
 
 duals::duald matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
@@ -1257,21 +1255,24 @@ duals::duald get_material_grid_fill(meep::ndim dim, duals::duald d, double r, du
   }
 }
 
-void normalize_dual(cvector3 &cv){
+duals::duald normalize_dual(cvector3 &cv){
   duals::duald d[3], norm;
+  // compute the norm, u_0'
   d[0] = cv.x.re + 1_e*cv.x.im;
   d[1] = cv.y.re + 1_e*cv.y.im;
   d[2] = cv.z.re + 1_e*cv.z.im;
 
   norm = sqrt(abs(d[0])*abs(d[0]) + abs(d[1])*abs(d[1]) + abs(d[2])*abs(d[2]));
 
+  // normalize the normal vector
   d[0] = d[0] / norm;
   d[1] = d[1] / norm;
   d[2] = d[2] / norm;
-
   cv.x.re = d[0].rpart(); cv.x.im = d[0].dpart();
   cv.y.re = d[1].rpart(); cv.y.im = d[1].dpart();
   cv.z.re = d[2].rpart(); cv.z.im = d[2].dpart();
+
+  return norm;
 }
 
 duals::duald get_distance(cvector3 &cv, duals::duald uval, double eta){
@@ -1300,18 +1301,18 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
                                       bool &fallback) {
   const geometric_object *o;
   material_type mat, mat_behind;
-  vector3 p_mat, p_mat_behind;
+  vector3 p_mat, p_mat_behind, p, shiftby;
   symm_matrix meps, eps2, epsinv2;
-  vector3 p, shiftby;
   cvector3 normal;
   duals::duald fill, uval;
-  fallback = false;
-  
   int oi;
   geom_box_tree tp;
+  fallback = false;
 
-  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind)
-      && (!is_material_grid(mat))) {
+  /* first let's check if our pixel has more than a single
+  interface (i.e. a corner) in which case we abandon any
+  smoothing efforts*/
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, p_mat, p_mat_behind)) {
   noavg:
     get_material_pt(mat, v.center());
   trivial:
@@ -1320,17 +1321,25 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     return;
   }
 
+  /* we may have entered this routine (e.g. because of a material grid
+  backprop routine) but don't want to actually do any averaging */
   if (maxeval == 0){
+    get_material_pt(mat, v.center());
     if (is_material_grid(mat)){
+      //boolean inobject;
+      //mat =
+      //(material_type)material_of_unshifted_point_in_tree_inobject(vec_to_vector3(v.center()), restricted_tree, &inobject);
       tp = geom_tree_search(vec_to_vector3(v.center()), restricted_tree, &oi);
       uval = matgrid_val(vec_to_vector3(v.center()), tp, oi, mat);
     mgavg:
       dual_interpolate_mat(mat,meps,uval);
       sym_matrix_invert(chi1inv_matrix, &meps);
+      //get_material_pt(mat, v.center());
+      //material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
       material_gc(mat);
       return;
     }else{
-      goto noavg;
+      goto trivial;
     }
   }
 
@@ -1362,9 +1371,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
         /* couldn't get normal vector for this point; no averaging is needed,
         but we still need to interpolate onto our grid using duals */
         goto mgavg;
-      
-      duals::duald d = get_distance(normal, uval, mat->eta);
-      normalize_dual(normal);
+      duals::duald u_prime = normalize_dual(normal);
+      duals::duald d = (mat->eta - uval) / u_prime;
       
       double r = v.diameter()/2;
       fill = get_material_grid_fill(v.dim,d,r,uval,mat->eta);
@@ -1378,14 +1386,20 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
         we therefore need to set the two materials used for
         averaging to our corresponding solid and voide materials.
         */
-        medium_struct medium_1 = medium_struct(mat->medium_2);
-        medium_struct medium_0 = medium_struct(mat->medium_1);
-        material_data mat_temp = material_data();
-        material_data mat_behind_temp = material_data();
-        mat_temp.medium = medium_1;
-        mat_behind_temp.medium = medium_0;
-        material_epsmu(meep::type(c), &mat_temp, &meps, chi1inv_matrix);
-        material_epsmu(meep::type(c), &mat_behind_temp, &eps2, &epsinv2);
+        symm_matrix eps_0, eps_plus, eps_minus;
+        dual_interpolate_mat(mat,eps_0,uval);
+        dual_interpolate_mat(mat,eps_plus,uval+r*u_prime);
+        dual_interpolate_mat(mat,eps_minus,uval-r*u_prime);
+        
+        if (d > 0) {
+          // Case 1: d > 0. Then let ε̃₊ = ε₊ and let ε̃₋ = [ε₀d + ε₋(Δx/2 – d)] / (Δx/2).
+          meps = eps_plus;
+          eps2 = (eps_0*d + eps_minus*(r-d)) / (r);
+        }else {
+          // Case 2: d < 0. Then let ε̃₋ = ε₋ and let ε̃₊ = [-ε₀d + ε₊(Δx/2 + d)] / (Δx/2).
+          eps2 = eps_minus;
+          meps = (-eps_0*d + eps_plus*(r+d)) / (r);
+        }
       }
     } else if(is_variable(mat)) {
       // no averaging is needed (not a material grid)
