@@ -73,6 +73,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_ldos.py                   \
     $(MDPYTEST)                                \
     $(TEST_DIR)/test_material_grid.py          \
+    $(TEST_DIR)/test_materials_library.py      \
     $(TEST_DIR)/test_medium_evaluations.py     \
     $(MPBPYTEST)                               \
     $(MODE_COEFFS_TEST)                        \

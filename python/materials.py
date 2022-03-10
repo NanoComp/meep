@@ -622,11 +622,11 @@ metal_visible_range = mp.FreqRange(min=um_scale/0.8, max=um_scale/0.4)
 # fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9, 1972
 
 Au_JC_visible_frq0 = 1/(0.139779231751333*um_scale)
-Au_JC_visible_gam0 = 1/(26.1269913352870*um_scale)
+Au_JC_visible_gam0 = 1/(1.12834046202759*um_scale)
 Au_JC_visible_sig0 = 1
 
 Au_JC_visible_frq1 = 1/(0.404064525036786*um_scale)
-Au_JC_visible_gam1 = 1/(1.12834046202759*um_scale)
+Au_JC_visible_gam1 = 1/(26.1269913352870*um_scale)
 Au_JC_visible_sig1 = 2.07118534879440
 
 Au_JC_visible_susc = [mp.DrudeSusceptibility(frequency=Au_JC_visible_frq0, gamma=Au_JC_visible_gam0, sigma=Au_JC_visible_sig0),
@@ -636,7 +636,7 @@ Au_JC_visible = mp.Medium(epsilon=6.1599, E_susceptibilities=Au_JC_visible_susc)
 
 #------------------------------------------------------------------
 # gold (Au)
-# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985 
+# fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 
 Au_visible_frq0 = 1/(0.0473629248511456*um_scale)
 Au_visible_gam0 = 1/(0.255476199605166*um_scale)
