@@ -16,7 +16,7 @@ class TestMaterialsLibrary(unittest.TestCase):
         self.assertAlmostEqual(LiNbO3.epsilon(1/1.55)[2][2], (2.1376)**2, places=2)
 
         self.assertAlmostEqual(SiO2_aniso.epsilon(1/1.55)[0][0], (1.5277)**2, places=2)
-        self.assertAlmostEqual(SiO2_aniso.epsilon(1/1.55)[1][0], 0, places=2)
+        self.assertEqual(SiO2_aniso.epsilon(1/1.55)[1][0], 0)
         self.assertAlmostEqual(SiO2_aniso.epsilon(1/1.55)[1][1], (1.5277)**2, places=2)
         self.assertAlmostEqual(SiO2_aniso.epsilon(1/1.55)[2][2], (1.5362)**2, places=2)
 
