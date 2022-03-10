@@ -1247,10 +1247,10 @@ class Matrix(object):
         self.c1 = Vector3(*c1)
         self.c2 = Vector3(*c2)
         self.c3 = Vector3(*c3)
-        if c1 == c2 == c3 == Vector3():
-            self.c1 = Vector3(diag.x,offdiag.x,offdiag.y)
-            self.c2 = Vector3(np.conj(offdiag.x),diag.y,offdiag.z)
-            self.c3 = Vector3(np.conj(offdiag.y),np.conj(offdiag.z),diag.z)
+        if np.all(c1 == c2) and np.all(c2 == c3) and np.all(c3 == Vector3()):
+            self.c1 = Vector3(diag[0], offdiag[0], offdiag[1])
+            self.c2 = Vector3(np.conj(offdiag[0]), diag[1], offdiag[2])
+            self.c3 = Vector3(np.conj(offdiag[1]), np.conj(offdiag[2]), diag[2])
 
     def __getitem__(self, i):
         return self.row(i)

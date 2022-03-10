@@ -1553,6 +1553,7 @@ void _get_gradient(PyObject *grad, double scalegrad, PyObject *fields_a, PyObjec
 %template(VolumeVector) std::vector<meep::volume>;
 %template(GridVolumeVector) std::vector<meep::grid_volume>;
 %template(IntVector) std::vector<int>;
+%template(Size_t_Vector) std::vector<size_t>;
 %template(DoubleVector) std::vector<double>;
 
 // use NumPy arrays for returning common std::vector types:

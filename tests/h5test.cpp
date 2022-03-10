@@ -48,7 +48,7 @@ symmetry make_rotate4z(const grid_volume &gv) { return rotate4(Z, gv); }
 
 typedef symmetry (*symfunc)(const grid_volume &);
 
-const double tol = sizeof(realnum) == sizeof(float) ? 2e-4 : 1e-8;
+const double tol = sizeof(realnum) == sizeof(float) ? 2.5e-4 : 1e-8;
 double compare(double a, double b, const char *nam, size_t i0, size_t i1, size_t i2) {
   if (fabs(a - b) > tol * tol + fabs(b) * tol || b != b) {
     master_printf("%g vs. %g differs by\t%g\n", a, b, fabs(a - b));
