@@ -345,8 +345,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
-      (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (kpoint.z() == 0) &&
-      (real(k[Z]) != 0)) {
+      (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) &&
+      (kpoint.z() == 0) && (real(k[Z]) != 0)) {
     kpoint.set_direction(Z, real(k[Z]));
     empty_dim[2] = true;
   }
@@ -621,11 +621,24 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
         k2sum += ktmp*ktmp;
       }
     }
+    if (((v.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
+        (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (real(k[Z]) != 0)) ||
+        ((v.dim == D2) && (real(k[Z]) != 0))) {
+      k2sum += k[Z]*k[Z];
+    }
 
     // compute kperp (if it is non evanescent) OR
     // frequency from kperp^2 and sum of (kparallel+G)^2
     {
       direction dd = eig_vol.normal_direction();
+      if (eig_vol.dim == D3 && empty_dim[2]) {
+        volume eig_vol_2d(D2);
+        eig_vol_2d.set_direction_min(X, eig_vol.in_direction_min(X));
+        eig_vol_2d.set_direction_min(Y, eig_vol.in_direction_min(Y));
+        eig_vol_2d.set_direction_max(X, eig_vol.in_direction_max(X));
+        eig_vol_2d.set_direction_max(Y, eig_vol.in_direction_max(Y));
+        dd = eig_vol_2d.normal_direction();
+      }
       if (match_frequency) {
         vec cen = eig_vol.center();
         double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
