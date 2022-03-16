@@ -51,6 +51,14 @@ $$\frac{i \sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega (\gamma_n - i\omega)}$$
 
 which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, $\omega_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
 
+### How do I import n and k values into Meep?
+
+You can import into Meep any arbitrary complex permittivity profile via $n$ and $k$ values obtained via e.g. [ellipsometry](https://en.wikipedia.org/wiki/Ellipsometry) by fitting the wavelength- or frequency-dependent data to a sum of Lorentzian polarizability terms. In general, you have to use nonlinear optimization to perform the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. Unfortunately, the fitting process requires some trial and error to specify the number of fitting parameters and their initial values. For a demonstration, see this [script](../../python/examples/eps_fit_lorentzian.py).
+
+A wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented using the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation) can be directly [transferred to the Lorentz model using a simple substitution of variables](#sellmeier-coefficients).
+
+Note: Meep only does [subpixel averaging of the nondispersive part of $\varepsilon$ (and $\mu$)](Subpixel_Smoothing.md#what-about-dispersive-materials).
+
 ### Sellmeier Coefficients
 
 For a wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented via the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation):
