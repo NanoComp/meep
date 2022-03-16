@@ -9,7 +9,7 @@ This tutorial demonstrates the [mode-decomposition](../Mode_Decomposition.md) fe
 Reflectance of a Waveguide Taper
 --------------------------------
 
-This example involves computing the reflectance of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance, the fraction of the incident power which is reflected, using two different methods produces nearly identical results: (1) mode decomposition and (2) [Poynting flux](../Introduction.md#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92, 2008](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
+This example involves computing the reflectance of the fundamental mode of a linear waveguide taper. The structure and the simulation parameters are shown in the schematic below. We will verify that computing the reflectance, the fraction of the incident power which is reflected, using two different methods produces nearly identical results: (1) mode decomposition and (2) [Poynting flux](../Introduction.md#transmittancereflectance-spectra). Also, we will demonstrate that the scaling of the reflectance with the taper length is quadratic, consistent with analytical results from [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376).
 
 <center>
 ![](../images/waveguide-taper.png)
@@ -186,7 +186,10 @@ fcen = 0.5*(fmin+fmax)  # center frequency
 df = fmax-fmin          # frequency width
 
 src_pt = mp.Vector3(-0.5*sx+dpml+0.5*dsub,0,0)
-sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=src_pt, size=mp.Vector3(0,sy,0))]
+sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
+                     component=mp.Ez,
+                     center=src_pt,
+                     size=mp.Vector3(0,sy,0))]
 
 k_point = mp.Vector3(0,0,0)
 
@@ -204,7 +207,10 @@ sim = mp.Simulation(resolution=resolution,
 
 nfreq = 21
 mon_pt = mp.Vector3(0.5*sx-dpml-0.5*dpad,0,0)
-flux_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
+flux_mon = sim.add_flux(fcen,
+                        df,
+                        nfreq,
+                        mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
@@ -212,8 +218,12 @@ input_flux = mp.get_fluxes(flux_mon)
 
 sim.reset_meep()
 
-geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
-            mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
+geometry = [mp.Block(material=glass,
+                     size=mp.Vector3(dpml+dsub,mp.inf,mp.inf),
+                     center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+            mp.Block(material=glass,
+                     size=mp.Vector3(gh,gdc*gp,mp.inf),
+                     center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
 
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
@@ -223,7 +233,10 @@ sim = mp.Simulation(resolution=resolution,
                     sources=sources,
                     symmetries=symmetries)
 
-mode_mon = sim.add_flux(fcen, df, nfreq, mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
+mode_mon = sim.add_flux(fcen,
+                        df,
+                        nfreq,
+                        mp.FluxRegion(center=mon_pt, size=mp.Vector3(0,sy,0)))
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, mon_pt, 1e-9))
 
@@ -259,7 +272,7 @@ plt.pcolormesh(np.reshape(mode_wvl,(nmode,nfreq)),
                np.reshape(mode_angle,(nmode,nfreq)),
                np.reshape(mode_tran,(nmode,nfreq)),
                cmap='Blues',
-               shading='flat',
+               shading='nearest',
                vmin=0,
                vmax=tran_max)
 plt.axis([min(mode_wvl), max(mode_wvl), min(mode_angle), max(mode_angle)])
@@ -276,13 +289,13 @@ plt.show()
 
 Each diffraction order corresponds to a single angle. In the figure below, this angle is represented by the *lower* boundary of each labeled region. For example, the $m$=0 order has a diffraction angle of 0° at all wavelengths. The representation of the diffraction orders as finite angular regions is an artifact of matplotlib's [pcolormesh](https://matplotlib.org/api/_as_gen/matplotlib.pyplot.pcolormesh.html) routine. Note that only the positive diffraction orders are shown as these are equivalent to the negative orders due to the symmetry of the source and the structure.
 
-The diffraction orders/modes are a finite set of propagating planewaves. The wavevector $k_x$ of these modes can be computed analytically: for a frequency of $\omega$ (in $c=1$ units), these propagating modes are the **real** solutions of $\sqrt{(\omega^2 n^2 - (k_y+2\pi m/\Lambda)^2)}$ where $m$ is the diffraction order (an integer), $\Lambda$ is the periodicity of the grating, and $n$ is the refractive index of the propagating medium. In this example, $n=1$, $k_y=0$, and $\Lambda=10$ μm. Thus, at a wavelength of 0.5 μm there are a total of 20 diffraction orders of which we only computed the first 10. The wavevector $k_x$ is used to compute the angle of the diffraction order as $\cos^{-1}(k_x/(\omega n))$. Evanescent modes, those with an imaginary $k_x$, exist for $|m|>20$ but these modes carry no power. Note that currently Meep does not compute the number of propagating modes for you. If the mode number passed to `get_eigenmode_coefficients` is larger than the number of propagating modes at a given frequency/wavelength, MPB's Newton solver will fail to converge and will return zero for the mode coefficient. It is therefore a good idea to know beforehand the number of propagating modes.
+The diffraction orders/modes are a finite set of propagating planewaves. The wavevector $k_x$ of these modes can be computed analytically: for a frequency of $\omega$ (in $c=1$ units), these propagating modes are the **real** solutions of $\sqrt{(\omega^2 n^2 - (k_y+2\pi m/\Lambda)^2)}$ where $m$ is the diffraction order (an integer), $\Lambda$ is the periodicity of the grating, and $n$ is the refractive index of the propagating medium. In this example, $n=1$, $k_y=0$, and $\Lambda=10$ μm. Thus, at a wavelength of 0.5 μm there are a total of 20 diffraction orders of which we only computed the first 10. The wavevector $k_x$ is used to compute the angle of the diffraction order as $\cos^{-1}(k_x/(\omega n))$. (The angle can also be equivalently computed as $\sin^{-1}((k_y+2\pi m/\Lambda)/(\omega n))$.) Evanescent modes, those with an imaginary $k_x$, exist for $|m|>20$ but these modes carry no power. Note that currently Meep does not compute the number of propagating modes for you. If the mode number passed to `get_eigenmode_coefficients` is larger than the number of propagating modes at a given frequency/wavelength, MPB's Newton solver will fail to converge and will return zero for the mode coefficient. It is therefore a good idea to know beforehand the number of propagating modes.
 
 <center>
 ![](../images/grating_diffraction_spectra.png)
 </center>
 
-In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is $4/(m\pi)^2$ when the phase difference between the propagating distance in the glass relative to the same distance in air is $\pi$. The phase difference/contrast is $(2\pi/\lambda)(n-1)s$ where $\lambda$ is the wavelength, $n$ is the refractive index of the grating, and $s$ is the propagation distance in the grating (`gh` in the script). A special feature of the binary grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above at $\lambda=0.5$ μm. Note the wavelength dependence of the transmittance and, in particular, the slightly *non-zero* diffraction efficiency for the even orders at wavelengths other than 0.5 μm. Since the diffraction efficiency of the ninth order has already fallen to a negligible value (~0.005), computing the spectra of higher-order modes is unnecessary.
+In the limit where the grating periodicity is much larger than the wavelength and the size of the diffracting element (i.e., more than 10 times), as it is in this example, the [diffraction efficiency](https://en.wikipedia.org/wiki/Diffraction_efficiency) can be computed analytically using scalar theory. This is described in the OpenCourseWare [Optics course](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/) in the Lecture 16 (Gratings: Amplitude and Phase, Sinusoidal and Binary) [notes](https://ocw.mit.edu/courses/mechanical-engineering/2-71-optics-spring-2009/video-lectures/lecture-16-gratings-amplitude-and-phase-sinusoidal-and-binary/MIT2_71S09_lec16.pdf) and [video](https://www.youtube.com/watch?v=JmWguqCZRxk). For a review of scalar diffraction theory, see Chapter 3 ("Analysis of Two-Dimensional Signals and Systems") of [Introduction to Fourier Optics (fourth edition)](https://www.amazon.com/Introduction-Fourier-Optics-Joseph-Goodman-ebook/dp/B076TBP48F) by J.W. Goodman. From the scalar theory, the diffraction efficiency of the binary grating is $4/(m\pi)^2$ when the phase difference between the propagating distance in the glass relative to the same distance in air is $\pi$. The phase difference/contrast is $(2\pi/\lambda)(n-1)s$ where $\lambda$ is the wavelength, $n$ is the refractive index of the grating, and $s$ is the propagation distance in the grating (`gh` in the script). A special feature of the binary phase grating is that the diffraction efficiency is 0 for all *even* orders. This is verified by the diffraction spectrum shown above at $\lambda=0.5$ μm. Note the wavelength dependence of the transmittance and, in particular, the slightly *non-zero* diffraction efficiency for the even orders at wavelengths other than 0.5 μm. Since the diffraction efficiency of the ninth order has already fallen to a negligible value (~0.005), computing the spectra of higher-order modes is unnecessary.
 
 To convert the diffraction efficiency into transmittance in the $x$ direction (in order to be able to compare the scalar-theory results with those from Meep), the diffraction efficiency must be multiplied by the Fresnel transmittance from air to glass and by the cosine of the diffraction angle. We compare the analytic and simulated results at a wavelength of 0.5 μm for diffraction orders 1 (2.9°), 3 (8.6°), 5 (14.5°), and 7 (20.5°). The analytic results are 0.3886, 0.0427, 0.0151, and 0.0074. The Meep results are 0.3891, 0.04287, 0.0152, and 0.0076. This corresponds to relative errors of approximately 1.3%, 0.4%, 0.8%, and 2.1% which indicates good agreement.
 
@@ -337,7 +350,8 @@ tol = 1e-6             # CW solver tolerance
 max_iters = 2000       # CW solver max iterations
 L = 10                 # CW solver L
 
-# rotation angle of incident planewave; counter clockwise (CCW) about Z axis, 0 degrees along +X axis
+# rotation angle of incident planewave
+# counter clockwise (CCW) about Z axis, 0 degrees along +X axis
 theta_in = math.radians(10.7)
 
 # k (in source medium) with correct length (plane of incidence: XY)
@@ -384,8 +398,12 @@ input_flux_data = sim.get_flux_data(refl_flux)
 
 sim.reset_meep()
 
-geometry = [mp.Block(material=glass, size=mp.Vector3(dpml+dsub,mp.inf,mp.inf), center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
-            mp.Block(material=glass, size=mp.Vector3(gh,gdc*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
+geometry = [mp.Block(material=glass,
+                     size=mp.Vector3(dpml+dsub,mp.inf,mp.inf),
+                     center=mp.Vector3(-0.5*sx+0.5*(dpml+dsub),0,0)),
+            mp.Block(material=glass,
+                     size=mp.Vector3(gh,gdc*gp,mp.inf),
+                     center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,0,0))]
 
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
@@ -491,7 +509,7 @@ The first numerical column is the total reflectance, the second is the total tra
 
 ### Diffracted Planewaves in Homogeneous Media
 
-Rather than specify the diffracted planewave in homogeneous media using a band number (which is a property of the eigensolver), we can specify it directly using a `DiffractedPlanewave`. This is the only approach in 3d for specifying *non-degenerate* modes and is particularly useful when the incident planewave is oblique (since in this case the band number does not directly relate to the diffraction order, as demonstrated previously). As diffracted planewaves are generally not mirror symmetric, `DiffractedPlanewave` cannot take advantage of `symmetries` that bisect the monitor plane (which means that it can only be used with `add_mode_monitor` rather than `add_flux`). A `DiffractedPlanewave` object can be passed as the `bands` argument of `get_eigenmode_coefficients` (or the `band_num` argument of `get_eigenmode`) and its constructor has four arguments: (1) a list/tuple of integers for the diffraction order, (2) a `Vector3` for the axis which together with the planewave's wavevector defines the "plane of incidence", and complex amplitudes for the (3) $\mathcal{S}$ and (4) $\mathcal{P}$ polarizations (i.e., electric field perpendicular or parallel to the plane of incidence, respectively). `DiffractedPlanewave` only computes *non-evanescent* propagating modes (i.e., the component of the wavevector in the non-periodic direction is real valued). For evanescent modes, a warning will be displayed and `get_eigenmode_coefficients` will return an empty object.
+Rather than specify the diffracted planewave in homogeneous media using a band number (which is a property of the eigensolver), we can specify it directly using a [`DiffractedPlanewave`](../Python_User_Interface.md#diffractedplanewave). This is the only approach in 3d for specifying *non-degenerate* modes and is particularly useful when the incident planewave is oblique since in this case the band number does not directly relate to the diffraction order, as demonstrated previously. As diffracted planewaves are generally not mirror symmetric (because the grating itself is not symmetric or the planewave source is incident at an oblique angle), `DiffractedPlanewave` cannot take advantage of `symmetries` that bisect the monitor plane which means that it can only be used with `add_mode_monitor` rather than `add_flux`. A `DiffractedPlanewave` object can be passed as the `bands` argument of `get_eigenmode_coefficients` (or the `band_num` argument of `get_eigenmode`) and its constructor has four arguments: (1) a list/tuple of integers for the diffraction order, (2) a `Vector3` for the axis which together with the planewave's wavevector defines the "plane of incidence", and complex amplitudes for the (3) $\mathcal{S}$ and (4) $\mathcal{P}$ polarizations (i.e., electric field perpendicular or parallel to the plane of incidence, respectively). `DiffractedPlanewave` only computes *non-evanescent* propagating modes (i.e., the component of the wavevector in the non-periodic direction is real valued). For evanescent modes, a warning will be displayed and `get_eigenmode_coefficients` will return an empty object.
 
 As a demonstration, the [previous example](#reflectance-and-transmittance-spectra-for-planewave-at-oblique-incidence) involving a binary grating with an input planewave at oblique incidence is modified such that the transmitted diffraction orders are computed using two different methods: (1) MPB's eigensolver and (2) `DiffractedPlanewave`. This example verifies that (1) both methods compute the same set of diffracted modes (although the ordering is different when the source is oblique) and (2) that the total power in all the orders is equivalent to the Poynting flux.
 
@@ -735,9 +753,9 @@ See [Tutorials/Near to Far Field Spectra/Focusing Properties of a Metasurface Le
 Diffraction Spectrum of Liquid-Crystal Polarization Gratings
 ------------------------------------------------------------
 
-As a final demonstration of mode decomposition, we compute the diffraction spectrum of a [liquid-crystal](https://en.wikipedia.org/wiki/Liquid_crystal) polarization grating. These types of beam splitters use [birefringence](https://en.wikipedia.org/wiki/Birefringence) to produce diffraction orders which are [circularly polarized](https://en.wikipedia.org/wiki/Circular_polarization). We will investigate two kinds of polarization gratings: (1) a homogeneous [uniaxial](https://en.wikipedia.org/wiki/Birefringence#Uniaxial_materials) grating (commonly known as a circular-polarization grating), and (2) a [twisted-nematic](https://en.wikipedia.org/wiki/Liquid_crystal#Chiral_phases) bilayer grating as described in [Optics Letters, Vol. 33, No. 20, pp. 2287-9, 2008](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-33-20-2287) ([pdf](https://www.imagineoptix.com/cms/wp-content/uploads/2017/01/OL_08_Oh-broadband_PG.pdf)). The homogeneous uniaxial grating is just a special case of the twisted-nematic grating with a nematic [director](https://en.wikipedia.org/wiki/Liquid_crystal#Director) rotation angle of $\phi=0^{\circ}$.
+As a final demonstration of mode decomposition, we compute the diffraction spectrum of a [liquid-crystal](https://en.wikipedia.org/wiki/Liquid_crystal) polarization grating. These types of beam splitters use [birefringence](https://en.wikipedia.org/wiki/Birefringence) to produce diffraction orders which are [circularly polarized](https://en.wikipedia.org/wiki/Circular_polarization). We will investigate two kinds of polarization gratings: (1) a homogeneous [uniaxial](https://en.wikipedia.org/wiki/Birefringence#Uniaxial_materials) grating (commonly known as a circular-polarization grating), and (2) a [twisted-nematic](https://en.wikipedia.org/wiki/Liquid_crystal#Chiral_phases) bilayer grating as described in [Optics Letters, Vol. 33, No. 20, pp. 2287-9 (2008)](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-33-20-2287) ([pdf](https://www.imagineoptix.com/cms/wp-content/uploads/2017/01/OL_08_Oh-broadband_PG.pdf)). The homogeneous uniaxial grating is just a special case of the twisted-nematic grating with a nematic [director](https://en.wikipedia.org/wiki/Liquid_crystal#Director) rotation angle of $\phi=0^{\circ}$.
 
-A schematic of the grating geometry is shown below. The grating is a 2d slab in the $xy$-plane with two parameters: birefringence ($\Delta n$) and thickness ($d$). The twisted-nematic grating consists of two layers of thickness $d$ each with equal and opposite rotation angles of $\phi = 70^{\circ}$ for the nematic director. Both gratings contain only three diffraction orders: $m = 0, \pm 1$. The $m=0$ order is linearly polarized and the $m=\pm 1$ orders are circularly polarized with opposite chirality. For the uniaxial grating, the diffraction efficiencies for a mode with wavelength $\lambda$ can be computed analytically: $\eta_0 = \cos^2(\pi\Delta n d/\lambda)$, $\eta_{\pm 1} = 0.5\sin^2(\pi\Delta n d/\lambda)$. The derivation of these formulas is presented in [Optics Letters, Vol. 24, No. 9, pp. 584-6, 1999](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-24-9-584). We will verify these analytic results and also demonstrate that the twisted-nematic grating produces a broader bandwidth response for the ±1 orders than the homogeneous uniaxial grating. An important property of these polarization gratings for e.g. display applications is that for a circular-polarized input planewave and phase delay ($\Delta n d/\lambda$) of nearly 0.5, there is only a single diffraction order (+1 or -1) with *opposite* chiraity to that of the input. This is also demonstrated below.
+A schematic of the grating geometry is shown below. The grating is a 2d slab in the $xy$-plane with two parameters: birefringence ($\Delta n$) and thickness ($d$). The twisted-nematic grating consists of two layers of thickness $d$ each with equal and opposite rotation angles of $\phi = 70^{\circ}$ for the nematic director. Both gratings contain only three diffraction orders: $m = 0, \pm 1$. The $m=0$ order is linearly polarized and the $m=\pm 1$ orders are circularly polarized with opposite chirality. For the uniaxial grating, the diffraction efficiencies for a mode with wavelength $\lambda$ can be computed analytically: $\eta_0 = \cos^2(\pi\Delta n d/\lambda)$, $\eta_{\pm 1} = 0.5\sin^2(\pi\Delta n d/\lambda)$. The derivation of these formulas is presented in [Optics Letters, Vol. 24, No. 9, pp. 584-6 (1999)](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-24-9-584). We will verify these analytic results and also demonstrate that the twisted-nematic grating produces a broader bandwidth response for the ±1 orders than the homogeneous uniaxial grating. An important property of these polarization gratings for e.g. display applications is that for a circular-polarized input planewave and phase delay ($\Delta n d/\lambda$) of nearly 0.5, there is only a single diffraction order (+1 or -1) with *opposite* chiraity to that of the input. This is also demonstrated below.
 
 <center>
 ![](../images/polarization_grating_schematic.png)

@@ -4,10 +4,10 @@ import math
 import cmath
 import numpy as np
 
+
 class TestDiffractedPlanewave(unittest.TestCase):
 
   def run_binary_grating_diffraction(self, gp, gh, gdc, theta, bands, orders):
-
     resolution = 50        # pixels/um
 
     dpml = 1.0             # PML thickness
@@ -27,7 +27,8 @@ class TestDiffractedPlanewave(unittest.TestCase):
     ng = 1.5
     glass = mp.Medium(index=ng)
 
-    # rotation angle of incident planewave; counter clockwise (CCW) about Z axis, 0 degrees along +X axis
+    # rotation angle of incident planewave
+    # counter clockwise (CCW) about Z axis, 0 degrees along +X axis
     theta_in = math.radians(theta)
 
     eig_parity = mp.ODD_Z
@@ -62,10 +63,13 @@ class TestDiffractedPlanewave(unittest.TestCase):
                         symmetries=symmetries)
 
     tran_pt = mp.Vector3(0.5*sx-dpml,0,0)
-    tran_flux = sim.add_flux(fcen, 0, 1,
-                             mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
+    tran_flux = sim.add_flux(fcen,
+                             0,
+                             1,
+                             mp.FluxRegion(center=tran_pt,
+                                           size=mp.Vector3(0,sy,0)))
 
-    sim.run(until_after_sources=50)
+    sim.run(until_after_sources=10)
 
     input_flux = mp.get_fluxes(tran_flux)
 
@@ -86,8 +90,11 @@ class TestDiffractedPlanewave(unittest.TestCase):
                         sources=sources,
                         symmetries=symmetries)
 
-    tran_flux = sim.add_mode_monitor(fcen, 0, 1,
-                                     mp.FluxRegion(center=tran_pt, size=mp.Vector3(0,sy,0)))
+    tran_flux = sim.add_mode_monitor(fcen,
+                                     0,
+                                     1,
+                                     mp.FluxRegion(center=tran_pt,
+                                                   size=mp.Vector3(0,sy,0)))
 
     sim.run(until_after_sources=100)
 
@@ -101,7 +108,8 @@ class TestDiffractedPlanewave(unittest.TestCase):
       vg_ref = res.vgrp[0]
 
       res = sim.get_eigenmode_coefficients(tran_flux,
-                                           mp.DiffractedPlanewave((0,order,0),mp.Vector3(0,1,0),1,0))
+                                           mp.DiffractedPlanewave((0,order,0),
+                                                                  mp.Vector3(0,1,0),1,0))
       if res is not None:
         tran_dp = abs(res.alpha[0,0,0])**2/input_flux[0]
         if ((theta_in == 0) and (order == 0)):
@@ -111,7 +119,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
       vg_dp = res.vgrp[0]
 
       err = abs(tran_ref-tran_dp)/tran_ref
-      print("tran:, {} (band), {} (order), {:.8f} (eigensolver), {:.8f} (planewave), {:.8f} (error)".format(band,order,tran_ref,tran_dp,err))
+      print("tran:, {:2d} (band), {:2d} (order), {:10.8f} (eigensolver), {:10.8f} (planewave), {:10.8f} (error)".format(band,order,tran_ref,tran_dp,err))
 
       self.assertAlmostEqual(vg_ref,vg_dp,places=5)
       self.assertAlmostEqual(tran_ref,tran_dp,places=5)
@@ -119,8 +127,9 @@ class TestDiffractedPlanewave(unittest.TestCase):
   def test_diffracted_planewave(self):
     self.run_binary_grating_diffraction(2.6,0.4,0.6,0,range(1,6),range(0,5))
     self.run_binary_grating_diffraction(2.6,0.4,0.6,13.4,range(1,6),[-2,-1,-3,0,-4])
-    ## self.run_binary_grating_diffraction(10.0,0.5,0.5,0,[2,4,6],[1,3,5])
-    ## self.run_binary_grating_diffraction(10.0,0.5,0.5,10.7,[1,4,8],[-6,-4,-2])
+
+    # self.run_binary_grating_diffraction(10.0,0.5,0.5,0,[2,4,6],[1,3,5])
+    # self.run_binary_grating_diffraction(10.0,0.5,0.5,10.7,[1,4,8],[-6,-4,-2])
 
 if __name__ == '__main__':
   unittest.main()
