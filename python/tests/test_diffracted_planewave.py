@@ -109,7 +109,9 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
       res = sim.get_eigenmode_coefficients(tran_flux,
                                            mp.DiffractedPlanewave((0,order,0),
-                                                                  mp.Vector3(0,1,0),1,0))
+                                                                  mp.Vector3(0,1,0),
+                                                                  1,
+                                                                  0))
       if res is not None:
         tran_dp = abs(res.alpha[0,0,0])**2/input_flux[0]
         if ((theta_in == 0) and (order == 0)):
