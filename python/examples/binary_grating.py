@@ -95,7 +95,7 @@ plt.pcolormesh(np.reshape(mode_wvl,(nmode,nfreq)),
                np.reshape(mode_angle,(nmode,nfreq)),
                np.reshape(mode_tran,(nmode,nfreq)),
                cmap='Blues',
-               shading='flat',
+               shading='nearest',
                vmin=0,
                vmax=tran_max)
 plt.axis([min(mode_wvl), max(mode_wvl), min(mode_angle), max(mode_angle)])

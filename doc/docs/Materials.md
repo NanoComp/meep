@@ -275,4 +275,37 @@ In Scheme, the materials library is already included when Meep is run, so you ca
 (set! geometry (list (make cylinder (material Al) ...)))
 ```
 
+As a final example, we plot the complex refractive index of SiO$_2$ from the materials library over the visible wavelength range of 400 nm to 700 nm.
+
+```py
+from meep.materials import SiO2
+import numpy as np
+import matplotlib.pyplot as plt
+
+wvl_min = 0.4 # units of μm
+wvl_max = 0.7 # units of μm
+nwvls = 21
+wvls = np.linspace(wvl_min, wvl_max, nwvls)
+
+SiO2_epsilon = np.array([SiO2.epsilon(1/w)[0][0] for w in wvls])
+
+plt.subplot(1,2,1)
+plt.plot(wvls,np.real(SiO2_epsilon),'bo-')
+plt.xlabel('wavelength (μm)')
+plt.ylabel('real(ε)')
+
+plt.subplot(1,2,2)
+plt.plot(wvls,np.imag(SiO2_epsilon),'ro-')
+plt.xlabel('wavelength (μm)')
+plt.ylabel('imag(ε)')
+
+plt.suptitle('SiO$_2$ from Meep materials library')
+plt.subplots_adjust(wspace=0.4)
+plt.show()
+```
+
+<center>
+![SiO2 from the materials library](images/SiO2_materials_library.png)
+</center>
+
 **Note:** for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting accuracy) by removing from the material definitions those Lorentzian susceptibility terms which are far outside the spectral region of interest. In addition, when using the materials library the Courant parameter may need to be reduced to achieve meaningful results, see [Numerical Stability](Materials.md#numerical-stability).
