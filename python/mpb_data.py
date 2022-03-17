@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division
-
 import math
-
 import numpy as np
 import meep as mp
 from . import map_data

@@ -135,7 +135,7 @@ plt.show()
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
 
-This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition/Phase Map of a Subwavelength Binary Grating](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle, while keeping its height and periodicity fixed (1.8 and 0.3 μm), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The design wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an $E_z$-polarized planewave at normal incidence.
+This example demonstrates how to compute the far-field profile at the focal length of a metasurface lens. The lens design, which is also part of the tutorial, is based on a supercell of binary-grating unit cells. For a review of the binary-grating geometry as well as a demonstration of computing its phasemap, see [Tutorial/Mode Decomposition/Phase Map of a Subwavelength Binary Grating](Mode_Decomposition.md#phase-map-of-a-subwavelength-binary-grating). The far-field calculation of the lens contains two separate components: (1) compute the phasemap of the unit cell as a function of a single geometric parameter, the duty cycle (also referred to as the filling fraction), while keeping its height and periodicity fixed (1.8 μm and 0.3 μm, respectively), and (2) form the supercell lens by tuning the local phase of each of a variable number of unit cells according to the quadratic formula for planar wavefront focusing. The operating wavelength is 0.5 μm and the focal length is 0.2 mm. The input source is an $E_z$-polarized planewave at normal incidence.
 
 The simulation script is in [examples/metasurface_lens.py](https://github.com/NanoComp/meep/blob/master/python/examples/metasurface_lens.py). The notebook is [examples/metasurface_lens.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/metasurface_lens.ipynb).
 
@@ -145,6 +145,7 @@ The key to the script is the function `grating` with three geometric input argum
 import meep as mp
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 resolution = 50         # pixels/μm
 
@@ -690,56 +691,147 @@ The sharpness of the peaks directly corresponds to how [collimated](https://en.w
 
 In 3d, the procedure is very similar, but a little more effort is required to disentangle the two polarizations relative to the plane of incidence [the $(z,\mathbf{k})$ plane for each Fourier component $\mathbf{k}$]. For propagation in the $z$ direction, you would Fourier transform both $E_x$ and $E_y$ of the scattered field as a function of $\mathbf{k}=(k_x, k_y)$. For each $\mathbf{k}$, you decompose the corresponding $\mathbf{E}=(E_x, E_y)$ into the amplitude parallel to $\mathbf{k}$ [which gives the $\mathcal{P}$ polarization amplitude if you multiply by $\sec(\theta)$, where $\sin(\theta)=|\mathbf{k}|/(n\omega/c)$, $n$ is the refractive index of the ambient medium, and $\omega$ is the angular frequency; $\theta$ is the outgoing angle, where $\theta=0$ is normal] and perpendicular to $\mathbf{k}$ [which equals the $\mathcal{S}$ polarization amplitude].  Then square these amplitudes to get something proportional to power as above.  (Note that this analysis is the same even if the incident wave is at an oblique angle, although the **k** locations of the diffraction peaks will change.) Simulating large finite gratings is usually unnecessary since the accuracy improvements are negligible. For example, a 3d simulation of a finite grating with e.g. 100 periods by 100 periods which is computationally expensive would only provide a tiny correction of ~1% (on par with fabrication errors) compared to the infinite structure involving a single unit cell. A finite grating with a small number of periods (e.g., 5 or 10) exhibits weak diffractive effects and is therefore not considered a diffractive grating.
 
-Far-Field Profile of a Cavity
------------------------------
+Truncation Errors from a Non-Closed Near-Field Surface
+------------------------------------------------------
 
-For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb). The structure is shown at the bottom of the left image below.
+For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide (a structure introduced in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)) and demonstrate that these fields are *exactly* equivalent to the actual DFT fields at the same location. A schematic of the simulation setup generated using [`plot2D`](../Python_User_Interface.md#data-visualization) is shown below.
 
 ![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
 
-To set this up, we simply remove the last portion of [examples/holey-wvg-cavity.py](https://github.com/NanoComp/meep/blob/master/python/examples/holey-wvg-cavity.py), beginning right after the line:
+The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb).
 
 ```py
-sim.symmetries.append(mp.Mirror(mp.Y, phase=-1))
-sim.symmetries.append(mp.Mirror(mp.X, phase=-1))
-```
+import meep as mp
+import numpy as np
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 
-and insert the following lines:
 
-```py
-d1 = 0.2
+resolution = 20                    # pixels/μm
+
+fcen = 0.25                        # pulse center frequency
+df = 0.2                           # pulse width (in frequency)
+
+eps = 13                           # dielectric constant of waveguide
+w = 1.2                            # width of waveguide
+r = 0.36                           # radius of holes
+d = 1.4                            # defect spacing (ordinary spacing = 1)
+N = 3                              # number of holes on either side of defect
+
+dpad = 32                          # padding between last hole and PML edge
+dpml = 0.5/(fcen-0.5*df)           # PML thickness (> half the largest wavelength)
+sx = 2*(dpad+dpml+N) + d - 1       # size of cell in x direction
+
+d1 = 0.2                           # y-distance from waveguide edge to near2far surface
+d2 = 2.0                           # y-distance from near2far surface to far-field line
+sy = w + 2*(d1+d2+dpml)            # size of cell in y direction (perpendicular to wvg.)
+
+cell = mp.Vector3(sx,sy,0)
+
+geometry = [mp.Block(center=mp.Vector3(),
+                     size=mp.Vector3(mp.inf, w, mp.inf),
+                     material=mp.Medium(epsilon=eps))]
+
+for i in range(N):
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
+    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)))
+
+pml_layers = [mp.PML(dpml)]
+
+sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df),
+                     component=mp.Hz,
+                     center=mp.Vector3())]
+
+symmetries = [mp.Mirror(mp.X, phase=-1),
+              mp.Mirror(mp.Y, phase=-1)]
 
 sim = mp.Simulation(cell_size=cell,
                     geometry=geometry,
-                    sources=[sources],
+                    sources=sources,
                     symmetries=symmetries,
-                    boundary_layers=[pml_layers],
+                    boundary_layers=pml_layers,
                     resolution=resolution)
 
 nearfield = sim.add_near2far(
     fcen, 0, 1,
-    mp.Near2FarRegion(mp.Vector3(0, 0.5 * w + d1), size=mp.Vector3(2 * dpml - sx)),
-    mp.Near2FarRegion(mp.Vector3(-0.5 * sx + dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1), weight=-1.0),
-    mp.Near2FarRegion(mp.Vector3(0.5 * sx - dpml, 0.5 * w + 0.5 * d1), size=mp.Vector3(0, d1))
+    mp.Near2FarRegion(mp.Vector3(0, 0.5*w + d1),
+                      size=mp.Vector3(sx - 2*dpml)),
+    mp.Near2FarRegion(mp.Vector3(-0.5*sx + dpml, 0.5*w + 0.5*d1),
+                      size=mp.Vector3(0, d1),
+                      weight=-1.0),
+    mp.Near2FarRegion(mp.Vector3(0.5*sx - dpml, 0.5*w + 0.5*d1),
+                      size=mp.Vector3(0, d1)),
 )
+
+mon = sim.add_dft_fields(
+    [mp.Hz],
+    fcen,
+    0,
+    1,
+    center=mp.Vector3(0, 0.5*w + d1 + d2),
+    size=mp.Vector3(sx - 2*(dpad+dpml), 0)
+)
+
+sim.run(until_after_sources=mp.stop_when_dft_decayed())
+
+sim.plot2D()
+if mp.am_master():
+    plt.savefig(f'cavity_farfield_plot2D_dpad{dpad}_{d1}_{d2}.png',bbox_inches='tight',dpi=150)
+
+Hz_mon = sim.get_dft_array(mon, mp.Hz, 0)
+
+(x,y,z,w) = sim.get_array_metadata(dft_cell=mon)
+
+ff = []
+for xc in x:
+    ff_pt = sim.get_farfield(nearfield, mp.Vector3(xc,y[0]))
+    ff.append(ff_pt[5])
+ff = np.array(ff)
+
+if mp.am_master():
+    plt.figure()
+    plt.subplot(1,3,1)
+    plt.plot(x,np.real(Hz_mon),'bo-',label='DFT')
+    plt.plot(x,np.real(ff),'ro-',label='N2F')
+    plt.legend()
+    plt.xlabel('$x$ (μm)')
+    plt.ylabel('real(Hz)')
+
+    plt.subplot(1,3,2)
+    plt.plot(x,np.imag(Hz_mon),'bo-',label='DFT')
+    plt.plot(x,np.imag(ff),'ro-',label='N2F')
+    plt.legend()
+    plt.xlabel('$x$ (μm)')
+    plt.ylabel('imag(Hz)')
+
+    plt.subplot(1,3,3)
+    plt.plot(x,np.abs(Hz_mon),'bo-',label='DFT')
+    plt.plot(x,np.abs(ff),'ro-',label='N2F')
+    plt.legend()
+    plt.xlabel('$x$ (μm)')
+    plt.ylabel('|Hz|')
+
+    plt.suptitle(f'comparison of near2far and actual DFT fields\n dpad={dpad}, d1={d1}, d2={d2}')
+    plt.subplots_adjust(wspace=0.6)
+    plt.savefig(f'test_Hz_dft_vs_n2f_res{resolution}_dpad{dpad}_d1{d1}_d2{d2}.png',
+                bbox_inches='tight',
+                dpi=150)
 ```
 
-We are creating a "near" bounding surface, consisting of three separate regions surrounding the cavity, that captures *all* outgoing waves in the top-half of the cell. Note that the $x$-normal surface on the left has a `weight` of -1 corresponding to the direction of the *outward normal* vector relative to the $x$ direction so that the far-field spectra is correctly computed from the outgoing fields, similar to the flux and force features. The parameter `d1` is the distance between the edge of the waveguide and the bounding surface, as shown in the schematic above, and we will demonstrate that changing this parameter does not change the far-field spectra which we compute at a single frequency corresponding to the cavity mode.
+Because of the adjoining waveguides, the total structure is actually infinitely extended in the $x$ direction. It is therefore not possible in a finite simulation to define a *closed* near-field surface for capturing all outgoing waves in the top-half of the cell because (currently) the near-field surface cannot be extended into the PML.   The only workaround is to make the computational cell and hence the near-field surface sufficiently wide so that the truncation effect is negligible, ideally also fine-tuning the distance between the near-field surface and the waveguide mode as discussed below.
 
-We then time step the fields until they have sufficiently decayed away as the cell is surrounded by PMLs, and output the far-field spectra over a rectangular area that lies *outside* of the cell:
+A non-closed near-field surface introduces two types of errors from the truncation:
 
-```py
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Hz, mp.Vector3(0.12, -0.37), 1e-8))
+- If an *infinite* near-field surface is positioned adjacent to the guided mode, the equivalent currents on that surface do not radiate any fields simply because the guided mode is under the light cone. However, if the near-field surface is truncated to a finite length, the equivalent currents *do* radiate from the edges. This windowing/truncation is equivalent to "smearing out" guided modes in Fourier space (convolving with a sinc function) so that the currents have radiative Fourier components inside light cone.
+- If the finite/truncated near-field surface is moved farther away from the waveguide along the $y$ direction (`d1` parameter in the script), then the spurious radiation from the guided mode decreases exponentially fast. However, if the surface is moved too far away (i.e., `d1` $\gg \lambda$), then it will fail to capture more and more of the radiation from the cavity mode and this will make the results less accurate.
 
-d2 = 20
-h = 4
+A closed near-field surface will still disagree with a brute-force far-field calculation at a finite resolution, because of discretization errors (the near-to-far transform uses the analytical Green's function of the exact Maxwell equations, not the discretized Green's function), although these errors decrease with spatial resolution.  The biggest of these discretization effects is numerical dispersion (described in Chapter 4 of Taflove and Hagness, 2005), in which the phase velocity is slightly different between the exact and discretized equations. In consequence, a brute-force far-field calculation has phase errors that grow with the propagation distance (the `d2` parameter in the script).
 
-sim.output_farfields(nearfield, "spectra-{}-{}-{}".format(d1, d2, h), resolution,
-                     mp.Volume(mp.Vector3(0, (0.5 * w) + d2 + (0.5 * h)), size=mp.Vector3(sx - 2 * dpml, h)))
-```
+In this example, to demonstrate agreement between the far fields and DFT fields, there are two requirements: (1) the cell size in the $x$ direction via `dpad` needs to be sufficiently large in order to minimize the impact of the spurious radiation from the edge of the near-field surface and (2) the far-field region needs to be sufficiently close to the near-field surface to minimize discrepancies caused by numerical dispersion.
 
-The first item to note is that the far-field region is located *outside* of the cell, although in principle it can be located anywhere. The second is that the far-field spectra can be interpolated onto a spatial grid that has any given resolution but in this example we used the same resolution as the simulation. Note that the simulation itself used purely real fields but the output, given its analytical nature, contains complex fields. Finally, given that the far-field spectra is derived from the Fourier-transformed fields which includes an arbitrary constant factor, we should expect an overall scale and phase difference in the results obtained using the near-to-far-field feature with those from a corresponding simulation involving the full computational volume. The key point is that the results will be qualitatively but not quantitatively identical. The data will be written out to an HDF5 file having a filename prefix with the values of the three main parameters. This file will includes the far-field spectra for all six field components, including real and imaginary parts.
+![center|Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity.png)
 
-We run the above modified control file and in post-processing create an image of the real and imaginary parts of $H_z$ over the far-field region which is shown in insets (a) above. For comparison, we compute the steady-state fields using a larger cell that contains within it the far-field region. This involves a continuous source and complex fields. Results are shown in figure (b) above. The difference in the relative phases among any two points within each of the two field spectra is zero, which can be confirmed numerically. Also, as would be expected, it can be shown that increasing `d1` does not change the far-field spectra as long as the results are sufficiently converged. This indicates that discretization effects are irrelevant.
+When these two conditions are not met as in the example below involving a small `dpad` and large `d2`, the error from the finite truncation and numerical dispersion can be large and therefore result in a significant mismatch between the far fields computed using the near-to-far field transformation versus the actual DFT fields at the same location.
 
-In general, it is tricky to interpret the overall scale and phase of the far fields, because it is related to the scaling of the Fourier transforms of the near fields. It is simplest to use the `near2far` feature in situations where the overall scaling is irrelevant, e.g. when you are computing a ratio of fields in two simulations, or a fraction of the far field in some region, etcetera.
+![center|Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity_mismatch.png)

@@ -231,98 +231,57 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    def __init__(self, sim, volume, component, decimation_factor=0):
+    def __init__(self, sim, volume, component, yee_grid=False, decimation_factor=0):
         super().__init__(sim)
-        self.volume = volume
+        self.volume = sim._fit_volume_to_simulation(volume)
         self.component = component
+        self.yee_grid = yee_grid
         self.decimation_factor = decimation_factor
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
         self._monitor = self.sim.add_dft_fields(
-            [self.component],
-            self._frequencies,
-            where=self.volume,
-            yee_grid=False,
-            decimation_factor=self.decimation_factor,
-        )
+            [self.component], self._frequencies, where=self.volume, yee_grid=self.yee_grid, decimation_factor=self.decimation_factor)
         return self._monitor
 
     def place_adjoint_source(self, dJ):
         time_src = self._create_time_profile()
         sources = []
-        scale = self._adj_src_scale()
 
-        x_dim, y_dim, z_dim = len(self._dg.x), len(self._dg.y), len(self._dg.z)
+        mon_size = self.sim.fields.dft_monitor_size(self._monitor.swigobj, self.volume.swigobj, self.component)
+        dJ = dJ.astype(np.complex128)
+        if np.prod(mon_size)*self.num_freq != dJ.size and np.prod(mon_size)*self.num_freq**2 != dJ.size:
+            raise ValueError('The format of J is incorrect!')
 
-        if self.num_freq == 1:
-            amp = -dJ[0].copy().reshape(x_dim, y_dim, z_dim) * scale
-            if self.component in [mp.Hx, mp.Hy, mp.Hz]:
-                amp = -amp
-            for zi in range(z_dim):
-                for yi in range(y_dim):
-                    for xi in range(x_dim):
-                        if amp[xi, yi, zi] != 0:
-                            sources += [
-                                mp.Source(
-                                    time_src,
-                                    component=self.component,
-                                    amplitude=amp[xi, yi, zi],
-                                    center=mp.Vector3(self._dg.x[xi],
-                                                      self._dg.y[yi],
-                                                      self._dg.z[zi]),
-                                )
-                            ]
-        else:
-            '''The adjoint solver requires the objective function
-            to be scalar valued with regard to objective arguments
-            and position, but the function may be vector valued
-            with regard to frequency. In this case, the Jacobian
-            will be of the form [F,F,...] where F is the number of
-            frequencies. Because of linearity, we can sum across the
-            second frequency dimension to calculate a frequency
-            scale factor for each point (rather than a scale vector).
-            '''
-            dJ = np.sum(
-                dJ,
-                axis=1)  # sum along first dimension bc Jacobian is always diag
-            dJ_4d = np.array([
-                dJ[f].copy().reshape(x_dim, y_dim, z_dim)
-                for f in range(self.num_freq)
-            ])
-            if self.component in [mp.Hx, mp.Hy, mp.Hz]:
-                dJ_4d = -dJ_4d
-            for zi in range(z_dim):
-                for yi in range(y_dim):
-                    for xi in range(x_dim):
-                        '''We only need to add a current source if the
-                        jacobian is nonzero for all frequencies at
-                        that particular point. Otherwise, the fitting
-                        algorithm is going to fail.
-                        '''
-                        if not np.all((dJ_4d[:, xi, yi, zi] == 0)):
-                            final_scale = -dJ_4d[:, xi, yi, zi] * scale
-                            src = FilteredSource(
-                                time_src.frequency,
-                                self._frequencies,
-                                final_scale,
-                                self.sim.fields.dt,
-                            )
-                            sources += [
-                                mp.Source(
-                                    src,
-                                    component=self.component,
-                                    amplitude=1,
-                                    center=mp.Vector3(self._dg.x[xi],
-                                                      self._dg.y[yi],
-                                                      self._dg.z[zi]),
-                                )
-                            ]
+        # The objective function J is a vector. Each component corresponds to a frequency.
+        if np.prod(mon_size)*self.num_freq**2 == dJ.size and self.num_freq > 1:
+            dJ = np.sum(dJ,axis=1)
+        '''The adjoint solver requires the objective function
+        to be scalar valued with regard to objective arguments
+        and position, but the function may be vector valued
+        with regard to frequency. In this case, the Jacobian
+        will be of the form [F,F,...] where F is the number of
+        frequencies. Because of linearity, we can sum across the
+        second frequency dimension to calculate a frequency
+        scale factor for each point (rather than a scale vector).
+        '''
 
+        self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(self.volume.swigobj, self.component, self.sim.fields, dJ)
+
+        for fourier_data in self.all_fouriersrcdata:
+            amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
+            scale = amp_arr * self._adj_src_scale(include_resolution=False)
+            
+            if self.num_freq == 1:
+                sources += [mp.IndexedSource(time_src, fourier_data, scale[:,0])]
+            else:
+                src = FilteredSource(time_src.frequency,self._frequencies,scale,self.sim.fields.dt)
+                (num_basis, num_pts) = src.nodes.shape
+                for basis_i in range(num_basis):
+                    sources += [mp.IndexedSource(src.time_src_bf[basis_i], fourier_data, src.nodes[basis_i])]
         return sources
 
     def __call__(self):
-        self._dg = Grid(*self.sim.get_array_metadata(dft_cell=self._monitor))
         self._eval = np.array([
             self.sim.get_dft_array(self._monitor, self.component, i)
             for i in range(self.num_freq)
@@ -352,7 +311,7 @@ class Near2FarFields(ObjectiveQuantity):
         sources = []
         if dJ.ndim == 4:
             dJ = np.sum(dJ, axis=0)
-        dJ = dJ.flatten()
+
         farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
         far_pt0 = self.far_pts[0]
         far_pt_vec = py_v3_to_vec(
@@ -386,7 +345,6 @@ class Near2FarFields(ObjectiveQuantity):
                             src.nodes[basis_i],
                         )
                     ]
-
         return sources
 
     def __call__(self):

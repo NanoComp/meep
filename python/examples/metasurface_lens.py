@@ -4,6 +4,7 @@ import meep as mp
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 resolution = 50         # pixels/μm
 
 dpml = 1.0              # PML thickness

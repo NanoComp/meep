@@ -1072,8 +1072,8 @@ grid_volume grid_volume::split_at_fraction(bool side_high, int split_pt, int spl
 // Halve the grid_volume for symmetry exploitation...must contain icenter!
 grid_volume grid_volume::halve(direction d) const {
   grid_volume retval(*this);
-  // note that icenter-io is always even by construction of grid_volume::icenter
-  retval.set_num_direction(d, (icenter().in_direction(d) - io.in_direction(d)) / 2);
+  retval.set_num_direction(d, 1+(icenter().in_direction(d) - io.in_direction(d)) / 2);
+  retval.set_origin(d, icenter().in_direction(d)-2);
   return retval;
 }
 
@@ -1088,6 +1088,7 @@ void grid_volume::pad_self(direction d) {
   num_changed();
   shift_origin(d, -2);
 }
+
 
 ivec grid_volume::icenter() const {
   /* Find the center of the user's cell.  This will be used as the
