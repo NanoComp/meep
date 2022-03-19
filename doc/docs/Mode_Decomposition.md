@@ -8,7 +8,7 @@ Meep contains a feature to decompose arbitrary fields into a superposition of th
 
 The theory underlying mode decomposition is described in Chapter 31 ("Modal methods for Maxwell's equations") of [Optical Waveguide Theory](http://www.springer.com/us/book/9780412099502) by Snyder and Love.
 
-Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse directions $(y,z)$.   Let $\psi = (E_y,E_z,H_y,H_z)$ denote the tranverse components of the electric and magnetic fields.  For a given angular frequency $\omega$ we can solve for the eigenmodes of the structure: solutions of the form $\psi^\pm_n(y,z) e^{\pm i \beta_n x - i\omega t}$, where $\beta_n$ are the propagation constants of the right ($+$) and left ($-$) traveling modes.   (There are also evanescent modes with complex $\beta_n$ values, but we will focus mainly here on the propagating modes with real $\beta_n$.)
+Consider a waveguide with propagation axis along the $x$ direction and constant cross section in the transverse directions $(y,z)$.   Let $\psi = (E_y,E_z,H_y,H_z)$ denote the transverse components of the electric and magnetic fields.  For a given angular frequency $\omega$ we can solve for the eigenmodes of the structure: solutions of the form $\psi^\pm_n(y,z) e^{\pm i \beta_n x - i\omega t}$, where $\beta_n$ are the propagation constants of the right ($+$) and left ($-$) traveling modes.   (There are also evanescent modes with complex $\beta_n$ values, but we will focus mainly here on the propagating modes with real $\beta_n$.)
 
 Any *arbitrary* fields $\psi$, Fourier-transformed to a particular $\omega$, can be expressed in the basis of these eigenmodes:
 
@@ -212,7 +212,7 @@ where $S$ is a cross-section transverse to the direction of propagation and $\ha
 
 (There is some subtlety about the use of complex conjugation for orthogonality in the inner product above that arises for evanescent modes, which we don't consider here because Meep only computes coefficients of propagating modes.  The above definition has the nice property that $\langle \psi, \psi \rangle = 2 \int_S \Re[\mathbf{E}^* \times \mathbf{H}]\cdot \hat{\mathbf{n}} = 2P$ where $P$ is the Poynting flux.)
 
-Now consider a Meep calculation in which we have accumulated tranverse frequency-domain fields $\psi^{\text{meep}} = (\mathbf E^{\text{meep}}_\parallel, \mathbf H^{\text{meep}}_\parallel)$ on a `dft_flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane means that
+Now consider a Meep calculation in which we have accumulated transverse frequency-domain fields $\psi^{\text{meep}} = (\mathbf E^{\text{meep}}_\parallel, \mathbf H^{\text{meep}}_\parallel)$ on a `dft_flux` object located on a cross-sectional surface $S$. Invoking the eigenmode expansion and choosing the origin of the $x$ axis to be the position of the cross-sectional plane means that
 Meep fields take the form:
 
 $$

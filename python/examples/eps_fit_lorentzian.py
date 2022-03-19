@@ -4,6 +4,9 @@
 
 import nlopt
 import numpy as np
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
 import meep as mp
 
 
@@ -62,11 +65,11 @@ def lorentzfit(p0, x, y, alg=nlopt.LD_LBFGS, tol=1e-25, maxeval=10000):
     return popt, minf
 
 
-# format of input data is three columns: wavelength (nm), real(n), complex(n)
-# each column is separated by a comma
+# format of input data file is three comma-separated columns:
+# wavelength (nm), real(n), complex(n)
 mydata = np.genfromtxt('mymaterial.csv',delimiter=',')
 n = mydata[:,1] + 1j*mydata[:,2]
-eps_inf = 1.2 # should be > 1.0 for stability; choose this value such that np.amin(np.real(eps)) is ~1.0
+eps_inf = 1.1 # should be >= 1.0 for stability and chosen such that np.amin(np.real(eps)) is ~1.0
 eps = np.square(n) - eps_inf
 wl = mydata[:,0]
 wl_min = 399 # minimum wavelength (units of nm)
@@ -80,27 +83,63 @@ freqs_reduced = freqs[idx_start:idx_end]
 wl_reduced = wl[idx_start:idx_end]
 eps_reduced = eps[idx_start:idx_end]
 
+num_lorentzians = 2
 num_repeat = 30 # number of times to repeat local optimization with random initial values
-ps = np.zeros((num_repeat,3))
+ps = np.zeros((num_repeat,3*num_lorentzians))
 mins = np.zeros(num_repeat)
 for m in range(num_repeat):
-    # specify one Lorentzian polarizability term consisting of three parameters (σ_0, ω_0, γ_0)
+    # specify Lorentzian polarizability terms each consisting of three parameters (σ_0, ω_0, γ_0)
     # with random initial values
-    # note: for the case of no absorption, γ (third parameter) is zero
-    p_rand = [10**(np.random.random()), 10**(np.random.random()), 10**(np.random.random())]
+    # note: for the case of no absorption, set γ (every third parameter) to zero
+    p_rand = [10**(np.random.random()) for _ in range(3*num_lorentzians)]
     ps[m,:], mins[m] = lorentzfit(p_rand, freqs_reduced, eps_reduced, nlopt.LD_MMA, 1e-25, 50000)
     print(f"iteration{m}:, {ps[m,:]}, {mins[m]}")
 
 # find the best performing set of parameters
-idx_min = np.where(np.min(mins) == mins)
-print(f"optimal:, {ps[idx_min]}, {mins[idx_min]}")
+idx_opt = np.where(np.min(mins) == mins)
+print(f"optimal:, {ps[idx_opt]}, {mins[idx_opt]}")
 
-# define a Meep `Medium` class object with the fitting parameters
-mymaterial_eps_inf = eps_inf
-mymaterial_freq = ps[idx_min][1]
-mymaterial_gamma = ps[idx_min][2]
-mymaterial_sigma = ps[idx_min][0] / mymaterial_freq**2
-mymaterial = mp.Medium(epsilon=mymaterial_eps_inf,
-                       E_susceptibilities=[mp.LorentzianSusceptibility(frequency=mymaterial_freq,
-                                                                       gamma=mymaterial_gamma,
-                                                                       sigma=mymaterial_sigma)])
+
+# define a Meep `Medium` class object using the optimal fitting parameters
+E_susceptibilities = []
+
+for n in range(num_lorentzians):
+    mymaterial_freq = ps[idx_opt][0][3*n+1]
+    mymaterial_gamma = ps[idx_opt][0][3*n+2]
+
+    if mymaterial_freq == 0:
+        mymaterial_sigma = ps[idx_opt][0][3*n+0]
+        E_susceptibilities.append(mp.DrudeSusceptibility(frequency=1.0,
+                                                         gamma=mymaterial_gamma,
+                                                         sigma=mymaterial_sigma))
+    else:
+        mymaterial_sigma = ps[idx_opt][0][3*n+0] / mymaterial_freq**2
+        E_susceptibilities.append(mp.LorentzianSusceptibility(frequency=mymaterial_freq,
+                                                              gamma=mymaterial_gamma,
+                                                              sigma=mymaterial_sigma))
+
+mymaterial = mp.Medium(epsilon=eps_inf,
+                       E_susceptibilities=E_susceptibilities)
+
+
+# plot the fit and the actual data for comparison
+
+mymaterial_eps = [mymaterial.epsilon(f)[0][0] for f in freqs_reduced]
+
+plt.subplot(1,2,1)
+plt.plot(wl_reduced,np.real(eps_reduced),'bo-',label='actual')
+plt.plot(wl_reduced,np.real(mymaterial_eps),'ro-',label='fit')
+plt.xlabel('wavelength (nm)')
+plt.ylabel(r'real($\epsilon$)')
+plt.legend()
+
+plt.subplot(1,2,2)
+plt.plot(wl_reduced,np.imag(eps_reduced),'bo-',label='actual')
+plt.plot(wl_reduced,np.imag(mymaterial_eps),'ro-',label='fit')
+plt.xlabel('wavelength (nm)')
+plt.ylabel(r'imag($\epsilon$)')
+plt.legend()
+
+plt.suptitle('Comparison of Actual Material Data and Fit using Drude-Lorentzian Susceptibility')
+plt.subplots_adjust(wspace=0.3)
+plt.savefig('eps_fit_sample.png',dpi=150,bbox_inches='tight')
