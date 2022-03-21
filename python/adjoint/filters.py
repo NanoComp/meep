@@ -229,8 +229,8 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx = int(Lx * resolution) 
+    Ny = int(Ly * resolution) 
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
