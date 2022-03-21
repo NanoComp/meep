@@ -52,10 +52,10 @@ class DesignRegion(object):
         vol = sim._fit_volume_to_simulation(self.volume)
         # compute the gradient
         mp._get_gradient(grad,scalegrad,
-                            fields_a[0].swigobj,fields_a[1].swigobj,fields_a[2].swigobj,
-                            fields_f[0].swigobj,fields_f[1].swigobj,fields_f[2].swigobj,
-                         sim.gv,vol.swigobj,onp.array(frequencies),
-                         sim.geps,finite_difference_step)
+                        fields_a[0].swigobj,fields_a[1].swigobj,fields_a[2].swigobj,
+                        fields_f[0].swigobj,fields_f[1].swigobj,fields_f[2].swigobj,
+                        sim.gv,vol.swigobj,onp.array(frequencies),
+                        sim.geps,finite_difference_step)
         return onp.squeeze(grad).T
 
 def _check_if_cylindrical(sim):
@@ -125,8 +125,7 @@ def install_design_region_monitors(
             where=design_region.volume,
             yee_grid=True,
             decimation_factor=decimation_factor,
-            persist=True,
-            expand=True
+            persist=True
         ) for comp in _compute_components(simulation)
     ] for design_region in design_regions ]
     return design_region_monitors

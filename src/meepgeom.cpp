@@ -2943,10 +2943,9 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
                 v_local+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
                 adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
             /* more complicated case requires interpolation/restriction */
-            } else if (
-                      md->do_averaging ||                         /* account for subpixel smoothing     */
-                      !is_material_grid(md) ||                    /* account for edge effects of mg     */
-                     (md->medium_1.epsilon_offdiag.x.re != 0) ||  /* account for offdiagonal components */
+            } else if (md->do_averaging ||                         /* account for subpixel smoothing     */
+                     !is_material_grid(md) ||                      /* account for edge effects of mg     */
+                     (md->medium_1.epsilon_offdiag.x.re != 0) ||   /* account for offdiagonal components */
                      (md->medium_1.epsilon_offdiag.y.re != 0) ||
                      (md->medium_1.epsilon_offdiag.z.re != 0) ||
                      (md->medium_2.epsilon_offdiag.x.re != 0) ||

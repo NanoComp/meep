@@ -18,6 +18,9 @@ _FD_STEP = 1e-4
 # The tolerance for the adjoint and finite difference gradient comparison
 _TOL = 0.1 if mp.is_single_precision() else 0.025
 
+# We expect 3 design region monitor pointers (one for each field component)
+_NUM_DES_REG_MON = 3
+
 mp.verbosity(0)
 
 
@@ -151,6 +154,15 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(monitor_values.dtype, onp.complex128)
         self.assertEqual(monitor_values.shape,
                          (len(self.monitors), len(self.frequencies)))
+    
+    def test_dist_dft_pointers(self):
+        fwd_design_region_monitors = mpa.utils.install_design_region_monitors(
+            self.simulation,
+            self.design_regions,
+            self.frequencies,
+        )
+        self.assertEqual(len(fwd_design_region_monitors[0]),_NUM_DES_REG_MON)
+
 
 
 class WrapperTest(ApproxComparisonTestCase):
