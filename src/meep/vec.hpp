@@ -53,7 +53,7 @@ enum component {
   Permeability,
   NO_COMPONENT
 };
-#define Centered Dielectric // better name for centered "dielectric" grid
+const component Centered = Dielectric; // better name for centered "dielectric" grid
 enum derived_component {
   Sx = 100,
   Sy,
@@ -1095,6 +1095,7 @@ public:
   }
 
   ivec little_owned_corner(component c) const;
+  ivec big_owned_corner(component c) const { return big_corner() - iyee_shift(c); }
   bool owns(const ivec &) const;
   volume surroundings() const;
   volume interior() const;
@@ -1212,12 +1213,12 @@ public:
   void operator=(const symmetry &);
   bool operator==(const symmetry &) const;
   bool operator!=(const symmetry &S) const { return !(*this == S); };
+  ivec i_symmetry_point;
 
 private:
   signed_direction S[5];
   std::complex<double> ph;
   vec symmetry_point;
-  ivec i_symmetry_point;
   int g; // g is the multiplicity of the symmetry.
   symmetry *next;
   friend symmetry r_to_minus_r_symmetry(double m);

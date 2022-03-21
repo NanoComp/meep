@@ -186,8 +186,6 @@ std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &
     // Before padding, find the corresponding geometric grid_volume.
     v = gv.surroundings();
     // Pad the little cell in any direction that we've shrunk:
-    for (int d = 0; d < 3; d++)
-      if (break_this[d]) gv = gv.pad((direction)d);
   }
 
   int proc_id = 0;
@@ -517,13 +515,17 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   if (dx <= 0.0) return;
   grid_volume pml_volume = gv;
   pml_volume.set_num_direction(d, int(dx * user_volume.a + 1 + 0.5)); // FIXME: exact value?
-  if (b == High)
+  const int v_to_user_shift =
+      (gv.big_corner().in_direction(d) - user_volume.big_corner().in_direction(d)) / 2;
+  if (b == Low){
+    pml_volume.set_origin(d, user_volume.little_corner().in_direction(d));
+  }
+      
+  if (b == High){
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d) -
                                  pml_volume.num_direction(d) * 2);
-  const int v_to_user_shift =
-      (user_volume.little_corner().in_direction(d) - gv.little_corner().in_direction(d)) / 2;
-  if (b == Low && v_to_user_shift != 0)
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
+  }
   add_to_effort_volumes(pml_volume, 0.60); // FIXME: manual value for pml effort
 }
 

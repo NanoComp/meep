@@ -87,40 +87,40 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size,
-             resolution,
-             geometry=None,
-             sources=None,
-             eps_averaging=True,
-             dimensions=3,
-             boundary_layers=None,
-             symmetries=None,
-             force_complex_fields=False,
-             default_material=Medium(),
-             m=0,
-             k_point=False,
-             kz_2d='complex',
-             extra_materials=None,
-             material_function=None,
-             epsilon_func=None,
-             epsilon_input_file='',
-             progress_interval=4,
-             subpixel_tol=0.0001,
-             subpixel_maxeval=100000,
-             loop_tile_base_db=0,
-             loop_tile_base_eh=0,
-             ensure_periodicity=True,
-             num_chunks=0,
-             Courant=0.5,
-             accurate_fields_near_cylorigin=False,
-             filename_prefix=None,
-             output_volume=None,
-             output_single_precision=False,
-             geometry_center=Vector3<0.0, 0.0, 0.0>,
-             force_all_components=False,
-             split_chunks_evenly=True,
+             cell_size:Union[meep.geom.Vector3, Tuple[float, ...], NoneType]=None,
+             resolution:float=None,
+             geometry:Union[List[meep.geom.GeometricObject], NoneType]=None,
+             sources:Union[List[meep.source.Source], NoneType]=None,
+             eps_averaging:bool=True,
+             dimensions:int=3,
+             boundary_layers:Union[List[meep.simulation.PML], NoneType]=None,
+             symmetries:Union[List[meep.simulation.Symmetry], NoneType]=None,
+             force_complex_fields:bool=False,
+             default_material:meep.geom.Medium=Medium(),
+             m:float=0,
+             k_point:Union[meep.geom.Vector3, Tuple[float, ...], bool]=False,
+             kz_2d:str='complex',
+             extra_materials:Union[List[meep.geom.Medium], NoneType]=None,
+             material_function:Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium], NoneType]=None,
+             epsilon_func:Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float], NoneType]=None,
+             epsilon_input_file:str='',
+             progress_interval:float=4,
+             subpixel_tol:float=0.0001,
+             subpixel_maxeval:int=100000,
+             loop_tile_base_db:int=0,
+             loop_tile_base_eh:int=0,
+             ensure_periodicity:bool=True,
+             num_chunks:int=0,
+             Courant:float=0.5,
+             accurate_fields_near_cylorigin:bool=False,
+             filename_prefix:Union[str, NoneType]=None,
+             output_volume:Union[meep.simulation.Volume, NoneType]=None,
+             output_single_precision:bool=False,
+             geometry_center:Union[meep.geom.Vector3, Tuple[float, ...]]=Vector3<0.0, 0.0, 0.0>,
+             force_all_components:bool=False,
+             split_chunks_evenly:bool=True,
              chunk_layout=None,
-             collect_stats=False):
+             collect_stats:bool=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -152,7 +152,7 @@ Python. `Vector3` is a `meep` class.
 
 + **`boundary_layers` [ list of `PML` class ]** — Specifies the
   [PML](Perfectly_Matched_Layer.md) absorbing boundary layers to use. Defaults to
-  none.
+  none (empty list).
 
 + **`cell_size` [ `Vector3` ]** — Specifies the size of the cell which is centered
   on the origin of the coordinate system. Any sizes of 0 imply a
@@ -1228,7 +1228,7 @@ values currently there) from an HDF5 file of the given `filename` without the
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_flux` in a simulation of the same
 dimensions (for both the cell and the flux regions) with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -1286,7 +1286,8 @@ def load_flux_data(self, flux, fdata):
 Load the Fourier-transformed fields into the given flux object (replacing any
 values currently there) from the `FluxData` object `fdata`. You must load from an
 object that was created by `get_flux_data` in a simulation of the same dimensions
-(for both the cell and the flux regions) with the same number of processors.
+(for both the cell and the flux regions) with the same number of processors and
+chunk layout.
 
 </div>
 
@@ -1479,7 +1480,7 @@ def __init__(self, g=None, axis=None, s=None, p=None):
 
 Construct a `DiffractedPlanewave`.
 
-+ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
++ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
 + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
@@ -1693,7 +1694,7 @@ values currently there) from an HDF5 file of the given `filename` without the
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_energy` in a simulation of the same
 dimensions for both the cell and the energy regions with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -1861,7 +1862,7 @@ values currently there) from an HDF5 file of the given `filename` without the
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_force` in a simulation of the same
 dimensions for both the cell and the force regions with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -1920,7 +1921,8 @@ def load_force_data(self, force, fdata):
 Load the Fourier-transformed fields into the given force object (replacing any
 values currently there) from the `ForceData` object `fdata`. You must load from an
 object that was created by `get_force_data` in a simulation of the same dimensions
-(for both the cell and the flux regions) with the same number of processors.
+(for both the cell and the flux regions) with the same number of processors and
+chunk layout.
 
 </div>
 
@@ -2012,9 +2014,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Python_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d, 3d, or cylindrical region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
-This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
-
-Note: in order for the far-field results to be accurate, the [far region must be separated from the near region](https://en.wikipedia.org/wiki/Near_and_far_field) by *at least* $2D^2/\lambda$, the Fraunhofer distance, where $D$ is the largest dimension of the radiator and $\lambda$ is the vacuum wavelength.
+This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Since the "far" fields are computed using the full Green's functions, they should be able to be computed *anywhere* outside of the near-field surface monitor. The only limiting factor should be discretization errors but for any given distannce, the "far" fields should converge to the actual DFT fields at that location with resolution (assuming the distance separation is >> resolution).
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use this `Simulation` method:
 
@@ -2195,7 +2195,7 @@ any values currently there) from an HDF5 file of the given `filename` without th
 `.h5` suffix (the current filename-prefix is prepended automatically). You must
 load from a file that was saved by `save_near2far` in a simulation of *the same
 dimensions* for both the cell and the near2far regions with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 
@@ -2256,7 +2256,7 @@ Load the Fourier-transformed fields into the `near2far` object (replacing any
 values currently there) from the `NearToFarData` object `n2fdata`. You must load
 from an object that was created by `get_near2far_data` in a simulation of the same
 dimensions (for both the cell and the flux regions) with the same number of
-processors.
+processors and chunk layout.
 
 </div>
 

@@ -1,5 +1,3 @@
-from __future__ import division, print_function
-
 import glob
 import math
 import os
@@ -1421,6 +1419,62 @@ class TestModeSolver(unittest.TestCase):
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
+    def test_symmetry_overlap(self):
+        ms = mpb.ModeSolver(
+            num_bands=6,
+            k_points         = [mp.Vector3(0.5, 0.5, 0.5),],
+            geometry         = [mp.Sphere(0.25, material=mp.Medium(epsilon=13))],
+            geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1, 1)),
+            resolution       = 32,
+            filename_prefix  = self.filename_prefix,
+            deterministic    = True,
+            tolerance        = 1e-12
+        )
+        ms.run()
+
+        # inversion symmetry
+        Wi = mp.Matrix([-1,0,0], [0,-1,0], [0,0,-1])
+        w = mp.Vector3(0,0,0)
+        symeigs = ms.compute_symmetries(Wi, w) 
+        symeigs_expected = [1,1,1,-1,-1,-1]
+        for i in range(0,5):
+            self.assertAlmostEqual(symeigs[i].real, symeigs_expected[i], places=3)
+            self.assertAlmostEqual(symeigs[i].imag, 0, places=3)
+        
+        # check that transformed_overlap agrees when called manually, with a
+        # "preloaded" bfield
+        for i in range(0,5):
+            ms.get_bfield(i+1, bloch_phase=False)
+            symeig_bfield = ms.transformed_overlap(Wi, w)
+            self.assertAlmostEqual(symeigs[i].real, symeig_bfield.real, places=3)
+            self.assertAlmostEqual(symeigs[i].imag, symeig_bfield.imag, places=3)
+
+            ms.get_dfield(i+1, bloch_phase=False)
+            symeig_dfield = ms.transformed_overlap(Wi, w)
+            self.assertAlmostEqual(symeigs[i].real, symeig_dfield.real, places=3)
+            self.assertAlmostEqual(symeigs[i].imag, symeig_dfield.imag, places=3)
+
+        # 2-fold symmetry (across MPI xy-transposition dimensions)
+        W2 = mp.Matrix([-1,0,0], [0,1,0], [0,0,-1])
+        symeigs = ms.compute_symmetries(W2, w)
+        self.assertAlmostEqual(sum(symeigs[0:3]), -1+0j, places=3)
+        self.assertAlmostEqual(sum(symeigs[3:6]), -1+0j, places=3)
+
+        # mirror symmetry: compare with run_zeven & run_zodd 
+        ms.k_points = [mp.Vector3(0,0,0)] # must be at Γ cf. https://github.com/NanoComp/mpb/issues/114
+        Wz = mp.Matrix([1,0,0], [0,1,0], [0,0,-1])
+
+        ms.run_zeven()
+        symeigs_zeven = ms.compute_symmetries(Wz, w)
+        for i in range(0,5):
+            self.assertAlmostEqual(symeigs_zeven[i].real, 1, places=3)
+            self.assertAlmostEqual(symeigs_zeven[i].imag, 0, places=3)
+
+        ms.run_zodd()
+        symeigs_zodd = ms.compute_symmetries(Wz, w)
+        for i in range(0,5):
+            self.assertAlmostEqual(symeigs_zodd[i].real, -1, places=3)
+            self.assertAlmostEqual(symeigs_zodd[i].imag,  0, places=3)
 
 if __name__ == '__main__':
     unittest.main()

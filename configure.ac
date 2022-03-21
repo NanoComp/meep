@@ -147,14 +147,6 @@ fi
 
 LT_INIT
 
-AC_CHECK_PROG(LATEX2HTML, latex2html, latex2html)
-if test -z "$LATEX2HTML"; then
-    AC_MSG_WARN([Cannot find latex2html in your path!])
-    # FIXME: use standard 'missing' script from automake
-    LATEX2HTML='echo not running latex2html...'
-fi
-AC_SUBST(LATEX2HTML)
-
 AC_CHECK_LIB(m, sin)
 
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],

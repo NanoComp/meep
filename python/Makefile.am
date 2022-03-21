@@ -6,15 +6,15 @@ TEST_DIR = tests
 # material_dispersion.py test must be excluded from test suite for MPI build
 if WITH_MPI
   MDPYTEST=
-  MPBPYTEST=
 else
   MDPYTEST=$(TEST_DIR)/test_material_dispersion.py
+endif # WITH_MPI
+
 if WITH_MPB
   MPBPYTEST=$(TEST_DIR)/test_mpb.py
 else
   MPBPYTEST=
 endif # WITH_MPB
-endif # WITH_MPI
 
 if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/test_binary_grating.py
@@ -73,6 +73,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_ldos.py                   \
     $(MDPYTEST)                                \
     $(TEST_DIR)/test_material_grid.py          \
+    $(TEST_DIR)/test_materials_library.py      \
     $(TEST_DIR)/test_medium_evaluations.py     \
     $(MPBPYTEST)                               \
     $(MODE_COEFFS_TEST)                        \
@@ -95,7 +96,7 @@ TESTS =                                        \
     $(WVG_SRC_TEST)
 
 if WITH_COVERAGE
-  PY_LOG_COMPILER = coverage run -a --source=$(top_srcdir)/python/meep --omit=$(top_srcdir)/python/tests/*,$(top_srcdir)/python/examples/*,$(top_srcdir)/python/meep/materials.py
+  PY_LOG_COMPILER = coverage run -p --source=$(top_srcdir)/python/meep --omit=$(top_srcdir)/python/tests/*,$(top_srcdir)/python/examples/*,$(top_srcdir)/python/meep/materials.py
 else
   PY_LOG_COMPILER = $(RUNCODE) $(PYTHON)
 endif
