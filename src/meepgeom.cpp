@@ -1326,6 +1326,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   if (maxeval == 0){
     get_material_pt(mat, v.center());
     if (is_material_grid(mat)){
+      master_printf("point: %f %f \n",v.center().x(),v.center().y());
       //boolean inobject;
       //mat =
       //(material_type)material_of_unshifted_point_in_tree_inobject(vec_to_vector3(v.center()), restricted_tree, &inobject);
@@ -1352,7 +1353,10 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     }
   }
 
-  /* check for trivial case of only one object/material
+  /* ------------------------------------------- */
+  // One material
+  /* ------------------------------------------- */
+  /* check for case of only one object/material
    in the case of the material grid, make sure we don't need
    to do any interface averaging within.
    */
@@ -1409,7 +1413,10 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     } else {
       goto trivial;
     }
-  } else { // Two different materials (perhaps a m.g. and a geom object)
+  /* ------------------------------------------- */
+  // Two different materials (perhaps a m.g. and a geom object)
+  /* ------------------------------------------- */
+  } else {
     
     vector3 normal_re = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
     if (normal_re.x == 0 && normal_re.y == 0 && normal_re.z == 0)
@@ -1435,8 +1442,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
       Specifically, we need to include the effects of u_i
       in the dual part of the material tensor */
     if (is_material_grid(mat)){
-      int oi;
-      geom_box_tree tp = geom_tree_search(p_mat, restricted_tree, &oi);
+      tp = geom_tree_search(p_mat, restricted_tree, &oi);
       duals::duald uval = matgrid_val(p_mat, tp, oi, mat);
       dual_interpolate_mat(mat,meps,uval);
       sym_matrix_invert(chi1inv_matrix, &meps);    
@@ -1444,8 +1450,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
       material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
     }
     if (is_material_grid(mat_behind)){
-      int oi;
-      geom_box_tree tp = geom_tree_search(p_mat_behind, restricted_tree, &oi);
+      tp = geom_tree_search(p_mat_behind, restricted_tree, &oi);
       duals::duald uval = matgrid_val(p_mat_behind, tp, oi, mat);
       dual_interpolate_mat(mat_behind,eps2,uval);
       sym_matrix_invert(&epsinv2, &eps2); // not really needed
@@ -1458,6 +1463,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
 
   kottke_algorithm(c,chi1inv_matrix,meps,eps2,normal,fill);
+  material_gc(mat);
 }
 
 static int eps_ever_negative = 0;
