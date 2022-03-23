@@ -29,8 +29,7 @@ eig_parity = mp.EVEN_Y + mp.ODD_Z
 
 design_region_size = mp.Vector3(1.5,1.5)
 design_region_resolution = int(2*resolution)
-Nx = int(design_region_resolution*design_region_size.x) + 1
-Ny = int(design_region_resolution*design_region_size.y) + 1
+Nx, Ny = mpa.compute_mg_dims(design_region_size.x,design_region_size.y,design_region_resolution)
 
 ## ensure reproducible results
 rng = np.random.RandomState(9861548)

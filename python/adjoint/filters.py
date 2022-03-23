@@ -7,6 +7,19 @@ from autograd import numpy as npa
 import meep as mp
 from scipy import special
 
+def compute_mg_dims(Lx,Ly,resolution):
+    '''Compute the material grid dimensions from
+    the corresponding resolution, x-size, and y-size.
+    The grid dimensions must be odd.    
+    '''
+    Nx = int(Lx * resolution)
+    Ny = int(Ly * resolution)
+    if (Nx % 2) == 0:
+        Nx += 1
+    if (Ny % 2) == 0:
+        Ny += 1
+    return Nx, Ny
+
 
 def _centered(arr, newshape):
     '''Helper function that reformats the padded array of the fft filter operation.
@@ -98,8 +111,7 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
         The output of the 2d convolution.
     """
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx, Ny = compute_mg_dims(Lx,Ly,resolution)
     (kx, ky) = kernel.shape
 
     # Adjust parameter space shape for symmetries
@@ -179,8 +191,7 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx, Ny = compute_mg_dims(Lx,Ly,resolution)
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
@@ -189,7 +200,7 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
                          indexing='ij')
 
     # Calculate kernel
-    kernel = np.where(np.abs(xv**2 + yv**2) <= radius**2, 1, 0).T
+    kernel = np.where(np.abs(xv**2 + yv**2) <= radius**2, 1, 0)
 
     # Normalize kernel
     kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
@@ -229,8 +240,7 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx, Ny = compute_mg_dims(Lx,Ly,resolution)
 
     # Formulate grid over entire design region
     xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
@@ -279,8 +289,7 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
     # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx, Ny = compute_mg_dims(Lx,Ly,resolution)
 
     gaussian = lambda x, sigma: np.exp(-x**2 / sigma**2)
 
