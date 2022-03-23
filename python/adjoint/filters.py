@@ -135,8 +135,8 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
     # Convolution (multiplication in frequency domain)
     Y = H * X
 
-    # We need to fftshift since we padded both sides if each dimension of our input and kernel.
-    y = npa.fft.fftshift(npa.real(npa.fft.ifft2(Y)))
+    # We need to fftshift since we padded both sides of each dimension of our input and kernel.
+    y = npa.fft.ifftshift(npa.real(npa.fft.ifft2(Y)))
 
     # Remove all the extra padding
     y = _centered(y, (kx, ky))
