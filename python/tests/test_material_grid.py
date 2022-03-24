@@ -1,4 +1,8 @@
 import meep as mp
+try:
+    import meep.adjoint as mpa
+except:
+    import adjoint as mpa
 import numpy as np
 from scipy.ndimage import gaussian_filter
 import unittest
@@ -14,8 +18,7 @@ def compute_transmittance(matgrid_symmetry=False):
         matgrid_size = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
 
-        Nx = int(matgrid_resolution*matgrid_size.x) + 1
-        Ny = int(matgrid_resolution*matgrid_size.y) + 1
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
 
         # ensure reproducible results
         rng = np.random.RandomState(2069588)
@@ -90,8 +93,7 @@ def compute_resonant_mode(res,default_mat=False):
 
         # for a fixed resolution, compute the number of grid points
         # necessary which are defined on the corners of the voxels
-        Nx = int(matgrid_resolution*matgrid_size.x) + 1
-        Ny = int(matgrid_resolution*matgrid_size.y) + 1
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
 
         x = np.linspace(-0.5*matgrid_size.x,0.5*matgrid_size.x,Nx)
         y = np.linspace(-0.5*matgrid_size.y,0.5*matgrid_size.y,Ny)
