@@ -18,7 +18,7 @@ def compute_transmittance(matgrid_symmetry=False):
         matgrid_size = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
 
-        Nx, Ny = mpa.compute_mg_dims(matgrid_size.x,matgrid_size.y,matgrid_resolution)
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
 
         # ensure reproducible results
         rng = np.random.RandomState(2069588)
@@ -93,7 +93,7 @@ def compute_resonant_mode(res,default_mat=False):
 
         # for a fixed resolution, compute the number of grid points
         # necessary which are defined on the corners of the voxels
-        Nx, Ny = mpa.compute_mg_dims(matgrid_size.x,matgrid_size.y,matgrid_resolution)
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
 
         x = np.linspace(-0.5*matgrid_size.x,0.5*matgrid_size.x,Nx)
         y = np.linspace(-0.5*matgrid_size.y,0.5*matgrid_size.y,Ny)

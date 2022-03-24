@@ -69,7 +69,7 @@ def build_straight_wg_simulation(
             center=[sx / 2 - pml_width - source_to_pml, 0, 0],
         ),
     ]
-    nx, ny = mpa.compute_mg_dims(design_region_shape[0],design_region_shape[1],design_region_resolution)
+    nx, ny = int(design_region_shape[0]*design_region_resolution), int(design_region_shape[1]*design_region_resolution)
     mat_grid = mp.MaterialGrid(
         mp.Vector3(nx, ny),
         sio2,

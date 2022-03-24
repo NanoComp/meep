@@ -16,7 +16,7 @@ class TestGetEpsilonGrid(unittest.TestCase):
 
         matgrid_resolution = 200
         matgrid_size = mp.Vector3(1.0,1.0,mp.inf)
-        Nx, Ny = mpa.compute_mg_dims(matgrid_size.x,matgrid_size.y,matgrid_resolution)
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
         x = np.linspace(-0.5*matgrid_size.x,0.5*matgrid_size.x,Nx)
         y = np.linspace(-0.5*matgrid_size.y,0.5*matgrid_size.y,Ny)
         xv, yv = np.meshgrid(x,y)
