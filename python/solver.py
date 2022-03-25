@@ -620,11 +620,14 @@ class ModeSolver(object):
             output_k = [0, 0, 0]
 
         if curfield_type in 'dhbecv':
-            self._output_vector_field(curfield_type, fname_prefix, output_k, component)
+            if mp.am_master():
+                self._output_vector_field(curfield_type, fname_prefix, output_k, component)
         elif curfield_type == 'C':
-            self._output_complex_scalar_field(fname_prefix, output_k)
+            if mp.am_master():
+                self._output_complex_scalar_field(fname_prefix, output_k)
         elif curfield_type in 'DHBnmR':
-            self._output_scalar_field(curfield_type, fname_prefix)
+            if mp.am_master():
+                self._output_scalar_field(curfield_type, fname_prefix)
         else:
             raise ValueError("Unkown field type: {}".format(curfield_type))
 
