@@ -24,7 +24,7 @@ class TestModeSolver(unittest.TestCase):
     def setUp(self):
         self.start = time.time()
 
-        self.filename_prefix = os.path.join(self.temp_dir, self.id().split('.')[-1])
+        self.filename_prefix = os.path.join(self.temp_dir, self.id().split('.')[-1] + '-' + str(mp.my_rank()))
         print()
         print(self.filename_prefix)
         print('=' * 24)
