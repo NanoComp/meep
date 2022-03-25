@@ -4514,6 +4514,48 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     return _stop
 
 
+def stop_when_energy_decayed(dt=None, decay_by=None):
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+    or `until_after_sources` parameter, that examines the electric energy over the entire
+    cell volume and keeps running until its absolute value has decayed by at least `decay_by`
+    from its maximum previous value. In particular, it keeps incrementing the run time by `dt`
+    (in Meep units) and checks the maximum value over that time period &mdash.
+
+    Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
+    property of your source(s), to decrease the amplitude of the small high-frequency
+    field components that are excited when the source turns off. High frequencies near the
+    [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
+    slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+    """
+    if (dt is None) or (decay_by is None):
+        raise ValueError("dt and decay_by are all required.")
+
+    closure = {
+        'max_abs': 0,
+        'cur_max': 0,
+        't0': 0,
+    }
+
+    def _stop(sim):
+        cell_volume = mp.Volume(center=sim.geometry_center, size=sim.cell_size)
+        fabs = abs(sim.electric_energy_in_box(box=cell_volume))
+        closure['cur_max'] = max(closure['cur_max'], fabs)
+
+        if sim.round_time() <= dt + closure['t0']:
+            return False
+        else:
+            old_cur = closure['cur_max']
+            closure['cur_max'] = 0
+            closure['t0'] = sim.round_time()
+            closure['max_abs'] = max(closure['max_abs'], old_cur)
+            if closure['max_abs'] != 0 and verbosity.meep > 0:
+                fmt = "energy decay(t = {}): {} / {} = {}"
+                print(fmt.format(sim.meep_time(), old_cur, closure['max_abs'], old_cur / closure['max_abs']))
+            return old_cur <= closure['max_abs'] * decay_by
+    return _stop
+
+
 def stop_after_walltime(t):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`

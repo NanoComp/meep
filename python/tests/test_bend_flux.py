@@ -80,7 +80,7 @@ class TestBendFlux(ApproxComparisonTestCase):
     def run_bend_flux(self, from_gdsii_file):
         # Normalization run
         self.init(no_bend=True, gdsii=from_gdsii_file)
-        self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
+        self.sim.run(until_after_sources=mp.stop_when_energy_decayed(50, 1e-3))
         # Save flux data for use in real run below
         fdata = self.sim.get_flux_data(self.refl)
         fdata_decimated = self.sim.get_flux_data(self.refl_decimated)
@@ -126,7 +126,7 @@ class TestBendFlux(ApproxComparisonTestCase):
         # Load flux data obtained from normalization run
         self.sim.load_minus_flux_data(self.refl, fdata)
         self.sim.load_minus_flux_data(self.refl_decimated, fdata_decimated)
-        self.sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ez, self.pt, 1e-3))
+        self.sim.run(until_after_sources=mp.stop_when_energy_decayed(50, 1e-3))
 
         expected = [
             (0.09999999999999999, 1.8392235204829767e-5, -7.259467687598002e-6),

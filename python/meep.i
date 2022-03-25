@@ -1833,6 +1833,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         stop_on_interrupt,
         stop_when_dft_decayed,
         stop_when_fields_decayed,
+        stop_when_energy_decayed,
         synchronized_magnetic,
         to_appended,
         vec,
