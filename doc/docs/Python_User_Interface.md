@@ -2852,10 +2852,9 @@ def stop_when_energy_decayed(dt=None, decay_by=None):
 <div class="function_docstring" markdown="1">
 
 Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
-or `until_after_sources` parameter, that examines the electric energy over the entire
-cell volume and keeps running until its absolute value has decayed by at least `decay_by`
-from its maximum previous value. In particular, it keeps incrementing the run time by `dt`
-(in Meep units) and checks the maximum value over that time period &mdash.
+or `until_after_sources` parameter, that examines the field energy over the entire
+cell volume at every `dt` time units and keeps incrementing the run time by `dt`  until
+its absolute value has decayed by at least `decay_by` from its maximum recorded value.
 
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency
