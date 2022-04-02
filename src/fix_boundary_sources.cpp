@@ -109,8 +109,8 @@ void fields::fix_boundary_sources() {
 #ifdef HAVE_MPI
   // declare an MPI datatype mirroring srcpt_info, so that we can send/receive srcpt_info arrays
   int srcpt_info_blocklengths[5] = {2,1,1,1,1};
-  MPI_Datatype srcpt_info_types[5] = {MPI_DOUBLE, sizeof(ptrdiff_t) == 4 ? MPI_INT : MPI_LONG_LONG, sizeof(size_t) == 4 ? MPI_UNSIGNED : MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_INT};
-  MPI_Aint srcpt_info_offsets[5] = { offsetof(srcpt_info,A), offsetof(srcpt_info,index), offsetof(srcpt_info,chunk_idx), offsetof(srcpt_info,src_time_id), offsetof(srcpt_info,c) };
+  MPI_Datatype srcpt_info_types[5] = {MPI_DOUBLE, sizeof(ptrdiff_t) == sizeof(int) ? MPI_INT : MPI_LONG_LONG, sizeof(size_t) == sizeof(unsigned) ? MPI_UNSIGNED : MPI_UNSIGNED_LONG_LONG, MPI_INT, MPI_INT};
+  MPI_Aint srcpt_info_offsets[5] = { offsetof(srcpt_info,A), offsetof(srcpt_info,index), offsetof(srcpt_info,src_time_id), offsetof(srcpt_info,chunk_idx), offsetof(srcpt_info,c) };
   MPI_Datatype mpi_srcpt_info;
   MPI_Type_create_struct(5, srcpt_info_blocklengths, srcpt_info_offsets, srcpt_info_types, &mpi_srcpt_info);
   MPI_Type_commit(&mpi_srcpt_info);

@@ -109,12 +109,10 @@ class ObjectiveQuantity(abc.ABC):
         The user may specify a scalar valued objective function across multiple frequencies (e.g. MSE) in
         which case we should check that all the frequencies fit in the specified bandwidth.
         """
-        srct = mp.GaussianSource(
+        return mp.GaussianSource(
             np.mean(self._frequencies),
             fwidth=fwidth_frac * np.mean(self._frequencies),
         )
-        self.sim.fields.register_src_time(srct.swigobj)
-        return srct
 
 
 class EigenmodeCoefficient(ObjectiveQuantity):
