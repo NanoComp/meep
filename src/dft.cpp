@@ -113,13 +113,15 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 
   const int Nomega = data->omega.size();
   omega = data->omega;
-  dft_phase = new complex<realnum>[Nomega];
+  dft_phase.reserve(Nomega);
+  for (size_t i = 0; i < Nomega; ++i)
+    dft.push_back(0.0);
 
   N = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d) { N *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
-  dft = new complex<realnum>[N * Nomega];
+  dft.reserve(N * Nomega);
   for (size_t i = 0; i < N * Nomega; ++i)
-    dft[i] = 0.0;
+    dft.push_back(0.0);
   for (int i = 0; i < 5; ++i)
     empty_dim[i] = data->empty_dim[i];
 
@@ -129,8 +131,6 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 }
 
 dft_chunk::~dft_chunk() {
-  delete[] dft;
-  delete[] dft_phase;
 
   // delete from fields_chunk list
   dft_chunk *cur = fc->dft_chunks;
@@ -332,11 +332,9 @@ double dft_chunk::norm2(grid_volume fgv) const {
   */
   if (persist) {
     grid_volume subgv = fgv.subvolume(is,ie,c);
-    LOOP_OVER_IVECS(fgv, is_old, ie_old, idx) {
-      idx_dft = subgv.index(c,fgv.iloc(c,idx));
-      if ((idx_dft < 0) || idx_dft > N) continue;
+    LOOP_OVER_IVECS(subgv, is_old, ie_old, idx) {
       for (size_t i = 0; i < Nomega; ++i)
-          sum += sqr(dft[Nomega * idx_dft + i]);
+        sum += sqr(dft.at(Nomega * idx + i));          
     } 
   } 
   /* note we place the if outside of the
@@ -348,7 +346,7 @@ double dft_chunk::norm2(grid_volume fgv) const {
     LOOP_OVER_IVECS(fgv, is, ie, idx) {
      idx_dft = IVEC_LOOP_COUNTER;
      for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx_dft + i]); 
+        sum += sqr(dft.at(Nomega * idx_dft + i)); 
     }
   }
 
@@ -451,7 +449,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->write_chunk(1, &istart, &Nchunk, (realnum *)(&cur->dft));
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -479,7 +477,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->read_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->read_chunk(1, &istart, &Nchunk, (realnum *)(&cur->dft));
     istart += Nchunk;
   }
 }

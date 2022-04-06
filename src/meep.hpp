@@ -1149,7 +1149,7 @@ public:
   component c; // component to DFT (possibly transformed by symmetry)
 
   size_t N;                   // number of spatial points (on epsilon grid)
-  std::complex<realnum> *dft; // N x Nomega array of DFT values.
+  std::vector<std::complex<realnum>> dft; // N x Nomega array of DFT values.
 
   class dft_chunk *next_in_chunk; // per-fields_chunk list of DFT chunks
   class dft_chunk *next_in_dft;   // next for this particular DFT vol./component
@@ -1200,7 +1200,7 @@ public:
   int sn;
 
   // cache of exp(iwt) * scale, of length Nomega
-  std::complex<realnum> *dft_phase;
+  std::vector<std::complex<realnum>> dft_phase;
 
   ptrdiff_t avg1, avg2; // index offsets for average to get epsilon grid
 
