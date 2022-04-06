@@ -9,8 +9,9 @@
 #undef SEEK_CUR
 #endif
 #include <mpi.h>
-#include <algorithm>
 #endif
+
+#include <algorithm>
 
 namespace meep {
 
