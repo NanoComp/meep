@@ -449,7 +449,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (realnum *)(&cur->dft));
+    file->write_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -477,7 +477,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->read_chunk(1, &istart, &Nchunk, (realnum *)(&cur->dft));
+    file->read_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
     istart += Nchunk;
   }
 }
