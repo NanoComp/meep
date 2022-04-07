@@ -2921,7 +2921,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
           LOOP_OVER_IVECS(gv_adj,adj_chunk->is_old,adj_chunk->ie_old,idx_adj){
             double cyl_scale;   
             IVEC_LOOP_ILOC(gv_adj, ip);
-            IVEC_LOOP_LOC(gv, p);
+            IVEC_LOOP_LOC(gv_adj, p);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf*idx_adj+f_i];
             material_type md;
             geps->get_material_pt(md, p);
