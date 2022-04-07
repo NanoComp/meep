@@ -2918,16 +2918,17 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie,forward_c);
           
           // loop over each point of interest
-          LOOP_OVER_IVECS(gv,adj_chunk->is_old,adj_chunk->ie_old,idx){
-            meep::ivec ip = gv.iloc(adjoint_c,idx);
-            size_t idx_adj =  gv_adj.index(adjoint_c,ip); 
-            if (idx_adj >= adj_chunk->N) meep::abort("index %d larger than limit %d\n",idx_adj,adj_chunk->N);    
-            meep::vec p  = gv.loc(adjoint_c,idx);
+          LOOP_OVER_IVECS(gv_adj,adj_chunk->is_old,adj_chunk->ie_old,idx_adj){
+            double cyl_scale;   
+            IVEC_LOOP_ILOC(gv_adj, ip);
+            IVEC_LOOP_LOC(gv, p);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf*idx_adj+f_i];
             material_type md;
             geps->get_material_pt(md, p);
+            /* if we have conductivities (e.g. for damping)
+            then we need to make sure we correctly account
+            for that here */
             if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
-            double cyl_scale;      
             
             /**************************************/
             /*            Main Routine            */

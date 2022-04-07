@@ -349,16 +349,16 @@ _Pragma("omp parallel for collapse(2)")				                                     
    (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3 - 1)))
 
 #define IVEC_LOOP_ILOC(gv, iloc)                                                                   \
-  ivec iloc((gv).dim);                                                                             \
-  iloc.set_direction(direction(loop_d1), loop_is1 + 2 * loop_i1);                                  \
-  iloc.set_direction(direction(loop_d2), loop_is2 + 2 * loop_i2);                                  \
-  iloc.set_direction(direction(loop_d3), loop_is3 + 2 * loop_i3)
+  meep::ivec iloc((gv).dim);                                                                             \
+  iloc.set_direction(meep::direction(loop_d1), loop_is1 + 2 * loop_i1);                                  \
+  iloc.set_direction(meep::direction(loop_d2), loop_is2 + 2 * loop_i2);                                  \
+  iloc.set_direction(meep::direction(loop_d3), loop_is3 + 2 * loop_i3)
 
 #define IVEC_LOOP_LOC(gv, loc)                                                                     \
-  vec loc((gv).dim);                                                                               \
-  loc.set_direction(direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);                   \
-  loc.set_direction(direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);                   \
-  loc.set_direction(direction(loop_d3), (0.5 * loop_is3 + loop_i3) * (gv).inva)
+  meep::vec loc((gv).dim);                                                                               \
+  loc.set_direction(meep::direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);                   \
+  loc.set_direction(meep::direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);                   \
+  loc.set_direction(meep::direction(loop_d3), (0.5 * loop_is3 + loop_i3) * (gv).inva)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
 #define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir)                                              \
