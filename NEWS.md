@@ -2,6 +2,8 @@
 
 ## Meep 1.23.0
 
+4/6/2022
+
 * Support for termination condition function based on the field energy in the entire cell ([#2021]).
 
 * Support for mode decomposition for 2d cell with out of plane wavevector ([#1968]).
