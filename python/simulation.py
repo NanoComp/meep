@@ -4514,6 +4514,42 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     return _stop
 
 
+def stop_when_energy_decayed(dt=None, decay_by=None):
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+    or `until_after_sources` parameter, that examines the field energy over the entire
+    cell volume at every `dt` time units and keeps incrementing the run time by `dt`  until
+    its absolute value has decayed by at least `decay_by` from its maximum recorded value.
+
+    Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
+    property of your source(s), to decrease the amplitude of the small high-frequency
+    field components that are excited when the source turns off. High frequencies near the
+    [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
+    slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+    """
+    if (dt is None) or (decay_by is None):
+        raise ValueError("dt and decay_by are all required.")
+
+    closure = {
+        'max_abs': 0,
+        't0': 0,
+    }
+
+    def _stop(sim):
+        if sim.round_time() <= dt + closure['t0']:
+            return False
+        else:
+            cell_volume = mp.Volume(center=sim.geometry_center, size=sim.cell_size)
+            cur_abs = abs(sim.field_energy_in_box(box=cell_volume))
+            closure['max_abs'] = max(closure['max_abs'], cur_abs)
+            closure['t0'] = sim.round_time()
+            if closure['max_abs'] != 0 and verbosity.meep > 0:
+                fmt = "energy decay(t = {}): {} / {} = {}"
+                print(fmt.format(sim.meep_time(), cur_abs, closure['max_abs'], cur_abs / closure['max_abs']))
+            return cur_abs <= closure['max_abs'] * decay_by
+    return _stop
+
+
 def stop_after_walltime(t):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
