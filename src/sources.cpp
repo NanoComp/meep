@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <complex>
+#include <assert.h>
 
 #include "meep.hpp"
 #include "meep_internals.hpp"
@@ -165,13 +166,13 @@ bool custom_src_time::is_equal(const src_time &t) const {
 /*********************************************************************/
 
 src_vol::src_vol(component cc, src_time *st, std::vector<ptrdiff_t> &&ind,
-                 std::vector<std::complex<double> > &&amps)
+                 std::vector<std::complex<double> > &&amps, bool fix_boundaries)
     : c([](component c) -> component {
         if (is_D(c)) c = direction_component(Ex, component_direction(c));
         if (is_B(c)) c = direction_component(Hx, component_direction(c));
         return c;
       }(cc)),
-      src_t(st), index(std::move(ind)), amp(std::move(amps)) {
+      src_t(st), index(std::move(ind)), amp(std::move(amps)), needs_boundary_fix(fix_boundaries) {
   assert(index.size() == amp.size());
 }
 
@@ -288,18 +289,23 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array)));
 }
 
-void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr){
+void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix){
+  if (n == 0) {
+      n = cur_data.idx_arr.size();
+      assert(amp_arr == NULL);
+      amp_arr = cur_data.amp_arr.data();
+  }
+  assert(n == cur_data.idx_arr.size());
   sources = src->add_to(sources, &src);
   std::vector<ptrdiff_t> index_arr(cur_data.idx_arr);
   std::vector<std::complex<double>> amplitudes(amp_arr, amp_arr+n);
   component c = cur_data.near_fd_comp;
-
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) meep::abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
   if (!fc->is_mine()) meep::abort("wrong fields chunk");
 
-  fc->add_source(ft, src_vol(c, src, std::move(index_arr), std::move(amplitudes)));
+  fc->add_source(ft, src_vol(c, src, std::move(index_arr), std::move(amplitudes), needs_boundary_fix));
   // We can't do require_component(c) since that only works if all processes are adding
   // srcdata for the same components in the same order, which may not be true.
   // ... instead, the caller should call fields::require_source_components()
@@ -341,6 +347,23 @@ complex<double> amp_file_func(const vec &p) {
   res.imag(linear_interpolate(rx, ry, rz, amp_func_data_im, amp_file_dims[0], amp_file_dims[1],
                               amp_file_dims[2], 1));
   return res;
+}
+
+void fields::register_src_time(src_time *src) {
+  sources = src->add_to(sources, &src);
+  if (src->id == 0) { // doesn't have an ID yet
+    size_t max_id = 0;
+    for (src_time *s = sources; s; s = s->next)
+      max_id = s->id > max_id ? s->id : max_id;
+    src->id = max_id + 1;
+  }
+}
+
+src_time *fields::lookup_src_time(size_t id) {
+  if (id == 0) abort("bug: cannot lookup unregistered source");
+  for (src_time *s = sources; s; s = s->next)
+    if (s->id == id) return s;
+  return NULL;
 }
 
 void fields::add_volume_source(component c, const src_time &src, const volume &where_,
