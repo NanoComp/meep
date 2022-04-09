@@ -597,8 +597,9 @@ class IndexedSource(Source):
     """
     created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
     """
-    def __init__(self, src, srcdata, amp_arr):
+    def __init__(self, src, srcdata, amp_arr, needs_boundary_fix=False):
         self.src = src
         self.num_pts = len(amp_arr)
         self.srcdata = srcdata
         self.amp_arr = amp_arr
+        self.needs_boundary_fix = needs_boundary_fix

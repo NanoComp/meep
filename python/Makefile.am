@@ -38,6 +38,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_solver.py         \
+    $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_jax.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \

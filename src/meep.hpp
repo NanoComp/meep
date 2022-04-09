@@ -939,8 +939,13 @@ public:
   // sources are not, but this may change.
   bool is_integrated;
 
+   // a unique ID > 0 can be assigned to a src_time object by fields::register_src_time,
+   // in order to communicate it from one process to another; otherwise defaults to 0.
+  size_t id;
+
   src_time() {
     is_integrated = true;
+    id = 0;
     current_time = nan;
     current_current = 0.0;
     next = NULL;
@@ -951,6 +956,7 @@ public:
     current_time = t.current_time;
     current_current = t.current_current;
     current_dipole = t.current_dipole;
+    id = t.id;
     if (t.next)
       next = t.next->clone();
     else
@@ -1896,7 +1902,9 @@ public:
   void require_source_components();
   void _require_component(component c, bool aniso2d);
   void require_component(component c) { _require_component(c, is_aniso2d()); sync_chunk_connections(); }
-  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr);
+  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix);
+  void register_src_time(src_time *src);
+  src_time *lookup_src_time(size_t id);
 
   // mpb.cpp
 
@@ -2238,6 +2246,8 @@ private:
   bool locate_point_in_user_volume(ivec *, std::complex<double> *phase) const;
   void locate_volume_source_in_user_volume(const vec p1, const vec p2, vec newp1[8], vec newp2[8],
                                            std::complex<double> kphase[8], int &ncopies) const;
+  // fix_boundary_sources.cpp
+  void fix_boundary_sources();
   // step.cpp
   void phase_material();
   void step_db(field_type ft);
