@@ -523,7 +523,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
       }
     } while (ishift != min_ishift);
   }
-  if (vol_sum != original_vol) meep::abort("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum);
+  if (vol_sum !=0 && vol_sum != original_vol) meep::abort("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum);
 }
 
 } // namespace meep
