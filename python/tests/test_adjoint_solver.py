@@ -47,7 +47,7 @@ waveguide_geometry = [mp.Block(material=silicon,
                                size=mp.Vector3(mp.inf,w,mp.inf))]
 
 fcen = 1/1.55
-df = 0.3135*fcen # enough bandwidth, but not a "simple" value (like 0.2 or 0.3)
+df = 0.2*fcen
 wvg_source = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
                                  center=mp.Vector3(-0.5*sxy+dpml+0.1,0),
                                  size=mp.Vector3(0,sxy-2*dpml),

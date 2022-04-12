@@ -327,6 +327,18 @@ bool is_metal(meep::field_type ft, const material_type *material) {
     }
 }
 
+bool has_offdiag(const medium_struct *material) {
+ if ((material->epsilon_offdiag.x.re != 0) ||   /* account for offdiagonal components */
+    (material->epsilon_offdiag.y.re != 0) ||
+    (material->epsilon_offdiag.z.re != 0) ||
+    (material->epsilon_offdiag.x.im != 0) ||
+    (material->epsilon_offdiag.y.im != 0) ||
+    (material->epsilon_offdiag.z.im != 0))
+    return true;
+  else
+    return false;
+}
+
 // computes the vector-Jacobian product of the gradient of the matgrid_val function v
 // with the Jacobian of the to_geom_box_coords function for geometric_object o
 vector3 to_geom_object_coords_VJP(vector3 v, const geometric_object *o) {
@@ -2944,14 +2956,10 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
                 v_local+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
                 adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
             /* more complicated case requires interpolation/restriction */
-            } else if (md->do_averaging ||                         /* account for subpixel smoothing     */
-                     !is_material_grid(md) ||                      /* account for edge effects of mg     */
-                     (md->medium_1.epsilon_offdiag.x.re != 0) ||   /* account for offdiagonal components */
-                     (md->medium_1.epsilon_offdiag.y.re != 0) ||
-                     (md->medium_1.epsilon_offdiag.z.re != 0) ||
-                     (md->medium_2.epsilon_offdiag.x.re != 0) ||
-                     (md->medium_2.epsilon_offdiag.y.re != 0) ||
-                     (md->medium_2.epsilon_offdiag.z.re != 0)) {
+            } else if ((md->do_averaging) ||                         /* account for subpixel smoothing     */
+                     (!is_material_grid(md)) ||                      /* account for edge effects of mg     */
+                     (has_offdiag(&(md->medium_1))) ||             /* account for offdiagonal components */
+                     (has_offdiag(&(md->medium_2)))) {
               /* we need to restrict the adjoint fields to
               the two nodes of interest (which requires a factor
               of 0.5 to scale), and interpolate the forward fields
@@ -2970,33 +2978,27 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
               meep::ivec fwd_pf  = (fwd_p - unit_f*2);
               meep::ivec fwd_paf = (fwd_p + unit_a*2 - unit_f*2);
 
-              //identify the two eps points
-              meep::ivec ieps1 = (fwd_p + fwd_pf) / 2;
-              meep::ivec ieps2 = (fwd_pa + fwd_paf) / 2;
+              // store in vector for convenience
+              std::vector<meep::ivec> fwd_pl = {fwd_p, fwd_pa};
+              std::vector<meep::ivec> fwd_pr = {fwd_pf, fwd_paf};
 
-              //operate on the first eps node
-              fwd1_idx = gv_fwd.index(forward_c,fwd_p);
-              fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
-              fwd2_idx = gv_fwd.index(forward_c,fwd_pf);
-              fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i]; 
-              fwd_avg = fwd1 + fwd2;
-              meep::vec eps1 = gv[ieps1];
-              cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-              material_grids_addgradient_point(
+              //identify the two eps points
+              std::vector<meep::ivec> ieps = {(fwd_p + fwd_pf) / 2, (fwd_pa + fwd_paf) / 2};
+
+              //operate on the each eps node
+              #pragma unroll
+              for (int node=0;node<2;node++) { // two nodes
+                fwd1_idx = gv_fwd.index(forward_c,fwd_pl[node]);
+                fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx<0)) ? 0 : fwd_chunk->dft[nf*fwd1_idx+f_i];
+                fwd2_idx = gv_fwd.index(forward_c,fwd_pr[node]);
+                fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx<0)) ? 0 : fwd_chunk->dft[nf*fwd2_idx+f_i];                 
+                fwd_avg = std::complex<meep::realnum>(0.5,0) * (fwd1 + fwd2);
+                meep::vec eps1 = gv[ieps[node]];
+                cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
+                material_grids_addgradient_point(
                 v_local+ng*f_i, vec_to_vector3(eps1), scalegrad*cyl_scale, geps,
                 adjoint_c, forward_c, fwd_avg, std::complex<meep::realnum>(0.5,0)*adj, frequencies[f_i], gv, du);
-              
-              //operate on the second eps node
-              fwd1_idx = gv_fwd.index(forward_c,fwd_pa);
-              fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd1_idx+f_i];
-              fwd2_idx = gv_fwd.index(forward_c,fwd_paf);
-              fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx<0)) ? 0 : std::complex<meep::realnum>(0.5,0) * fwd_chunk->dft[nf*fwd2_idx+f_i];
-              fwd_avg = fwd1 + fwd2;
-              meep::vec eps2 = gv[ieps2];
-              cyl_scale = (gv.dim == meep::Dcyl) ? eps2.r() : 1;
-              material_grids_addgradient_point(
-                v_local+ng*f_i, vec_to_vector3(eps2), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd_avg, std::complex<meep::realnum>(0.5,0)*adj, frequencies[f_i], gv, du);
+              }
             }
             /********* compute λᵀbᵤ ***************/
             /* not yet implemented/needed */
