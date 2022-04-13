@@ -525,7 +525,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
     } while (ishift != min_ishift);
   }
   int vol_sum_all = sum_to_all(vol_sum);
-  if (use_symmetry && vol_sum_all != original_vol) meep::abort("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum_all);
+  if (use_symmetry && vol_sum_all != original_vol) master_printf("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum_all);
 }
 
 } // namespace meep
