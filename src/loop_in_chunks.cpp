@@ -363,7 +363,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
     if (boundaries[High][d] == Periodic && boundaries[Low][d] == Periodic) {
       original_vol *= (ie.in_direction(d) - is.in_direction(d))/2+1;
     } else {
-      original_vol *= (min(user_volume.big_owned_corner(cgrid), ie).in_direction(d) - max(user_volume.little_owned_corner(cgrid),is).in_direction(d))/2+1;
+      int vol_size_d = (min(user_volume.big_owned_corner(cgrid), ie).in_direction(d) - max(user_volume.little_owned_corner(cgrid),is).in_direction(d))/2+1;
+      original_vol *= (vol_size_d > 0 ? vol_size_d : 0);
     }
   }
 
@@ -524,7 +525,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
     } while (ishift != min_ishift);
   }
   int vol_sum_all = sum_to_all(vol_sum);
-  if (original_vol > 0 && use_symmetry && vol_sum_all != original_vol) master_printf("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum_all);
+  if (use_symmetry && vol_sum_all != original_vol) meep::abort("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum_all);
 }
 
 } // namespace meep
