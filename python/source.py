@@ -301,7 +301,7 @@ class CustomSource(SourceTime):
           automatically determine the decimation factor of the time-series updates
           of the DFT fields monitors (if any).
         """
-        super(CustomSource, self).__init__(**kwargs)
+        super(CustomSource, self).__init__(is_integrated=is_integrated, **kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
