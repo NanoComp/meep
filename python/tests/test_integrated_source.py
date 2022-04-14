@@ -26,7 +26,7 @@ class TestIntegratedSource(unittest.TestCase):
         ez = sim.get_array(mp.Ez, center=mp.Vector3(2), size=mp.Vector3(y=6))
         std = np.std(ez) / np.sqrt(np.mean(ez**2))
         print("std = ", std)
-        self.assertAlmostEqual(std, 0.0, places=8)
+        self.assertAlmostEqual(std, 0.0, places = 4 if mp.is_single_precision() else 8)
 
 if __name__ == '__main__':
     unittest.main()
