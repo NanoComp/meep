@@ -70,6 +70,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_get_epsilon_grid.py       \
     $(TEST_DIR)/test_holey_wvg_bands.py        \
     $(TEST_DIR)/test_holey_wvg_cavity.py       \
+    $(TEST_DIR)/test_integrated_source.py      \
     $(KDOM_TEST)                               \
     $(TEST_DIR)/test_ldos.py                   \
     $(MDPYTEST)                                \
