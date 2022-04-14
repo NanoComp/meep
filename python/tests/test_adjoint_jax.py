@@ -18,6 +18,9 @@ _FD_STEP = 1e-4
 # The tolerance for the adjoint and finite difference gradient comparison
 _TOL = 0.1 if mp.is_single_precision() else 0.025
 
+# We expect 3 design region monitor pointers (one for each field component)
+_NUM_DES_REG_MON = 3
+
 mp.verbosity(0)
 
 
@@ -149,32 +152,15 @@ class UtilsTest(unittest.TestCase):
         self.assertEqual(monitor_values.dtype, onp.complex128)
         self.assertEqual(monitor_values.shape,
                          (len(self.monitors), len(self.frequencies)))
-
-    def test_design_region_monitor_helpers(self):
-        design_region_monitors = mpa.utils.install_design_region_monitors(
+    
+    def test_dist_dft_pointers(self):
+        fwd_design_region_monitors = mpa.utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
             self.frequencies,
         )
-        self.simulation.run(until=100)
-        design_region_fields = mpa.utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
+        self.assertEqual(len(fwd_design_region_monitors[0]),_NUM_DES_REG_MON)
 
-        self.assertIsInstance(design_region_fields, list)
-        self.assertEqual(len(design_region_fields), len(self.design_regions))
-
-        self.assertIsInstance(design_region_fields[0], list)
-        self.assertEqual(len(design_region_fields[0]),
-                         len(mpa.utils._ADJOINT_FIELD_COMPONENTS))
-
-        for value in design_region_fields[0]:
-            self.assertIsInstance(value, onp.ndarray)
-            self.assertEqual(value.ndim, 4)  # dims: freq, x, y, pad
-            self.assertEqual(value.dtype,
-                             onp.complex64 if mp.is_single_precision() else onp.complex128)
 
 
 class WrapperTest(ApproxComparisonTestCase):

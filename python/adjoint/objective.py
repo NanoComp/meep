@@ -179,7 +179,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 *(np.eye(3)[self._monitor.normal_direction] *
                   np.abs(center_frequency)))
             eig_kpoint = -1 * direction if self.forward else direction
-
+        
         if self._frequencies.size == 1:
             amp = da_dE * dJ * scale
             src = time_src

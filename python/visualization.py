@@ -38,7 +38,7 @@ default_monitor_parameters = {
 default_field_parameters = {
         'interpolation':'spline36',
         'cmap':'RdBu',
-        'alpha':0.6,
+        'alpha':0.8,
         'post_process':np.real
         }
 
@@ -86,7 +86,7 @@ def filter_dict(dict_to_filter, func_with_kwargs):
     try:
         # Python3 ...
         sig = inspect.signature(func_with_kwargs)
-        filter_keys = [param.name for param in sig.parameters.values() if param.kind == param.POSITIONAL_OR_KEYWORD]
+        filter_keys = [param.name for param in sig.parameters.values()]
     except:
         # Python2 ...
         filter_keys = inspect.getargspec(func_with_kwargs)[0]
@@ -533,7 +533,7 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
-    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Hx, mp.Hy, mp.Hz]:
+    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Dx, mp.Dy, mp.Dz, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
         sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 

@@ -119,13 +119,11 @@ class OptimizationProblem(object):
                 print("Starting forward run...")
                 self.forward_run()
                 print("Starting adjoint run...")
-                self.D_a = []
                 self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
             elif self.current_state == "FWD":
                 print("Starting adjoint run...")
-                self.D_a = []
                 self.adjoint_run()
                 print("Calculating gradient...")
                 self.calculate_gradient()
@@ -168,7 +166,7 @@ class OptimizationProblem(object):
             self.forward_monitors.append(m.register_monitors(self.frequencies))
 
         # register design region
-        self.design_region_monitors = utils.install_design_region_monitors(
+        self.forward_design_region_monitors = utils.install_design_region_monitors(
             self.sim, self.design_regions, self.frequencies, self.decimation_factor
         )
 
@@ -192,10 +190,7 @@ class OptimizationProblem(object):
         self.f0 = [fi(*self.results_list) for fi in self.objective_functions]
         if len(self.f0) == 1:
             self.f0 = self.f0[0]
-
-        # Store forward fields for each set of design variables in array
-        self.D_f = utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies)
-
+        
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
 
@@ -225,19 +220,22 @@ class OptimizationProblem(object):
 
         # flip the k point
         if self.sim.k_point:
-            self.sim.k_point *= -1
+            self.sim.change_k_point(-1*self.sim.k_point)
 
+        self.adjoint_design_region_monitors = []
         for ar in range(len(self.objective_functions)):
             # Reset the fields
-            self.sim.reset_meep()
+            self.sim.restart_fields()
+            self.sim.clear_dft_monitors()
 
             # Update the sources
             self.sim.change_sources(self.adjoint_sources[ar])
 
-            # register design flux
-            self.design_region_monitors = utils.install_design_region_monitors(
+            # register design dft fields
+            self.adjoint_design_region_monitors.append(utils.install_design_region_monitors(
             self.sim, self.design_regions, self.frequencies, self.decimation_factor
-            )
+            ))
+            self.sim._evaluate_dft_objects()
 
             # Adjoint run
             self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
@@ -245,9 +243,6 @@ class OptimizationProblem(object):
                 self.minimum_run_time,
                 self.maximum_run_time
             ))
-
-            # Store adjoint fields for each design set of design variables
-            self.D_a.append(utils.gather_design_region_fields(self.sim,self.design_region_monitors,self.frequencies))
 
         # reset the m number
         if utils._check_if_cylindrical(self.sim):
@@ -264,8 +259,8 @@ class OptimizationProblem(object):
         self.gradient = [[
             dr.get_gradient(
                 self.sim,
-                self.D_a[ar][dri],
-                self.D_f[dri],
+                self.adjoint_design_region_monitors[ar][dri],
+                self.forward_design_region_monitors[dri],
                 self.frequencies,
                 self.finite_difference_step
             ) for dri, dr in enumerate(self.design_regions)
