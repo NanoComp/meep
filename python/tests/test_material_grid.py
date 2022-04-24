@@ -61,7 +61,9 @@ def compute_transmittance(matgrid_symmetry=False):
                             sources=sources,
                             geometry=geometry)
 
-        mode_mon = sim.add_flux(fcen, 0, 1,
+        mode_mon = sim.add_flux(fcen,
+                                0,
+                                1,
                                 mp.FluxRegion(center=mp.Vector3(2.0,0),
                                               size=mp.Vector3(0,4.0)))
 
@@ -133,7 +135,6 @@ def compute_resonant_mode_2d(res,default_mat=False):
         except:
             raise RuntimeError("No resonant modes found.")
 
-        sim.reset_meep()
         return freq
 
 
@@ -155,7 +156,7 @@ def compute_resonant_mode_3d(use_matgrid=True):
     rad = 0.34  # radius of sphere
 
     if use_matgrid:
-        matgrid_resolution = 100
+        matgrid_resolution = 2*resolution
         N = int(s*matgrid_resolution)
         coord = np.linspace(-0.5*s,0.5*s,N)
         xv, yv, zv = np.meshgrid(coord,coord,coord)
@@ -207,7 +208,6 @@ def compute_resonant_mode_3d(use_matgrid=True):
     except:
         raise RuntimeError("No resonant modes found.")
 
-    sim.reset_meep()
     return freq
 
 
@@ -243,7 +243,7 @@ class TestMaterialGrid(unittest.TestCase):
     def test_symmetry(self):
             tran_nosym = compute_transmittance(False)
             tran_sym = compute_transmittance(True)
-            self.assertAlmostEqual(tran_nosym, tran_sym, places=6)
+            self.assertAlmostEqual(tran_nosym, tran_sym, places=5)
 
 if __name__ == '__main__':
     unittest.main()
