@@ -154,6 +154,11 @@ class TestAntennaRadiation(ApproxComparisonTestCase):
         Verifies that the radiation pattern for a point dipole source a
         given height above a perfect-electric conductor (PEC) ground plane
         agrees with the theoretical result.
+
+        The radiation pattern of a two-element antenna array is equivalent
+        to the radiation pattern of a single antenna multiplied by its array
+        factor as derived in Section 6.2 "Two-Element Array" of Antenna Theory:
+        Analysis and Design, Fourth Edition (2016) by C.A. Balanis.
         """
         Pr_fsp = self.free_space_radiation()
         Pr_pec = self.pec_ground_plane_radiation()

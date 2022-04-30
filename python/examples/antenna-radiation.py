@@ -1,9 +1,8 @@
-from __future__ import division
-
 import meep as mp
 import math
 import numpy as np
 import matplotlib.pyplot as plt
+
 
 resolution = 50  # pixels/um
 
@@ -37,29 +36,57 @@ sim = mp.Simulation(cell_size=cell,
                     boundary_layers=pml_layers)
 
 nearfield_box = sim.add_near2far(fcen, 0, 1,
-                                 mp.Near2FarRegion(center=mp.Vector3(0,+0.5*sxy), size=mp.Vector3(sxy,0), weight=+1),
-                                 mp.Near2FarRegion(center=mp.Vector3(0,-0.5*sxy), size=mp.Vector3(sxy,0), weight=-1),
-                                 mp.Near2FarRegion(center=mp.Vector3(+0.5*sxy,0), size=mp.Vector3(0,sxy), weight=+1),
-                                 mp.Near2FarRegion(center=mp.Vector3(-0.5*sxy,0), size=mp.Vector3(0,sxy), weight=-1))
+                                 mp.Near2FarRegion(center=mp.Vector3(0,+0.5*sxy),
+                                                   size=mp.Vector3(sxy,0)),
+                                 mp.Near2FarRegion(center=mp.Vector3(0,-0.5*sxy),
+                                                   size=mp.Vector3(sxy,0),
+                                                   weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(+0.5*sxy,0),
+                                                   size=mp.Vector3(0,sxy)),
+                                 mp.Near2FarRegion(center=mp.Vector3(-0.5*sxy,0),
+                                                   size=mp.Vector3(0,sxy),
+                                                   weight=-1))
 
 flux_box = sim.add_flux(fcen, 0, 1,
-                        mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy), size=mp.Vector3(sxy,0), weight=+1),
-                        mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy), size=mp.Vector3(sxy,0), weight=-1),
-                        mp.FluxRegion(center=mp.Vector3(+0.5*sxy,0), size=mp.Vector3(0,sxy), weight=+1),
-                        mp.FluxRegion(center=mp.Vector3(-0.5*sxy,0), size=mp.Vector3(0,sxy), weight=-1))
+                        mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy),
+                                      size=mp.Vector3(sxy,0)),
+                        mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy),
+                                      size=mp.Vector3(sxy,0),
+                                      weight=-1),
+                        mp.FluxRegion(center=mp.Vector3(+0.5*sxy,0),
+                                      size=mp.Vector3(0,sxy)),
+                        mp.FluxRegion(center=mp.Vector3(-0.5*sxy,0),
+                                      size=mp.Vector3(0,sxy),
+                                      weight=-1))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
+sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
 near_flux = mp.get_fluxes(flux_box)[0]
 
-r = 1000/fcen      # half side length of far-field square box OR radius of far-field circle
-res_ff = 1         # resolution of far fields (points/μm)
-far_flux_box = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=r), size=mp.Vector3(2*r)), res_ff)[0]
-               - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-r), size=mp.Vector3(2*r)), res_ff)[0]
-               + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(r), size=mp.Vector3(y=2*r)), res_ff)[0]
-               - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-r), size=mp.Vector3(y=2*r)), res_ff)[0])
+# half side length of far-field square box OR radius of far-field circle
+r = 1000/fcen
 
-npts = 100         # number of points in [0,2*pi) range of angles
+# resolution of far fields (points/μm)
+res_ff = 1
+
+far_flux_box = (nearfield_box.flux(mp.Y,
+                                   mp.Volume(center=mp.Vector3(y=r),
+                                             size=mp.Vector3(2*r)),
+                                   res_ff)[0] -
+                nearfield_box.flux(mp.Y,
+                                   mp.Volume(center=mp.Vector3(y=-r),
+                                             size=mp.Vector3(2*r)),
+                                   res_ff)[0] +
+                nearfield_box.flux(mp.X,
+                                   mp.Volume(center=mp.Vector3(r),
+                                             size=mp.Vector3(y=2*r)),
+                                   res_ff)[0] -
+                nearfield_box.flux(mp.X,
+                                   mp.Volume(center=mp.Vector3(-r),
+                                             size=mp.Vector3(y=2*r)),
+                                   res_ff)[0])
+
+npts = 100  # number of points in [0,2*pi) range of angles
 angles = 2*math.pi/npts*np.arange(npts)
 
 E = np.zeros((npts,3),dtype=np.complex128)
@@ -75,6 +102,7 @@ Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
 Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2])
 Pr = np.sqrt(np.square(Px)+np.square(Py))
 
+# integrate the radial flux over the circle circumference
 far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
 print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_box,far_flux_circle))

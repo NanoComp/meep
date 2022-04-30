@@ -2,14 +2,14 @@
 # Near to Far Field Spectra
 ---
 
-The [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature is demonstrated using four different examples. There are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the far fields at any desired points with the option to save the far fields to an HDF5 file.
+The [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature is demonstrated using five different examples. There are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in *free space* in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the "far" fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
 Radiation Pattern of an Antenna
 -------------------------------
 
-In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna. This involves an electric-current point dipole emitter in vacuum. The source is placed at the center of a 2d cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways from *closed* surfaces: (1) sides of a square and (2) circumference of a circle, having a length/radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal polarizations of the input source.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna in free space. This involves computing the far fields of an electric-current point dipole emitter in vacuum. The source is placed at the center of a 2D cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways from *closed* surfaces: (1) sides of a square and (2) circumference of a circle, having a length/radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal polarizations of the input source.
 
 The simulation geometry is shown in the following schematic.
 
@@ -27,6 +27,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 resolution = 50  # pixels/um
 
 sxy = 4
@@ -39,8 +40,8 @@ fcen = 1.0
 df = 0.4
 src_cmpt = mp.Ez
 sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
-                     center=mp.Vector3(),
-                     component=src_cmpt)]
+                    center=mp.Vector3(),
+                    component=src_cmpt)]
 
 if src_cmpt == mp.Ex:
     symmetries = [mp.Mirror(mp.X,phase=-1),
@@ -59,18 +60,30 @@ sim = mp.Simulation(cell_size=cell,
                     boundary_layers=pml_layers)
 
 nearfield_box = sim.add_near2far(fcen, 0, 1,
-                                 mp.Near2FarRegion(center=mp.Vector3(0,+0.5*sxy), size=mp.Vector3(sxy,0), weight=+1),
-                                 mp.Near2FarRegion(center=mp.Vector3(0,-0.5*sxy), size=mp.Vector3(sxy,0), weight=-1),
-                                 mp.Near2FarRegion(center=mp.Vector3(+0.5*sxy,0), size=mp.Vector3(0,sxy), weight=+1),
-                                 mp.Near2FarRegion(center=mp.Vector3(-0.5*sxy,0), size=mp.Vector3(0,sxy), weight=-1))
+                                 mp.Near2FarRegion(center=mp.Vector3(0,+0.5*sxy),
+                                                   size=mp.Vector3(sxy,0)),
+                                 mp.Near2FarRegion(center=mp.Vector3(0,-0.5*sxy),
+                                                   size=mp.Vector3(sxy,0),
+                                                   weight=-1),
+                                 mp.Near2FarRegion(center=mp.Vector3(+0.5*sxy,0),
+                                                   size=mp.Vector3(0,sxy)),
+                                 mp.Near2FarRegion(center=mp.Vector3(-0.5*sxy,0),
+                                                   size=mp.Vector3(0,sxy),
+                                                   weight=-1))
 
 flux_box = sim.add_flux(fcen, 0, 1,
-                        mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy), size=mp.Vector3(sxy,0), weight=+1),
-                        mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy), size=mp.Vector3(sxy,0), weight=-1),
-                        mp.FluxRegion(center=mp.Vector3(+0.5*sxy,0), size=mp.Vector3(0,sxy), weight=+1),
-                        mp.FluxRegion(center=mp.Vector3(-0.5*sxy,0), size=mp.Vector3(0,sxy), weight=-1))
+                        mp.FluxRegion(center=mp.Vector3(0,+0.5*sxy),
+                                      size=mp.Vector3(sxy,0)),
+                        mp.FluxRegion(center=mp.Vector3(0,-0.5*sxy),
+                                      size=mp.Vector3(sxy,0),
+                                      weight=-1),
+                        mp.FluxRegion(center=mp.Vector3(+0.5*sxy,0),
+                                      size=mp.Vector3(0,sxy)),
+                        mp.FluxRegion(center=mp.Vector3(-0.5*sxy,0),
+                                      size=mp.Vector3(0,sxy),
+                                      weight=-1))
 
-sim.run(until_after_sources=mp.stop_when_fields_decayed(50, src_cmpt, mp.Vector3(), 1e-8))
+sim.run(until_after_sources=mp.stop_when_dft_decayed())
 ```
 
 After the time stepping, the flux of the near fields is computed using `get_fluxes`:
@@ -82,18 +95,34 @@ near_flux = mp.get_fluxes(flux_box)[0]
 In the first of two cases, the flux of the far fields is computed using the `flux` routine for a square box of side length 2 mm which is 2000 times larger than the source wavelength. This requires computing the outgoing flux on each of the four sides of the box separately and summing the values. The resolution of the far fields is chosen arbitrarily as 1 point/μm. This means there are 2x10<sup>6</sup> points per side length.
 
 ```py
-r = 1000/fcen      # half side length of far-field square box OR radius of far-field circle
-res_ff = 1         # resolution of far fields (points/μm)
-far_flux_box = (nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=r), size=mp.Vector3(2*r)), res_ff)[0]
-               - nearfield_box.flux(mp.Y, mp.Volume(center=mp.Vector3(y=-r), size=mp.Vector3(2*r)), res_ff)[0]
-               + nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(r), size=mp.Vector3(y=2*r)), res_ff)[0]
-               - nearfield_box.flux(mp.X, mp.Volume(center=mp.Vector3(-r), size=mp.Vector3(y=2*r)), res_ff)[0])
+# half side length of far-field square box OR radius of far-field circle
+r = 1000/fcen
+
+# resolution of far fields (points/μm)
+res_ff = 1
+
+far_flux_box = (nearfield_box.flux(mp.Y,
+                                   mp.Volume(center=mp.Vector3(y=r),
+                                             size=mp.Vector3(2*r)),
+                                   res_ff)[0] -
+                nearfield_box.flux(mp.Y,
+                                   mp.Volume(center=mp.Vector3(y=-r),
+                                             size=mp.Vector3(2*r)),
+                                   res_ff)[0] +
+                nearfield_box.flux(mp.X,
+                                   mp.Volume(center=mp.Vector3(r),
+                                             size=mp.Vector3(y=2*r)),
+                                   res_ff)[0] -
+                nearfield_box.flux(mp.X,
+                                   mp.Volume(center=mp.Vector3(-r),
+                                             size=mp.Vector3(y=2*r)),
+                                   res_ff)[0])
 ```
 
 For the second of two cases, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm. The six far field components ($E_x$, $E_y$, $E_z$, $H_x$, $H_y$, $H_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where $P_x$ and $P_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation. The total flux is computed and the three flux values are displayed.
 
 ```py
-npts = 100         # number of points in [0,2*pi) range of angles
+npts = 100  # number of points in [0,2*pi) range of angles
 angles = 2*math.pi/npts*np.arange(npts)
 
 E = np.zeros((npts,3),dtype=np.complex128)
@@ -109,9 +138,18 @@ Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
 Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2])
 Pr = np.sqrt(np.square(Px)+np.square(Py))
 
+# integrate the radial flux over the circle circumference
 far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
 print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_box,far_flux_circle))
+
+ax = plt.subplot(111, projection='polar')
+ax.plot(angles,Pr/max(Pr),'b-')
+ax.set_rmax(1)
+ax.set_rticks([0,0.5,1])
+ax.grid(True)
+ax.set_rlabel_position(22)
+plt.show()
 ```
 
 By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). The flux of the near fields for the $J_z$ source is 2.456196 and that for the far fields is 2.458030 (box) and 2.457249 (circle). The ratio of near- to far-field (circle) flux is 0.999571. Similarly, for the $J_x$ source, the values are 1.227786 (near-field), 1.227651 (far-field box), and 1.227260 (far-field circle). The ratio of near- to far-field (circle) flux is 1.000429. The slight differences in the flux values are due to discretization effects and will decrease as the resolution is increased.
@@ -131,6 +169,193 @@ plt.show()
 <center>
 ![](../images/Source_radiation_pattern.png)
 </center>
+
+### Antenna above a Perfect Electric Conductor Ground Plane
+
+As a second example, we compute the radiation pattern of an antenna positioned a given height $h$ above a perfect-electric conductor (PEC) ground plane. Depending on the wavelength and height of the antenna, self-interference effects due to reflections from the ground plane will produce well-defined lobes in the radiation pattern. The challenge in setting up this calculation is that because the ground plane is infinitely extended, it is not possible to enclose the antenna by a near-field surface. A non-closed near-field surface unfortunately gives rise to truncation errors which is described in more detail in the [section below](#truncation-errors-from-a-non-closed-near-field-surface).
+
+A workaround is to transform this problem into radiation in free space by making use of the fact that the effect of the ground plane can be exactly reproduced by two antennas of *opposite* phase separated by a distance of $2h$. This is known as the method of images. Additionally, the odd-mirror symmetry plane can be used to divide the cell in half in order to reduce the computional cost.
+
+We can validate the radiation pattern computed by Meep using analytic theory. The radiation pattern of a two-element antenna array is equivalent to the radiation pattern of a single antenna multiplied by its "array factor" (AF) as derived in Section 6.2 "Two-Element Array" of [Antenna Theory: Analysis and Design, Fourth Edition (2016)](https://www.amazon.com/Antenna-Theory-Analysis-Constantine-Balanis/dp/1118642066) by C.A. Balanis. In this example, we consider an $E_z$-polarized antenna at a vacuum wavelength ($\lambda$) of 0.65 μm embedded within a medium with $n$ of 1.2 and positioned 1.25 μm above the ground plane. The outgoing (radial) flux is computed along the circumference of a circle with radius 1000$\lambda$ (or 650 μm) centered at the midpoint between the two antennas. The angular range is [0,90] degrees with 0° being the direction normal to the ground plane. A schematic showing the simulation layout and a plot of the radiation pattern computed by Meep and analytic theory are shown in the figure below. There is good agreement between the two results.
+
+The simulation script is in [examples/antenna_pec_ground_plane.py](https://github.com/NanoComp/meep/blob/master/python/examples/antenna_pec_ground_plane.py).
+
+<center>
+![](../images/antenna_pec_ground_plane.png)
+</center>
+
+```py
+resolution = 200  # pixels/um
+n = 1.2           # refractive index of surrounding medium
+h = 1.25          # height of antenna (point dipole source) above ground plane
+wvl = 0.65        # vacuum wavelength
+r = 1000*wvl      # radius of far-field circle
+npts = 50         # number of points in [0,pi/2) range of angles
+
+angles = 0.5*math.pi/npts*np.arange(npts)
+
+
+def radial_flux(sim,nearfield_box,r):
+    E = np.zeros((npts,3),dtype=np.complex128)
+    H = np.zeros((npts,3),dtype=np.complex128)
+
+    for n in range(npts):
+        ff = sim.get_farfield(nearfield_box,
+                              mp.Vector3(r*math.sin(angles[n]),
+                                         r*math.cos(angles[n])))
+        E[n,:] = [np.conj(ff[j]) for j in range(3)]
+        H[n,:] = [ff[j+3] for j in range(3)]
+
+    Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1]) # Ey*Hz-Ez*Hy
+    Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2]) # Ez*Hx-Ex*Hz
+    Pr = np.sqrt(np.square(Px)+np.square(Py))
+
+    return Pr
+
+
+def free_space_radiation(src_cmpt):
+    sxy = 4
+    dpml = 1
+    cell_size = mp.Vector3(sxy+2*dpml,sxy+2*dpml)
+    pml_layers = [mp.PML(dpml)]
+
+    fcen = 1/wvl
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         center=mp.Vector3(),
+                         component=src_cmpt)]
+
+    if src_cmpt == mp.Hz:
+        symmetries = [mp.Mirror(mp.X,phase=-1),
+                      mp.Mirror(mp.Y,phase=-1)]
+    elif src_cmpt == mp.Ez:
+        symmetries = [mp.Mirror(mp.X,phase=+1),
+                      mp.Mirror(mp.Y,phase=+1)]
+    else:
+        symmetries = []
+
+    sim = mp.Simulation(cell_size=cell_size,
+                        resolution=resolution,
+                        sources=sources,
+                        symmetries=symmetries,
+                        boundary_layers=pml_layers,
+                        default_material=mp.Medium(index=n))
+
+    nearfield_box = sim.add_near2far(fcen,
+                                     0,
+                                     1,
+                                     mp.Near2FarRegion(center=mp.Vector3(0,+0.5*sxy),
+                                                       size=mp.Vector3(sxy,0)),
+                                     mp.Near2FarRegion(center=mp.Vector3(0,-0.5*sxy),
+                                                       size=mp.Vector3(sxy,0),
+                                                       weight=-1),
+                                     mp.Near2FarRegion(center=mp.Vector3(+0.5*sxy,0),
+                                                       size=mp.Vector3(0,sxy)),
+                                     mp.Near2FarRegion(center=mp.Vector3(-0.5*sxy,0),
+                                                       size=mp.Vector3(0,sxy),
+                                                       weight=-1))
+
+    sim.run(until_after_sources=mp.stop_when_dft_decayed())
+
+    Pr = radial_flux(sim,nearfield_box,r)
+
+    return Pr
+
+
+def pec_ground_plane_radiation(src_cmpt=mp.Hz):
+    L = 8.0     # length of non-PML region
+    dpml = 1.0  # thickness of PML
+    sxy = dpml+L+dpml
+    cell_size = mp.Vector3(sxy,sxy,0)
+    boundary_layers = [mp.PML(dpml)]
+
+    fcen = 1/wvl
+
+    # The near-to-far field transformation feature only supports
+    # homogeneous media which means it cannot explicitly take into
+    # account the ground plane. As a workaround, we use two antennas
+    # of opposite sign surrounded by a single near2far box which
+    # encloses both antennas. We then use an odd mirror symmetry to
+    # divide the computational cell in half which is effectively
+    # equivalent to a PEC boundary condition on one side.
+    # Note: This setup means that the radiation pattern can only
+    # be measured in the top half above the dipole.
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         component=src_cmpt,
+                         center=mp.Vector3(0,+h)),
+               mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         component=src_cmpt,
+                         center=mp.Vector3(0,-h),
+                         amplitude=-1 if src_cmpt==mp.Ez else +1)]
+
+    symmetries = [mp.Mirror(direction=mp.X,
+                            phase=+1 if src_cmpt==mp.Ez else -1),
+                  mp.Mirror(direction=mp.Y,
+                            phase=-1 if src_cmpt==mp.Ez else +1)]
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=boundary_layers,
+                        sources=sources,
+                        symmetries=symmetries,
+                        default_material=mp.Medium(index=n))
+
+    nearfield_box = sim.add_near2far(fcen,
+                                     0,
+                                     1,
+                                     mp.Near2FarRegion(center=mp.Vector3(0,2*h),
+                                                       size=mp.Vector3(2*h,0),
+                                                       weight=+1),
+                                     mp.Near2FarRegion(center=mp.Vector3(0,-2*h),
+                                                       size=mp.Vector3(2*h,0),
+                                                       weight=-1),
+                                     mp.Near2FarRegion(center=mp.Vector3(h,0),
+                                                       size=mp.Vector3(0,4*h),
+                                                       weight=+1),
+                                     mp.Near2FarRegion(center=mp.Vector3(-h,0),
+                                                       size=mp.Vector3(0,4*h),
+                                                       weight=-1))
+
+    sim.plot2D()
+    plt.savefig('antenna_pec_ground_plane.png',bbox_inches='tight')
+
+    sim.run(until_after_sources=mp.stop_when_dft_decayed())
+
+    Pr = radial_flux(sim,nearfield_box,r)
+
+    return Pr
+
+
+if __name__ == '__main__':
+    src_cmpt = mp.Ez  # TM/P: Hz or TE/S: Ez
+    Pr_fsp = free_space_radiation(src_cmpt)
+    Pr_pec = pec_ground_plane_radiation(src_cmpt)
+
+    # The radiation pattern of a two-element antenna
+    # array is equivalent to the radiation pattern of
+    # a single antenna multiplied by its array factor
+    # as derived in Section 6.2 "Two-Element Array" of
+    # Antenna Theory: Analysis and Design, Fourth Edition
+    # (2016) by C.A. Balanis.
+    k = 2*np.pi/(wvl/n)  # wavevector in free space
+    Pr_theory = np.zeros(npts,)
+    for i,ang in enumerate(angles):
+        Pr_theory[i] = Pr_fsp[i] * 2*np.sin(k*h*np.cos(ang))
+
+    Pr_pec_norm = Pr_pec/np.max(Pr_pec)
+    Pr_theory_norm = (Pr_theory/max(Pr_theory))**2
+
+    plt.figure()
+    plt.plot(np.degrees(angles),Pr_pec_norm,'b-',label='Meep')
+    plt.plot(np.degrees(angles),Pr_theory_norm,'r-',label='theory')
+    plt.xlabel('angle (degrees)')
+    plt.ylabel('radial flux (normalized by maximum flux)')
+    plt.title('antenna with {}$_z$ polarization above PEC ground plane'.format('E' if src_cmpt==mp.Ez else r'H'))
+    plt.axis([0,90,0,1.0])
+    plt.legend()
+    plt.savefig('radiation_pattern.png',bbox_inches='tight')
+
+    print("norm:, {:.6f}".format(np.linalg.norm(Pr_pec_norm-Pr_theory_norm)))
+```
 
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
