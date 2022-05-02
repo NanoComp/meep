@@ -285,8 +285,12 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 center=self.volume.center,
                 **self.eigenmode_kwargs,
             )
+<<<<<<< HEAD
 
         else isinstance(self.mode, mp.DiffractedPlanewave):
+=======
+        elif isinstance(self.mode,mp.DiffractedPlanewave):
+>>>>>>> 9b8bf646 (whoops)
             source = mp.EigenModeSource(
                 src,
                 eig_band=new_dp,
