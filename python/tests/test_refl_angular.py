@@ -127,7 +127,7 @@ class TestReflAngular(ApproxComparisonTestCase):
                                                                               Ranalytic[i],
                                                                               err))
 
-        tol = 0.004
+        tol = 0.005 if mp.is_single_precision() else 0.004
         self.assertClose(Rmeep, Ranalytic, epsilon=tol)
 
 

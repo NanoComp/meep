@@ -884,10 +884,10 @@ public:
   // case not thread-safe)
   const char *str(char *buffer = 0, size_t buflen = 0);
 
-  ivec round_up_to_even(void) const {
+  ivec round_down_to_even(void) const {
     ivec result(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
-    result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2;
+    result.t[d] = t[d] - (t[d] >= 0 ? t[d] : -t[d]) % 2;
     return result;
   }
 
