@@ -417,7 +417,7 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         grid_volume gvu(chunks[i]->gv);
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
-        ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(min(user_volume.big_owned_corner(cgrid), max(_iscoS, _iecoS))); // fix ordering due to to transform
+        ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
         
         //With symmetry, the upper half of the original chunk is kept and includes one extra pixel. 
         //When looped over all symmetries, pixels outside the lower boundary "user_volume.little_owned_corner(cgrid)" is excluded.  
