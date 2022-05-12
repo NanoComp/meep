@@ -87,40 +87,40 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size: Union[meep.geom.Vector3, Tuple[float, ...], NoneType] = None,
-             resolution: float = None,
-             geometry: Optional[List[meep.geom.GeometricObject]] = None,
-             sources: Optional[List[meep.source.Source]] = None,
-             eps_averaging: bool = True,
-             dimensions: int = 3,
-             boundary_layers: Optional[List[meep.simulation.PML]] = None,
-             symmetries: Optional[List[meep.simulation.Symmetry]] = None,
-             force_complex_fields: bool = False,
-             default_material: meep.geom.Medium = Medium(),
-             m: float = 0,
-             k_point: Union[meep.geom.Vector3, Tuple[float, ...], bool] = False,
-             kz_2d: str = 'complex',
-             extra_materials: Optional[List[meep.geom.Medium]] = None,
-             material_function: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium]] = None,
-             epsilon_func: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float]] = None,
-             epsilon_input_file: str = '',
-             progress_interval: float = 4,
-             subpixel_tol: float = 0.0001,
-             subpixel_maxeval: int = 100000,
-             loop_tile_base_db: int = 0,
-             loop_tile_base_eh: int = 0,
-             ensure_periodicity: bool = True,
-             num_chunks: int = 0,
-             Courant: float = 0.5,
-             accurate_fields_near_cylorigin: bool = False,
-             filename_prefix: Optional[str] = None,
-             output_volume: Optional[meep.simulation.Volume] = None,
-             output_single_precision: bool = False,
-             geometry_center: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
-             force_all_components: bool = False,
-             split_chunks_evenly: bool = True,
+             cell_size:Union[meep.geom.Vector3, Tuple[float, ...], NoneType]=None,
+             resolution:float=None,
+             geometry:Union[List[meep.geom.GeometricObject], NoneType]=None,
+             sources:Union[List[meep.source.Source], NoneType]=None,
+             eps_averaging:bool=True,
+             dimensions:int=3,
+             boundary_layers:Union[List[meep.simulation.PML], NoneType]=None,
+             symmetries:Union[List[meep.simulation.Symmetry], NoneType]=None,
+             force_complex_fields:bool=False,
+             default_material:meep.geom.Medium=Medium(),
+             m:float=0,
+             k_point:Union[meep.geom.Vector3, Tuple[float, ...], bool]=False,
+             kz_2d:str='complex',
+             extra_materials:Union[List[meep.geom.Medium], NoneType]=None,
+             material_function:Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium], NoneType]=None,
+             epsilon_func:Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float], NoneType]=None,
+             epsilon_input_file:str='',
+             progress_interval:float=4,
+             subpixel_tol:float=0.0001,
+             subpixel_maxeval:int=100000,
+             loop_tile_base_db:int=0,
+             loop_tile_base_eh:int=0,
+             ensure_periodicity:bool=True,
+             num_chunks:int=0,
+             Courant:float=0.5,
+             accurate_fields_near_cylorigin:bool=False,
+             filename_prefix:Union[str, NoneType]=None,
+             output_volume:Union[meep.simulation.Volume, NoneType]=None,
+             output_single_precision:bool=False,
+             geometry_center:Union[meep.geom.Vector3, Tuple[float, ...]]=Vector3<0.0, 0.0, 0.0>,
+             force_all_components:bool=False,
+             split_chunks_evenly:bool=True,
              chunk_layout=None,
-             collect_stats: bool = False):
+             collect_stats:bool=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -723,7 +723,7 @@ of the field at that point.
 
 ```python
 def add_dft_fields(self, *args, **kwargs):
-def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0):
+def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0, persist=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1462,7 +1462,7 @@ class DiffractedPlanewave(object):
 
 <div class="class_docstring" markdown="1">
 
-For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
+For mode decomposition, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients` or `band_num` of `get_eigenmode`.
 
 </div>
 
@@ -1480,9 +1480,9 @@ def __init__(self, g=None, axis=None, s=None, p=None):
 
 Construct a `DiffractedPlanewave`.
 
-+ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
++ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor extends the entire length of the cell.
 
-+ **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
++ **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
 + **`s` [ `complex` ]** — The complex amplitude of the $\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
 
@@ -4435,7 +4435,7 @@ def __init__(self,
              medium2,
              weights=None,
              grid_type='U_DEFAULT',
-             do_averaging=False,
+             do_averaging=True,
              beta=0,
              eta=0.5,
              damping=0):

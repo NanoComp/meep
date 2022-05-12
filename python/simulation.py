@@ -128,7 +128,7 @@ def bands_to_diffractedplanewave(where,bands):
 
 class DiffractedPlanewave(object):
     """
-    For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
+    For mode decomposition, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients` or `band_num` of `get_eigenmode`.
     """
     def __init__(self,
                  g=None,
@@ -138,9 +138,9 @@ class DiffractedPlanewave(object):
         """
         Construct a `DiffractedPlanewave`.
 
-        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor extends the entire length of the cell.
 
-        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\\mathcal{S}$ and $\\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
+        + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\\mathcal{S}$ and $\\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
         + **`s` [ `complex` ]** — The complex amplitude of the $\\mathcal{S}$ polarziation (i.e., electric field perpendicular to the plane of incidence).
 
@@ -2470,11 +2470,10 @@ class Simulation(object):
             eig_vol = Volume(src.eig_lattice_center, src.eig_lattice_size, self.dimensions,
                              is_cylindrical=self.is_cylindrical).swigobj
 
-            if isinstance(src.eig_band, DiffractedPlanewave):
-                eig_band = 1
-                diffractedplanewave = bands_to_diffractedplanewave(where, src.eig_band)
-            elif isinstance(src.eig_band, int):
+            if isinstance(src.eig_band, int):
                 eig_band = src.eig_band
+            else:
+                raise TypeError("eig_band property of EigenModeSource must be an integer.")
 
             add_eig_src_args = [
                 src.component,
@@ -2491,11 +2490,7 @@ class Simulation(object):
                 src.amplitude
             ]
             add_eig_src = functools.partial(self.fields.add_eigenmode_source, *add_eig_src_args)
-
-            if isinstance(src.eig_band, DiffractedPlanewave):
-                add_eig_src(src.amp_func, diffractedplanewave)
-            else:
-                add_eig_src(src.amp_func)
+            add_eig_src(src.amp_func)
         elif isinstance (src, GaussianBeamSource):
             gaussianbeam_args = [
                 py_v3_to_vec(self.dimensions, src.beam_x0, is_cylindrical=self.is_cylindrical),
@@ -3630,7 +3625,7 @@ class Simulation(object):
                 direction
             )
         else:
-            raise TypeError("get_eigenmode_coefficients: bands must be either a list or DiffractedPlanewave object")
+            raise TypeError("get_eigenmode_coefficients: bands must be either a list of positive integers or DiffractedPlanewave object.")
 
         return EigCoeffsResult(np.reshape(coeffs, (num_bands, flux.freq.size(), 2)), vgrp, kpoints, kdom, cscale)
 
