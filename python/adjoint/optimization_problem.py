@@ -321,6 +321,8 @@ class OptimizationProblem(object):
                 "The requested number of gradients must be less than or equal to the total number of design parameters."
             )
 
+        assert db < 0.2, "The step size of finite difference is too large."   
+
         # cleanup simulation object
         self.sim.reset_meep()
         self.sim.change_sources(self.forward_sources)
@@ -339,7 +341,10 @@ class OptimizationProblem(object):
             self.sim.reset_meep()
 
             # assign new design vector
-            b0[k] -= db
+            in_interior = True  # b0[k] is not too close to the boundaries 0 and 1
+            if b0[k] < db or b0[k]+db > 1: in_interior = False  # b0[k] is too close to 0 or 1
+
+            if b0[k] >= db: b0[k] -= db
             self.design_regions[design_variables_idx].update_design_parameters(
                 b0)
 
@@ -367,7 +372,9 @@ class OptimizationProblem(object):
             self.sim.reset_meep()
 
             # assign new design vector
-            b0[k] += 2 * db  # central difference rule...
+            if in_interior: b0[k] += 2 * db  # central difference rule...
+            else: b0[k] += db  # forward or backward  difference...
+
             self.design_regions[design_variables_idx].update_design_parameters(
                 b0)
 
@@ -394,7 +401,7 @@ class OptimizationProblem(object):
             # estimate derivative
             # -------------------------------------------- #
             fd_gradient.append([
-                np.squeeze((fp[fi] - fm[fi]) / (2 * db))
+                np.squeeze((fp[fi] - fm[fi]) / db / (2 if in_interior else 1))
                 for fi in range(len(self.objective_functions))
             ])
 
