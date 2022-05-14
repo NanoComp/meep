@@ -49,9 +49,9 @@ class TestDiffractedPlanewave(unittest.TestCase):
   def run_mode_decomposition(self,theta,bands,orders):
     """Computes the transmittance of the diffraction orders
        of a binary grating given an incident planewave at
-       angle theta. The transmittance is computed using
+       angle `theta`. The transmittance is computed using
        mode decomposition in two different ways:
-       (1) band number (bands) and (2) diffraction order (orders)
+       (1) band number (`bands`) and (2) diffraction order (`orders`)
        via a `DiffractedPlanewave` object. The test verifies
        that these two methods produce equivalent results.
     """
@@ -154,10 +154,11 @@ class TestDiffractedPlanewave(unittest.TestCase):
   def run_mode_source(self,m,diffpw):
     """Computes the transmitted Poynting flux of a
        binary grating given an incident planewave
-       specified by the diffraction order m in the
+       specified by the diffraction order `m` in the
        y direction. The incident planewave is defined
        using a mode source with either a band number
-       or `DiffractedPlanewave` object.
+       or `DiffractedPlanewave` object specified by
+       the boolean flag `diffpw`.
     """
     ky = m/self.gp
     theta = math.asin(ky/(self.fcen*self.ng))
@@ -172,8 +173,8 @@ class TestDiffractedPlanewave(unittest.TestCase):
       symmetries = [mp.Mirror(direction=mp.Y)]
 
     if diffpw:
-      # the *zeroth* diffraction order defines a planewave with a wavevector
-      # equal to the `k_point` of the `Simulation` object
+      # the *zeroth* diffraction order defines a planewave with a
+      # wavevector equal to the `k_point` of the `Simulation` object
       sources = [mp.EigenModeSource(mp.GaussianSource(self.fcen,fwidth=self.df),
                                     center=self.src_pt,
                                     size=mp.Vector3(0,self.sy,0),
@@ -227,7 +228,9 @@ class TestDiffractedPlanewave(unittest.TestCase):
           "{:.5f} [trans. (diffraction order)]".format(m,
                                                        tran_bandnum,
                                                        tran_diffpw))
-    self.assertAlmostEqual(tran_bandnum,tran_diffpw,places=4)
+    self.assertAlmostEqual(tran_bandnum,
+                           tran_diffpw,
+                           places=3 if mp.is_single_precision() else 4)
 
 
 if __name__ == '__main__':
