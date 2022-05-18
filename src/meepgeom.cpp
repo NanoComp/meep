@@ -1224,10 +1224,6 @@ void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matri
 
 duals::duald get_material_grid_fill(meep::ndim dim, duals::duald d, double r, duals::duald u, double eta){
   /* The fill fraction should describe the amount of u=1 material in the current pixel.
-
-  The analytic volume expressions for the end cap only specify the fill fraction
-  of the cap relative to the whole sphere... but we don't know what the cap 
-  actually is (solid or void). So we need a little extra logic to sort that out.
   
   Occasionally, the distance to the nearest interface is outside the current
   sphere, which means we don't need to do any averaging (the fill is 0 or 1). Again,
@@ -1247,12 +1243,8 @@ duals::duald get_material_grid_fill(meep::ndim dim, duals::duald d, double r, du
     else if (dim == meep::D3)
       rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
   }
-
-  if (u <= eta){
-    return rel_fill;   // center is void, so cap must be solid
-  }else{
-    return 1-rel_fill; // center is solid, so cap must be void (and we need complement)
-  }
+  
+  return rel_fill;
 }
 
 duals::duald normalize_dual(cvector3 &cv){
@@ -1326,10 +1318,6 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   if (maxeval == 0){
     get_material_pt(mat, v.center());
     if (is_material_grid(mat)){
-      master_printf("point: %f %f \n",v.center().x(),v.center().y());
-      //boolean inobject;
-      //mat =
-      //(material_type)material_of_unshifted_point_in_tree_inobject(vec_to_vector3(v.center()), restricted_tree, &inobject);
       tp = geom_tree_search(vec_to_vector3(v.center()), restricted_tree, &oi);
       uval = matgrid_val(vec_to_vector3(v.center()), tp, oi, mat);
     mgavg:
@@ -1388,7 +1376,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
       } else{
         /* we have a material grid interface within our pixel.
         we therefore need to set the two materials used for
-        averaging to our corresponding solid and voide materials.
+        averaging to our corresponding solid and void materials.
         */
         symm_matrix eps_0, eps_plus, eps_minus;
         dual_interpolate_mat(mat,eps_0,uval);
