@@ -29,7 +29,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
   for (int i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
-  overall_scale = 1.0
+  overall_scale = 1.0;
 }
 
 dft_ldos::dft_ldos(const std::vector<double> freq_) {
@@ -40,7 +40,7 @@ dft_ldos::dft_ldos(const std::vector<double> freq_) {
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
-  overall_scale = 1.0
+  overall_scale = 1.0;
 }
 
 dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
@@ -51,7 +51,7 @@ dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
-  overall_scale = 1.0
+  overall_scale = 1.0;
 }
 
 // |c|^2
