@@ -353,3 +353,48 @@ class Near2FarFields(ObjectiveQuantity):
             for far_pt in self.far_pts
         ]).reshape((self._nfar_pts, self.num_freq, 6))
         return self._eval
+        
+class LDOS(ObjectiveQuantity):
+    def __init__(self, sim, decimation_factor=0, **kwargs):
+        super().__init__(sim)
+        self.decimation_factor = decimation_factor
+        self.srckwarg = kwargs
+
+    def register_monitors(self, frequencies):
+        self._frequencies = np.asarray(frequencies)
+        self.forward_src = self.sim.sources
+        return
+
+    def place_adjoint_source(self, dJ):
+        time_src = self._create_time_profile()
+        dJ = dJ.flatten()
+        sources = []
+        forward_f_scale = np.array([self.ldos_scale/self.ldos_Jdata[k] for k in range(self.num_freq)])
+        if self._frequencies.size == 1:
+            amp = (dJ * self._adj_src_scale(False) * forward_f_scale)[0]
+            src = time_src
+        else:
+            scale = dJ * self._adj_src_scale(False) * forward_f_scale
+            src = FilteredSource(
+                time_src.frequency,
+                self._frequencies,
+                scale,
+                self.sim.fields.dt,
+            )
+            amp = 1
+        for forward_src_i in self.forward_src:
+            if isinstance(forward_src_i, mp.EigenModeSource):
+                src_i = mp.EigenModeSource(src, component=forward_src_i.component, eig_kpoint = forward_src_i.eig_kpoint, amplitude=amp, eig_band=forward_src_i.eig_band, size = forward_src_i.size,center=forward_src_i.center, **self.srckwarg)
+            else:
+                src_i = mp.Source(src, component=forward_src_i.component, amplitude=amp, size = forward_src_i.size,center=forward_src_i.center, **self.srckwarg)
+            if mp.is_electric(src_i.component):
+                src_i.amplitude *= -1
+            sources += [src_i]
+            
+        return sources
+
+    def __call__(self):
+        self._eval = self.sim.ldos_data
+        self.ldos_scale = self.sim.ldos_scale
+        self.ldos_Jdata = self.sim.ldos_Jdata
+        return np.array(self._eval)

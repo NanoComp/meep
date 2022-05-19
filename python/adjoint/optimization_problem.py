@@ -3,7 +3,7 @@ import numpy as np
 from autograd import grad, jacobian
 from collections import namedtuple
 
-from . import utils, DesignRegion
+from . import utils, DesignRegion, LDOS
 
 class OptimizationProblem(object):
     """Top-level class in the MEEP adjoint module.
@@ -175,11 +175,16 @@ class OptimizationProblem(object):
         self.prepare_forward_run()
 
         # Forward run
-        self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-            self.decay_by,
-            self.minimum_run_time,
-            self.maximum_run_time
-        ))
+        if any(isinstance(m, LDOS) for m in self.objective_arguments):
+            self.sim.run(mp.dft_ldos(self.frequencies), until_after_sources=mp.stop_when_dft_decayed(
+                self.decay_by,
+                self.minimum_run_time,
+                self.maximum_run_time))
+        else:
+            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
+                self.decay_by,
+                self.minimum_run_time,
+                self.maximum_run_time))
 
         # record objective quantities from user specified monitors
         self.results_list = []
@@ -349,11 +354,13 @@ class OptimizationProblem(object):
                 self.forward_monitors.append(
                     m.register_monitors(self.frequencies))
 
-            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-                self.decay_by,
-                self.minimum_run_time,
-                self.maximum_run_time
-            ))
+            if any(isinstance(m, LDOS) for m in self.objective_arguments):
+                self.sim.run(mp.dft_ldos(self.frequencies), until_after_sources=mp.stop_when_energy_decayed(dt=1, decay_by=1e-11))
+            else:
+                self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
+                    self.decay_by,
+                    self.minimum_run_time,
+                    self.maximum_run_time))
 
             # record final objective function value
             results_list = []
@@ -378,11 +385,13 @@ class OptimizationProblem(object):
                     m.register_monitors(self.frequencies))
 
             # add monitor used to track dft convergence
-            self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
-                self.decay_by,
-                self.minimum_run_time,
-                self.maximum_run_time
-            ))
+            if any(isinstance(m, LDOS) for m in self.objective_arguments):
+                self.sim.run(mp.dft_ldos(self.frequencies), until_after_sources=mp.stop_when_energy_decayed(dt=1, decay_by=1e-11))
+            else:
+                self.sim.run(until_after_sources=mp.stop_when_dft_decayed(
+                    self.decay_by,
+                    self.minimum_run_time,
+                    self.maximum_run_time))
 
             # record final objective function value
             results_list = []
