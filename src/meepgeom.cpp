@@ -445,12 +445,14 @@ cvector3 material_grid_grad(vector3 p, material_data *md, const geometric_object
   if (o != NULL) {
     gradient = to_geom_object_coords_VJP(grad_u, o);
   } else {
-    g_real = make_vector3(nx*du_dx.rpart()/ geometry_lattice.size.x,
-      ny*du_dy.rpart()/ geometry_lattice.size.y,
-      nz*du_dz.rpart()/ geometry_lattice.size.z);
-    g_imag = make_vector3(nx*du_dx.dpart()/ geometry_lattice.size.x,
-      ny*du_dy.dpart()/ geometry_lattice.size.y,
-      nz*du_dz.dpart()/ geometry_lattice.size.z);
+    g_real = make_vector3(
+      geometry_lattice.size.x == 0 ? 0 : nx*du_dx.rpart()/ geometry_lattice.size.x,
+      geometry_lattice.size.y == 0 ? 0 : ny*du_dy.rpart()/ geometry_lattice.size.y,
+      geometry_lattice.size.z == 0 ? 0 : nz*du_dz.rpart()/ geometry_lattice.size.z);
+    g_imag = make_vector3(
+      geometry_lattice.size.x == 0 ? 0 : nx*du_dx.dpart()/ geometry_lattice.size.x,
+      geometry_lattice.size.y == 0 ? 0 : ny*du_dy.dpart()/ geometry_lattice.size.y,
+      geometry_lattice.size.z == 0 ? 0 : nz*du_dz.dpart()/ geometry_lattice.size.z);
     gradient = make_cvector3(g_real,g_imag);
   }
   return gradient;
