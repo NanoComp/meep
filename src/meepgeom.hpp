@@ -339,8 +339,8 @@ void update_weights(material_type matgrid, double *weights);
 duals::duald matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 duals::duald material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
-void material_grids_addgradient(double *v, size_t ng, std::complex<meep::realnum> *fields_a,
-                                std::complex<meep::realnum> *fields_f, size_t fields_shapes[12],
+void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<meep::dft_fields *> fields_a,
+                                std::vector<meep::dft_fields *>fields_f,
                                 double *frequencies, double scalegrad, meep::grid_volume &gv,
                                 meep::volume &where, geom_epsilon *geps, double du = 1e-6);
 

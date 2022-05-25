@@ -51,6 +51,14 @@ $$\frac{i \sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega (\gamma_n - i\omega)}$$
 
 which is equivalent to the Lorentzian model except that the $\omega_n^2$ term has been omitted from the denominator, and asymptotes to a conductivity $\sigma_n \omega_n^2 / \gamma_n$ as $\omega\to 0$. In this case, $\omega_n^2$ is just a dimensional scale factor and has no interpretation as a resonance frequency.
 
+### How do I import n and k values into Meep?
+
+You can import into Meep any arbitrary complex permittivity profile via $n$ and $k$ values obtained via e.g. [ellipsometry](https://en.wikipedia.org/wiki/Ellipsometry) by fitting the wavelength- or frequency-dependent data to a sum of Lorentzian polarizability terms. In general, you have to use nonlinear optimization to perform the fit (e.g., to minimize the sum-of-squares errors or whatever error criterion you prefer). Enough Lorentzians should form a complete basis, so you should be able to fit any function given enough Lorentzians. Unfortunately, the fitting process requires some trial and error to specify the number of fitting parameters and their initial values. For a demonstration, see this [script](https://github.com/NanoComp/meep/blob/master/python/examples/eps_fit_lorentzian.py).
+
+A wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented using the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation) can be directly [transferred to the Lorentz model using a simple substitution of variables](#sellmeier-coefficients).
+
+Note: Meep only does [subpixel averaging of the nondispersive part of $\varepsilon$ (and $\mu$)](Subpixel_Smoothing.md#what-about-dispersive-materials).
+
 ### Sellmeier Coefficients
 
 For a wavelength-dependent, purely-real permittivity (i.e., with no loss) which can be represented via the [Sellmeier equation](https://en.wikipedia.org/wiki/Sellmeier_equation):
@@ -274,5 +282,38 @@ In Scheme, the materials library is already included when Meep is run, so you ca
 ```scm
 (set! geometry (list (make cylinder (material Al) ...)))
 ```
+
+As a final example, we plot the complex refractive index of SiO$_2$ from the materials library over the visible wavelength range of 400 nm to 700 nm.
+
+```py
+from meep.materials import SiO2
+import numpy as np
+import matplotlib.pyplot as plt
+
+wvl_min = 0.4 # units of μm
+wvl_max = 0.7 # units of μm
+nwvls = 21
+wvls = np.linspace(wvl_min, wvl_max, nwvls)
+
+SiO2_epsilon = np.array([SiO2.epsilon(1/w)[0][0] for w in wvls])
+
+plt.subplot(1,2,1)
+plt.plot(wvls,np.real(SiO2_epsilon),'bo-')
+plt.xlabel('wavelength (μm)')
+plt.ylabel('real(ε)')
+
+plt.subplot(1,2,2)
+plt.plot(wvls,np.imag(SiO2_epsilon),'ro-')
+plt.xlabel('wavelength (μm)')
+plt.ylabel('imag(ε)')
+
+plt.suptitle('SiO$_2$ from Meep materials library')
+plt.subplots_adjust(wspace=0.4)
+plt.show()
+```
+
+<center>
+![SiO2 from the materials library](images/SiO2_materials_library.png)
+</center>
 
 **Note:** for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting accuracy) by removing from the material definitions those Lorentzian susceptibility terms which are far outside the spectral region of interest. In addition, when using the materials library the Courant parameter may need to be reduced to achieve meaningful results, see [Numerical Stability](Materials.md#numerical-stability).

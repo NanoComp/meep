@@ -51,6 +51,7 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   bool empty_dim[5];
   dft_chunk *dft_chunks;
   int decimation_factor;
+  bool persist;
 };
 
 dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_,
@@ -70,7 +71,22 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   dV0 = dV0_;
   dV1 = dV1_;
 
+  persist = data->persist;
+
   c = c_;
+
+  /* for adjoint calculations, we want to pad
+  (or expand) the dimensions of the dft region
+  to account for boundary effects. We will pad
+  by 1 pixel in each dimension, while ensuring
+  we don't step outside of the chunk loop itself
+  */
+  if(persist){
+    is_old = is_;
+    ie_old = ie_;
+    is = max(is-one_ivec(fc->gv.dim)*2,fc->gv.little_corner());
+    ie = min(ie+one_ivec(fc->gv.dim)*2,fc->gv.big_corner());
+  }
 
   if (use_centered_grid)
     fc->gv.yee2cent_offsets(c, avg1, avg2);
@@ -159,7 +175,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
                            complex<double> extra_weight, bool use_centered_grid,
-                           int vc, int decimation_factor) {
+                           int vc, int decimation_factor, bool persist) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -172,6 +188,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
           "add_dft");
 
   dft_chunk_data data;
+  data.persist = persist;
   data.c = c;
   data.vc = vc;
 
@@ -211,13 +228,13 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
 }
 
 dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> &freq,
-                           bool include_dV_and_interp_weights) {
+                           bool include_dV_and_interp_weights, bool persist) {
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) meep::abort("derived_component invalid for dft");
     complex<double> stored_weight = where->weight;
     chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
-                     stored_weight, chunks);
+                     stored_weight, chunks, persist);
     where = where->next;
   }
   return chunks;
@@ -289,30 +306,50 @@ double fields::dft_norm() {
   am_now_working_on(Other);
   double sum = 0.0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2();
+    if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2(gv);
   finished_working();
   return std::sqrt(sum_to_all(sum));
 }
 
-double fields_chunk::dft_norm2() const {
+double fields_chunk::dft_norm2(grid_volume fgv) const {
   double sum = 0.0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
-    sum += cur->norm2();
+    sum += cur->norm2(fgv);
   return sum;
 }
 
 static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
 
-double dft_chunk::norm2() const {
+double dft_chunk::norm2(grid_volume fgv) const {
   if (!fc->f[c][0]) return 0.0;
   double sum = 0.0;
-  size_t idx_dft = 0;
-  const int Nomega = omega.size();
-  LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
-    for (int i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx_dft + i]);
-    idx_dft++;
+  size_t idx_dft;
+  const size_t Nomega = omega.size();
+  /* looping over chunks that have been "expanded"
+  for adjoint calculations requires some care. Namely,
+  we want to make sure we don't double count the padding
+  and can replicate results with different chunk combinations.
+  */
+  if (persist) {
+    grid_volume subgv = fgv.subvolume(is,ie,c);
+    LOOP_OVER_IVECS(subgv, is_old, ie_old, idx) {
+      for (size_t i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx + i]);          
+    } 
+  } 
+  /* note we place the if outside of the
+  loop to avoid branching. This routine gets
+  called a lot, so let's try to stay efficient
+  (at the expense of uglier code).
+   */
+  else{
+    LOOP_OVER_IVECS(fgv, is, ie, idx) {
+     idx_dft = IVEC_LOOP_COUNTER;
+     for (size_t i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx_dft + i]); 
+    }
   }
+
   return sum;
 }
 
@@ -842,7 +879,7 @@ void dft_fields::remove() {
 
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
                                   const double *freq, size_t Nfreq, bool use_centered_grid,
-                                  int decimation_factor) {
+                                  int decimation_factor, bool persist) {
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
@@ -851,7 +888,7 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
   for (int nc = 0; nc < num_components; nc++)
     chunks = add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights,
                      stored_weight, chunks, sqrt_dV_and_interp_weights, extra_weight,
-                     use_centered_grid, 0, decimation_factor);
+                     use_centered_grid, 0, decimation_factor, persist);
 
   return dft_fields(chunks, freq, Nfreq, where);
 }
@@ -1380,6 +1417,16 @@ void fields::get_mode_flux_overlap(void *mode_data, dft_flux flux, int num_freq,
 void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux flux,
                                    std::complex<double> overlaps[2]) {
   get_overlap(mode1_data, mode2_data, flux, 0, overlaps);
+}
+
+/* deregister all of the remaining dft monitors
+from the fields object. Note that this does not
+delete the underlying dft_chunks! (useful for 
+adjoint calculations, where we want to keep
+the chunk data around) */
+void fields::clear_dft_monitors() {
+for (int i = 0; i < num_chunks; i++)
+  if (chunks[i]->is_mine() && chunks[i]->dft_chunks) chunks[i]->dft_chunks = NULL;
 }
 
 // return the size of the dft monitor

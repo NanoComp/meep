@@ -292,6 +292,18 @@ static int nextpow2357(int n) {
   }
 }
 
+void special_kz_phasefix(eigenmode_data *edata, bool phase_flip) {
+  size_t n = edata->n[0] * edata->n[1] * edata->n[2];
+  complex<mpb_real> *E = (complex<mpb_real> *)edata->fft_data_E;
+  complex<mpb_real> *H = (complex<mpb_real> *)edata->fft_data_H;
+  complex<mpb_real> im(0, phase_flip ? -1 : 1);
+  for (size_t i = 0; i < n; ++i) {
+    E[3*i + 2] *= im; // Ez
+    H[3*i + 0] *= im; // Hx
+    H[3*i + 1] *= im; // Hy
+  }
+}
+
 /****************************************************************/
 /* call MPB to get the band_numth eigenmode at freq frequency.  */
 /*                                                              */
@@ -333,8 +345,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
   // special case: 2d cell in x and y with non-zero kz
   if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
-      (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (kpoint.z() == 0) &&
-      (real(k[Z]) != 0)) {
+      (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) &&
+      (kpoint.z() == 0) && (real(k[Z]) != 0)) {
     kpoint.set_direction(Z, real(k[Z]));
     empty_dim[2] = true;
   }
@@ -609,11 +621,24 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
         k2sum += ktmp*ktmp;
       }
     }
+    if (((v.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
+        (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (real(k[Z]) != 0)) ||
+        ((v.dim == D2) && (real(k[Z]) != 0))) {
+      k2sum += k[Z]*k[Z];
+    }
 
     // compute kperp (if it is non evanescent) OR
     // frequency from kperp^2 and sum of (kparallel+G)^2
     {
       direction dd = eig_vol.normal_direction();
+      if (eig_vol.dim == D3 && empty_dim[2]) {
+        volume eig_vol_2d(D2);
+        eig_vol_2d.set_direction_min(X, eig_vol.in_direction_min(X));
+        eig_vol_2d.set_direction_min(Y, eig_vol.in_direction_min(Y));
+        eig_vol_2d.set_direction_max(X, eig_vol.in_direction_max(X));
+        eig_vol_2d.set_direction_max(Y, eig_vol.in_direction_max(Y));
+        dd = eig_vol_2d.normal_direction();
+      }
       if (match_frequency) {
         vec cen = eig_vol.center();
         double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
@@ -809,6 +834,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                       NULL, NULL, dp);
   finished_working();
 
+  if (is_real && beta != 0) special_kz_phasefix(global_eigenmode_data, true /* phase_flip */);
+
   if (global_eigenmode_data == NULL) meep::abort("MPB could not find the eigenmode");
 
   /* add_volume_source amp_fun coordinates are relative to where.center();
@@ -922,6 +949,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
         if (kdom_list) kdom_list[nb * num_freqs + nf] = vec(0.0, 0.0, 0.0);
         continue;
       }
+
+      if (is_real && beta != 0) special_kz_phasefix((eigenmode_data *) mode_data, false /* phase_flip */);
 
       double vg = get_group_velocity(mode_data);
       vec kfound = get_k(mode_data);

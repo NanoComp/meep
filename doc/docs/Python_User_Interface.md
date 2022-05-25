@@ -87,40 +87,40 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size:Union[meep.geom.Vector3, Tuple[float, ...], NoneType]=None,
-             resolution:float=None,
-             geometry:Union[List[meep.geom.GeometricObject], NoneType]=None,
-             sources:Union[List[meep.source.Source], NoneType]=None,
-             eps_averaging:bool=True,
-             dimensions:int=3,
-             boundary_layers:Union[List[meep.simulation.PML], NoneType]=None,
-             symmetries:Union[List[meep.simulation.Symmetry], NoneType]=None,
-             force_complex_fields:bool=False,
-             default_material:meep.geom.Medium=Medium(),
-             m:float=0,
-             k_point:Union[meep.geom.Vector3, Tuple[float, ...], bool]=False,
-             kz_2d:str='complex',
-             extra_materials:Union[List[meep.geom.Medium], NoneType]=None,
-             material_function:Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium], NoneType]=None,
-             epsilon_func:Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float], NoneType]=None,
-             epsilon_input_file:str='',
-             progress_interval:float=4,
-             subpixel_tol:float=0.0001,
-             subpixel_maxeval:int=100000,
-             loop_tile_base_db:int=0,
-             loop_tile_base_eh:int=0,
-             ensure_periodicity:bool=True,
-             num_chunks:int=0,
-             Courant:float=0.5,
-             accurate_fields_near_cylorigin:bool=False,
-             filename_prefix:Union[str, NoneType]=None,
-             output_volume:Union[meep.simulation.Volume, NoneType]=None,
-             output_single_precision:bool=False,
-             geometry_center:Union[meep.geom.Vector3, Tuple[float, ...]]=Vector3<0.0, 0.0, 0.0>,
-             force_all_components:bool=False,
-             split_chunks_evenly:bool=True,
+             cell_size: Union[meep.geom.Vector3, Tuple[float, ...], NoneType] = None,
+             resolution: float = None,
+             geometry: Optional[List[meep.geom.GeometricObject]] = None,
+             sources: Optional[List[meep.source.Source]] = None,
+             eps_averaging: bool = True,
+             dimensions: int = 3,
+             boundary_layers: Optional[List[meep.simulation.PML]] = None,
+             symmetries: Optional[List[meep.simulation.Symmetry]] = None,
+             force_complex_fields: bool = False,
+             default_material: meep.geom.Medium = Medium(),
+             m: float = 0,
+             k_point: Union[meep.geom.Vector3, Tuple[float, ...], bool] = False,
+             kz_2d: str = 'complex',
+             extra_materials: Optional[List[meep.geom.Medium]] = None,
+             material_function: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium]] = None,
+             epsilon_func: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float]] = None,
+             epsilon_input_file: str = '',
+             progress_interval: float = 4,
+             subpixel_tol: float = 0.0001,
+             subpixel_maxeval: int = 100000,
+             loop_tile_base_db: int = 0,
+             loop_tile_base_eh: int = 0,
+             ensure_periodicity: bool = True,
+             num_chunks: int = 0,
+             Courant: float = 0.5,
+             accurate_fields_near_cylorigin: bool = False,
+             filename_prefix: Optional[str] = None,
+             output_volume: Optional[meep.simulation.Volume] = None,
+             output_single_precision: bool = False,
+             geometry_center: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
+             force_all_components: bool = False,
+             split_chunks_evenly: bool = True,
              chunk_layout=None,
-             collect_stats:bool=False):
+             collect_stats: bool = False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2816,7 +2816,7 @@ stopping conditions.
 
 </div>
 
-In particular, a useful value for `until_after_sources` or `until` is often `stop_when_field_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These top-level functions are available:
+In particular, a useful value for `until_after_sources` or `until` is often `stop_when_fields_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These top-level functions are available:
 
 
 <a id="stop_when_fields_decayed"></a>
@@ -2838,6 +2838,27 @@ happens to go through zero at some instant.
 Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
 property of your source(s), to decrease the amplitude of the small high-frequency
 components that are excited when the source turns off. High frequencies near the
+[Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
+slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
+
+</div>
+
+<a id="stop_when_energy_decayed"></a>
+
+```python
+def stop_when_energy_decayed(dt=None, decay_by=None):
+```
+
+<div class="function_docstring" markdown="1">
+
+Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+or `until_after_sources` parameter, that examines the field energy over the entire
+cell volume at every `dt` time units and keeps incrementing the run time by `dt`  until
+its absolute value has decayed by at least `decay_by` from its maximum recorded value.
+
+Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
+property of your source(s), to decrease the amplitude of the small high-frequency
+field components that are excited when the source turns off. High frequencies near the
 [Nyquist frequency](https://en.wikipedia.org/wiki/Nyquist_frequency) of the grid have
 slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.md).
 

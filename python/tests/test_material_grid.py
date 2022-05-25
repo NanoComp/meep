@@ -1,4 +1,8 @@
 import meep as mp
+try:
+    import meep.adjoint as mpa
+except:
+    import adjoint as mpa
 import numpy as np
 from scipy.ndimage import gaussian_filter
 import unittest
@@ -14,8 +18,7 @@ def compute_transmittance(matgrid_symmetry=False):
         matgrid_size = mp.Vector3(2,2,0)
         matgrid_resolution = 2*resolution
 
-        Nx = int(matgrid_resolution*matgrid_size.x) + 1
-        Ny = int(matgrid_resolution*matgrid_size.y) + 1
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
 
         # ensure reproducible results
         rng = np.random.RandomState(2069588)
@@ -58,7 +61,9 @@ def compute_transmittance(matgrid_symmetry=False):
                             sources=sources,
                             geometry=geometry)
 
-        mode_mon = sim.add_flux(fcen, 0, 1,
+        mode_mon = sim.add_flux(fcen,
+                                0,
+                                1,
                                 mp.FluxRegion(center=mp.Vector3(2.0,0),
                                               size=mp.Vector3(0,4.0)))
 
@@ -72,7 +77,7 @@ def compute_transmittance(matgrid_symmetry=False):
         return tran
 
 
-def compute_resonant_mode(res,default_mat=False):
+def compute_resonant_mode_2d(res,default_mat=False):
         cell_size = mp.Vector3(1,1,0)
 
         rad = 0.301943
@@ -90,8 +95,7 @@ def compute_resonant_mode(res,default_mat=False):
 
         # for a fixed resolution, compute the number of grid points
         # necessary which are defined on the corners of the voxels
-        Nx = int(matgrid_resolution*matgrid_size.x) + 1
-        Ny = int(matgrid_resolution*matgrid_size.y) + 1
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
 
         x = np.linspace(-0.5*matgrid_size.x,0.5*matgrid_size.x,Nx)
         y = np.linspace(-0.5*matgrid_size.y,0.5*matgrid_size.y,Ny)
@@ -131,35 +135,115 @@ def compute_resonant_mode(res,default_mat=False):
         except:
             raise RuntimeError("No resonant modes found.")
 
-        sim.reset_meep()
         return freq
+
+
+def compute_resonant_mode_3d(use_matgrid=True):
+    resolution = 25
+
+    wvl = 1.27
+    fcen = 1/wvl
+    df = 0.02*fcen
+
+    nSi = 3.45
+    Si = mp.Medium(index=nSi)
+    nSiO2 = 1.45
+    SiO2 = mp.Medium(index=nSiO2)
+
+    s = 1.0
+    cell_size = mp.Vector3(s,s,s)
+
+    rad = 0.34  # radius of sphere
+
+    if use_matgrid:
+        matgrid_resolution = 2*resolution
+        N = int(s*matgrid_resolution)
+        coord = np.linspace(-0.5*s,0.5*s,N)
+        xv, yv, zv = np.meshgrid(coord,coord,coord)
+
+        weights = np.sqrt(np.square(xv) + np.square(yv) + np.square(zv)) < rad
+        filtered_weights = gaussian_filter(weights,
+                                           sigma=4/resolution,
+                                           output=np.double)
+
+        matgrid = mp.MaterialGrid(mp.Vector3(N,N,N),
+                                  SiO2,
+                                  Si,
+                                  weights=filtered_weights,
+                                  do_averaging=True,
+                                  beta=1000,
+                                  eta=0.5)
+
+        geometry = [mp.Block(center=mp.Vector3(),
+                             size=cell_size,
+                             material=matgrid)]
+    else:
+        geometry = [mp.Sphere(center=mp.Vector3(),
+                              radius=rad,
+                              material=Si)]
+
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
+                         size=mp.Vector3(),
+                         center=mp.Vector3(0.13,0.25,0.06),
+                         component=mp.Ez)]
+
+    k_point = mp.Vector3(0.23,-0.17,0.35)
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        sources=sources,
+                        default_material=SiO2,
+                        k_point=k_point,
+                        geometry=geometry)
+
+    h = mp.Harminv(mp.Ez, mp.Vector3(-0.2684,0.1185,0.0187), fcen, df)
+
+    sim.run(mp.after_sources(h),
+            until_after_sources=200)
+
+    try:
+        for m in h.modes:
+            print("harminv:, {}, {}, {}".format(resolution,m.freq,m.Q))
+        freq = h.modes[0].freq
+    except:
+        raise RuntimeError("No resonant modes found.")
+
+    return freq
+
 
 class TestMaterialGrid(unittest.TestCase):
 
     def test_subpixel_smoothing(self):
-        ## "exact" frequency computed using MaterialGrid at resolution = 300
+        # "exact" frequency computed using MaterialGrid at resolution = 300
         freq_ref = 0.29826813873225283
 
         res = [25, 50]
         freq_matgrid = []
         for r in res:
-            freq_matgrid.append(compute_resonant_mode(r))
-            ## verify that the frequency of the resonant mode is
-            ## approximately equal to the reference value
+            freq_matgrid.append(compute_resonant_mode_2d(r))
+            # verify that the frequency of the resonant mode is
+            # approximately equal to the reference value
             self.assertAlmostEqual(freq_ref, freq_matgrid[-1], 2)
 
-        ## verify that the relative error is decreasing with increasing resolution
-        ## and is better than linear convergence because of subpixel smoothing
+        # verify that the relative error is decreasing with increasing resolution
+        # and is better than linear convergence because of subpixel smoothing
         self.assertLess(abs(freq_matgrid[1]-freq_ref)*(res[1]/res[0]),
                         abs(freq_matgrid[0]-freq_ref))
 
-        freq_matgrid_default_mat = compute_resonant_mode(res[0], True)
+        freq_matgrid_default_mat = compute_resonant_mode_2d(res[0], True)
         self.assertAlmostEqual(freq_matgrid[0], freq_matgrid_default_mat)
+
+
+    def test_matgrid_3d(self):
+        freq_matgrid = compute_resonant_mode_3d(True)
+        freq_geomobj = compute_resonant_mode_3d(False)
+        self.assertAlmostEqual(freq_matgrid, freq_geomobj, places=2)
+
 
     def test_symmetry(self):
             tran_nosym = compute_transmittance(False)
             tran_sym = compute_transmittance(True)
-            self.assertAlmostEqual(tran_nosym, tran_sym, places=6)
+            self.assertAlmostEqual(tran_nosym, tran_sym, places=5)
 
 if __name__ == '__main__':
     unittest.main()

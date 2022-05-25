@@ -1072,7 +1072,7 @@ grid_volume grid_volume::split_at_fraction(bool side_high, int split_pt, int spl
 // Halve the grid_volume for symmetry exploitation...must contain icenter!
 grid_volume grid_volume::halve(direction d) const {
   grid_volume retval(*this);
-  retval.set_num_direction(d, 1+(icenter().in_direction(d) - io.in_direction(d)) / 2);
+  retval.set_num_direction(d, 1+(big_corner().in_direction(d)-icenter().in_direction(d)) / 2);
   retval.set_origin(d, icenter().in_direction(d)-2);
   return retval;
 }
@@ -1095,10 +1095,10 @@ ivec grid_volume::icenter() const {
      symmetry point, and therefore icenter-io must be *even*
      in all components in order that rotations preserve the Yee lattice. */
   switch (dim) {
-    case D1: return io + ivec(nz()).round_up_to_even();
-    case D2: return io + ivec(nx(), ny()).round_up_to_even();
-    case D3: return io + ivec(nx(), ny(), nz()).round_up_to_even();
-    case Dcyl: return io + iveccyl(0, nz()).round_up_to_even();
+    case D1: return io + ivec(nz()).round_down_to_even();
+    case D2: return io + ivec(nx(), ny()).round_down_to_even();
+    case D3: return io + ivec(nx(), ny(), nz()).round_down_to_even();
+    case Dcyl: return io + iveccyl(0, nz()).round_down_to_even();
   }
   meep::abort("Can't do symmetry with these dimensions.\n");
   return ivec(0); // This is never reached.
@@ -1633,25 +1633,26 @@ const char *grid_volume::str(char *buffer, size_t buflen) {
 /********************************************************************/
 /********************************************************************/
 /********************************************************************/
-grid_volume grid_volume::subvolume(ivec is, ivec ie) {
+grid_volume grid_volume::subvolume(ivec is, ivec ie, component c) {
   if (!(contains(is) && contains(ie))) meep::abort("invalid extents in subvolume");
   grid_volume sub;
   sub.dim = dim;
   sub.a = a;
   sub.inva = inva;
-  sub.init_subvolume(is, ie);
+  sub.init_subvolume(is, ie, c);
   return sub;
 }
 
-void grid_volume::init_subvolume(ivec is, ivec ie) {
+void grid_volume::init_subvolume(ivec is, ivec ie, component c) {
   ivec origin(dim, 0);
+  for (int i=0;i<3;i++) num[i] = 0;
   LOOP_OVER_DIRECTIONS(dim, d) {
-    num[(int)d] = (ie - is).in_direction(d) / 2;
-    origin.set_direction(d, is.in_direction(d));
+    num[(int)d] = (ie - is).in_direction(d)/2;
+    origin.set_direction(d, is.in_direction(d)-iyee_shift(c).in_direction(d));
   }
   num_changed();
-  center_origin();
-  shift_origin(origin);
+  //center_origin();
+  set_origin(origin);
 }
 
 } // namespace meep

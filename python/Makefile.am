@@ -38,6 +38,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_solver.py         \
+    $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_jax.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
@@ -69,6 +70,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_get_epsilon_grid.py       \
     $(TEST_DIR)/test_holey_wvg_bands.py        \
     $(TEST_DIR)/test_holey_wvg_cavity.py       \
+    $(TEST_DIR)/test_integrated_source.py      \
     $(KDOM_TEST)                               \
     $(TEST_DIR)/test_ldos.py                   \
     $(MDPYTEST)                                \

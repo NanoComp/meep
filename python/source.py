@@ -173,7 +173,7 @@ class ContinuousSource(SourceTime):
         if frequency is None and wavelength is None:
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
-        super(ContinuousSource, self).__init__(**kwargs)
+        super(ContinuousSource, self).__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
@@ -240,7 +240,7 @@ class GaussianSource(SourceTime):
         if frequency is None and wavelength is None:
             raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
 
-        super(GaussianSource, self).__init__(**kwargs)
+        super(GaussianSource, self).__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
@@ -301,7 +301,7 @@ class CustomSource(SourceTime):
           automatically determine the decimation factor of the time-series updates
           of the DFT fields monitors (if any).
         """
-        super(CustomSource, self).__init__(**kwargs)
+        super(CustomSource, self).__init__(is_integrated=is_integrated, **kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
@@ -597,8 +597,9 @@ class IndexedSource(Source):
     """
     created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
     """
-    def __init__(self, src, srcdata, amp_arr):
+    def __init__(self, src, srcdata, amp_arr, needs_boundary_fix=False):
         self.src = src
         self.num_pts = len(amp_arr)
         self.srcdata = srcdata
         self.amp_arr = amp_arr
+        self.needs_boundary_fix = needs_boundary_fix

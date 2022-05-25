@@ -2,6 +2,10 @@ import unittest
 import parameterized
 import numpy as np
 import meep as mp
+try:
+    import meep.adjoint as mpa
+except:
+    import adjoint as mpa
 from meep.materials import SiN, Co
 
 class TestGetEpsilonGrid(unittest.TestCase):
@@ -12,8 +16,7 @@ class TestGetEpsilonGrid(unittest.TestCase):
 
         matgrid_resolution = 200
         matgrid_size = mp.Vector3(1.0,1.0,mp.inf)
-        Nx = int(matgrid_resolution*matgrid_size.x) + 1
-        Ny = int(matgrid_resolution*matgrid_size.y) + 1
+        Nx, Ny = int(matgrid_size.x*matgrid_resolution), int(matgrid_size.y*matgrid_resolution)
         x = np.linspace(-0.5*matgrid_size.x,0.5*matgrid_size.x,Nx)
         y = np.linspace(-0.5*matgrid_size.y,0.5*matgrid_size.y,Ny)
         xv, yv = np.meshgrid(x,y)

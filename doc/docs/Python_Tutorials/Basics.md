@@ -433,7 +433,7 @@ A 1d cell must be used since a higher-dimensional cell will introduce [artificia
 
 Creating an oblique planewave source typically requires specifying two parameters: (1) for periodic structures, the Bloch-periodic wavevector $\vec{k}$ via [`k_point`](../FAQ.md#how-does-k_point-define-the-phase-relation-between-adjacent-unit-cells), and (2) the source amplitude function `amp_func` for setting the $e^{i\vec{k} \cdot \vec{r}}$ spatial dependence ($\vec{r}$ is the position vector). Since we have a 1d cell and the source is at a single point, it is not necessary to specify the source amplitude (see this [2d example](https://github.com/NanoComp/meep/blob/master/python/examples/pw-source.py) for how this is done). The magnitude of the Bloch-periodic wavevector is specified according to the dispersion relation formula for a planewave in homogeneous media with index $n$: $\omega=c|\vec{k}|/n$. As the source in this example is incident from air, $|\vec{k}|$ is simply equal to the frequency $\omega$. Note that specifying $\vec{k}$ corresponds to a single frequency. Any broadband source is therefore incident at a specified angle for only a *single* frequency. This is described in more detail in Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). In this example, $\omega$ is set to the minimum frequency of the pulse to produce propagating fields at all pulse frequencies. In general, any pulse frequencies which are *less* than any non-zero component of $\vec{k}$ will result in *evanescent* fields (which carry zero power to the far field, and computationally will yield exponentially small power).
 
-In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is chosen to be $xz$. The source angle $\theta$ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the $+z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the $E_x$ and $H_y$ field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are included and are complex valued (note that the fields are real, by default). A current source with $E_x$ polarization lies within the plane of incidence and corresponds to the convention of $\mathcal{P}$-polarization. In order to model the $\mathcal{S}$-polarization, we must use an $E_y$ source. This example involves just the $\mathcal{P}$-polarization.
+In this example, the plane of incidence which contains $\vec{k}$ and the surface normal vector is chosen to be $xz$. The source angle $\theta$ is defined in degrees in the counterclockwise (CCW) direction around the $y$ axis with 0 degrees along the $+z$ axis. In Meep, a 1d cell is defined along the $z$ direction. When $\vec{k}$ is not set, only the $E_x$ and $H_y$ field components are permitted. A non-zero $\vec{k}$ results in a 3d simulation where all field components are included and are complex valued (note that the fields are real, by default). A current source with $E_x$ polarization lies within the plane of incidence and corresponds to the convention of $\mathcal{P}$ polarization. In order to model the $\mathcal{S}$ polarization, we must use an $E_y$ source. This example involves just the $\mathcal{P}$ polarization.
 
 The simulation script is [examples/refl-angular.py](https://github.com/NanoComp/meep/blob/master/python/examples/refl-angular.py). The notebook is [examples/refl-angular.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/refl-angular.ipynb).
 
@@ -442,13 +442,12 @@ import meep as mp
 import argparse
 import math
 
-def main(args):
 
+def main(args):
     resolution = args.res
 
     dpml = 1.0              # PML thickness
-    sz = 10                 # size of cell (without PMLs)
-    sz = 10 + 2*dpml
+    sz = 10 + 2*dpml        # size of cell (without PMLs)
     cell_size = mp.Vector3(0,0,sz)
     pml_layers = [mp.PML(dpml)]
 
@@ -472,7 +471,9 @@ def main(args):
     else:
         dimensions = 3
     
-    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df), component=mp.Ex, center=mp.Vector3(0,0,-0.5*sz+dpml))]
+    sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
+                         component=mp.Ex,
+                         center=mp.Vector3(0,0,-0.5*sz+dpml))]
 
     sim = mp.Simulation(cell_size=cell_size,
                         boundary_layers=pml_layers,
@@ -491,7 +492,9 @@ def main(args):
     sim.reset_meep()
 
     # add a block with n=3.5 for the air-dielectric interface
-    geometry = [mp.Block(mp.Vector3(mp.inf,mp.inf,0.5*sz), center=mp.Vector3(0,0,0.25*sz), material=mp.Medium(index=3.5))]
+    geometry = [mp.Block(size=mp.Vector3(mp.inf,mp.inf,0.5*sz),
+                         center=mp.Vector3(0,0,0.25*sz),
+                         material=mp.Medium(index=3.5))]
 
     sim = mp.Simulation(cell_size=cell_size,
                         geometry=geometry,

@@ -243,16 +243,17 @@ import os.path
 
 # Fetch chunk layout from a previous run if it exists
 if os.path.exists("path/to/chunk_layout.pkl"):
-  chunk_layout = pickle.load(open("path/to/chunk_layout.pkl", "rb"))
+  initial_chunk_layout = pickle.load(open("path/to/chunk_layout.pkl", "rb"))
 else:
-  chunk_layout = None
+  initial_chunk_layout = None
 
-sim = mp.Simulation(..., chunk_layout=chunk_layout)
+sim = mp.Simulation(..., chunk_layout=initial_chunk_layout)
 sim.init_sim()
 sim.run(...)
 
 # Compute and save chunk layout for next run
 timings = MeepTimingMeasurements.new_from_simulation(sim)
+chunk_layout = sim.chunk_layout
 chunk_volumes = sim.structure.get_chunk_volumes()
 chunk_owners = sim.structure.get_chunk_owners()
 next_chunk_layout = ChunkBalancer().compute_new_chunk_layout(

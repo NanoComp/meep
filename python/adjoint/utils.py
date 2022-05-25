@@ -43,53 +43,19 @@ class DesignRegion(object):
 
     def get_gradient(self, sim, fields_a, fields_f, frequencies, finite_difference_step):
         num_freqs = onp.array(frequencies).size
-        shapes = []
         '''We have the option to linearly scale the gradients up front
         using the scalegrad parameter (leftover from MPB API). Not
         currently needed for any existing feature (but available for
         future use)'''
         scalegrad = 1
-        for component_idx, component in enumerate(_compute_components(sim)):
-            '''We need to correct for the rare cases that get_dft_array
-            returns a singleton element for the forward and adjoint fields.
-            This only occurs when we are in 2D and only working with a particular
-            polarization (as the other fields are never stored). For example, the
-            2D in-plane polarization consists of a single scalar Ez field
-            (technically, meep doesn't store anything for these cases, but get_dft_array
-            still returns 0).
-
-            Our get_gradient algorithm, however, requires we pass an array of
-            zeros with the proper shape as the design_region.'''
-            spatial_shape = sim.get_array_slice_dimensions(component, vol=self.volume)[0]
-            if (fields_a[component_idx][0,...].size == 1):
-                fields_a[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs),
-                                                    dtype=onp.complex64 if mp.is_single_precision() else onp.complex128)
-                fields_f[component_idx] = onp.zeros(onp.insert(spatial_shape,0,num_freqs),
-                                                    dtype=onp.complex64 if mp.is_single_precision() else onp.complex128)
-            if _check_if_cylindrical(sim):
-                '''For some reason, get_dft_array returns the field
-                components in a different order than the convention used
-                throughout meep. So, we reorder them here so we can use
-                the same field macros later in our get_gradient function.
-                '''
-                fields_a[component_idx] = onp.transpose(fields_a[component_idx],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
-                fields_f[component_idx] = onp.transpose(fields_f[component_idx],(_FREQ_AXIS,_RHO_AXIS,_PHI_AXIS,_Z_AXIS))
-            shapes.append(fields_a[component_idx].shape)
-            fields_a[component_idx] = fields_a[component_idx].flatten(order='C')
-            fields_f[component_idx] = fields_f[component_idx].flatten(order='C')
-        shapes = onp.asarray(shapes).flatten(order='C')
-        fields_a = onp.concatenate(fields_a)
-        fields_f = onp.concatenate(fields_f)
-
         grad = onp.zeros((num_freqs, self.num_design_params))  # preallocate
-        geom_list = sim.geometry
-        f = sim.fields
         vol = sim._fit_volume_to_simulation(self.volume)
-
         # compute the gradient
-        mp._get_gradient(grad,scalegrad,fields_a,fields_f,
-                         sim.gv,vol.swigobj,onp.array(frequencies),
-                         sim.geps,shapes,finite_difference_step)
+        mp._get_gradient(grad,scalegrad,
+                        fields_a[0].swigobj,fields_a[1].swigobj,fields_a[2].swigobj,
+                        fields_f[0].swigobj,fields_f[1].swigobj,fields_f[2].swigobj,
+                        sim.gv,vol.swigobj,onp.array(frequencies),
+                        sim.geps,finite_difference_step)
         return onp.squeeze(grad).T
 
 def _check_if_cylindrical(sim):
@@ -149,18 +115,19 @@ def install_design_region_monitors(
     simulation: mp.Simulation,
     design_regions: List[DesignRegion],
     frequencies: List[float],
-    decimation_factor: int = 0
+    decimation_factor: int = 0,
 ) -> List[mp.DftFields]:
     """Installs DFT field monitors at the design regions of the simulation."""
-    design_region_monitors = [
+    design_region_monitors = [[
         simulation.add_dft_fields(
-            _compute_components(simulation),
+            [comp],
             frequencies,
             where=design_region.volume,
             yee_grid=True,
-            decimation_factor=decimation_factor
-        ) for design_region in design_regions
-    ]
+            decimation_factor=decimation_factor,
+            persist=True
+        ) for comp in _compute_components(simulation)
+    ] for design_region in design_regions ]
     return design_region_monitors
 
 

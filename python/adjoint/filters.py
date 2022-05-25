@@ -6,11 +6,23 @@ import numpy as np
 from autograd import numpy as npa
 import meep as mp
 from scipy import special
+from scipy import signal
 
+def _proper_pad(x,n):
+    '''
+    Parameters
+    ----------
+    x : array_like (2D)
+        Input array. Must be 2D.
+    n : int
+        Total size to be padded to.
+    '''
+    N = x.size
+    k = n - (2*N-1)
+    return np.concatenate((x,np.zeros((k,)),np.flipud(x[1:])))
 
 def _centered(arr, newshape):
     '''Helper function that reformats the padded array of the fft filter operation.
-
     Borrowed from scipy:
     https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
     '''
@@ -21,7 +33,6 @@ def _centered(arr, newshape):
     endind = startind + newshape
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
     return arr[tuple(myslice)]
-
 
 def _edge_pad(arr, pad):
 
@@ -46,31 +57,7 @@ def _edge_pad(arr, pad):
 
     return out
 
-
-def _zero_pad(arr, pad):
-
-    # fill sides
-    left = npa.tile(0, (pad[0][0], arr.shape[1]))   # left side
-    right = npa.tile(0, (pad[0][1], arr.shape[1]))  # right side
-    top = npa.tile(0, (arr.shape[0], pad[1][0]))    # top side
-    bottom = npa.tile(0, (arr.shape[0], pad[1][1])) # bottom side
-
-    # fill corners
-    top_left = npa.tile(0, (pad[0][0], pad[1][0]))     # top left
-    top_right = npa.tile(0, (pad[0][1], pad[1][0]))    # top right
-    bottom_left = npa.tile(0, (pad[0][0], pad[1][1]))  # bottom left
-    bottom_right = npa.tile(0, (pad[0][1], pad[1][1])) # bottom right
-
-    out = npa.concatenate((npa.concatenate(
-        (top_left, top, top_right)), npa.concatenate((left, arr, right)),
-                           npa.concatenate(
-                               (bottom_left, bottom, bottom_right))),
-                          axis=1)
-
-    return out
-
-
-def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
+def simple_2d_filter(x, h):
     """A simple 2d filter algorithm that is differentiable with autograd.
     Uses a 2D fft approach since it is typically faster and preserves the shape
     of the input and output arrays.
@@ -81,76 +68,19 @@ def simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries=[]):
     ----------
     x : array_like (2D)
         Input array to be filtered. Must be 2D.
-    kernel : array_like (2D)
+    h : array_like (2D)
         Filter kernel (before the DFT). Must be same size as `x`
-    Lx : float
-        Length of design region in X direction (in "meep units")
-    Ly : float
-        Length of design region in Y direction (in "meep units")
-    resolution : int
-        Resolution of the design grid (not the meep simulation resolution)
-    symmetries : list
-        Symmetries to impose on the parameter field (either mp.X or mp.Y)
 
     Returns
     -------
     array_like (2D)
         The output of the 2d convolution.
     """
-    # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
-    (kx, ky) = kernel.shape
+    (kx, ky) = x.shape
+    x = _edge_pad(x,((kx, kx), (ky, ky)))
+    return _centered(npa.real(npa.fft.ifft2(npa.fft.fft2(x)*npa.fft.fft2(h))),(kx, ky))
 
-    # Adjust parameter space shape for symmetries
-    if mp.X in symmetries:
-        Nx = int(Nx / 2)
-    if mp.Y in symmetries:
-        Ny = int(Ny / 2)
-
-    # Ensure the input is 2D
-    x = x.reshape(Nx, Ny)
-
-    # Perform the required reflections for symmetries
-    if mp.X in symmetries:
-        if kx % 2 == 1:
-            x = npa.concatenate((x, x[-1, :][None, :], x[::-1, :]), axis=0)
-        else:
-            x = npa.concatenate((x, x[::-1, :]), axis=0)
-    if mp.Y in symmetries:
-        if ky % 2 == 1:
-            x = npa.concatenate((x[:, ::-1], x[:, -1][:, None], x), axis=1)
-        else:
-            x = npa.concatenate((x[:, ::-1], x), axis=1)
-
-    # pad the kernel and input to avoid circular convolution and
-    # to ensure boundary conditions are met.
-    kernel = _zero_pad(kernel, ((kx, kx), (ky, ky)))
-    x = _edge_pad(x, ((kx, kx), (ky, ky)))
-
-    # Transform to frequency domain for fast convolution
-    H = npa.fft.fft2(kernel)
-    X = npa.fft.fft2(x)
-
-    # Convolution (multiplication in frequency domain)
-    Y = H * X
-
-    # We need to fftshift since we padded both sides if each dimension of our input and kernel.
-    y = npa.fft.fftshift(npa.real(npa.fft.ifft2(Y)))
-
-    # Remove all the extra padding
-    y = _centered(y, (kx, ky))
-
-    # Remove the added symmetry domains
-    if mp.X in symmetries:
-        y = y[0:Nx, :]
-    if mp.Y in symmetries:
-        y = y[:, -Ny:]
-
-    return y
-
-
-def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
+def cylindrical_filter(x, radius, Lx, Ly, resolution):
     '''A uniform cylindrical filter [1]. Typically allows for sharper transitions.
 
     Parameters
@@ -165,8 +95,6 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
-    symmetries : list
-        Symmetries to impose on the parameter field (either mp.X or mp.Y)
 
     Returns
     -------
@@ -178,29 +106,27 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx = int(Lx*resolution)
+    Ny = int(Ly*resolution)
+    x = x.reshape(Nx, Ny) # Ensure the input is 2D
 
-    # Formulate grid over entire design region
-    xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
-                         np.linspace(-Ly / 2, Ly / 2, Ny),
-                         sparse=True,
-                         indexing='ij')
+    xv = np.arange(0,Lx/2,1/resolution)
+    yv = np.arange(0,Ly/2,1/resolution)
 
-    # Calculate kernel
-    kernel = np.where(np.abs(xv**2 + yv**2) <= radius**2, 1, 0).T
+    cylindrical = lambda a: np.where(a <= radius, 1, 0)
+    hx = cylindrical(xv)
+    hy = cylindrical(yv)
+
+    h = np.outer(_proper_pad(hx,3*Nx),_proper_pad(hy,3*Ny))
 
     # Normalize kernel
-    kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
+    h = h / np.sum(h.flatten())  # Normalize the filter
 
     # Filter the response
-    y = simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries)
-
-    return y
+    return simple_2d_filter(x, h)
 
 
-def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
+def conic_filter(x, radius, Lx, Ly, resolution):
     '''A linear conic filter, also known as a "Hat" filter in the literature [1].
 
     Parameters
@@ -215,8 +141,6 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
-    symmetries : list
-        Symmetries to impose on the parameter field (either mp.X or mp.Y)
 
     Returns
     -------
@@ -228,31 +152,27 @@ def conic_filter(x, radius, Lx, Ly, resolution, symmetries=[]):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     '''
-    # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx = int(Lx*resolution)
+    Ny = int(Ly*resolution)
+    x = x.reshape(Nx, Ny) # Ensure the input is 2D
 
-    # Formulate grid over entire design region
-    xv, yv = np.meshgrid(np.linspace(-Lx / 2, Lx / 2, Nx),
-                         np.linspace(-Ly / 2, Ly / 2, Ny),
-                         sparse=True,
-                         indexing='ij')
+    xv = np.arange(0,Lx/2,1/resolution)
+    yv = np.arange(0,Ly/2,1/resolution)
 
-    # Calculate kernel
-    kernel = np.where(
-        np.abs(xv**2 + yv**2) <= radius**2,
-        (1 - np.sqrt(abs(xv**2 + yv**2)) / radius), 0)
+    conic = lambda a: np.where(np.abs(a**2) <= radius**2, (1 - a / radius), 0)
+    hx = conic(xv)
+    hy = conic(yv)
+
+    h = np.outer(_proper_pad(hx,3*Nx),_proper_pad(hy,3*Ny))
 
     # Normalize kernel
-    kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
+    h = h / np.sum(h.flatten())  # Normalize the filter
 
     # Filter the response
-    y = simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries)
-
-    return y
+    return simple_2d_filter(x, h)
 
 
-def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
+def gaussian_filter(x, sigma, Lx, Ly, resolution):
     '''A simple gaussian filter of the form exp(-x **2 / sigma ** 2) [1].
 
     Parameters
@@ -278,28 +198,24 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, symmetries=[]):
     [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     '''
-    # Get 2d parameter space shape
-    Nx = int(Lx * resolution) + 1
-    Ny = int(Ly * resolution) + 1
+    Nx = int(Lx*resolution)
+    Ny = int(Ly*resolution)
+    x = x.reshape(Nx, Ny) # Ensure the input is 2D
 
-    gaussian = lambda x, sigma: np.exp(-x**2 / sigma**2)
+    xv = np.arange(0,Lx/2,1/resolution)
+    yv = np.arange(0,Ly/2,1/resolution)
 
-    # Formulate grid over entire design region
-    xv = np.linspace(-Lx / 2, Lx / 2, Nx)
-    yv = np.linspace(-Ly / 2, Ly / 2, Ny)
+    gaussian = lambda a: np.exp(-a**2 / sigma**2)
+    hx = gaussian(xv)
+    hy = gaussian(yv)
 
-    # Calculate kernel
-    kernel = np.outer(gaussian(xv, sigma),
-                      gaussian(yv, sigma))  # Gaussian filter kernel
+    h = np.outer(_proper_pad(hx,3*Nx),_proper_pad(hy,3*Ny))
 
     # Normalize kernel
-    kernel = kernel / np.sum(kernel.flatten())  # Normalize the filter
+    h = h / np.sum(h.flatten())  # Normalize the filter
 
     # Filter the response
-    y = simple_2d_filter(x, kernel, Lx, Ly, resolution, symmetries)
-
-    return y
-
+    return simple_2d_filter(x, h)
 
 '''
 # ------------------------------------------------------------------------------------ #

@@ -349,16 +349,16 @@ _Pragma("omp parallel for collapse(2)")				                                     
    (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3 - 1)))
 
 #define IVEC_LOOP_ILOC(gv, iloc)                                                                   \
-  ivec iloc((gv).dim);                                                                             \
-  iloc.set_direction(direction(loop_d1), loop_is1 + 2 * loop_i1);                                  \
-  iloc.set_direction(direction(loop_d2), loop_is2 + 2 * loop_i2);                                  \
-  iloc.set_direction(direction(loop_d3), loop_is3 + 2 * loop_i3)
+  meep::ivec iloc((gv).dim);                                                                             \
+  iloc.set_direction(meep::direction(loop_d1), loop_is1 + 2 * loop_i1);                                  \
+  iloc.set_direction(meep::direction(loop_d2), loop_is2 + 2 * loop_i2);                                  \
+  iloc.set_direction(meep::direction(loop_d3), loop_is3 + 2 * loop_i3)
 
 #define IVEC_LOOP_LOC(gv, loc)                                                                     \
-  vec loc((gv).dim);                                                                               \
-  loc.set_direction(direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);                   \
-  loc.set_direction(direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);                   \
-  loc.set_direction(direction(loop_d3), (0.5 * loop_is3 + loop_i3) * (gv).inva)
+  meep::vec loc((gv).dim);                                                                               \
+  loc.set_direction(meep::direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);                   \
+  loc.set_direction(meep::direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);                   \
+  loc.set_direction(meep::direction(loop_d3), (0.5 * loop_is3 + loop_i3) * (gv).inva)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
 #define IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, i, n, dir)                                              \
@@ -884,10 +884,10 @@ public:
   // case not thread-safe)
   const char *str(char *buffer = 0, size_t buflen = 0);
 
-  ivec round_up_to_even(void) const {
+  ivec round_down_to_even(void) const {
     ivec result(dim);
     LOOP_OVER_DIRECTIONS(dim, d)
-    result.t[d] = t[d] + (t[d] >= 0 ? t[d] : -t[d]) % 2;
+    result.t[d] = t[d] - (t[d] >= 0 ? t[d] : -t[d]) % 2;
     return result;
   }
 
@@ -1006,8 +1006,8 @@ class grid_volume {
 public:
   grid_volume(){};
 
-  grid_volume subvolume(ivec is, ivec ie);
-  void init_subvolume(ivec is, ivec ie);
+  grid_volume subvolume(ivec is, ivec ie, component c);
+  void init_subvolume(ivec is, ivec ie, component c);
 
   ndim dim;
   double a, inva /* = 1/a */;

@@ -181,7 +181,11 @@ fields_chunk::~fields_chunk() {
   delete[] f_rderiv_int;
   while (dft_chunks) {
     dft_chunk *nxt = dft_chunks->next_in_chunk;
-    delete dft_chunks;
+    // keep the dft chunk in memory for adjoint calculations
+    if (dft_chunks->persist)
+      dft_chunks->fc = NULL;
+    else
+      delete dft_chunks;
     dft_chunks = nxt;
   }
   FOR_FIELD_TYPES(ft) {
@@ -495,6 +499,8 @@ bool fields_chunk::alloc_f(component c) {
 // allocate fields for components required by any source on any process
 // ... this is needed after calling the low-level fields::add_srcdata
 void fields::require_source_components() {
+  fix_boundary_sources(); // needed if add_srcdata put sources on non-owned points
+
   int needed[NUM_FIELD_COMPONENTS];
   memset(needed, 0, sizeof(needed));
   for (int i = 0; i < num_chunks; i++) {

@@ -358,7 +358,18 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
 
+  int original_vol = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d){
+    if (boundaries[High][d] == Periodic && boundaries[Low][d] == Periodic) {
+      original_vol *= (ie.in_direction(d) - is.in_direction(d))/2+1;
+    } else {
+      int vol_size_d = (min(user_volume.big_owned_corner(cgrid), ie).in_direction(d) - max(user_volume.little_owned_corner(cgrid),is).in_direction(d))/2+1;
+      original_vol *= (vol_size_d > 0 ? vol_size_d : 0);
+    }
+  }
+
   // loop over symmetry transformations of the chunks:
+  int vol_sum = 0;
   for (int sn = 0; sn < (use_symmetry ? S.multiplicity() : 1); ++sn) {
     component cS = S.transform(cgrid, -sn);
     volume gvS = S.transform(gv.surroundings(), sn);
@@ -496,6 +507,11 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
 
           chunkloop(chunks[i], i, cS, isc, iec, s0c, s1c, e0c, e1c, dV0, dV1,
                     shifti, ph, S, sn, chunkloop_data);
+          int loop_vol = 1;
+          LOOP_OVER_DIRECTIONS(gv.dim, d){
+            loop_vol *= (iec.in_direction(d) - isc.in_direction(d))/2+1;
+          }
+          vol_sum += loop_vol;
         }
       }
 
@@ -508,6 +524,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
       }
     } while (ishift != min_ishift);
   }
+  int vol_sum_all = sum_to_all(vol_sum);
+  if (use_symmetry && vol_sum_all != original_vol) master_printf("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum_all);
 }
 
 } // namespace meep

@@ -55,13 +55,16 @@ public:
   // Constructs a new source volume. Takes ownership of `ind` and `amps`.
   // Requirement: ind.size() == amps.size()
   src_vol(component cc, src_time *st, std::vector<ptrdiff_t> &&ind,
-          std::vector<std::complex<double> > &&amps);
+          std::vector<std::complex<double> > &&amps, bool fix_boundaries=false);
 
   // Checks whether `a` and `b` are combinable, i.e. have the same indices and point to the same
   // `src_time` instance, but have potentially different amplitudes.
   static bool combinable(const src_vol &a, const src_vol &b);
 
   ptrdiff_t index_at(size_t pos) const { return index[pos]; }
+  std::complex<double> amplitude(size_t j) const { return amp[j]; };
+  void set_amplitude(size_t j, std::complex<double> a) { amp[j] = a; };
+  void set_amplitude(size_t j, double a) { amp[j] = a; };
   const std::complex<double> &amplitude_at(size_t pos) const { return amp[pos]; }
   size_t num_points() const { return index.size(); };
   const src_time *t() const { return src_t; };
@@ -75,6 +78,7 @@ public:
   void add_amplitudes_from(const src_vol &other);
 
   const component c; // field component the source applies to
+  bool needs_boundary_fix; // whether fix_boundary_sources needs calling
 private:
   src_time *src_t;                        // Not owned by us.
   std::vector<ptrdiff_t> index;           // locations of sources in grid (indices)

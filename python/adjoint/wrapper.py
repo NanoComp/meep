@@ -143,7 +143,7 @@ class MeepJaxWrapper:
         self.simulation.reset_meep()
         self.simulation.change_sources(self.sources)
         utils.register_monitors(self.monitors, self.frequencies)
-        design_region_monitors = utils.install_design_region_monitors(
+        fwd_design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
             self.frequencies,
@@ -156,13 +156,8 @@ class MeepJaxWrapper:
         self.simulation.run(**sim_run_args)
 
         monitor_values = utils.gather_monitor_values(self.monitors)
-        fwd_fields = utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
         return (jnp.asarray(monitor_values),
-                jax.tree_map(jnp.asarray, fwd_fields))
+                fwd_design_region_monitors)
 
     def _run_adjoint_simulation(self, monitor_values_grad):
         """Runs adjoint simulation, returning design region fields."""
@@ -172,9 +167,12 @@ class MeepJaxWrapper:
                 'regions are present.')
         adjoint_sources = utils.create_adjoint_sources(self.monitors,
                                                        monitor_values_grad)
-        self.simulation.reset_meep()
+        # TODO refactor with optimization_problem.py #
+        self.simulation.restart_fields()
+        self.simulation.clear_dft_monitors()
         self.simulation.change_sources(adjoint_sources)
-        design_region_monitors = utils.install_design_region_monitors(
+        #                                            #
+        adj_design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
             self.frequencies,
@@ -186,11 +184,7 @@ class MeepJaxWrapper:
         }
         self.simulation.run(**sim_run_args)
 
-        return utils.gather_design_region_fields(
-            self.simulation,
-            design_region_monitors,
-            self.frequencies,
-        )
+        return adj_design_region_monitors
 
     def _calculate_vjps(
         self,
@@ -221,20 +215,16 @@ class MeepJaxWrapper:
 
         def _simulate_fwd(design_variables):
             """Runs forward simulation, returning monitor values and fields."""
-            monitor_values, fwd_fields = self._run_fwd_simulation(
+            monitor_values, self.fwd_design_region_monitors = self._run_fwd_simulation(
                 design_variables)
             design_variable_shapes = [x.shape for x in design_variables]
-            return monitor_values, (fwd_fields, design_variable_shapes)
+            return monitor_values, (design_variable_shapes)
 
         def _simulate_rev(res, monitor_values_grad):
             """Runs adjoint simulation, returning VJP of design wrt monitor values."""
-            fwd_fields = jax.tree_map(
-                lambda x: onp.asarray(x,
-                                      dtype=onp.complex64 if mp.is_single_precision() else onp.complex128),
-                res[0])
-            design_variable_shapes = res[1]
-            adj_fields = self._run_adjoint_simulation(monitor_values_grad)
-            vjps = self._calculate_vjps(fwd_fields, adj_fields,
+            design_variable_shapes = res
+            self.adj_design_region_monitors = self._run_adjoint_simulation(monitor_values_grad)
+            vjps = self._calculate_vjps(self.fwd_design_region_monitors, self.adj_design_region_monitors,
                                         design_variable_shapes)
             return ([jnp.asarray(vjp) for vjp in vjps], )
 

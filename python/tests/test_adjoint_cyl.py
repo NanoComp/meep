@@ -24,15 +24,14 @@ dpml = 1.0
 boundary_layers = [mp.PML(thickness=dpml)]
 
 design_region_resolution = int(2*resolution)
-design_r = 4.8
+design_r = 5
 design_z = 2
-Nr = int(design_region_resolution*design_r) + 1
-Nz = int(design_region_resolution*design_z) + 1
+Nr, Nz = int(design_r*design_region_resolution), int(design_z*design_region_resolution)
 
 fcen = 1/1.55
 width = 0.2
 fwidth = width * fcen
-source_center  = [0.1+design_r/2,0,(sz/2-dpml+design_z/2)/2]
+source_center  = [design_r/2,0,-(sz/2-dpml+design_z/2)/2]
 source_size    = mp.Vector3(design_r,0,0)
 src = mp.GaussianSource(frequency=fcen,fwidth=fwidth)
 source = [mp.Source(src,component=mp.Er,
@@ -52,7 +51,7 @@ def forward_simulation(design_params):
                               Si,
                               weights=design_params.reshape(Nr,1,Nz))
 
-    geometry = [mp.Block(center=mp.Vector3(0.1+design_r/2,0,0),
+    geometry = [mp.Block(center=mp.Vector3(design_r/2,0,0),
                                  size=mp.Vector3(design_r,0,design_z),
                                  material=matgrid)]
 
@@ -68,7 +67,7 @@ def forward_simulation(design_params):
     far_x = [mp.Vector3(5,0,20)]
     mode = sim.add_near2far(
         frequencies,
-        mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0,(sz/2-dpml+design_z/2)/2),
+        mp.Near2FarRegion(center=mp.Vector3(design_r/2,0,(sz/2-dpml+design_z/2)/2),
                           size=mp.Vector3(design_r,0,0),weight=+1))
 
     sim.run(until_after_sources=1200)
@@ -82,7 +81,7 @@ def adjoint_solver(design_params):
 
     design_variables = mp.MaterialGrid(mp.Vector3(Nr,0,Nz),SiO2,Si)
     design_region = mpa.DesignRegion(design_variables,
-                                     volume=mp.Volume(center=mp.Vector3(0.1+design_r/2,0,0),
+                                     volume=mp.Volume(center=mp.Vector3(design_r/2,0,0),
                                                       size=mp.Vector3(design_r,0,design_z)))
     geometry = [mp.Block(center=design_region.center,
                          size=design_region.size,
@@ -97,7 +96,7 @@ def adjoint_solver(design_params):
         m=m)
 
     far_x = [mp.Vector3(5,0,20)]
-    NearRegions = [mp.Near2FarRegion(center=mp.Vector3(0.1+design_r/2,0,(sz/2-dpml+design_z/2)/2),
+    NearRegions = [mp.Near2FarRegion(center=mp.Vector3(design_r/2,0,(sz/2-dpml+design_z/2)/2),
                                      size=mp.Vector3(design_r,0,0),
                                      weight=+1)]
     FarFields = mpa.Near2FarFields(sim, NearRegions ,far_x)
@@ -144,7 +143,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         adj_scale = (dp[None,:]@adjsol_grad).flatten()
         fd_grad = S12_perturbed-S12_unperturbed
         print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
-        tol = 0.1 if mp.is_single_precision() else 0.01
+        tol = 0.2 if mp.is_single_precision() else 0.1
         self.assertClose(adj_scale,fd_grad,epsilon=tol)
 
 

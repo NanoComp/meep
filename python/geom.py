@@ -539,7 +539,7 @@ class MaterialGrid(object):
                  medium2,
                  weights=None,
                  grid_type="U_DEFAULT",
-                 do_averaging=False,
+                 do_averaging=True,
                  beta=0,
                  eta=0.5,
                  damping=0):

@@ -38,7 +38,7 @@ default_monitor_parameters = {
 default_field_parameters = {
         'interpolation':'spline36',
         'cmap':'RdBu',
-        'alpha':0.6,
+        'alpha':0.8,
         'post_process':np.real
         }
 
@@ -86,7 +86,7 @@ def filter_dict(dict_to_filter, func_with_kwargs):
     try:
         # Python3 ...
         sig = inspect.signature(func_with_kwargs)
-        filter_keys = [param.name for param in sig.parameters.values() if param.kind == param.POSITIONAL_OR_KEYWORD]
+        filter_keys = [param.name for param in sig.parameters.values()]
     except:
         # Python2 ...
         filter_keys = inspect.getargspec(func_with_kwargs)[0]
@@ -99,7 +99,10 @@ def filter_dict(dict_to_filter, func_with_kwargs):
 
 def place_label(ax, label_text, x, y, centerx, centery, label_parameters=None):
 
-    label_parameters = default_label_parameters if label_parameters is None else dict(default_label_parameters, **label_parameters)
+    if label_parameters is None:
+        label_parameters = default_label_parameters
+    else:
+        label_parameters = dict(default_label_parameters, **label_parameters)
 
     offset = label_parameters['offset']
     alpha = label_parameters['label_alpha']
@@ -215,6 +218,17 @@ def get_2D_dimensions(sim, output_plane):
     sim_center, sim_size = (intersection_vol.center, intersection_vol.size)
     return sim_center, sim_size
 
+
+def box_vertices(box_center, box_size):
+    xmin = box_center.x - 0.5*box_size.x
+    xmax = box_center.x + 0.5*box_size.x
+    ymin = box_center.y - 0.5*box_size.y
+    ymax = box_center.y + 0.5*box_size.y
+    zmin = box_center.z - 0.5*box_size.z
+    zmax = box_center.z + 0.5*box_size.z
+
+    return xmin, xmax, ymin, ymax, zmin, zmax
+
 # ------------------------------------------------------- #
 # actual plotting routines
 
@@ -224,23 +238,20 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
     from meep.simulation import Volume
 
     # Set up the plotting parameters
-    plotting_parameters = default_volume_parameters if plotting_parameters is None else dict(default_volume_parameters, **plotting_parameters)
+    if plotting_parameters is None:
+        plotting_parameters = default_volume_parameters
+    else:
+        plotting_parameters = dict(default_volume_parameters, **plotting_parameters)
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
     plane = Volume(center=sim_center, size=sim_size)
 
-    # Pull volume parameters
     size = volume.size
     center = volume.center
 
-    xmax = center.x + size.x/2
-    xmin = center.x - size.x/2
-    ymax = center.y + size.y/2
-    ymin = center.y - size.y/2
-    zmax = center.z + size.z/2
-    zmin = center.z - size.z/2
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(center, size)
 
     # Add labels if requested
     if label is not None and mp.am_master():
@@ -336,11 +347,15 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
 
 def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     # consolidate plotting parameters
-    eps_parameters = default_eps_parameters if eps_parameters is None else dict(default_eps_parameters, **eps_parameters)
+    if eps_parameters is None:
+        eps_parameters = default_eps_parameters
+    else:
+        eps_parameters = dict(default_eps_parameters, **eps_parameters)
 
     # Determine a frequency to plot all epsilon
     if frequency is not None:
-        warnings.warn('The frequency parameter of plot2D has been deprecated. Use the frequency key of the eps_parameters dictionary instead.')
+        warnings.warn("The frequency parameter of plot2D has been deprecated. "
+                      "Use the frequency key of the eps_parameters dictionary instead.")
         eps_parameters['frequency'] = frequency
     if eps_parameters['frequency'] is None:
         try:
@@ -361,17 +376,13 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
-    xmin = sim_center.x - sim_size.x/2
-    xmax = sim_center.x + sim_size.x/2
-    ymin = sim_center.y - sim_size.y/2
-    ymax = sim_center.y + sim_size.y/2
-    zmin = sim_center.z - sim_size.z/2
-    zmax = sim_center.z + sim_size.z/2
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center, sim_size)
 
-    center = Vector3(sim_center.x, sim_center.y, sim_center.z)
-    cell_size = Vector3(sim_size.x, sim_size.y, sim_size.z)
+    if eps_parameters['resolution']:
+        grid_resolution = eps_parameters['resolution']
+    else:
+        grid_resolution = sim.resolution
 
-    grid_resolution = eps_parameters['resolution'] if eps_parameters['resolution'] else sim.resolution
     Nx = int((xmax - xmin) * grid_resolution + 1)
     Ny = int((ymax - ymin) * grid_resolution + 1)
     Nz = int((zmax - zmin) * grid_resolution + 1)
@@ -420,51 +431,66 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
 
 def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
     # consolidate plotting parameters
-    boundary_parameters = default_boundary_parameters if boundary_parameters is None else dict(default_boundary_parameters, **boundary_parameters)
+    if boundary_parameters is None:
+        boundary_parameters = default_boundary_parameters
+    else:
+        boundary_parameters = dict(default_boundary_parameters, **boundary_parameters)
 
     def get_boundary_volumes(thickness, direction, side, cylindrical=False):
         from meep.simulation import Volume
 
         thickness = boundary.thickness
 
-        # Get domain measurements
-        sim_center, sim_size = get_2D_dimensions(sim, output_plane)
-
-        xmin = sim_center.x - sim_size.x/2
-        xmax = sim_center.x + sim_size.x/2
-        ymin = sim_center.y - sim_size.y/2
-        ymax = sim_center.y + sim_size.y/2
-        zmin = sim_center.z - sim_size.z/2
-        zmax = sim_center.z + sim_size.z/2
-
-        cell_x = sim.cell_size.x
-        cell_y = sim.cell_size.y
-        cell_z = sim.cell_size.z
+        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center, sim.cell_size)
 
         if direction == mp.X and side == mp.Low:
-            return Volume(center=Vector3(xmin+thickness/2,sim_center.y,sim_center.z),
-            size=Vector3(thickness,cell_y,cell_z))
+            return Volume(center=Vector3(xmin+0.5*thickness,
+                                         sim.geometry_center.y,
+                                         sim.geometry_center.z),
+                          size=Vector3(thickness,
+                                       sim.cell_size.y,
+                                       sim.cell_size.z))
         elif direction == mp.X and side == mp.High:
-            return Volume(center=Vector3(xmax-thickness/2,sim_center.y,sim_center.z),
-            size=Vector3(thickness,cell_y,cell_z))
+            return Volume(center=Vector3(xmax-0.5*thickness,
+                                         sim.geometry_center.y,
+                                         sim.geometry_center.z),
+                          size=Vector3(thickness,
+                                       sim.cell_size.y,
+                                       sim.cell_size.z))
         elif direction == mp.Y and side == mp.Low:
-            return Volume(center=Vector3(sim_center.x,ymin+thickness/2,sim_center.z),
-            size=Vector3(cell_x,thickness,cell_z))
+            return Volume(center=Vector3(sim.geometry_center.x,
+                                         ymin+0.5*thickness,
+                                         sim.geometry_center.z),
+                          size=Vector3(sim.cell_size.x,
+                                       thickness,
+                                       sim.cell_size.z))
         elif direction == mp.Y and side == mp.High:
-            return Volume(center=Vector3(sim_center.x,ymax-thickness/2,sim_center.z),
-            size=Vector3(cell_x,thickness,cell_z))
+            return Volume(center=Vector3(sim.geometry_center.x,
+                                         ymax-0.5*thickness,
+                                         sim.geometry_center.z),
+                          size=Vector3(sim.cell_size.x,
+                                       thickness,
+                                       sim.cell_size.z))
         elif direction == mp.Z and side == mp.Low:
-            return Volume(center=Vector3(sim_center.x,sim_center.y,zmin+thickness/2),
-            size=Vector3(cell_x,cell_y,thickness))
+            return Volume(center=Vector3(sim.geometry_center.x,
+                                         sim.geometry_center.y,
+                                         zmin+0.5*thickness),
+                          size=Vector3(sim.cell_size.x,
+                                       sim.cell_size.y,
+                                       thickness))
         elif direction == mp.Z and side == mp.High:
-            return Volume(center=Vector3(sim_center.x,sim_center.y,zmax-thickness/2),
-            size=Vector3(cell_x,cell_y,thickness))
+            return Volume(center=Vector3(sim.geometry_center.x,
+                                         sim.geometry_center.y,
+                                         zmax-0.5*thickness),
+                          size=Vector3(sim.cell_size.x,
+                                       sim.cell_size.y,
+                                       thickness))
         else:
             raise ValueError("Invalid boundary type")
 
     import itertools
     for boundary in sim.boundary_layers:
-        # All four sides are the same
+        # boundary on all four sides
         if boundary.direction == mp.ALL and boundary.side == mp.ALL:
             if sim.dimensions == 1:
                 dims = [mp.X]
@@ -481,15 +507,15 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
                     continue
                 vol = get_boundary_volumes(boundary.thickness,*permutation)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
-        # two sides are the same
+        # boundary on only two of four sides
         elif boundary.side == mp.ALL:
             for side in [mp.Low, mp.High]:
                 if ((boundary.direction == mp.X) and (side == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
                     continue
                 vol = get_boundary_volumes(boundary.thickness,boundary.direction,side)
                 ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
-        # only one side
-        else:                
+        # boundary on just one side
+        else:
             if ((boundary.direction == mp.X) and (boundary.side == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
                 continue
             vol = get_boundary_volumes(boundary.thickness,boundary.direction,boundary.side)
@@ -500,7 +526,10 @@ def plot_sources(sim, ax, output_plane=None, labels=False, source_parameters=Non
     from meep.simulation import Volume
 
     # consolidate plotting parameters
-    source_parameters = default_source_parameters if source_parameters is None else dict(default_source_parameters, **source_parameters)
+    if source_parameters is None:
+        source_parameters = default_source_parameters
+    else:
+        source_parameters = dict(default_source_parameters, **source_parameters)
 
     label = 'source' if labels else None
 
@@ -513,7 +542,10 @@ def plot_monitors(sim, ax, output_plane=None, labels=False, monitor_parameters=N
     from meep.simulation import Volume
 
     # consolidate plotting parameters
-    monitor_parameters = default_monitor_parameters if monitor_parameters is None else dict(default_monitor_parameters, **monitor_parameters)
+    if monitor_parameters is None:
+        monitor_parameters = default_monitor_parameters
+    else:
+        monitor_parametesr = dict(default_monitor_parameters, **monitor_parameters)
 
     label = 'monitor' if labels else None
 
@@ -530,22 +562,17 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     if fields is None:
         return ax
 
-    field_parameters = default_field_parameters if field_parameters is None else dict(default_field_parameters, **field_parameters)
+    if field_parameters is None:
+        field_parameters = default_field_parameters
+    else:
+        field_parameters = dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
-    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Hx, mp.Hy, mp.Hz]:
+    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Dx, mp.Dy, mp.Dz, mp.Hx, mp.Hy, mp.Hz]:
         # Get domain measurements
         sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
-        xmin = sim_center.x - sim_size.x/2
-        xmax = sim_center.x + sim_size.x/2
-        ymin = sim_center.y - sim_size.y/2
-        ymax = sim_center.y + sim_size.y/2
-        zmin = sim_center.z - sim_size.z/2
-        zmax = sim_center.z + sim_size.z/2
-
-        center = Vector3(sim_center.x, sim_center.y, sim_center.z)
-        cell_size = Vector3(sim_size.x, sim_size.y, sim_size.z)
+        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center, sim_size)
 
         if sim_size.x == 0:
             # Plot y on x axis, z on y axis (YZ plane)
@@ -565,13 +592,16 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
             extent = [xmin, xmax, ymin, ymax]
             xlabel = 'X'
             ylabel = 'Y'
-        fields = sim.get_array(center=center, size=cell_size, component=fields)
+        fields = sim.get_array(center=sim_center, size=sim_size, component=fields)
     else:
         raise ValueError('Please specify a valid field component (mp.Ex, mp.Ey, ...')
 
 
     fields = field_parameters['post_process'](fields)
-    fields = np.flipud(fields) if ((sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical) else np.rot90(fields)
+    if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+        fields = np.flipud(fields)
+    else:
+        fields = np.rot90(fields)
 
     # Either plot the field, or return the array
     if ax:
@@ -632,12 +662,7 @@ def plot3D(sim):
     if sim.dimensions < 3:
         raise ValueError("Simulation must have 3 dimensions to visualize 3D")
 
-    xmin = sim.geometry_center.x - 0.5*sim.cell_size.x
-    xmax = sim.geometry_center.x + 0.5*sim.cell_size.x
-    ymin = sim.geometry_center.y - 0.5*sim.cell_size.y
-    ymax = sim.geometry_center.y + 0.5*sim.cell_size.y
-    zmin = sim.geometry_center.z - 0.5*sim.cell_size.z
-    zmax = sim.geometry_center.z + 0.5*sim.cell_size.z
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center, sim.cell_size)
 
     Nx = int(sim.cell_size.x * sim.resolution) + 1
     Ny = int(sim.cell_size.y * sim.resolution) + 1
