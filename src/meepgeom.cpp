@@ -1369,6 +1369,9 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     to just evaluate.
     */
     if (is_material_grid(mat)){
+      // if we have a damping term and β≠∞, we can't smooth
+      if ((mat->damping != 0) && (mat->eta != std::numeric_limits<double>::infinity())) goto noavg;
+
       tp = geom_tree_search(p_mat, restricted_tree, &oi);
       uval = matgrid_val(p_mat, tp, oi, mat);
       
