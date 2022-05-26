@@ -1,4 +1,13 @@
+'''
+Checks that a material grid works with symmetries, and that the
+new subpixel smoothing feature is accurate.
+
+TODO:
+    Create a 3D test that works well with the new smoothing
+'''
+
 import meep as mp
+from meep import mpb
 try:
     import meep.adjoint as mpa
 except:
@@ -7,6 +16,10 @@ import numpy as np
 from scipy.ndimage import gaussian_filter
 import unittest
 
+rad = 0.301943
+k_point = mp.Vector3(0.3892,0.1597,0)
+Si = mp.Medium(index=3.5)
+cell_size = mp.Vector3(1,1,0)
 
 def compute_transmittance(matgrid_symmetry=False):
         resolution = 25
@@ -24,13 +37,16 @@ def compute_transmittance(matgrid_symmetry=False):
         rng = np.random.RandomState(2069588)
 
         w = rng.rand(Nx,Ny)
+        # for subpixel smoothing, the underlying design grid must be smoothly varying
+        w = mpa.tanh_projection(rng.rand(Nx,Ny),1e5,0.5)
+        w = mpa.conic_filter(w,0.25,matgrid_size.x,matgrid_size.y,matgrid_resolution)
         weights = 0.5 * (w + np.fliplr(w)) if not matgrid_symmetry else w
 
         matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                                   mp.air,
                                   mp.Medium(index=3.5),
                                   weights=weights,
-                                  do_averaging=False,
+                                  beta=np.inf,
                                   grid_type='U_MEAN')
 
         geometry = [mp.Block(center=mp.Vector3(),
@@ -78,17 +94,11 @@ def compute_transmittance(matgrid_symmetry=False):
 
 
 def compute_resonant_mode_2d(res,default_mat=False):
-        cell_size = mp.Vector3(1,1,0)
-
-        rad = 0.301943
-
         fcen = 0.3
         df = 0.2*fcen
         sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                              component=mp.Hz,
                              center=mp.Vector3(-0.1057,0.2094,0))]
-
-        k_point = mp.Vector3(0.3892,0.1597,0)
 
         matgrid_size = mp.Vector3(1,1,0)
         matgrid_resolution = 1200
@@ -107,7 +117,7 @@ def compute_resonant_mode_2d(res,default_mat=False):
 
         matgrid = mp.MaterialGrid(mp.Vector3(Nx,Ny),
                                   mp.air,
-                                  mp.Medium(index=3.5),
+                                  Si,
                                   weights=filtered_weights,
                                   do_averaging=True,
                                   beta=1000,
@@ -138,84 +148,25 @@ def compute_resonant_mode_2d(res,default_mat=False):
         return freq
 
 
-def compute_resonant_mode_3d(use_matgrid=True):
-    resolution = 25
+def compute_resonant_mode_mpb(resolution=1024):
+    geometry = [mp.Cylinder(rad, material=Si)]
+    geometry_lattice = mp.Lattice(cell_size)
 
-    wvl = 1.27
-    fcen = 1/wvl
-    df = 0.02*fcen
+    ms = mpb.ModeSolver(num_bands=1,
+                        k_points=[k_point],
+                        geometry=geometry,
+                        geometry_lattice=geometry_lattice,
+                        resolution=resolution)
 
-    nSi = 3.45
-    Si = mp.Medium(index=nSi)
-    nSiO2 = 1.45
-    SiO2 = mp.Medium(index=nSiO2)
 
-    s = 1.0
-    cell_size = mp.Vector3(s,s,s)
-
-    rad = 0.34  # radius of sphere
-
-    if use_matgrid:
-        matgrid_resolution = 2*resolution
-        N = int(s*matgrid_resolution)
-        coord = np.linspace(-0.5*s,0.5*s,N)
-        xv, yv, zv = np.meshgrid(coord,coord,coord)
-
-        weights = np.sqrt(np.square(xv) + np.square(yv) + np.square(zv)) < rad
-        filtered_weights = gaussian_filter(weights,
-                                           sigma=4/resolution,
-                                           output=np.double)
-
-        matgrid = mp.MaterialGrid(mp.Vector3(N,N,N),
-                                  SiO2,
-                                  Si,
-                                  weights=filtered_weights,
-                                  do_averaging=True,
-                                  beta=1000,
-                                  eta=0.5)
-
-        geometry = [mp.Block(center=mp.Vector3(),
-                             size=cell_size,
-                             material=matgrid)]
-    else:
-        geometry = [mp.Sphere(center=mp.Vector3(),
-                              radius=rad,
-                              material=Si)]
-
-    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
-                         size=mp.Vector3(),
-                         center=mp.Vector3(0.13,0.25,0.06),
-                         component=mp.Ez)]
-
-    k_point = mp.Vector3(0.23,-0.17,0.35)
-
-    sim = mp.Simulation(resolution=resolution,
-                        cell_size=cell_size,
-                        sources=sources,
-                        default_material=SiO2,
-                        k_point=k_point,
-                        geometry=geometry)
-
-    h = mp.Harminv(mp.Ez, mp.Vector3(-0.2684,0.1185,0.0187), fcen, df)
-
-    sim.run(mp.after_sources(h),
-            until_after_sources=200)
-
-    try:
-        for m in h.modes:
-            print("harminv:, {}, {}, {}".format(resolution,m.freq,m.Q))
-        freq = h.modes[0].freq
-    except:
-        raise RuntimeError("No resonant modes found.")
-
-    return freq
-
+    ms.run_te()
+    return ms.freqs[0]
 
 class TestMaterialGrid(unittest.TestCase):
 
     def test_subpixel_smoothing(self):
-        # "exact" frequency computed using MaterialGrid at resolution = 300
-        freq_ref = 0.29826813873225283
+        # "exact" frequency computed using MPB
+        freq_ref = compute_resonant_mode_mpb()
 
         res = [25, 50]
         freq_matgrid = []
@@ -232,13 +183,6 @@ class TestMaterialGrid(unittest.TestCase):
 
         freq_matgrid_default_mat = compute_resonant_mode_2d(res[0], True)
         self.assertAlmostEqual(freq_matgrid[0], freq_matgrid_default_mat)
-
-
-    def test_matgrid_3d(self):
-        freq_matgrid = compute_resonant_mode_3d(True)
-        freq_geomobj = compute_resonant_mode_3d(False)
-        self.assertAlmostEqual(freq_matgrid, freq_geomobj, places=2)
-
 
     def test_symmetry(self):
             tran_nosym = compute_transmittance(False)
