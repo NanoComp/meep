@@ -1491,7 +1491,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
         temp_struct.idx_arr.push_back(idx);
         for (size_t i = 0; i < Nfreq; ++i) {
           EH0 = dJ_weight*dJ[reduced_grid_size*i+idx_1d];
-          if (is_electric(temp_struct.near_fd_comp)) EH0 *= -1;
+          if (is_E_or_D(temp_struct.near_fd_comp)) EH0 *= -1;
           EH0 /= f->S.multiplicity(ix0);
           temp_struct.amp_arr.push_back(EH0);
         }
@@ -1503,7 +1503,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
           temp_struct.idx_arr.push_back(site_ind[j]);
           for (size_t i = 0; i < Nfreq; ++i) {
             EH0 = dJ_weight*dJ[reduced_grid_size*i+idx_1d]*0.25; // split the amplitude of the adjoint source into four parts
-            if (is_electric(temp_struct.near_fd_comp)) EH0 *= -1;
+            if (is_E_or_D(temp_struct.near_fd_comp)) EH0 *= -1;
             EH0 /= f->S.multiplicity(ix0);
             temp_struct.amp_arr.push_back(EH0);
           }

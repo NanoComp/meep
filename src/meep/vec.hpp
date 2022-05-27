@@ -412,6 +412,8 @@ inline bool is_electric(component c) { return c < Hx; }
 inline bool is_magnetic(component c) { return c >= Hx && c < Dx; }
 inline bool is_D(component c) { return c >= Dx && c < Bx; }
 inline bool is_B(component c) { return c >= Bx && c < Dielectric; }
+inline bool is_E_or_D(component c) {return is_electric(c) || is_D(c); }
+inline bool is_H_or_B(component c) {return is_magnetic(c) || is_B(c); }
 inline bool is_derived(int c) { return c >= Sx; }
 inline bool is_poynting(derived_component c) { return c < EnergyDensity; }
 inline bool is_energydensity(derived_component c) { return c >= EnergyDensity; }
