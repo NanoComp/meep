@@ -362,8 +362,14 @@ cvector3 to_geom_object_coords_VJP(cvector3 v, const geometric_object *o) {
     /* case geometric_object::CYLINDER:
        NOT YET IMPLEMENTED */
     case geometric_object::BLOCK: {
-      vector3 v_real = cvector3_re(v);
-      vector3 v_imag = cvector3_im(v);
+      /* In order to leverage the underlying libctl infrastructure
+      *and* the dual library that makes computing derivatives so easy,
+      me perform a bit of a trick: we use the *complex* libctl vector,
+      storing the real and dual parts of the dual library and *manually*
+      propagate the dual through existing libraries as needed.
+      */
+      vector3 v_real = cvector3_re(v); // real part
+      vector3 v_imag = cvector3_im(v); // "dual" part
 
       vector3 size = o->subclass.block_data->size;
       if (size.x != 0.0) {v_real.x /= size.x; v_imag.x /= size.x;}
@@ -379,6 +385,9 @@ cvector3 to_geom_object_coords_VJP(cvector3 v, const geometric_object *o) {
 }
 
 cvector3 material_grid_grad(vector3 p, material_data *md, const geometric_object *o) {
+  /* computes the actual spatial gradient at point `p` 
+  for the specified material grid `md`. */
+  
   if (!is_material_grid(md)) {meep::abort("Invalid material grid detected.\n"); }
 
   cvector3 gradient = cvector_zero();
@@ -468,6 +477,14 @@ void map_lattice_coordinates(double &px, double &py, double &pz) {
 }
 
 cvector3 matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
+  /* loops through all the material grids at a current point
+  and computes the final *spatial* gradient (w.r.t. x,y,z)
+  after all appropriate transformations (e.g. due to 
+  overlapping grids). Calls the helper function, `material_grid_grad`,
+  which is what actually computes the spatial gradient.
+  */
+
+  // check for proper overlapping grids
   if (md->material_grid_kinds == material_data::U_MIN ||
       md->material_grid_kinds == material_data::U_PROD)
     meep::abort("%s:%i:matgrid_grad does not support overlapping grids with U_MIN or U_PROD\n",__FILE__,__LINE__);
@@ -493,6 +510,7 @@ cvector3 matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
     ++matgrid_val_count;
   }
 
+  // compensate for overlapping grids
   if (md->material_grid_kinds == material_data::U_MEAN)
     gradient = cvector3_scale(1.0/matgrid_val_count,gradient);
 
@@ -1250,12 +1268,11 @@ duals::duald get_material_grid_fill(meep::ndim dim, duals::duald d, double r, du
     return -1.0; // garbage fill
   } else {
     if (dim == meep::D1)
-      rel_fill = (r-d)/(2*r);
-    else if (dim == meep::D2 || dim == meep::Dcyl){
-      rel_fill = (1/(r*r*meep::pi)) * (r*r*acos(d/r)-d*sqrt(r*r-d*d));
-    }
+      return (r-d)/(2*r);
+    else if (dim == meep::D2 || dim == meep::Dcyl)
+      return (1/(r*r*meep::pi)) * (r*r*acos(d/r)-d*sqrt(r*r-d*d));
     else if (dim == meep::D3)
-      rel_fill = (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
+      return (((r-d)*(r-d))/(4*meep::pi*r*r*r))*(2*r+d);
   }
   
   return rel_fill;
@@ -1593,20 +1610,7 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   material =
       (material_type)material_of_unshifted_point_in_tree_inobject(p, restricted_tree, &inobject);
   material_data *md = material;
-  meep::vec gradient(zero_vec(v.dim));
-  double uval = 0;
-  // TODO cleanup and remove
-  if (md->which_subclass == material_data::MATERIAL_GRID) {
-    geom_box_tree tp;
-    int oi;
-    tp = geom_tree_search(p, restricted_tree, &oi);
-    //gradient = matgrid_grad(p, tp, oi, md);
-    //uval = matgrid_val(p, tp, oi, md)+this->u_p;
-  }
-  else {
-    gradient = normal_vector(meep::type(c), v);
-  }
-
+  meep::vec gradient = normal_vector(meep::type(c), v);
   get_material_pt(material, v.center());
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
   material_gc(material);
@@ -1634,73 +1638,47 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
   integer errflag;
   double meps, minveps;
 
-  if (md->which_subclass == material_data::MATERIAL_GRID) {
-    number xmin[1], xmax[1];
-    matgrid_volavg mgva;
-    mgva.dim = v.dim;
-    mgva.ugrad_abs = meep::abs(gradient);
-    mgva.uval = uval;
-    mgva.rad = v.diameter()/2;
-    mgva.beta = md->beta;
-    mgva.eta = md->eta;
-    mgva.eps1 = (md->medium_1.epsilon_diag.x+md->medium_1.epsilon_diag.y+md->medium_1.epsilon_diag.z)/3;
-    mgva.eps2 = (md->medium_2.epsilon_diag.x+md->medium_2.epsilon_diag.y+md->medium_2.epsilon_diag.z)/3;
-    xmin[0] = -v.diameter()/2;
-    xmax[0] = v.diameter()/2;
-#ifdef CTL_HAS_COMPLEX_INTEGRATION
-    cnumber ret = cadaptive_integration(matgrid_ceps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval,
-                                        &esterr, &errflag);
-    meps = ret.re;
-    minveps = ret.im;
-#else
-    meps = adaptive_integration(matgrid_eps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval, &esterr,
-                                &errflag);
-    minveps = adaptive_integration(matgrid_inveps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval, &esterr,
-                                   &errflag);
-#endif
+  integer n;
+  number xmin[3], xmax[3];
+  vector3 gvmin, gvmax;
+  gvmin = vec_to_vector3(v.get_min_corner());
+  gvmax = vec_to_vector3(v.get_max_corner());
+  xmin[0] = gvmin.x;
+  xmax[0] = gvmax.x;
+  if (dim == meep::Dcyl) {
+    xmin[1] = gvmin.z;
+    xmin[2] = gvmin.y;
+    xmax[1] = gvmax.z;
+    xmax[2] = gvmax.y;
   }
   else {
-    integer n;
-    number xmin[3], xmax[3];
-    vector3 gvmin, gvmax;
-    gvmin = vec_to_vector3(v.get_min_corner());
-    gvmax = vec_to_vector3(v.get_max_corner());
-    xmin[0] = gvmin.x;
-    xmax[0] = gvmax.x;
-    if (dim == meep::Dcyl) {
-      xmin[1] = gvmin.z;
-      xmin[2] = gvmin.y;
-      xmax[1] = gvmax.z;
-      xmax[2] = gvmax.y;
-    }
-    else {
-      xmin[1] = gvmin.y;
-      xmin[2] = gvmin.z;
-      xmax[1] = gvmax.y;
-      xmax[2] = gvmax.z;
-    }
-    if (xmin[2] == xmax[2])
-      n = xmin[1] == xmax[1] ? 1 : 2;
-    else
-      n = 3;
-    double vol = 1;
-    for (int i = 0; i < n; ++i)
-      vol *= xmax[i] - xmin[i];
-    if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
-    eps_ever_negative = 0;
-    func_ft = meep::type(c);
-#ifdef CTL_HAS_COMPLEX_INTEGRATION
-    cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval,
-                                        &esterr, &errflag);
-    meps = ret.re / vol;
-    minveps = ret.im / vol;
-#else
-    meps = adaptive_integration(eps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
-                                &errflag) / vol;
-    minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
-                                   &errflag) / vol;
-#endif
+    xmin[1] = gvmin.y;
+    xmin[2] = gvmin.z;
+    xmax[1] = gvmax.y;
+    xmax[2] = gvmax.z;
   }
+  if (xmin[2] == xmax[2])
+    n = xmin[1] == xmax[1] ? 1 : 2;
+  else
+    n = 3;
+  double vol = 1;
+  for (int i = 0; i < n; ++i)
+    vol *= xmax[i] - xmin[i];
+  if (dim == meep::Dcyl) vol *= (xmin[0] + xmax[0]) * 0.5;
+  eps_ever_negative = 0;
+  func_ft = meep::type(c);
+#ifdef CTL_HAS_COMPLEX_INTEGRATION
+  cnumber ret = cadaptive_integration(ceps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval,
+                                      &esterr, &errflag);
+  meps = ret.re / vol;
+  minveps = ret.im / vol;
+#else
+  meps = adaptive_integration(eps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
+                              &errflag) / vol;
+  minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
+                                  &errflag) / vol;
+#endif
+
   if (eps_ever_negative) // averaging negative eps causes instability
     minveps = 1.0 / (meps = eps(v.center()));
   {
