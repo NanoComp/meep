@@ -28,7 +28,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
     cls.pml_layers = [mp.PML(thickness=cls.dpml,direction=mp.X)]
 
 
-  def run_binary_grating_diffraction(self,gp,gh,gdc,theta,num_bands):
+  def run_binary_grating_diffraction(self,gp,gh,gdc,theta):
     sx = self.dpml+self.dsub+gh+self.dpad+self.dpml
     sy = gp
     cell_size = mp.Vector3(sx,sy,0)
@@ -84,23 +84,19 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(20,mp.Ez,src_pt,1e-6))
 
-    num_orders = np.ceil((self.fcen-k.y)*gp)-np.floor((-self.fcen-k.y)*gp)
-    if theta == 0:
-      num_orders = num_orders / 2
-    num_orders = int(num_orders)
-    if num_bands >= num_orders:
-      raise ValueError("num_bands is larger than the number of propagating modes.")
+    m_plus = int(np.floor((self.fcen-k.y)*gp))
+    m_minus = int(np.ceil((-self.fcen-k.y)*gp))
 
     if theta == 0:
-      orders = range(num_bands+1)
+      orders = range(m_plus)
     else:
       # ordering of the modes computed by MPB is according to *decreasing*
       # values of kx (i.e., closest to propagation direction of 0° or +x)
-      ms = range(-num_orders,num_orders+1)
+      ms = range(m_minus,m_plus+1)
       kx = lambda m: np.power(self.fcen,2) - np.power(k.y+m/gp,2)
       kxs = [kx(m) for m in ms]
       ids = np.flip(np.argsort(kxs))
-      orders = [ms[d] for d in ids[:num_bands]]
+      orders = [ms[d] for d in ids]
 
     for band,order in enumerate(orders):
       res = sim.get_eigenmode_coefficients(tran_flux,
@@ -139,13 +135,14 @@ class TestDiffractedPlanewave(unittest.TestCase):
         self.assertAlmostEqual(kdom_ref.y,kdom_dp.y,places=5)
         self.assertAlmostEqual(kdom_ref.z,kdom_dp.z,places=5)
 
+    print("PASSED.")
 
   def test_diffracted_planewave(self):
-    self.run_binary_grating_diffraction(2.6,0.4,0.6,0,5)
-    self.run_binary_grating_diffraction(2.6,0.4,0.6,13.4,6)
+    self.run_binary_grating_diffraction(2.6,0.4,0.6,0)
+    self.run_binary_grating_diffraction(2.6,0.4,0.6,13.4)
 
-    # self.run_binary_grating_diffraction(10.0,0.5,0.5,0,5)
-    # self.run_binary_grating_diffraction(10.0,0.5,0.5,10.7,9)
+    # self.run_binary_grating_diffraction(10.0,0.5,0.5,0)
+    # self.run_binary_grating_diffraction(10.0,0.5,0.5,10.7)
 
 if __name__ == '__main__':
   unittest.main()
