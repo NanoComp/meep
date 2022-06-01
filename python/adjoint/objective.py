@@ -367,6 +367,8 @@ class LDOS(ObjectiveQuantity):
 
     def place_adjoint_source(self, dJ):
         time_src = self._create_time_profile()
+        if dJ.ndim == 2:
+            dJ = np.sum(dJ, axis=1)
         dJ = dJ.flatten()
         sources = []
         forward_f_scale = np.array([self.ldos_scale/self.ldos_Jdata[k] for k in range(self.num_freq)])
