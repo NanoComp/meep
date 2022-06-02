@@ -1412,15 +1412,17 @@ public:
   }
 
   void update(fields &f);          // to be called after each timestep
-  double *ldos() const;            // returns array of Nomega values (after last timestep)
+  double *ldos();            // returns array of Nomega values (after last timestep)
   std::complex<double> *F() const; // returns Fdft
   std::complex<double> *J() const; // returns Jdft
   std::vector<double> freq;
-
+  double overall_scale() const { return saved_overall_scale; }
+  
 private:
   std::complex<double> *Fdft;  // Nomega array of field * J*(x) DFT values
   std::complex<double> *Jdft;  // Nomega array of J(t) DFT values
   double Jsum;                 // sum of |J| over all points
+  double saved_overall_scale;  // saved overall scale for adjoint calculation
 };
 
 // dft.cpp (normally created with fields::add_dft_fields)

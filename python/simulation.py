@@ -5213,6 +5213,7 @@ def dft_ldos(*args, **kwargs):
             sim.ldos_data = mp._dft_ldos_ldos(ldos)
             sim.ldos_Fdata = mp._dft_ldos_F(ldos)
             sim.ldos_Jdata = mp._dft_ldos_J(ldos)
+            sim.ldos_scale = ldos.overall_scale()
             if verbosity.meep > 0:
                 display_csv(sim, 'ldos', zip(mp.get_ldos_freqs(ldos), sim.ldos_data))
     return _ldos

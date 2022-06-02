@@ -29,6 +29,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
   for (int i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
+  saved_overall_scale = 1.0;
 }
 
 dft_ldos::dft_ldos(const std::vector<double> freq_) {
@@ -39,6 +40,7 @@ dft_ldos::dft_ldos(const std::vector<double> freq_) {
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
+  saved_overall_scale = 1.0;
 }
 
 dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
@@ -49,12 +51,13 @@ dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
+  saved_overall_scale = 1.0;
 }
 
 // |c|^2
 static double abs2(complex<double> c) { return real(c) * real(c) + imag(c) * imag(c); }
 
-double *dft_ldos::ldos() const {
+double *dft_ldos::ldos() {
   // we try to get the overall scale factor right (at least for a point source)
   // so that we can compare against the analytical formula for testing
   // ... in most practical cases, the scale factor won't matter because
@@ -62,14 +65,14 @@ double *dft_ldos::ldos() const {
 
   // overall scale factor
   double Jsum_all = sum_to_all(Jsum);
-  double scale = 4.0 / pi                 // from definition of LDOS comparison to power
+  saved_overall_scale = 4.0 / pi                 // from definition of LDOS comparison to power
                  * -0.5                   // power = -1/2 Re[E* J]
                  / (Jsum_all * Jsum_all); // normalize to unit-integral current
 
   const size_t Nfreq = freq.size();
   double *sum = new double[Nfreq];
   for (size_t i = 0; i < Nfreq; ++i) /* 4/pi * work done by unit dipole */
-    sum[i] = scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
+    sum[i] = saved_overall_scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
   double *out = new double[Nfreq];
   sum_to_all(sum, out, Nfreq);
   delete[] sum;
