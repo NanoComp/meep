@@ -86,7 +86,8 @@ complex<double> *dft_ldos::F() const {
 complex<double> *dft_ldos::J() const {
   const size_t Nfreq = freq.size();
   complex<double> *out = new complex<double>[Nfreq];
-  sum_to_all(Jdft, out, Nfreq);
+  // note: Jdft is the same on all processes, so no sum_to_all
+  memcpy(out, Jdft, Nfreq * sizeof(complex<double>));
   return out;
 }
 
