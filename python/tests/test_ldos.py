@@ -2,11 +2,11 @@ import unittest
 import numpy as np
 import meep as mp
 
-# Computes the Purcell enhancement factor of a parallel dipole in a 3D
-# homogeneous dielectric cavity with lossless metallic walls on two sides.
-# The result is computed in cylindrical and 3D coordinates and validated
-# using analytic theory from:
+# Computes the Purcell enhancement factor of a parallel dipole in a planar
+# dielectric cavity with lossless metallic walls. The result is computed in
+# cylindrical and 3D coordinates and validated using analytic theory from:
 # I. Abram et al., IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998).
+
 
 class TestLDOS(unittest.TestCase):
 
@@ -30,11 +30,7 @@ class TestLDOS(unittest.TestCase):
 
         sources = [mp.Source(src=mp.GaussianSource(self.fcen,fwidth=0.2*self.fcen),
                              component=mp.Er,
-                             center=mp.Vector3()),
-                   mp.Source(src=mp.GaussianSource(self.fcen,fwidth=0.2*self.fcen),
-                             component=mp.Er,
-                             center=mp.Vector3(),
-                             amplitude=-1j)]
+                             center=mp.Vector3())]
 
         sim = mp.Simulation(resolution=self.resolution,
                             cell_size=cell_size,
@@ -61,11 +57,7 @@ class TestLDOS(unittest.TestCase):
 
         sources = [mp.Source(src=mp.GaussianSource(self.fcen,fwidth=0.2*self.fcen),
                              component=mp.Er,
-                             center=mp.Vector3()),
-                   mp.Source(src=mp.GaussianSource(self.fcen,fwidth=0.2*self.fcen),
-                             component=mp.Er,
-                             center=mp.Vector3(),
-                             amplitude=-1j)]
+                             center=mp.Vector3())]
 
         sim = mp.Simulation(resolution=self.resolution,
                             cell_size=cell_size,
@@ -155,6 +147,7 @@ class TestLDOS(unittest.TestCase):
     def test_ldos_cyl(self):
         ldos_bulk = self.bulk_ldos_cyl()
 
+        # not a Van Hove singularity
         cavity_thickness = 1.63
         gap = cavity_thickness*self.wvl/self.n
 
@@ -176,6 +169,7 @@ class TestLDOS(unittest.TestCase):
     def test_ldos_3D(self):
         ldos_bulk = self.bulk_ldos_3D()
 
+        # not a Van Hove singularity
         cavity_thickness = 0.75
         gap = cavity_thickness*self.wvl/self.n
 

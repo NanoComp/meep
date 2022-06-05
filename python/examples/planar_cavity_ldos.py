@@ -1,8 +1,8 @@
-# Computes the Purcell enhancement factor of a parallel dipole in a 3D
-# homogeneous dielectric cavity with lossless metallic walls on two sides.
-# The result is computed in cylindrical and 3D coordinates and compared
-# with the analytic theory from:
+# Computes the Purcell enhancement factor of a parallel dipole in a planar
+# dielectric cavity with lossless metallic walls. The result is computed in
+# cylindrical and 3D coordinates and compared with the analytic theory from:
 # I. Abram et al., IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998).
+
 
 import meep as mp
 import numpy as np
@@ -11,7 +11,7 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
-resolution = 50  # pixels/μm
+resolution = 70  # pixels/μm
 dpml = 0.5       # thickness of PML
 L = 6.0          # length of non-PML region
 n = 2.4          # refractive index of surrounding medium
@@ -29,11 +29,7 @@ def bulk_ldos_cyl():
 
     sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                          component=mp.Er,
-                         center=mp.Vector3()),
-               mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                         component=mp.Er,
-                         center=mp.Vector3(),
-                         amplitude=-1j)]
+                         center=mp.Vector3())]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -60,11 +56,7 @@ def cavity_ldos_cyl(sz):
 
     sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                          component=mp.Er,
-                         center=mp.Vector3()),
-               mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                         component=mp.Er,
-                         center=mp.Vector3(),
-                         amplitude=-1j)]
+                         center=mp.Vector3())]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -178,10 +170,10 @@ if __name__ == '__main__':
         plt.plot(cavity_thickness,pe_meep_cyl,'r-',label='Meep (cylin.)')
         plt.plot(cavity_thickness,pe_theory,'g-',label='theory')
         plt.plot(cavity_thickness,np.ones(len(cavity_thickness)),'k--')
-        plt.xlabel('cavity thickness')
-        plt.ylabel('Purcell enhancement factor (relative to bulk)')
-        plt.title("horizontal point dipole at λ=1.0 μm in a cavity with"
-                  "\n n=2.4 and lossless metallic walls on two sides")
+        plt.xlabel('cavity thickness, $nL/\lambda$')
+        plt.ylabel('Purcell enhancement factor')
+        plt.title("planar point dipole at λ=1.0 μm in a planar cavity\n"
+                  "with n=2.4 and lossless metallic walls")
         plt.axis([0.5,2.5,0.4,3.1])
         plt.legend()
         plt.savefig('cavity_purcell_factor_vs_thickness.png',

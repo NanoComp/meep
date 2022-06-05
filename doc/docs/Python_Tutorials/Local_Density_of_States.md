@@ -14,15 +14,19 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 Planar Cavity with Lossless Metallic Walls
 ------------------------------------------
 
-The spontaneous-emission rate of a point-dipole emitter in a planar cavity bounded by a lossless metallic mirror can be tuned using the thickness of the cavity. A schematic of the cavity is shown in the figure inset below. In this example, the 3D cavity consists of two mirrors separated in the $z$ direction by a distance $L$. The cavity consists of a homogeneous dielectric with $n$=2.4. The dipole wavelength ($\lambda$) is 1.0 μm with polarization *parallel* to the mirrors. The Purcell enhancement factor, a dimensionless quantity defined relative to the bulk medium, can be computed analytically in terms of the cavity thickness in units of the medium wavelength ($nL/\lambda$) for this system using equation (7) of [IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998)](https://ieeexplore.ieee.org/abstract/document/655009). We will validate the simulated results using the analytic theory. Since this system has cylindrical symmetry, we can perform an identical simulation in [cylindrical coordinates](Cylindrical_Coordinates.md) which is much faster because it is a 2D calculation.
+The spontaneous-emission rate of a point-dipole emitter in a planar cavity bounded by a lossless metallic mirror can be tuned using the thickness of the cavity. A schematic of the cavity is shown in the figure inset below. In this example, the planar cavity consists of two mirrors separated in the $z$ direction by a distance $L$. The cavity consists of a homogeneous dielectric with $n$=2.4. The dipole wavelength ($\lambda$) is 1.0 μm with polarization *parallel* to the mirrors. The Purcell enhancement factor, a dimensionless quantity defined relative to the bulk medium, can be computed analytically as a function of the cavity thickness expressed in units of the wavelength in the cavity medium ($nL/\lambda$) using equation 7 of [IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998)](https://ieeexplore.ieee.org/abstract/document/655009). We will validate the simulated results using the analytic theory. Since this system has cylindrical symmetry, we can perform an identical simulation in [cylindrical coordinates](Cylindrical_Coordinates.md) which is significantly faster because it is a 2D calculation.
 
 In this demonstration, the cavity thickness is swept over a range of 0.5 to 2.5. Below a thickness of 0.5 there are no guided modes and thus the Purcell enhancement factor is zero.
 
-Two types of simulations are necessary for computing the Purcell enhancement factor: (1) bulk medium and (2) cavity. The `dft_ldos` featured is used to compute the LDOS in each case at a single wavelength. The Purcell enhancement factor is computed as the ratio of the LDOS measured in (2) to that from (1).
+Two types of simulations are necessary for computing the Purcell enhancement factor: (1) bulk medium and (2) cavity. The `dft_ldos` featured is used to compute the LDOS in each case. The Purcell enhancement factor is computed as the ratio of the LDOS measured in (2) to that from (1).
 
-In 3D, each simulation uses three mirror symmetries to reduce the size of the computation by a factor of eight. The dipole is polarized in the $x$ direction. The cavity is infinitely extended in the $xy$ plane and thus the cell is terminated using PMLs in these two directions. Because Meep uses a default boundary condition of a perfect electric conductor, there is no need to explicitly define the boundaries in the $z$ direction. In cylindrical coordinates, the dipole is polarized in the $r$ direction. A linearly polarized source in cylindrical coordiantes is described in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). The fields are timestepped until they have decayed away sufficiently due to absorption by the PMLs at the location of the pulsed source.
+In 3D, each simulation uses three [mirror symmetries](../Exploiting_Symmetry.md#rotations-and-reflections) to reduce the size of the computation by a factor of eight. The dipole is polarized in the $x$ direction. The cavity is infinitely extended in the $xy$ plane and the cell is therefore terminated using PMLs in $x$ and $y$. Because Meep uses a default boundary condition of a perfect-electric conductor, there is no need to explicitly define the boundaries in the $z$ direction. The fields are timestepped until they have decayed away sufficiently due to absorption by the PMLs.
 
-As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory.
+In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordiantes is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example is a *single* simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
+
+One important parameter when setting up this calculation is the grid resolution. There are [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity) for cavity-thickness values of 0.5, 1.5, 2.5, ... Any discretization errors in the cavity thickness (which is equivalent to the cell size in the *z* direction) can have a large impact on the results at these singularities.
+
+As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
 
 <center>
 ![](../images/planar_cavity_purcell_enhancement.png)
@@ -38,7 +42,7 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
-resolution = 50  # pixels/μm
+resolution = 70  # pixels/μm
 dpml = 0.5       # thickness of PML
 L = 6.0          # length of non-PML region
 n = 2.4          # refractive index of surrounding medium
@@ -56,11 +60,7 @@ def bulk_ldos_cyl():
 
     sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                          component=mp.Er,
-                         center=mp.Vector3()),
-               mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                         component=mp.Er,
-                         center=mp.Vector3(),
-                         amplitude=-1j)]
+                         center=mp.Vector3())]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -87,11 +87,7 @@ def cavity_ldos_cyl(sz):
 
     sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                          component=mp.Er,
-                         center=mp.Vector3()),
-               mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                         component=mp.Er,
-                         center=mp.Vector3(),
-                         amplitude=-1j)]
+                         center=mp.Vector3())]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -175,7 +171,7 @@ if __name__ == '__main__':
     ldos_bulk_cyl = bulk_ldos_cyl()
     ldos_bulk_3D = bulk_ldos_3D()
 
-    # units of wavelength in medium
+    # units of wavelength in cavity medium
     cavity_thickness = np.arange(0.50,2.55,0.05)
 
     gap = cavity_thickness*wvl/n
@@ -205,10 +201,10 @@ if __name__ == '__main__':
         plt.plot(cavity_thickness,pe_meep_cyl,'r-',label='Meep (cylin.)')
         plt.plot(cavity_thickness,pe_theory,'g-',label='theory')
         plt.plot(cavity_thickness,np.ones(len(cavity_thickness)),'k--')
-        plt.xlabel('cavity thickness')
-        plt.ylabel('Purcell enhancement factor (relative to bulk)')
-        plt.title("horizontal point dipole at λ=1.0 μm in a cavity with"
-                  "\n n=2.4 and lossless metallic walls on two sides")
+        plt.xlabel('cavity thickness, $nL/\lambda$')
+        plt.ylabel('Purcell enhancement factor')
+        plt.title("parallel point dipole at λ=1.0 μm in a planar cavity\n"
+                  "with n=2.4 and lossless metallic walls")
         plt.axis([0.5,2.5,0.4,3.1])
         plt.legend()
         plt.savefig('cavity_purcell_factor_vs_thickness.png',
