@@ -10,21 +10,22 @@ $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}
 
 where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole assuming linear materials. In FDTD, computing the LDOS is straightforward: excite a point dipole source and accumulate the Fourier transforms of the field at a given point in space to obtain the entire LDOS spectrum in a single calculation. This is implemented in the `dft_ldos` feature which is the subject of this tutorial.
 
+[TOC]
 
 Planar Cavity with Lossless Metallic Walls
 ------------------------------------------
 
-The spontaneous-emission rate of a point-dipole emitter in a planar cavity bounded by a lossless metallic mirror can be tuned using the thickness of the cavity. A schematic of the cavity is shown in the figure inset below. In this example, the planar cavity consists of two mirrors separated in the $z$ direction by a distance $L$. The cavity consists of a homogeneous dielectric with $n$=2.4. The dipole wavelength ($\lambda$) is 1.0 μm with polarization *parallel* to the mirrors. The Purcell enhancement factor, a dimensionless quantity defined relative to the bulk medium, can be computed analytically as a function of the cavity thickness expressed in units of the wavelength in the cavity medium ($nL/\lambda$) using equation 7 of [IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998)](https://ieeexplore.ieee.org/abstract/document/655009). We will validate the simulated results using the analytic theory. Since this system has cylindrical symmetry, we can perform an identical simulation in [cylindrical coordinates](Cylindrical_Coordinates.md) which is significantly faster because it is a 2D calculation.
+The spontaneous-emission rate of a point-dipole emitter in a planar cavity bounded by a lossless metallic mirror can be tuned using the thickness of the cavity. A schematic of the cavity structure is shown in the figure below. The planar cavity consists of two mirrors separated in the $z$ direction by a distance $L$. The cavity consists of a homogeneous dielectric with $n$=2.4. The dipole wavelength ($\lambda$) is 1.0 μm with polarization *parallel* to the mirrors. The Purcell enhancement factor can be computed analytically as a function of the cavity thickness expressed in units of the wavelength in the cavity medium ($nL/\lambda$) using equation 7 of [IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998)](https://ieeexplore.ieee.org/abstract/document/655009). We will validate the simulated results using the analytic theory. Since this system has cylindrical symmetry, we can perform an identical simulation in [cylindrical coordinates](Cylindrical_Coordinates.md) which is significantly faster because it is a 2D calculation.
 
 In this demonstration, the cavity thickness is swept over a range of 0.5 to 2.5. Below a thickness of 0.5 there are no guided modes and thus the Purcell enhancement factor is zero.
 
-Two types of simulations are necessary for computing the Purcell enhancement factor: (1) bulk medium and (2) cavity. The `dft_ldos` featured is used to compute the LDOS in each case. The Purcell enhancement factor is computed as the ratio of the LDOS measured in (2) to that from (1).
+Two types of simulations are necessary for computing the Purcell enhancement factor: (1) bulk cavity medium and (2) cavity. The `dft_ldos` feature is used to compute the LDOS in each case. The Purcell enhancement factor is computed as the ratio of the LDOS measured in (2) to that from (1).
 
 In 3D, each simulation uses three [mirror symmetries](../Exploiting_Symmetry.md#rotations-and-reflections) to reduce the size of the computation by a factor of eight. The dipole is polarized in the $x$ direction. The cavity is infinitely extended in the $xy$ plane and the cell is therefore terminated using PMLs in $x$ and $y$. Because Meep uses a default boundary condition of a perfect-electric conductor, there is no need to explicitly define the boundaries in the $z$ direction. The fields are timestepped until they have decayed away sufficiently due to absorption by the PMLs.
 
-In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordiantes is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example is a *single* simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
+In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordiantes is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example which involves a single point dipole rather than a planewave is one simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
 
-One important parameter when setting up this calculation is the grid resolution. There are [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity) for cavity-thickness values of 0.5, 1.5, 2.5, ... Any discretization errors in the cavity thickness (which is equivalent to the cell size in the *z* direction) can have a large impact on the results at these singularities.
+One important parameter when setting up this calculation is the grid resolution. There are [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity) for cavity-thickness values of 0.5, 1.5, 2.5, ... Any discretization errors in the cavity thickness (which is equivalent to the cell size in the *z* direction) can have a large impact on the results at these singularities. This is because if the cell size in the *z* direction is not an integer number of pixels, Meep will round the cell size to the nearest pixel which in effect modifies the cavity structure.
 
 As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
 
@@ -42,7 +43,12 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
+# important note:
+# Meep may round the cell dimensions to an integer number
+# of pixels which could modify the cavity structure.
 resolution = 70  # pixels/μm
+
+
 dpml = 0.5       # thickness of PML
 L = 6.0          # length of non-PML region
 n = 2.4          # refractive index of surrounding medium

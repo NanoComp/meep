@@ -11,7 +11,12 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
+# important note:
+# Meep may round the cell dimensions to an integer number
+# of pixels which could modify the cavity structure.
 resolution = 70  # pixels/μm
+
+
 dpml = 0.5       # thickness of PML
 L = 6.0          # length of non-PML region
 n = 2.4          # refractive index of surrounding medium
