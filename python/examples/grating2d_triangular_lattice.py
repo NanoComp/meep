@@ -1,0 +1,115 @@
+# Computes the diffraction orders of a 2D binary grating with
+# triangular lattice using a rectangular supercell and verifies
+# that only the diffraction orders of the actual unit cell
+# produce non-zero power (up to discretization error)
+
+import meep as mp
+import math
+import numpy as np
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+
+resolution = 100
+
+ng = 1.5
+glass = mp.Medium(index=ng)
+
+wvl = 0.5  # wavelength
+fcen = 1/wvl
+
+# rectangular supercell
+sx = 1.0
+sy = np.sqrt(3)
+
+dpml = 1.0  # PML thickness
+dsub = 2.0  # substrate thickness
+dair = 2.0  # air padding
+hcyl = 0.5  # cylinder height
+rcyl = 0.1  # cylinder radius
+
+sz = dpml+dsub+hcyl+dair+dpml
+
+cell_size = mp.Vector3(sx,sy,sz)
+
+boundary_layers = [mp.PML(thickness=dpml,direction=mp.Z)]
+
+# periodic boundary conditions
+k_point = mp.Vector3()
+
+src_pt = mp.Vector3(0,0,-0.5*sz+dpml)
+sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.1*fcen),
+                     size=mp.Vector3(sx,sy,0),
+                     center=src_pt,
+                     component=mp.Ex)]
+
+substrate = [mp.Block(size=mp.Vector3(mp.inf,mp.inf,dpml+dsub),
+                      center=mp.Vector3(0,0,-0.5*sz+0.5*(dpml+dsub)),
+                      material=glass)]
+
+cyl_grating = [mp.Cylinder(center=mp.Vector3(0,0,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(0.5*sx,0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(-0.5*sx,0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(-0.5*sx,-0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(0.5*sx,-0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass)]
+
+geometry = substrate + cyl_grating
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    sources=sources,
+                    geometry=geometry,
+                    boundary_layers=boundary_layers,
+                    k_point=k_point)
+
+tran_pt = mp.Vector3(0,0,0.5*sz-dpml)
+tran_flux = sim.add_mode_monitor(fcen,
+                                 0,
+                                 1,
+                                 mp.ModeRegion(center=tran_pt,
+                                               size=mp.Vector3(sx,sy,0)))
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(20,mp.Ex,src_pt,1e-6))
+
+# unit cell (triangular lattice)
+mx = 0  # diffraction order in x direction
+my = 1  # diffraction order in y direction
+
+# super cell (rectangular lattice)
+nx = mx
+ny = -mx + 2*my
+
+# diffraction orders in y direction
+# check: since mx=0, only even orders should produce non-zero power
+for n in range(0,4):
+    # wavevector of diffraction order
+    kdiff = mp.Vector3(nx/sx,
+                       n/sy,
+                       (fcen**2-(nx/sx)**2-(n/sy)**2)**0.5)
+
+    print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
+
+    res = sim.get_eigenmode_coefficients(tran_flux,
+                                         mp.DiffractedPlanewave((nx,n,0),
+                                                                mp.Vector3(0,1,0),
+                                                                1,
+                                                                0))
+    t_coeffs = res.alpha
+    tran = abs(t_coeffs[0,0,0])**2
+
+    print("order:, {}, {}, {:.5f}".format(nx,n,tran))
