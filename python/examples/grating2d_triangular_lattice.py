@@ -96,20 +96,20 @@ ny = -mx + 2*my
 
 # diffraction orders in y direction
 # check: since mx=0, only even orders should produce non-zero power
-for n in range(0,4):
-    # wavevector of diffraction order
-    kdiff = mp.Vector3(nx/sx,
-                       n/sy,
-                       (fcen**2-(nx/sx)**2-(n/sy)**2)**0.5)
+for ny in range(0,6):
+    kz2 = fcen**2-(nx/sx)**2-(ny/sy)**2
+    if kz2 > 0:
+        # wavevector of diffraction order
+        kdiff = mp.Vector3(nx/sx,ny/sy,kz**0.5)
 
-    print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
+        print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
 
-    res = sim.get_eigenmode_coefficients(tran_flux,
-                                         mp.DiffractedPlanewave((nx,n,0),
-                                                                mp.Vector3(0,1,0),
-                                                                1,
-                                                                0))
-    t_coeffs = res.alpha
-    tran = abs(t_coeffs[0,0,0])**2
+        res = sim.get_eigenmode_coefficients(tran_flux,
+                                             mp.DiffractedPlanewave((nx,ny,0),
+                                                                    mp.Vector3(0,1,0),
+                                                                    1,
+                                                                    0))
+        t_coeffs = res.alpha
+        tran = abs(t_coeffs[0,0,0])**2
 
-    print("order:, {}, {}, {:.5f}".format(nx,n,tran))
+        print("order:, {}, {}, {:.5f}".format(nx,ny,tran))

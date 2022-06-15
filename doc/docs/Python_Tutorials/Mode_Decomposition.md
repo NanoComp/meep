@@ -614,13 +614,11 @@ flux:, 0.90830587, 0.90830748, 0.90911585, 0.00088919
 Diffracted Orders of a Triangular/Hexagonal Lattice
 ---------------------------------------------------
 
-While it is straightforward to compute the diffracted orders of a square lattice, a triangular/hexagonal lattice requires some care. This is because Meep only supports a rectilinear cell lattice. It is not possible to directly simulate the unit cell of a triangular lattice. The workaround is to use a (rectilinear) *supercell* but then the diffracted orders must be defined differently in order to compute diffracted orders pertaining to the actual unit cell rather than artificial ones which may not be physical because they are artifacts of the supercell.
+While it is straightforward to compute the diffracted orders of a square lattice, a triangular/hexagonal lattice requires some care. This is because Meep only supports a rectilinear cell lattice. It is therefore not possible to directly simulate the unit cell of a triangular lattice. The workaround is to use a (rectilinear) *supercell* but then the diffracted orders must be defined differently in order to correspond exactly to those of the actual unit cell. This is because the supercell introduces artificial orders which may not be physical and thus carry no power. As a demonstration, we will compute the transmitted orders of a 2D grating with triangular lattice. We will verify that only the "real" orders contain nonzero power whereas the artificial ones (artifacts of the supercell) contain none.
 
-As a demonstration, we will compute the diffraction efficiencies of the transmitted orders of a 2D grating with triangular lattice. We will verify that only the diffraction efficiencies of the "real" orders are non zero whereas the artificial ones are all zero.
+As shown in the left side of the figure below, the lattice vectors of a triangular lattice are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_2}=(\frac{\Lambda}{2},\frac{\sqrt{3}}{2}\Lambda)$ where $\Lambda$ is the lattice periodicity. The unit cell is marked by the dotted silver line. The [reciprocal lattice vectors](https://en.wikipedia.org/wiki/Reciprocal_lattice#Two_dimensions) are $\vec{b_1}=\frac{2\pi}{\Lambda}(1,-1/\sqrt{3})$ and $\vec{b_2}=\frac{2\pi}{\Lambda}(0,2/\sqrt{3})$. An in-plane ($xy$) diffracted order of the unit cell can be defined as $\vec{k_\parallel}=m_1\vec{b_1}+m_2\vec{b_2}$ where $m_1$ and $m_2$ are integers.
 
-As shown in the left side of the figure below, the lattice vectors of a triangular lattice are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_2}=(\frac{\Lambda}{2},\frac{\sqrt{3}}{2}\Lambda)$ where $\Lambda$ is the lattice periodicity. The unit cell is marked by the dotted silver lines. The [reciprocal lattice vectors](https://en.wikipedia.org/wiki/Reciprocal_lattice#Two_dimensions) are $\vec{b_1}=\frac{2\pi}{\Lambda}(1,-1/\sqrt{3})$ and $\vec{b_2}=\frac{2\pi}{\Lambda}(0,2/\sqrt{3})$. An in-plane diffracted order of the unit cell can be defined as $\vec{k_\parallel}=m_1\vec{b_1}+m_2\vec{b_2}$ where $m_1$ and $m_2$ are integers.
-
-For the supercell shown on the right side of the figure, the lattice vectors are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_3} = (0,\sqrt{3}\Lambda)$. Its reciprocal lattice vectors are $\vec{b'_1}=\frac{2\pi}{\Lambda}(1,0)$ and $\vec{b'_2}=\frac{2\pi}{\Lambda}(0,1/\sqrt{3})$. Note that the dot product of $\vec{b'_1}$ and $\vec{b'_2}$ is zero because they are orthogonal. An in-plane diffracted order of the supercell can be defined as $\vec{k_{SC}}=n_1\vec{b'_1}+n_2\vec{b'_2}$ where $n_1$ and $n_2$ are integers.
+For the supercell shown in the right side of the figure, the lattice vectors are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_3} = (0,\sqrt{3}\Lambda)$. Its reciprocal lattice vectors are $\vec{b'_1}=\frac{2\pi}{\Lambda}(1,0)$ and $\vec{b'_2}=\frac{2\pi}{\Lambda}(0,1/\sqrt{3})$. Note that the dot product of $\vec{b'_1}$ and $\vec{b'_2}$ is zero because they are orthogonal. An in-plane diffracted order of the supercell can be defined as $\vec{k_{SC}}=n_1\vec{b'_1}+n_2\vec{b'_2}$ where $n_1$ and $n_2$ are integers.
 
 Given a "real" diffracted order specified by $(m_1,m_2)$, we need to determine the equivalent order of the supercell specified by $(n_1,n_2)$ for use in the simulation when computing the mode coefficients. Setting $\vec{k_{SC}}=\vec{k_\parallel}$ and solving for the pair of equations yields: $n_1=m_1$ and $n_2=-m_1+2m_2$.
 
@@ -628,8 +626,7 @@ Given a "real" diffracted order specified by $(m_1,m_2)$, we need to determine t
 ![](../images/triangular_lattice.png)
 </center>
 
-
-To demonstrate this in practice, we will compute the power (an absolute quantity) of the $(0,1)$ order of a triangular lattice of cylindrical rods (height: 0.5 µm, radius: 0.1 µm) on a glass ($n=1.5$) substrate with periodicity of 1.0 µm. Note that this is a 3D simulation. In this example, the plane of incidence is *yz* and the $E_x$ source therefore corresponds to the $\mathcal{S}$ polarization.
+To demonstrate this in practice, we will compute the power (an absolute quantity) of the $(0,1)$ order of a triangular lattice of cylindrical rods (height: 0.5 µm, radius: 0.1 µm) on a glass ($n=1.5$) substrate with periodicity of 1.0 µm. Note that this is a 3D simulation. In this example, the plane of incidence is $yz$ and the $E_x$ source therefore corresponds to the $\mathcal{S}$ polarization.
 
 The simulation script is in [examples/grating2d_triangular_lattice.py](https://github.com/NanoComp/meep/blob/master/python/examples/grating2d_triangular_lattice.py).
 
@@ -637,8 +634,6 @@ The simulation script is in [examples/grating2d_triangular_lattice.py](https://g
 import meep as mp
 import math
 import numpy as np
-import matplotlib
-matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 resolution = 100
@@ -727,26 +722,26 @@ ny = -mx + 2*my
 
 # diffraction orders in y direction
 # check: since mx=0, only even orders should produce non-zero power
-for n in range(0,4):
-    # wavevector of diffraction order
-    kdiff = mp.Vector3(nx/sx,
-                       n/sy,
-                       (fcen**2-(nx/sx)**2-(n/sy)**2)**0.5)
+for ny in range(0,4):
+    kz2 = fcen**2-(nx/sx)**2-(ny/sy)**2
+    if kz2 > 0:
+        # wavevector of diffraction order
+        kdiff = mp.Vector3(nx/sx,ny/sy,kz**0.5)
 
-    print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
+        print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
 
-    res = sim.get_eigenmode_coefficients(tran_flux,
-                                         mp.DiffractedPlanewave((nx,n,0),
-                                                                mp.Vector3(0,1,0),
-                                                                1,
-                                                                0))
-    t_coeffs = res.alpha
-    tran = abs(t_coeffs[0,0,0])**2
+        res = sim.get_eigenmode_coefficients(tran_flux,
+                                             mp.DiffractedPlanewave((nx,ny,0),
+                                                                    mp.Vector3(0,1,0),
+                                                                    1,
+                                                                    0))
+        t_coeffs = res.alpha
+        tran = abs(t_coeffs[0,0,0])**2
 
-    print("order:, {}, {}, {:.5f}".format(nx,n,tran))
+        print("order:, {}, {}, {:.5f}".format(nx,ny,tran))
 ```
 
-The output lists the power in the orders labeled by $n_1$ and $n_2$. Only those with even $n_2$ have non-zero diffraction efficiency whereas the odd orders are zero. The $(m_1,m_2)=(0,1)$ order is equivalent to $(n_1,n_2)=(0,2)$ using the formulas from above.
+The output lists the power in the orders labeled by $n_1$ and $n_2$. Because $n_2=-m_1+2m_2$ and $m_1=1=0$, only those with even $n_2$ have nonzero power whereas the odd orders are zero. The $(m_1,m_2)=(0,1)$ order is equivalent to $(n_1,n_2)=(0,2)$.
 
 ```
 order:, 0, 0, 1.46914
