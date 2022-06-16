@@ -611,6 +611,138 @@ tran:, 14, 0.02346054,  4, 0.0234605
 flux:, 0.90830587, 0.90830748, 0.90911585, 0.00088919
 ```
 
+Diffracted Orders of a Triangular/Hexagonal Lattice
+---------------------------------------------------
+
+While it is straightforward to compute the diffracted orders of a square lattice, a triangular/hexagonal lattice requires some care. This is because Meep only supports a rectilinear cell lattice. It is therefore not possible to directly simulate the unit cell of a triangular lattice. The workaround is to use a (rectilinear) *supercell* but then the diffracted orders must be defined differently in order to correspond exactly to those of the actual unit cell. This is because the supercell introduces artificial diffraction orders (forbidden by the higher symmetry of the underlying triangular lattice) that carry no power. As a demonstration, we will compute the transmitted orders of a 2D grating with triangular lattice. We will verify that only the "real" orders contain nonzero power whereas the artificial ones contain zero power.
+
+As shown in the left side of the figure below, the lattice vectors of a triangular lattice are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_2}=(\frac{\Lambda}{2},\frac{\sqrt{3}}{2}\Lambda)$ where $\Lambda$ is the lattice periodicity. The unit cell is marked by the dotted silver line. The [reciprocal lattice vectors](https://en.wikipedia.org/wiki/Reciprocal_lattice#Two_dimensions) are $\vec{b_1}=\frac{2\pi}{\Lambda}(1,-1/\sqrt{3})$ and $\vec{b_2}=\frac{2\pi}{\Lambda}(0,2/\sqrt{3})$. An in-plane ($xy$) diffracted order of the unit cell can be defined as $\vec{k_\parallel}=m_1\vec{b_1}+m_2\vec{b_2}$ where $m_1$ and $m_2$ are integers.
+
+For the supercell shown in the right side of the figure, the lattice vectors are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_3} = (0,\sqrt{3}\Lambda)$. Its reciprocal lattice vectors are $\vec{b'_1}=\frac{2\pi}{\Lambda}(1,0)$ and $\vec{b'_2}=\frac{2\pi}{\Lambda}(0,1/\sqrt{3})$. Note that the dot product of $\vec{b'_1}$ and $\vec{b'_2}$ is zero because they are orthogonal. An in-plane diffracted order of the supercell can be defined as $\vec{k_{SC}}=n_1\vec{b'_1}+n_2\vec{b'_2}$ where $n_1$ and $n_2$ are integers.
+
+Given a "real" diffracted order specified by $(m_1,m_2)$, we need to determine the equivalent order of the supercell specified by $(n_1,n_2)$ for use in the simulation when computing the mode coefficients. Setting $\vec{k_{SC}}=\vec{k_\parallel}$ and solving for the pair of equations yields: $n_1=m_1$ and $n_2=-m_1+2m_2$.
+
+<center>
+![](../images/triangular_lattice.png)
+</center>
+
+To demonstrate this in practice, we will compute the power (an absolute quantity) of the $(0,1)$ order of a triangular lattice of cylindrical rods (height: 0.5 µm, radius: 0.1 µm) on a glass ($n=1.5$) substrate with periodicity of 1.0 µm. Note that this is a 3D simulation. In this example, the plane of incidence is $yz$ and the $E_x$ source therefore corresponds to the $\mathcal{S}$ polarization.
+
+The simulation script is in [examples/grating2d_triangular_lattice.py](https://github.com/NanoComp/meep/blob/master/python/examples/grating2d_triangular_lattice.py).
+
+```py
+import meep as mp
+import math
+import numpy as np
+
+resolution = 100  # pixels/μm
+
+ng = 1.5
+glass = mp.Medium(index=ng)
+
+wvl = 0.5  # wavelength
+fcen = 1/wvl
+
+# rectangular supercell
+sx = 1.0
+sy = np.sqrt(3)
+
+dpml = 1.0  # PML thickness
+dsub = 2.0  # substrate thickness
+dair = 2.0  # air padding
+hcyl = 0.5  # cylinder height
+rcyl = 0.1  # cylinder radius
+
+sz = dpml+dsub+hcyl+dair+dpml
+
+cell_size = mp.Vector3(sx,sy,sz)
+
+boundary_layers = [mp.PML(thickness=dpml,direction=mp.Z)]
+
+# periodic boundary conditions
+k_point = mp.Vector3()
+
+src_pt = mp.Vector3(0,0,-0.5*sz+dpml)
+sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.1*fcen),
+                     size=mp.Vector3(sx,sy,0),
+                     center=src_pt,
+                     component=mp.Ex)]
+
+substrate = [mp.Block(size=mp.Vector3(mp.inf,mp.inf,dpml+dsub),
+                      center=mp.Vector3(0,0,-0.5*sz+0.5*(dpml+dsub)),
+                      material=glass)]
+
+cyl_grating = [mp.Cylinder(center=mp.Vector3(0,0,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(0.5*sx,0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(-0.5*sx,0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(-0.5*sx,-0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass),
+               mp.Cylinder(center=mp.Vector3(0.5*sx,-0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                           radius=rcyl,
+                           height=hcyl,
+                           material=glass)]
+
+geometry = substrate + cyl_grating
+
+sim = mp.Simulation(resolution=resolution,
+                    cell_size=cell_size,
+                    sources=sources,
+                    geometry=geometry,
+                    boundary_layers=boundary_layers,
+                    k_point=k_point)
+
+tran_pt = mp.Vector3(0,0,0.5*sz-dpml)
+tran_flux = sim.add_mode_monitor(fcen,
+                                 0,
+                                 1,
+                                 mp.ModeRegion(center=tran_pt,
+                                               size=mp.Vector3(sx,sy,0)))
+
+sim.run(until_after_sources=mp.stop_when_fields_decayed(20,mp.Ex,src_pt,1e-6))
+
+# unit cell (triangular lattice)
+mx = 0  # diffraction order in x direction
+my = 1  # diffraction order in y direction
+
+# check: for diffraction orders of supercell for which
+#        nx = mx and ny = -mx + 2*my and thus
+#        only even orders should produce nonzero power
+nx = mx
+for ny in range(4):
+    kz2 = fcen**2-(nx/sx)**2-(ny/sy)**2
+    if kz2 > 0:
+        res = sim.get_eigenmode_coefficients(tran_flux,
+                                             mp.DiffractedPlanewave((nx,ny,0),
+                                                                    mp.Vector3(0,1,0),
+                                                                    1,
+                                                                    0))
+        t_coeffs = res.alpha
+        tran = abs(t_coeffs[0,0,0])**2
+
+        print("order:, {}, {}, {:.5f}".format(nx,ny,tran))
+```
+
+The output lists the power in the orders labeled by $n_1$ and $n_2$. Because $n_1=m_1$ and $n_2=-m_1+2m_2$, only those supercell orders with even $n_2$ contain nonzero power whereas the odd orders (artifacts of the supercell) contain zero power. Note that the $(m_1,m_2)=(0,1)$ order of the unit cell corresponds to the $(n_1,n_2)=(0,2)$ order of the supercell.
+
+```
+order:, 0, 0, 1.46914
+order:, 0, 1, 0.00000
+order:, 0, 2, 0.03570
+order:, 0, 3, 0.00000
+```
+
+
 Phase Map of a Subwavelength Binary Grating
 -------------------------------------------
 
