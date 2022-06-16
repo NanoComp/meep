@@ -6,11 +6,8 @@
 import meep as mp
 import math
 import numpy as np
-import matplotlib
-matplotlib.use('agg')
-import matplotlib.pyplot as plt
 
-resolution = 100
+resolution = 100  # pixels/μm
 
 ng = 1.5
 glass = mp.Medium(index=ng)
@@ -86,24 +83,17 @@ tran_flux = sim.add_mode_monitor(fcen,
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(20,mp.Ex,src_pt,1e-6))
 
-# unit cell (triangular lattice)
-mx = 0  # diffraction order in x direction
-my = 1  # diffraction order in y direction
+# diffraction order of unit cell (triangular lattice)
+mx = 0
+my = 1
 
-# super cell (rectangular lattice)
+# check: for diffraction orders of supercell for which
+#        nx = mx and ny = -mx + 2*my and thus
+#        only even orders should produce nonzero power
 nx = mx
-ny = -mx + 2*my
-
-# diffraction orders in y direction
-# check: since mx=0, only even orders should produce non-zero power
-for ny in range(0,6):
+for ny in range(4):
     kz2 = fcen**2-(nx/sx)**2-(ny/sy)**2
     if kz2 > 0:
-        # wavevector of diffraction order
-        kdiff = mp.Vector3(nx/sx,ny/sy,kz**0.5)
-
-        print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
-
         res = sim.get_eigenmode_coefficients(tran_flux,
                                              mp.DiffractedPlanewave((nx,ny,0),
                                                                     mp.Vector3(0,1,0),

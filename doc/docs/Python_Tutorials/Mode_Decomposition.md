@@ -614,7 +614,7 @@ flux:, 0.90830587, 0.90830748, 0.90911585, 0.00088919
 Diffracted Orders of a Triangular/Hexagonal Lattice
 ---------------------------------------------------
 
-While it is straightforward to compute the diffracted orders of a square lattice, a triangular/hexagonal lattice requires some care. This is because Meep only supports a rectilinear cell lattice. It is therefore not possible to directly simulate the unit cell of a triangular lattice. The workaround is to use a (rectilinear) *supercell* but then the diffracted orders must be defined differently in order to correspond exactly to those of the actual unit cell. This is because the supercell introduces artificial orders which may not be physical and thus carry no power. As a demonstration, we will compute the transmitted orders of a 2D grating with triangular lattice. We will verify that only the "real" orders contain nonzero power whereas the artificial ones (artifacts of the supercell) contain none.
+While it is straightforward to compute the diffracted orders of a square lattice, a triangular/hexagonal lattice requires some care. This is because Meep only supports a rectilinear cell lattice. It is therefore not possible to directly simulate the unit cell of a triangular lattice. The workaround is to use a (rectilinear) *supercell* but then the diffracted orders must be defined differently in order to correspond exactly to those of the actual unit cell. This is because the supercell introduces artificial orders which are not physical and thus carry no power. As a demonstration, we will compute the transmitted orders of a 2D grating with triangular lattice. We will verify that only the "real" orders contain nonzero power whereas the artificial ones contain zero power.
 
 As shown in the left side of the figure below, the lattice vectors of a triangular lattice are $\vec{a_1} = (\Lambda,0)$ and $\vec{a_2}=(\frac{\Lambda}{2},\frac{\sqrt{3}}{2}\Lambda)$ where $\Lambda$ is the lattice periodicity. The unit cell is marked by the dotted silver line. The [reciprocal lattice vectors](https://en.wikipedia.org/wiki/Reciprocal_lattice#Two_dimensions) are $\vec{b_1}=\frac{2\pi}{\Lambda}(1,-1/\sqrt{3})$ and $\vec{b_2}=\frac{2\pi}{\Lambda}(0,2/\sqrt{3})$. An in-plane ($xy$) diffracted order of the unit cell can be defined as $\vec{k_\parallel}=m_1\vec{b_1}+m_2\vec{b_2}$ where $m_1$ and $m_2$ are integers.
 
@@ -634,9 +634,8 @@ The simulation script is in [examples/grating2d_triangular_lattice.py](https://g
 import meep as mp
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 
-resolution = 100
+resolution = 100  # pixels/μm
 
 ng = 1.5
 glass = mp.Medium(index=ng)
@@ -716,20 +715,13 @@ sim.run(until_after_sources=mp.stop_when_fields_decayed(20,mp.Ex,src_pt,1e-6))
 mx = 0  # diffraction order in x direction
 my = 1  # diffraction order in y direction
 
-# super cell (rectangular lattice)
+# check: for diffraction orders of supercell for which
+#        nx = mx and ny = -mx + 2*my and thus
+#        only even orders should produce nonzero power
 nx = mx
-ny = -mx + 2*my
-
-# diffraction orders in y direction
-# check: since mx=0, only even orders should produce non-zero power
-for ny in range(0,4):
+for ny in range(4):
     kz2 = fcen**2-(nx/sx)**2-(ny/sy)**2
     if kz2 > 0:
-        # wavevector of diffraction order
-        kdiff = mp.Vector3(nx/sx,ny/sy,kz**0.5)
-
-        print("kdiff:, ({:.6f},{:.6f},{:.6f})".format(kdiff.x,kdiff.y,kdiff.z))
-
         res = sim.get_eigenmode_coefficients(tran_flux,
                                              mp.DiffractedPlanewave((nx,ny,0),
                                                                     mp.Vector3(0,1,0),
@@ -741,7 +733,7 @@ for ny in range(0,4):
         print("order:, {}, {}, {:.5f}".format(nx,ny,tran))
 ```
 
-The output lists the power in the orders labeled by $n_1$ and $n_2$. Because $n_2=-m_1+2m_2$ and $m_1=1=0$, only those with even $n_2$ have nonzero power whereas the odd orders are zero. The $(m_1,m_2)=(0,1)$ order is equivalent to $(n_1,n_2)=(0,2)$.
+The output lists the power in the orders labeled by $n_1$ and $n_2$. Because $n_1=m_1$ and $n_2=-m_1+2m_2$, only those supercell orders with even $n_2$ contain nonzero power whereas the odd orders (artifacts of the supercell) contain zero power. Note that the $(m_1,m_2)=(0,1)$ order of the unit cell corresponds to the $(n_1,n_2)=(0,2)$ order of the supercell.
 
 ```
 order:, 0, 0, 1.46914
