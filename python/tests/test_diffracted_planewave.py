@@ -5,16 +5,12 @@ import cmath
 import numpy as np
 
 
-# Computes the mode coefficient of the transmitted orders of
-# a binary grating given an incident planewave and verifies
-# that the results are the same when using either a band number
-# or `DiffractedPlanewave` object in `get_eigenmode_coefficients`.
-
 class TestDiffractedPlanewave(unittest.TestCase):
 
   @classmethod
   def setUp(cls):
-    cls.resolution = 50        # pixels/um
+    cls.resolution = 50        # pixels/μm
+
     cls.dpml = 1.0             # PML thickness
     cls.dsub = 3.0             # substrate thickness
     cls.dpad = 3.0             # length of padding between grating and PML
@@ -29,6 +25,12 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
 
   def run_binary_grating_diffraction(self,gp,gh,gdc,theta):
+    """Computes the mode coefficient of the transmitted orders of
+       a binary grating given an incident planewave using the two
+       approaches of band number and `DiffractedPlanewave` object in
+       `get_eigenmode_coefficients` and verifies that they produce
+       the same result.
+    """
     sx = self.dpml+self.dsub+gh+self.dpad+self.dpml
     sy = gp
     cell_size = mp.Vector3(sx,sy,0)
@@ -88,7 +90,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
     m_minus = int(np.ceil((-self.fcen-k.y)*gp))
 
     if theta == 0:
-      orders = range(m_plus)
+      orders = range(m_plus+1)
     else:
       # ordering of the modes computed by MPB is according to *decreasing*
       # values of kx (i.e., closest to propagation direction of 0° or +x)
@@ -137,12 +139,104 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
     print("PASSED.")
 
+
   def test_diffracted_planewave(self):
     self.run_binary_grating_diffraction(2.6,0.4,0.6,0)
     self.run_binary_grating_diffraction(2.6,0.4,0.6,13.4)
 
     # self.run_binary_grating_diffraction(10.0,0.5,0.5,0)
     # self.run_binary_grating_diffraction(10.0,0.5,0.5,10.7)
+
+
+  def run_mode_source(self,gp,gh,gdc,m,diffpw):
+    """Computes the transmitted flux of a
+       binary grating given an incident planewave
+       specified by the diffraction order `m` in the
+       y direction. The incident planewave is defined
+       using a mode source with either a band number
+       or `DiffractedPlanewave` object specified by
+       the boolean flag `diffpw`.
+    """
+    sx = self.dpml+self.dsub+gh+self.dpad+self.dpml
+    sy = gp
+    cell_size = mp.Vector3(sx,sy,0)
+
+    ky = m/gp
+    theta = math.asin(ky/(self.fcen*self.ng))
+
+    # k (in source medium) with correct length (plane of incidence: XY)
+    k = mp.Vector3(self.fcen*self.ng).rotate(mp.Vector3(z=1), theta)
+
+    eig_parity = mp.ODD_Z
+    if theta == 0:
+      k = mp.Vector3()
+      eig_parity += mp.EVEN_Y
+      symmetries = [mp.Mirror(direction=mp.Y)]
+    else:
+      symmetries = []
+
+    src_pt = mp.Vector3(-0.5*sx+self.dpml,0,0)
+    if diffpw:
+      # the *zeroth* diffraction order defines a planewave with a
+      # wavevector equal to the `k_point` of the `Simulation` object
+      sources = [mp.EigenModeSource(mp.GaussianSource(self.fcen,fwidth=0.1*self.fcen),
+                                    center=src_pt,
+                                    size=mp.Vector3(0,sy,0),
+                                    eig_band=mp.DiffractedPlanewave((0,0,0),
+                                                                    mp.Vector3(0,1,0),
+                                                                    1,
+                                                                    0))]
+    else:
+      sources = [mp.EigenModeSource(mp.GaussianSource(self.fcen,fwidth=0.1*self.fcen),
+                                    center=src_pt,
+                                    size=mp.Vector3(0,sy,0),
+                                    direction=mp.NO_DIRECTION,
+                                    eig_kpoint=k,
+                                    eig_band=1,
+                                    eig_parity=eig_parity)]
+
+    geometry = [mp.Block(material=self.glass,
+                         size=mp.Vector3(self.dpml+self.dsub,mp.inf,mp.inf),
+                         center=mp.Vector3(-0.5*sx+0.5*(self.dpml+self.dsub),0,0)),
+                mp.Block(material=self.glass,
+                         size=mp.Vector3(gh,gdc*gp,mp.inf),
+                         center=mp.Vector3(-0.5*sx+self.dpml+self.dsub+0.5*gh,0,0))]
+
+    sim = mp.Simulation(resolution=self.resolution,
+                        cell_size=cell_size,
+                        boundary_layers=self.pml_layers,
+                        k_point=k,
+                        geometry=geometry,
+                        sources=sources,
+                        symmetries=symmetries)
+
+    tran_pt = mp.Vector3(0.5*sx-self.dpml,0,0)
+    tran_flux = sim.add_flux(self.fcen,
+                             0,
+                             1,
+                             mp.FluxRegion(center=tran_pt,
+                                           size=mp.Vector3(0,sy,0)))
+
+    sim.run(until_after_sources=mp.stop_when_fields_decayed(20,mp.Ez,src_pt,1e-6))
+
+    tran = mp.get_fluxes(tran_flux)[0]
+
+    sim.reset_meep()
+
+    return tran
+
+
+  def test_mode_source(self):
+    tran_bn = self.run_mode_source(1.5,0.5,0.3,2,False)
+    tran_dp = self.run_mode_source(1.5,0.5,0.3,2,True)
+    print("mode-source:, "
+          "{:.5f} (band number), "
+          "{:.5f} (diffraction order)".format(tran_bn,
+                                              tran_dp))
+    self.assertAlmostEqual(tran_bn,
+                           tran_dp,
+                           places=3 if mp.is_single_precision() else 4)
+
 
 if __name__ == '__main__':
   unittest.main()
