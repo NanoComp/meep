@@ -510,7 +510,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             ## compare objective results
             print("Dz2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,Dz2_unperturbed))
-            self.assertClose(adjsol_obj,Dz2_unperturbed,epsilon=1e-6)
+            self.assertClose(adjsol_obj,Dz2_unperturbed,epsilon=1e-4 if mp.is_single_precision() else 1e-6)
 
             ## compute perturbed |Dz|^2
             Dz2_perturbed = forward_simulation_complex_fields(p+dp, frequencies)
