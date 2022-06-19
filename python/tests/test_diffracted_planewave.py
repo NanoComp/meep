@@ -221,8 +221,6 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
     tran = mp.get_fluxes(tran_flux)[0]
 
-    sim.reset_meep()
-
     return tran
 
 
