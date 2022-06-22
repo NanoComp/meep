@@ -1,6 +1,9 @@
 import unittest
 import numpy as np
 import meep as mp
+import math
+import cmath
+
 
 class TestModeDecomposition(unittest.TestCase):
 
@@ -159,7 +162,7 @@ class TestModeDecomposition(unittest.TestCase):
 
 
     def test_grating_3d(self):
-        """Unit test for mode decomposition in 3d.
+        """Unit test for mode decomposition in 3d with zero k_point.
 
         Verifies that the reflectance and transmittance in the z
         direction at a single wavelength for a unit cell of a
@@ -319,6 +322,205 @@ class TestModeDecomposition(unittest.TestCase):
 
         ## to obtain agreement for two decimal digits,
         ## the resolution must be increased to 200
+        self.assertAlmostEqual(Rsum,Rflux,places=1)
+        self.assertAlmostEqual(Tsum,Tflux,places=2)
+        self.assertAlmostEqual(Rsum+Tsum,1.00,places=1)
+
+
+    def test_triangular_lattice_oblique(self):
+        """Unit test for mode decomposition in 3d with nonzero k_point.
+
+        Verifies that the reflectance and transmittance in the z
+        direction at a single wavelength for a supercell of a
+        binary grating with triangular lattice using a incident oblique
+        planewave is equivalent to the sum of the Poynting flux
+        (normalized by the flux of the input source) for all the
+        individual reflected and transmitted diffracted orders.
+        """
+        resolution = 25
+
+        ng = 1.5
+        glass = mp.Medium(index=ng)
+
+        wvl = 0.5
+        fcen = 1/wvl
+
+        dpml = 1.0
+        dsub = 2.0
+        dair = 2.0
+        rcyl = 0.1
+        hcyl = 0.3
+
+        a = 0.6
+
+        sx = a
+        sy = a*np.sqrt(3)
+
+        sz = dpml+dsub+hcyl+dair+dpml
+
+        cell_size = mp.Vector3(sx,sy,sz)
+
+        boundary_layers = [mp.PML(thickness=dpml,direction=mp.Z)]
+
+        # plane of incidence is yz
+        # 0° is +z with CCW rotation about x
+        theta = math.radians(50.0)
+
+        if theta == 0:
+            k = mp.Vector3()
+        else:
+            k = mp.Vector3(0,0,fcen).rotate(mp.Vector3(1,0,0),theta)
+
+        def pw_amp(k,x0):
+            def _pw_amp(x):
+                return cmath.exp(1j*2*math.pi*k.dot(x+x0))
+            return _pw_amp
+
+        src_pt = mp.Vector3(0,0,-0.5*sz+dpml)
+        src_cmpt = mp.Ex # S-pol: Ex / P-pol: Ey
+        sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.1*fcen),
+                             size=mp.Vector3(sx,sy,0),
+                             center=src_pt,
+                             component=src_cmpt,
+                             amp_func=pw_amp(k,src_pt))]
+
+        symmetries = [mp.Mirror(direction=mp.X, phase=-1 if src_cmpt==mp.Ex else +1)]
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell_size,
+                            sources=sources,
+                            default_material=glass,
+                            boundary_layers=boundary_layers,
+                            k_point=k,
+                            symmetries=symmetries)
+
+        refl_pt = mp.Vector3(0,0,-0.5*sz+dpml+0.5*dsub)
+        refl_flux = sim.add_mode_monitor(fcen,
+                                         0,
+                                         1,
+                                         mp.ModeRegion(center=refl_pt,
+                                                       size=mp.Vector3(sx,sy,0)))
+
+        stop_cond = mp.stop_when_fields_decayed(25,src_cmpt,src_pt,1e-6)
+        sim.run(until_after_sources=stop_cond)
+
+        input_flux = mp.get_fluxes(refl_flux)[0]
+        input_flux_data = sim.get_flux_data(refl_flux)
+
+        sim.reset_meep()
+
+        substrate = [mp.Block(size=mp.Vector3(mp.inf,mp.inf,dpml+dsub),
+                              center=mp.Vector3(0,0,-0.5*sz+0.5*(dpml+dsub)),
+                              material=glass)]
+
+        grating = [mp.Cylinder(center=mp.Vector3(0,0,-0.5*sz+dpml+dsub+0.5*hcyl),
+                               radius=rcyl,
+                               height=hcyl,
+                               material=glass),
+                   mp.Cylinder(center=mp.Vector3(0.5*sx,0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                               radius=rcyl,
+                               height=hcyl,
+                               material=glass),
+                   mp.Cylinder(center=mp.Vector3(-0.5*sx,0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                               radius=rcyl,
+                               height=hcyl,
+                               material=glass),
+                   mp.Cylinder(center=mp.Vector3(0.5*sx,-0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                               radius=rcyl,
+                               height=hcyl,
+                               material=glass),
+                   mp.Cylinder(center=mp.Vector3(-0.5*sx,-0.5*sy,-0.5*sz+dpml+dsub+0.5*hcyl),
+                               radius=rcyl,
+                               height=hcyl,
+                               material=glass)]
+
+        geometry = substrate + grating
+
+        sim = mp.Simulation(resolution=resolution,
+                            cell_size=cell_size,
+                            sources=sources,
+                            geometry=geometry,
+                            boundary_layers=boundary_layers,
+                            k_point=k,
+                            symmetries=symmetries)
+
+        refl_flux = sim.add_mode_monitor(fcen,
+                                         0,
+                                         1,
+                                         mp.ModeRegion(center=refl_pt,
+                                                       size=mp.Vector3(sx,sy,0)))
+
+        sim.load_minus_flux_data(refl_flux, input_flux_data)
+
+        tran_pt = mp.Vector3(0,0,0.5*sz-dpml)
+        tran_flux = sim.add_mode_monitor(fcen,
+                                         0,
+                                         1,
+                                         mp.ModeRegion(center=tran_pt,
+                                                       size=mp.Vector3(sx,sy,0)))
+
+        sim.run(until_after_sources=stop_cond)
+
+        Rsum = 0
+        Tsum = 0
+        m = 5
+        tol = 1e-6
+        for nx in range(-m,m+1):
+            for ny in range(-m,m+1):
+                kz2 = (ng*fcen)**2-(k.x+nx/sx)**2-(k.y+ny/sy)**2
+                if kz2 > 0:
+                    Rpol = 0
+                    for S_pol in [True, False]:
+                        res = sim.get_eigenmode_coefficients(refl_flux,
+                                                             mp.DiffractedPlanewave((nx,ny,0),
+                                                                                    mp.Vector3(0,1,0),
+                                                                                    1 if S_pol else 0,
+                                                                                    0 if S_pol else 1))
+
+                        coeffs = res.alpha
+                        refl = abs(coeffs[0,0,1])**2 / input_flux
+
+                        if refl > tol:
+                            if (nx + ny) % 2 == 0:
+                                Rpol += refl
+                            else:
+                                print("WARNING: artificial order contains nonzero power")
+                            print("refl:, {}, {:2d}, {:2d}, {:.5f}".format('S' if S_pol else 'P',nx,ny,refl))
+
+                    Rsum += Rpol
+
+                kz2 = fcen**2-(k.x+nx/sx)**2-(k.y+ny/sy)**2
+                if kz2 > 0:
+                    Tpol = 0
+                    for S_pol in [True, False]:
+                        res = sim.get_eigenmode_coefficients(tran_flux,
+                                                             mp.DiffractedPlanewave((nx,ny,0),
+                                                                                    mp.Vector3(0,1,0),
+                                                                                    1 if S_pol else 0,
+                                                                                    0 if S_pol else 1))
+                        coeffs = res.alpha
+                        tran = abs(coeffs[0,0,0])**2 / input_flux
+
+                        if tran > tol:
+                            if (nx + ny) % 2 == 0:
+                                Tpol += tran
+                            else:
+                                print("WARNING: artificial order contains nonzero power")
+                            print("tran:, {}, {:2d}, {:2d}, {:.5f}".format('S' if S_pol else 'P',nx,ny,tran))
+
+                    Tsum += Tpol
+
+
+        Rflux = -mp.get_fluxes(refl_flux)[0] / input_flux
+        err = abs(Rflux-Rsum)/Rflux
+        print("refl:, {:.6f} (flux), {:.6f} (orders), {:.6f} (error)".format(Rflux,Rsum,err))
+
+        Tflux = mp.get_fluxes(tran_flux)[0] / input_flux
+        err = abs(Tflux-Tsum)/Tflux
+        print("tran:, {:.6f} (flux), {:.6f} (orders), {:.6f} (error)".format(Tflux,Tsum,err))
+
+        ## to obtain agreement for two decimal digits,
+        ## the resolution must be increased to 100
         self.assertAlmostEqual(Rsum,Rflux,places=1)
         self.assertAlmostEqual(Tsum,Tflux,places=2)
         self.assertAlmostEqual(Rsum+Tsum,1.00,places=1)

@@ -334,9 +334,16 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   // if the mode region extends over the full computational grid and we are bloch-periodic
   // in any direction, set the corresponding component of the eigenmode initial-guess
   // k-vector to be the (real part of the) bloch vector in that direction.
+  grid_volume eig_gv;
+  if (eig_vol.dim == D1)
+    eig_gv = vol1d(eig_vol.in_direction(Z), a);
+  else if (eig_vol.dim == D2)
+    eig_gv = vol2d(eig_vol.in_direction(X), eig_vol.in_direction(Y), a);
+  else
+    eig_gv = vol3d(eig_vol.in_direction(X), eig_vol.in_direction(Y), eig_vol.in_direction(Z), a);
   vec kpoint(_kpoint);
   LOOP_OVER_DIRECTIONS(v.dim, dd) {
-    if (dd != d && float(eig_vol.in_direction(dd)) == float(v.in_direction(dd)))
+    if (dd != d && eig_gv.num_direction(dd) == user_volume.num_direction(dd))
       if (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)
         kpoint.set_direction(dd, real(k[dd]));
   }
@@ -344,12 +351,10 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   bool empty_dim[3] = {false, false, false};
 
   // special case: 2d cell in x and y with non-zero kz
-  if ((eig_vol.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
+  if ((v.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
       (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) &&
-      (kpoint.z() == 0) && (real(k[Z]) != 0)) {
-    kpoint.set_direction(Z, real(k[Z]));
+      (real(k[Z]) != 0))
     empty_dim[2] = true;
-  }
 
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
   int n[3], local_N, N_start, alloc_N, mesh_size[3] = {1, 1, 1};
