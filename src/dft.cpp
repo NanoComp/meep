@@ -1468,7 +1468,10 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
     std::vector<ptrdiff_t> idx_arr;
     std::vector<std::complex<double> > amp_arr;
     std::complex<double> EH0 = std::complex<double>(0,0);
-    sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
+    component c = component(f->c);
+    direction cd = component_direction(c);
+    sourcedata temp_struct = {c, idx_arr, f->fc->chunk_idx, amp_arr};
+
     int position_array[3] = {0, 0, 0}; // array indicating the position of a point relative to the minimum corner of the monitor
 
     LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
@@ -1491,7 +1494,11 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
         temp_struct.idx_arr.push_back(idx);
         for (size_t i = 0; i < Nfreq; ++i) {
           EH0 = dJ_weight*dJ[reduced_grid_size*i+idx_1d];
-          if (is_E_or_D(temp_struct.near_fd_comp)) EH0 *= -1;
+
+          if (is_electric(c)) EH0 *= -1;
+          if (is_D(c) && f->fc->s->chi1inv[c - Dx + Ex][cd]) EH0 /= -f->fc->s->chi1inv[c - Dx + Ex][cd][idx];
+          if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd]) EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
+
           EH0 /= f->S.multiplicity(ix0);
           temp_struct.amp_arr.push_back(EH0);
         }
@@ -1503,7 +1510,11 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
           temp_struct.idx_arr.push_back(site_ind[j]);
           for (size_t i = 0; i < Nfreq; ++i) {
             EH0 = dJ_weight*dJ[reduced_grid_size*i+idx_1d]*0.25; // split the amplitude of the adjoint source into four parts
-            if (is_E_or_D(temp_struct.near_fd_comp)) EH0 *= -1;
+
+            if (is_electric(c)) EH0 *= -1;
+            if (is_D(c) && f->fc->s->chi1inv[c - Dx + Ex][cd]) EH0 /= -f->fc->s->chi1inv[c - Dx + Ex][cd][idx];
+            if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd]) EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
+
             EH0 /= f->S.multiplicity(ix0);
             temp_struct.amp_arr.push_back(EH0);
           }
