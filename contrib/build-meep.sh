@@ -75,29 +75,6 @@ fi
 
 set -ex
 
-ubuntu=false
-centos=false
-
-distrib=$(lsb_release -r -s)
-case "$distrib" in
-    18.04) # ubuntu 18.04 bionic
-        libpng=libpng-dev
-        libpython=libpython3-dev
-        ubuntu=true
-        ;;
-    16.04) # ubuntu 16.04 xenial
-        libpng=libpng16-dev
-        libpython=libpython3.5-dev
-        ubuntu=true
-        ;;
-    7.*) # CentOS 7.x
-        centos=true
-        ;;
-    *)
-        echo "unsupported distribution '$(lsb_release -a)', edit and fix!"
-        false
-        ;;
-esac
 
 mkdir -p ${SRCDIR}
 cd ${SRCDIR}
@@ -122,101 +99,132 @@ autogensh ()
         "$@"
 }
 
-if $installdeps && $ubuntu; then
+if $installdeps; then
 
-    sudo apt-get update
+    ubuntu=false
+    centos=false
 
-    sudo apt-get -y install     \
-        build-essential         \
-        gfortran                \
-        libblas-dev             \
-        liblapack-dev           \
-        libgmp-dev              \
-        swig                    \
-        libgsl-dev              \
-        autoconf                \
-        pkg-config              \
-        $libpng                 \
-        git                     \
-        guile-2.0-dev           \
-        libfftw3-dev            \
-        libhdf5-openmpi-dev     \
-        hdf5-tools              \
-        $libpython              \
-        python3-numpy           \
-        python3-scipy           \
-        python3-pip             \
-        ffmpeg                  \
+    distrib=$(lsb_release -r -s)
+    case "$distrib" in
+        18.04) # ubuntu 18.04 bionic
+            libpng=libpng-dev
+            libpython=libpython3-dev
+            ubuntu=true
+            ;;
+        16.04) # ubuntu 16.04 xenial
+            libpng=libpng16-dev
+            libpython=libpython3.5-dev
+            ubuntu=true
+            ;;
+        7.*) # CentOS 7.x
+            centos=true
+            ;;
+        *)
+            echo "unsupported distribution '$(lsb_release -a)', edit and fix!"
+            false
+            ;;
+    esac
 
-    [ "$distrib" = 16.04 ] && sudo -H pip3 install --upgrade pip
-    sudo -H pip3 install --no-cache-dir mpi4py
-    export HDF5_MPI="ON"
-    sudo -H pip3 install --no-binary=h5py h5py
-    sudo -H pip3 install matplotlib>3.0.0
+    if $ubuntu; then
 
-    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
+        sudo apt-get update
 
-fi
+        sudo apt-get -y install     \
+            build-essential         \
+            gfortran                \
+            libblas-dev             \
+            liblapack-dev           \
+            libgmp-dev              \
+            swig                    \
+            libgsl-dev              \
+            autoconf                \
+            pkg-config              \
+            $libpng                 \
+            git                     \
+            guile-2.0-dev           \
+            libfftw3-dev            \
+            libhdf5-openmpi-dev     \
+            hdf5-tools              \
+            $libpython              \
+            python3-numpy           \
+            python3-scipy           \
+            python3-pip             \
+            ffmpeg                  \
 
-if $installdeps && $centos; then
+        [ "$distrib" = 16.04 ] && sudo -H pip3 install --upgrade pip
+        sudo -H pip3 install --no-cache-dir mpi4py
+        export HDF5_MPI="ON"
+        sudo -H pip3 install --no-binary=h5py h5py
+        sudo -H pip3 install matplotlib>3.0.0
 
-    sudo yum -y --enablerepo=extras install epel-release
+        RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+        LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
+        CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
 
-    sudo yum -y install   \
-        bison             \
-        byacc             \
-        cscope            \
-        ctags             \
-        cvs               \
-        diffstat          \
-        oxygen            \
-        flex              \
-        gcc               \
-        gcc-c++           \
-        gcc-gfortran      \
-        gettext           \
-        git               \
-        indent            \
-        intltool          \
-        libtool           \
-        patch             \
-        patchutils        \
-        rcs               \
-        redhat-rpm-config \
-        rpm-build         \
-        subversion        \
-        systemtap         \
-        wget
+    fi
 
-    sudo yum -y install    \
-        openblas-devel     \
-        fftw3-devel        \
-        libpng-devel       \
-        gsl-devel          \
-        gmp-devel          \
-        pcre-devel         \
-        libtool-ltdl-devel \
-        libunistring-devel \
-        libffi-devel       \
-        gc-devel           \
-        zlib-devel         \
-        openssl-devel      \
-        sqlite-devel       \
-        bzip2-devel        \
-        ffmpeg
+    if $centos; then
 
-    sudo yum -y install    \
-        openmpi-devel      \
-        hdf5-openmpi-devel \
-        guile-devel        \
-        swig
+        sudo yum -y --enablerepo=extras install epel-release
+
+        sudo yum -y install   \
+            bison             \
+            byacc             \
+            cscope            \
+            ctags             \
+            cvs               \
+            diffstat          \
+            oxygen            \
+            flex              \
+            gcc               \
+            gcc-c++           \
+            gcc-gfortran      \
+            gettext           \
+            git               \
+            indent            \
+            intltool          \
+            libtool           \
+            patch             \
+            patchutils        \
+            rcs               \
+            redhat-rpm-config \
+            rpm-build         \
+            subversion        \
+            systemtap         \
+            wget
+
+        sudo yum -y install    \
+            openblas-devel     \
+            fftw3-devel        \
+            libpng-devel       \
+            gsl-devel          \
+            gmp-devel          \
+            pcre-devel         \
+            libtool-ltdl-devel \
+            libunistring-devel \
+            libffi-devel       \
+            gc-devel           \
+            zlib-devel         \
+            openssl-devel      \
+            sqlite-devel       \
+            bzip2-devel        \
+            ffmpeg
+
+        sudo yum -y install    \
+            openmpi-devel      \
+            hdf5-openmpi-devel \
+            guile-devel        \
+            swig
 
     export PATH=${PATH}:/usr/lib64/openmpi/bin
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib64/openmpi/lib"
     LDFLAGS="-L${DESTDIR}/lib -L/usr/lib64/openmpi/lib ${RPATH_FLAGS}"
     CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
+    fi
+else
+    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib"
+    LDFLAGS="-L${DESTDIR}/lib ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include"
 fi
 
 CPPFLAGS=${CFLAGS}
