@@ -330,14 +330,13 @@ class TestModeDecomposition(unittest.TestCase):
     def test_triangular_lattice_oblique(self):
         """Unit test for mode decomposition in 3d with nonzero k_point.
 
-        Verifies that the reflectance and transmittance in the z
-        direction at a single wavelength for a supercell of a
-        binary grating with triangular lattice using a incident oblique
-        planewave is equivalent to the sum of the Poynting flux
-        (normalized by the flux of the input source) for all the
-        individual reflected and transmitted diffracted orders.
+        Verifies that the sum of the diffraction efficiencies of all
+        the reflected and transmitted orders of a binary grating with
+        triangular lattice given an oblique planewave incident from
+        within the high-index medium is equivalent to the reflectance and
+        transmittance, respectively, obtained using the Poynting flux.
         """
-        resolution = 25
+        resolution = 30
 
         ng = 1.5
         glass = mp.Medium(index=ng)
@@ -364,12 +363,15 @@ class TestModeDecomposition(unittest.TestCase):
 
         # plane of incidence is yz
         # 0° is +z with CCW rotation about x
-        theta = math.radians(50.0)
+        theta = math.radians(34.6)
 
         if theta == 0:
             k = mp.Vector3()
         else:
-            k = mp.Vector3(0,0,fcen).rotate(mp.Vector3(1,0,0),theta)
+            # The planewave source is incident from within the high-index
+            # medium which means ω = c|k|/n where n is the index of medium.
+            # In Meep units (c=1), this implies |k| = nω.
+            k = mp.Vector3(0,0,ng*fcen).rotate(mp.Vector3(1,0,0),theta)
 
         def pw_amp(k,x0):
             def _pw_amp(x):
@@ -467,6 +469,11 @@ class TestModeDecomposition(unittest.TestCase):
         tol = 1e-6
         for nx in range(-m,m+1):
             for ny in range(-m,m+1):
+                # convert supercell order to unit cell order
+                mx = nx
+                my = (nx + ny) // 2
+
+                # consider only propagating modes in high-index medium
                 kz2 = (ng*fcen)**2-(k.x+nx/sx)**2-(k.y+ny/sy)**2
                 if kz2 > 0:
                     Rpol = 0
@@ -480,15 +487,19 @@ class TestModeDecomposition(unittest.TestCase):
                         coeffs = res.alpha
                         refl = abs(coeffs[0,0,1])**2 / input_flux
 
+                        pol_str = 'S' if S_pol else 'P'
+
                         if refl > tol:
+                            # determine whether diffracted order is for the unit cell or super cell
                             if (nx + ny) % 2 == 0:
                                 Rpol += refl
+                                print("refl:, {}, {:2d}, {:2d}, {:.5f}, (unit cell)".format(pol_str,mx,my,refl))
                             else:
-                                print("WARNING: artificial order contains nonzero power")
-                            print("refl:, {}, {:2d}, {:2d}, {:.5f}".format('S' if S_pol else 'P',nx,ny,refl))
+                                print("refl:, {}, {:2d}, {:2d}, {:.7f}, (super cell)".format(pol_str,nx,ny,refl))
 
                     Rsum += Rpol
 
+                # consider only propagating modes in air
                 kz2 = fcen**2-(k.x+nx/sx)**2-(k.y+ny/sy)**2
                 if kz2 > 0:
                     Tpol = 0
@@ -501,12 +512,15 @@ class TestModeDecomposition(unittest.TestCase):
                         coeffs = res.alpha
                         tran = abs(coeffs[0,0,0])**2 / input_flux
 
+                        pol_str = 'S' if S_pol else 'P'
+
                         if tran > tol:
+                            # determine whether diffracted order is for the unit cell or super cell
                             if (nx + ny) % 2 == 0:
                                 Tpol += tran
+                                print("tran:, {}, {:2d}, {:2d}, {:.5f}, (unit cell)".format(pol_str,mx,my,tran))
                             else:
-                                print("WARNING: artificial order contains nonzero power")
-                            print("tran:, {}, {:2d}, {:2d}, {:.5f}".format('S' if S_pol else 'P',nx,ny,tran))
+                                print("tran:, {}, {:2d}, {:2d}, {:.7f}, (super cell)".format(pol_str,nx,ny,tran))
 
                     Tsum += Tpol
 
@@ -519,11 +533,9 @@ class TestModeDecomposition(unittest.TestCase):
         err = abs(Tflux-Tsum)/Tflux
         print("tran:, {:.6f} (flux), {:.6f} (orders), {:.6f} (error)".format(Tflux,Tsum,err))
 
-        ## to obtain agreement for two decimal digits,
-        ## the resolution must be increased to 100
-        self.assertAlmostEqual(Rsum,Rflux,places=1)
-        self.assertAlmostEqual(Tsum,Tflux,places=2)
-        self.assertAlmostEqual(Rsum+Tsum,1.00,places=1)
+        self.assertAlmostEqual(Rsum,Rflux,places=3)
+        self.assertAlmostEqual(Tsum,Tflux,places=3)
+        self.assertAlmostEqual(Rsum+Tsum,1.00,places=2)
 
 
 if __name__ == '__main__':
