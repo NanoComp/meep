@@ -18,8 +18,8 @@ There are six Jupyter notebooks that demonstrate the main features of the adjoin
 
 - [Design of a Symmetric Broadband Splitter](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/04-Splitter.ipynb)
 
-- [Broadband Objective Function using Epigraph Formulation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/05-Minimax.ipynb)
+- [Broadband Objective Function using Epigraph Formulation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/05-Near2Far.ipynb)
 
-- [Objective Function based on Near to Far-Field Transformation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/Near2Far-Epigraph.ipynb)
+- [Objective Function based on Near to Far-Field Transformation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb)
 
 More documentation will be available soon.
