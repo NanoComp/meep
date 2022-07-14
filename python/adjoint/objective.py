@@ -85,7 +85,7 @@ class ObjectiveQuantity(abc.ABC):
         src_center_dtft = np.matmul(
             np.exp(1j * 2 * np.pi * np.array([src.frequency])[:, np.newaxis] *
                    np.arange(y.size) * dt), y) * dt / np.sqrt(2 * np.pi)
-        adj_src_phase = np.exp(1j * np.angle(src_center_dtft))
+        adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
 
         if self._frequencies.size == 1:
             # Single frequency simulations. We need to drive it with a time profile.
@@ -99,7 +99,7 @@ class ObjectiveQuantity(abc.ABC):
             scale *= 2
         return scale
 
-    def _create_time_profile(self, fwidth_frac=0.1):
+    def _create_time_profile(self, fwidth_frac=0.1, adj_cutoff=5):
         """Creates a time domain waveform for normalizing the adjoint source(s).
 
         For single frequency objective functions, we should generate a guassian pulse with a reasonable
@@ -109,9 +109,10 @@ class ObjectiveQuantity(abc.ABC):
         The user may specify a scalar valued objective function across multiple frequencies (e.g. MSE) in
         which case we should check that all the frequencies fit in the specified bandwidth.
         """
+        self.fwidth_scale = np.exp(-2j*np.pi*adj_cutoff/fwidth_frac)
         return mp.GaussianSource(
             np.mean(self._frequencies),
-            fwidth=fwidth_frac * np.mean(self._frequencies),
+            fwidth=fwidth_frac * np.mean(self._frequencies),cutoff=adj_cutoff
         )
 
 
