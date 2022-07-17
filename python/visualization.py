@@ -219,9 +219,16 @@ def get_2D_dimensions(sim, output_plane):
     return sim_center, sim_size
 
 
-def box_vertices(box_center, box_size):
-    xmin = box_center.x - 0.5*box_size.x
-    xmax = box_center.x + 0.5*box_size.x
+def box_vertices(box_center, box_size, is_cylindrical=False):
+    # in cylindrical coordinates, radial (R) axis
+    # is in the range (0,R) rather than (-R/2,+R/2)
+    # as in Cartesian coordinates.
+    if is_cylindrical:
+        xmin = 0
+        xmax = box_size.x
+    else:
+        xmin = box_center.x - 0.5*box_size.x
+        xmax = box_center.x + 0.5*box_size.x
     ymin = box_center.y - 0.5*box_size.y
     ymax = box_center.y + 0.5*box_size.y
     zmin = box_center.z - 0.5*box_size.z
@@ -251,7 +258,9 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
     size = volume.size
     center = volume.center
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(center, size)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(center,
+                                                      size,
+                                                      sim.is_cylindrical)
 
     # Add labels if requested
     if label is not None and mp.am_master():
@@ -376,7 +385,9 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center, sim_size)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center,
+                                                      sim_size,
+                                                      sim.is_cylindrical)
 
     if eps_parameters['resolution']:
         grid_resolution = eps_parameters['resolution']
@@ -436,12 +447,14 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
     else:
         boundary_parameters = dict(default_boundary_parameters, **boundary_parameters)
 
-    def get_boundary_volumes(thickness, direction, side, cylindrical=False):
+    def get_boundary_volumes(thickness, direction, side):
         from meep.simulation import Volume
 
         thickness = boundary.thickness
 
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center, sim.cell_size)
+        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center,
+                                                          sim.cell_size,
+                                                          sim.is_cylindrical)
 
         if direction == mp.X and side == mp.Low:
             return Volume(center=Vector3(xmin+0.5*thickness,
@@ -450,7 +463,7 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
                           size=Vector3(thickness,
                                        sim.cell_size.y,
                                        sim.cell_size.z))
-        elif direction == mp.X and side == mp.High:
+        elif (direction == mp.X and side == mp.High) or direction == mp.R:
             return Volume(center=Vector3(xmax-0.5*thickness,
                                          sim.geometry_center.y,
                                          sim.geometry_center.z),
@@ -472,14 +485,20 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
                                        thickness,
                                        sim.cell_size.z))
         elif direction == mp.Z and side == mp.Low:
-            return Volume(center=Vector3(sim.geometry_center.x,
+            xcen = sim.geometry_center.x
+            if sim.is_cylindrical:
+                xcen += 0.5*sim.cell_size.x
+            return Volume(center=Vector3(xcen,
                                          sim.geometry_center.y,
                                          zmin+0.5*thickness),
                           size=Vector3(sim.cell_size.x,
                                        sim.cell_size.y,
                                        thickness))
         elif direction == mp.Z and side == mp.High:
-            return Volume(center=Vector3(sim.geometry_center.x,
+            xcen = sim.geometry_center.x
+            if sim.is_cylindrical:
+                xcen += 0.5*sim.cell_size.x
+            return Volume(center=Vector3(xcen,
                                          sim.geometry_center.y,
                                          zmax-0.5*thickness),
                           size=Vector3(sim.cell_size.x,
@@ -572,7 +591,9 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
         # Get domain measurements
         sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center, sim_size)
+        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center,
+                                                          sim_size,
+                                                          sim.is_cylindrical)
 
         if sim_size.x == 0:
             # Plot y on x axis, z on y axis (YZ plane)
@@ -662,7 +683,8 @@ def plot3D(sim):
     if sim.dimensions < 3:
         raise ValueError("Simulation must have 3 dimensions to visualize 3D")
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center, sim.cell_size)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center,
+                                                      sim.cell_size)
 
     Nx = int(sim.cell_size.x * sim.resolution) + 1
     Ny = int(sim.cell_size.y * sim.resolution) + 1
