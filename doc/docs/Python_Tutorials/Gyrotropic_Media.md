@@ -119,6 +119,5 @@ plt.show()
 
 As shown in the figure below, the results are in excellent agreement:
 <p align="center">
-  <img  src="../images/Faraday-rotation-comparison.png">
+  <img src="../images/Faraday-rotation-comparison.png">
 </p>
-
