@@ -91,7 +91,7 @@ else:
 
 The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The error is converging to an asymptotic limit of `1e-12` which is set by the lowest tolerance.
 <p align="center">
-  <img  src="../images/CWsolver-python.png">
+  <img src="../images/CWsolver-python.png">
 </p>
 
 
