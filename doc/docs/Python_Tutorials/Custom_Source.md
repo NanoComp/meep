@@ -178,6 +178,7 @@ Results for Method 1 for three different numbers of trials/iterations (10, 50, a
 
 
 The next figure shows a comparison of the normalized radiated flux for Method 1 (500 trials) and 2 (20 runs; 10 runs each for the flat and textured surface). The results show good agreement over the entire bandwidth spectrum. The Method 1 results (labeled "Monte Carlo") required almost *four days* of compute time using an Intel Xeon processor with two single-threaded cores at 3.8 GHz whereas the Method 2 results (labeled "Deterministic") were obtained in 24 minutes. In general, deterministic approaches tend to be more efficient than brute-force Monte Carlo.
+
 <p align="center">
   <img src="../images/stochastic_emitter_normalized_flux_comparison.png">
 </p>
@@ -308,6 +309,7 @@ if mp.am_master():
 There are three items to note in this script. (1) The line source spans the entire length of the cell in the $x$ direction (i.e., $L$ is `sx`). (2) The number of point dipoles in Method 2 is `sx*resolution`, one per pixel. (3) The source amplitude function in Method 3 is specified by the `amp_func` property of the [`Source`](../Python_User_Interface.md#source) object. In the case of a Fourier cosine series as conventionally written, $\cos (m\pi x)/L$ is defined over the interval $x=[0,L]$ such that $x=0$ corresponds to the *edge* of the source, not the center. Since the source region in this example is defined in $[-L/2,+L/2]$, the amplitude function must shift its $x$ coordinate argument by $+L/2$ or `0.5*sx`.
 
 Method 3 requires a convergence check in which $M$ (`nsrc` in the script) is repeatedly doubled until the change in the results are within a desired tolerance of e.g., < 1%. For this example, $M=15$ was found to be sufficient. Note that because a line source with a cosine amplitude function in *homogeneous* media is analogous to generating a planewave at a discrete angle, at each frequency $\omega$ there exists a cutoff $M$ beyond which there are *no* propagating planewaves. The cutoff $M$ can be computed analytically using the grating equation: $\sqrt{\omega^2n^2 - \left(k_x+\frac{M\pi}{L}\right)^2} = 0$, where $n$ is the refractive index of the source medium and $k_x$ is the Bloch-periodic wavevector in the $x$ direction. In this example, $\omega=2\pi$ (pulse center frequency), $L=1.5$, $k_x=0$, and $n=3.45$ for which the largest propagating $M$ is 10. For $M > 10$ the cosine source produces evanescent *waves in the material*, but these waves scatter into other Fourier components (including propagating waves) once they hit the grating. Thus, the source still produces propagating waves, but the amplitude of the propagating waves (and hence the contribution to the power) decreases exponentially for $M > 10$ as the coupling between the source and the grating decreases. This effect is demonstrated in the figure below which is a semilog plot of the $L_2$ norm of the error in the normalized flux of the cosine source relative to the "correct" result computed using 75 point dipoles (Method 2) as a function of the number of terms in the cosine source. The error decreases exponentially for $M > 10$  until $M=12$, at which point it becomes limited by discretization error (both the point-dipole and cosine-source methods have discretization errors at finite resolution, but are discretized slightly differently); as resolution is increased, this minimum difference will go to zero. Note that this analysis is only applicable to periodic structures where the line source extends the entire width of the cell with periodic boundary conditions. A finite length source in a non-periodic cell has no such cutoff and thus will typically require a large number of cosine terms for convergence.
+
 <p align="center">
   <img src="../images/line_source_DCT_ampfunc_convergence.png">
 </p>
@@ -358,6 +360,7 @@ plt.show()
 ```
 
 Results for Method 2 and 3 are shown in the following figure. The agreement is good but there is a significant difference in the runtime. Method 2 (labeled "Point Source") involves $N=75$ simulations each for the flat and textured surface for a total of 150 runs which required 10.6 hours. Method 3 (labeled "Line Source") involves $M=15$ simulations for the flat/textured surface for a total of 30 runs which required just 2.0 hours.
+
 <p align="center">
   <img src="../images/stochastic_emitter_line_normalized_flux_comparison.png">
 </p>
