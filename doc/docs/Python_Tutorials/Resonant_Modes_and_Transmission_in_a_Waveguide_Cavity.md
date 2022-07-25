@@ -5,7 +5,7 @@
 In this example, we will consider the 2d structure shown below, which is based on a system considered in Chapter 7 of [Photonic Crystals: Molding the Flow of Light (second edition)](http://ab-initio.mit.edu/book). In particular, there are three basic ideas behind this structure, which we briefly summarize.
 
 <p align="center">
-  <img  src="../images/Tut-holey-cavity.png">
+  <img src="../images/Tut-holey-cavity.png">
 </p>
 
 
@@ -165,8 +165,8 @@ unix% h5topng holey-wvg-cavity-eps-000000.00.h5
 unix% h5topng -Zc dkbluered holey-wvg-cavity-hz-slice.h5
 ```
 <p align="center">
-  <img  src="../images/Holey-wvg-cavity-eps-000000.00.png">
-  <img  src="../images/Holey-wvg-cavity-hz-slice.png">
+  <img src="../images/Holey-wvg-cavity-eps-000000.00.png">
+  <img src="../images/Holey-wvg-cavity-hz-slice.png">
 </p>
 
 
@@ -187,7 +187,7 @@ unix% grep flux1: holey-wvg-cavity0.out > flux0.dat
 
 which we then import into our plotting program, divide the two fluxes, and get:
 <p align="center">
-  <img  src="../images/Holey-cavity-trans.png">
+  <img src="../images/Holey-cavity-trans.png">
 </p>
 
 
@@ -255,7 +255,7 @@ unix% h5topng -RZc dkbluered -C holey-wvg-cavity-eps-000000.00.h5 holey-wv
 unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ```
 <p align="center">
-  <img  src="../images/Holey-wvg-cavity-hz.gif">
+  <img src="../images/Holey-wvg-cavity-hz.gif">
 </p>
 
 
@@ -271,7 +271,7 @@ unix% python holey-wvg-cavity.py -r -N 5 |grep harminv
 ...
 ```
 <p align="center">
-  <img  src="../images/Holey-wvg-cavity-Q.png">
+  <img src="../images/Holey-wvg-cavity-Q.png">
 </p>
 
 
@@ -289,7 +289,7 @@ What is this extra mode at $ω=0.32823$? This is right around the **edge of the 
 unix% python holey-wvg-cavity.py -r -sy 12 -fcen 0.328227374843021 -df 0.01 -N 16
 ```
 <p align="center">
-  <img  src="../images/Holey-wvg-cavity-hz-001401.23.png">
+  <img src="../images/Holey-wvg-cavity-hz-001401.23.png">
 </p>
 
 
@@ -300,7 +300,7 @@ Band Diagram
 
 Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the infinite periodic waveguide by itself with no defects. The structure is shown below. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
 <p align="center">
-  <img  src="../images/Holey-wvg-bands-eps-000000.00.png">
+  <img src="../images/Holey-wvg-bands-eps-000000.00.png">
 </p>
 
 
@@ -389,7 +389,7 @@ unix% grep freqs-im: holey-wvg-bands.out > fim.dat
 
 Plotting the real parts of ω, where the light cone ω &gt; *ck* is shaded gray,  we find: 
 <p align="center">
-  <img  src="../images/Holey-wvg-bands.png">
+  <img src="../images/Holey-wvg-bands.png">
 </p>
 
 
@@ -409,15 +409,11 @@ It is usually a good idea to examine the field patterns for any modes that you a
 + $k_x=0.3$, $ω=0.8838-0.0018i$ leaky mode
 + $k_x=0.25$, $ω=0.2506$ light-cone (extended) mode
 <p align="center">
-  <img  src="../images/Holey-wvg-kx=0.4-w=0.1896.gif">
-
-  <img  src="../images/Holey-wvg-kx=0.4-w=0.3175.gif">
-
-  <img  src="../images/Holey-wvg-kx=0.10-w=0.4811.gif">
-
-  <img  src="../images/Holey-wvg-kx=0.30-w=0.8838.gif">
-
-  <img  src="../images/Holey-wvg-kx=0.25-w=0.2506.gif">
+  <img src="../images/Holey-wvg-kx=0.4-w=0.1896.gif">
+  <img src="../images/Holey-wvg-kx=0.4-w=0.3175.gif">
+  <img src="../images/Holey-wvg-kx=0.10-w=0.4811.gif">
+  <img src="../images/Holey-wvg-kx=0.30-w=0.8838.gif">
+  <img src="../images/Holey-wvg-kx=0.25-w=0.2506.gif">
 </p>
 
 
