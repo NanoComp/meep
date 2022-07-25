@@ -30,6 +30,7 @@ One important parameter when setting up this calculation is the grid resolution.
 A key feature of the LDOS in this geometry is that it experiences discontinuities, called  [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity), any time the cavity thickness/λ passes through the cutoff for a waveguide mode, which occurs for cavity-thickness/λ values of 0.5, 1.5, 2.5, etc.   (Mathematically, Van Hove singularities depend strongly on the dimensionality — it is a discontinuity in this case because the waves are propagating along two dimensions, i.e. each cutoff is a minimum in the 2d dispersion relation $\omega(k_x,k_y)$.)  This discontinuity also means that the LDOS *exactly at* the cutoff thickness/λ is ill-defined and convergence with discretization can be problematic at this point.  (In consequence, the LDOS *exactly* at the Van Hove discontinuity can behave erratically with resolution, and should be viewed with caution.)
 
 As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
+
 <p align="center">
   <img src="../images/planar_cavity_purcell_enhancement.png">
 </p>
