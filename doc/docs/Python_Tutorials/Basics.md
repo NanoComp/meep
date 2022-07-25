@@ -151,6 +151,7 @@ resolution = 10
 ```
 
 Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
+
 <p align="center">
   <img src="../images/Tutorial-wvg-bent-eps-000000.00.png">
 </p>
@@ -200,11 +201,13 @@ unix% convert ez.t*.png ez.gif
 ```
 
 We are using an animated GIF format for the output. This results in the following animation:
+
 <p align="center">
   <img src="../images/Tutorial-wvg-ez.gif">
 </p>
 
 It is clear that the transmission around the bend is rather low for this frequency and structure &mdash; both large reflection and large radiation loss are clearly visible. Moreover, since we are operating just barely below the cutoff for single-mode behavior, we are able to excite a second *leaky* mode after the waveguide bend, whose second-order mode pattern (superimposed with the fundamental mode) is apparent in the animation. Below, we show a field snapshot from a simulation with a larger cell along the $y$ direction, in which you can see that the second-order leaky mode decays away, leaving us with the fundamental mode propagating downward.
+
 <p align="center">
   <img src="../images/Tutorial-wvg-bent2-ez-000300.00.png">
 </p>
@@ -635,6 +638,7 @@ A common reference calculation in computational electromagnetics for which an an
 The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `is_integrated=True` must be specified in the source object definition. A `k_point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module (which you will have to install in order to run the script below).
 
 A schematic of the 2d cross section at $z=0$ of the 3d cell is shown below.
+
 <p align="center">
   <img src="../images/mie_scattering_schematic.png">
 </p>
@@ -764,6 +768,7 @@ if mp.am_master():
 The incident intensity (`intensity`) is the flux in one of the six monitor planes (the one closest to and facing the planewave source propagating in the $x$ direction) divided by its area. This is why the six sides of the flux box are defined separately. (Otherwise, the entire box could have been defined as a single flux object with different weights ±1 for each side.) The scattered power is multiplied by -1 since it is the *outgoing* power (a positive quantity) rather than the incoming power as defined by the orientation of the flux box. Note that because of the linear $E_z$ polarization of the source, the flux through the $y$ and $z$ planes will *not* be the same. A circularly-polarized source would have produced equal flux in these two monitor planes. The runtime of the scattering run is chosen to be sufficiently long to ensure that the Fourier-transformed fields have [converged](../FAQ.md#checking-convergence).
 
 Results are shown below. Overall, the Meep results agree well with the analytic theory.
+
 <p align="center">
   <img src="../images/mie_scattering.png">
 </p>
@@ -1014,12 +1019,14 @@ plt.savefig('power_density_map.png',dpi=150,bbox_inches='tight')
 There is one important item to note: in order to eliminate discretization artifacts when computing the $\mathbf{E}^* \cdot \mathbf{D}$ dot-product, the `add_dft_fields` definition includes `yee_grid=True` which ensures that the $E_z$ and $D_z$ fields are computed on the Yee grid rather than interpolated to the centered grid. As a corollary, we cannot use [`get_array_metadata`](../Python_User_Interface.md#array-metadata) to obtain the coordinates of the `dft_fields` region or its interpolation weights because this involves the centered grid.
 
 A schematic of the simulation layout generated using [`plot2D`](../Python_User_Interface.md#data-visualization) shows the line source (red), PMLs (green hatch region), `dft_flux` box (solid blue contour line), and `dft_fields` surface (blue hatch region).
+
 <p align="center">
   <img src="../images/power_density_cell.png">
 </p>
 
 
 The spatial map of the absorbed power density shows that most of the absorption occurs in a small region near the back surface of the cylinder (i.e., on the opposite side of the incident planewave).
+
 <p align="center">
   <img src="../images/power_density_map.png">
 </p>
@@ -1126,6 +1133,7 @@ unix% convert ring-ez-*.png ring-ez-0.118.gif
 ```
 
 The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are below, in which you can clearly see the radiating fields that produce the losses:
+
 <p align="center">
  <img src="../images/Tut-ring-ez-0.118.gif">
  <img src="../images/Tut-ring-ez-0.147.gif">
