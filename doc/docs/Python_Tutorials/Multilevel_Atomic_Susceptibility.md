@@ -89,6 +89,7 @@ sim.run(mp.after_time(endt-250, print_field), until=endt)
 ```
 
 The spectra of the field intensity is shown below.
+
 <p align="center">
   <img src="../images/multilevel_meep_n0_37_spectra.png", alt="Multilevel meep spectra">
 </p>
@@ -108,6 +109,7 @@ By varying $N_0$ or the pumping rate $R_p$, we can change the total gain availab
 
 
 Further increasing the gain continues to yield good agreement.
+
 <p align="center">
   <img src="../images/meep_salt_comparison_full.png", alt="Near threshold comparison">
 </p>
