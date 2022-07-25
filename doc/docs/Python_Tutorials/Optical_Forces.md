@@ -5,7 +5,7 @@
 This tutorial demonstrates Meep's ability to compute classical forces via the [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor). The geometry consists of two identical, parallel, silicon waveguides with square cross section in vacuum. A schematic of the geometry is shown below. Due to the parallel orientation of the waveguides (propagation axis along $z$ and separation in $x$), the two modes can be chosen to be either symmetric or anti-symmetric with respect to an $x$ mirror-symmetry plane between them. As the two waveguides are brought closer and closer together, their modes couple and give rise to a gradient force that is *transverse* to the waveguide axis (i.e., in the $x$ direction). This is different from [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) which involves momentum exchange between photons and is longitudinal in nature (i.e., along the $z$ direction). An interesting phenomena that occurs for this coupled waveguide system is that the force can be tuned to be either attractive or repulsive depending on the relative phase of the two modes. This tutorial will demonstrate this effect.
 <p align="center">
   <img src="../images/Waveguide_forces.png">
-    </p>
+</p>
 
 
 The gradient force $F$ on each waveguide arising from the evanescent coupling of the two waveguide modes can be computed analytically:
@@ -131,6 +131,7 @@ plt.show()
 ```
 
 The following figure shows the $E_y$ mode profiles at a waveguide separation distance of 0.1 μm. This figure was generated using the [`plot2D`](../Python_User_Interface.md#data-visualization) routine and shows the source and flux monitor (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
+
 <p align="center">
   <img src="../images/parallel_wvgs_s0.1.png">
 </p>
