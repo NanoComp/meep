@@ -51,7 +51,9 @@ geometry = [mp.Block(mp.Vector3(mp.inf,1,mp.inf),
 
 The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε=12$, centered at (0,0) which is the center of the cell. By default, any place where there are no objects there is air ($ε=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
 
-<center>![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png)</center>
+<p align="center">
+  <img  src="../images/Python-Tutorial-wvg-straight-eps-000000.00.png">
+</p>
 
 We have the structure and need to specify the current sources using the `sources` object. The simplest thing is to add a single point source $J_z$:
 
@@ -120,8 +122,9 @@ plt.imshow(ez_data.transpose(), interpolation='spline36', cmap='RdBu', alpha=0.9
 plt.axis('off')
 plt.show()
 ```
-
-<center>![](../images/Python-Tutorial-wvg-straight-ez-000200.00.png)</center>
+<p align="center">
+  <img src="../images/Python-Tutorial-wvg-straight-ez-000200.00.png">
+</p>
 
 We see that the the source has excited the waveguide mode but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML.
 
@@ -148,8 +151,9 @@ resolution = 10
 ```
 
 Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
-
-<center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
+<p align="center">
+  <img src="../images/Tutorial-wvg-bent-eps-000000.00.png">
+</p>
 
 There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface.md#eigenmodesource) can also be used which is described in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
@@ -196,12 +200,14 @@ unix% convert ez.t*.png ez.gif
 ```
 
 We are using an animated GIF format for the output. This results in the following animation:
-
-<center>![](../images/Tutorial-wvg-ez.gif)</center>
+<p align="center">
+  <img  src="../images/Tutorial-wvg-ez.gif">
+</p>
 
 It is clear that the transmission around the bend is rather low for this frequency and structure &mdash; both large reflection and large radiation loss are clearly visible. Moreover, since we are operating just barely below the cutoff for single-mode behavior, we are able to excite a second *leaky* mode after the waveguide bend, whose second-order mode pattern (superimposed with the fundamental mode) is apparent in the animation. Below, we show a field snapshot from a simulation with a larger cell along the $y$ direction, in which you can see that the second-order leaky mode decays away, leaving us with the fundamental mode propagating downward.
-
-<center>![](../images/Tutorial-wvg-bent2-ez-000300.00.png)</center>
+<p align="center">
+  <img src="../images/Tutorial-wvg-bent2-ez-000300.00.png">
+</p>
 
 Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. To get the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time, we can use `get_array` in a step function to collect a slice for each time step:
 
@@ -222,8 +228,9 @@ plt.imshow(vals, interpolation='spline36', cmap='RdBu')
 plt.axis('off')
 plt.show()
 ```
-
-<center>![](../images/Python-Tutorial-wvg-bent-ez-tslice.png)</center>
+<p align="center">
+  <img src="../images/Python-Tutorial-wvg-bent-ez-tslice.png">
+</p>
 
 #### Output Tips and Tricks
 
@@ -412,8 +419,9 @@ if mp.am_master():
     plt.legend(loc="upper right")
     plt.show()
 ```
-
-<center>![](../images/Tut-bend-flux.png)</center>
+<p align="center">
+  <img  src="../images/Tut-bend-flux.png">
+</p>
 
 We should also check whether our data is converged. We can do this by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll try doubling the cell size:
 
@@ -615,8 +623,9 @@ cbar.set_ticks([t for t in np.arange(0,0.4,0.1)])
 cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 ```
-
-<center>![](../images/reflectance_angular_spectrum.png)</center>
+<p align="center">
+  <imgsrc="../images/reflectance_angular_spectrum.png">
+</p>
 
 Mie Scattering of a Lossless Dielectric Sphere
 ----------------------------------------------
@@ -626,8 +635,9 @@ A common reference calculation in computational electromagnetics for which an an
 The scattering cross section ($\sigma_{scat}$) is the scattered power in all directions divided by the incident intensity. The scattering efficiency, a dimensionless quantity, is the ratio of the scattering cross section to the cross sectional area of the sphere. In this demonstration, the sphere is a lossless dielectric with wavelength-independent refractive index of 2.0. This way, [subpixel smoothing](../Subpixel_Smoothing.md) can improve accuracy at low resolutions which is important for reducing the size of this 3d simulation. The source is an $E_z$-polarized, planewave pulse (its `size` parameter fills the *entire* cell in 2d) spanning the broadband wavelength spectrum of 10% to 50% the circumference of the sphere. There is one subtlety: since the [planewave source extends into the PML](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml) which surrounds the cell on all sides, `is_integrated=True` must be specified in the source object definition. A `k_point` of zero specifying periodic boundary conditions is necessary in order for the source to be infinitely extended. Also, given the [symmetry of the fields and the structure](../Exploiting_Symmetry.md), two mirror symmery planes can be used to reduce the cell size by a factor of four. The simulation results are validated by comparing with the analytic theory obtained from the [PyMieScatt](https://pymiescatt.readthedocs.io/en/latest/) module (which you will have to install in order to run the script below).
 
 A schematic of the 2d cross section at $z=0$ of the 3d cell is shown below.
-
-<center>![](../images/mie_scattering_schematic.png)</center>
+<p align="center">
+  <img src="../images/mie_scattering_schematic.png">
+</p>
 
 The simulation script is in [examples/mie_scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie_scattering.py). The notebook is [examples/mie_scattering.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/mie_scattering.ipynb). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
@@ -754,8 +764,9 @@ if mp.am_master():
 The incident intensity (`intensity`) is the flux in one of the six monitor planes (the one closest to and facing the planewave source propagating in the $x$ direction) divided by its area. This is why the six sides of the flux box are defined separately. (Otherwise, the entire box could have been defined as a single flux object with different weights ±1 for each side.) The scattered power is multiplied by -1 since it is the *outgoing* power (a positive quantity) rather than the incoming power as defined by the orientation of the flux box. Note that because of the linear $E_z$ polarization of the source, the flux through the $y$ and $z$ planes will *not* be the same. A circularly-polarized source would have produced equal flux in these two monitor planes. The runtime of the scattering run is chosen to be sufficiently long to ensure that the Fourier-transformed fields have [converged](../FAQ.md#checking-convergence).
 
 Results are shown below. Overall, the Meep results agree well with the analytic theory.
-
-<center>![](../images/mie_scattering.png)</center>
+<p align="center">
+  <img src="../images/mie_scattering.png">
+</p>
 
 Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section ($\sigma_{abs}$) to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load_minus_flux_data` calls. The extinction cross section ($\sigma_{ext}$) is simply the sum of the scattering and absorption cross sections: $\sigma_{scat}+\sigma_{abs}$.
 
@@ -1003,16 +1014,16 @@ plt.savefig('power_density_map.png',dpi=150,bbox_inches='tight')
 There is one important item to note: in order to eliminate discretization artifacts when computing the $\mathbf{E}^* \cdot \mathbf{D}$ dot-product, the `add_dft_fields` definition includes `yee_grid=True` which ensures that the $E_z$ and $D_z$ fields are computed on the Yee grid rather than interpolated to the centered grid. As a corollary, we cannot use [`get_array_metadata`](../Python_User_Interface.md#array-metadata) to obtain the coordinates of the `dft_fields` region or its interpolation weights because this involves the centered grid.
 
 A schematic of the simulation layout generated using [`plot2D`](../Python_User_Interface.md#data-visualization) shows the line source (red), PMLs (green hatch region), `dft_flux` box (solid blue contour line), and `dft_fields` surface (blue hatch region).
+<p align="center">
+  <img src="../images/power_density_cell.png">
+</p>
 
-<center>
-![](../images/power_density_cell.png)
-</center>
 
 The spatial map of the absorbed power density shows that most of the absorption occurs in a small region near the back surface of the cylinder (i.e., on the opposite side of the incident planewave).
+<p align="center">
+  <img src="../images/power_density_map.png">
+</p>
 
-<center>
-![](../images/power_density_map.png)
-</center>
 
 Finally, the two values for the total absorbed power which are displayed at the end of the run are nearly equivalent. The relative error between the two methods is ~1.0%.
 
@@ -1115,12 +1126,12 @@ unix% convert ring-ez-*.png ring-ez-0.118.gif
 ```
 
 The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are below, in which you can clearly see the radiating fields that produce the losses:
+<p align="center">
+  <img src="../images/Tut-ring-ez-0.118.gif">
+ <img src="../images/Tut-ring-ez-0.147.gif">
+ <img src="../images/Tut-ring-ez-0.175.gif">
+</p>
 
-<center>
-![](../images/Tut-ring-ez-0.118.gif)
-![](../images/Tut-ring-ez-0.147.gif)
-![](../images/Tut-ring-ez-0.175.gif)
-</center>
 
 Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for m=3, 4, and 5 in this case.
 
@@ -1185,9 +1196,9 @@ from mayavi import mlab
 s = mlab.contour3d(eps_data, colormap="YlGnBu")
 mlab.show()
 ```
+<p align="center">
+  <img src="../images/prism_epsilon.png">
+</p>
 
-<center>
-![](../images/prism_epsilon.png)
-</center>
 
 Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [`output_epsilon`](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.
