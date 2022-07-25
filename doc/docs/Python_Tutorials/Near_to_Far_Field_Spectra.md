@@ -13,7 +13,7 @@ In this example, we compute the [radiation pattern](https://en.wikipedia.org/wik
 
 The simulation geometry is shown in the following schematic.
 <p align="center">
-  <img  src="../images/Near2far_simulation_geometry.png">
+  <img src="../images/Near2far_simulation_geometry.png">
 </p>
 
 
@@ -166,7 +166,7 @@ ax.set_rlabel_position(22)
 plt.show()
 ```
 <p align="center">
-  <img  src="../images/Source_radiation_pattern.png">
+  <img src="../images/Source_radiation_pattern.png">
 </p>
 
 ### Antenna above a Perfect Electric Conductor Ground Plane
@@ -179,7 +179,7 @@ We can validate the radiation pattern computed by Meep using analytic theory. Th
 
 The simulation script is in [examples/antenna_pec_ground_plane.py](https://github.com/NanoComp/meep/blob/master/python/examples/antenna_pec_ground_plane.py).
 <p align="center">
-  <img  src="../images/antenna_pec_ground_plane.png">
+  <img src="../images/antenna_pec_ground_plane.png">
 </p>
 
 
@@ -519,7 +519,7 @@ plt.show()
 
 The phasemap is shown below. The left figure shows the transmittance which is nearly unity for all values of the duty cycle; the Fresnel transmittance is 0.96 for the glass-air interface. This is expected since the periodicity is subwavelength. The right figure shows the phase. There is a subregion in the middle of the plot spanning the duty-cycle range of roughly 0.16 to 0.65 in which the phase varies continuously over the full range of -2π to 0. This structural regime is used to design the supercell lens.
 <p align="center">
-  <img  src="../images/metasurface_lens_phasemap.png">
+  <img src="../images/metasurface_lens_phasemap.png">
 </p>
 
 
@@ -563,13 +563,13 @@ plt.show()
 
 Shown below is the supercell lens design involving 201 unit cells. Note that even though periodic boundaries are used in the supercell calculation (via the `k_point`), the choice of cell boundaries in the *y* (or longitudinal) direction is *irrelevant* given the finite length of the lens. For example, PMLs could also have been used (at the expense of a larger cell). Although [`add_near2far`](../Python_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter), it is not necessary for this particular example.
 <p align="center">
-  <img  src="../images/metasurface_lens_epsilon.png">
+  <img src="../images/metasurface_lens_epsilon.png">
 </p>
 
 
 The far-field energy-density profile is shown below for the three lens designs. As the number of unit cells increases, the focal spot becomes sharper and sharper. This is expected since the longer the focal length, the bigger the lens required to demonstrate focusing (which means more unit cells). In this example, the largest lens design contains 801 unit cells which corresponds to 0.24 mm or 1.2X the focal length.
 <p align="center">
-  <img  src="../images/metasurface_lens_farfield.png">
+  <img src="../images/metasurface_lens_farfield.png">
 </p>
 
 
@@ -752,7 +752,7 @@ plt.tight_layout(pad=0.5)
 plt.show()
 ```
 <p align="center">
-  <img  src="../images/grating_diffraction_spectra_n2f.png">
+  <img src="../images/grating_diffraction_spectra_n2f.png">
 </p>
 
 
@@ -766,7 +766,7 @@ Finally, we can validate the results for the diffraction spectra of a finite gra
 
 The simulation setup is shown in the schematic below. The binary grating has $\Lambda = 1$ μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must [extend into the PML region in order to span the entire width of the cell](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml)). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
 <p align="center">
-  <img  src="../images/finite_grating_schematic.png">
+  <img src="../images/finite_grating_schematic.png">
 </p>
 
 
@@ -901,11 +901,11 @@ else:
 
 Results are shown for two finite gratings with 5 and 20 periods.
 <p align="center">
-  <img  src="../images/finite_grating_nperiods5.png">
+  <img src="../images/finite_grating_nperiods5.png">
 </p>
 
 <p align="center">
-  <img  src="../images/finite_grating_nperiods20.png">
+  <img src="../images/finite_grating_nperiods20.png">
 </p>
 
 
@@ -920,7 +920,7 @@ Truncation Errors from a Non-Closed Near-Field Surface
 
 For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide (a structure introduced in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)) and demonstrate that these fields are *exactly* equivalent to the actual DFT fields at the same location. A schematic of the simulation setup generated using [`plot2D`](../Python_User_Interface.md#data-visualization) is shown below.
 <p align="center">
-  <img  src="../images/N2ff_comp_cell.png" alt="Schematic of the computational cell for a holey waveguide with cavity showing the location of the 'near' boundary surface and the far-field region.">
+  <img src="../images/N2ff_comp_cell.png" alt="Schematic of the computational cell for a holey waveguide with cavity showing the location of the 'near' boundary surface and the far-field region.">
 </p>
 
 The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb).
@@ -1055,11 +1055,11 @@ A closed near-field surface will still disagree with a brute-force far-field cal
 
 In this example, to demonstrate agreement between the far fields and DFT fields, there are two requirements: (1) the cell size in the $x$ direction via `dpad` needs to be sufficiently large in order to minimize the impact of the spurious radiation from the edge of the near-field surface and (2) the far-field region needs to be sufficiently close to the near-field surface to minimize discrepancies caused by numerical dispersion.
 <p align="center">
-  <img  src="../images/farfields_vs_DFTfields_holeycavity.png" alt="Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.">
+  <img src="../images/farfields_vs_DFTfields_holeycavity.png" alt="Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.">
 </p>
 
 
 When these two conditions are not met as in the example below involving a small `dpad` and large `d2`, the error from the finite truncation and numerical dispersion can be large and therefore result in a significant mismatch between the far fields computed using the near-to-far field transformation versus the actual DFT fields at the same location.
 <p align="center">
-  <img  src="../images/farfields_vs_DFTfields_holeycavity_mismatch.png" alt="Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.">
+  <img src="../images/farfields_vs_DFTfields_holeycavity_mismatch.png" alt="Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.">
 </p>
