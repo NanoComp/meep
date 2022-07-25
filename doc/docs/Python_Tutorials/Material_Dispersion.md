@@ -98,7 +98,7 @@ plt.legend(loc='upper right')
 plt.show()
 ```
 <p align="center">
-  <img  src="../images/fused_quartz_reflectance_spectrum.png">
+  <img src="../images/fused_quartz_reflectance_spectrum.png">
 </p>
 
 
@@ -132,7 +132,7 @@ $$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^
 
 The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 <p align="center">
-  <img  src="../images/Material-dispersion-eps.png">
+  <img src="../images/Material-dispersion-eps.png">
 </p>
 
 
@@ -175,7 +175,7 @@ unix% python -u material-dispersion.py | tee material-dispersion.out
 
 we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation ω(k) for the real part of ω:
 <p align="center">
-  <img  src="../images/Material-dispersion-bands.png">
+  <img src="../images/Material-dispersion-bands.png">
 </p>
 
 
@@ -183,12 +183,12 @@ The red circles are the computed points from Meep, whereas the blue line is the 
 
 Similarly, the computed and analytical real parts of the dielectric function are given by:
 <p align="center">
-  <img  src="../images/Material-dispersion-epsre.png">
+  <img src="../images/Material-dispersion-epsre.png">
 </p>
 
 which shows excellent agreement between the analytical (blue line) and numerical (red circles) calculations. The imaginary part, however, is more subtle:
 <p align="center">
-  <img  src="../images/Material-dispersion-epsim.png">
+  <img src="../images/Material-dispersion-epsim.png">
 </p>
 
 The blue line is the analytical calculation from above and the red circles are the numerical value from Meep &mdash; why is the agreement so poor? There is nothing wrong with Meep, and this is *not* a numerical error. The problem is simply that we are comparing apples and oranges.
