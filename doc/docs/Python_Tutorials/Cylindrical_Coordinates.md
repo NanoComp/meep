@@ -143,16 +143,20 @@ unix% h5topng -S 2 -Zc dkbluered -C ring-cyl-eps-001200.00.h5 ring-cyl-e
 
 Note that, because of the `to_appended` command, the `ring-cyl-ez.h5` file is a 160$\times$18 dataset corresponding to an $r \times t$ slice. Repeating this for all three modes results in the images:
 
-<center>
 $E_z$ for $\omega$=0.118 $m$=3 mode:
-![](../images/Ring-cyl-ez-0.118.png)
+<p align="center">
+  <img  src="../images/Ring-cyl-ez-0.118.png">
+</p>
 
 $E_z$ for $\omega$=0.148 $m$=4 mode:
-![](../images/Ring-cyl-ez-0.148.png)
+<p align="center">
+  <img  src="../images/Ring-cyl-ez-0.148.png">
+</p>
 
 $E_z$ for $\omega$=0.176 $m$=5 mode:
-![](../images/Ring-cyl-ez-0.176.png)
-</center>
+<p align="center">
+  <img  src="../images/Ring-cyl-ez-0.176.png">
+</p>
 
 Because only the $\phi$=0 slice is used, the visual distinction between $m$ values is much less than with the 2d simulation. What is apparent is that, as the frequency increases, the mode becomes more localized in the waveguide and the radiating field (seen in the $r \times t$ slice as curved waves extending outward) becomes less, as expected.
 
