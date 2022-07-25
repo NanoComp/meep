@@ -90,7 +90,7 @@ sim.run(mp.after_time(endt-250, print_field), until=endt)
 
 The spectra of the field intensity is shown below.
 <p align="center">
-  <img  src="../images/multilevel_meep_n0_37_spectra.png", alt="Multilevel meep spectra">
+  <img src="../images/multilevel_meep_n0_37_spectra.png", alt="Multilevel meep spectra">
 </p>
 
 
@@ -103,12 +103,12 @@ For two-level gain media, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. We can
 By varying $N_0$ or the pumping rate $R_p$, we can change the total gain available in the cavity. This is used to find the laser's modal intensities as a function of the strength of the gain. We can compare the simulated modal intensity with SALT as well as an independent FDTD solver based on the Maxwell-Bloch equations. All three methods produce results with good agreement close to the first lasing threshold. 
 
 <p align="center">
-  <img  src="../images/meep_salt_comparison_thresh.png", alt="Near threshold comparison">
+  <img src="../images/meep_salt_comparison_thresh.png", alt="Near threshold comparison">
 </p>
 
 
 Further increasing the gain continues to yield good agreement.
 <p align="center">
-  <img  src="../images/meep_salt_comparison_full.png", alt="Near threshold comparison">
+  <img src="../images/meep_salt_comparison_full.png", alt="Near threshold comparison">
 </p>
 
