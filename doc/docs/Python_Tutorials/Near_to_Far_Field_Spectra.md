@@ -12,10 +12,10 @@ Radiation Pattern of an Antenna
 In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna in free space. This involves computing the far fields of an electric-current point dipole emitter in vacuum. The source is placed at the center of a 2D cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways from *closed* surfaces: (1) sides of a square and (2) circumference of a circle, having a length/radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal polarizations of the input source.
 
 The simulation geometry is shown in the following schematic.
+<p align="center">
+  <img  src="../images/Near2far_simulation_geometry.png">
+</p>
 
-<center>
-![](../images/Near2far_simulation_geometry.png)
-</center>
 
 In the first part of the simulation, we define the cell and source as well as the near field and flux regions. Since we are using a pulsed source (with center wavelength of 1 μm), the fields are timestepped until they have sufficiently decayed away.
 
@@ -165,10 +165,9 @@ ax.grid(True)
 ax.set_rlabel_position(22)
 plt.show()
 ```
-
-<center>
-![](../images/Source_radiation_pattern.png)
-</center>
+<p align="center">
+  <img  src="../images/Source_radiation_pattern.png">
+</p>
 
 ### Antenna above a Perfect Electric Conductor Ground Plane
 
@@ -179,10 +178,10 @@ A workaround is to transform this problem into radiation in free space by making
 We can validate the radiation pattern computed by Meep using analytic theory. The radiation pattern of a two-element antenna array is equivalent to the radiation pattern of a single antenna multiplied by its "array factor" (AF) as derived in Section 6.2 "Two-Element Array" of [Antenna Theory: Analysis and Design, Fourth Edition (2016)](https://www.amazon.com/Antenna-Theory-Analysis-Constantine-Balanis/dp/1118642066) by C.A. Balanis. In this example, we consider an $E_z$-polarized antenna at a vacuum wavelength ($\lambda$) of 0.65 μm embedded within a medium with $n$ of 1.2 and positioned 1.25 μm above the ground plane. The outgoing (radial) flux is computed along the circumference of a circle with radius 1000$\lambda$ (or 650 μm) centered at the midpoint between the two antennas. The angular range is [0,90] degrees with 0° being the direction normal to the ground plane. A schematic showing the simulation layout and a plot of the radiation pattern computed by Meep and analytic theory are shown in the figure below. There is good agreement between the two results.
 
 The simulation script is in [examples/antenna_pec_ground_plane.py](https://github.com/NanoComp/meep/blob/master/python/examples/antenna_pec_ground_plane.py).
+<p align="center">
+  <img  src="../images/antenna_pec_ground_plane.png">
+</p>
 
-<center>
-![](../images/antenna_pec_ground_plane.png)
-</center>
 
 ```py
 resolution = 200  # pixels/um
@@ -519,10 +518,10 @@ plt.show()
 ```
 
 The phasemap is shown below. The left figure shows the transmittance which is nearly unity for all values of the duty cycle; the Fresnel transmittance is 0.96 for the glass-air interface. This is expected since the periodicity is subwavelength. The right figure shows the phase. There is a subregion in the middle of the plot spanning the duty-cycle range of roughly 0.16 to 0.65 in which the phase varies continuously over the full range of -2π to 0. This structural regime is used to design the supercell lens.
+<p align="center">
+  <img  src="../images/metasurface_lens_phasemap.png">
+</p>
 
-<center>
-![](../images/metasurface_lens_phasemap.png)
-</center>
 
 In the second part of the calculation, the far-field energy-density profile of three supercell lens designs, comprised of 201, 401, and 801 unit cells, are computed using the quadratic formula for the local phase. Initially, this involves fitting the unit-cell phase data to a finer duty-cycle grid in order to enhance the local-phase interpolation of the supercell. This is important since as the number of unit cells in the lens increases, the local phase via the duty cycle varies more gradually from unit cell to unit cell. However, if the duty cycle becomes too gradual (i.e., less than a tenth of the pixel dimensions), the `resolution` may also need to be increased in order to improve the accuracy of [subpixel smoothing](../Subpixel_Smoothing.md).
 
@@ -563,16 +562,16 @@ plt.show()
 ```
 
 Shown below is the supercell lens design involving 201 unit cells. Note that even though periodic boundaries are used in the supercell calculation (via the `k_point`), the choice of cell boundaries in the *y* (or longitudinal) direction is *irrelevant* given the finite length of the lens. For example, PMLs could also have been used (at the expense of a larger cell). Although [`add_near2far`](../Python_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter), it is not necessary for this particular example.
+<p align="center">
+  <img  src="../images/metasurface_lens_epsilon.png">
+</p>
 
-<center>
-![](../images/metasurface_lens_epsilon.png)
-</center>
 
 The far-field energy-density profile is shown below for the three lens designs. As the number of unit cells increases, the focal spot becomes sharper and sharper. This is expected since the longer the focal length, the bigger the lens required to demonstrate focusing (which means more unit cells). In this example, the largest lens design contains 801 unit cells which corresponds to 0.24 mm or 1.2X the focal length.
+<p align="center">
+  <img  src="../images/metasurface_lens_farfield.png">
+</p>
 
-<center>
-![](../images/metasurface_lens_farfield.png)
-</center>
 
 Diffraction Spectrum of a Finite Binary Grating
 -----------------------------------------------
@@ -752,10 +751,10 @@ plt.title("f.-f. spectra @  λ = {:.1} μm".format(wvl_slice))
 plt.tight_layout(pad=0.5)
 plt.show()
 ```
+<p align="center">
+  <img  src="../images/grating_diffraction_spectra_n2f.png">
+</p>
 
-<center>
-![](../images/grating_diffraction_spectra_n2f.png)
-</center>
 
 For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with finite angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which, along with the diffraction efficiency, can be computed analytically using scalar theory as described in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). As an additional validation of the simulation results, the ratio of any two diffraction peaks $p_a/p_b$ ($a,b = 1,3,5,...$) is consistent with that of its diffraction efficiencies: $b^2/a^2$.
 
@@ -766,10 +765,10 @@ For a single process, the far-field calculation in both runs takes roughly the s
 Finally, we can validate the results for the diffraction spectra of a finite grating via a different approach than computing the far fields: as the (spatial) Fourier transform of the scattered fields. This involves two simulations &mdash; one with the grating and the other with just a flat surface &mdash; and subtracting the Fourier-transformed fields at a given frequency $\omega$ from the two runs to obtain the scattered fields $s(y)$. The Fourier transform of the scattered fields is then computed in post processing: $a(k_y) = \int s(y)\exp(ik_y y)dy$, where $|a(k_y)|^2$ is the amplitude of the corresponding Fourier component. For a grating with periodicity $\Lambda$, we should expect to see peaks in the diffraction spectra at $k_y=2\pi m/\Lambda$ for $m=0, \pm 1, \pm 2, ...$ The total number of diffraction orders is determined by the wavelength as described in [Tutorial/Mode Decomposition/Transmittance Spectra for Planewave at Normal Incidence](Mode_Decomposition.md#transmittance-spectra-for-planewave-at-normal-incidence).
 
 The simulation setup is shown in the schematic below. The binary grating has $\Lambda = 1$ μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must [extend into the PML region in order to span the entire width of the cell](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml)). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
+<p align="center">
+  <img  src="../images/finite_grating_schematic.png">
+</p>
 
-<center>
-![](../images/finite_grating_schematic.png)
-</center>
 
 The simulation script is in [examples/finite_grating.py](https://github.com/NanoComp/meep/blob/master/python/examples/finite_grating.py). The notebook is [examples/finite_grating.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/finite_grating.ipynb).
 
@@ -901,14 +900,14 @@ else:
 ```
 
 Results are shown for two finite gratings with 5 and 20 periods.
+<p align="center">
+  <img  src="../images/finite_grating_nperiods5.png">
+</p>
 
-<center>
-![](../images/finite_grating_nperiods5.png)
-</center>
+<p align="center">
+  <img  src="../images/finite_grating_nperiods20.png">
+</p>
 
-<center>
-![](../images/finite_grating_nperiods20.png)
-</center>
 
 The scattered field amplitude profile (the top figure in each of the two sets of results) shows that the fields decay to zero away from the grating (which is positioned at the left edge of the figure in the region indicated by the bright spots). The middle figure is the field amplitude along a 1d slice above the grating (marked by the dotted green line in the top figure). Note the decaying fields at the edges due to the flat-surface termination. The bottom figure is the Fourier transform of the fields from the 1d slice. As expected, there are only three diffraction orders present at $k_y = 2\pi m/\Lambda$ for $m = 0, \pm 1, \pm 2$. These peaks are becoming sharper as the number of grating periods increases.
 
@@ -920,8 +919,9 @@ Truncation Errors from a Non-Closed Near-Field Surface
 ------------------------------------------------------
 
 For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide (a structure introduced in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md)) and demonstrate that these fields are *exactly* equivalent to the actual DFT fields at the same location. A schematic of the simulation setup generated using [`plot2D`](../Python_User_Interface.md#data-visualization) is shown below.
-
-![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
+<p align="center">
+  <img  src="../images/N2ff_comp_cell.png" alt="Schematic of the computational cell for a holey waveguide with cavity showing the location of the 'near' boundary surface and the far-field region.">
+</p>
 
 The script is in [examples/cavity-farfield.py](https://github.com/NanoComp/meep/blob/master/python/examples/cavity-farfield.py). The notebook is [examples/cavity-farfield.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cavity-farfield.ipynb).
 
@@ -1054,9 +1054,12 @@ A non-closed near-field surface introduces two types of errors from the truncati
 A closed near-field surface will still disagree with a brute-force far-field calculation at a finite resolution, because of discretization errors (the near-to-far transform uses the analytical Green's function of the exact Maxwell equations, not the discretized Green's function), although these errors decrease with spatial resolution.  The biggest of these discretization effects is numerical dispersion (described in Chapter 4 of Taflove and Hagness, 2005), in which the phase velocity is slightly different between the exact and discretized equations. In consequence, a brute-force far-field calculation has phase errors that grow with the propagation distance (the `d2` parameter in the script).
 
 In this example, to demonstrate agreement between the far fields and DFT fields, there are two requirements: (1) the cell size in the $x$ direction via `dpad` needs to be sufficiently large in order to minimize the impact of the spurious radiation from the edge of the near-field surface and (2) the far-field region needs to be sufficiently close to the near-field surface to minimize discrepancies caused by numerical dispersion.
+<p align="center">
+  <img  src="../images/farfields_vs_DFTfields_holeycavity.png" alt="Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.">
+</p>
 
-![center|Comparison of the far fields from the near-to-far field transformation and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity.png)
 
 When these two conditions are not met as in the example below involving a small `dpad` and large `d2`, the error from the finite truncation and numerical dispersion can be large and therefore result in a significant mismatch between the far fields computed using the near-to-far field transformation versus the actual DFT fields at the same location.
-
-![center|Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity_mismatch.png)
+<p align="center">
+  <img  src="../images/farfields_vs_DFTfields_holeycavity_mismatch.png" alt="Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.">
+</p>
