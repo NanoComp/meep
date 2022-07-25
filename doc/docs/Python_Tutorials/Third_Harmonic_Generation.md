@@ -81,7 +81,7 @@ sim.display_fluxes(trans)
 In a linear calculation, we normalize the transmission against some reference spectrum, but in this case there is no obvious normalization so we will just plot the raw data for several values of `k` (i.e. of χ$^{(3)}$):
 
 <p align="center">
-  <img  src="../images/3rd-harm-1d-flux.png">
+  <img src="../images/3rd-harm-1d-flux.png">
 </p>
 
 
@@ -132,7 +132,7 @@ harmonics:, 1e-16, 1.0, 225.25726603587043, 5.026979706160964e-16
 
 That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and 3ω as a function of χ$^{(3)}$ on a log-log scale:
 <p align="center">
-  <img  src="../images/3rd-harm-1d-vs-chi.png">
+  <img src="../images/3rd-harm-1d-vs-chi.png">
 </p>
 
 
