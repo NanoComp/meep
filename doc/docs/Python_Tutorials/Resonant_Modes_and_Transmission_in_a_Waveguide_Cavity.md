@@ -186,6 +186,7 @@ unix% grep flux1: holey-wvg-cavity0.out > flux0.dat
 ```
 
 which we then import into our plotting program, divide the two fluxes, and get:
+
 <p align="center">
   <img src="../images/Holey-cavity-trans.png">
 </p>
@@ -292,17 +293,16 @@ unix% python holey-wvg-cavity.py -r -sy 12 -fcen 0.328227374843021 -df 0.01 -N 1
   <img src="../images/Holey-wvg-cavity-hz-001401.23.png">
 </p>
 
-
 From the image, the field is clearly localized around the defect in the center as opposed to being spread out evenly in the crystal like a band-edge state would be. In the defect, the pattern is higher order than the previous mode. It has an extra pair of nodes in the $y$ direction.
 
 Band Diagram
 ------------
 
 Finally, we consider a smaller, more abstract calculation that we really should have done first. In particular, we compute the **band diagram** of the infinite periodic waveguide by itself with no defects. The structure is shown below. This is very similar to the types of calculations that [MPB](https://mpb.readthedocs.io) performs, but with a different method that has its own strengths and weaknesses. By analyzing what solutions can propagate in the periodic structure, one gains fundamental insight into the aperiodic structures above.
+
 <p align="center">
   <img src="../images/Holey-wvg-bands-eps-000000.00.png">
 </p>
-
 
 Let us briefly review the problem. In a periodic system of this sort, the eigen-solutions can be expressed in the form of *Bloch modes*: a periodic *Bloch envelope* multiplied by a planewave $\exp[i(\mathbf{k}\cdot\mathbf{x}-ω t)]$, where **k** is the *Bloch wavevector*. We wish to find the *bands* $ω(\mathbf{k})$. In this case, there is only *one* direction of periodicity, so we only have one wavevector component $k_x$. Moreover, the solutions are periodic functions of this wavevector: for a unit-period structure, $k_x$ and $k_x+2\pi$ are redundant. Also, $k_x$ and $-k_x$ are redundant by time-reversal symmetry, so we only need to look for solutions in the *irreducible Brillouin zone* from $k_x=0$ to $k_x=\pi$.
 
@@ -388,6 +388,7 @@ unix% grep freqs-im: holey-wvg-bands.out > fim.dat
 ```
 
 Plotting the real parts of ω, where the light cone ω &gt; *ck* is shaded gray,  we find: 
+
 <p align="center">
   <img src="../images/Holey-wvg-bands.png">
 </p>
@@ -408,6 +409,7 @@ It is usually a good idea to examine the field patterns for any modes that you a
 + $k_x=0.1$, $ω=0.4811-0.0017i$ leaky mode
 + $k_x=0.3$, $ω=0.8838-0.0018i$ leaky mode
 + $k_x=0.25$, $ω=0.2506$ light-cone (extended) mode
+
 <p align="center">
   <img src="../images/Holey-wvg-kx=0.4-w=0.1896.gif">
   <img src="../images/Holey-wvg-kx=0.4-w=0.3175.gif">
