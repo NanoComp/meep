@@ -52,7 +52,7 @@ geometry = [mp.Block(mp.Vector3(mp.inf,1,mp.inf),
 The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε=12$, centered at (0,0) which is the center of the cell. By default, any place where there are no objects there is air ($ε=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
 
 <p align="center">
-  <img  src="../images/Python-Tutorial-wvg-straight-eps-000000.00.png">
+  <img src="../images/Python-Tutorial-wvg-straight-eps-000000.00.png">
 </p>
 
 We have the structure and need to specify the current sources using the `sources` object. The simplest thing is to add a single point source $J_z$:
@@ -201,7 +201,7 @@ unix% convert ez.t*.png ez.gif
 
 We are using an animated GIF format for the output. This results in the following animation:
 <p align="center">
-  <img  src="../images/Tutorial-wvg-ez.gif">
+  <img src="../images/Tutorial-wvg-ez.gif">
 </p>
 
 It is clear that the transmission around the bend is rather low for this frequency and structure &mdash; both large reflection and large radiation loss are clearly visible. Moreover, since we are operating just barely below the cutoff for single-mode behavior, we are able to excite a second *leaky* mode after the waveguide bend, whose second-order mode pattern (superimposed with the fundamental mode) is apparent in the animation. Below, we show a field snapshot from a simulation with a larger cell along the $y$ direction, in which you can see that the second-order leaky mode decays away, leaving us with the fundamental mode propagating downward.
@@ -420,7 +420,7 @@ if mp.am_master():
     plt.show()
 ```
 <p align="center">
-  <img  src="../images/Tut-bend-flux.png">
+  <img src="../images/Tut-bend-flux.png">
 </p>
 
 We should also check whether our data is converged. We can do this by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll try doubling the cell size:
@@ -624,7 +624,7 @@ cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 ```
 <p align="center">
-  <imgsrc="../images/reflectance_angular_spectrum.png">
+  <img src="../images/reflectance_angular_spectrum.png">
 </p>
 
 Mie Scattering of a Lossless Dielectric Sphere
@@ -1127,7 +1127,7 @@ unix% convert ring-ez-*.png ring-ez-0.118.gif
 
 The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are below, in which you can clearly see the radiating fields that produce the losses:
 <p align="center">
-  <img src="../images/Tut-ring-ez-0.118.gif">
+ <img src="../images/Tut-ring-ez-0.118.gif">
  <img src="../images/Tut-ring-ez-0.147.gif">
  <img src="../images/Tut-ring-ez-0.175.gif">
 </p>
