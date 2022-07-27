@@ -118,7 +118,6 @@ plt.show()
 ```
 
 As shown in the figure below, the results are in excellent agreement:
-
-<center>
-![](../images/Faraday-rotation-comparison.png)
-</center>
+<p align="center">
+  <img src="../images/Faraday-rotation-comparison.png">
+</p>
