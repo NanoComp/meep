@@ -30,7 +30,8 @@ vector3 v3(double x, double y = 0.0, double z = 0.0) {
 }
 
 // passthrough field function
-std::complex<double> default_field_function(const std::complex<double> *fields, const vec &loc, void *data_) {
+std::complex<double> default_field_function(const std::complex<double> *fields, const vec &loc,
+                                            void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return fields[0];
@@ -39,7 +40,7 @@ std::complex<double> default_field_function(const std::complex<double> *fields, 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-const double RELTOL = sizeof(realnum) == sizeof(float) ? 1.0e-4: 1.0e-6;
+const double RELTOL = sizeof(realnum) == sizeof(float) ? 1.0e-4 : 1.0e-6;
 
 double Compare(realnum *d1, realnum *d2, int N, const char *Name) {
   double Norm1 = 0.0, Norm2 = 0.0, NormDelta = 0.0;
@@ -137,9 +138,7 @@ int main(int argc, char *argv[]) {
   symmetry sym = use_symmetry ? -mirror(Y, gv) : identity();
   structure the_structure(gv, dummy_eps, pml(dpml), sym);
   meep_geom::material_type vacuum = meep_geom::vacuum;
-  auto material_deleter = [](meep_geom::material_data *m) {
-    meep_geom::material_free(m);
-  };
+  auto material_deleter = [](meep_geom::material_data *m) { meep_geom::material_free(m); };
   std::unique_ptr<meep_geom::material_data, decltype(material_deleter)> dielectric(
       meep_geom::make_dielectric(eps), material_deleter);
   geometric_object objects[7];
@@ -204,17 +203,17 @@ int main(int argc, char *argv[]) {
     // read 1D and 2D array-slice data from HDF5 file
     //
     h5file *file = f.open_h5file(H5FILENAME, h5file::READONLY);
-    std::unique_ptr<realnum []> rdata(static_cast<realnum *>(
+    std::unique_ptr<realnum[]> rdata(static_cast<realnum *>(
         file->read("hz.r", &rank, dims1D, 1, sizeof(realnum) == sizeof(float))));
     if (rank != 1 || dims1D[0] != NX)
       meep::abort("failed to read 1D data(hz.r) from file %s.h5", H5FILENAME);
 
-    std::unique_ptr<realnum []> idata(static_cast<realnum *>(
+    std::unique_ptr<realnum[]> idata(static_cast<realnum *>(
         file->read("hz.i", &rank, dims1D, 1, sizeof(realnum) == sizeof(float))));
     if (rank != 1 || dims1D[0] != NX)
       meep::abort("failed to read 1D data(hz.i) from file %s.h5", H5FILENAME);
 
-    std::vector<std::complex<realnum>> file_slice1d;
+    std::vector<std::complex<realnum> > file_slice1d;
     for (size_t n = 0; n < dims1D[0]; n++)
       file_slice1d.emplace_back(rdata[n], idata[n]);
 
@@ -230,16 +229,18 @@ int main(int argc, char *argv[]) {
     //
     rank = f.get_array_slice_dimensions(v1d, dims1D, dirs1D, true, false);
     if (rank != 1 || dims1D[0] != NX) meep::abort("incorrect dimensions for 1D slice");
-    std::unique_ptr<std::complex<realnum> []> slice1d(f.get_complex_array_slice(v1d, Hz, 0, 0, true));
-    std::vector<std::complex<realnum>> slice1d_realnum;
+    std::unique_ptr<std::complex<realnum>[]> slice1d(
+        f.get_complex_array_slice(v1d, Hz, 0, 0, true));
+    std::vector<std::complex<realnum> > slice1d_realnum;
     for (int i = 0; i < NX; ++i)
       slice1d_realnum.emplace_back(slice1d[i]);
     double RelErr1D = Compare(slice1d_realnum.data(), file_slice1d.data(), NX, "Hz_1d");
     master_printf("1D: rel error %e\n", RelErr1D);
 
     rank = f.get_array_slice_dimensions(v2d, dims2D, dirs2D, true, false);
-    if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY) meep::abort("incorrect dimensions for 2D slice");
-    std::unique_ptr<realnum []> slice2d(f.get_array_slice(v2d, Sy, 0, 0, true));
+    if (rank != 2 || dims2D[0] != NX || dims2D[1] != NY)
+      meep::abort("incorrect dimensions for 2D slice");
+    std::unique_ptr<realnum[]> slice2d(f.get_array_slice(v2d, Sy, 0, 0, true));
     std::unique_ptr<realnum[]> slice2d_realnum(new realnum[NX * NY]);
     for (int i = 0; i < NX * NY; ++i)
       slice2d_realnum[i] = static_cast<realnum>(slice2d[i]);

@@ -214,8 +214,10 @@ complex<double> fields::casimir_stress_dct_integral(direction dforce, direction 
   if (where.dim != gv.dim) meep::abort("invalid dimesionality in casimir_stress_dct_integral");
   if (coordinate_mismatch(gv.dim, dforce) || coordinate_mismatch(gv.dim, dsource))
     meep::abort("invalid directions in casimir_stress_dct_integral");
-  if (dnormal == NO_DIRECTION) meep::abort("invalid integration surface in casimir_stress_dct_integral");
-  if (ft != E_stuff && ft != H_stuff) meep::abort("invalid field type in casimir_stress_dct_integral");
+  if (dnormal == NO_DIRECTION)
+    meep::abort("invalid integration surface in casimir_stress_dct_integral");
+  if (ft != E_stuff && ft != H_stuff)
+    meep::abort("invalid field type in casimir_stress_dct_integral");
 
   if (dforce != dnormal && dsource != dnormal)
     return 0.0;

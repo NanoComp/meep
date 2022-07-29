@@ -13,7 +13,7 @@ from typing import Callable, List, Optional, Tuple, Union
 try:
     from collections.abc import Sequence
 except ImportError:
-    from collections import Sequence
+    from collections.abc import Sequence
 
 import meep.visualization as vis
 import numpy as np

@@ -59,8 +59,8 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta,
-                                 zero_fields_near_cylorigin, i, loop_tile_base_db);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i,
+                                 loop_tile_base_db);
   FOR_FIELD_TYPES(ft) {
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
@@ -188,9 +188,7 @@ fields_chunk::~fields_chunk() {
       delete dft_chunks;
     dft_chunks = nxt;
   }
-  FOR_FIELD_TYPES(ft) {
-    delete[] zeroes[ft];
-  }
+  FOR_FIELD_TYPES(ft) { delete[] zeroes[ft]; }
   FOR_FIELD_TYPES(ft) {
     for (polarization_state *cur = pol[ft]; cur;) {
       polarization_state *p = cur;
@@ -229,10 +227,13 @@ void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
       if (gvs[i].intersect_with(gvs[j], &vol_intersection))
         meep::abort("gvs[%zu] intersects with gvs[%zu]\n", i, j);
   size_t sum = 0;
-  for (const auto& sub_gv : gvs) { sum += sub_gv.nowned_min(); }
+  for (const auto &sub_gv : gvs) {
+    sum += sub_gv.nowned_min();
+  }
   size_t v_grid_points = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
-  if (sum != v_grid_points) meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
+  if (sum != v_grid_points)
+    meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
 }
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
@@ -252,9 +253,8 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
   if (loop_tile_base_db > 0) {
     split_into_tiles(gv, &gvs_tiled, loop_tile_base_db);
     check_tiles(gv, gvs_tiled);
-  } else {
-    gvs_tiled.push_back(gv);
   }
+  else { gvs_tiled.push_back(gv); }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     pol[ft] = NULL;
@@ -268,9 +268,7 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
         cur->next = p;
         cur = p;
       }
-      else {
-        pol[ft] = cur = p;
-      }
+      else { pol[ft] = cur = p; }
     }
   }
   doing_solve_cw = false;
@@ -311,9 +309,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   dt = thef.dt;
   dft_chunks = NULL;
   gvs_tiled = thef.gvs_tiled;
-  FOR_FIELD_TYPES(ft) {
-    gvs_eh[ft] = thef.gvs_eh[ft];
-  }
+  FOR_FIELD_TYPES(ft) { gvs_eh[ft] = thef.gvs_eh[ft]; }
   FOR_FIELD_TYPES(ft) {
     polarization_state *cur = NULL;
     for (polarization_state *ocur = thef.pol[ft]; ocur; ocur = ocur->next) {
@@ -327,9 +323,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
         cur->next = p;
         cur = p;
       }
-      else {
-        pol[ft] = cur = p;
-      }
+      else { pol[ft] = cur = p; }
     }
   }
   doing_solve_cw = thef.doing_solve_cw;
@@ -505,7 +499,7 @@ void fields::require_source_components() {
   memset(needed, 0, sizeof(needed));
   for (int i = 0; i < num_chunks; i++) {
     FOR_FIELD_TYPES(ft) {
-      for (const auto& src : chunks[i]->get_sources(ft)) {
+      for (const auto &src : chunks[i]->get_sources(ft)) {
         needed[src.c] = 1;
       }
     }
@@ -517,8 +511,7 @@ void fields::require_source_components() {
 
   bool aniso2d = is_aniso2d();
   for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
-    if (allneeded[c])
-      _require_component(component(c), aniso2d);
+    if (allneeded[c]) _require_component(component(c), aniso2d);
   sync_chunk_connections();
 }
 
@@ -546,7 +539,8 @@ bool fields::is_aniso2d() {
 
 void fields::_require_component(component c, bool aniso2d) {
   if (!gv.has_field(c))
-    meep::abort("cannot require a %s component in a %s grid", component_name(c), dimension_name(gv.dim));
+    meep::abort("cannot require a %s component in a %s grid", component_name(c),
+                dimension_name(gv.dim));
 
   components_allocated = true;
 
@@ -567,9 +561,8 @@ void fields::_require_component(component c, bool aniso2d) {
 }
 
 void fields_chunk::add_source(field_type ft, src_vol &&src) {
-  auto it = std::find_if(sources[ft].begin(), sources[ft].end(), [&src](const src_vol &other) {
-    return src_vol::combinable(src, other);
-  });
+  auto it = std::find_if(sources[ft].begin(), sources[ft].end(),
+                         [&src](const src_vol &other) { return src_vol::combinable(src, other); });
 
   if (it != sources[ft].end()) {
     it->add_amplitudes_from(src);
@@ -580,9 +573,7 @@ void fields_chunk::add_source(field_type ft, src_vol &&src) {
 }
 
 void fields_chunk::remove_sources() {
-  FOR_FIELD_TYPES(ft) {
-    sources[ft].clear();
-  }
+  FOR_FIELD_TYPES(ft) { sources[ft].clear(); }
 }
 
 void fields::remove_sources() {
@@ -674,7 +665,8 @@ void fields_chunk::use_real_fields() {
 
 int fields::phase_in_material(const structure *snew, double time) {
   if (snew->num_chunks != num_chunks)
-    meep::abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks, num_chunks);
+    meep::abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks,
+                num_chunks);
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) chunks[i]->phase_in_material(snew->chunks[i]);
   phasein_time = (int)(time / dt);
@@ -728,7 +720,7 @@ void fields::unset_solve_cw_omega() {
     chunks[i]->unset_solve_cw_omega();
 }
 
-void fields::log(const char* prefix) {
+void fields::log(const char *prefix) {
   master_printf("%sFields State:\n", prefix);
   master_printf("%s  a = %g, dt = %g\n", prefix, a, dt);
   master_printf("%s  m = %g, beta = %g\n", prefix, m, beta);
@@ -742,11 +734,8 @@ int mirrorindex(int i, int n) { return i >= n ? 2 * n - 1 - i : (i < 0 ? -1 - i 
 
 /* map the cell coordinates into the range [0,1].
    anything outside [0,1] is *mirror* reflected into [0,1] */
-void map_coordinates(double rx, double ry, double rz,
-                     int nx, int ny, int nz,
-                     int &x1, int &y1, int &z1,
-                     int &x2, int &y2, int &z2,
-                     double &dx, double &dy, double &dz,
+void map_coordinates(double rx, double ry, double rz, int nx, int ny, int nz, int &x1, int &y1,
+                     int &z1, int &x2, int &y2, int &z2, double &dx, double &dy, double &dz,
                      bool do_fabs) {
 
   /* mirror boundary conditions for r just beyond the boundary */
@@ -775,19 +764,16 @@ void map_coordinates(double rx, double ry, double rz,
     dy = fabs(dy);
     dz = fabs(dz);
   }
-
 }
 
 /* linearly interpolate a given point in a 3d grid of data. */
-double linear_interpolate(double rx, double ry, double rz, double *data,
-                          int nx, int ny, int nz, int stride) {
+double linear_interpolate(double rx, double ry, double rz, double *data, int nx, int ny, int nz,
+                          int stride) {
 
   int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz;
 
-  map_coordinates(rx, ry, rz, nx, ny, nz,
-                  x1, y1, z1, x2, y2, z2,
-                  dx, dy, dz);
+  map_coordinates(rx, ry, rz, nx, ny, nz, x1, y1, z1, x2, y2, z2, dx, dy, dz);
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by HDF5): */

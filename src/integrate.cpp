@@ -234,7 +234,7 @@ double fields::max_abs(int num_fvals, const component *components, field_rfuncti
 }
 
 static complex<double> return_the_field(const complex<realnum> *fields, const vec &loc,
-                                         void *integrand_data_) {
+                                        void *integrand_data_) {
   (void)integrand_data_;
   (void)loc; // unused
   return cdouble(fields[0]);

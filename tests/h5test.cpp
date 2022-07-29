@@ -121,11 +121,13 @@ bool check_2d(double eps(const vec &), double a, int splitting, symfunc Sf, doub
     snprintf(dataname, 256, "%s%s", component_name(file_c),
              reim ? ".i" : (real_fields ? "" : ".r"));
 
-    realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
+    realnum *h5data =
+        (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
     if (!h5data) meep::abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
-      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
+      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name,
+                  dataname);
     if (expected_rank == 1 && file_gv.in_direction_min(X) == file_gv.in_direction_max(X)) {
       dims[1] = dims[0];
       dims[0] = 1;
@@ -234,11 +236,13 @@ bool check_3d(double eps(const vec &), double a, int splitting, symfunc Sf, comp
     snprintf(dataname, 256, "%s%s", component_name(file_c),
              reim ? ".i" : (real_fields ? "" : ".r"));
 
-    realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 3, sizeof(realnum) == sizeof(float));
+    realnum *h5data =
+        (realnum *)file->read(dataname, &rank, dims, 3, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
     if (!h5data) meep::abort("failed to read dataset %s:%s\n", name, dataname);
     if (rank != expected_rank)
-      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name, dataname);
+      meep::abort("incorrect rank (%d instead of %d) in %s:%s\n", rank, expected_rank, name,
+                  dataname);
     vec loc(loc0.dim);
     for (size_t i0 = 0; i0 < dims[0]; ++i0) {
       for (size_t i1 = 0; i1 < dims[1]; ++i1) {
@@ -341,7 +345,8 @@ bool check_2d_monitor(double eps(const vec &), double a, int splitting, symfunc 
     snprintf(dataname, 256, "%s%s", component_name(file_c),
              reim ? ".i" : (real_fields ? "" : ".r"));
 
-    realnum *h5data = (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
+    realnum *h5data =
+        (realnum *)file->read(dataname, &rank, dims, 2, sizeof(realnum) == sizeof(float));
     file->prevent_deadlock(); // hackery
     if (!h5data) meep::abort("failed to read dataset %s:%s\n", file->file_name(), dataname);
     if (rank != 1) meep::abort("monitor-point data is not one-dimensional");

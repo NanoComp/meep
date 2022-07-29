@@ -65,9 +65,7 @@ double gaussian_random(double mean, double stddev) {
     s = v1 * v1 + v2 * v2;
   } while (s >= 1.0);
   if (s == 0) { return mean; }
-  else {
-    return mean + v1 * sqrt(-2 * log(s) / s) * stddev;
-  }
+  else { return mean + v1 * sqrt(-2 * log(s) / s) * stddev; }
 }
 
 } // namespace meep

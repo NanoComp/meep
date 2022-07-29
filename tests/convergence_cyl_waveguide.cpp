@@ -48,7 +48,7 @@ void test_convergence_without_averaging() {
     while (f.time() < f.last_source_time())
       f.step();
     int t_harminv_max = 2500; // try increasing this in case of failure
-    std::vector<complex<double>> mon_data(t_harminv_max);
+    std::vector<complex<double> > mon_data(t_harminv_max);
     int t = 0;
     monitor_point mp;
     while (t < t_harminv_max) {
@@ -58,10 +58,10 @@ void test_convergence_without_averaging() {
       t++;
     }
     const int maxbands = 10;
-    std::vector<complex<double>> amps(maxbands);
+    std::vector<complex<double> > amps(maxbands);
     std::vector<double> freq_re(maxbands), freq_im(maxbands), errors(maxbands);
-    int nfreq = do_harminv(mon_data.data(), t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps.data(),
-                           freq_re.data(), freq_im.data(), errors.data());
+    int nfreq = do_harminv(mon_data.data(), t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands,
+                           amps.data(), freq_re.data(), freq_im.data(), errors.data());
     double w = 0.0;
     for (int jf = 0; jf < nfreq; jf++)
       if (abs(freq_re[jf] - w0) < abs(w - w0)) w = freq_re[jf];
@@ -117,7 +117,7 @@ void test_convergence_with_averaging() {
     while (f.time() < f.last_source_time())
       f.step();
     int t_harminv_max = 2500; // try increasing this in case of failure
-    std::vector<complex<double>> mon_data(t_harminv_max);
+    std::vector<complex<double> > mon_data(t_harminv_max);
     int t = 0;
     monitor_point mp;
     while (t < t_harminv_max) {
@@ -127,10 +127,10 @@ void test_convergence_with_averaging() {
       t++;
     }
     const int maxbands = 10;
-    std::vector<complex<double>> amps(maxbands);
+    std::vector<complex<double> > amps(maxbands);
     std::vector<double> freq_re(maxbands), freq_im(maxbands), errors(maxbands);
-    int nfreq = do_harminv(mon_data.data(), t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands, amps.data(),
-                           freq_re.data(), freq_im.data(), errors.data());
+    int nfreq = do_harminv(mon_data.data(), t_harminv_max - 1, f.dt, 0.10, 0.50, maxbands,
+                           amps.data(), freq_re.data(), freq_im.data(), errors.data());
     double w = 0.0;
     for (int jf = 0; jf < nfreq; jf++)
       if (abs(freq_re[jf] - w0) < abs(w - w0)) w = freq_re[jf];

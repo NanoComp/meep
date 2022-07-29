@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "b0f06dc9f2260909f3423243de180edfc823ec5a"
+    rev: "08b4be84be2d74173246b7c9b6c22212a6c15a2d"
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
@@ -19,7 +19,7 @@ repos:
         args: ["--profile", "black", "--filter-files"]
 
   - repo: https://github.com/psf/black
-    rev: "6debce63bc2429b1680f8838592f2e56e3df6b27"
+    rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
     hooks:
       - id: black
 
@@ -35,7 +35,7 @@ repos:
   #       files: ".ipynb"
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: 85f02f45f0d2889f3826f16b60f27188ea84c1ae
+    rev: v2.37.3
     hooks:
       - id: pyupgrade
         args: [--py37-plus, --keep-runtime-typing]
@@ -52,17 +52,21 @@ repos:
   #     - id: shellcheck
 
   - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: 8e68d79b05355c9e107f81fc267f2bfc3e9e5a04 # Use the ref you want to point at
+    rev: dc89c436469616a7c48293ec60c8e21e9d95be08 # Use the ref you want to point at
     hooks:
       - id: python-use-type-annotations
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 44c05fcac53de3a39589173177c931b38de5bb0f
+    rev: 97501817e621db9975dfa6a2a1d36370942d1812
     hooks:
       - id: bandit
         args: [--exit-zero]
         # ignore all tests, not just tests data
         exclude: ^tests/
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: 'v14.0.6'  # Use the sha / tag you want to point at
+    hooks:
+    -   id: clang-format
   # - repo: https://github.com/pre-commit/mirrors-mypy
   #   rev: "214c33306afe17f1cc7d2d55e4da705b6ebe0627"
   #   hooks:

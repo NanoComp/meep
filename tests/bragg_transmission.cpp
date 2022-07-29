@@ -224,11 +224,11 @@ void doit(bool use_hdf5) {
     if (errT > maxerrT) maxerrT = errT;
     if (errR > maxerrR) maxerrR = errR;
     if (errT * sqr(freq_min / (freq_min + i * dfreq)) > 0.01)
-      meep::abort("large error %g at freq = %g: T = %g instead of %g\n", errT, freq_min + i * dfreq, T[i],
-            T0[i]);
+      meep::abort("large error %g at freq = %g: T = %g instead of %g\n", errT, freq_min + i * dfreq,
+                  T[i], T0[i]);
     if (errR * sqr(freq_min / (freq_min + i * dfreq)) > 0.01)
-      meep::abort("large error %g at freq = %g: R = %g instead of %g\n", errR, freq_min + i * dfreq, R[i],
-            R0[i]);
+      meep::abort("large error %g at freq = %g: R = %g instead of %g\n", errR, freq_min + i * dfreq,
+                  R[i], R0[i]);
   }
   master_printf("Done (max. err in T = %e, in R = %e)\n", maxerrT, maxerrR);
 

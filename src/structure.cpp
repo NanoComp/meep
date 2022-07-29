@@ -30,7 +30,6 @@ using namespace std;
 
 namespace meep {
 
-
 typedef structure_chunk *structure_chunk_ptr;
 
 structure::structure(const grid_volume &thegv, material_function &eps, const boundary_region &br,
@@ -64,10 +63,10 @@ structure::structure(const grid_volume &thegv, double eps(const vec &), const bo
   }
 }
 
-static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
-                                                       bool fragment_cost, int &proc_id) {
-  if (n == 1) return std::unique_ptr<binary_partition>(new binary_partition(proc_id++
-                                                                            % count_processors()));
+static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol, bool fragment_cost,
+                                                       int &proc_id) {
+  if (n == 1)
+    return std::unique_ptr<binary_partition>(new binary_partition(proc_id++ % count_processors()));
 
   int best_split_point;
   direction best_split_direction;
@@ -88,17 +87,18 @@ static std::unique_ptr<binary_partition> split_by_cost(int n, grid_volume gvol,
   split_plane optimal_plane{best_split_direction, best_split_position};
   grid_volume left_gvol = gvol.split_at_fraction(false, best_split_point, best_split_direction);
   grid_volume right_gvol = gvol.split_at_fraction(true, best_split_point, best_split_direction);
-  return std::unique_ptr<binary_partition>(
-      new binary_partition(optimal_plane,
-                           /*left=*/split_by_cost(num_left, left_gvol, fragment_cost, proc_id),
-                           /*right=*/split_by_cost(n - num_left, right_gvol, fragment_cost, proc_id)));
+  return std::unique_ptr<binary_partition>(new binary_partition(
+      optimal_plane,
+      /*left=*/split_by_cost(num_left, left_gvol, fragment_cost, proc_id),
+      /*right=*/split_by_cost(n - num_left, right_gvol, fragment_cost, proc_id)));
 }
 
 void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_chunks,
                                      const boundary_region &br, const symmetry &s,
                                      const binary_partition *_bp) {
 
-  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0) meep::abort("r < 0 origins are not supported");
+  if (thegv.dim == Dcyl && thegv.get_origin().r() < 0)
+    meep::abort("r < 0 origins are not supported");
 
   user_volume = thegv;
   gv = thegv;
@@ -107,11 +107,8 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
   a = gv.a;
   dt = Courant / a;
 
-  if (_bp) {
-    bp.reset(new binary_partition(*_bp));
-  } else {
-    bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s);
-  }
+  if (_bp) { bp.reset(new binary_partition(*_bp)); }
+  else { bp = meep::choose_chunkdivision(gv, v, desired_num_chunks, s); }
 
   // create the chunks:
   std::vector<grid_volume> chunk_volumes;
@@ -149,7 +146,6 @@ void structure::choose_chunkdivision(const grid_volume &thegv, int desired_num_c
       chunks[i]->cost = chunks[i]->gv.get_cost();
     }
   }
-
 }
 
 std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &v,
@@ -165,8 +161,7 @@ std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &
       const direction d = (direction)dd;
       break_this[dd] = false;
       for (int n = 0; n < S.multiplicity(); n++)
-        if (has_direction(gv.dim, d) &&
-            (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
+        if (has_direction(gv.dim, d) && (S.transform(d, n).d != d || S.transform(d, n).flipped)) {
           if (gv.num_direction(d) & 1 && !break_this[d] && verbosity > 0)
             master_printf("Padding %s to even number of grid points.\n", direction_name(d));
           break_this[dd] = true;
@@ -291,7 +286,8 @@ void structure::check_chunks() {
   }
   size_t v_grid_points = 1;
   LOOP_OVER_DIRECTIONS(gv.dim, d) { v_grid_points *= gv.num_direction(d); }
-  if (sum != v_grid_points) meep::abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
+  if (sum != v_grid_points)
+    meep::abort("v_grid_points = %zd, sum(chunks) = %zd\n", v_grid_points, sum);
 }
 
 void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, double extra_effort) {
@@ -339,8 +335,7 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
 structure::structure(const structure &s)
     : num_chunks{s.num_chunks}, shared_chunks{false}, gv(s.gv),
       user_volume(s.user_volume), a{s.a}, Courant{s.Courant}, dt{s.dt}, v(s.v), S(s.S),
-      outdir(s.outdir), num_effort_volumes{s.num_effort_volumes},
-      bp(new binary_partition(*s.bp)) {
+      outdir(s.outdir), num_effort_volumes{s.num_effort_volumes}, bp(new binary_partition(*s.bp)) {
   chunks = new structure_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++) {
     chunks[i] = new structure_chunk(s.chunks[i]);
@@ -517,11 +512,9 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   pml_volume.set_num_direction(d, int(dx * user_volume.a + 1 + 0.5)); // FIXME: exact value?
   const int v_to_user_shift =
       (gv.big_corner().in_direction(d) - user_volume.big_corner().in_direction(d)) / 2;
-  if (b == Low){
-    pml_volume.set_origin(d, user_volume.little_corner().in_direction(d));
-  }
+  if (b == Low) { pml_volume.set_origin(d, user_volume.little_corner().in_direction(d)); }
 
-  if (b == High){
+  if (b == High) {
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d) -
                                  pml_volume.num_direction(d) * 2);
     pml_volume.set_num_direction(d, pml_volume.num_direction(d) + v_to_user_shift);
@@ -715,9 +708,7 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
           cur->next = ocur->clone();
           cur = cur->next;
         }
-        else {
-          chiP[ft] = cur = ocur->clone();
-        }
+        else { chiP[ft] = cur = ocur->clone(); }
         cur->next = NULL;
       }
     }
@@ -736,18 +727,14 @@ structure_chunk::structure_chunk(const structure_chunk *o) : v(o->v) {
       for (size_t i = 0; i < gv.ntot(); i++)
         chi3[c][i] = o->chi3[c][i];
     }
-    else {
-      chi3[c] = NULL;
-    }
+    else { chi3[c] = NULL; }
     if (is_mine() && o->chi2[c]) {
       chi2[c] = new realnum[gv.ntot()];
       if (chi2[c] == NULL) meep::abort("Out of memory!\n");
       for (size_t i = 0; i < gv.ntot(); i++)
         chi2[c][i] = o->chi2[c][i];
     }
-    else {
-      chi2[c] = NULL;
-    }
+    else { chi2[c] = NULL; }
   }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) { trivial_chi1inv[c][d] = true; }
   FOR_COMPONENTS(c) FOR_DIRECTIONS(d) {

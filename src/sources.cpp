@@ -254,7 +254,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   size_t npts = 1;
   LOOP_OVER_DIRECTIONS(is.dim, d) { npts *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1; }
   std::vector<ptrdiff_t> index_array(npts);
-  std::vector<complex<double>> amps_array(npts);
+  std::vector<complex<double> > amps_array(npts);
 
   complex<double> amp = data->amp * conj(shift_phase);
 
@@ -283,29 +283,33 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     index_array[idx_vol++] = idx;
   }
 
-  if (idx_vol > npts) meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
+  if (idx_vol > npts)
+    meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
   fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array)));
 }
 
-void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix){
+void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n,
+                         std::complex<double> *amp_arr, bool needs_boundary_fix) {
   if (n == 0) {
-      n = cur_data.idx_arr.size();
-      assert(amp_arr == NULL);
-      amp_arr = cur_data.amp_arr.data();
+    n = cur_data.idx_arr.size();
+    assert(amp_arr == NULL);
+    amp_arr = cur_data.amp_arr.data();
   }
   assert(n == cur_data.idx_arr.size());
   sources = src->add_to(sources, &src);
   std::vector<ptrdiff_t> index_arr(cur_data.idx_arr);
-  std::vector<std::complex<double>> amplitudes(amp_arr, amp_arr+n);
+  std::vector<std::complex<double> > amplitudes(amp_arr, amp_arr + n);
   component c = cur_data.near_fd_comp;
   field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
-  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks) meep::abort("fields chunk index out of range");
+  if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks)
+    meep::abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
   if (!fc->is_mine()) meep::abort("wrong fields chunk");
 
-  fc->add_source(ft, src_vol(c, src, std::move(index_arr), std::move(amplitudes), needs_boundary_fix));
+  fc->add_source(ft,
+                 src_vol(c, src, std::move(index_arr), std::move(amplitudes), needs_boundary_fix));
   // We can't do require_component(c) since that only works if all processes are adding
   // srcdata for the same components in the same order, which may not be true.
   // ... instead, the caller should call fields::require_source_components()
@@ -402,13 +406,15 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   std::string dataset_im = std::string(dataset) + ".im";
 
   size_t re_dims[] = {1, 1, 1};
-  realnum *real_data = (realnum *)eps_file.read(dataset_re.c_str(), &rank, re_dims, 3, sizeof(realnum) == sizeof(float));
+  realnum *real_data = (realnum *)eps_file.read(dataset_re.c_str(), &rank, re_dims, 3,
+                                                sizeof(realnum) == sizeof(float));
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", re_dims[0], re_dims[1],
                   re_dims[2], filename, dataset_re.c_str());
 
   size_t im_dims[] = {1, 1, 1};
-  realnum *imag_data = (realnum *)eps_file.read(dataset_im.c_str(), &rank, im_dims, 3, sizeof(realnum) == sizeof(float));
+  realnum *imag_data = (realnum *)eps_file.read(dataset_im.c_str(), &rank, im_dims, 3,
+                                                sizeof(realnum) == sizeof(float));
   if (verbosity > 0)
     master_printf("read in %zdx%zdx%zd amplitude function file \"%s:%s\"\n", im_dims[0], im_dims[1],
                   im_dims[2], filename, dataset_im.c_str());
@@ -466,8 +472,8 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
 /* add_volume_source only if certain conditions are met        */
 /***************************************************************/
 void fields::add_volume_source_check(component c, const src_time &src, const volume &where,
-                                     complex<double> A(const vec &), complex<double> amp, component c0,
-                                     direction d, int has_tm, int has_te) {
+                                     complex<double> A(const vec &), complex<double> amp,
+                                     component c0, direction d, int has_tm, int has_te) {
   if (!gv.has_field(c)) return;
   if (c0 != Centered && c0 != c) return;
   if (component_direction(c) == d) return;
@@ -486,13 +492,13 @@ static std::complex<double> gaussianbeam_ampfunc(const vec &p) {
   std::complex<double> EH[6];
   global_gaussianbeam_object->get_fields(EH, p);
   switch (global_gaussianbeam_component) {
-  case Ex: return EH[0];
-  case Ey: return EH[1];
-  case Ez: return EH[2];
-  case Hx: return EH[3];
-  case Hy: return EH[4];
-  case Hz: return EH[5];
-  default: meep::abort("invalid component in gaussianbeam_ampfunc");
+    case Ex: return EH[0];
+    case Ey: return EH[1];
+    case Ez: return EH[2];
+    case Hx: return EH[3];
+    case Hy: return EH[4];
+    case Hz: return EH[5];
+    default: meep::abort("invalid component in gaussianbeam_ampfunc");
   }
 }
 
@@ -502,9 +508,10 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
   int n = (d == X ? 0 : (d == Y ? 1 : 2));
   if (d == NO_DIRECTION) {
-    n = where.in_direction(X) == 0
-            ? 0
-            : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
+    n = where.in_direction(X) == 0   ? 0
+        : where.in_direction(Y) == 0 ? 1
+        : where.in_direction(Z) == 0 ? 2
+                                     : -1;
     if (n == -1)
       meep::abort(
           "can't determine source direction for non-empty source volume with NO_DIRECTION source");
@@ -515,22 +522,22 @@ void fields::add_volume_source(const src_time &src, const volume &where, gaussia
   int np2 = (n + 2) % 3;
   // Kx = -Hy, Ky = Hx   (for d==Z)
   global_gaussianbeam_component = cH[np1];
-  add_volume_source_check(cE[np2], src, where, gaussianbeam_ampfunc, +1.0, cE[np2], d,
-                          has_tm, has_te);
+  add_volume_source_check(cE[np2], src, where, gaussianbeam_ampfunc, +1.0, cE[np2], d, has_tm,
+                          has_te);
   global_gaussianbeam_component = cH[np2];
-  add_volume_source_check(cE[np1], src, where, gaussianbeam_ampfunc, -1.0, cE[np1], d,
-                          has_tm, has_te);
+  add_volume_source_check(cE[np1], src, where, gaussianbeam_ampfunc, -1.0, cE[np1], d, has_tm,
+                          has_te);
   // Nx = +Ey, Ny = -Ex  (for d==Z)
   global_gaussianbeam_component = cE[np1];
-  add_volume_source_check(cH[np2], src, where, gaussianbeam_ampfunc, -1.0, cH[np2], d,
-                          has_tm, has_te);
+  add_volume_source_check(cH[np2], src, where, gaussianbeam_ampfunc, -1.0, cH[np2], d, has_tm,
+                          has_te);
   global_gaussianbeam_component = cE[np2];
-  add_volume_source_check(cH[np1], src, where, gaussianbeam_ampfunc, +1.0, cH[np1], d,
-                          has_tm, has_te);
+  add_volume_source_check(cH[np1], src, where, gaussianbeam_ampfunc, +1.0, cH[np1], d, has_tm,
+                          has_te);
 }
 
-gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_,
-                           double eps_, double mu_, std::complex<double> E0_[3]) {
+gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double freq_, double eps_,
+                           double mu_, std::complex<double> E0_[3]) {
   if (x0_.dim == Dcyl) meep::abort("wrong dimensionality in gaussianbeam");
 
   x0 = x0_;
@@ -596,61 +603,64 @@ gaussianbeam::gaussianbeam(const vec &x0_, const vec &kdir_, double w0_, double 
 void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
   double n = sqrt(eps * mu);
   double k = 2 * pi * freq * n;
-  double ZR = sqrt(mu/eps);
+  double ZR = sqrt(mu / eps);
   double z0 = k * w0 * w0 / 2;
-  double kz0 = k*z0;
+  double kz0 = k * z0;
   vec xrel = x - x0;
 
   vec zhat = kdir / abs(kdir);
-  double rho = abs(vec(zhat.y()*xrel.z()-zhat.z()*xrel.y(),
-                       zhat.z()*xrel.x()-zhat.x()*xrel.z(),
-                       zhat.x()*xrel.y()-zhat.y()*xrel.x()));
+  double rho =
+      abs(vec(zhat.y() * xrel.z() - zhat.z() * xrel.y(), zhat.z() * xrel.x() - zhat.x() * xrel.z(),
+              zhat.x() * xrel.y() - zhat.y() * xrel.x()));
   double zhatdotxrel = zhat & xrel;
 
   bool UseRescaledFG = false;
 
-  complex<double> zc = complex<double>(zhatdotxrel,-z0);
-  complex<double> Rsq = rho*rho + zc*zc;
+  complex<double> zc = complex<double>(zhatdotxrel, -z0);
+  complex<double> Rsq = rho * rho + zc * zc;
   complex<double> R = sqrt(Rsq);
-  complex<double> kR = k*R, kR2 = kR*kR, kR3 = kR2*kR;
-  complex<double> f,g,fmgbRsq;
+  complex<double> kR = k * R, kR2 = kR * kR, kR3 = kR2 * kR;
+  complex<double> f, g, fmgbRsq;
   if (abs(kR) > 1e-4) {
     complex<double> coskR, sinkR;
     if (fabs(imag(kR)) > 30.0) {
       UseRescaledFG = true;
-      complex<double> ExpI = exp(complex<double>(0,1.0)*real(kR));
-      complex<double> ExpPlus = exp(imag(kR)-kz0);
-      complex<double> ExpMinus = exp(-(imag(kR)+kz0));
-      coskR = 0.5*(ExpI*ExpMinus + conj(ExpI)*ExpPlus);
-      sinkR = -0.5*complex<double>(0,1.0)*(ExpI*ExpMinus - conj(ExpI)*ExpPlus);
-    } else {
+      complex<double> ExpI = exp(complex<double>(0, 1.0) * real(kR));
+      complex<double> ExpPlus = exp(imag(kR) - kz0);
+      complex<double> ExpMinus = exp(-(imag(kR) + kz0));
+      coskR = 0.5 * (ExpI * ExpMinus + conj(ExpI) * ExpPlus);
+      sinkR = -0.5 * complex<double>(0, 1.0) * (ExpI * ExpMinus - conj(ExpI) * ExpPlus);
+    }
+    else {
       coskR = cos(kR);
       sinkR = sin(kR);
     }
-    f = -3.0 * (coskR/kR2 - sinkR/kR3);
-    g = 1.5 * (sinkR/kR + coskR/kR2 - sinkR/kR3);
-    fmgbRsq = (f-g)/Rsq;
-  } else {
-    complex<double> kR4 = kR2*kR2;
-    // Taylor series expansion for small R
-    f = kR4/280.0 - kR2/10.0 + 1.0;
-    g = 3.0*kR4/280.0 - kR2/5.0 + 1.0;
-    fmgbRsq = (kR4/5040.0 - kR2/140.0 + 0.1)*(k*k);
+    f = -3.0 * (coskR / kR2 - sinkR / kR3);
+    g = 1.5 * (sinkR / kR + coskR / kR2 - sinkR / kR3);
+    fmgbRsq = (f - g) / Rsq;
   }
-  complex<double> i2fk = 0.5*complex<double>(0,1)*f*k;
+  else {
+    complex<double> kR4 = kR2 * kR2;
+    // Taylor series expansion for small R
+    f = kR4 / 280.0 - kR2 / 10.0 + 1.0;
+    g = 3.0 * kR4 / 280.0 - kR2 / 5.0 + 1.0;
+    fmgbRsq = (kR4 / 5040.0 - kR2 / 140.0 + 0.1) * (k * k);
+  }
+  complex<double> i2fk = 0.5 * complex<double>(0, 1) * f * k;
 
   complex<double> E[3], H[3];
-  for (int j=0; j<3; ++j) {
-    E[j] = complex<double>(0,0);
-    H[j] = complex<double>(0,0);
+  for (int j = 0; j < 3; ++j) {
+    E[j] = complex<double>(0, 0);
+    H[j] = complex<double>(0, 0);
   }
 
-  double rnorm = sqrt(real(E0[0])*real(E0[0])+real(E0[1])*real(E0[1])+real(E0[2])*real(E0[2]));
+  double rnorm =
+      sqrt(real(E0[0]) * real(E0[0]) + real(E0[1]) * real(E0[1]) + real(E0[2]) * real(E0[2]));
   if (rnorm > 1e-13) {
-    vec xhat = vec(real(E0[0]),real(E0[1]),real(E0[2])) / rnorm;
-    vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
-                   zhat.z()*xhat.x()-zhat.x()*xhat.z(),
-                   zhat.x()*xhat.y()-zhat.y()*xhat.x());
+    vec xhat = vec(real(E0[0]), real(E0[1]), real(E0[2])) / rnorm;
+    vec yhat =
+        vec(zhat.y() * xhat.z() - zhat.z() * xhat.y(), zhat.z() * xhat.x() - zhat.x() * xhat.z(),
+            zhat.x() * xhat.y() - zhat.y() * xhat.x());
     double xhatdotxrel = xhat & xrel;
     double yhatdotxrel = yhat & xrel;
 
@@ -669,12 +679,13 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
     H[2] += rnorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
   }
 
-  double inorm = sqrt(imag(E0[0])*imag(E0[0])+imag(E0[1])*imag(E0[1])+imag(E0[2])*imag(E0[2]));
+  double inorm =
+      sqrt(imag(E0[0]) * imag(E0[0]) + imag(E0[1]) * imag(E0[1]) + imag(E0[2]) * imag(E0[2]));
   if (inorm > 1e-13) {
-    vec xhat = vec(imag(E0[0]),imag(E0[1]),imag(E0[2])) / inorm;
-    vec yhat = vec(zhat.y()*xhat.z()-zhat.z()*xhat.y(),
-                   zhat.z()*xhat.x()-zhat.x()*xhat.z(),
-                   zhat.x()*xhat.y()-zhat.y()*xhat.x());
+    vec xhat = vec(imag(E0[0]), imag(E0[1]), imag(E0[2])) / inorm;
+    vec yhat =
+        vec(zhat.y() * xhat.z() - zhat.z() * xhat.y(), zhat.z() * xhat.x() - zhat.x() * xhat.z(),
+            zhat.x() * xhat.y() - zhat.y() * xhat.x());
     double xhatdotxrel = xhat & xrel;
     double yhatdotxrel = yhat & xrel;
 
@@ -685,29 +696,36 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
     complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
     complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
 
-    E[0] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.x() + gb_Ey * yhat.x() + gb_Ez * zhat.x());
-    E[1] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.y() + gb_Ey * yhat.y() + gb_Ez * zhat.y());
-    E[2] += complex<double>(0,1.0) * inorm * (gb_Ex * xhat.z() + gb_Ey * yhat.z() + gb_Ez * zhat.z());
-    H[0] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.x() + gb_Hy * yhat.x() + gb_Hz * zhat.x());
-    H[1] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.y() + gb_Hy * yhat.y() + gb_Hz * zhat.y());
-    H[2] += complex<double>(0,1.0) * inorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
+    E[0] +=
+        complex<double>(0, 1.0) * inorm * (gb_Ex * xhat.x() + gb_Ey * yhat.x() + gb_Ez * zhat.x());
+    E[1] +=
+        complex<double>(0, 1.0) * inorm * (gb_Ex * xhat.y() + gb_Ey * yhat.y() + gb_Ez * zhat.y());
+    E[2] +=
+        complex<double>(0, 1.0) * inorm * (gb_Ex * xhat.z() + gb_Ey * yhat.z() + gb_Ez * zhat.z());
+    H[0] +=
+        complex<double>(0, 1.0) * inorm * (gb_Hx * xhat.x() + gb_Hy * yhat.x() + gb_Hz * zhat.x());
+    H[1] +=
+        complex<double>(0, 1.0) * inorm * (gb_Hx * xhat.y() + gb_Hy * yhat.y() + gb_Hz * zhat.y());
+    H[2] +=
+        complex<double>(0, 1.0) * inorm * (gb_Hx * xhat.z() + gb_Hy * yhat.z() + gb_Hz * zhat.z());
   }
 
   double Eorig;
   if (UseRescaledFG)
-    Eorig = 3.0/(2*kz0*kz0*kz0) * (kz0*(kz0-1) + 0.5*(1.0-exp(-2.0*kz0)));
+    Eorig = 3.0 / (2 * kz0 * kz0 * kz0) * (kz0 * (kz0 - 1) + 0.5 * (1.0 - exp(-2.0 * kz0)));
   else
-    Eorig = 3.0/(2*kz0*kz0*kz0) * (exp(kz0)*kz0*(kz0-1) + sinh(kz0));
+    Eorig = 3.0 / (2 * kz0 * kz0 * kz0) * (exp(kz0) * kz0 * (kz0 - 1) + sinh(kz0));
 
   EH[0] = E[0] / Eorig;
   EH[1] = E[1] / Eorig;
   EH[2] = E[2] / Eorig;
-  EH[3] = H[0] / (Eorig*ZR);
-  EH[4] = H[1] / (Eorig*ZR);
-  EH[5] = H[2] / (Eorig*ZR);
+  EH[3] = H[0] / (Eorig * ZR);
+  EH[4] = H[1] / (Eorig * ZR);
+  EH[5] = H[2] / (Eorig * ZR);
 }
 
-diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::complex<double> s_, std::complex<double> p_) {
+diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::complex<double> s_,
+                                         std::complex<double> p_) {
   for (int j = 0; j < 3; ++j) {
     g[j] = g_[j];
     axis[j] = axis_[j];

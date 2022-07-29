@@ -37,9 +37,7 @@ int compare(double a, double b, const char *n) {
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
   }
-  else {
-    return 1;
-  }
+  else { return 1; }
 }
 
 int compare_point(fields &f1, fields &f2, const vec &p) {
