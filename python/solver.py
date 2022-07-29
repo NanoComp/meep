@@ -1041,7 +1041,9 @@ class ModeSolver:
 
         def rootfun(b):
             def _rootfun(k):
-                if tab_val := bktab.get((b, k), None):
+                # First, look in the cached table
+                tab_val = bktab.get((b, k), None)
+                if tab_val:
                     if verbosity.mpb > 0:
                         print(f"find-k {b} at {k}: {tab_val[0]} (cached)")
                     return tab_val

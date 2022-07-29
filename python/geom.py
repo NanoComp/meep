@@ -1662,7 +1662,8 @@ def memoize(f):
     f_memo_tab = {}
 
     def _mem(y=None):
-        if tab_val := f_memo_tab.get(y, None):
+        tab_val = f_memo_tab.get(y, None)
+        if tab_val:
             return tab_val
 
         fy = f(y)
