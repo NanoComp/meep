@@ -7,6 +7,7 @@ import numpy as np
 import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
+from meep.simulation import Simulation, Volume
 
 ## Typing imports
 from matplotlib.axes import Axes
@@ -133,7 +134,7 @@ def place_label(ax: Axes, label_text: str, x, y, centerx, centery, label_paramet
 # Returns the intersection points of two Volumes.
 # Volumes must be a line, plane, or rectangular prism
 # (since they are volume objects)
-def intersect_volume_volume(volume1: mp.Volume, volume2: mp.Volume) -> list:
+def intersect_volume_volume(volume1: Volume, volume2: Volume) -> list:
     # volume1 ............... [volume]
     # volume2 ............... [volume]
 
@@ -186,9 +187,7 @@ def intersect_volume_volume(volume1: mp.Volume, volume2: mp.Volume) -> list:
 # Not only do we need to check for all of these possibilities, but we also need
 # to check if the user accidentally specifies a plane that stretches beyond the
 # simulation domain.
-def get_2D_dimensions(sim: mp.Simulation, output_plane: mp.Volume) -> (mp.Vector3, mp.Vector3):
-    from meep.simulation import Volume
-
+def get_2D_dimensions(sim: Simulation, output_plane: Volume) -> (Vector3, Vector3):
     # Pull correct plane from user
     if output_plane:
         plane_center, plane_size = (output_plane.center, output_plane.size)
@@ -196,7 +195,7 @@ def get_2D_dimensions(sim: mp.Simulation, output_plane: mp.Volume) -> (mp.Vector
         plane_center, plane_size = mp.get_center_and_size(sim.output_volume)
     else:
         if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-            plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size)
+            plane_center, plane_size = (sim.geometry_center+Vector3(sim.cell_size.x/2), sim.cell_size)
         else:
             plane_center, plane_size = (sim.geometry_center, sim.cell_size)
     plane_volume = Volume(center=plane_center,size=plane_size)
@@ -204,8 +203,8 @@ def get_2D_dimensions(sim: mp.Simulation, output_plane: mp.Volume) -> (mp.Vector
     if plane_size.x != 0 and plane_size.y != 0 and plane_size.z != 0:
         raise ValueError("Plane volume must be 2D (a plane).")
     if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-        center = sim.geometry_center+mp.Vector3(sim.cell_size.x/2)
-        check_volume = mp.Volume(center=center, size = sim.cell_size)
+        center = sim.geometry_center+Vector3(sim.cell_size.x/2)
+        check_volume = Volume(center=center, size = sim.cell_size)
     else:
         check_volume = Volume(center=sim.geometry_center, size=sim.cell_size)
     vertices = intersect_volume_volume(check_volume, plane_volume)
@@ -223,7 +222,7 @@ def get_2D_dimensions(sim: mp.Simulation, output_plane: mp.Volume) -> (mp.Vector
 
 
 def box_vertices(
-        box_center: mp.Vector3, box_size: mp.Vector3, is_cylindrical: bool = False
+        box_center: Vector3, box_size: Vector3, is_cylindrical: bool = False
 ) -> (float, float, float, float, float, float):
     # in cylindrical coordinates, radial (R) axis
     # is in the range (0,R) rather than (-R/2,+R/2)
@@ -245,16 +244,15 @@ def box_vertices(
 # ------------------------------------------------------- #
 # actual plotting routines
 def plot_volume(
-        sim: mp.Simulation,
+        sim: Simulation,
         ax: Axes,
-        volume: mp.Volume,
-        output_plane: mp.Volume = None,
+        volume: Volume,
+        output_plane: Volume = None,
         plotting_parameters: dict = None,
         label: str = None
 ) -> Axes:
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
-    from meep.simulation import Volume
 
     # Set up the plotting parameters
     if plotting_parameters is None:
@@ -371,9 +369,9 @@ def plot_volume(
     return ax
 
 def plot_eps(
-        sim: mp.Simulation,
+        sim: Simulation,
         ax: Axes,
-        output_plane: mp.Volume = None,
+        output_plane: Volume = None,
         eps_parameters: dict = None,
         frequency: float = None
 ) -> Axes:
@@ -464,9 +462,9 @@ def plot_eps(
 
 
 def plot_boundaries(
-        sim: mp.Simulation,
+        sim: Simulation,
         ax: Axes,
-        output_plane: mp.Volume = None,
+        output_plane: Volume = None,
         boundary_parameters: dict = None
 ) -> Axes:
     # consolidate plotting parameters
@@ -475,9 +473,7 @@ def plot_boundaries(
     else:
         boundary_parameters = dict(default_boundary_parameters, **boundary_parameters)
 
-    def get_boundary_volumes(thickness: float, direction: float, side) -> mp.Volume:
-        from meep.simulation import Volume
-
+    def get_boundary_volumes(thickness: float, direction: float, side) -> Volume:
         thickness = boundary.thickness
 
         xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center,
@@ -571,13 +567,12 @@ def plot_boundaries(
 
 
 def plot_sources(
-        sim: mp.Simulation,
+        sim: Simulation,
         ax: Axes,
-        output_plane: mp.Volume = None,
+        output_plane: Volume = None,
         labels: bool = False,
         source_parameters: dict = None
 ):
-    from meep.simulation import Volume
 
     # consolidate plotting parameters
     if source_parameters is None:
@@ -594,14 +589,12 @@ def plot_sources(
 
 
 def plot_monitors(
-        sim: mp.Simulation,
+        sim: Simulation,
         ax: Axes,
-        output_plane: mp.Volume = None,
+        output_plane: Volume = None,
         labels: bool = False,
         monitor_parameters: dict = None
 ) -> Axes:
-    from meep.simulation import Volume
-
     # consolidate plotting parameters
     if monitor_parameters is None:
         monitor_parameters = default_monitor_parameters
@@ -618,10 +611,10 @@ def plot_monitors(
 
 
 def plot_fields(
-        sim: mp.Simulation,
+        sim: Simulation,
         ax: Axes = None,
         fields=None,
-        output_plane: mp.Volume = None,
+        output_plane: Volume = None,
         field_parameters: dict = None
 ) -> Union[Axes, Any]:
     if not sim._is_initialized:
@@ -684,9 +677,9 @@ def plot_fields(
 
 
 def plot2D(
-    sim: mp.Simulation,
+    sim: Simulation,
     ax: Axes = None,
-    output_plane: mp.Volume = None,
+    output_plane: Volume = None,
     fields=None,
     labels: bool = False,
     eps_parameters: dict = None,
@@ -739,7 +732,7 @@ def plot2D(
     return ax
 
 
-def plot3D(sim: mp.Simulation):
+def plot3D(sim: Simulation):
     from mayavi import mlab
 
     if sim.dimensions < 3:
@@ -761,7 +754,7 @@ def plot3D(sim: mp.Simulation):
     return s
 
 
-def visualize_chunks(sim: mp.Simulation):
+def visualize_chunks(sim: Simulation):
     if sim.structure is None:
         sim.init_sim()
 
@@ -780,13 +773,13 @@ def visualize_chunks(sim: mp.Simulation):
 
     def plot_box(box, proc, fig, ax):
         if sim.structure.gv.dim == 2:
-            low = mp.Vector3(box.low.x, box.low.y, box.low.z)
-            high = mp.Vector3(box.high.x, box.high.y, box.high.z)
+            low = Vector3(box.low.x, box.low.y, box.low.z)
+            high = Vector3(box.high.x, box.high.y, box.high.z)
             points = [low, high]
 
-            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
-            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
-            xy_len = mp.Vector3(high.x, high.y) - mp.Vector3(low.x, low.y)
+            x_len = Vector3(high.x) - Vector3(low.x)
+            y_len = Vector3(y=high.y) - Vector3(y=low.y)
+            xy_len = Vector3(high.x, high.y) - Vector3(low.x, low.y)
 
             points += [low + x_len]
             points += [low + y_len]
@@ -813,12 +806,12 @@ def visualize_chunks(sim: mp.Simulation):
             # Plot the points themselves to force the scaling of the axes
             ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=0)
         else:
-            low = mp.Vector3(box.low.x, box.low.y)
-            high = mp.Vector3(box.high.x, box.high.y)
+            low = Vector3(box.low.x, box.low.y)
+            high = Vector3(box.high.x, box.high.y)
             points = [low, high]
 
-            x_len = mp.Vector3(high.x) - mp.Vector3(low.x)
-            y_len = mp.Vector3(y=high.y) - mp.Vector3(y=low.y)
+            x_len = Vector3(high.x) - Vector3(low.x)
+            y_len = Vector3(y=high.y) - Vector3(y=low.y)
 
             points += [low + x_len]
             points += [low + y_len]
