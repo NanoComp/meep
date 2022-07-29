@@ -1504,8 +1504,6 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %ignore material_type_equal;
 %ignore is_variable;
 %ignore is_variable;
-%ignore is_file;
-%ignore is_file;
 %ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;
@@ -1986,7 +1984,7 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
         geps = existing_geps;
     } else {
         geps = meep_geom::make_geom_epsilon(s, &gobj_list, center, _ensure_periodicity, _default_material,
-                                                extra_materials);
+                                                extra_materials, use_anisotropic_averaging);
     }
     if (set_materials) {
         meep_geom::set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,

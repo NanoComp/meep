@@ -20,7 +20,7 @@ _PHI_AXIS = 3
 _Z_AXIS = 1
 
 # default finite difference step size when calculating Aᵤ
-FD_DEFAULT = 1e-3
+FD_DEFAULT = 1e-6
 
 
 class DesignRegion:

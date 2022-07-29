@@ -66,10 +66,10 @@ void material_data::copy_from(const material_data &from) {
   }
 
   grid_size = from.grid_size;
-  if (from.weights) {
+  if (from.weights.size() != 0) {
     size_t N = from.grid_size.x * from.grid_size.y * from.grid_size.z;
-    weights = new double[N];
-    std::copy_n(from.weights, N, weights);
+    weights.clear();
+    weights.insert(weights.end(), from.weights.begin(), from.weights.end());
   }
 
   medium_1 = from.medium_1;

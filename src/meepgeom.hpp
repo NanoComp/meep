@@ -153,9 +153,50 @@ inline vector3 make_vector3(double x = 0.0, double y = 0.0, double z = 0.0) {
   return v;
 }
 
-typedef struct {
-  double m00, m01, m02, m11, m12, m22;
-} symm_matrix;
+inline cvector3 cvector3_scale(number s, cvector3 v) {
+  return make_cvector3(vector3_scale(s,cvector3_re(v)),vector3_scale(s,cvector3_im(v)));
+}
+
+inline cvector3 cvector_zero(){
+  return make_cvector3(make_vector3(),make_vector3());
+}
+
+inline cvector3 cvector_add(cvector3 cv1, cvector3 cv2){
+  return make_cvector3(vector3_plus(cvector3_re(cv1),cvector3_re(cv2)),vector3_plus(cvector3_im(cv1),cvector3_im(cv2)));
+}
+
+struct symm_matrix{
+  duals::duald m00, m01, m02, m11, m12, m22;
+  struct symm_matrix& operator+=(const symm_matrix& rhs) { 
+    m00 += rhs.m00; m11 += rhs.m11; m22 += rhs.m22;
+    m01 += rhs.m01; m02 += rhs.m02; m12 += rhs.m12;
+    return *this; 
+  }
+  struct symm_matrix& operator+=(const duals::duald& k) { 
+    m00 += k; m11 += k; m22 += k;
+    return *this; 
+   }
+  struct symm_matrix& operator+(const symm_matrix& rhs) { 
+    m00 += rhs.m00; m11 += rhs.m11; m22 += rhs.m22;
+    m01 += rhs.m01; m02 += rhs.m02; m12 += rhs.m12;
+    return *this; 
+   }
+  struct symm_matrix& operator*( const duals::duald& k) { 
+    m00 *= k; m11 *= k; m22 *= k;
+    m01 *= k; m02 *= k; m12 *= k;
+    return *this; 
+   }
+  struct symm_matrix& operator/( const duals::duald& k) { 
+    m00 /= k; m11 /= k; m22 /= k;
+    m01 /= k; m02 /= k; m12 /= k;
+    return *this; 
+   }
+  struct symm_matrix& operator-() { 
+    m00 = -m00; m11 = -m11; m22 = -m22;
+    m01 = -m01; m02 = -m02; m12 = -m12;
+    return *this; 
+   }
+} ;
 
 struct pol {
   meep_geom::susceptibility user_s;
@@ -173,6 +214,7 @@ class geom_epsilon : public meep::material_function {
 
 public:
   double u_p = 0;
+  bool use_anisotropic_averaging;
   geom_box_tree geometry_tree;
   geom_box_tree restricted_tree;
   geometric_object_list geometry;
@@ -206,6 +248,8 @@ public:
   virtual double chi1p1(meep::field_type ft, const meep::vec &r);
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                double tol, int maxeval);
+  void eff_chi1inv_row_grad(meep::component c, double chi1inv_row[3], const meep::volume &v,
+                               double tol, int maxeval, bool needs_grad);
 
   void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix, const meep::volume &v,
                           double tol, int maxeval, bool &fallback);
@@ -221,14 +265,17 @@ public:
 
 private:
   material_type_list extra_materials;
+  void eval_material_pt(material_type &material, vector3 p);
   pol *current_pol;
 };
 
 void set_dimensions(int dims);
-geom_epsilon *make_geom_epsilon(meep::structure *s, geometric_object_list *g,
-                                vector3 center = make_vector3(), bool ensure_periodicity = false,
-                                material_type _default_material = vacuum,
-                                material_type_list extra_materials = material_type_list());
+geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g,
+                                 vector3 center = make_vector3(),
+                                 bool ensure_periodicity = false,
+                                 material_type _default_material = vacuum,
+                                 material_type_list extra_materials = material_type_list(),
+                                 bool use_anisotropic_averaging = false);
 //, geometric_object_list g, material_type_list extra_materials
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  vector3 center = make_vector3(),
@@ -266,8 +313,6 @@ bool is_material_grid(material_type mt);
 bool is_material_grid(void *md);
 bool is_variable(material_type mt);
 bool is_variable(void *md);
-bool is_file(material_type md);
-bool is_file(void *md);
 bool is_medium(material_type md, medium_struct **m);
 bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
@@ -284,10 +329,8 @@ void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *
 // material grid functions
 /***************************************************************/
 void update_weights(material_type matgrid, double *weights);
-meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md);
-meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_object *o);
-double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
-double material_grid_val(vector3 p, material_data *md);
+duals::duald matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
+duals::duald material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
 void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
