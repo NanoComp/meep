@@ -289,9 +289,10 @@ chmod +x build-meep.sh
 ./build-meep.sh
 ```
 
-#### Ubuntu 16.04 and 18.04 (note 20.04 will not work without a few changes)
+#### Ubuntu 16.04 and 18.04
 
 There are a few differences in building for 16.04 and 18.04, so be sure to read the script and adjust appropriately.
+ (Ubuntu 20.04 will not work without a few changes.)
 
 ```bash
 #!/bin/bash
