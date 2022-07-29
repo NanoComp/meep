@@ -115,7 +115,7 @@ jobs:
         echo "::set-output name=dir::$(pip cache dir)"
 
     - name: pip cache
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       id: cache
       with:
         path: ${{ steps.pip-cache.outputs.dir }}
