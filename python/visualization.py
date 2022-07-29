@@ -8,11 +8,14 @@ import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
 
+## Typing imports
+from matplotlib.axes import Axes
+from typing import Callable, Union, Any, Iterable
 
 # ------------------------------------------------------- #
 # Visualization
 # ------------------------------------------------------- #
-# Contains all necesarry visualation routines for use with
+# Contains all necessary visualization routines for use with
 # pymeep and pympb.
 
 # ------------------------------------------------------- #
@@ -80,7 +83,7 @@ default_label_parameters = {
 # don't correspond to the keyword arguments of a particular
 # function (func_with_kwargs.)
 # Adapted from https://stackoverflow.com/questions/26515595/how-does-one-ignore-unexpected-keyword-arguments-passed-to-a-function/44052550
-def filter_dict(dict_to_filter, func_with_kwargs):
+def filter_dict(dict_to_filter: dict, func_with_kwargs: Callable) -> dict:
     import inspect
     filter_keys = []
     try:
@@ -91,13 +94,13 @@ def filter_dict(dict_to_filter, func_with_kwargs):
         # Python2 ...
         filter_keys = inspect.getargspec(func_with_kwargs)[0]
 
-    filtered_dict = {filter_key:dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
+    filtered_dict = {filter_key: dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
     return filtered_dict
 
 # ------------------------------------------------------- #
 # Routines to add legends to plot
 
-def place_label(ax, label_text, x, y, centerx, centery, label_parameters=None):
+def place_label(ax: Axes, label_text: str, x, y, centerx, centery, label_parameters: dict = None) -> Axes:
 
     if label_parameters is None:
         label_parameters = default_label_parameters
@@ -130,7 +133,7 @@ def place_label(ax, label_text, x, y, centerx, centery, label_parameters=None):
 # Returns the intersection points of two Volumes.
 # Volumes must be a line, plane, or rectangular prism
 # (since they are volume objects)
-def intersect_volume_volume(volume1, volume2):
+def intersect_volume_volume(volume1: mp.Volume, volume2: mp.Volume) -> list:
     # volume1 ............... [volume]
     # volume2 ............... [volume]
 
@@ -183,7 +186,7 @@ def intersect_volume_volume(volume1, volume2):
 # Not only do we need to check for all of these possibilities, but we also need
 # to check if the user accidentally specifies a plane that stretches beyond the
 # simulation domain.
-def get_2D_dimensions(sim, output_plane):
+def get_2D_dimensions(sim: mp.Simulation, output_plane: mp.Volume) -> (mp.Vector3, mp.Vector3):
     from meep.simulation import Volume
 
     # Pull correct plane from user
@@ -193,7 +196,7 @@ def get_2D_dimensions(sim, output_plane):
         plane_center, plane_size = mp.get_center_and_size(sim.output_volume)
     else:
         if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-            plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size) 
+            plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size)
         else:
             plane_center, plane_size = (sim.geometry_center, sim.cell_size)
     plane_volume = Volume(center=plane_center,size=plane_size)
@@ -219,7 +222,9 @@ def get_2D_dimensions(sim, output_plane):
     return sim_center, sim_size
 
 
-def box_vertices(box_center, box_size, is_cylindrical=False):
+def box_vertices(
+        box_center: mp.Vector3, box_size: mp.Vector3, is_cylindrical: bool = False
+) -> (float, float, float, float, float, float):
     # in cylindrical coordinates, radial (R) axis
     # is in the range (0,R) rather than (-R/2,+R/2)
     # as in Cartesian coordinates.
@@ -236,10 +241,17 @@ def box_vertices(box_center, box_size, is_cylindrical=False):
 
     return xmin, xmax, ymin, ymax, zmin, zmax
 
+
 # ------------------------------------------------------- #
 # actual plotting routines
-
-def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, label=None):
+def plot_volume(
+        sim: mp.Simulation,
+        ax: Axes,
+        volume: mp.Volume,
+        output_plane: mp.Volume = None,
+        plotting_parameters: dict = None,
+        label: str = None
+) -> Axes:
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
     from meep.simulation import Volume
@@ -335,18 +347,22 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
 
         # Planar volume
         elif len(intersection) > 2:
-            planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
+            planar_args = {
+                key: value
+                for key, value in plotting_parameters.items()
+                if key in ['edgecolor', 'linewidth', 'facecolor', 'hatch', 'alpha']
+            }
             # Plot YZ
             if sim_size.x == 0:
-                ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
+                ax.add_patch(patches.Polygon(sort_points([[a.y, a.z] for a in intersection]), **planar_args))
                 return ax
             # Plot XZ
-            elif sim_size.y==0:
-                ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
+            elif sim_size.y == 0:
+                ax.add_patch(patches.Polygon(sort_points([[a.x, a.z] for a in intersection]), **planar_args))
                 return ax
             # Plot XY
             elif sim_size.z == 0:
-                ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
+                ax.add_patch(patches.Polygon(sort_points([[a.x, a.y] for a in intersection]), **planar_args))
                 return ax
             else:
                 return ax
@@ -354,7 +370,13 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
             return ax
     return ax
 
-def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
+def plot_eps(
+        sim: mp.Simulation,
+        ax: Axes,
+        output_plane: mp.Volume = None,
+        eps_parameters: dict = None,
+        frequency: float = None
+) -> Axes:
     # consolidate plotting parameters
     if eps_parameters is None:
         eps_parameters = default_eps_parameters
@@ -440,14 +462,20 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
 
     return ax
 
-def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
+
+def plot_boundaries(
+        sim: mp.Simulation,
+        ax: Axes,
+        output_plane: mp.Volume = None,
+        boundary_parameters: dict = None
+) -> Axes:
     # consolidate plotting parameters
     if boundary_parameters is None:
         boundary_parameters = default_boundary_parameters
     else:
         boundary_parameters = dict(default_boundary_parameters, **boundary_parameters)
 
-    def get_boundary_volumes(thickness, direction, side):
+    def get_boundary_volumes(thickness: float, direction: float, side) -> mp.Volume:
         from meep.simulation import Volume
 
         thickness = boundary.thickness
@@ -541,7 +569,14 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
             ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
     return ax
 
-def plot_sources(sim, ax, output_plane=None, labels=False, source_parameters=None):
+
+def plot_sources(
+        sim: mp.Simulation,
+        ax: Axes,
+        output_plane: mp.Volume = None,
+        labels: bool = False,
+        source_parameters: dict = None
+):
     from meep.simulation import Volume
 
     # consolidate plotting parameters
@@ -554,27 +589,41 @@ def plot_sources(sim, ax, output_plane=None, labels=False, source_parameters=Non
 
     for src in sim.sources:
         vol = Volume(center=src.center,size=src.size)
-        ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=source_parameters,label=label)
+        ax = plot_volume(sim, ax, vol, output_plane, plotting_parameters=source_parameters, label=label)
     return ax
 
-def plot_monitors(sim, ax, output_plane=None, labels=False, monitor_parameters=None):
+
+def plot_monitors(
+        sim: mp.Simulation,
+        ax: Axes,
+        output_plane: mp.Volume = None,
+        labels: bool = False,
+        monitor_parameters: dict = None
+) -> Axes:
     from meep.simulation import Volume
 
     # consolidate plotting parameters
     if monitor_parameters is None:
         monitor_parameters = default_monitor_parameters
     else:
-        monitor_parametesr = dict(default_monitor_parameters, **monitor_parameters)
+        monitor_parameters = dict(default_monitor_parameters, **monitor_parameters)
 
     label = 'monitor' if labels else None
 
     for mon in sim.dft_objects:
         for reg in mon.regions:
-            vol = Volume(center=reg.center,size=reg.size)
-            ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=monitor_parameters,label=label)
+            vol = Volume(center=reg.center, size=reg.size)
+            ax = plot_volume(sim, ax, vol, output_plane, plotting_parameters=monitor_parameters, label=label)
     return ax
 
-def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=None):
+
+def plot_fields(
+        sim: mp.Simulation,
+        ax: Axes = None,
+        fields=None,
+        output_plane: mp.Volume = None,
+        field_parameters: dict = None
+) -> Union[Axes, Any]:
     if not sim._is_initialized:
         sim.init_sim()
 
@@ -633,12 +682,24 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
         return fields
     return ax
 
-def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
-           eps_parameters=None, boundary_parameters=None,
-           source_parameters=None, monitor_parameters=None,
-           field_parameters=None, frequency=None,
-           plot_eps_flag=True, plot_sources_flag=True,
-           plot_monitors_flag=True, plot_boundaries_flag=True):
+
+def plot2D(
+    sim: mp.Simulation,
+    ax: Axes = None,
+    output_plane: mp.Volume = None,
+    fields=None,
+    labels: bool = False,
+    eps_parameters: dict = None,
+    boundary_parameters: dict = None,
+    source_parameters: dict = None,
+    monitor_parameters: dict = None,
+    field_parameters: dict = None,
+    frequency: float = None,
+    plot_eps_flag: bool = True,
+    plot_sources_flag: bool = True,
+    plot_monitors_flag: bool = True,
+    plot_boundaries_flag: bool = True
+) -> Axes:
 
     # Ensure a figure axis exists
     if ax is None and mp.am_master():
@@ -677,7 +738,8 @@ def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
 
     return ax
 
-def plot3D(sim):
+
+def plot3D(sim: mp.Simulation):
     from mayavi import mlab
 
     if sim.dimensions < 3:
@@ -698,7 +760,8 @@ def plot3D(sim):
     s = mlab.contour3d(eps_data, colormap="YlGnBu")
     return s
 
-def visualize_chunks(sim):
+
+def visualize_chunks(sim: mp.Simulation):
     if sim.structure is None:
         sim.init_sim()
 
