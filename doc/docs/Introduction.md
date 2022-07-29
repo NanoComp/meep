@@ -15,7 +15,7 @@ Maxwell's Equations
 
 Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equations), which describe the interactions of electric ($\mathbf{E}$) and magnetic ($\mathbf{H}$) fields with one another and with matter and sources. In particular, the equations for the time evolution of the fields are:
 
-<center>
+
 
 $\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$
 
@@ -25,17 +25,17 @@ $\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf
 
 $\mathbf{D} = \varepsilon \mathbf{E}$
 
-</center>
+
 
 where $\mathbf{D}$ is the displacement field, $\varepsilon$ is the dielectric constant, $\mathbf{J}$ is the current density (of electric charge), and $\mathbf{J}$<sub>*B*</sub> is the *magnetic-charge* current density. Magnetic currents are a convenient computational fiction in some situations. $\mathbf{B}$ is the magnetic flux density (often called the magnetic field), $\mu$ is the magnetic permeability, and $\mathbf{H}$ is the magnetic field. The $\sigma_B$ and $\sigma_D$ terms correspond to (frequency-independent) magnetic and electric conductivities, respectively. The divergence equations are implicitly:
 
-<center>
+
 
 $\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$
 
 $\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$
 
-</center>
+
 
 Generally, $\varepsilon$ depends not only on position but also on frequency (material dispersion) and on the field $\mathbf{E}$ itself (nonlinearity), and may include loss or gain. These effects are supported in Meep and are described in [Materials](Materials.md).
 

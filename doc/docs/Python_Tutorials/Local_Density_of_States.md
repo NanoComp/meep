@@ -31,9 +31,9 @@ A key feature of the LDOS in this geometry is that it experiences discontinuitie
 
 As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
 
-<p align="center">
-  <img src="../images/planar_cavity_purcell_enhancement.png">
-</p>
+
+![](../images/planar_cavity_purcell_enhancement.png)
+
 
 
 The simulation script is [examples/planar_cavity_ldos.py](https://github.com/NanoComp/meep/blob/master/python/examples/planar_cavity_ldos.py).
@@ -313,6 +313,5 @@ plt.xlabel('a/w')
 plt.ylabel('2Q/(πωW) or LDOS')
 plt.show()
 ```
-<p align="center">
-  <img src="../images/Metalcavity_ldos.png">
-</p>
+
+![](../images/Metalcavity_ldos.png)

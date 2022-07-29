@@ -11,9 +11,8 @@ Index-Guided Modes in a Ridge Waveguide
 
 The first structure, shown in the schematic below, is a 2d ridge waveguide with ε=12, width $a$=1 μm, and out-of-plane electric field E<sub>z</sub>. The dispersion relation ω(k) for index-guided modes with *even* mirror symmetry in the $y$-direction is computed using [MPB](https://mpb.readthedocs.io/en/latest/) and shown as blue lines. The light cone which denotes radiative modes is the section in solid green. Using this waveguide configuration, we will investigate two different frequency regimes: (1) single mode (normalized frequency of 0.15) and (2) multi mode (normalized frequency of 0.35), both shown as dotted horizontal lines in the figures. We will use the eigenmode source to excite a specific mode in each case &mdash; labeled **A** and **B** in the band diagram &mdash; and compare the results to using a constant-amplitude source for straight and rotated waveguides. Finally, we will demonstrate that a single monitor plane in the $y$-direction is sufficient for computing the total Poynting flux in a waveguide with any arbitrary orientation.
 
-<p align="center">
-  <img src=".../images/eigenmode_source.png">
-</p>
+
+![](../images/eigenmode_source.png)
 
 
 The simulation script is in [examples/oblique-source.py](https://github.com/NanoComp/meep/blob/master/python/examples/oblique-source.py). The notebook is [examples/oblique-source.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/oblique-source.ipynb).
@@ -179,17 +178,15 @@ if mp.am_master():
 
 Results are shown for the single mode waveguide with one eigenmode **A** (band 1) using a center frequency of `0.15` and multi mode waveguide with two eigenmodes **A** (higher-order mode, band 2) and **B** (fundamental mode, band 1), all with a center frequency of `0.35`.
 
-<p align="center">
-  <img src="../images/single_mode_eigsource_pulse.png">
-</p>
 
-<p align="center">
-  <img src="../images/multi_mode_eigsource_pulse_A.png">
-</p>
+![](../images/single_mode_eigsource_pulse.png)
 
-<p align="center">
-  <img src="../images/multi_mode_eigsource_pulse_B.png">
-</p>
+
+![](../images/multi_mode_eigsource_pulse_A.png)
+
+
+![](../images/multi_mode_eigsource_pulse_B.png)
+
 
 
 These results demonstrate that in all cases the error is nearly 0 at the center frequency and increases roughly quadratically away from the center frequency. The error tends to be smallest for single-mode waveguides because a localized source excitation couples most strongly into guided modes. Note that in this case the maximum error is ~1% for a source bandwidth that is 67% of its center frequency.  For the multi-mode waveguide, a much larger scattering loss is obtained for the higher-order mode **A** at frequencies below the center frequency, but this is simply because that mode ceases to be guided around a frequency `≈ 0.3`, and the mode pattern changes dramatically as this cutoff is approached.
@@ -202,31 +199,31 @@ The eigenmode source can also be used to launch modes in an oblique/rotated wave
 
 Note that an oblique waveguide leads to a breakdown in the [PML](../Perfectly_Matched_Layer.md#breakdown-of-pml-in-inhomogeneous-media). A simple workaround for mitigating the PML reflection artifacts in this case is to double the `thickness` from 1 to 2.
 
-<p align="center">
-  <img src="../images/oblique_source_singlemode.png">
-</p>
+
+![](../images/oblique_source_singlemode.png)
+
 
 
 There are numerical dispersion artifacts due to the FDTD spatial and temporal discretizations which create negligible backward-propagating waves by the eigenmode current source, carrying approximately 10<sup>-5</sup> of the power of the desired forward-propagating mode. These artifacts can be seen as residues in the field profiles.
 
-<p align="center">
-  <img src="../images/oblique_source_multimode.png">
-</p>
+
+![](../images/oblique_source_multimode.png)
 
 
 We can demonstrate that the total power in a waveguide with *arbitrary* orientation — computed using two equivalent methods via `get_fluxes` and [mode decomposition](../Mode_Decomposition.md) — can be computed by a single flux plane oriented along the $y$ direction: thanks to [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the flux through any plane crossing a lossless waveguide is the same, regardless of whether the plane is oriented perpendicular to the waveguide. Furthermore, the eigenmode source is normalized in such a way as to produce the same power regardless of the waveguide orientation — in consequence, the flux values for mode **A** of the single-mode case for rotation angles of 0°, 20°, and 40° are 1111.280794, 1109.565028, and 1108.759159, within 0.2% (discretization error) of one another. Note that the Poynting flux could have been normalized to unity by setting the `EigenModeSource`/`Source` object parameter `amplitude=1/src.fourier_transform(fsrc)` where `fsrc=0.15` and `src=mp.GaussianSource(fsrc,fwidth=0.2*fsrc)`.
 
 Finally, we demonstrate that as long as the line source intersects the waveguide *and* `eig_kpoint` is not nearly parallel to the direction of the line source, the mode can be properly launched. As shown in the field profiles below for the single-mode waveguide, there does not seem to be any noticeable distortion in the launched mode as the waveguide approaches glancing incidence to the source plane up to 80°, where the total power in the forward-propagating mode is 97%. Note that the line source spans the entire length of the cell extending into the PML region (not shown). In this example where the cell length is 10 μm (or 10X the width of the waveguide), the maximum rotation angle is ~84°, where the power drops to 59% and backward-propagating fields are clearly visible.
 
-<p align="center">
-  <img src="../images/waveguide_rotation_glancing_small.png">
-</p>
+
+![](../images/waveguide_rotation_glancing_small.png)
+
 
 
 Increasing the size of the cell improves results at the expense of a larger simulation. The field profiles shown below are for a cell where the length has been doubled to 20 μm. The waveguide power at 84° increases from 59% to 80%. However, as the waveguide mode approaches glancing incidence, sensitivity to discretization errors increases because the mode varies rapidly with frequency on a glancing-angle cross-section, and you will eventually need to increase the resolution as well as the cell size. For waveguide angles much beyond 45° you probably want to simply change the orientation of the line source by 90°.
-<p align="center">
-  <img src="../images/waveguide_rotation_glancing.png">
-</p>
+
+
+![](../images/waveguide_rotation_glancing.png)
+
 
 
 Planewaves in Homogeneous Media
@@ -290,6 +287,4 @@ Note that the line source spans the *entire* length of the cell. (Planewave sour
 
 Shown below are the steady-state field profiles generated by the planewave for the three rotation angles. Residues of the backward-propagating waves due to the discretization are slightly visible.
 
-<p align="center">
-  <img src="../images/eigenmode_planewave.png">
-</p>
+![](../images/eigenmode_planewave.png)

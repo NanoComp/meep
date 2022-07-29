@@ -97,9 +97,9 @@ plt.xticks([t for t in np.arange(0.4,0.9,0.1)])
 plt.legend(loc='upper right')
 plt.show()
 ```
-<p align="center">
-  <img src="../images/fused_quartz_reflectance_spectrum.png">
-</p>
+
+![](../images/fused_quartz_reflectance_spectrum.png)
+
 
 
 ### Permittivity Function of an Artificial Dispersive Material
@@ -132,9 +132,9 @@ $$\varepsilon(\omega) = \varepsilon(2\pi f) = 2.25 + \frac{1.1^2 \cdot 0.5}{1.1^
 
 The real and imaginary parts of this dielectric function ε(ω) are plotted below:
 
-<p align="center">
-  <img src="../images/Material-dispersion-eps.png">
-</p>
+
+![](../images/Material-dispersion-eps.png)
+
 
 
 We can see that the f=1.1 resonance causes a large change in both the real and imaginary parts of ε around that frequency. In fact, there is a range of frequencies from 1.1 to 1.2161 where ε is *negative*. In this range, no propagating modes exist &mdash; it is actually a kind of electromagnetic band gap associated with polariton resonances in a material. For more information on the physics of such materials, see e.g. Chapter 14 of [Introduction to Solid State Physics](http://www.wiley.com/WileyCDA/WileyTitle/productCd-EHEP000803.html) by C. Kittel.
@@ -176,24 +176,24 @@ unix% python -u material-dispersion.py | tee material-dispersion.out
 
 we can then `grep` for the frequencies and the computed dielectric function, and plot it. First, let's plot the dispersion relation ω(k) for the real part of ω:
 
-<p align="center">
-  <img src="../images/Material-dispersion-bands.png">
-</p>
+
+![](../images/Material-dispersion-bands.png)
+
 
 
 The red circles are the computed points from Meep, whereas the blue line is the analytical band diagram from the specified ε(ω). As you can see, we get *two* bands at each *k*, separated by a polaritonic gap (shaded yellow). This dispersion relation can be thought of as the interaction (anti-crossing) between the light line of the ambient ε=2.25 material (dashed black line) and the horizontal line corresponding to the phonon resonance.
 
 Similarly, the computed and analytical real parts of the dielectric function are given by:
 
-<p align="center">
-  <img src="../images/Material-dispersion-epsre.png">
-</p>
+
+![](../images/Material-dispersion-epsre.png)
+
 
 which shows excellent agreement between the analytical (blue line) and numerical (red circles) calculations. The imaginary part, however, is more subtle:
 
-<p align="center">
-  <img src="../images/Material-dispersion-epsim.png">
-</p>
+
+![](../images/Material-dispersion-epsim.png)
+
 
 The blue line is the analytical calculation from above and the red circles are the numerical value from Meep &mdash; why is the agreement so poor? There is nothing wrong with Meep, and this is *not* a numerical error. The problem is simply that we are comparing apples and oranges.
 

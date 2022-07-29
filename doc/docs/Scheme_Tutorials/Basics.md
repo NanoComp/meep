@@ -58,7 +58,7 @@ We can add the waveguide. Most commonly, the structure is specified by a `list` 
 
 The waveguide is specified by a *block* (parallelepiped) of size $\infty \times 1 \times \infty$, with ε=12, centered at (0,0) which is the center of the cell. By default, any place where there are no objects there is air (ε=1), although this can be changed by setting the `default-material` variable. The resulting structure is shown below.
 
-<center>![](../images/Tutorial-wvg-straight-eps-000000.00.png)</center>
+![](../images/Tutorial-wvg-straight-eps-000000.00.png)
 
 We have the structure and need to specify the current sources using the [`sources`](../Scheme_User_Interface.md#source) object. The simplest thing is to add a single point source $J_z$:
 
@@ -110,7 +110,7 @@ unix% h5topng -S3 -Zc dkbluered -a yarg -A eps-000000.00.h5 ez-000200.0
 
 Briefly, the `-Zc dkbluered` makes the color scale go from dark blue (negative) to white (zero) to dark red (positive), and the `-a/-A` options overlay the dielectric function as light gray contours. This results in the image:
 
-<center>![](../images/Tutorial-wvg-straight-ez-000200.00.png)</center>
+![](../images/Tutorial-wvg-straight-ez-000200.00.png)
 
 We see that the the source has excited the waveguide mode, but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML layers. If we look carefully, we see something else &mdash; the image is "speckled" towards the right side. This is because, by turning on the current abruptly at $t=0$, we have excited high-frequency components (very high order modes), and we have not waited long enough for them to die away; we'll eliminate these in the next section by turning on the source more smoothly.
 
@@ -140,7 +140,7 @@ Then let's set up the bent waveguide, in a slightly bigger cell, via:
 
 Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured at right. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the cell, with positive $y$ being downwards in `h5topng`, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
 
-<center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
+![](../images/Tutorial-wvg-bent-eps-000000.00.png)
 
 There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source the same width as the waveguide by adding a `size` property to the source. An eigenmode source can also be used which is described in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at t=0 which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum `wavelength` instead of the `frequency`; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
@@ -182,11 +182,12 @@ unix% convert ez.t*.png ez.gif
 
 We are using an animated GIF format for the output. This results in the following animation:
 
-<center>![](../images/Tutorial-wvg-ez.gif)</center>
 
-<center>![](../images/Tutorial-wvg-bent2-ez-000300.00.png)</center>
+![](../images/Tutorial-wvg-ez.gif)
 
-<center>![](../images/Tutorial-wvg-bent-ez-tslice.png)</center>
+![](../images/Tutorial-wvg-bent2-ez-000300.00.png)
+
+![](../images/Tutorial-wvg-bent-ez-tslice.png)
 
 It is clear that the transmission around the bend is rather low for this frequency and structure &mdash; both large reflection and large radiation loss are clearly visible. Moreover, since we are operating just barely below the cutoff for single-mode behavior, we are able to excite a second *leaky* mode after the waveguide bend, whose second-order mode pattern (superimposed with the fundamental mode) is apparent in the animation. At right, we show a field snapshot from a simulation with a larger cell along the $y$ direction, in which you can see that the second-order leaky mode decays away, leaving us with the fundamental mode propagating downward.
 
@@ -389,7 +390,8 @@ unix% grep flux1: bend.out > bend.dat
 
 We import them to Octave/Matlab (using its `dlmread` command), and plot the results:
 
-<center>![](../images/Tut-bend-flux.png)</center>
+
+![](../images/Tut-bend-flux.png)
 
 What are we plotting here? The transmittance is the transmitted flux (second column of `bend.dat`) divided by the incident flux (second column of `bend0.dat`), to give us the *fraction* of power transmitted. The reflectance is the reflected flux (third column of `bend.dat`) divided by the incident flux (second column of `bend0.dat`). We also have to multiply by -1 because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. Finally, the scattered loss is simply $1-transmittance-reflectance$.
 
@@ -548,7 +550,7 @@ ylabel("wavelength (μm)");
 title("reflectance (analytic)");
 ```
 
-<center>![](../images/reflectance_angular_spectrum.png)</center>
+![](../images/reflectance_angular_spectrum.png)
 
 Mie Scattering of a Lossless Dielectric Sphere
 ----------------------------------------------
@@ -559,7 +561,8 @@ The scattering cross section ($\sigma_{scat}$) is the scattered power in all dir
 
 A schematic of the 2d cross section at $z = 0$ of the 3d cell is shown below.
 
-<center>![](../images/mie_scattering_schematic.png)</center>
+
+![](../images/mie_scattering_schematic.png)
 
 The simulation script is in [examples/mie-scattering.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/mie-scattering.ctl). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
@@ -706,7 +709,7 @@ The incident intensity (`intensity`) is the flux in one of the six monitor plane
 
 Results are shown below. Overall, the Meep results agree well with the analytic theory.
 
-<center>![](../images/mie_scattering.png)</center>
+![](../images/mie_scattering.png)
 
 Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section ($\sigma_{abs}$) to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load-minus-flux` calls. The extinction cross section ($\sigma_{ext}$) is simply the sum of the scattering and absorption cross sections: $\sigma_{scat}+\sigma_{abs}$.
 
@@ -717,11 +720,11 @@ As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-di
 
 The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
-<center>
+
 
 $$ \sigma_{scatt} = \int_0^{2\pi} d\phi \int_0^{\pi} \sigma_{diff}(\phi,\theta)\sin(\theta)d\theta $$
 
-</center>
+
 
 (In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of 4π.)
 
@@ -943,9 +946,9 @@ There is one important item to note: in order to eliminate discretization artifa
 
 A schematic of the simulation layout shows the line source (red), PMLs (green hatch region), `dft-flux` box (solid blue contour line), and `dft-fields` surface (blue hatch region).
 
-<center>
+
 ![](../images/power_density_cell.png)
-</center>
+
 
 The spatial map of the absorbed power density is generated from the DFT fields in `dft-fields-cylinder.h5` using the Octave/Matlab script below. The figures shows that most of the absorption occurs in a small region near the back surface of the cylinder (i.e., on the opposite side of the incident planewave).
 
@@ -982,9 +985,9 @@ title("absorbed power density");
 print -dpng 'power_density_map.png';
 ```
 
-<center>
+
 ![](../images/power_density_map.png)
-</center>
+
 
 Finally, the two values for the total absorbed power are nearly equivalent: 0.13120421825956843 (`dft-fields`) vs. 0.13249534167200672 (`dft-flux`). The relative error between the two methods is ~1.0%.
 
@@ -1084,11 +1087,11 @@ unix% convert ring-ez-*.png ring-ez-0.118.gif
 
 The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are below, in which you can clearly see the radiating fields that produce the losses:
 
-<center>
+
 ![](../images/Tut-ring-ez-0.118.gif)
 ![](../images/Tut-ring-ez-0.147.gif)
 ![](../images/Tut-ring-ez-0.175.gif)
-</center>
+
 
 Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for m=3, 4, and 5 in this case.
 
@@ -1149,9 +1152,9 @@ mayavi2 -d epsilon.vtk -m IsoSurface &> /dev/null &
 
 ```
 
-<center>
+
 ![](../images/sphere_epsilon.png)
-</center>
+
 
 
 Editors and ctl
