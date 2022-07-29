@@ -1,6 +1,7 @@
-import meep as mp
 import math
 import unittest
+
+import meep as mp
 
 
 class TestMultiLevelAtom(unittest.TestCase):

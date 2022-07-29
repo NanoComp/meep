@@ -1,6 +1,5 @@
-from __future__ import division
-
 import time
+
 import meep as mp
 from meep import mpb
 
@@ -41,9 +40,7 @@ def main():
     t0 = time.time()
     ms.run_te()
     ms.run_tm()
-    print(
-        "total time for both TE and TM bands: {:.2f} seconds".format(time.time() - t0)
-    )
+    print(f"total time for both TE and TM bands: {time.time() - t0:.2f} seconds")
 
     ms.display_eigensolver_stats()
 

@@ -1,7 +1,6 @@
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
 import meep as mp
 
-
 n = 3.4  # index of waveguide
 w = 1  # width of waveguide
 r = 1  # inner radius of ring

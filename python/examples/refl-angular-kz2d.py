@@ -1,5 +1,6 @@
-import meep as mp
 import math
+
+import meep as mp
 
 
 def refl_planar(theta, kz_2d):

@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
+import numpy as np
 
 import meep as mp
-import numpy as np
-import matplotlib.pyplot as plt
-
 
 resolution = 50  # pixels/μm
 
@@ -167,8 +165,8 @@ gp = 0.3  # grating periodicity
 gh = 1.8  # grating height
 gdc = np.linspace(0.1, 0.9, 30)  # grating duty cycle
 
-mode_tran = np.empty((gdc.size))
-mode_phase = np.empty((gdc.size))
+mode_tran = np.empty(gdc.size)
+mode_phase = np.empty(gdc.size)
 for n in range(gdc.size):
     mode_tran[n], mode_phase[n] = grating(gp, gh, [gdc[n]])
 
@@ -197,7 +195,7 @@ plt.show()
 
 gdc_new = np.linspace(0.16, 0.65, 500)
 mode_phase_interp = np.interp(gdc_new, gdc, mode_phase)
-print("phase-range:, {:.6f}".format(mode_phase_interp.max() - mode_phase_interp.min()))
+print(f"phase-range:, {mode_phase_interp.max() - mode_phase_interp.min():.6f}")
 
 phase_tol = 1e-2
 num_cells = [100, 200, 400]

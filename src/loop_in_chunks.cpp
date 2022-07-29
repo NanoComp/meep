@@ -418,10 +418,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
         ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
-        
-        //With symmetry, the upper half of the original chunk is kept and includes one extra pixel. 
-        //When looped over all symmetries, pixels outside the lower boundary "user_volume.little_owned_corner(cgrid)" is excluded.  
-        //isym finds the lower boundary of the upper half chunk. Then in each direction that chunk isn't the upper, 
+
+        //With symmetry, the upper half of the original chunk is kept and includes one extra pixel.
+        //When looped over all symmetries, pixels outside the lower boundary "user_volume.little_owned_corner(cgrid)" is excluded.
+        //isym finds the lower boundary of the upper half chunk. Then in each direction that chunk isn't the upper,
         //checked by ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)),
         //the end point iecoS will shift to not go beyond isym
         ivec isym(gvu.dim, INT_MAX);
@@ -433,10 +433,10 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         ivec iscS(max(is - shifti, iscoS));
         ivec chunk_corner(gvu.little_owned_corner(cgrid));
         LOOP_OVER_DIRECTIONS(gv.dim, d) {
-          if ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)) iecoS.set_direction(d, min(isym, iecoS).in_direction(d));  
-        } 
+          if ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)) iecoS.set_direction(d, min(isym, iecoS).in_direction(d));
+        }
         ivec iecS( min(ie - shifti, iecoS));
-                
+
         if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
           ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));

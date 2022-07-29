@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-
 # From the Meep tutorial: plotting permittivity and fields of a bent waveguide
-from __future__ import division
-
 import meep as mp
 
 cell = mp.Vector3(16, 16, 0)

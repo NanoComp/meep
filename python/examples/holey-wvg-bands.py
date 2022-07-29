@@ -1,14 +1,10 @@
 # Meep Tutorial: Hz-polarized transmission and reflection through a cavity
 # formed by a periodic sequence of holes in a dielectric waveguide,
 # with a defect formed by a larger spacing between one pair of holes.
-
 # This structure is based on one analyzed in:
 #    S. Fan, J. N. Winn, A. Devenyi, J. C. Chen, R. D. Meade, and
 #    J. D. Joannopoulos, "Guided and defect modes in periodic dielectric
 #    waveguides," J. Opt. Soc. Am. B, 12 (7), 1267-1272 (1995).
-
-from __future__ import division
-
 import meep as mp
 
 

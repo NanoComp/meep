@@ -1,5 +1,3 @@
-from __future__ import division
-
 import meep as mp
 from meep import mpb
 

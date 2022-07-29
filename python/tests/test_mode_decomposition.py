@@ -1,8 +1,10 @@
-import unittest
-import numpy as np
-import meep as mp
-import math
 import cmath
+import math
+import unittest
+
+import numpy as np
+
+import meep as mp
 
 
 class TestModeDecomposition(unittest.TestCase):
@@ -190,7 +192,7 @@ class TestModeDecomposition(unittest.TestCase):
             kpoint_func=lambda f, n: kpoint,
         ).alpha[0, 0, 0]
 
-        print("oblique-waveguide-flux:, {:.6f}, {:.6f}".format(-flux, abs(coeff) ** 2))
+        print(f"oblique-waveguide-flux:, {-flux:.6f}, {abs(coeff) ** 2:.6f}")
         print(
             "oblique-waveguide-flux (decimated):, {:.6f}, {:.6f}".format(
                 -flux_decimated, abs(coeff_decimated) ** 2
@@ -385,9 +387,9 @@ class TestModeDecomposition(unittest.TestCase):
         Rflux = -r_flux[0] / input_flux[0]
         Tflux = t_flux[0] / input_flux[0]
 
-        print("refl:, {}, {}".format(Rsum, Rflux))
-        print("tran:, {}, {}".format(Tsum, Tflux))
-        print("sum:,  {}, {}".format(Rsum + Tsum, Rflux + Tflux))
+        print(f"refl:, {Rsum}, {Rflux}")
+        print(f"tran:, {Tsum}, {Tflux}")
+        print(f"sum:,  {Rsum + Tsum}, {Rflux + Tflux}")
 
         ## to obtain agreement for two decimal digits,
         ## the resolution must be increased to 200

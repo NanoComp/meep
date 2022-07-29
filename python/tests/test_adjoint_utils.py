@@ -5,20 +5,21 @@ filters, which may not need explicit gradient computation
 (i.e. forward and adjoint runs).
 
 """
-
 import meep as mp
 
 try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
-import numpy as np
-from autograd import numpy as npa
-from autograd import tensor_jacobian_product
+
 import unittest
 from enum import Enum
-from utils import ApproxComparisonTestCase
+
+import numpy as np
 import parameterized
+from autograd import numpy as npa
+from autograd import tensor_jacobian_product
+from utils import ApproxComparisonTestCase
 
 _TOL = 1e-6 if mp.is_single_precision() else 1e-14
 

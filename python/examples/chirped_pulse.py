@@ -1,7 +1,7 @@
 ## linear-chirped pulse planewave with higher frequencies at the front (down-chirp)
+import numpy as np
 
 import meep as mp
-import numpy as np
 
 resolution = 40
 

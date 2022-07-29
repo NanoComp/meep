@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 # Materials Library
+import numpy as np
 
 import meep as mp
-import numpy as np
 
 # default unit length is 1 μm
 um_scale = 1.0

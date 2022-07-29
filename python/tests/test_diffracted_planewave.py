@@ -1,9 +1,10 @@
-import unittest
-import meep as mp
-import math
 import cmath
+import math
+import unittest
+
 import numpy as np
 
+import meep as mp
 
 # Computes the mode coefficient of the transmitted orders of
 # a binary grating given an incident planewave and verifies

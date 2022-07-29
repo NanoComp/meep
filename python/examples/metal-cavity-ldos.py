@@ -1,9 +1,9 @@
-from __future__ import division
-
 import math
-import meep as mp
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+import meep as mp
 
 
 def metal_cavity(w):

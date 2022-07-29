@@ -1,9 +1,8 @@
 # Calculating 2d ring-resonator modes using cylindrical coordinates,
 # from the Meep tutorial.
-from __future__ import division
+import argparse
 
 import meep as mp
-import argparse
 
 
 def main(args):

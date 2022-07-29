@@ -1,6 +1,8 @@
 import unittest
-import meep as mp
+
 import numpy as np
+
+import meep as mp
 
 # Test that is_integrated=True source correctly generates planewaves
 # for sources extending into the PML, as in this tutorial:

@@ -1,6 +1,7 @@
-import meep as mp
 import math
 import unittest
+
+import meep as mp
 
 
 class TestEigenmodeSource(unittest.TestCase):
@@ -63,8 +64,8 @@ class TestEigenmodeSource(unittest.TestCase):
 
             fluxes.append(mp.get_fluxes(tran)[0])
             coeff_fluxes.append(abs(res.alpha[0, 0, 0]) ** 2)
-            print("flux:, {:.2f}, {:.6f}".format(t, fluxes[-1]))
-            print("coef_flux:, {:.2f}, {:.6f}".format(t, coeff_fluxes[-1]))
+            print(f"flux:, {t:.2f}, {fluxes[-1]:.6f}")
+            print(f"coef_flux:, {t:.2f}, {coeff_fluxes[-1]:.6f}")
 
         self.assertAlmostEqual(fluxes[0], fluxes[1], places=0)
         self.assertAlmostEqual(fluxes[1], fluxes[2], places=0)

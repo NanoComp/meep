@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+import math
+
+import matplotlib.pyplot as plt
+import numpy as np
+from meep.materials import fused_quartz
 
 import meep as mp
-from meep.materials import fused_quartz
-import numpy as np
-import math
-import matplotlib.pyplot as plt
 
 resolution = 200  # pixels/μm
 

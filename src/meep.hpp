@@ -1417,7 +1417,7 @@ public:
   std::complex<double> *J() const; // returns Jdft
   std::vector<double> freq;
   double overall_scale() const { return saved_overall_scale; }
-  
+
 private:
   std::complex<double> *Fdft;  // Nomega array of field * J*(x) DFT values
   std::complex<double> *Jdft;  // Nomega array of J(t) DFT values

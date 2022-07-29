@@ -334,9 +334,9 @@ double dft_chunk::norm2(grid_volume fgv) const {
     grid_volume subgv = fgv.subvolume(is,ie,c);
     LOOP_OVER_IVECS(subgv, is_old, ie_old, idx) {
       for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx + i]);          
-    } 
-  } 
+        sum += sqr(dft[Nomega * idx + i]);
+    }
+  }
   /* note we place the if outside of the
   loop to avoid branching. This routine gets
   called a lot, so let's try to stay efficient
@@ -346,7 +346,7 @@ double dft_chunk::norm2(grid_volume fgv) const {
     LOOP_OVER_IVECS(fgv, is, ie, idx) {
      idx_dft = IVEC_LOOP_COUNTER;
      for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx_dft + i]); 
+        sum += sqr(dft[Nomega * idx_dft + i]);
     }
   }
 
@@ -1421,7 +1421,7 @@ void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux 
 
 /* deregister all of the remaining dft monitors
 from the fields object. Note that this does not
-delete the underlying dft_chunks! (useful for 
+delete the underlying dft_chunks! (useful for
 adjoint calculations, where we want to keep
 the chunk data around) */
 void fields::clear_dft_monitors() {

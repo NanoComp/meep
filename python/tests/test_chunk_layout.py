@@ -1,6 +1,7 @@
-import meep as mp
 import copy
 import unittest
+
+import meep as mp
 
 
 def traverse_tree(bp=None, min_corner=None, max_corner=None):

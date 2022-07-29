@@ -1,8 +1,10 @@
-import meep as mp
 import math
-import numpy as np
 import unittest
+
+import numpy as np
 from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestAntennaRadiation(ApproxComparisonTestCase):

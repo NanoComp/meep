@@ -1,13 +1,13 @@
 import unittest
-import parameterized
-
-from utils import ApproxComparisonTestCase
 
 import jax
 import jax.numpy as jnp
-import meep as mp
 import meep.adjoint as mpa
 import numpy as onp
+import parameterized
+from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 # The calculation of finite difference gradients requires that JAX be operated with double precision
 jax.config.update("jax_enable_x64", True)

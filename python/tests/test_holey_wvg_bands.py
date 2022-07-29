@@ -1,5 +1,6 @@
-import meep as mp
 import unittest
+
+import meep as mp
 
 
 class TestHoleyWvgBands(unittest.TestCase):

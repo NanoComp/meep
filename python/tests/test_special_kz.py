@@ -1,9 +1,11 @@
-import unittest
-import parameterized
-import meep as mp
 import cmath
 import math
+import unittest
 from time import time
+
+import parameterized
+
+import meep as mp
 
 
 class TestSpecialKz(unittest.TestCase):

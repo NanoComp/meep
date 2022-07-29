@@ -36,7 +36,7 @@ sim.run(meep.output_efield_z, print("Hello World!"), until=200)
 
 **Scheme**
 ```scm
-(run-until 200 output-efield-z (print "Hello World!\n"))     
+(run-until 200 output-efield-z (print "Hello World!\n"))
 ```
 
 **This is wrong.**  It will output "Hello World!" *once*, then give an error.  What is going on? The problem is that you are thinking of `run` (Python) or `run-until` (Scheme) in the wrong way, as if it were a loop:

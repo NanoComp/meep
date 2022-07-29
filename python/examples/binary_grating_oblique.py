@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+import cmath
+import math
+
+import numpy as np
 
 import meep as mp
-import math
-import cmath
-import numpy as np
 
 resolution = 50  # pixels/μm
 
@@ -148,7 +148,7 @@ for nm in range(nm_r):
     r_kdom = res.kdom[nm]
     Rmode = abs(r_coeffs[nm, 0, 1]) ** 2 / input_flux[0]
     r_angle = np.sign(r_kdom.y) * math.acos(r_kdom.x / (ng * fcen))
-    print("refl:, {:2d}, {:6.2f}, {:.8f}".format(nm, math.degrees(r_angle), Rmode))
+    print(f"refl:, {nm:2d}, {math.degrees(r_angle):6.2f}, {Rmode:.8f}")
     Rsum += Rmode
 
 nm_t = np.floor((fcen - k.y) * gp) - np.ceil(
@@ -168,13 +168,13 @@ for nm in range(nm_t):
     t_kdom = res.kdom[nm]
     Tmode = abs(t_coeffs[nm, 0, 0]) ** 2 / input_flux[0]
     t_angle = np.sign(t_kdom.y) * math.acos(t_kdom.x / fcen)
-    print("tran:, {:2d}, {:6.2f}, {:.8f}".format(nm, math.degrees(t_angle), Tmode))
+    print(f"tran:, {nm:2d}, {math.degrees(t_angle):6.2f}, {Tmode:.8f}")
     Tsum += Tmode
 
-print("mode-coeff:, {:11.6f}, {:.6f}, {:.6f}".format(Rsum, Tsum, Rsum + Tsum))
+print(f"mode-coeff:, {Rsum:11.6f}, {Tsum:.6f}, {Rsum + Tsum:.6f}")
 
 r_flux = mp.get_fluxes(refl_flux)
 t_flux = mp.get_fluxes(tran_flux)
 Rflux = -r_flux[0] / input_flux[0]
 Tflux = t_flux[0] / input_flux[0]
-print("poynting-flux:, {:.6f}, {:.6f}, {:.6f}".format(Rflux, Tflux, Rflux + Tflux))
+print(f"poynting-flux:, {Rflux:.6f}, {Tflux:.6f}, {Rflux + Tflux:.6f}")

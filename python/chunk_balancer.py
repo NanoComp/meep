@@ -2,11 +2,11 @@ import abc
 import copy
 from typing import Optional, Tuple, Union
 
-import meep as mp
-from meep import binary_partition_utils as bpu
+import numpy as np
 from meep.timing_measurements import MeepTimingMeasurements
 
-import numpy as np
+import meep as mp
+from meep import binary_partition_utils as bpu
 
 
 class AbstractChunkBalancer(abc.ABC):

@@ -1,7 +1,9 @@
-import numpy as np
-import gdspy
-from matplotlib import pyplot as plt
 import importlib
+
+import gdspy
+import numpy as np
+from matplotlib import pyplot as plt
+
 import meep as mp
 
 # core and cladding materials

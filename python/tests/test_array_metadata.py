@@ -1,7 +1,9 @@
-import meep as mp
 import unittest
+
 import numpy as np
 from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestArrayMetadata(ApproxComparisonTestCase):

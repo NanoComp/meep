@@ -1,13 +1,13 @@
 # fit complex refractive index profile over broad bandwidth imported from
 # a file to a sum of Lorentzian polarizability terms using gradient-based
 # optimization via NLopt (nlopt.readthedocs.io)
-
+import matplotlib
 import nlopt
 import numpy as np
-import matplotlib
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
+
 import meep as mp
 
 

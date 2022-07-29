@@ -1,6 +1,5 @@
-from __future__ import division
-
 import math
+
 import meep as mp
 
 # This file realizes a 1D, one-sided Fabry-Perot laser, as described in Fig. 2 of Optics Express, Vol. 20, pp. 474-88, 2012.

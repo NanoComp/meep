@@ -1,13 +1,12 @@
-import meep as mp
-import numpy as np
-
-import parameterized
 import unittest
 
 import meep.binary_partition_utils as bpu
-
-from meep.timing_measurements import MeepTimingMeasurements, TIMING_MEASUREMENT_IDS
+import numpy as np
+import parameterized
 from meep.chunk_balancer import ChunkBalancer
+from meep.timing_measurements import TIMING_MEASUREMENT_IDS, MeepTimingMeasurements
+
+import meep as mp
 
 
 class MockSimulation(mp.Simulation):

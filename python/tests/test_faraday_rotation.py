@@ -1,6 +1,9 @@
 import unittest
+
 import numpy as np
+
 import meep as mp
+
 
 ## Farady rotation rate for gyrotropic Lorentzian medium
 def kgyro_lorentzian(freq, epsn, f0, gamma, sigma, b0):
@@ -73,7 +76,7 @@ class TestFaradayRotation(unittest.TestCase):
         Ey_theory = np.abs(np.sin(kpred * (zout - zsrc)).real)
         expected = np.arctan2(Ey_theory, Ex_theory) * 180 / np.pi
 
-        print("Rotation angle (in degrees): {}, expected {}\n".format(result, expected))
+        print(f"Rotation angle (in degrees): {result}, expected {expected}\n")
         np.testing.assert_allclose(expected, result, atol=tol)
 
     def test_faraday_rotation(self):

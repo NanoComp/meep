@@ -1,13 +1,16 @@
 import unittest
-import parameterized
+
 import numpy as np
+import parameterized
+
 import meep as mp
 
 try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
-from meep.materials import SiN, Co
+
+from meep.materials import Co, SiN
 
 
 class TestGetEpsilonGrid(unittest.TestCase):

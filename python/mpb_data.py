@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
 import math
+
 import numpy as np
+
 import meep as mp
-from . import map_data
-from . import MPBArray
+
+from . import MPBArray, map_data
 
 
-class MPBData(object):
+class MPBData:
 
     TWOPI = 6.2831853071795864769252867665590057683943388
 

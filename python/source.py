@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
 import warnings
-import meep as mp
+
 from meep.geom import Vector3, check_nonnegative
+
+import meep as mp
 
 
 def check_positive(prop, val):
@@ -11,7 +12,7 @@ def check_positive(prop, val):
         raise ValueError(f"{prop} must be positive. Got {val}")
 
 
-class Source(object):
+class Source:
     """
     The `Source` class is used to specify the current sources via the `Simulation.sources`
     attribute. Note that all sources in Meep are separable in time and space, i.e. of the
@@ -126,7 +127,7 @@ class Source(object):
         self.amp_data = amp_data
 
 
-class SourceTime(object):
+class SourceTime:
     """
     This is the parent for classes describing the time dependence of sources; it should
     not be instantiated directly.
@@ -196,7 +197,7 @@ class ContinuousSource(SourceTime):
                 f"Must set either frequency or wavelength in {self.__class__.__name__}."
             )
 
-        super(ContinuousSource, self).__init__(is_integrated=is_integrated, **kwargs)
+        super().__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
@@ -276,7 +277,7 @@ class GaussianSource(SourceTime):
                 f"Must set either frequency or wavelength in {self.__class__.__name__}."
             )
 
-        super(GaussianSource, self).__init__(is_integrated=is_integrated, **kwargs)
+        super().__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
@@ -349,7 +350,7 @@ class CustomSource(SourceTime):
           automatically determine the decimation factor of the time-series updates
           of the DFT fields monitors (if any).
         """
-        super(CustomSource, self).__init__(is_integrated=is_integrated, **kwargs)
+        super().__init__(is_integrated=is_integrated, **kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
@@ -512,7 +513,7 @@ class EigenModeSource(Source):
           simulation.
         """
 
-        super(EigenModeSource, self).__init__(src, component, center, volume, **kwargs)
+        super().__init__(src, component, center, volume, **kwargs)
         self.eig_lattice_size = eig_lattice_size
         self.eig_lattice_center = eig_lattice_center
         self.component = component
@@ -623,9 +624,7 @@ class GaussianBeamSource(Source):
         + **`beam_E0` [`Vector3`]** — The polarization vector of the beam. Elements can be complex valued (i.e., for circular polarization). The polarization vector must be *parallel* to the source region in order to generate a transverse mode.
         """
 
-        super(GaussianBeamSource, self).__init__(
-            src, component, center, volume, **kwargs
-        )
+        super().__init__(src, component, center, volume, **kwargs)
         self._beam_x0 = beam_x0
         self._beam_kdir = beam_kdir
         self._beam_w0 = beam_w0

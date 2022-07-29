@@ -1,6 +1,8 @@
 import unittest
-import meep as mp
+
 from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class Test3rdHarm1d(ApproxComparisonTestCase):

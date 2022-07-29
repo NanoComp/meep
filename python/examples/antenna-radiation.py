@@ -1,8 +1,9 @@
-import meep as mp
 import math
-import numpy as np
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+import meep as mp
 
 resolution = 50  # pixels/um
 
@@ -104,7 +105,7 @@ Pr = np.sqrt(np.square(Px) + np.square(Py))
 # integrate the radial flux over the circle circumference
 far_flux_circle = np.sum(Pr) * 2 * np.pi * r / len(Pr)
 
-print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux, far_flux_box, far_flux_circle))
+print(f"flux:, {near_flux:.6f}, {far_flux_box:.6f}, {far_flux_circle:.6f}")
 
 ax = plt.subplot(111, projection="polar")
 ax.plot(angles, Pr / max(Pr), "b-")

@@ -123,7 +123,7 @@ There are upcoming packages for [Meep version 1.17.1](https://github.com/NanoCom
 
 In the meantime, the following dependencies are already available as precompiled packages: BLAS and LAPACK possibly as part of a package for [Atlas BLAS](https://en.wikipedia.org/wiki/Automatically_Tuned_Linear_Algebra_Software), Guile, MPI, and HDF5. One thing to be careful of is that many distributions split packages into two parts: one main package for the libraries and programs, and a **devel** package for [header files](https://en.wikipedia.org/wiki/Header_file) and other things needed to compile software using those libraries. You will need to install **both**. So, for example, you will probably need both a `guile` package (probably installed by default) and a `guile-dev` or `guile-devel` package (probably *not* installed by default), and similarly for HDF5 etcetera. You will probably also want to install a `libpng-dev` or `libpng-devel` package in order to compile the `h5topng` utility in [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md).
 
-Installation from source on macOS 
+Installation from source on macOS
 ---------------------------------
 Most macOS users will probably want to install via the Conda packages as described above.  It is also possible to compile Meep from source, however.
 

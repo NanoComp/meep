@@ -1,6 +1,8 @@
 import unittest
-import meep as mp
+
 from meep.materials import Al
+
+import meep as mp
 
 
 class TestAbsorber(unittest.TestCase):

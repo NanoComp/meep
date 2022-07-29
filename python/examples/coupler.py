@@ -1,5 +1,6 @@
-import meep as mp
 import argparse
+
+import meep as mp
 
 gdsII_file = "coupler.gds"
 CELL_LAYER = 0

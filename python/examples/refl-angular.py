@@ -1,6 +1,7 @@
-import meep as mp
 import argparse
 import math
+
+import meep as mp
 
 
 def main(args):

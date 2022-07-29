@@ -1,11 +1,13 @@
 """Handling of objective functions and objective quantities."""
-
 import abc
-import numpy as np
-import meep as mp
-from .filter_source import FilteredSource
-from meep.simulation import py_v3_to_vec
 from collections import namedtuple
+
+import numpy as np
+from meep.simulation import py_v3_to_vec
+
+import meep as mp
+
+from .filter_source import FilteredSource
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
 

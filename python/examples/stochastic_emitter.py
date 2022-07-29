@@ -1,8 +1,9 @@
-import meep as mp
-from meep.materials import Ag
-import numpy as np
-
 import argparse
+
+import numpy as np
+from meep.materials import Ag
+
+import meep as mp
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-res", type=int, default=50, help="resolution (pixels/um)")

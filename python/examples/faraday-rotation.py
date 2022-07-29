@@ -1,5 +1,4 @@
 # From the Meep tutorial: plotting Faraday rotation of a linearly polarized plane wave
-
 import meep as mp
 
 ## Parameters for a gyrotropic Lorentzian medium
@@ -41,9 +40,10 @@ sim = mp.Simulation(
 )
 sim.run(until=tmax)
 
+import matplotlib.pyplot as plt
+
 ## Plot results:
 import numpy as np
-import matplotlib.pyplot as plt
 
 ex_data = sim.get_efield_x().real
 ey_data = sim.get_efield_y().real

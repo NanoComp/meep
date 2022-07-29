@@ -1,4 +1,5 @@
 import unittest
+
 import meep as mp
 
 # compute group velocity of a waveguide mode using two different methods

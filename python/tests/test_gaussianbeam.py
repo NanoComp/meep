@@ -1,7 +1,9 @@
-import unittest
-import meep as mp
 import math
+import unittest
+
 import numpy as np
+
+import meep as mp
 
 
 class TestGaussianBeamSource(unittest.TestCase):

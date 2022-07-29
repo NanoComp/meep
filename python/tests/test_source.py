@@ -1,12 +1,12 @@
 import math
 import os
 import unittest
+
 import numpy as np
+from meep.geom import Cylinder, Vector3
+from meep.source import ContinuousSource, EigenModeSource, GaussianSource
 
 import meep as mp
-from meep.geom import Cylinder, Vector3
-from meep.source import EigenModeSource, ContinuousSource, GaussianSource
-
 
 data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
 

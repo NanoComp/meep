@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+import math
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 import meep as mp
-import math
-import numpy as np
-import matplotlib.pyplot as plt
 
 resolution = 60  # pixels/μm
 
@@ -139,5 +139,5 @@ plt.yticks(list(range(0, 35, 5)))
 plt.title("transmittance of diffraction orders")
 cbar = plt.colorbar()
 cbar.set_ticks(list(np.arange(0, tran_max + 0.1, 0.1)))
-cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0, tran_max + 0.1, 0.1)])
+cbar.set_ticklabels([f"{t:.1f}" for t in np.arange(0, tran_max + 0.1, 0.1)])
 plt.show()

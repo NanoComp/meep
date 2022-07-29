@@ -1,7 +1,9 @@
-import meep as mp
-import numpy as np
 import math
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+import meep as mp
 
 resolution = 25  # pixels/μm
 

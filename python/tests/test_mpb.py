@@ -8,11 +8,11 @@ import unittest
 
 import h5py
 import numpy as np
-from scipy.optimize import minimize_scalar
-from scipy.optimize import ridder
+from scipy.optimize import minimize_scalar, ridder
+from utils import compare_arrays
+
 import meep as mp
 from meep import mpb
-from utils import compare_arrays
 
 
 @unittest.skipIf(os.getenv("MEEP_SKIP_LARGE_TESTS", False), "skipping large tests")
@@ -40,7 +40,7 @@ class TestModeSolver(unittest.TestCase):
 
     def tearDown(self):
         end = time.time() - self.start
-        print("{}: {:.2f}s".format(self.filename_prefix, end))
+        print(f"{self.filename_prefix}: {end:.2f}s")
 
     @classmethod
     def tearDownClass(cls):
@@ -1050,7 +1050,7 @@ class TestModeSolver(unittest.TestCase):
         self.check_band_range_data(expected_te_brd, ms.band_range_data)
 
     def test_line_defect(self):
-        from mpb_line_defect import ms, k_points
+        from mpb_line_defect import k_points, ms
 
         ms.deterministic = True
         ms.filename_prefix = self.filename_prefix

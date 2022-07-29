@@ -1,10 +1,10 @@
-import meep as mp
-import numpy as np
 import matplotlib
+import numpy as np
+
+import meep as mp
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
-
 
 resolution = 20  # pixels/μm
 

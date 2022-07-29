@@ -1,9 +1,11 @@
+import os
 import unittest
+
 import h5py
 import numpy as np
-import meep as mp
 from utils import ApproxComparisonTestCase
-import os
+
+import meep as mp
 
 
 class TestDFTFields(ApproxComparisonTestCase):

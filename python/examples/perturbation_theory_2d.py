@@ -1,6 +1,8 @@
-import meep as mp
-import numpy as np
 import argparse
+
+import numpy as np
+
+import meep as mp
 
 
 def main(args):

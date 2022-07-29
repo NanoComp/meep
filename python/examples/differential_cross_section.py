@@ -1,7 +1,8 @@
-import meep as mp
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import PyMieScatt as ps
+
+import meep as mp
 
 r = 1.0  # radius of sphere
 

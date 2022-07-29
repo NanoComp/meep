@@ -1,6 +1,7 @@
-import unittest
-import meep as mp
 import math
+import unittest
+
+import meep as mp
 
 
 class TestKdom(unittest.TestCase):

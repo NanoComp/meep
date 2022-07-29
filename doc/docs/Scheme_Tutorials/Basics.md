@@ -108,7 +108,7 @@ This will create `eps-000000.00.png`, where the `-S3` increases the image scale 
 unix% h5topng -S3 -Zc dkbluered -a yarg -A eps-000000.00.h5 ez-000200.00.h5
 ```
 
-Briefly, the `-Zc dkbluered` makes the color scale go from dark blue (negative) to white (zero) to dark red (positive), and the `-a/-A` options overlay the dielectric function as light gray contours. This results in the image:  
+Briefly, the `-Zc dkbluered` makes the color scale go from dark blue (negative) to white (zero) to dark red (positive), and the `-a/-A` options overlay the dielectric function as light gray contours. This results in the image:
 
 <center>![](../images/Tutorial-wvg-straight-ez-000200.00.png)</center>
 
@@ -433,7 +433,7 @@ The simulation script is [examples/refl-angular.ctl](https://github.com/NanoComp
 (define df (- fmax fmin))           ; frequency width of source
 (define-param nfreq 50)             ; number of frequency bins
 
-; rotation angle (in degrees) of source: CCW around Y axis, 0 degrees along +Z axis 
+; rotation angle (in degrees) of source: CCW around Y axis, 0 degrees along +Z axis
 (define-param theta 0)
 (define theta-r (deg->rad theta))
 

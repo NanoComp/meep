@@ -1,10 +1,9 @@
-from __future__ import division
-
 import math
+
+from scipy.optimize import minimize_scalar, ridder
+
 import meep as mp
 from meep import mpb
-from scipy.optimize import minimize_scalar
-from scipy.optimize import ridder
 
 
 def print_heading(h):

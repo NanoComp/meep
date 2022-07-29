@@ -1,0 +1,35 @@
+name: Test code and lint
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: 0 2 * * * # run at 2 AM UTC
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 12
+      matrix:
+        python-version: [3.8, 3.9]
+        os: [ubuntu-latest]
+
+    steps:
+      - name: Cancel Workflow Action
+        uses: styfle/cancel-workflow-action@0.10.0
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install flake8 pytest
+      - name: Lint with flake8
+        run: |
+          flake8 .
+      - name: Test with pytest
+        run: pytest

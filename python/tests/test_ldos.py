@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+
 import meep as mp
 
 # Computes the Purcell enhancement factor of a parallel dipole in a planar

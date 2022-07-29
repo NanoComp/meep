@@ -4,13 +4,14 @@
 #  * check materials with off diagonal components
 #  * check magnetic profiles
 #  * once imaginary component is supported, check that
+import os
+import unittest
+
+import h5py
+import numpy as np
+from utils import ApproxComparisonTestCase
 
 import meep as mp
-from utils import ApproxComparisonTestCase
-import unittest
-import numpy as np
-import h5py
-import os
 
 
 class TestDispersiveEigenmode(ApproxComparisonTestCase):
@@ -86,7 +87,7 @@ class TestDispersiveEigenmode(ApproxComparisonTestCase):
         # fields and structure classes by comparing their output to the
         # python epsilon output.
 
-        from meep.materials import Si, Ag, LiNbO3, Au
+        from meep.materials import Ag, Au, LiNbO3, Si
 
         # Check Silicon
         w0 = Si.valid_freq_range.min
@@ -124,7 +125,7 @@ class TestDispersiveEigenmode(ApproxComparisonTestCase):
         # Checks the get_array_slice and output_fields method
         # with dispersive materials.
 
-        from meep.materials import Si, Ag, LiNbO3, Au
+        from meep.materials import Ag, Au, LiNbO3, Si
 
         # Check Silicon
         w0 = Si.valid_freq_range.min

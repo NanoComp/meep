@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+import argparse
+
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.matlib
 
 import meep as mp
-import numpy as np
-import matplotlib.pyplot as plt
-import numpy.matlib
-import argparse
 
 resolution = 60  # pixels/μm
 
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     plt.title("transmittance")
     cbar = plt.colorbar()
     cbar.set_ticks(list(np.arange(0, 1.2, 0.2)))
-    cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0, 1.2, 0.2)])
+    cbar.set_ticklabels([f"{t:.1f}" for t in np.arange(0, 1.2, 0.2)])
 
     plt.subplot(1, 2, 2)
     plt.pcolormesh(
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     plt.title("phase (radians)")
     cbar = plt.colorbar()
     cbar.set_ticks(list(range(-3, 4)))
-    cbar.set_ticklabels(["{:.1f}".format(t) for t in range(-3, 4)])
+    cbar.set_ticklabels([f"{t:.1f}" for t in range(-3, 4)])
 
     plt.tight_layout()
     plt.show()

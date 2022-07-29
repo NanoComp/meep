@@ -5,15 +5,16 @@
 # TODO:
 #  * check materials with off diagonal components
 #  * check magnetic profiles
-
 import unittest
-import meep as mp
+
 import numpy as np
+
+import meep as mp
 
 
 class TestMediumEvaluations(unittest.TestCase):
     def test_medium_evaluations(self):
-        from meep.materials import Si, Ag, LiNbO3, fused_quartz
+        from meep.materials import Ag, LiNbO3, Si, fused_quartz
 
         # Check that scalars work
         w0 = LiNbO3.valid_freq_range.min

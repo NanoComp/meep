@@ -2,10 +2,11 @@
 # triangular lattice using a rectangular supercell and verifies
 # that only the diffraction orders of the actual unit cell
 # produce non-zero power (up to discretization error)
+import math
+
+import numpy as np
 
 import meep as mp
-import math
-import numpy as np
 
 resolution = 100  # pixels/μm
 
@@ -120,4 +121,4 @@ for ny in range(4):
         t_coeffs = res.alpha
         tran = abs(t_coeffs[0, 0, 0]) ** 2
 
-        print("order:, {}, {}, {:.5f}".format(nx, ny, tran))
+        print(f"order:, {nx}, {ny}, {tran:.5f}")

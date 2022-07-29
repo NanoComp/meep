@@ -1,12 +1,11 @@
 """
 General filter functions to be used in other projection and morphological transform routines.
 """
-
 import numpy as np
 from autograd import numpy as npa
+from scipy import signal, special
+
 import meep as mp
-from scipy import special
-from scipy import signal
 
 
 def _proper_pad(x, n):

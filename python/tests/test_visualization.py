@@ -3,20 +3,21 @@
 # boundary conditions. Checks for subdomain plots.
 #
 # Also tests the animation run function, mp4 output, jshtml output, and git output.
-
+import os
 import unittest
 from subprocess import call
 
-import meep as mp
+import matplotlib
 import numpy as np
-import os
+
+import meep as mp
 
 # Make sure we have matplotlib installed
-import matplotlib
 
 matplotlib.use("agg")  # Set backend for consistency and to pull pixels quickly
-from matplotlib import pyplot as plt
 import io
+
+from matplotlib import pyplot as plt
 
 
 def hash_figure(fig):

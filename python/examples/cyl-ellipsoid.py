@@ -1,5 +1,3 @@
-from __future__ import division
-
 import meep as mp
 
 
@@ -41,7 +39,7 @@ def main():
         until=23,
     )
 
-    print("stopped at meep time = {}".format(sim.round_time()))
+    print(f"stopped at meep time = {sim.round_time()}")
 
 
 if __name__ == "__main__":

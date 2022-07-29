@@ -1,6 +1,8 @@
 from typing import Dict, List, Optional
-import meep as mp
+
 import numpy as np
+
+import meep as mp
 
 # Codes for different Meep time sinks, used by `mp.Simulation.time_spent_on()`.
 # See

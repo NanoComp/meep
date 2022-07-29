@@ -1,7 +1,8 @@
-import meep as mp
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import linalg as LA
-import matplotlib.pyplot as plt
+
+import meep as mp
 
 n = 3.4
 w = 1

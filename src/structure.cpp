@@ -520,7 +520,7 @@ void structure::use_pml(direction d, boundary_side b, double dx) {
   if (b == Low){
     pml_volume.set_origin(d, user_volume.little_corner().in_direction(d));
   }
-      
+
   if (b == High){
     pml_volume.set_origin(d, user_volume.big_corner().in_direction(d) -
                                  pml_volume.num_direction(d) * 2);

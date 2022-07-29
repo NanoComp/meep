@@ -1,10 +1,8 @@
 # 1d simulation of a plane wave propagating through a Kerr medium
 # and generating the third-harmonic frequency component.
-
-from __future__ import division
+import argparse
 
 import meep as mp
-import argparse
 
 
 def main(args):

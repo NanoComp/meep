@@ -1,12 +1,14 @@
-import meep as mp
-import numpy as np
-from autograd import grad, jacobian
 from collections import namedtuple
 
-from . import utils, DesignRegion, LDOS
+import numpy as np
+from autograd import grad, jacobian
+
+import meep as mp
+
+from . import LDOS, DesignRegion, utils
 
 
-class OptimizationProblem(object):
+class OptimizationProblem:
     """Top-level class in the MEEP adjoint module.
 
     Intended to be instantiated from user scripts with mandatory constructor

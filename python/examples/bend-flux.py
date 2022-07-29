@@ -1,11 +1,8 @@
-# -*- coding: utf-8 -*-
-
 # transmission around a 90-degree waveguide bend in 2d
-from __future__ import division
+import matplotlib.pyplot as plt
+import numpy as np
 
 import meep as mp
-import numpy as np
-import matplotlib.pyplot as plt
 
 resolution = 10  # pixels/um
 

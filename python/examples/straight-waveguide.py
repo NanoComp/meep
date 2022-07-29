@@ -1,8 +1,4 @@
-# -*- coding: utf-8 -*-
-
 # From the Meep tutorial: plotting permittivity and fields of a straight waveguide
-from __future__ import division
-
 import meep as mp
 
 cell = mp.Vector3(16, 8, 0)
@@ -35,8 +31,8 @@ sim = mp.Simulation(
 
 sim.run(until=200)
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 eps_data = sim.get_array(center=mp.Vector3(), size=cell, component=mp.Dielectric)
 plt.figure()

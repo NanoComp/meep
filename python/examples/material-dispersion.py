@@ -2,10 +2,7 @@
 # simulate homogenous space filled with a dispersive material, and compute
 # its modes as a function of wavevector k.  Since omega/c = k/n, we can
 # extract the dielectric function epsilon(omega) = (ck/omega)^2.
-from __future__ import division
-
 import meep as mp
-
 
 cell = mp.Vector3()
 resolution = 20
@@ -48,4 +45,4 @@ all_freqs = sim.run_k_points(200, kpts)  # a list of lists of frequencies
 
 for fs, kx in zip(all_freqs, [v.x for v in kpts]):
     for f in fs:
-        print("eps:, {:.6g}, {:.6g}, {:.6g}".format(f.real, f.imag, (kx / f) ** 2))
+        print(f"eps:, {f.real:.6g}, {f.imag:.6g}, {(kx / f) ** 2:.6g}")

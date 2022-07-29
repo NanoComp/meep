@@ -46,16 +46,15 @@ def loss(x):
 value, grad = jax.value_and_grad(loss)(x)
 ```
 """
-
 from typing import Callable, List, Tuple
 
 import jax
 import jax.numpy as jnp
-import meep as mp
 import numpy as onp
 
-from . import utils
-from . import DesignRegion, EigenmodeCoefficient
+import meep as mp
+
+from . import DesignRegion, EigenmodeCoefficient, utils
 
 _norm_fn = onp.linalg.norm
 _reduce_fn = onp.max

@@ -1,6 +1,8 @@
-import meep as mp
-from utils import ApproxComparisonTestCase
 import unittest
+
+from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestHoleyWvgCavity(ApproxComparisonTestCase):

@@ -1,8 +1,8 @@
-from __future__ import division
-
 import argparse
-import meep as mp
+
 from meep.materials import Al
+
+import meep as mp
 
 
 def main(args):

@@ -1,12 +1,11 @@
-# -*- coding: utf-8 -*-
-
 # polarization grating from C. Oh and M.J. Escuti, Optics Letters, Vol. 33, No. 20, pp. 2287-9, 2008
 # note: reference uses z as the propagation direction and y as the out-of-plane direction; this script uses x and z, respectively
+import math
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 import meep as mp
-import numpy as np
-import math
-import matplotlib.pyplot as plt
 
 resolution = 50  # pixels/μm
 
@@ -157,7 +156,7 @@ for k in range(len(dd)):
     )
     tran = (abs(coeffs1) ** 2 + abs(coeffs2) ** 2) / input_flux
     for m in range(nmode):
-        print("tran (uniaxial):, {}, {:.2f}, {:.5f}".format(m, angles[m], tran[m]))
+        print(f"tran (uniaxial):, {m}, {angles[m]:.2f}, {tran[m]:.5f}")
     m0_uniaxial[k] = tran[0]
     m1_uniaxial[k] = tran[1]
     ang_uniaxial[k] = angles[1]
@@ -167,7 +166,7 @@ for k in range(len(dd)):
     )
     tran = (abs(coeffs1) ** 2 + abs(coeffs2) ** 2) / input_flux
     for m in range(nmode):
-        print("tran (twisted):, {}, {:.2f}, {:.5f}".format(m, angles[m], tran[m]))
+        print(f"tran (twisted):, {m}, {angles[m]:.2f}, {tran[m]:.5f}")
     m0_twisted[k] = tran[0]
     m1_twisted[k] = tran[1]
     ang_twisted[k] = angles[1]

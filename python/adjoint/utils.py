@@ -1,7 +1,8 @@
-from typing import List, Iterable, Tuple
+from typing import Iterable, List, Tuple
+
+import numpy as onp
 
 import meep as mp
-import numpy as onp
 
 from . import ObjectiveQuantity
 
@@ -22,7 +23,7 @@ _Z_AXIS = 1
 FD_DEFAULT = 1e-3
 
 
-class DesignRegion(object):
+class DesignRegion:
     def __init__(self, design_parameters, volume=None, size=None, center=mp.Vector3()):
         self.volume = volume or mp.Volume(center=center, size=size)
         self.size = self.volume.size

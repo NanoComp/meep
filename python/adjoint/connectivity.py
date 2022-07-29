@@ -4,13 +4,12 @@ Solve and find adjoint gradients for [-div (k grad) + alpha^2 (1-rho)k + alpha0^
 BC: Dirichlet on last slice rho[-Nx*Ny:], 0 outside the first slice, and Neumann on sides.
 Mo Chen <mochen@mit.edu>
 """
-
 import numpy as np
+from scipy.sparse import csc_matrix, csr_matrix, diags, eye, kron, lil_matrix
 from scipy.sparse.linalg import cg, spsolve
-from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix, lil_matrix
 
 
-class ConnectivityConstraint(object):
+class ConnectivityConstraint:
     def __init__(
         self,
         nx,

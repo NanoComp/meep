@@ -1,7 +1,9 @@
-import meep as mp
+from abc import ABCMeta, abstractmethod
+
 import numpy as np
 from scipy import sparse
-from abc import ABCMeta, abstractmethod
+
+import meep as mp
 
 ABC = ABCMeta("ABC", (object,), {"__slots__": ()})  # compatible with Python 2 and 3
 
@@ -54,7 +56,7 @@ class BilinearInterpolationBasis(Basis):
     def __init__(self, resolution, symmetry=None, **kwargs):
         self.dim = 2
 
-        super(BilinearInterpolationBasis, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # Generate interpolation grid
         self.symmetry = [] if symmetry is None or len(symmetry) == 0 else symmetry

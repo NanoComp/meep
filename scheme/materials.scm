@@ -24,7 +24,7 @@
 (define cSi-sig3 -0.107)
 
 (define cSi (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency cSi-frq1) (gamma cSi-gam1) (sigma cSi-sig1))
   (make lorentzian-susceptibility
@@ -42,7 +42,7 @@
 (define aSi-sig1 14.571)
 
 (define aSi (make medium (epsilon 3.109)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency aSi-frq1) (gamma aSi-gam1) (sigma aSi-sig1)))))
 
@@ -56,7 +56,7 @@
 (define aSi-H-sig1 12.31)
 
 (define aSi-H (make medium (epsilon 3.22)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency aSi-H-frq1) (gamma aSi-H-gam1) (sigma aSi-H-sig1)))))
 
@@ -70,7 +70,7 @@
 (define ITO-sig1 2.5)
 
 (define ITO (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency ITO-frq1) (gamma ITO-gam1) (sigma ITO-sig1)))))
 
@@ -84,7 +84,7 @@
 (define Al2O3-sig1 1.52)
 
 (define Al2O3 (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency Al2O3-frq1) (gamma Al2O3-gam1) (sigma Al2O3-sig1)))))
 
@@ -98,7 +98,7 @@
 (define AlN-sig1 3.306)
 
 (define AlN (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency AlN-frq1) (gamma AlN-gam1) (sigma AlN-sig1)))))
 
@@ -116,7 +116,7 @@
 (define AlAs-sig2 1.900)
 
 (define AlAs (make medium (epsilon 2.0792)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency AlAs-frq1) (gamma AlAs-gam1) (sigma AlAs-sig1))
   (make lorentzian-susceptibility
@@ -138,7 +138,7 @@
 (define BK7-sig3 1.01046945)
 
 (define BK7 (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency BK7-frq1) (gamma BK7-gam1) (sigma BK7-sig1))
   (make lorentzian-susceptibility
@@ -162,7 +162,7 @@
 (define fused-quartz-sig3 0.897479400)
 
 (define fused-quartz (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency fused-quartz-frq1) (gamma fused-quartz-gam1) (sigma fused-quartz-sig1))
   (make lorentzian-susceptibility
@@ -186,7 +186,7 @@
 (define GaAs-sig3 1.957522)
 
 (define GaAs (make medium (epsilon 5.372514)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency GaAs-frq1) (gamma GaAs-gam1) (sigma GaAs-sig1))
   (make lorentzian-susceptibility
@@ -204,7 +204,7 @@
 (define Si3N4-VISNIR-sig1 2.8939)
 
 (define Si3N4-VISNIR (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency Si3N4-VISNIR-frq1) (gamma Si3N4-VISNIR-gam1) (sigma Si3N4-VISNIR-sig1)))))
 
@@ -221,7 +221,7 @@
 (define Si3N4-NIR-sig2 40314)
 
 (define Si3N4-NIR (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency Si3N4-NIR-frq1) (gamma Si3N4-NIR-gam1) (sigma Si3N4-NIR-sig1))
   (make lorentzian-susceptibility
@@ -758,7 +758,7 @@
    (make lorentzian-susceptibility
      (frequency Au-visible-frq1) (gamma Au-visible-gam1) (sigma Au-visible-sig1)))))
 
-;------------------------------------------------------------------                       
+;------------------------------------------------------------------
 ;; UNSTABLE: field divergence may occur
 
 ; silver (Au)
@@ -936,7 +936,7 @@
 (define SiN-sig1 1.2650)
 
 (define SiN (make medium (epsilon 2.320)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency SiN-frq1) (gamma SiN-gam1) (sigma SiN-sig1)))))
 
@@ -950,7 +950,7 @@
 (define Si3N4-sig1 4.377)
 
 (define Si3N4 (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency Si3N4-frq1) (gamma Si3N4-gam1) (sigma Si3N4-sig1)))))
 
@@ -964,7 +964,7 @@
 (define SiO2-sig1 1.12)
 
 (define SiO2 (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency SiO2-frq1) (gamma SiO2-gam1) (sigma SiO2-sig1)))))
 
@@ -982,7 +982,7 @@
 (define InP-sig2 2.765)
 
 (define InP (make medium (epsilon 7.255)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency InP-frq1) (gamma InP-gam1) (sigma InP-sig1))
   (make lorentzian-susceptibility
@@ -1002,7 +1002,7 @@
 (define Ge-sig2 0.21307)
 
 (define Ge (make medium (epsilon 9.28156)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency Ge-frq1) (gamma Ge-gam1) (sigma Ge-sig1))
   (make lorentzian-susceptibility
@@ -1026,7 +1026,7 @@
 (define Si-sig3 1.54133408)
 
 (define Si (make medium (epsilon 9.28156)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency Si-frq1) (gamma Si-gam1) (sigma Si-sig1))
   (make lorentzian-susceptibility
@@ -1044,7 +1044,7 @@
 (define PMMA-sig1 1.1819)
 
 (define PMMA (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency PMMA-frq1) (gamma PMMA-gam1) (sigma PMMA-sig1)))))
 
@@ -1058,7 +1058,7 @@
 (define PC-sig1 1.4182)
 
 (define PC (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency PC-frq1) (gamma PC-gam1) (sigma PC-sig1)))))
 
@@ -1072,7 +1072,7 @@
 (define PS-sig1 1.4435)
 
 (define PS (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency PS-frq1) (gamma PS-gam1) (sigma PS-sig1)))))
 
@@ -1086,7 +1086,7 @@
 (define CLS-sig1 1.124)
 
 (define CLS (make medium (epsilon 1.0)
- (E-susceptibilities 
+ (E-susceptibilities
   (make lorentzian-susceptibility
     (frequency CLS-frq1) (gamma CLS-gam1) (sigma CLS-sig1)))))
 

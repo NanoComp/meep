@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
+import numpy as np
 
 import meep as mp
 from meep import mpb
-import numpy as np
-import matplotlib.pyplot as plt
 
 resolution = 128  # pixels/μm
 

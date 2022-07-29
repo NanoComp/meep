@@ -1,9 +1,11 @@
 import math
 import unittest
 import warnings
-import numpy as np
-import meep as mp
+
 import meep.geom as gm
+import numpy as np
+
+import meep as mp
 
 
 def zeros():

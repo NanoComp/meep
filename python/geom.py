@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import functools
 import math
 import numbers
@@ -9,8 +8,8 @@ from copy import deepcopy
 from numbers import Number
 
 import numpy as np
-import meep as mp
 
+import meep as mp
 
 FreqRange = namedtuple("FreqRange", ["min", "max"])
 
@@ -27,7 +26,7 @@ def init_do_averaging(mat_func):
         mat_func.do_averaging = False
 
 
-class Vector3(object):
+class Vector3:
     """
     Properties:
 
@@ -258,7 +257,7 @@ class Vector3(object):
         return cartesian_to_reciprocal(v.rotate(a, theta), lat)
 
 
-class Medium(object):
+class Medium:
     """
     This class is used to specify the materials that geometric objects are made of. It
     represents an electromagnetic medium which is possibly nonlinear and/or dispersive.
@@ -571,7 +570,7 @@ class Medium(object):
         return np.squeeze(epsmu)
 
 
-class MaterialGrid(object):
+class MaterialGrid:
     """
     This class is used to specify materials on a rectilinear grid. A class object is passed
     as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
@@ -697,7 +696,7 @@ class MaterialGrid(object):
         self.weights[:] = self.check_weights(x).flatten().astype(np.float64)
 
 
-class Susceptibility(object):
+class Susceptibility:
     """
     Parent class for various dispersive susceptibility terms, parameterized by an
     anisotropic amplitude $\\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
@@ -744,7 +743,7 @@ class LorentzianSusceptibility(Susceptibility):
         different `sigma` will appear as a *single* Lorentzian susceptibility term in the
         preliminary simulation info output.
         """
-        super(LorentzianSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
 
@@ -785,7 +784,7 @@ class DrudeSusceptibility(Susceptibility):
 
         + **`gamma` [`number`]** — The loss rate $\\gamma_n / 2\\pi$.
         """
-        super(DrudeSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
 
@@ -831,7 +830,7 @@ class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
         [here](http://doi.org/10.1103/PhysRevB.92.134202) or
         [here](http://doi.org/10.1103/PhysRevB.88.054305).
         """
-        super(NoisyLorentzianSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.noise_amp = noise_amp
 
 
@@ -862,7 +861,7 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
         [here](http://doi.org/10.1103/PhysRevB.92.134202) or
         [here](http://doi.org/10.1103/PhysRevB.88.054305).
         """
-        super(NoisyDrudeSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.noise_amp = noise_amp
 
 
@@ -881,7 +880,7 @@ class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
           orientation of the gyrotropic response, and the magnitude is the precession
           frequency $|\\mathbf{b}_n|/2\\pi$.
         """
-        super(GyrotropicLorentzianSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.bias = bias
 
 
@@ -900,7 +899,7 @@ class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
           orientation of the gyrotropic response, and the magnitude is the precession
           frequency $|\\mathbf{b}_n|/2\\pi$.
         """
-        super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.bias = bias
 
 
@@ -939,7 +938,7 @@ class GyrotropicSaturatedSusceptibility(Susceptibility):
           the magnitude is ignored; instead, the relevant precession frequencies are
           determined by the `sigma` and `frequency` parameters.
         """
-        super(GyrotropicSaturatedSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
         self.bias = bias
@@ -957,12 +956,12 @@ class MultilevelAtom(Susceptibility):
     """
 
     def __init__(self, initial_populations=None, transitions=None, **kwargs):
-        super(MultilevelAtom, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.initial_populations = initial_populations or []
         self.transitions = transitions or []
 
 
-class Transition(object):
+class Transition:
     """ """
 
     def __init__(
@@ -1002,7 +1001,7 @@ class Transition(object):
         self.pumping_rate = pumping_rate
 
 
-class GeometricObject(object):
+class GeometricObject:
     """
     This class, and its descendants, are used to specify the solid geometric objects that
     form the dielectric structure being simulated.
@@ -1135,7 +1134,7 @@ class Sphere(GeometricObject):
     def __init__(self, radius, **kwargs):
         """Constructs a `Sphere`"""
         self.radius = float(radius)
-        super(Sphere, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def radius(self):
@@ -1167,7 +1166,7 @@ class Cylinder(GeometricObject):
         self.axis = Vector3(*axis)
         self.radius = float(radius)
         self.height = float(height)
-        super(Cylinder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def radius(self):
@@ -1199,7 +1198,7 @@ class Wedge(Cylinder):
         """
         self.wedge_angle = wedge_angle
         self.wedge_start = Vector3(*wedge_start)
-        super(Wedge, self).__init__(radius, **kwargs)
+        super().__init__(radius, **kwargs)
 
 
 class Cone(Cylinder):
@@ -1220,7 +1219,7 @@ class Cone(Cylinder):
         Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
         """
         self.radius2 = radius2
-        super(Cone, self).__init__(radius, **kwargs)
+        super().__init__(radius, **kwargs)
 
 
 class Block(GeometricObject):
@@ -1252,7 +1251,7 @@ class Block(GeometricObject):
         self.e1 = Vector3(*e1)
         self.e2 = Vector3(*e2)
         self.e3 = Vector3(*e3)
-        super(Block, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class Ellipsoid(Block):
@@ -1265,7 +1264,7 @@ class Ellipsoid(Block):
         """
         Construct an `Ellipsoid`.
         """
-        super(Ellipsoid, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class Prism(GeometricObject):
@@ -1326,10 +1325,10 @@ class Prism(GeometricObject):
         self.axis = axis
         self.sidewall_angle = sidewall_angle
 
-        super(Prism, self).__init__(center=center, **kwargs)
+        super().__init__(center=center, **kwargs)
 
 
-class Matrix(object):
+class Matrix:
     """
     The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
 
@@ -1496,7 +1495,7 @@ class Matrix(object):
     H = property(getH, None)
 
 
-class Lattice(object):
+class Lattice:
     def __init__(
         self,
         size=Vector3(1, 1, 1),

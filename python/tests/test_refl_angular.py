@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
-
-import unittest
-import parameterized
-import numpy as np
 import math
-import meep as mp
+import unittest
+
+import numpy as np
+import parameterized
 from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestReflAngular(ApproxComparisonTestCase):

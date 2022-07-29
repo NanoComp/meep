@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+
 import meep as mp
 
 dB_cm_to_dB_um = 1e-4

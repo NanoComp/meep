@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
+import matplotlib.pyplot as plt
 
 import meep as mp
-import matplotlib.pyplot as plt
 
 resolution = 25  # pixels/μm
 
@@ -112,7 +111,7 @@ for Lt in Lts:
         abs(taper_coeffs[0, 0, 1]) ** 2 / abs(incident_coeffs[0, 0, 0]) ** 2
     )
     R_flux.append(-taper_flux[0] / incident_flux[0])
-    print("refl:, {}, {:.8f}, {:.8f}".format(Lt, R_coeffs[-1], R_flux[-1]))
+    print(f"refl:, {Lt}, {R_coeffs[-1]:.8f}, {R_flux[-1]:.8f}")
 
 
 if mp.am_master():

@@ -1,6 +1,7 @@
-import meep as mp
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
+import meep as mp
 
 r = 0.7  # radius of cylinder
 h = 2.3  # height of cylinder

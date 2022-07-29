@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
-from collections import namedtuple
 import warnings
+from collections import namedtuple
 
 import numpy as np
-
-import meep as mp
 from meep.geom import Vector3, init_do_averaging
 from meep.source import EigenModeSource, check_positive
 
+import meep as mp
 
 # ------------------------------------------------------- #
 # Visualization
@@ -847,9 +845,9 @@ def visualize_chunks(sim):
     if sim.structure is None:
         sim.init_sim()
 
-    import matplotlib.pyplot as plt
     import matplotlib.cm
     import matplotlib.colors
+    import matplotlib.pyplot as plt
 
     if sim.structure.gv.dim == 2:
         from mpl_toolkits.mplot3d import Axes3D
@@ -965,7 +963,7 @@ def visualize_chunks(sim):
 #                       to pass to plot2D()
 
 
-class Animate2D(object):
+class Animate2D:
     """
     A class used to record the fields during timestepping (i.e., a [`run`](#run-functions)
     function). The object is initialized prior to timestepping by specifying the
@@ -1177,6 +1175,7 @@ class Animate2D(object):
 
         # Only works with Python3 and matplotlib > 3.1.0
         from distutils.version import LooseVersion
+
         import matplotlib
 
         if LooseVersion(matplotlib.__version__) < LooseVersion("3.1.0"):
@@ -1188,6 +1187,7 @@ class Animate2D(object):
             return
         if mp.am_master():
             from uuid import uuid4
+
             from matplotlib._animation_data import (
                 DISPLAY_TEMPLATE,
                 INCLUDED_FRAMES,
@@ -1227,8 +1227,8 @@ class Animate2D(object):
         # requires ffmpeg to be installed
         # modified from the matplotlib library
         if mp.am_master():
-            from subprocess import Popen, PIPE
-            from io import TextIOWrapper, BytesIO
+            from io import BytesIO, TextIOWrapper
+            from subprocess import PIPE, Popen
 
             FFMPEG_BIN = "ffmpeg"
             command = [
@@ -1273,8 +1273,8 @@ class Animate2D(object):
         # requires ffmpeg to be installed
         # modified from the matplotlib library
         if mp.am_master():
-            from subprocess import Popen, PIPE
-            from io import TextIOWrapper, BytesIO
+            from io import BytesIO, TextIOWrapper
+            from subprocess import PIPE, Popen
 
             FFMPEG_BIN = "ffmpeg"
             command = [

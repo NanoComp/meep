@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-from typing import Callable, List, Tuple, Union, Optional
-
 import functools
 import math
 import numbers
@@ -10,27 +7,27 @@ import signal
 import subprocess
 import sys
 import warnings
-from collections import namedtuple
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
+from typing import Callable, List, Optional, Tuple, Union
 
 try:
     from collections.abc import Sequence
 except ImportError:
     from collections import Sequence
 
+import meep.visualization as vis
 import numpy as np
-
-import meep as mp
-from meep.geom import Vector3, init_do_averaging, GeometricObject, Medium
+from meep.geom import GeometricObject, Medium, Vector3, init_do_averaging
 from meep.source import (
-    Source,
     EigenModeSource,
     GaussianBeamSource,
     IndexedSource,
+    Source,
     check_positive,
 )
-import meep.visualization as vis
 from meep.verbosity_mgr import Verbosity
+
+import meep as mp
 
 try:
     basestring
@@ -38,8 +35,8 @@ except NameError:
     basestring = str
 
 try:
-    from ipywidgets import FloatProgress
     from IPython.display import display
+    from ipywidgets import FloatProgress
 
     do_progress = True
 except ImportError:
@@ -149,7 +146,7 @@ def bands_to_diffractedplanewave(where, bands):
     return mp.diffractedplanewave(*diffractedplanewave_args)
 
 
-class DiffractedPlanewave(object):
+class DiffractedPlanewave:
     """
     For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
     """
@@ -158,7 +155,7 @@ class DiffractedPlanewave(object):
         """
         Construct a `DiffractedPlanewave`.
 
-        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
+        + **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\\pi m_x/\\Lambda_x,k_y+2\\pi m_y/\\Lambda_y,k_z+2\\pi m_z/\\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\\Lambda_x,\\Lambda_y,\\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
         + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\\mathcal{S}$ and $\\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
@@ -192,7 +189,7 @@ DefaultPMLProfile = lambda u: u * u
 Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 
-class PML(object):
+class PML:
     """
     This class is used for specifying the PML absorbing boundary layers around the cell,
     if any, via the `boundary_layers` input variable. See also [Perfectly Matched
@@ -315,7 +312,7 @@ class Absorber(PML):
     """
 
 
-class Symmetry(object):
+class Symmetry:
     """
     This class is used for the `symmetries` input variable to specify symmetries which
     must preserve both the structure *and* the sources. Any number of symmetries can be
@@ -380,7 +377,7 @@ class Identity(Symmetry):
     """ """
 
 
-class Volume(object):
+class Volume:
     """
     Many Meep functions require you to specify a volume in space, corresponding to the C++
     type `meep::volume`. This class creates such a volume object, given the `center` and
@@ -488,7 +485,7 @@ class Volume(object):
         )
 
 
-class FluxRegion(object):
+class FluxRegion:
     """
     A `FluxRegion` object is used with [`add_flux`](#flux-spectra) to specify a region in
     which Meep should accumulate the appropriate Fourier-transformed fields in order to
@@ -591,7 +588,7 @@ class EnergyRegion(FluxRegion):
     """
 
 
-class FieldsRegion(object):
+class FieldsRegion:
     def __init__(self, where=None, center=None, size=None):
         if where:
             self.center = where.center
@@ -603,7 +600,7 @@ class FieldsRegion(object):
         self.where = where
 
 
-class DftObj(object):
+class DftObj:
     """Wrapper around DFT objects that allows delayed initialization of the structure.
 
     When splitting the structure into chunks for parallel simulations, we want to know all
@@ -668,7 +665,7 @@ class DftFlux(DftObj):
 
     def __init__(self, func, args):
         """Construct a `DftFlux`."""
-        super(DftFlux, self).__init__(func, args)
+        super().__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
         self.num_components = 4
@@ -707,7 +704,7 @@ class DftForce(DftObj):
 
     def __init__(self, func, args):
         """Construct a `DftForce`."""
-        super(DftForce, self).__init__(func, args)
+        super().__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
         self.num_components = 6
@@ -738,7 +735,7 @@ class DftNear2Far(DftObj):
 
     def __init__(self, func, args):
         """Construct a `DftNear2Far`."""
-        super(DftNear2Far, self).__init__(func, args)
+        super().__init__(func, args)
         self.nfreqs = len(args[0])
         self.nperiods = args[1]
         self.regions = args[2]
@@ -784,7 +781,7 @@ class DftEnergy(DftObj):
 
     def __init__(self, func, args):
         """Construct a `DftEnergy`."""
-        super(DftEnergy, self).__init__(func, args)
+        super().__init__(func, args)
         self.nfreqs = len(args[0])
         self.regions = args[1]
         self.num_components = 12
@@ -811,7 +808,7 @@ class DftFields(DftObj):
 
     def __init__(self, func, args):
         """Construct a `DftFields`."""
-        super(DftFields, self).__init__(func, args)
+        super().__init__(func, args)
         self.nfreqs = len(args[4])
         self.regions = [FieldsRegion(where=args[1], center=args[2], size=args[3])]
         self.num_components = len(args[0])
@@ -824,7 +821,7 @@ class DftFields(DftObj):
 Mode = namedtuple("Mode", ["freq", "decay", "Q", "amp", "err"])
 
 
-class EigenmodeData(object):
+class EigenmodeData:
     def __init__(self, band_num, freq, group_velocity, k, swigobj, kdom):
         """Construct an `EigenmodeData`."""
         self.band_num = band_num
@@ -839,7 +836,7 @@ class EigenmodeData(object):
         return mp.eigenmode_amplitude(self.swigobj, swig_point, component)
 
 
-class Harminv(object):
+class Harminv:
     """
     Harminv is implemented as a class with a [`__call__`](#Harminv.__call__) method,
     which allows it to be used as a step function that collects field data from a given
@@ -996,7 +993,7 @@ class Harminv(object):
         return _combine_step_funcs(at_end(_harm), f1(self.c, self.pt))
 
 
-class Simulation(object):
+class Simulation:
     """
     The `Simulation` [class](#classes) contains all the attributes that you can set to
     control various parameters of the Meep computation.
@@ -1458,7 +1455,7 @@ class Simulation(object):
             self.dimensions = 2
             self.is_cylindrical = True
         else:
-            raise ValueError("Unsupported dimentionality: {}".format(dims))
+            raise ValueError(f"Unsupported dimentionality: {dims}")
 
         gv.center_origin()
         gv.shift_origin(
@@ -1804,23 +1801,21 @@ class Simulation(object):
             and verbosity.meep > 0
         ):
             stats = self._compute_fragment_stats(gv)
-            print("FRAGMENT:, aniso_eps:, {}".format(stats.num_anisotropic_eps_pixels))
-            print("FRAGMENT:, aniso_mu:, {}".format(stats.num_anisotropic_mu_pixels))
-            print("FRAGMENT:, nonlinear:, {}".format(stats.num_nonlinear_pixels))
-            print(
-                "FRAGMENT:, susceptibility:, {}".format(stats.num_susceptibility_pixels)
-            )
+            print(f"FRAGMENT:, aniso_eps:, {stats.num_anisotropic_eps_pixels}")
+            print(f"FRAGMENT:, aniso_mu:, {stats.num_anisotropic_mu_pixels}")
+            print(f"FRAGMENT:, nonlinear:, {stats.num_nonlinear_pixels}")
+            print(f"FRAGMENT:, susceptibility:, {stats.num_susceptibility_pixels}")
             print(
                 "FRAGMENT:, conductivity:, {}".format(
                     stats.num_nonzero_conductivity_pixels
                 )
             )
-            print("FRAGMENT:, pml_1d:, {}".format(stats.num_1d_pml_pixels))
-            print("FRAGMENT:, pml_2d:, {}".format(stats.num_2d_pml_pixels))
-            print("FRAGMENT:, pml_3d:, {}".format(stats.num_3d_pml_pixels))
-            print("FRAGMENT:, dft:, {}".format(stats.num_dft_pixels))
-            print("FRAGMENT:, total_pixels:, {}".format(stats.num_pixels_in_box))
-            print("FRAGMENT:, procs:, {}".format(mp.count_processors()))
+            print(f"FRAGMENT:, pml_1d:, {stats.num_1d_pml_pixels}")
+            print(f"FRAGMENT:, pml_2d:, {stats.num_2d_pml_pixels}")
+            print(f"FRAGMENT:, pml_3d:, {stats.num_3d_pml_pixels}")
+            print(f"FRAGMENT:, dft:, {stats.num_dft_pixels}")
+            print(f"FRAGMENT:, total_pixels:, {stats.num_pixels_in_box}")
+            print(f"FRAGMENT:, procs:, {mp.count_processors()}")
 
         fragment_vols = self._make_fragment_lists(gv)
         self.dft_data_list = fragment_vols[0]
@@ -2077,7 +2072,9 @@ class Simulation(object):
         self.structure.dump(fname, single_parallel_file)
         if verbosity.meep > 0:
             print(
-                "Dumped structure to file: %s (%s)" % (fname, str(single_parallel_file))
+                "Dumped structure to file: {} ({})".format(
+                    fname, str(single_parallel_file)
+                )
             )
 
     def load_structure(self, fname, single_parallel_file=True):
@@ -2104,7 +2101,11 @@ class Simulation(object):
             raise ValueError("Fields must be initialized before calling dump_fields")
         self.fields.dump(fname, single_parallel_file)
         if verbosity.meep > 0:
-            print("Dumped fields to file: %s (%s)" % (fname, str(single_parallel_file)))
+            print(
+                "Dumped fields to file: {} ({})".format(
+                    fname, str(single_parallel_file)
+                )
+            )
 
     def load_fields(self, fname, single_parallel_file=True):
         """
@@ -2119,7 +2120,9 @@ class Simulation(object):
         self.fields.load(fname, single_parallel_file)
         if verbosity.meep > 0:
             print(
-                "Loaded fields from file: %s (%s)" % (fname, str(single_parallel_file))
+                "Loaded fields from file: {} ({})".format(
+                    fname, str(single_parallel_file)
+                )
             )
 
     def dump_chunk_layout(self, fname):
@@ -2518,7 +2521,7 @@ class Simulation(object):
 
         def hook():
             if verbosity.meep > 0:
-                print("Meep: using output directory '{}'".format(dname))
+                print(f"Meep: using output directory '{dname}'")
             self.fields.set_output_directory(dname)
             if not closure["trashed"]:
                 mp.trash_output_directory(dname)
@@ -2633,22 +2636,18 @@ class Simulation(object):
         pts = [s.center for s in self.sources]
 
         src_freqs_min = min(
-            [
-                s.src.frequency - 1 / s.src.width / 2
-                if isinstance(s.src, mp.GaussianSource)
-                else mp.inf
-                for s in self.sources
-            ]
+            s.src.frequency - 1 / s.src.width / 2
+            if isinstance(s.src, mp.GaussianSource)
+            else mp.inf
+            for s in self.sources
         )
         fmin = max(0, src_freqs_min)
 
         fmax = max(
-            [
-                s.src.frequency + 1 / s.src.width / 2
-                if isinstance(s.src, mp.GaussianSource)
-                else 0
-                for s in self.sources
-            ]
+            s.src.frequency + 1 / s.src.width / 2
+            if isinstance(s.src, mp.GaussianSource)
+            else 0
+            for s in self.sources
         )
 
         if not components or fmin > fmax:
@@ -2686,11 +2685,9 @@ class Simulation(object):
             freqs = [complex(m.freq, m.decay) for m in harminv.modes]
 
             if verbosity.meep > 0:
-                print("freqs:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end="")
+                print(f"freqs:, {k_index}, {k.x}, {k.y}, {k.z}, ", end="")
                 print(", ".join([str(f.real) for f in freqs]))
-                print(
-                    "freqs-im:, {}, {}, {}, {}, ".format(k_index, k.x, k.y, k.z), end=""
-                )
+                print(f"freqs-im:, {k_index}, {k.x}, {k.y}, {k.z}, ", end="")
                 print(", ".join([str(f.imag) for f in freqs]))
 
             all_freqs.append(freqs)
@@ -3006,7 +3003,7 @@ class Simulation(object):
             if verbosity.meep > 0:
                 display_csv(
                     self,
-                    "{}-energy".format(name),
+                    f"{name}-energy",
                     zip(freqs, *[func(f) for f in energys]),
                 )
 
@@ -3708,7 +3705,7 @@ class Simulation(object):
             )
 
     def h5topng(self, rm_h5, option, *step_funcs):
-        opts = "h5topng {}".format(option)
+        opts = f"h5topng {option}"
         cmd = re.sub(r"\$EPS", self.last_eps_filename, opts)
         return convert_h5(rm_h5, cmd, *step_funcs)
 
@@ -3875,7 +3872,7 @@ class Simulation(object):
                 self.fields, dft_swigobj, component, num_freq
             )
         else:
-            raise ValueError("Invalid type of dft object: {}".format(dft_swigobj))
+            raise ValueError(f"Invalid type of dft object: {dft_swigobj}")
 
     def get_source(self, component, vol=None, center=None, size=None):
         """
@@ -4362,7 +4359,7 @@ class Simulation(object):
         self._check_material_frequencies()
 
         if kwargs:
-            raise ValueError("Unrecognized keyword arguments: {}".format(kwargs.keys()))
+            raise ValueError(f"Unrecognized keyword arguments: {kwargs.keys()}")
 
         if until_after_sources is not None:
             self._run_sources_until(until_after_sources, step_funcs)
@@ -4789,9 +4786,7 @@ def _eval_step_func(sim, func, todo):
     num_args = get_num_args(func)
 
     if num_args != 1 and num_args != 2:
-        raise ValueError(
-            "Step function '{}'' requires 1 or 2 arguments".format(func.__name__)
-        )
+        raise ValueError(f"Step function '{func.__name__}'' requires 1 or 2 arguments")
     elif num_args == 1:
         if todo == "step":
             func(sim)
@@ -5271,7 +5266,7 @@ def display_progress(t0, t, dt):
 
             if do_progress:
                 sim.progress.value = val1
-                sim.progress.description = "{}% done ".format(int(val2))
+                sim.progress.description = f"{int(val2)}% done "
 
             if verbosity.meep > 0:
                 print(msg_fmt.format(val1, t, val2, val3, val4))
@@ -5283,7 +5278,7 @@ def display_progress(t0, t, dt):
 def data_to_str(d):
     if type(d) is complex:
         sign = "+" if d.imag >= 0 else ""
-        return "{}{}{}i".format(d.real, sign, d.imag)
+        return f"{d.real}{sign}{d.imag}i"
     else:
         return str(d)
 
@@ -6091,7 +6086,7 @@ def merge_subgroup_data(data):
     return output
 
 
-class BinaryPartition(object):
+class BinaryPartition:
     """
     Binary tree class used for specifying a cell partition of arbitrary sized chunks for use as the
     `chunk_layout` parameter of the `Simulation` class object.
@@ -6153,7 +6148,7 @@ class BinaryPartition(object):
 
     def print(self):
         """Pretty-prints the tree structure of the BinaryPartition object."""
-        print(str(self) + " with {} chunks:".format(self.numchunks()))
+        print(str(self) + f" with {self.numchunks()} chunks:")
         for line in self._print(is_root=True):
             print(line)
 
@@ -6178,10 +6173,10 @@ class BinaryPartition(object):
 
     def _node_info(self) -> str:
         if self.proc_id is not None:
-            return "<proc_id={}>".format(self.proc_id)
+            return f"<proc_id={self.proc_id}>"
         else:
             split_dir_str = {mp.X: "X", mp.Y: "Y", mp.Z: "Z"}[self.split_dir]
-            return "<split_dir={}, split_pos={}>".format(split_dir_str, self.split_pos)
+            return f"<split_dir={split_dir_str}, split_pos={self.split_pos}>"
 
     def _numchunks(self, bp):
         if bp is None:

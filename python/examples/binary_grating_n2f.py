@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
-
-import meep as mp
 import math
+
+import matplotlib.pyplot as plt
 import numpy as np
 from numpy import linalg as LA
-import matplotlib.pyplot as plt
+
+import meep as mp
 
 resolution = 25  # pixels/μm
 
@@ -189,7 +189,7 @@ ff_supercell = sim.get_farfields(
 )
 
 norm_err = LA.norm(ff_unitcell["Ez"] - ff_supercell["Ez"]) / nperiods
-print("error:, {}, {}".format(nperiods, norm_err))
+print(f"error:, {nperiods}, {norm_err}")
 
 freqs = mp.get_near2far_freqs(n2f_obj)
 wvl = np.divide(1, freqs)
@@ -221,7 +221,7 @@ plt.xticks([t for t in range(0, ff_angle + 1, 10)])
 plt.xlabel("angle (degrees)")
 plt.ylabel("relative enhancement")
 plt.grid(axis="x", linewidth=0.5, linestyle="--")
-plt.title("f.-f. spectra @  λ = {:.1} μm".format(wvl_slice))
+plt.title(f"f.-f. spectra @  λ = {wvl_slice:.1} μm")
 
 plt.tight_layout(pad=0.5)
 plt.show()

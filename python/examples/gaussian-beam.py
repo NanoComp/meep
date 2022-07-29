@@ -1,8 +1,9 @@
 ## launch a Gaussian beam
+import math
+
+import matplotlib
 
 import meep as mp
-import math
-import matplotlib
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt

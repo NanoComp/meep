@@ -1,8 +1,10 @@
-import meep as mp
 import cmath
 import math
 import unittest
+
 from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestPwSource(ApproxComparisonTestCase):

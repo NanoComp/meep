@@ -1,8 +1,9 @@
-from typing import Dict, Generator, List, Tuple
 import warnings
+from typing import Dict, Generator, List, Tuple
+
+import numpy as onp
 
 import meep as mp
-import numpy as onp
 
 
 def is_leaf_node(partition: mp.BinaryPartition) -> bool:

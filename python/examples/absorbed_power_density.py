@@ -1,11 +1,11 @@
-import numpy as np
 import matplotlib
+import numpy as np
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
+from meep.materials import SiO2
 
 import meep as mp
-from meep.materials import SiO2
 
 resolution = 100  # pixels/um
 

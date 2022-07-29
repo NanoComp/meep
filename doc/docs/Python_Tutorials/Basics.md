@@ -242,7 +242,7 @@ Above, we outputted the full 2d data slice at every 0.6 time units, resulting in
 To create the movie above, all we really need are the *images* corresponding to each time. Images can be stored much more efficiently than raw arrays of numbers &mdash; to exploit this fact, Meep allows you to output PNG images instead of HDF5 files. In particular, instead of `output_efield_z` as above, we can use `mp.output_png(mp.Ez, "-Zc dkbluered")`, where Ez is the component to output and the `"-Zc` `dkbluered"` are options for `h5topng` of [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md) which is the program that is actually used to create the image files. That is:
 
 ```py
-sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)        
+sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)
 ```
 
 will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
@@ -258,7 +258,7 @@ This will put *all* of the output files (.h5, .png, etcetera) into a newly-creat
 What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful output feature &mdash; Meep allows us to output only **a subset of the computational cell**. This is done using the `in_volume` function, which like `at_every` and `to_appended` is another function that modifies the behavior of other output functions. In particular, we can do:
 
 ```
-sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)), until=200)        
+sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)), until=200)
 ```
 
 The first argument to `in_volume` is a volume which applies to all of the nested output functions. Note that `to_appended`, `at_every`, and `in_volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
@@ -334,7 +334,7 @@ sim = mp.Simulation(cell_size=cell,
 nfreq = 100  # number of frequencies at which to compute flux
 
 # reflected flux
-refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))                            
+refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))
 refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
 # transmitted flux
@@ -348,7 +348,7 @@ The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from
 
 As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
 
-```py    
+```py
 pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,pt,1e-3))
@@ -372,7 +372,7 @@ We need to run the second simulation which involves the waveguide bend. We reset
 
 ```py
 sim.reset_meep()
-    
+
 geometry = [mp.Block(mp.Vector3(sx-pad,w,mp.inf), center=mp.Vector3(-0.5*pad,wvg_ycen), material=mp.Medium(epsilon=12)),
             mp.Block(mp.Vector3(w,sy-pad,mp.inf), center=mp.Vector3(wvg_xcen,0.5*pad), material=mp.Medium(epsilon=12))]
 
@@ -387,7 +387,7 @@ refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
 tran_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5,0), size=mp.Vector3(2*w,0,0))
 tran = sim.add_flux(fcen, df, nfreq, tran_fr)
-    
+
 # for normal run, load negated fields to subtract incident from refl. fields
 sim.load_minus_flux_data(refl, straight_refl_data)
 
@@ -402,7 +402,7 @@ flux_freqs = mp.get_flux_freqs(refl)
 ```
 
 With the flux data, we are ready to compute and plot the reflectance and transmittance. The reflectance is the reflected flux divided by the incident flux. We also have to multiply by -1 because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. The transmittance is the transmitted flux divided by the incident flux. Finally, the scattered loss is simply $1-transmittance-reflectance$. The results are plotted in the accompanying figure.
- 
+
 ```py
 wl = []
 Rs = []
@@ -410,7 +410,7 @@ Ts = []
 for i in range(nfreq):
     wl = np.append(wl, 1/flux_freqs[i])
     Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
-    Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])    
+    Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])
 
 if mp.am_master():
     plt.figure()
@@ -469,7 +469,7 @@ def main(args):
     fcen = 0.5*(fmin+fmax)  # center frequency
     df = fmax-fmin          # frequency width
     nfreq = 50              # number of frequency bins
-    
+
     # rotation angle (in degrees) of source: CCW around Y axis, 0 degrees along +Z axis
     theta_r = math.radians(args.theta)
 
@@ -481,7 +481,7 @@ def main(args):
         dimensions = 1
     else:
         dimensions = 3
-    
+
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                          component=mp.Ex,
                          center=mp.Vector3(0,0,-0.5*sz+dpml))]
@@ -495,7 +495,7 @@ def main(args):
 
     refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
     refl = sim.add_flux(fcen, df, nfreq, refl_fr)
-    
+
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
 
     empty_flux = mp.get_fluxes(refl)
@@ -522,10 +522,10 @@ def main(args):
 
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
-    
+
     for i in range(nfreq):
         print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-res', type=int, default=200, help='resolution (default: 200 pixels/um)')
@@ -882,7 +882,7 @@ for n in range(npts):
     E[n,:] = [np.conj(ff[j]) for j in range(3)]
     H[n,:] = [ff[j+3] for j in range(3)]
 
-# compute Poynting flux Pr in the radial direction.  At large r, 
+# compute Poynting flux Pr in the radial direction.  At large r,
 # all of the flux is radial so we can simply compute the magnitude of the Poynting vector.
 Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
 Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
@@ -1078,7 +1078,7 @@ Finally, we are ready to run the simulation. The basic idea is to run until the 
 sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
                     geometry=[c1, c2],
                     sources=[src],
-                    resolution=10,                    
+                    resolution=10,
                     boundary_layers=[mp.PML(dpml)])
 
 sim.run(mp.at_beginning(mp.output_epsilon),

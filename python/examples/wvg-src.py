@@ -1,7 +1,4 @@
-from __future__ import division
-
 import meep as mp
-
 
 # Example file illustrating an eigenmode source, generating a waveguide mode
 # (requires recent MPB version to be installed before Meep is compiled)

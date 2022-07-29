@@ -1,8 +1,10 @@
-import unittest
-import meep as mp
 import math
+import unittest
+
 import numpy as np
 from numpy import linalg as LA
+
+import meep as mp
 
 
 class TestNear2FarPeriodicBoundaries(unittest.TestCase):
@@ -87,7 +89,7 @@ class TestNear2FarPeriodicBoundaries(unittest.TestCase):
             dft_Ez = sim.get_dft_array(dft_obj, mp.Ez, 0)
 
             norm[j] = LA.norm(n2f_Ez["Ez"] - dft_Ez[1:-1])
-            print("norm:, {}, {:.5f}".format(res[j], norm[j]))
+            print(f"norm:, {res[j]}, {norm[j]:.5f}")
             sim.reset_meep()
 
         self.assertGreater(norm[0], norm[1])

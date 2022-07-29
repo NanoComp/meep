@@ -1,6 +1,4 @@
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
-from __future__ import division
-
 import meep as mp
 
 

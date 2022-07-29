@@ -1,14 +1,14 @@
 ### compute the transmitted diffraction orders of a binary grating using mode decomposition
 ### based on two different methods: (1) MPB eigensolver and (2) DiffractedPlanewave object.
 ### Also, verify that the total power in all the orders is equivalent to the Poynting flux.
-
 ### for normal incidence, compute only positive diff. orders (total transmittance <= 0.50)
 ### for oblique incidence, compute ALL diff. orders (total transmittance <= 1.00)
+import cmath
+import math
+
+import numpy as np
 
 import meep as mp
-import math
-import cmath
-import numpy as np
 
 
 def binary_grating_diffraction(gp, gh, gdc, theta):
@@ -172,7 +172,7 @@ def binary_grating_diffraction(gp, gh, gdc, theta):
         t_flux = 0.5 * t_flux
 
     err = abs(dp_sum - t_flux) / t_flux
-    print("flux:, {:.8f}, {:.8f}, {:.8f}, {:.8f}".format(eig_sum, dp_sum, t_flux, err))
+    print(f"flux:, {eig_sum:.8f}, {dp_sum:.8f}, {t_flux:.8f}, {err:.8f}")
 
 
 if __name__ == "__main__":

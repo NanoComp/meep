@@ -1,5 +1,6 @@
 import unittest
-from meep.materials import InP, Ge, Si, LiNbO3, SiO2_aniso, Ag, Cr
+
+from meep.materials import Ag, Cr, Ge, InP, LiNbO3, Si, SiO2_aniso
 
 
 class TestMaterialsLibrary(unittest.TestCase):

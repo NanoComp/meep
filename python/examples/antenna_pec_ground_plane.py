@@ -2,15 +2,15 @@
 # positioned a given height above a perfect-electric
 # conductor (PEC) ground plane and compares the result
 # to analytic theory.
+import math
+
+import matplotlib
+import numpy as np
 
 import meep as mp
-import math
-import numpy as np
-import matplotlib
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
-
 
 resolution = 200  # pixels/um
 n = 1.2  # refractive index of surrounding medium
@@ -194,4 +194,4 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig("radiation_pattern.png", bbox_inches="tight")
 
-    print("norm:, {:.6f}".format(np.linalg.norm(Pr_pec_norm - Pr_theory_norm)))
+    print(f"norm:, {np.linalg.norm(Pr_pec_norm - Pr_theory_norm):.6f}")

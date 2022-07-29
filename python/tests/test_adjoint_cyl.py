@@ -4,11 +4,13 @@ try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
+
+import unittest
+from enum import Enum
+
 import numpy as np
 from autograd import numpy as npa
 from autograd import tensor_jacobian_product
-import unittest
-from enum import Enum
 from utils import ApproxComparisonTestCase
 
 rng = np.random.RandomState(2)

@@ -1,11 +1,11 @@
-# -*- coding: utf-8 -*-
-
-import unittest
-import parameterized
-import meep as mp
-import math
 import cmath
+import math
+import unittest
+
 import numpy as np
+import parameterized
+
+import meep as mp
 
 
 class TestEigCoeffs(unittest.TestCase):
@@ -176,9 +176,9 @@ class TestEigCoeffs(unittest.TestCase):
         Rflux = -r_flux[0] / input_flux[0]
         Tflux = t_flux[0] / input_flux[0]
 
-        print("refl:, {}, {}".format(Rsum, Rflux))
-        print("tran:, {}, {}".format(Tsum, Tflux))
-        print("sum:,  {}, {}".format(Rsum + Tsum, Rflux + Tflux))
+        print(f"refl:, {Rsum}, {Rflux}")
+        print(f"tran:, {Tsum}, {Tflux}")
+        print(f"sum:,  {Rsum + Tsum}, {Rflux + Tflux}")
 
         self.assertAlmostEqual(Rsum, Rflux, places=2)
         self.assertAlmostEqual(Tsum, Tflux, places=2)
@@ -325,9 +325,9 @@ class TestEigCoeffs(unittest.TestCase):
         Rflux = -r_flux[0] / input_flux[0]
         Tflux = t_flux[0] / input_flux[0]
 
-        print("refl:, {}, {}".format(Rsum, Rflux))
-        print("tran:, {}, {}".format(Tsum, Tflux))
-        print("sum:,  {}, {}".format(Rsum + Tsum, Rflux + Tflux))
+        print(f"refl:, {Rsum}, {Rflux}")
+        print(f"tran:, {Tsum}, {Tflux}")
+        print(f"sum:,  {Rsum + Tsum}, {Rflux + Tflux}")
 
         self.assertAlmostEqual(Rsum, Rflux, places=2)
         self.assertAlmostEqual(Tsum, Tflux, places=2)

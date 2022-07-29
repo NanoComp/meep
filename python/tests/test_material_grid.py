@@ -4,9 +4,11 @@ try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
+
+import unittest
+
 import numpy as np
 from scipy.ndimage import gaussian_filter
-import unittest
 
 
 def compute_transmittance(matgrid_symmetry=False):

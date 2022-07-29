@@ -1,12 +1,10 @@
 # This example creates an approximate Ez-polarized planewave in vacuum
 # propagating at a 45-degree angle, by using a couple of current sources
 # with amplitude exp(ikx) corresponding to the desired planewave.
-from __future__ import division
-
 import cmath
 import math
-import meep as mp
 
+import meep as mp
 
 s = 11  # the size of the computational cell, not including PML
 dpml = 1  # thickness of PML layers

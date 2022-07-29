@@ -1,19 +1,20 @@
-# -*- coding: utf-8 -*-
 import functools
 import math
-import os
 import numbers
+import os
 import re
 import sys
 import time
 
 import h5py
 import numpy as np
-import meep as mp
-from . import mode_solver, with_hermitian_epsilon
 from meep.geom import init_do_averaging
 from meep.simulation import get_num_args
 from meep.verbosity_mgr import Verbosity
+
+import meep as mp
+
+from . import mode_solver, with_hermitian_epsilon
 
 try:
     basestring
@@ -70,7 +71,7 @@ class MPBArray(np.ndarray):
         self.bloch_phase = getattr(obj, "bloch_phase", False)
 
 
-class ModeSolver(object):
+class ModeSolver:
     def __init__(
         self,
         resolution=10,
@@ -642,7 +643,7 @@ class ModeSolver(object):
         curfield_type = "C"
         kpoint_index = self.mode_solver.get_kpoint_index()
         curfield_band = self.mode_solver.curfield_band
-        fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+        fname = f"{curfield_type}.k{kpoint_index:02d}.b{curfield_band:02d}"
         description = "{} field, kpoint {}, band {}, freq={:.6g}".format(
             curfield_type, kpoint_index, curfield_band, self.freqs[curfield_band - 1]
         )
@@ -668,7 +669,7 @@ class ModeSolver(object):
         components = ["x", "y", "z"]
         kpoint_index = self.mode_solver.get_kpoint_index()
         curfield_band = self.mode_solver.curfield_band
-        fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+        fname = f"{curfield_type}.k{kpoint_index:02d}.b{curfield_band:02d}"
 
         if component >= 0:
             fname += f".{components[component]}"
@@ -1099,15 +1100,15 @@ class ModeSolver(object):
         ks = list(reversed(ks))
         if verbosity.mpb > 0:
             print(
-                "{}kvals:, {}, {}, {}".format(self.parity, omega, band_min, band_max),
+                f"{self.parity}kvals:, {omega}, {band_min}, {band_max}",
                 end="",
             )
             for k in korig:
-                print(", {}".format(k), end="")
+                print(f", {k}", end="")
             for k in kdir1:
-                print(", {}".format(k), end="")
+                print(f", {k}", end="")
             for k in ks:
-                print(", {}".format(k), end="")
+                print(f", {k}", end="")
             print()
 
         return ks

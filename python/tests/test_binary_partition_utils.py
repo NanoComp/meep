@@ -1,11 +1,11 @@
 import copy
 import unittest
 
+import meep.binary_partition_utils as bpu
+import numpy as np
 import parameterized
 
 import meep as mp
-import meep.binary_partition_utils as bpu
-import numpy as np
 
 PARTITION_NO_DUPLICATE_PROC_ID = mp.BinaryPartition(
     data=[(mp.X, -2.0), 0, [(mp.Y, 1.5), [(mp.X, 4.0), 1, [(mp.Y, 0.5), 4, 3]], 2]]

@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-
-
-class Verbosity(object):
+class Verbosity:
     """
     A class to help make accessing and setting the global verbosity level a bit
     more pythonic. It manages one or more verbosity flags that are located in
@@ -53,7 +50,7 @@ class Verbosity(object):
         # Create the real instance only the first time, and return the same each
         # time Verbosity is called thereafter.
         if cls._instance is None:
-            cls._instance = super(Verbosity, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             cls._instance._init()
         return cls._instance
 
@@ -96,7 +93,7 @@ class Verbosity(object):
 
         # If a name is not given then manufacture one
         if name is None:
-            name = "cvar_{}".format(len(self._cvars))
+            name = f"cvar_{len(self._cvars)}"
         self._cvars[name] = cvar
 
         # And create a property for so it can be accessed like `verbosity.mpb`

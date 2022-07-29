@@ -1,7 +1,9 @@
-import meep as mp
-import numpy as np
 import math
+
 import matplotlib.pyplot as plt
+import numpy as np
+
+import meep as mp
 
 # True:  plot the scattered fields in the extended air region adjacent to the grating
 # False: plot the diffraction spectra based on a 1d cross section of the scattered fields

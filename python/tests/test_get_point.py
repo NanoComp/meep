@@ -1,7 +1,9 @@
-import meep as mp
-import unittest
-import numpy as np
 import math
+import unittest
+
+import numpy as np
+
+import meep as mp
 
 
 class TestGetPoint(unittest.TestCase):

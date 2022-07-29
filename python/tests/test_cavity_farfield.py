@@ -1,8 +1,10 @@
-import meep as mp
-from utils import ApproxComparisonTestCase
 import os
 import unittest
+
 import h5py
+from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestCavityFarfield(ApproxComparisonTestCase):
