@@ -19,7 +19,7 @@ def check_nonnegative(prop, val):
     if val >= 0:
         return val
     else:
-        raise ValueError("{} cannot be negative. Got {}".format(prop, val))
+        raise ValueError(f"{prop} cannot be negative. Got {val}")
 
 def init_do_averaging(mat_func):
     if not hasattr(mat_func, 'do_averaging'):
@@ -113,7 +113,7 @@ class Vector3(object):
         elif isinstance(other, Number):
             return self.scale(other)
         else:
-            raise TypeError("No operation known for 'Vector3 * {}'".format(type(other)))
+            raise TypeError(f"No operation known for 'Vector3 * {type(other)}'")
 
     def __truediv__(self, other):
         if type(other) is Vector3:
@@ -121,7 +121,7 @@ class Vector3(object):
         elif isinstance(other, Number):
             return Vector3(self.x / other, self.y / other, self.z / other)
         else:
-            raise TypeError("No operation known for 'Vector3 / {}'".format(type(other)))
+            raise TypeError(f"No operation known for 'Vector3 / {type(other)}'")
 
     def __rmul__(self, other):
         """
@@ -135,7 +135,7 @@ class Vector3(object):
         if isinstance(other, Number):
             return self.scale(other)
         else:
-            raise TypeError("No operation known for '{} * Vector3'".format(type(other)))
+            raise TypeError(f"No operation known for '{type(other)} * Vector3'")
 
     def __getitem__(self, i):
         if i == 0:
@@ -145,10 +145,10 @@ class Vector3(object):
         elif i == 2:
             return self.z
         else:
-            raise IndexError("No value at index {}".format(i))
+            raise IndexError(f"No value at index {i}")
 
     def __repr__(self):
-        return "Vector3<{}, {}, {}>".format(self.x, self.y, self.z)
+        return f"Vector3<{self.x}, {self.y}, {self.z}>"
 
     def __array__(self):
         return np.array([self.x, self.y, self.z])
@@ -423,8 +423,8 @@ class Medium(object):
         self.epsilon_offdiag = Vector3(*epsilon_offdiag)
         self.mu_diag = Vector3(*mu_diag)
         self.mu_offdiag = Vector3(*mu_offdiag)
-        self.E_susceptibilities = E_susceptibilities if E_susceptibilities else []
-        self.H_susceptibilities = H_susceptibilities if H_susceptibilities else []
+        self.E_susceptibilities = E_susceptibilities or []
+        self.H_susceptibilities = H_susceptibilities or []
         self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else Vector3(*E_chi2_diag)
         self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else Vector3(*E_chi3_diag)
         self.H_chi2_diag = Vector3(*H_chi2_diag)
@@ -501,9 +501,11 @@ class Medium(object):
 
         # Check for values outside of allowed ranges
         if np.min(np.squeeze(freqs)) < self.valid_freq_range.min:
-            raise ValueError('User specified frequency {} is below the Medium\'s limit, {}.'.format(np.min(np.squeeze(freqs)),self.valid_freq_range.min))
+            raise ValueError(f"User specified frequency {np.min(np.squeeze(freqs))} is below the Medium\'s limit, {self.valid_freq_range.min}.")
+
         if np.max(np.squeeze(freqs)) > self.valid_freq_range.max:
-            raise ValueError('User specified frequency {} is above the Medium\'s limit, {}.'.format(np.max(np.squeeze(freqs)),self.valid_freq_range.max))
+            raise ValueError(f"User specified frequency {np.max(np.squeeze(freqs))} is above the Medium\'s limit, {self.valid_freq_range.max}.")
+
 
         # Initialize with instantaneous dielectric tensor
         epsmu = np.expand_dims(Matrix(diag=diag,offdiag=offdiag),axis=0)
@@ -527,11 +529,10 @@ class MaterialGrid(object):
     argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
     """
     def check_weights(self, w):
-        if np.amin(w) < 0. or np.amax(w) > 1.:
-            warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
-            return np.clip(w, 0., 1.)
-        else:
+        if np.amin(w) >= 0.0 and np.amax(w) <= 1.0:
             return w
+        warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
+        return np.clip(w, 0., 1.)
 
     def __init__(self,
                  grid_size,
@@ -630,7 +631,8 @@ class MaterialGrid(object):
         Reset the `weights` to `x`.
         """
         if x.size != self.num_params:
-            raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(self.weights.size,self.grid_size))
+            raise ValueError(f"weights of shape {self.weights.size} do not match user specified grid dimension: {self.grid_size}")
+
         self.weights[:] = self.check_weights(x).flatten().astype(np.float64)
 
 class Susceptibility(object):
@@ -860,8 +862,8 @@ class MultilevelAtom(Susceptibility):
     """
     def __init__(self, initial_populations=None, transitions=None, **kwargs):
         super(MultilevelAtom, self).__init__(**kwargs)
-        self.initial_populations = initial_populations if initial_populations else []
-        self.transitions = transitions if transitions else []
+        self.initial_populations = initial_populations or []
+        self.transitions = transitions or []
 
 
 class Transition(object):
@@ -1263,13 +1265,13 @@ class Matrix(object):
         elif isinstance(m, Number):
             return self.scale(m)
         else:
-            raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
+            raise TypeError(f"No operation known for 'Matrix * {type(m)}'")
 
     def __rmul__(self, left_arg):
         if isinstance(left_arg, Number):
             return self.scale(left_arg)
         else:
-            raise TypeError("No operation known for 'Matrix * {}'".format(type(left_arg)))
+            raise TypeError(f"No operation known for 'Matrix * {type(left_arg)}'")
 
     def __truediv__(self, scalar):
         return Matrix(self.c1 / scalar, self.c2 / scalar, self.c3 / scalar)
@@ -1284,9 +1286,7 @@ class Matrix(object):
         r0 = self.row(0)
         r1 = self.row(1)
         r2 = self.row(2)
-        return "<<{} {} {}>\n <{} {} {}>\n <{} {} {}>>".format(r0[0], r0[1], r0[2],
-                                                               r1[0], r1[1], r1[2],
-                                                               r2[0], r2[1], r2[2])
+        return f"<<{r0[0]} {r0[1]} {r0[2]}>\n <{r1[0]} {r1[1]} {r1[2]}>\n <{r2[0]} {r2[1]} {r2[2]}>>"
 
     def __array__(self):
         return np.array([self.row(0).__array__(),
@@ -1446,10 +1446,7 @@ def reciprocal_to_cartesian(x, lat):
     m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
     Rst = (lat.basis * m).transpose()
 
-    if isinstance(x, Vector3):
-        return Rst.inverse() * x
-    else:
-        return (Rst.inverse() * x) * Rst
+    return Rst.inverse() * x if isinstance(x, Vector3) else (Rst.inverse() * x) * Rst
 
 
 def cartesian_to_reciprocal(x, lat):
@@ -1458,10 +1455,7 @@ def cartesian_to_reciprocal(x, lat):
     m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
     Rst = (lat.basis * m).transpose()
 
-    if isinstance(x, Vector3):
-        return Rst * x
-    else:
-        return (Rst * x) * Rst.inverse()
+    return Rst * x if isinstance(x, Vector3) else (Rst * x) * Rst.inverse()
 
 
 def lattice_to_reciprocal(x, lat):
@@ -1476,11 +1470,10 @@ def geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go):
 
     shift_vector = Vector3(*shift_vector)
     def _dup(min_multiple, lst):
-        if min_multiple <= max_multiple:
-            shifted = go.shift(shift_vector.scale(min_multiple))
-            return _dup(min_multiple + 1, [shifted] + lst)
-        else:
+        if min_multiple > max_multiple:
             return lst
+        shifted = go.shift(shift_vector.scale(min_multiple))
+        return _dup(min_multiple + 1, [shifted] + lst)
 
     return _dup(min_multiple, [])
 
@@ -1531,8 +1524,7 @@ def memoize(f):
     f_memo_tab = {}
 
     def _mem(y=None):
-        tab_val = f_memo_tab.get(y, None)
-        if tab_val:
+        if tab_val := f_memo_tab.get(y, None):
             return tab_val
 
         fy = f(y)
@@ -1550,9 +1542,7 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
     f_memo = memoize(f)
 
     def lazy(x):
-        if isinstance(x, numbers.Number):
-            return x
-        return x()
+        return x if isinstance(x, numbers.Number) else x()
 
     def pick_bound(which):
         def _pb():

@@ -33,9 +33,7 @@ class TestAntennaRadiation(ApproxComparisonTestCase):
 
         Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1]) # Ey*Hz-Ez*Hy
         Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2]) # Ez*Hx-Ex*Hz
-        Pr = np.sqrt(np.square(Px)+np.square(Py))
-
-        return Pr
+        return np.sqrt(np.square(Px)+np.square(Py))
 
 
     def free_space_radiation(self):
@@ -83,9 +81,7 @@ class TestAntennaRadiation(ApproxComparisonTestCase):
 
         sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
-        Pr = self.radial_flux(sim,nearfield_box,self.r)
-
-        return Pr
+        return self.radial_flux(sim,nearfield_box,self.r)
 
 
     def pec_ground_plane_radiation(self):
@@ -143,9 +139,7 @@ class TestAntennaRadiation(ApproxComparisonTestCase):
 
         sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
-        Pr = self.radial_flux(sim,nearfield_box,self.r)
-
-        return Pr
+        return self.radial_flux(sim,nearfield_box,self.r)
 
 
     def test_pec_ground_plane(self):

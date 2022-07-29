@@ -21,12 +21,12 @@ class TestLoadDump(ApproxComparisonTestCase):
     fname = fname_base + '-ez-000200.00.h5'
 
     def setUp(self):
-        print("Running {}".format(self._testMethodName))
+        print(f"Running {self._testMethodName}")
 
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = mp.make_output_directory()
-        print("Saving temp files to dir: {}".format(cls.temp_dir))
+        print(f"Saving temp files to dir: {cls.temp_dir}")
 
     @classmethod
     def tearDownClass(cls):

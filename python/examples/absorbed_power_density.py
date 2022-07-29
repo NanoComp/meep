@@ -64,7 +64,8 @@ dxy = 1/resolution**2
 absorbed_power = np.sum(absorbed_power_density)*dxy
 absorbed_flux = mp.get_fluxes(flux_box)[0]
 err = abs(absorbed_power-absorbed_flux)/absorbed_flux
-print("flux:, {} (dft_fields), {} (dft_flux), {} (error)".format(absorbed_power,absorbed_flux,err))
+print(f"flux:, {absorbed_power} (dft_fields), {absorbed_flux} (dft_flux), {err} (error)")
+
 
 plt.figure()
 sim.plot2D()

@@ -22,14 +22,8 @@ class ConnectivityConstraint(object):
         self.p = p
 
         #default alpha and alpha0
-        if alpha != None:
-            self.alpha=alpha
-        else:
-            self.alpha = 0.1*min(1/nx, 1/ny, 1/nz)
-        if alpha0 != None:
-            self.alpha0 = alpha0
-        else:
-            self.alpha0 = -np.log(thresh)/min(nx, nz)
+        self.alpha = alpha if alpha != None else 0.1*min(1/nx, 1/ny, 1/nz)
+        self.alpha0 = alpha0 if alpha0 != None else -np.log(thresh)/min(nx, nz)
 
     def forward(self, rho_vector):
         self.rho_vector = rho_vector

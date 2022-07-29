@@ -29,7 +29,7 @@ class DesignRegion(object):
             size=None,
             center=mp.Vector3()
     ):
-        self.volume = volume if volume else mp.Volume(center=center, size=size)
+        self.volume = volume or mp.Volume(center=center, size=size)
         self.size = self.volume.size
         self.center = self.volume.center
         self.design_parameters = design_parameters
@@ -118,17 +118,7 @@ def install_design_region_monitors(
     decimation_factor: int = 0,
 ) -> List[mp.DftFields]:
     """Installs DFT field monitors at the design regions of the simulation."""
-    design_region_monitors = [[
-        simulation.add_dft_fields(
-            [comp],
-            frequencies,
-            where=design_region.volume,
-            yee_grid=True,
-            decimation_factor=decimation_factor,
-            persist=True
-        ) for comp in _compute_components(simulation)
-    ] for design_region in design_regions ]
-    return design_region_monitors
+    return [[simulation.add_dft_fields([comp], frequencies, where=design_region.volume, yee_grid=True, decimation_factor=decimation_factor, persist=True) for comp in _compute_components(simulation)] for design_region in design_regions]
 
 
 def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
@@ -142,9 +132,7 @@ def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
       complex128.  Note that these values refer to the mode as oriented (i.e. they
       are unidirectional).
     """
-    monitor_values = []
-    for monitor in monitors:
-        monitor_values.append(monitor())
+    monitor_values = [monitor() for monitor in monitors]
     monitor_values = onp.array(monitor_values)
     assert monitor_values.ndim in [1, 2]
     monitor_values = _make_at_least_nd(monitor_values, 2)
@@ -206,19 +194,15 @@ def validate_and_update_design(
             design_variable) in enumerate(zip(design_regions,
                                               design_variables)):
         if design_variable.ndim not in [1, 2, 3]:
-            raise ValueError(
-                'Design variables should be 1D, 2D, or 3D, but the design variable '
-                'at index {} had a shape of {}.'.format(
-                    i, design_variable.shape))
+            raise ValueError(f'Design variables should be 1D, 2D, or 3D, but the design variable at index {i} had a shape of {design_variable.shape}.')
+
         design_region_shape = tuple(
             int(x) for x in design_region.design_parameters.grid_size)
         design_variable_padded_shape = design_variable.shape + (1, ) * (
             3 - design_variable.ndim)
         if design_variable_padded_shape != design_region_shape:
-            raise ValueError(
-                'The design variable at index {} with a shape of {} is '
-                'incompatible with the associated design region, which has a shape '
-                'of {}.'.format(i, design_variable.shape, design_region_shape))
+            raise ValueError(f'The design variable at index {i} with a shape of {design_variable.shape} is incompatible with the associated design region, which has a shape of {design_region_shape}.')
+
         design_variable = onp.asarray(design_variable, dtype=onp.float64)
         # Update the design variable in Meep
         design_region.update_design_parameters(design_variable.flatten())

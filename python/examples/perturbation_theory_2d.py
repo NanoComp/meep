@@ -134,7 +134,7 @@ def main(args):
 
     finite_diff_dw_dR = (frq_perturbed - frq_unperturbed) / dr
 
-    print("dwdR:, {} (pert. theory), {} (finite diff.)".format(perturb_theory_dw_dR,finite_diff_dw_dR))
+    print(f"dwdR:, {perturb_theory_dw_dR} (pert. theory), {finite_diff_dw_dR} (finite diff.)")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

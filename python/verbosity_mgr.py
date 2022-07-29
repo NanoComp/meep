@@ -63,7 +63,7 @@ class Verbosity(object):
         instance is created.
         """
         self._master_verbosity = -1
-        self._cvars = dict()
+        self._cvars = {}
 
     @classmethod
     def reset(cls):
@@ -152,7 +152,7 @@ class Verbosity(object):
         return self.get()
 
     def __repr__(self):
-        return "Verbosity: level={}".format(self.get())
+        return f"Verbosity: level={self.get()}"
 
     # Some comparison operators
     def __gt__(self, o): return self.get() > o

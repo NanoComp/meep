@@ -55,7 +55,7 @@ def main(args):
         50, mp.Ex, mp.Vector3(0, 0, 0.5*sz - dpml - 0.5), 1e-6))
 
     # sim.display_fluxes(trans)
-    print("harmonics:, {}, {}, {}, {}".format(k, amp, mp.get_fluxes(trans1)[0], mp.get_fluxes(trans3)[0]))
+    print(f"harmonics:, {k}, {amp}, {mp.get_fluxes(trans1)[0]}, {mp.get_fluxes(trans3)[0]}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

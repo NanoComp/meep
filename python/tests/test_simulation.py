@@ -20,7 +20,7 @@ class TestSimulation(unittest.TestCase):
     fname = fname_base + '-ez-000200.00.h5'
 
     def setUp(self):
-        print("Running {}".format(self._testMethodName))
+        print(f"Running {self._testMethodName}")
 
     @classmethod
     def setUpClass(cls):
@@ -141,8 +141,8 @@ class TestSimulation(unittest.TestCase):
         sim.use_output_directory(self.temp_dir)
         sim.run(mp.at_time(100, mp.output_efield_z), until=200)
 
-        fname = os.path.join(self.temp_dir,
-                             sim.get_filename_prefix() +  '-ez-000100.00.h5')
+        fname = os.path.join(self.temp_dir, f'{sim.get_filename_prefix()}-ez-000100.00.h5')
+
         self.assertTrue(os.path.exists(fname))
 
     def test_after_sources_and_time(self):
@@ -162,8 +162,8 @@ class TestSimulation(unittest.TestCase):
         sim.use_output_directory(self.temp_dir)
         sim.run(mp.with_prefix('test_prefix-', mp.at_end(mp.output_efield_z)), until=200)
 
-        fname = os.path.join(self.temp_dir, 'test_prefix-' + sim.get_filename_prefix() +
-                             '-ez-000200.00.h5')
+        fname = os.path.join(self.temp_dir, (f'test_prefix-{sim.get_filename_prefix()}' + '-ez-000200.00.h5'))
+
         self.assertTrue(os.path.exists(fname))
 
     def test_extra_materials(self):
@@ -598,7 +598,7 @@ class TestSimulation(unittest.TestCase):
             else:
                 self.assertFalse(result)
 
-            print("Estimated memory usage: {}".format(sim.get_estimated_memory_usage()))
+            print(f"Estimated memory usage: {sim.get_estimated_memory_usage()}")
 
         def mat_func(p):
             return mp.Medium()

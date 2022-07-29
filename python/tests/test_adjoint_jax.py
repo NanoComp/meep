@@ -205,13 +205,8 @@ class WrapperTest(ApproxComparisonTestCase):
             )
             monitor_values = wrapped_meep([x])
             s1p, s1m, s2m, s2p = monitor_values
-            if excite_port_idx == 0:
-                t = s2m / s1p
-            else:
-                t = s1m / s2p
-            # Mean transmission vs wavelength
-            t_mean = jnp.mean(jnp.square(jnp.abs(t)))
-            return t_mean
+            t = s2m / s1p if excite_port_idx == 0 else s1m / s2p
+            return jnp.mean(jnp.square(jnp.abs(t)))
 
         value, adjoint_grad = jax.value_and_grad(loss_fn)(
             x, excite_port_idx=excite_port_idx)

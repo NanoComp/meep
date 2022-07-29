@@ -11,13 +11,13 @@ class TestPrism(unittest.TestCase):
     cell = mp.Vector3(10,10)
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
-    vertices_file = os.path.join(data_dir, 'nonconvex_prism_vertices{}.npz'.format(idx))
+    vertices_file = os.path.join(data_dir, f'nonconvex_prism_vertices{idx}.npz')
     vertices_obj = np.load(vertices_file)
 
     ## prism verticies precomputed from analytic "blob" shape using
     ## marching squares algorithm of skimage.measure.find_contours
     ## ref: https://github.com/NanoComp/meep/pull/1142
-    vertices_data = vertices_obj["N{}".format(npts)]
+    vertices_data = vertices_obj[f"N{npts}"]
     vertices = [mp.Vector3(v[0],v[1],0) for v in vertices_data]
 
     geometry = [mp.Prism(vertices,
@@ -32,7 +32,7 @@ class TestPrism(unittest.TestCase):
 
     prism_eps = sim.integrate_field_function([mp.Dielectric], lambda r,eps: eps)
 
-    print("epsilon-sum:, {} (prism-msq)".format(abs(prism_eps)))
+    print(f"epsilon-sum:, {abs(prism_eps)} (prism-msq)")
 
     return prism_eps
 
@@ -49,7 +49,7 @@ class TestPrism(unittest.TestCase):
     ## prism vertices precomputed for a circle of radius 1.0 using
     ## marching squares algorithm of skimage.measure.find_contours
     ## ref: https://github.com/NanoComp/meep/issues/1060
-    vertices_data = vertices_obj["N{}".format(npts)]
+    vertices_data = vertices_obj[f"N{npts}"]
     vertices = [mp.Vector3(v[0],v[1],0) for v in vertices_data]
 
     geometry = [mp.Prism(vertices,
@@ -79,7 +79,9 @@ class TestPrism(unittest.TestCase):
 
     cyl_eps = sim.integrate_field_function([mp.Dielectric], lambda r,eps: eps)
 
-    print("epsilon-sum:, {} (prism-msq), {} (cylinder), {} (relative error)".format(abs(prism_eps),abs(cyl_eps),abs((prism_eps-cyl_eps)/cyl_eps)))
+    print(
+        f"epsilon-sum:, {abs(prism_eps)} (prism-msq), {abs(cyl_eps)} (cylinder), {abs((prism_eps-cyl_eps)/cyl_eps)} (relative error)"
+    )
 
     return abs((prism_eps-cyl_eps)/cyl_eps)
 
@@ -122,7 +124,9 @@ class TestPrism(unittest.TestCase):
 
     cyl_eps = sim.integrate_field_function([mp.Dielectric], lambda r,eps: eps)
 
-    print("epsilon-sum:, {} (prism-cyl), {} (cylinder), {} (relative error)".format(abs(prism_eps),abs(cyl_eps),abs((prism_eps-cyl_eps)/cyl_eps)))
+    print(
+        f"epsilon-sum:, {abs(prism_eps)} (prism-cyl), {abs(cyl_eps)} (cylinder), {abs((prism_eps-cyl_eps)/cyl_eps)} (relative error)"
+    )
 
     return abs((prism_eps-cyl_eps)/cyl_eps)
 
@@ -142,7 +146,7 @@ class TestPrism(unittest.TestCase):
 
     prism_eps = sim.integrate_field_function([mp.Dielectric], lambda r,eps: eps)
 
-    print("epsilon-sum:, {} (prism-gds)".format(abs(prism_eps)))
+    print(f"epsilon-sum:, {abs(prism_eps)} (prism-gds)")
 
     return prism_eps
 

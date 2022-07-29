@@ -31,11 +31,7 @@ class MPBData(object):
         if periods:
             self.multiply_size = [periods, periods, periods]
         else:
-            self.multiply_size = [
-                x if x else 1,
-                y if y else 1,
-                z if z else 1
-            ]
+            self.multiply_size = [x or 1, y or 1, z or 1]
 
         self.resolution = resolution
         self.phase_angle = phase_angle
@@ -61,7 +57,7 @@ class MPBData(object):
         out_dims = [1, 1, 1]
         rank = len(in_arr.shape)
         num_ones = 3 - rank
-        in_dims = [x for x in in_arr.shape] + [1] * num_ones
+        in_dims = list(in_arr.shape) + [1] * num_ones
 
         if np.iscomplexobj(in_arr):
             in_arr_re = np.real(in_arr)
@@ -91,7 +87,7 @@ class MPBData(object):
             N *= out_dims[i]
 
         if self.verbose:
-            print("Output data {}x{}x{}".format(out_dims[0], out_dims[1], out_dims[2]))
+            print(f"Output data {out_dims[0]}x{out_dims[1]}x{out_dims[2]}")
 
         out_arr_re = np.zeros(int(N))
 
@@ -103,11 +99,7 @@ class MPBData(object):
         flat_in_arr_re = in_arr_re.ravel()
         flat_in_arr_im = in_arr_im.ravel() if isinstance(in_arr_im, np.ndarray) else np.array([])
 
-        if self.kpoint:
-            kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z]
-        else:
-            kvector = []
-
+        kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z] if self.kpoint else []
         map_data(flat_in_arr_re, flat_in_arr_im, np.array(in_dims, dtype=np.intc),
                  out_arr_re, out_arr_im, np.array(out_dims, dtype=np.intc), self.coord_map,
                  kvector, self.pick_nearest, self.verbose, False)
@@ -131,13 +123,13 @@ class MPBData(object):
 
         d_in = [[in_x_re, in_x_im], [in_y_re, in_y_im], [in_z_re, in_z_im]]
         in_dims = [in_arr.shape[0], in_arr.shape[1], 1]
-        rank = 2
-
         if self.verbose:
             print("Found complex vector dataset...")
 
         if self.verbose:
             fmt = "Input data is rank {}, size {}x{}x{}."
+            rank = 2
+
             print(fmt.format(rank, in_dims[0], in_dims[1], in_dims[2]))
 
         # rotate vector field according to cart_map
@@ -179,11 +171,7 @@ class MPBData(object):
             fmt = "Output data {}x{}x{}."
             print(fmt.format(out_dims[0], out_dims[1], out_dims[2]))
 
-        if self.kpoint:
-            kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z]
-        else:
-            kvector = []
-
+        kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z] if self.kpoint else []
         converted = []
         for dim in range(3):
             out_arr_re = np.zeros(int(N))
@@ -240,11 +228,7 @@ class MPBData(object):
             # that our first vector (in the direction of ve) smoothly
             # interpolates between the original lattice vectors.
 
-            if self.have_ve:
-                ve = self.ve.unit()
-            else:
-                ve = Rout.c1.unit()
-
+            ve = self.ve.unit() if self.have_ve else Rout.c1.unit()
             # First, compute c1 in the direction of ve by smoothly
             # interpolating the old c1/c2/c3 (formula is slightly tricky)
             V = Rout.c1.cross(Rout.c2).dot(Rout.c3)

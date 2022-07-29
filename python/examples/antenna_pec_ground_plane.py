@@ -34,9 +34,7 @@ def radial_flux(sim,nearfield_box,r):
 
     Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1]) # Ey*Hz-Ez*Hy
     Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2]) # Ez*Hx-Ex*Hz
-    Pr = np.sqrt(np.square(Px)+np.square(Py))
-
-    return Pr
+    return np.sqrt(np.square(Px)+np.square(Py))
 
 
 def free_space_radiation(src_cmpt):
@@ -82,9 +80,7 @@ def free_space_radiation(src_cmpt):
 
     sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
-    Pr = radial_flux(sim,nearfield_box,r)
-
-    return Pr
+    return radial_flux(sim,nearfield_box,r)
 
 
 def pec_ground_plane_radiation(src_cmpt=mp.Hz):
@@ -146,9 +142,7 @@ def pec_ground_plane_radiation(src_cmpt=mp.Hz):
 
     sim.run(until_after_sources=mp.stop_when_dft_decayed())
 
-    Pr = radial_flux(sim,nearfield_box,r)
-
-    return Pr
+    return radial_flux(sim,nearfield_box,r)
 
 
 if __name__ == '__main__':
@@ -175,7 +169,8 @@ if __name__ == '__main__':
     plt.plot(np.degrees(angles),Pr_theory_norm,'r-',label='theory')
     plt.xlabel('angle (degrees)')
     plt.ylabel('radial flux (normalized by maximum flux)')
-    plt.title('antenna with {}$_z$ polarization above PEC ground plane'.format('E' if src_cmpt==mp.Ez else r'H'))
+    plt.title(f"antenna with {'E' if src_cmpt==mp.Ez else r'H'}$_z$ polarization above PEC ground plane")
+
     plt.axis([0,90,0,1.0])
     plt.legend()
     plt.savefig('radiation_pattern.png',bbox_inches='tight')

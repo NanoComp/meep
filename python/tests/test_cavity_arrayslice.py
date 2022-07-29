@@ -27,11 +27,8 @@ class TestCavityArraySlice(ApproxComparisonTestCase):
 
         geometry = [blk]
 
-        for i in range(3):
-            geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
-
-        for i in range(3):
-            geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)))
+        geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)) for i in range(3))
+        geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)) for i in range(3))
 
         sources = [mp.Source(mp.GaussianSource(0.25, fwidth=0.2), mp.Hz, mp.Vector3())]
 

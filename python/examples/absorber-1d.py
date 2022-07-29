@@ -18,7 +18,7 @@ def main(args):
 
     def print_stuff(sim):
         p = sim.get_field_point(mp.Ex, mp.Vector3())
-        print("ex:, {}, {}".format(sim.meep_time(), p.real))
+        print(f"ex:, {sim.meep_time()}, {p.real}")
 
     sim = mp.Simulation(cell_size=cell_size,
                         resolution=resolution,

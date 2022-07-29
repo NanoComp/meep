@@ -63,8 +63,7 @@ class TestSpecialKz(unittest.TestCase):
 
         refl_flux = mp.get_fluxes(refl)
 
-        Rmeep = -refl_flux[0]/empty_flux[0]
-        return Rmeep
+        return -refl_flux[0]/empty_flux[0]
 
 
     def test_special_kz(self):

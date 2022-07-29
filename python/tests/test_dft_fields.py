@@ -26,10 +26,8 @@ class TestDFTFields(ApproxComparisonTestCase):
         cell = mp.Vector3(self.sxy, self.sxy)
         pml_layers = [mp.PML(self.dpml)]
 
-        geometry = [
-            mp.Cylinder(r + w, material=mp.Medium(epsilon=n * n)),
-            mp.Cylinder(r, material=mp.vacuum),
-        ]
+        geometry = [mp.Cylinder(r + w, material=mp.Medium(epsilon=n**2)), mp.Cylinder(r, material=mp.vacuum)]
+
         self.fcen = 0.118
         self.df = 0.1
 

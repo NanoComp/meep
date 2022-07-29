@@ -28,7 +28,7 @@ def refl_planar(theta, kz_2d):
 
     refl_fr = mp.FluxRegion(center=mp.Vector3(-0.25*sx))
     refl = sim.add_flux(fcen, 0, 1, refl_fr)
-    
+
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ey, mp.Vector3(-0.5*sx+dpml), 1e-9))
 
     input_flux = mp.get_fluxes(refl)
@@ -56,8 +56,7 @@ def refl_planar(theta, kz_2d):
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
 
-    Rmeep = -refl_flux[0]/input_flux[0]
-    return Rmeep
+    return -refl_flux[0]/input_flux[0]
 
 
 # rotation angle of source: CCW around Y axis, 0 degrees along +X axis
@@ -78,4 +77,4 @@ theta_out = lambda theta_in: math.asin(n1*math.sin(theta_in)/n2)
 # for incident planewave in medium n1 at angle theta_in
 Rfresnel = lambda theta_in: math.fabs((n2*math.cos(theta_out(theta_in))-n1*math.cos(theta_in))/(n2*math.cos(theta_out(theta_in))+n1*math.cos(theta_in)))**2
 
-print("refl:, {} (real/imag), {} (complex), {} (3d), {} (analytic)".format(Rmeep_real_imag,Rmeep_complex,Rmeep_3d,Rfresnel(theta_r)))
+print(f"refl:, {Rmeep_real_imag} (real/imag), {Rmeep_complex} (complex), {Rmeep_3d} (3d), {Rfresnel(theta_r)} (analytic)")

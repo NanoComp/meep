@@ -98,9 +98,7 @@ class TestSourceTypemaps(unittest.TestCase):
 
         # Bump function
         def my_src_func(t):
-            if t > 0 and t < 2:
-                return math.exp(-1 / (1 - ((t - 1)**2)))
-            return 0j
+            return math.exp(-1 / (1 - ((t - 1)**2))) if t > 0 and t < 2 else 0j
 
         sources = [mp.Source(src=mp.CustomSource(src_func=my_src_func, end_time=100),
                              component=mp.Ez, center=mp.Vector3(r + 0.1))]

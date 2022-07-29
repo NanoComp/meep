@@ -9,7 +9,7 @@ def metal_cavity(w):
     resolution = 50
     sxy = 2
     dpml = 1
-    sxy = sxy+2*dpml
+    sxy += 2*dpml
     cell = mp.Vector3(sxy,sxy)
 
     pml_layers = [mp.PML(dpml)]
@@ -60,7 +60,7 @@ ldos_2 = np.zeros(len(ws))
 
 for j in range(len(ws)):
     ldos_1[j], ldos_2[j] = metal_cavity(ws[j])
-    print("ldos:, {}, {}".format(ldos_1[j],ldos_2[2]))
+    print(f"ldos:, {ldos_1[j]}, {ldos_2[2]}")
 
 plt.figure(dpi=150)
 plt.semilogy(1/ws,ldos_1,'bo-',label="2Q/(πωV)")

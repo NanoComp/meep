@@ -62,11 +62,13 @@ flat_dft = sim.get_dft_array(near_fields, mp.Ez, 0)
 
 sim.reset_meep()
 
-for j in range(num_cells):
-  geometry.append(mp.Block(material=glass,
-                           size=mp.Vector3(gh,gdc*gp,mp.inf),
-                           center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,-0.5*sy+dpml+dpad+(j+0.5)*gp)))
-
+geometry.extend(
+    mp.Block(
+        material=glass,
+        size=mp.Vector3(gh, gdc * gp, mp.inf),
+        center=mp.Vector3(-0.5 * sx + dpml + dsub + 0.5 * gh, -0.5 * sy +
+                          dpml + dpad + (j + 0.5) * gp))
+    for j in range(num_cells))
 sim = mp.Simulation(resolution=resolution,
                     cell_size=cell_size,
                     boundary_layers=pml_layers,

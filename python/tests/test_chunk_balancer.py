@@ -30,11 +30,8 @@ class MockSimulation(mp.Simulation):
 
     def _structure_get_chunk_owners(self):
         # Hacky workaround to make this test work on single-core systems
-        proc_ids = []
-        for leaf in bpu.enumerate_leaf_nodes(self.chunk_layout):
-            # it seems that grid volumes are enumerated
-            # in the same order as enumerate_leaf_nodes()
-            proc_ids.append(leaf.proc_id)
+        proc_ids = [leaf.proc_id for leaf in bpu.enumerate_leaf_nodes(self.chunk_layout)]
+
         return np.array(proc_ids)
 
     def init_sim(self):

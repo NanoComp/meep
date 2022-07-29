@@ -58,21 +58,20 @@ class OptimizationProblem(object):
         if frequencies is not None:
             self.frequencies = frequencies
             self.nf = np.array(frequencies).size
+        elif nf == 1:
+            self.nf = nf
+            self.frequencies = [fcen]
         else:
-            if nf == 1:
-                self.nf = nf
-                self.frequencies = [fcen]
-            else:
-                fmax = fcen + 0.5 * df
-                fmin = fcen - 0.5 * df
-                dfreq = (fmax - fmin) / (nf - 1)
-                self.frequencies = np.linspace(
-                    fmin,
-                    fmin + dfreq * nf,
-                    num=nf,
-                    endpoint=False,
-                )
-                self.nf = nf
+            fmax = fcen + 0.5 * df
+            fmin = fcen - 0.5 * df
+            dfreq = (fmax - fmin) / (nf - 1)
+            self.frequencies = np.linspace(
+                fmin,
+                fmin + dfreq * nf,
+                num=nf,
+                endpoint=False,
+            )
+            self.nf = nf
 
         if self.nf == 1:
             self.fcen_idx = 0
@@ -128,8 +127,7 @@ class OptimizationProblem(object):
                 print("Calculating gradient...")
                 self.calculate_gradient()
             else:
-                raise ValueError("Incorrect solver state detected: {}".format(
-                    self.current_state))
+                raise ValueError(f"Incorrect solver state detected: {self.current_state}")
 
         return self.f0, self.gradient
 
@@ -160,10 +158,7 @@ class OptimizationProblem(object):
         self.sim.change_sources(self.forward_sources)
 
         # register user specified monitors
-        self.forward_monitors = [
-        ]  # save reference to monitors so we can track dft convergence
-        for m in self.objective_arguments:
-            self.forward_monitors.append(m.register_monitors(self.frequencies))
+        self.forward_monitors = [m.register_monitors(self.frequencies) for m in self.objective_arguments]
 
         # register design region
         self.forward_design_region_monitors = utils.install_design_region_monitors(
@@ -187,15 +182,12 @@ class OptimizationProblem(object):
                 self.maximum_run_time))
 
         # record objective quantities from user specified monitors
-        self.results_list = []
-        for m in self.objective_arguments:
-            self.results_list.append(m())
-
+        self.results_list = [m() for m in self.objective_arguments]
         # evaluate objectives
         self.f0 = [fi(*self.results_list) for fi in self.objective_functions]
         if len(self.f0) == 1:
             self.f0 = self.f0[0]
-        
+
         # store objective function evaluation in memory
         self.f_bank.append(self.f0)
 
@@ -204,8 +196,7 @@ class OptimizationProblem(object):
 
     def prepare_adjoint_run(self):
         # Compute adjoint sources
-        self.adjoint_sources = [[]
-                                for i in range(len(self.objective_functions))]
+        self.adjoint_sources = [[] for _ in range(len(self.objective_functions))]
         for ar in range(len(self.objective_functions)):
             for mi, m in enumerate(self.objective_arguments):
                 dJ = jacobian(self.objective_functions[ar],
@@ -277,11 +268,10 @@ class OptimizationProblem(object):
             if len(self.gradient) == 1:
                 self.gradient = self.gradient[
                     0]  # only one objective function and one design region
-        else:
-            if len(self.gradient[0]) == 1:
-                self.gradient = [
-                    g[0] for g in self.gradient
-                ]  # multiple objective functions bu one design region
+        elif len(self.gradient[0]) == 1:
+            self.gradient = [
+                g[0] for g in self.gradient
+            ]  # multiple objective functions bu one design region
         # Return optimizer's state to initialization
         self.current_state = "INIT"
 
@@ -354,10 +344,7 @@ class OptimizationProblem(object):
                 b0)
 
             # initialize design monitors
-            self.forward_monitors = []
-            for m in self.objective_arguments:
-                self.forward_monitors.append(
-                    m.register_monitors(self.frequencies))
+            self.forward_monitors = [m.register_monitors(self.frequencies) for m in self.objective_arguments]
 
             if any(isinstance(m, LDOS) for m in self.objective_arguments):
                 self.sim.run(mp.dft_ldos(self.frequencies), until_after_sources=mp.stop_when_energy_decayed(dt=1, decay_by=1e-11))
@@ -368,9 +355,7 @@ class OptimizationProblem(object):
                     self.maximum_run_time))
 
             # record final objective function value
-            results_list = []
-            for m in self.objective_arguments:
-                results_list.append(m())
+            results_list = [m() for m in self.objective_arguments]
             fm = [fi(*results_list) for fi in self.objective_functions]
 
             # -------------------------------------------- #
@@ -379,17 +364,12 @@ class OptimizationProblem(object):
             self.sim.reset_meep()
 
             # assign new design vector
-            if in_interior: b0[k] += 2 * db  # central difference rule...
-            else: b0[k] += db  # forward or backward  difference...
-
+            b0[k] += 2 * db if in_interior else db
             self.design_regions[design_variables_idx].update_design_parameters(
                 b0)
 
             # initialize design monitors
-            self.forward_monitors = []
-            for m in self.objective_arguments:
-                self.forward_monitors.append(
-                    m.register_monitors(self.frequencies))
+            self.forward_monitors = [m.register_monitors(self.frequencies) for m in self.objective_arguments]
 
             # add monitor used to track dft convergence
             if any(isinstance(m, LDOS) for m in self.objective_arguments):
@@ -401,9 +381,7 @@ class OptimizationProblem(object):
                     self.maximum_run_time))
 
             # record final objective function value
-            results_list = []
-            for m in self.objective_arguments:
-                results_list.append(m())
+            results_list = [m() for m in self.objective_arguments]
             fp = [fi(*results_list) for fi in self.objective_functions]
 
             # -------------------------------------------- #
@@ -440,10 +418,7 @@ class OptimizationProblem(object):
     def get_objective_arguments(self):
         '''Return list of evaluated objective arguments.
         '''
-        objective_args_evaluation = [
-            m.get_evaluation() for m in self.objective_arguments
-        ]
-        return objective_args_evaluation
+        return [m.get_evaluation() for m in self.objective_arguments]
 
     def plot2D(self, init_opt=False, **kwargs):
         """Produce a graphical visualization of the geometry and/or fields,
@@ -493,7 +468,4 @@ def atleast_3d(*arys):
         else:
             result = ary
         res.append(result)
-    if len(res) == 1:
-        return res[0]
-    else:
-        return res
+    return res[0] if len(res) == 1 else res

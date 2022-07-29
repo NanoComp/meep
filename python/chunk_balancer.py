@@ -130,9 +130,7 @@ class AbstractChunkBalancer(abc.ABC):
             node.proc_id for node in bpu.enumerate_leaf_nodes(sim.chunk_layout)
         ]
         if set(chunk_owners) != set(proc_ids):
-            raise ValueError(
-                'Processes {} present in chunk_layout but not grid_owners!'.format(
-                    set(proc_ids) - set(chunk_owners)))
+            raise ValueError(f'Processes {set(proc_ids) - set(chunk_owners)} present in chunk_layout but not grid_owners!')
 
 
 class ChunkBalancer(AbstractChunkBalancer):

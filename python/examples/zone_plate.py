@@ -44,10 +44,7 @@ geometry = [mp.Block(material=glass,
                      size=mp.Vector3(sr,0,dpml+dsub),
                      center=mp.Vector3(0.5*sr,0,-0.5*sz+0.5*(dpml+dsub)))]
 
-for n in range(zN-1,-1,-1):
-    geometry.append(mp.Block(material=glass if n % 2 == 0 else mp.vacuum,
-                             size=mp.Vector3(r[n],0,zh),
-                             center=mp.Vector3(0.5*r[n],0,-0.5*sz+dpml+dsub+0.5*zh)))
+geometry.extend(mp.Block(material=glass if n % 2 == 0 else mp.vacuum, size=mp.Vector3(r[n], 0, zh), center=mp.Vector3(0.5 * r[n], 0, -0.5 * sz + dpml + dsub + 0.5 * zh)) for n in range(zN - 1, -1, -1))
 
 sim = mp.Simulation(cell_size=cell_size,
                     boundary_layers=pml_layers,
@@ -90,7 +87,7 @@ if mp.am_master():
     plt.subplot(1,2,1)
     plt.semilogy(np.linspace(0,sr-dpml,len(E2_r)),E2_r,'bo-')
     plt.xlim(-2,20)
-    plt.xticks([t for t in np.arange(0,25,5)])
+    plt.xticks(list(np.arange(0,25,5)))
     plt.grid(True,axis="y",which="both",ls="-")
     plt.xlabel(r'$r$ coordinate (μm)')
     plt.ylabel(r'energy density of far fields, |E|$^2$')
@@ -99,6 +96,7 @@ if mp.am_master():
     plt.grid(True,axis="y",which="both",ls="-")
     plt.xlabel(r'$z$ coordinate (μm)')
     plt.ylabel(r'energy density of far fields, |E|$^2$')
-    plt.suptitle(r"binary-phase zone plate with focal length $z$ = {} μm".format(focal_length))
+    plt.suptitle(f"binary-phase zone plate with focal length $z$ = {focal_length} μm")
+
     plt.tight_layout()
     plt.savefig("zone_plate_farfields.png")

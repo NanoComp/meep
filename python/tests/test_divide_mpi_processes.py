@@ -19,7 +19,7 @@ class TestDivideParallelProcesses(unittest.TestCase):
         sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
                              center=mp.Vector3(),
                              component=mp.Ez)]
-        
+
         symmetries = [mp.Mirror(mp.X),
                       mp.Mirror(mp.Y)]
 
@@ -29,7 +29,7 @@ class TestDivideParallelProcesses(unittest.TestCase):
                                  symmetries=symmetries,
                                  boundary_layers=pml_layers)
 
-    
+
         flux_box = self.sim.add_flux(fcen, 0, 1,
                                      mp.FluxRegion(mp.Vector3(y=0.5*sxy), size=mp.Vector3(sxy)),
                                      mp.FluxRegion(mp.Vector3(y=-0.5*sxy), size=mp.Vector3(sxy), weight=-1),
@@ -40,7 +40,7 @@ class TestDivideParallelProcesses(unittest.TestCase):
         self.sim.run(until_after_sources=30)
 
         tot_flux = mp.get_fluxes(flux_box)[0]
-        
+
         tot_fluxes = mp.merge_subgroup_data(tot_flux)
         fcens = mp.merge_subgroup_data(fcen)            
 

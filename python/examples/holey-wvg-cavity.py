@@ -14,7 +14,7 @@ import meep as mp
 
 def main(args):
     resolution = 20 # pixels/um
-    
+
     eps = 13      # dielectric constant of waveguide
     w = 1.2       # width of waveguide
     r = 0.36      # radius of holes
@@ -40,8 +40,6 @@ def main(args):
 
     fcen = args.fcen  # pulse center frequency
     df = args.df      # pulse frequency width
-    nfreq = 500       # number of frequencies at which to compute flux
-
     sim = mp.Simulation(cell_size=cell,
                         geometry=geometry,
                         sources=[],
@@ -71,6 +69,8 @@ def main(args):
 
         freg = mp.FluxRegion(center=mp.Vector3(0.5*sx-dpml-0.5),
                              size=mp.Vector3(0,2*w))
+
+        nfreq = 500       # number of frequencies at which to compute flux
 
         # transmitted flux
         trans = sim.add_flux(fcen, df, nfreq, freg)

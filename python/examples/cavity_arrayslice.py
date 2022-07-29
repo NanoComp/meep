@@ -23,11 +23,8 @@ blk = mp.Block(size=mp.Vector3(mp.inf, w, mp.inf),
 
 geometry = [blk]
 
-for i in range(3):
-    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
-
-for i in range(3):
-    geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)))
+geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)) for i in range(3))
+geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)) for i in range(3))
 
 sim = mp.Simulation(cell_size=cell,
                     geometry=geometry,

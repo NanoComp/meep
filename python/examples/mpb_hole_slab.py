@@ -41,11 +41,7 @@ K = mp.Vector3(1 / -3, 1 / 3)
 
 only_K = False  # run with only_K=true to only do this k_point
 k_interp = 4   # the number of k points to interpolate
-if only_K:
-    k_points = [K]
-else:
-    k_points = mp.interpolate(k_interp, [Gamma, M, K, Gamma])
-
+k_points = [K] if only_K else mp.interpolate(k_interp, [Gamma, M, K, Gamma])
 resolution = mp.Vector3(32, 32, 16)
 num_bands = 9
 

@@ -48,7 +48,7 @@ flux1 = sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(-6.0), size=mp.Vector3
 flux2 = sim.flux_in_box(mp.X, mp.Volume(center=mp.Vector3(6.0), size=mp.Vector3(1.8, 6)))
 
 # averaged over y region of width 1.8
-print("left-going flux = {}".format(flux1 / -1.8))
+print(f"left-going flux = {flux1 / -1.8}")
 
 # averaged over y region of width 1.8
-print("right-going flux = {}".format(flux2 / 1.8))
+print(f"right-going flux = {flux2 / 1.8}")

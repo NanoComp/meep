@@ -24,7 +24,7 @@ def create_ring_gds(radius,width):
     # Reload the library each time to prevent gds library name clashes
     importlib.reload(gdspy)
 
-    ringCell = gdspy.Cell("ring_resonator_r{}_w{}".format(radius,width))
+    ringCell = gdspy.Cell(f"ring_resonator_r{radius}_w{width}")
 
     # Draw the ring
     ringCell.add(gdspy.Round((0,0),
@@ -53,7 +53,7 @@ def create_ring_gds(radius,width):
                                  (radius+width/2+pad,radius+width/2+pad),
                                  SIMULATION_LAYER))
 
-    filename = "ring_r{}_w{}.gds".format(radius,width)
+    filename = f"ring_r{radius}_w{width}.gds"
     gdspy.write_gds(filename, unit=1.0e-6, precision=1.0e-9)
 
     return filename
@@ -109,4 +109,4 @@ if __name__ == '__main__':
     filename = create_ring_gds(2.0,0.5)
     wvls, Qs = find_modes(filename,1.55,0.05)
     for w, Q in zip(wvls,Qs):
-        print("mode: {}, {}".format(w,Q))
+        print(f"mode: {w}, {Q}")

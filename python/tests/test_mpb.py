@@ -167,10 +167,7 @@ class TestModeSolver(unittest.TestCase):
     def test_first_brillouin_zone(self):
         ms = self.init_solver()
 
-        res = []
-        for k in ms.k_points:
-            res.append(ms.first_brillouin_zone(k))
-
+        res = [ms.first_brillouin_zone(k) for k in ms.k_points]
         expected = [
             mp.Vector3(0.0, 0.0, 0.0),
             mp.Vector3(0.10000000000000003, 0.0, 0.0),
@@ -219,9 +216,9 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, 'r') as ref:
             # Reshape the reference data into a component-wise 1d array like
             # [x1,y1,z1,x2,y2,z2,etc.]
-            ref_x = mp.complexarray(ref["x.r{}".format(suffix)][()], ref["x.i{}".format(suffix)][()])
-            ref_y = mp.complexarray(ref["y.r{}".format(suffix)][()], ref["y.i{}".format(suffix)][()])
-            ref_z = mp.complexarray(ref["z.r{}".format(suffix)][()], ref["z.i{}".format(suffix)][()])
+            ref_x = mp.complexarray(ref[f"x.r{suffix}"][()], ref[f"x.i{suffix}"][()])
+            ref_y = mp.complexarray(ref[f"y.r{suffix}"][()], ref[f"y.i{suffix}"][()])
+            ref_z = mp.complexarray(ref[f"z.r{suffix}"][()], ref[f"z.i{suffix}"][()])
 
             ref_arr = np.zeros(np.prod(field.shape), dtype=np.complex128)
             ref_arr[0::3] = ref_x.ravel()
@@ -370,12 +367,12 @@ class TestModeSolver(unittest.TestCase):
     def _test_get_field(self, field):
         ms = self.init_solver()
         ms.run_te()
-        get_field_func = getattr(ms, "get_{}field".format(field))
-        fix_phase_func = getattr(mpb, "fix_{}field_phase".format(field))
+        get_field_func = getattr(ms, f"get_{field}field")
+        fix_phase_func = getattr(mpb, f"fix_{field}field_phase")
         fix_phase_func(ms, ms.num_bands)
         fields = get_field_func(ms.num_bands)
 
-        ref_fname = "tutorial-{}.k16.b08.te.h5".format(field)
+        ref_fname = f"tutorial-{field}.k16.b08.te.h5"
         ref_path = os.path.join(self.data_dir, ref_fname)
 
         self.check_fields_against_h5(ref_path, fields)
@@ -400,7 +397,7 @@ class TestModeSolver(unittest.TestCase):
         ms.run_te()
         ms.output_epsilon()
 
-        res_path = self.filename_prefix + '-epsilon.h5'
+        res_path = f'{self.filename_prefix}-epsilon.h5'
         self.compare_h5_files(data_path, res_path)
 
     def test_compute_field_energy(self):

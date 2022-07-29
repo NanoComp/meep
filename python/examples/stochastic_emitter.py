@@ -51,11 +51,8 @@ if args.textured:
 
 def compute_flux(m=1,n=0):
     if m == 1:
-        sources = []
-        for n in range(ndipole):
-            sources.append(mp.Source(mp.CustomSource(src_func=lambda t: np.random.randn()),
-                                     component=mp.Ez,
-                                     center=mp.Vector3(sx*(-0.5+n/ndipole),-0.5*sy+dAg+0.5*dsub)))
+        sources = [mp.Source(mp.CustomSource(src_func=lambda t: np.random.randn()), component=mp.Ez, center=mp.Vector3(sx * (-0.5 + n / ndipole), -0.5 * sy + dAg + 0.5 * dsub)) for n in range(ndipole)]
+
     else:
         sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                              component=mp.Ez,
@@ -92,5 +89,5 @@ else:
 
 
 if mp.am_master():
-    with open('method{}_{}_res{}_nfreq{}_ndipole{}.npz'.format(args.method,"textured" if args.textured else "flat",resolution,nfreq,ndipole),'wb') as f:
+    with open(f'method{args.method}_{"textured" if args.textured else "flat"}_res{resolution}_nfreq{nfreq}_ndipole{ndipole}.npz', 'wb') as f:
         np.savez(f,freqs=freqs,fluxes=fluxes)

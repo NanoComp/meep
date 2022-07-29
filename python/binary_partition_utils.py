@@ -30,10 +30,8 @@ def enumerate_leaf_nodes(
     if is_leaf_node(partition):
         yield partition
     else:
-        for child in enumerate_leaf_nodes(partition.left):
-            yield child
-        for child in enumerate_leaf_nodes(partition.right):
-            yield child
+        yield from enumerate_leaf_nodes(partition.left)
+        yield from enumerate_leaf_nodes(partition.right)
 
 
 def partition_has_duplicate_proc_ids(partition: mp.BinaryPartition) -> bool:
@@ -219,10 +217,8 @@ def get_total_volume_per_process(partition: mp.BinaryPartition,
     volumes_per_process = {}
     leaf_nodes_in_tree = enumerate_leaf_nodes(partition)
     for leaf in leaf_nodes_in_tree:
-        total_volume = 0
-        for i, owner in enumerate(chunk_owners):
-            if owner == leaf.proc_id:
-                total_volume += pixel_volume(chunk_volumes[i])
+        total_volume = sum(pixel_volume(chunk_volumes[i]) for i, owner in enumerate(chunk_owners) if owner == leaf.proc_id)
+
         volumes_per_process[leaf.proc_id] = total_volume
     return volumes_per_process
 

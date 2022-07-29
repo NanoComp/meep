@@ -56,9 +56,9 @@ def grating(gp,gh,gdc_list):
     flux_obj = sim.add_flux(fcen, 0, 1, mp.FluxRegion(center=mon_pt, size=mp.Vector3(y=sy)))
 
     sim.run(until_after_sources=50)
-    
+
     input_flux = mp.get_fluxes(flux_obj)
-  
+
     sim.reset_meep()
 
     geometry.append(mp.Block(material=glass, size=mp.Vector3(gh,gdc_list[0]*gp,mp.inf), center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh)))
@@ -83,10 +83,10 @@ def grating(gp,gh,gdc_list):
     mode_phase = np.angle(coeffs[0,0,0])
     if mode_phase > 0:
       mode_phase -= 2*np.pi
-  
+
     return mode_tran, mode_phase
-  
-  else:    
+
+  else:  
     sy = num_cells*gp
     cell_size = mp.Vector3(sx,sy,0)
 
@@ -95,11 +95,12 @@ def grating(gp,gh,gdc_list):
                          center=src_pt,
                          size=mp.Vector3(y=sy))]
 
-    for j in range(num_cells):
-      geometry.append(mp.Block(material=glass,
-                               size=mp.Vector3(gh,gdc_list[j]*gp,mp.inf),
-                               center=mp.Vector3(-0.5*sx+dpml+dsub+0.5*gh,-0.5*sy+(j+0.5)*gp)))
-
+    geometry.extend(
+        mp.Block(
+            material=glass,
+            size=mp.Vector3(gh, gdc_list[j] * gp, mp.inf),
+            center=mp.Vector3(-0.5 * sx + dpml + dsub + 0.5 * gh, -0.5 * sy +
+                              (j + 0.5) * gp)) for j in range(num_cells))
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
                         boundary_layers=pml_layers,
@@ -111,7 +112,7 @@ def grating(gp,gh,gdc_list):
     n2f_obj = sim.add_near2far(fcen, 0, 1, mp.Near2FarRegion(center=mon_pt, size=mp.Vector3(y=sy)))
 
     sim.run(until_after_sources=500)
-    
+
     return abs(sim.get_farfields(n2f_obj, ff_res, center=mp.Vector3(-0.5*sx+dpml+dsub+gh+focal_length), size=mp.Vector3(spot_length))['Ez'])**2
 
 
@@ -128,20 +129,20 @@ plt.figure(dpi=200)
 plt.subplot(1,2,1)
 plt.plot(gdc, mode_tran, 'bo-')
 plt.xlim(gdc[0],gdc[-1])
-plt.xticks([t for t in np.linspace(0.1,0.9,5)])
+plt.xticks(list(np.linspace(0.1,0.9,5)))
 plt.xlabel("grating duty cycle")
 plt.ylim(0.96,1.00)
-plt.yticks([t for t in np.linspace(0.96,1.00,5)])
+plt.yticks(list(np.linspace(0.96,1.00,5)))
 plt.title("transmittance")
 
 plt.subplot(1,2,2)
 plt.plot(gdc, mode_phase, 'rs-')
 plt.grid(True)
 plt.xlim(gdc[0],gdc[-1])
-plt.xticks([t for t in np.linspace(0.1,0.9,5)])
+plt.xticks(list(np.linspace(0.1,0.9,5)))
 plt.xlabel("grating duty cycle")
 plt.ylim(-2*np.pi,0)
-plt.yticks([t for t in np.linspace(-6,0,7)])
+plt.yticks(list(np.linspace(-6,0,7)))
 plt.title("phase (radians)")
 
 plt.tight_layout(pad=0.5)
@@ -171,9 +172,12 @@ for k in range(len(num_cells)):
 
 x = np.linspace(focal_length-0.5*spot_length,focal_length+0.5*spot_length,ff_res*spot_length)
 plt.figure(dpi=200)
-plt.semilogy(x,abs(ff_nc[:,0])**2,'bo-',label='num_cells = {}'.format(2*num_cells[0]+1))
-plt.semilogy(x,abs(ff_nc[:,1])**2,'ro-',label='num_cells = {}'.format(2*num_cells[1]+1))
-plt.semilogy(x,abs(ff_nc[:,2])**2,'go-',label='num_cells = {}'.format(2*num_cells[2]+1))
+plt.semilogy(
+    x, abs(ff_nc[:, 0])**2, 'bo-', label=f'num_cells = {2*num_cells[0] + 1}')
+plt.semilogy(
+    x, abs(ff_nc[:, 1])**2, 'ro-', label=f'num_cells = {2*num_cells[1] + 1}')
+plt.semilogy(
+    x, abs(ff_nc[:, 2])**2, 'go-', label=f'num_cells = {2*num_cells[2] + 1}')
 plt.xlabel('x coordinate (μm)')
 plt.ylabel(r'energy density of far-field electric fields, |E$_z$|$^2$')
 plt.title('focusing properties of a binary-grating metasurface lens')

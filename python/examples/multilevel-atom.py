@@ -91,6 +91,6 @@ endt = 7000
 
 def print_field(sim):
     fp = sim.get_field_point(mp.Ex, mp.Vector3(z=(-0.5 * sz) + Lcav + (0.5 * dpad))).real
-    print("field:, {}, {}".format(sim.meep_time(), fp))
+    print(f"field:, {sim.meep_time()}, {fp}")
 
 sim.run(mp.after_time(endt - 250, print_field), until=endt)

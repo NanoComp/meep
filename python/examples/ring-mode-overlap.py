@@ -57,4 +57,4 @@ def overlap_integral(r, ez1, ez2):
     return ez1.conjugate() * ez2
 
 res = sim.integrate2_field_function(fields2, [mp.Ez], [mp.Ez], overlap_integral)
-print("overlap integral of mode at w and 2w: {}".format(abs(res)))
+print(f"overlap integral of mode at w and 2w: {abs(res)}")

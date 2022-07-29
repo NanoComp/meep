@@ -272,7 +272,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.07 if mp.is_single_precision() else 0.006
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 
@@ -298,7 +299,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.04 if mp.is_single_precision() else 0.01
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 
@@ -324,7 +326,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.07 if mp.is_single_precision() else 0.006
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 
@@ -332,12 +335,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
     def test_gradient_backpropagation(self):
         print("*** TESTING GRADIENT BACKPROPAGATION ***")
 
-        for frequencies in [[self.fcen], [1/1.58, self.fcen, 1/1.53]]:
-            # filter/thresholding parameters
-            filter_radius = 0.21985
-            eta = 0.49093
-            beta = 4.0698
+        # filter/thresholding parameters
+        filter_radius = 0.21985
+        eta = 0.49093
+        beta = 4.0698
 
+        for frequencies in [[self.fcen], [1/1.58, self.fcen, 1/1.53]]:
             mapped_p = self.mapping(self.p,filter_radius,eta,beta)
 
             # compute objective value and its gradient for unperturbed design
@@ -372,7 +375,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad_backprop = np.expand_dims(unperturbed_grad_backprop,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad_backprop).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.025 if mp.is_single_precision() else 0.01
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 
@@ -395,7 +399,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.06 if mp.is_single_precision() else 0.01
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 
@@ -418,7 +423,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.06 if mp.is_single_precision() else 0.04
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 
@@ -460,7 +466,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad_backprop = np.expand_dims(unperturbed_grad_backprop,axis=1)
             adj_dd = (self.dp[None,:]@unperturbed_grad_backprop).flatten()
             fnd_dd = perturbed_val-unperturbed_val
-            print("directional derivative:, {} (adjoint solver), {} (finite difference)".format(adj_dd,fnd_dd))
+            print(f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)")
+
             tol = 0.1 if mp.is_single_precision() else 0.04
             self.assertClose(adj_dd,fnd_dd,epsilon=tol)
 

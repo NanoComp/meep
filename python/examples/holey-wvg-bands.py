@@ -38,10 +38,7 @@ def main():
     sim = mp.Simulation(cell_size=cell, geometry=[b, c], sources=[s], symmetries=[sym],
                         boundary_layers=[mp.PML(dpml, direction=mp.Y)], resolution=20)
 
-    kx = False  # if true, do run at specified kx and get fields
-    k_interp = 19  # # k-points to interpolate, otherwise
-
-    if kx:
+    if kx := False:
         sim.k_point = mp.Vector3(kx)
 
         sim.run(
@@ -53,6 +50,8 @@ def main():
         sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 
     else:
+        k_interp = 19  # # k-points to interpolate, otherwise
+
         sim.run_k_points(300, mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]))
 
 

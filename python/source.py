@@ -8,7 +8,7 @@ def check_positive(prop, val):
     if val > 0:
         return val
     else:
-        raise ValueError("{} must be positive. Got {}".format(prop, val))
+        raise ValueError(f"{prop} must be positive. Got {val}")
 
 
 class Source(object):
@@ -171,7 +171,8 @@ class ContinuousSource(SourceTime):
         """
 
         if frequency is None and wavelength is None:
-            raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
+            raise ValueError(f"Must set either frequency or wavelength in {self.__class__.__name__}.")
+
 
         super(ContinuousSource, self).__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
@@ -238,7 +239,8 @@ class GaussianSource(SourceTime):
           `amplitude` or `amp_func` factor that you specified for the source.
         """
         if frequency is None and wavelength is None:
-            raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
+            raise ValueError(f"Must set either frequency or wavelength in {self.__class__.__name__}.")
+
 
         super(GaussianSource, self).__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
@@ -478,10 +480,7 @@ class EigenModeSource(Source):
 
     @eig_lattice_size.setter
     def eig_lattice_size(self, val):
-        if val is None:
-            self._eig_lattice_size = self.size
-        else:
-            self._eig_lattice_size = val
+        self._eig_lattice_size = self.size if val is None else val
 
     @property
     def eig_lattice_center(self):
@@ -489,10 +488,7 @@ class EigenModeSource(Source):
 
     @eig_lattice_center.setter
     def eig_lattice_center(self, val):
-        if val is None:
-            self._eig_lattice_center = self.center
-        else:
-            self._eig_lattice_center = val
+        self._eig_lattice_center = self.center if val is None else val
 
     @property
     def component(self):

@@ -74,8 +74,8 @@ ms.num_bands = 2
 ms.mesh_size = 7
 
 result = minimize_scalar(first_tm_gap, method='bounded', bounds=[0.1, 0.5], options={'xatol': 0.1})
-print("radius at maximum: {}".format(result.x))
-print("gap size at maximum: {}".format(result.fun * -1))
+print(f"radius at maximum: {result.x}")
+print(f"gap size at maximum: {result.fun * -1}")
 
 ms.mesh_size = 3  # Reset to default value of 3
 
@@ -110,7 +110,7 @@ mpb.output_efield_z(ms, 25)
 ms.get_dfield(25)  # compute the D field for band 25
 ms.compute_field_energy()  # compute the energy density from D
 c = mp.Cylinder(1.0, material=mp.air)
-print("energy in cylinder: {}".format(ms.compute_energy_in_objects([c])))
+print(f"energy in cylinder: {ms.compute_energy_in_objects([c])}")
 
 print_heading('5x5 point defect, targeted solver')
 
@@ -130,11 +130,11 @@ def rootfun(eps):
     # add the cylinder of epsilon = eps to the old geometry:
     ms.geometry = old_geometry + [mp.Cylinder(0.2, material=mp.Medium(epsilon=eps))]
     ms.run_tm()  # solve for the mode (using the targeted solver)
-    print("epsilon = {} gives freq. =  {}".format(eps, ms.get_freqs()[0]))
+    print(f"epsilon = {eps} gives freq. =  {ms.get_freqs()[0]}")
     return ms.get_freqs()[0] - 0.314159  # return 1st band freq. - 0.314159
 
 rooteps = ridder(rootfun, 1, 12)
-print("root (value of epsilon) is at: {}".format(rooteps))
+print(f"root (value of epsilon) is at: {rooteps}")
 
 rootval = rootfun(rooteps)
-print("root function at {} = {}".format(rooteps, rootval))
+print(f"root function at {rooteps} = {rootval}")

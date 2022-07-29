@@ -3,16 +3,7 @@ import meep as mp
 
 
 def make_dft_vecs(flx_reg=None, n2f_reg=None, frc_reg=None, fldc=None, flds=None, fldw=None, fld_cmp=None):
-    dft_vecs = {
-        'flux_regions': flx_reg,
-        'n2f_regions': n2f_reg,
-        'force_regions': frc_reg,
-        'fields_center': fldc,
-        'fields_size': flds,
-        'fields_where': fldw,
-        'fields_components': fld_cmp
-    }
-    return dft_vecs
+    return {'flux_regions': flx_reg, 'n2f_regions': n2f_reg, 'force_regions': frc_reg, 'fields_center': fldc, 'fields_size': flds, 'fields_where': fldw, 'fields_components': fld_cmp}
 
 
 def make_sim(cell, res, pml, dims, create_gv=True, k_point=False):
@@ -62,9 +53,7 @@ class TestFragmentStats(unittest.TestCase):
                                    center=dft_vecs['fields_center'], size=dft_vecs['fields_size'])
 
         gv = sim._create_grid_volume(False)
-        stats = sim._compute_fragment_stats(gv)
-
-        return stats
+        return sim._compute_fragment_stats(gv)
 
     def _test_1d(self, sym, pml=[]):
         # A z=30 cell, with a size 10 block in the middle.

@@ -29,18 +29,17 @@ class TestBendFlux(ApproxComparisonTestCase):
                                     mp.Vector3(-0.5 * sx - 5, wvg_ycen + 0.5 * w)]
 
                 geometry = [mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))]
+        elif gdsii:
+            geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 2, 0, height)
         else:
-            if gdsii:
-                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 2, 0, height)
-            else:
-                bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
-                                 mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
-                                 mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
-                                 mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
-                                 mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
-                                 mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
+            bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
+                             mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
+                             mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
+                             mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
+                             mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
+                             mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
 
-                geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
+            geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
 
         fcen = 0.15
         df = 0.1

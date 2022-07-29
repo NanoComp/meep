@@ -39,7 +39,7 @@ class TestHoleyWvgBands(unittest.TestCase):
             (0.19335527231544278, 4.6649450258959025e-4)
         ]
 
-        self.assertTrue(any(l for l in all_freqs))
+        self.assertTrue(any(all_freqs))
         for (r, i), f in zip(expected, all_freqs[17:21][0]):
             self.assertAlmostEqual(r, f.real)
             self.assertAlmostEqual(i, f.imag)

@@ -14,7 +14,7 @@ def lorentzfunc(p, x):
     """Return the complex ε profile given a set of Lorentzian parameters p
        (σ_0, ω_0, γ_0, σ_1, ω_1, γ_1, ...) for a set of frequencies x.
     """
-    N = int(len(p)/3)
+    N = len(p) // 3
     y = np.zeros(len(x))
     for n in range(N):
         A_n = p[3*n+0]
@@ -29,7 +29,7 @@ def lorentzerr(p, x, y, grad):
        well as the gradient of this error with respect to each Lorentzian
        polarizability parameter in p and saving the result in grad.
     """
-    N = int(len(p)/3)
+    N = len(p) // 3
     yp = lorentzfunc(p, x)
     val = np.sum(np.square(abs(y - yp)))
     for n in range(N):

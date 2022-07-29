@@ -21,7 +21,7 @@ class Basis(ABC):
             size=None,
             center=mp.Vector3(),
     ):
-        self.volume = volume if volume else mp.Volume(center=center, size=size)
+        self.volume = volume or mp.Volume(center=center, size=size)
         self.rho_vector = rho_vector
 
     def func(self):
@@ -59,11 +59,7 @@ class BilinearInterpolationBasis(Basis):
         super(BilinearInterpolationBasis, self).__init__(**kwargs)
 
         # Generate interpolation grid
-        if symmetry is None or len(symmetry) == 0:
-            self.symmetry = []
-        else:
-            self.symmetry = symmetry
-
+        self.symmetry = [] if symmetry is None or len(symmetry) == 0 else symmetry
         if mp.X in set(self.symmetry):
             self.Nx = int(resolution * self.volume.size.x / 2) + 1
             self.rho_x = np.linspace(
@@ -243,8 +239,4 @@ class BilinearInterpolationBasis(Basis):
 
                 ri += 1
 
-        # From matrix vectors, populate the sparse matrix
-        A = sparse.coo_matrix((interp_weights, (row_ind, col_ind)),
-                              shape=(output_dimension, input_dimension))
-
-        return A
+        return sparse.coo_matrix((interp_weights, (row_ind, col_ind)), shape=(output_dimension, input_dimension))

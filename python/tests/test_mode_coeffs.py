@@ -95,7 +95,7 @@ class TestModeCoeffs(unittest.TestCase):
         self.sim = sim
 
         # test 1: coefficient of excited mode >> coeffs of all other modes
-        self.assertTrue(TestPassed, msg="cfrel: {}, cbrel: {}".format(cfrel, cbrel))
+        self.assertTrue(TestPassed, msg=f"cfrel: {cfrel}, cbrel: {cbrel}")
         # test 2: |mode coeff|^2 = power
         self.assertAlmostEqual(mode_power / abs(c0**2), 1.0, places=1)
 
@@ -182,8 +182,8 @@ class TestModeCoeffs(unittest.TestCase):
                                                  direction=mp.NO_DIRECTION,
                                                  kpoint_func=lambda f,n: mp.Vector3(-1,0,0))
 
-        print("S11:, {}, {}".format(res_fwd.alpha[0,0,1],res_bwd.alpha[0,0,0]))
-        print("S21:, {}, {}".format(res_fwd.alpha[0,0,0],res_bwd.alpha[0,0,1]))
+        print(f"S11:, {res_fwd.alpha[0,0,1]}, {res_bwd.alpha[0,0,0]}")
+        print(f"S21:, {res_fwd.alpha[0,0,0]}, {res_bwd.alpha[0,0,1]}")
 
         # |S11|^2
         self.assertAlmostEqual(abs(res_fwd.alpha[0,0,1])**2, abs(res_bwd.alpha[0,0,0])**2, places=4)
@@ -235,8 +235,8 @@ class TestModeCoeffs(unittest.TestCase):
                                                  [1],
                                                  eig_parity=mp.EVEN_Y+mp.ODD_Z)
 
-        print("S11:, {}".format(res_fwd.alpha[0,0,1]))
-        print("S21:, {}".format(res_fwd.alpha[0,0,0]))
+        print(f"S11:, {res_fwd.alpha[0,0,1]}")
+        print(f"S21:, {res_fwd.alpha[0,0,0]}")
 
         sim.reset_meep()
 
@@ -267,8 +267,8 @@ class TestModeCoeffs(unittest.TestCase):
                                                  [1],
                                                  eig_parity=mp.EVEN_Y+mp.ODD_Z)
 
-        print("S12:, {}".format(res_bwd.alpha[0,0,1]))
-        print("S22:, {}".format(res_bwd.alpha[0,0,0]))
+        print(f"S12:, {res_bwd.alpha[0,0,1]}")
+        print(f"S22:, {res_bwd.alpha[0,0,0]}")
 
         # |S21|^2 = |S12|^2
         self.assertAlmostEqual(abs(res_fwd.alpha[0,0,0])**2 / abs(res_bwd.alpha[0,0,1])**2, 1.00, places=2)

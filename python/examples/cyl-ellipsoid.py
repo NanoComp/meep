@@ -27,7 +27,7 @@ def main():
     def print_stuff(sim_obj):
         v = mp.Vector3(4.13, 3.75, 0)
         p = sim.get_field_point(src_cmpt, v)
-        print("t, Ez: {} {}+{}i".format(sim.round_time(), p.real, p.imag))
+        print(f"t, Ez: {sim.round_time()} {p.real}+{p.imag}i")
 
     sim.run(mp.at_beginning(mp.output_epsilon),
             mp.at_every(0.25, print_stuff),

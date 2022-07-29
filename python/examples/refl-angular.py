@@ -26,11 +26,7 @@ def main(args):
     k = mp.Vector3(math.sin(theta_r),0,math.cos(theta_r)).scale(fmin)
 
     # if normal incidence, force number of dimensions to be 1
-    if theta_r == 0:
-        dimensions = 1
-    else:
-        dimensions = 3
-
+    dimensions = 1 if theta_r == 0 else 3
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                          component=mp.Ex,
                          center=mp.Vector3(0,0,-0.5*sz+dpml))]
@@ -73,7 +69,7 @@ def main(args):
     freqs = mp.get_flux_freqs(refl)
 
     for i in range(nfreq):
-        print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
+        print(f"refl:, {k.x}, {1 / freqs[i]}, {math.degrees(math.asin(k.x/freqs[i]))}, {-refl_flux[i] / empty_flux[i]}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

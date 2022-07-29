@@ -15,6 +15,9 @@
 _build
 .vscode
 .idea
+python/examples/.ipynb_checkpoints/
+h5utils/
+hdf5/
 
 # autotools stuff
 Makefile

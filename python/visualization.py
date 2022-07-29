@@ -91,8 +91,7 @@ def filter_dict(dict_to_filter, func_with_kwargs):
         # Python2 ...
         filter_keys = inspect.getargspec(func_with_kwargs)[0]
 
-    filtered_dict = {filter_key:dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
-    return filtered_dict
+    return {filter_key: dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
 
 # ------------------------------------------------------- #
 # Routines to add legends to plot
@@ -108,15 +107,8 @@ def place_label(ax, label_text, x, y, centerx, centery, label_parameters=None):
     alpha = label_parameters['label_alpha']
     color = label_parameters['label_color']
 
-    if x > centerx:
-        xtext = -offset
-    else:
-        xtext = offset
-    if y > centery:
-        ytext = -offset
-    else:
-        ytext = offset
-
+    xtext = -offset if x > centerx else offset
+    ytext = -offset if y > centery else offset
     ax.annotate(label_text, xy=(x, y), xytext=(xtext, ytext),
                 textcoords='offset points', ha='center', va='bottom',
                 bbox=dict(boxstyle='round,pad=0.2', fc=color, alpha=alpha),
@@ -154,9 +146,8 @@ def intersect_volume_volume(volume1, volume2):
     L = np.max([L1,L2],axis=0)
 
     # For single points we have to check manually
-    if np.all(U-L == 0):
-        if (not volume1.pt_in_volume(Vector3(*U))) or (not volume2.pt_in_volume(Vector3(*U))):
-            return []
+    if np.all(U - L == 0) and ((not volume1.pt_in_volume(Vector3(*U))) or (not volume2.pt_in_volume(Vector3(*U)))):
+        return []
 
     # Check for two volumes that don't intersect
     if np.any(U-L < 0):
@@ -166,9 +157,7 @@ def intersect_volume_volume(volume1, volume2):
     vertices = []
     for x_vals in [L[0],U[0]]:
         for y_vals in [L[1],U[1]]:
-            for z_vals in [L[2],U[2]]:
-                vertices.append(Vector3(x_vals,y_vals,z_vals))
-
+            vertices.extend(Vector3(x_vals,y_vals,z_vals) for z_vals in [L[2],U[2]])
     # Remove any duplicate points caused by coplanar lines
     vertices = [vertices[i] for i, x in enumerate(vertices) if x not in vertices[i+1:]]
 
@@ -191,11 +180,10 @@ def get_2D_dimensions(sim, output_plane):
         plane_center, plane_size = (output_plane.center, output_plane.size)
     elif sim.output_volume:
         plane_center, plane_size = mp.get_center_and_size(sim.output_volume)
+    elif (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+        plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size)
     else:
-        if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-            plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size) 
-        else:
-            plane_center, plane_size = (sim.geometry_center, sim.cell_size)
+        plane_center, plane_size = (sim.geometry_center, sim.cell_size)
     plane_volume = Volume(center=plane_center,size=plane_size)
 
     if plane_size.x != 0 and plane_size.y != 0 and plane_size.z != 0:
@@ -389,11 +377,7 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
                                                       sim_size,
                                                       sim.is_cylindrical)
 
-    if eps_parameters['resolution']:
-        grid_resolution = eps_parameters['resolution']
-    else:
-        grid_resolution = sim.resolution
-
+    grid_resolution = eps_parameters['resolution'] or sim.resolution
     Nx = int((xmax - xmin) * grid_resolution + 1)
     Ny = int((ymax - ymin) * grid_resolution + 1)
     Nz = int((zmax - zmin) * grid_resolution + 1)
@@ -409,10 +393,8 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
         extent = [xmin, xmax, zmin, zmax]
-        if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-            xlabel = 'R'
-        else:
-            xlabel = "X"
+        xlabel = 'R' if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical else "X"
+
         ylabel = 'Z'
         xtics = np.linspace(xmin, xmax, Nx)
         ytics = np.array([sim_center.y])
@@ -586,51 +568,44 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     else:
         field_parameters = dict(default_field_parameters, **field_parameters)
 
-    # user specifies a field component
-    if fields in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Dx, mp.Dy, mp.Dz, mp.Hx, mp.Hy, mp.Hz]:
-        # Get domain measurements
-        sim_center, sim_size = get_2D_dimensions(sim, output_plane)
-
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center,
-                                                          sim_size,
-                                                          sim.is_cylindrical)
-
-        if sim_size.x == 0:
-            # Plot y on x axis, z on y axis (YZ plane)
-            extent = [ymin, ymax, zmin, zmax]
-            xlabel = 'Y'
-            ylabel = 'Z'
-        elif sim_size.y == 0:
-            # Plot x on x axis, z on y axis (XZ plane)
-            extent = [xmin, xmax, zmin, zmax]
-            if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-                xlabel = 'R'
-            else:
-                xlabel = "X"
-            ylabel = 'Z'
-        elif sim_size.z == 0:
-            # Plot x on x axis, y on y axis (XY plane)
-            extent = [xmin, xmax, ymin, ymax]
-            xlabel = 'X'
-            ylabel = 'Y'
-        fields = sim.get_array(center=sim_center, size=sim_size, component=fields)
-    else:
+    if fields not in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Dx, mp.Dy, mp.Dz, mp.Hx, mp.Hy, mp.Hz]:
         raise ValueError('Please specify a valid field component (mp.Ex, mp.Ey, ...')
 
 
+    # Get domain measurements
+    sim_center, sim_size = get_2D_dimensions(sim, output_plane)
+
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center,
+                                                      sim_size,
+                                                      sim.is_cylindrical)
+
+    if sim_size.x == 0:
+        # Plot y on x axis, z on y axis (YZ plane)
+        extent = [ymin, ymax, zmin, zmax]
+        xlabel = 'Y'
+        ylabel = 'Z'
+    elif sim_size.y == 0:
+        # Plot x on x axis, z on y axis (XZ plane)
+        extent = [xmin, xmax, zmin, zmax]
+        xlabel = 'R' if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical else "X"
+
+        ylabel = 'Z'
+    elif sim_size.z == 0:
+        # Plot x on x axis, y on y axis (XY plane)
+        extent = [xmin, xmax, ymin, ymax]
+        xlabel = 'X'
+        ylabel = 'Y'
+    fields = sim.get_array(center=sim_center, size=sim_size, component=fields)
     fields = field_parameters['post_process'](fields)
     if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
         fields = np.flipud(fields)
     else:
         fields = np.rot90(fields)
 
-    # Either plot the field, or return the array
-    if ax:
-        if mp.am_master():
-            ax.imshow(fields, extent=extent, **filter_dict(field_parameters,ax.imshow))
-        return ax
-    else:
+    if not ax:
         return fields
+    if mp.am_master():
+        ax.imshow(fields, extent=extent, **filter_dict(field_parameters,ax.imshow))
     return ax
 
 def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
@@ -695,8 +670,7 @@ def plot3D(sim):
     ztics = np.linspace(zmin, zmax, Nz)
 
     eps_data = sim.get_epsilon_grid(xtics, ytics, ztics)
-    s = mlab.contour3d(eps_data, colormap="YlGnBu")
-    return s
+    return mlab.contour3d(eps_data, colormap="YlGnBu")
 
 def visualize_chunks(sim):
     if sim.structure is None:
@@ -1025,7 +999,7 @@ class Animate2D(object):
             mode_dict = dict(once_checked='',
                             loop_checked='',
                             reflect_checked='')
-            mode_dict[self.default_mode + '_checked'] = 'checked'
+            mode_dict[f'{self.default_mode}_checked'] = 'checked'
 
             interval = 1000 // fps
 

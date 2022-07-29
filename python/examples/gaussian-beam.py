@@ -39,4 +39,4 @@ sim.plot2D(fields=mp.Ez,
            output_plane=mp.Volume(center=mp.Vector3(),
                                   size=mp.Vector3(s-2*dpml,s-2*dpml)))
 
-plt.savefig('Ez_angle{}.png'.format(rot_angle),bbox_inches='tight',pad_inches=0)
+plt.savefig(f'Ez_angle{rot_angle}.png', bbox_inches='tight', pad_inches=0)

@@ -272,7 +272,7 @@ class FourierFields(ObjectiveQuantity):
         for fourier_data in self.all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
-            
+
             if self.num_freq == 1:
                 sources += [mp.IndexedSource(time_src, fourier_data, scale[:,0], not self.yee_grid)]
             else:
@@ -393,7 +393,7 @@ class LDOS(ObjectiveQuantity):
             if mp.is_electric(src_i.component):
                 src_i.amplitude *= -1
             sources += [src_i]
-            
+
         return sources
 
     def __call__(self):

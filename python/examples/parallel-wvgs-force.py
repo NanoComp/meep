@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 resolution = 40   # pixels/μm
-    
+
 Si = mp.Medium(index=3.45)
 
 dpml = 1.0
 pml_layers = [mp.PML(dpml)]
-    
+
 sx = 5
 sy = 3
 cell = mp.Vector3(sx+2*dpml,sy+2*dpml,0)
@@ -45,7 +45,7 @@ def parallel_waveguide(s,xodd):
                                       parity=mp.ODD_Y)
 
     fcen = EigenmodeData.freq
-    print("freq:, {}, {}, {}".format("xodd" if xodd else "xeven", s, fcen))
+    print(f'freq:, {"xodd" if xodd else "xeven"}, {s}, {fcen}')
 
     sim.reset_meep()
 
@@ -70,7 +70,8 @@ def parallel_waveguide(s,xodd):
 
     flux = mp.get_fluxes(wvg_flux)[0]
     force = mp.get_forces(wvg_force)[0]
-    print("data:, {}, {}, {}, {}, {}".format("xodd" if xodd else "xeven", s, flux, force, -force/flux))
+    print(f'data:, {"xodd" if xodd else "xeven"}, {s}, {flux}, {force}, {-force / flux}')
+
 
     sim.reset_meep()
     return flux, force

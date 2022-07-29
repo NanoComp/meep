@@ -21,7 +21,7 @@ class TestRing(unittest.TestCase):
         dpml = 2
         sxy = 2 * (r + w + pad + dpml)
 
-        dielectric = mp.Medium(epsilon=n * n)
+        dielectric = mp.Medium(epsilon=n**2)
         air = mp.Medium()
 
         c1 = mp.Cylinder(r + w, material=dielectric)

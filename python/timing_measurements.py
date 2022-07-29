@@ -129,9 +129,8 @@ class MeepTimingMeasurements:
         Returns:
           the resulting `MeepTimingMeasurements`
         """
-        measurements = {}
-        for name, timing_id in TIMING_MEASUREMENT_IDS.items():
-            measurements[name] = sim.time_spent_on(timing_id).tolist()
+        measurements = {name: sim.time_spent_on(timing_id).tolist() for name, timing_id in TIMING_MEASUREMENT_IDS.items()}
+
         return cls(
             measurements=measurements,
             elapsed_time=elapsed_time,

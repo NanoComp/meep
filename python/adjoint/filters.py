@@ -49,13 +49,7 @@ def _edge_pad(arr, pad):
     bottom_right = npa.tile(arr[-1, -1],
                             (pad[0][1], pad[1][1]))  # bottom right
 
-    out = npa.concatenate((npa.concatenate(
-        (top_left, top, top_right)), npa.concatenate((left, arr, right)),
-                           npa.concatenate(
-                               (bottom_left, bottom, bottom_right))),
-                          axis=1)
-
-    return out
+    return npa.concatenate((npa.concatenate((top_left, top, top_right)), npa.concatenate((left, arr, right)), npa.concatenate((bottom_left, bottom, bottom_right))), axis=1)
 
 def simple_2d_filter(x, h):
     """A simple 2d filter algorithm that is differentiable with autograd.
@@ -632,14 +626,13 @@ def get_eta_from_conic(b, R):
 
     norm_length = b / R
     if norm_length < 0:
-        eta_e = 0
+        return 0
     elif norm_length < 1:
-        eta_e = 0.25 * norm_length**2 + 0.5
+        return 0.25 * norm_length**2 + 0.5
     elif norm_length < 2:
-        eta_e = -0.25 * norm_length**2 + norm_length
+        return -0.25 * norm_length**2 + norm_length
     else:
-        eta_e = 1
-    return eta_e
+        return 1
 
 
 def get_conic_radius_from_eta_e(b, eta_e):
@@ -714,8 +707,7 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
         raise ValueError(
             "The gradient fields must be 2 dimensional. Check input array and filter functions."
         )
-    I_s = design_field * npa.exp(-c * grad_mag)
-    return I_s
+    return design_field * npa.exp(-c * grad_mag)
 
 
 def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):

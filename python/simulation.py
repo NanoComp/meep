@@ -66,9 +66,7 @@ def fix_dft_args(args, i):
         return args
 
 def get_num_args(func):
-    if isinstance(func, Harminv):
-        return 2
-    return func.__code__.co_argcount
+    return 2 if isinstance(func, Harminv) else func.__code__.co_argcount
 
 
 def vec(*args):
@@ -95,14 +93,13 @@ def py_v3_to_vec(dims, iterable, is_cylindrical=False):
     elif dims == 2:
         if is_cylindrical:
             return mp.veccyl(v3.x, v3.z)
-        else:
-            v = mp.vec(v3.x, v3.y)
-            v.set_direction(mp.Z, v3.z) # for special_kz handling
-            return v
+        v = mp.vec(v3.x, v3.y)
+        v.set_direction(mp.Z, v3.z) # for special_kz handling
+        return v
     elif dims == 3:
         return mp.vec(v3.x, v3.y, v3.z)
     else:
-        raise ValueError("Invalid dimensions in Volume: {}".format(dims))
+        raise ValueError(f"Invalid dimensions in Volume: {dims}")
 
 def bands_to_diffractedplanewave(where,bands):
     if bands.axis is None:
@@ -255,7 +252,7 @@ class PML(object):
         if val >= 1:
             self._mean_stretch = val
         else:
-            raise ValueError("PML.mean_stretch must be >= 1. Got {}".format(val))
+            raise ValueError(f"PML.mean_stretch must be >= 1. Got {val}")
 
 
 class Absorber(PML):
@@ -404,7 +401,7 @@ class Volume(object):
         zmax = self.center.z + self.size.z/2
 
         # Iterate over and remove duplicates for collapsed dimensions (i.e. min=max))
-        return [Vector3(x,y,z) for x in list(set([xmin,xmax])) for y in list(set([ymin,ymax])) for z in list(set([zmin,zmax]))]
+        return [Vector3(x, y, z) for x in list({xmin, xmax}) for y in list({ymin, ymax}) for z in list({zmin, zmax})]
 
 
     def get_edges(self):
@@ -432,10 +429,7 @@ class Volume(object):
         zmin = self.center.z - self.size.z/2
         zmax = self.center.z + self.size.z/2
 
-        if (pt.x >= xmin and pt.x <= xmax and pt.y >= ymin and pt.y <= ymax and pt.z >= zmin and pt.z <= zmax):
-            return True
-        else:
-            return False
+        return pt.x >= xmin and pt.x <= xmax and pt.y >= ymin and pt.y <= ymax and pt.z >= zmin and pt.z <= zmax
 
 
 class FluxRegion(object):
@@ -917,10 +911,7 @@ class Harminv(object):
 
         def _harm(sim):
 
-            if self.mxbands is None or self.mxbands == 0:
-                mb = 100
-            else:
-                mb = self.mxbands
+            mb = 100 if self.mxbands is None or self.mxbands == 0 else self.mxbands
             self.modes = self._analyze_harminv(sim, mb)
 
         f1 = self._collect_harminv()

@@ -98,10 +98,5 @@ else:
 
 
 if mp.am_master():
-    with open('method{}_{}_res{}_nfreq{}_{}{}.npz'.format(args.method,
-                                                          "textured" if args.textured else "flat",
-                                                          resolution,
-                                                          nfreq,
-                                                          "ndipole" if args.method == 2 else "nsrc",
-                                                          ndipole if args.method == 2 else nsrc),'wb') as f:
+    with open(f'method{args.method}_{"textured" if args.textured else "flat"}_res{resolution}_nfreq{nfreq}_{"ndipole" if args.method == 2 else "nsrc"}{ndipole if args.method == 2 else nsrc}.npz', 'wb') as f:
         np.savez(f,freqs=freqs,fluxes=fluxes)

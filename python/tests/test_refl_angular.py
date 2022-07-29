@@ -34,11 +34,7 @@ class TestReflAngular(ApproxComparisonTestCase):
         # wavevector (in source medium); plane of incidence is XZ
         k = mp.Vector3(0,0,1).rotate(mp.Vector3(0,1,0),theta_r).scale(self.n1*self.fmin)
 
-        if theta == 0:
-            dimensions = 1
-        else:
-            dimensions = 3
-
+        dimensions = 1 if theta == 0 else 3
         cell_size = mp.Vector3(z=self.sz)
         pml_layers = [mp.PML(self.dpml)]
 
@@ -97,10 +93,7 @@ class TestReflAngular(ApproxComparisonTestCase):
 
         Rs = -np.array(refl_flux)/np.array(empty_flux)
 
-        thetas = []
-        for i in range(self.nfreq):
-            thetas.append(math.asin(k.x/(self.n1*freqs[i])))
-
+        thetas = [math.asin(k.x/(self.n1*freqs[i])) for i in range(self.nfreq)]
         return freqs, thetas, Rs
 
     @parameterized.parameterized.expand([(0,), (20.6,)])

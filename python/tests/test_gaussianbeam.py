@@ -49,7 +49,8 @@ class TestGaussianBeamSource(unittest.TestCase):
         Ez_beam_x0 = Ez_cell[np.squeeze(idx_x)[0],np.squeeze(idx_y)[0]]
 
         frac = np.abs(Ez_beam_x0)**2 / np.amax(np.abs(Ez_cell)**2)
-        print("ratio of the Gaussian beam energy at the focus over the maximum beam energy for the entire cell: {}".format(frac))
+        print(f"ratio of the Gaussian beam energy at the focus over the maximum beam energy for the entire cell: {frac}")
+
 
         self.assertGreater(frac, 0.99)
 

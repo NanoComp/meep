@@ -131,7 +131,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         S12_unperturbed = forward_simulation(p)
 
         ## compare objective results
-        print("|Er|^2 -- adjoint solver: {}, traditional simulation: {}".format(adjsol_obj,S12_unperturbed))
+        print(f"|Er|^2 -- adjoint solver: {adjsol_obj}, traditional simulation: {S12_unperturbed}")
+
         self.assertClose(adjsol_obj,S12_unperturbed,epsilon=1e-3)
 
         ## compute perturbed S12
@@ -142,7 +143,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             adjsol_grad = np.expand_dims(adjsol_grad,axis=1)
         adj_scale = (dp[None,:]@adjsol_grad).flatten()
         fd_grad = S12_perturbed-S12_unperturbed
-        print("Directional derivative -- adjoint solver: {}, FD: {}".format(adj_scale,fd_grad))
+        print(f"Directional derivative -- adjoint solver: {adj_scale}, FD: {fd_grad}")
         tol = 0.2 if mp.is_single_precision() else 0.1
         self.assertClose(adj_scale,fd_grad,epsilon=tol)
 

@@ -75,7 +75,8 @@ class TestConductivity(unittest.TestCase):
         # compute the incident flux for a lossless waveguide
         incident_flux1, incident_flux2 = self.wvg_flux(res, 0.)
         self.assertAlmostEqual(incident_flux1/incident_flux2, 1., places=2)
-        print("incident_flux:, {} (measured), 1.0 (expected)".format(incident_flux2/incident_flux1))
+        print(f"incident_flux:, {incident_flux2 / incident_flux1} (measured), 1.0 (expected)")
+
 
         # compute the flux for a lossy waveguide
         att_coeff = 37.46 # dB/cm

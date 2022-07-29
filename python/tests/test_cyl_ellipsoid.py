@@ -44,7 +44,7 @@ class TestCylEllipsoid(unittest.TestCase):
         def print_stuff(sim_obj):
             v = mp.Vector3(4.13, 3.75, 0)
             p = self.sim.get_field_point(self.src_cmpt, v)
-            print("t, Ez: {} {}+{}i".format(self.sim.round_time(), p.real, p.imag))
+            print(f"t, Ez: {self.sim.round_time()} {p.real}+{p.imag}i")
         self.print_stuff = print_stuff
 
     def run_simulation(self):
