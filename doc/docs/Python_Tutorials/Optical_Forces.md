@@ -29,12 +29,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 resolution = 40   # pixels/μm
-    
+
 Si = mp.Medium(index=3.45)
 
 dpml = 1.0
 pml_layers = [mp.PML(dpml)]
-    
+
 sx = 5
 sy = 3
 cell = mp.Vector3(sx+2*dpml,sy+2*dpml,0)

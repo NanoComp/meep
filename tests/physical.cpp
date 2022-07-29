@@ -54,8 +54,9 @@ int radiating_2D(const double xmax) {
   master_printf("Ratio is %g from (%g %g) and (%g %g)\n", ratio, real(amp1), imag(amp1), real(amp2),
                 imag(amp2));
   if (ratio > 2.12 || ratio < 1.88)
-    meep::abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
-          real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
+    meep::abort(
+        "Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2)^2 = %g, too far from 2.0\n",
+        real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }
 
@@ -90,8 +91,9 @@ int radiating_3D(const double xmax) {
   master_printf("Ratio is %g from (%g %g) and (%g %g)\n", ratio, real(amp1), imag(amp1), real(amp2),
                 imag(amp2));
   if (ratio > 2.12 || ratio < 1.88)
-    meep::abort("Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2) = %g, too far from 2.0\n",
-          real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
+    meep::abort(
+        "Failed: amp1 = (%g, %g), amp2 = (%g, %g)\n abs(amp1/amp2) = %g, too far from 2.0\n",
+        real(amp1), imag(amp1), real(amp2), imag(amp2), ratio);
   return 1;
 }
 

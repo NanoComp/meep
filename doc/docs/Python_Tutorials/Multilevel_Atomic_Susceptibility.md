@@ -101,7 +101,7 @@ $$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{\gamma_\perp \g
 
 For two-level gain media, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. We can also verify that the system is not exhibiting relaxation oscillations by directly plotting the electric field as a function of time and looking for very long time-scale oscillations. In the continuum limit, these modes would appear as Dirac delta functions in the spectra. The discretized model, however, produces peaks with finite width. Thus, we need to integrate a fixed number of points around each peak to calculate the correct modal intensity.
 
-By varying $N_0$ or the pumping rate $R_p$, we can change the total gain available in the cavity. This is used to find the laser's modal intensities as a function of the strength of the gain. We can compare the simulated modal intensity with SALT as well as an independent FDTD solver based on the Maxwell-Bloch equations. All three methods produce results with good agreement close to the first lasing threshold. 
+By varying $N_0$ or the pumping rate $R_p$, we can change the total gain available in the cavity. This is used to find the laser's modal intensities as a function of the strength of the gain. We can compare the simulated modal intensity with SALT as well as an independent FDTD solver based on the Maxwell-Bloch equations. All three methods produce results with good agreement close to the first lasing threshold.
 
 <p align="center">
   <img src="../images/meep_salt_comparison_thresh.png", alt="Near threshold comparison">
@@ -113,4 +113,3 @@ Further increasing the gain continues to yield good agreement.
 <p align="center">
   <img src="../images/meep_salt_comparison_full.png", alt="Near threshold comparison">
 </p>
-

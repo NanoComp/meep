@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 This tool will extract the docstrings from the meep package and add them to the
 hand-written documentation tree.
@@ -58,21 +57,20 @@ mitigated.
   value to a symbolic name and using that name for the default value works well
   in this case too.
 """
-
-import sys
-import os
+import ast
 import inspect
 import io
-import ast
 import itertools
+import os
+import sys
 import textwrap
 
 import meep
 
 HERE = os.path.dirname(os.path.abspath(sys.argv[0]))
-SNIPSDIR = os.path.join(HERE, '_api_snippets')
-SRCDOC = os.path.join(HERE, 'docs/Python_User_Interface.md.in')
-DESTDOC = os.path.join(HERE, 'docs/Python_User_Interface.md')
+SNIPSDIR = os.path.join(HERE, "_api_snippets")
+SRCDOC = os.path.join(HERE, "docs/Python_User_Interface.md.in")
+DESTDOC = os.path.join(HERE, "docs/Python_User_Interface.md")
 
 
 # List of names that should not have documentation generated.
@@ -80,7 +78,7 @@ DESTDOC = os.path.join(HERE, 'docs/Python_User_Interface.md')
 # Top-level items in the module are automatically excluded if their name is not
 # used in a subsition tag in the master template file. Individual class memberes
 # can be excluded by using 'Classname.method_name'
-EXCLUDES = ['']
+EXCLUDES = [""]
 
 
 # ast.Constant was added in Python 3.6, and ast.NameConstant is deprecated
@@ -91,9 +89,10 @@ try:
 except AttributeError:
     Constant = ast.NameConstant
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
 
-class Item(object):
+
+class Item:
     """
     Common base class for documentable items.
     """
@@ -119,7 +118,6 @@ class Item(object):
             doc = inspect.cleandoc(doc)
         self.docstring = doc
 
-
     def create_markdown(self, stream):
         raise NotImplementedError
 
@@ -128,10 +126,11 @@ class FunctionItem(Item):
     """
     An introspected item that is a function at module scope.
     """
-    template_name = 'function_template.md'
+
+    template_name = "function_template.md"
 
     def __init__(self, name, obj):
-        super(FunctionItem, self).__init__(name, obj)
+        super().__init__(name, obj)
         self.signature = inspect.signature(obj)
 
     def get_parameters(self, indent):
@@ -139,19 +138,25 @@ class FunctionItem(Item):
         try:
             # Try using the AST to get the actual text for default values
             parameters = self.get_parameters_from_ast()
-            param_str = '({})'.format(', '.join(parameters))
+            param_str = "({})".format(", ".join(parameters))
 
             # Wrap and indent the parameters if the line is too long
             if len(param_str) > 50:
                 params = []
                 for idx, param in enumerate(parameters):
-                    params.append('('+str(param) if idx==0 else ' '*indent+param)
-                param_str = ',\n'.join(params)
-                param_str += ')'
+                    params.append(
+                        "(" + str(param) if idx == 0 else " " * indent + param
+                    )
+                param_str = ",\n".join(params)
+                param_str += ")"
             return param_str
 
         except ValueError as ex:
-            print("Warning: falling back to old parameter extraction method for {}\n{}".format(self.name, ex))
+            print(
+                "Warning: falling back to old parameter extraction method for {}\n{}".format(
+                    self.name, ex
+                )
+            )
         except OSError:
             # This happens when there is no source for some function/class (like NamedTuples)
             pass
@@ -164,11 +169,12 @@ class FunctionItem(Item):
             parameters = list(self.sig.parameters.values())
             params = []
             for idx, param in enumerate(parameters):
-                params.append('('+str(param) if idx==0 else ' '*indent+str(param))
-            param_str = ',\n'.join(params)
-            param_str += ')'
+                params.append(
+                    "(" + str(param) if idx == 0 else " " * indent + str(param)
+                )
+            param_str = ",\n".join(params)
+            param_str += ")"
         return param_str
-
 
     def get_parameters_from_ast(self):
         # Use Python's ast module to parse the function's code and pull out parameter names and
@@ -185,13 +191,15 @@ class FunctionItem(Item):
         func = module.body[0]
 
         if not isinstance(func, ast.FunctionDef):
-            raise ValueError('Unsupported node type: {}'.format(type(func)))
+            raise ValueError(f"Unsupported node type: {type(func)}")
 
         # Get the param name and defaults together into a list of tuples
         args = reversed(func.args.args)
         defaults = reversed(func.args.defaults)
         iter = itertools.zip_longest(args, defaults, fillvalue=None)
-        parameters = [(parse_name(name), default) for name, default in reversed(list(iter))]
+        parameters = [
+            (parse_name(name), default) for name, default in reversed(list(iter))
+        ]
 
         # Convert each of the parameters (name, ast.node) to valid Python parameter
         # code, like what would have been in the actual source code.
@@ -201,13 +209,13 @@ class FunctionItem(Item):
                 transformed.append(name)
             else:
                 default = self.transform_node(name, node)
-                transformed.append("{}={}".format(name, default))
+                transformed.append(f"{name}={default}")
 
         # Check for vararg (like *foo) and kwarg (like **bar) parameters
         if func.args.vararg is not None:
-            transformed.append('*{}'.format(func.args.vararg.arg))
+            transformed.append(f"*{func.args.vararg.arg}")
         if func.args.kwarg is not None:
-            transformed.append('**{}'.format(func.args.kwarg.arg))
+            transformed.append(f"**{func.args.kwarg.arg}")
 
         return transformed
 
@@ -239,42 +247,41 @@ class FunctionItem(Item):
             # print('Using inspect module for {}={} in {}'.format(name, default, self.name))
         return default
 
-
     def check_other_signatures(self, docstring):
-        """ Search for alternate function signatures in the docstring """
-        SIG = '##sig'
-        SIG_KEEP = '##sig-keep'
-        other_signatures = ''
+        """Search for alternate function signatures in the docstring"""
+        SIG = "##sig"
+        SIG_KEEP = "##sig-keep"
+        other_signatures = ""
 
         if SIG in docstring or SIG_KEEP in docstring:
             other_sigs = []
             docstring_lines = []
-            for line in docstring.split('\n'):
+            for line in docstring.split("\n"):
                 if line.endswith(SIG):
-                    line = line.replace(SIG, '')
+                    line = line.replace(SIG, "")
                     line = line.strip()
-                    line = line.replace('`', '')
+                    line = line.replace("`", "")
                     other_sigs.append(line)
 
                 elif line.endswith(SIG_KEEP):
-                    line = line.replace(SIG_KEEP, '')
+                    line = line.replace(SIG_KEEP, "")
                     line = line.strip()
                     docstring_lines.append(line)
-                    line = line.replace('`', '')
+                    line = line.replace("`", "")
                     other_sigs.append(line)
 
                 else:
                     docstring_lines.append(line)
 
-            docstring = '\n'.join(docstring_lines)
-            other_signatures = ''.join(['\ndef {}:'.format(item) for item in other_sigs])
+            docstring = "\n".join(docstring_lines)
+            other_signatures = "".join([f"\ndef {item}:" for item in other_sigs])
         return docstring, other_signatures
 
     def create_markdown(self):
         # pull relevant attributes into local variables
         function_name = self.name
-        function_name_escaped = function_name.replace('_', '\\_')
-        docstring = self.docstring if self.docstring else ''
+        function_name_escaped = function_name.replace("_", "\\_")
+        docstring = self.docstring if self.docstring else ""
         parameters = self.get_parameters(len(function_name) + 1)
         docstring, other_signatures = self.check_other_signatures(docstring)
 
@@ -287,20 +294,21 @@ class MethodItem(FunctionItem):
     An introspected item that is a method of a class.
     Mostly the same as a FunctionItem, but can do extra stuff for methods if needed.
     """
-    template_name = 'method_template.md'
+
+    template_name = "method_template.md"
 
     def __init__(self, name, obj, klass):
-        super(MethodItem, self).__init__(name, obj)
+        super().__init__(name, obj)
         self.klass = klass
         self.method_name = name
-        self.name = '{}.{}'.format(klass.name, name)
+        self.name = f"{klass.name}.{name}"
 
     def create_markdown(self):
         # pull relevant attributes into local variables
         class_name = self.klass.name
         method_name = self.method_name
-        method_name_escaped = method_name.replace('_', '\\_')
-        docstring = self.docstring if self.docstring else ''
+        method_name_escaped = method_name.replace("_", "\\_")
+        docstring = self.docstring if self.docstring else ""
         parameters = self.get_parameters(4 + len(method_name) + 1)
         docstring, other_signatures = self.check_other_signatures(docstring)
 
@@ -312,10 +320,11 @@ class ClassItem(Item):
     """
     An introspected item that is a Class.
     """
-    template_name = 'class_template.md'
+
+    template_name = "class_template.md"
 
     def __init__(self, name, obj):
-        super(ClassItem, self).__init__(name, obj)
+        super().__init__(name, obj)
         self.add_methods()
 
     def add_methods(self):
@@ -323,32 +332,37 @@ class ClassItem(Item):
         # inherited members
         def _predicate(value):
             if inspect.isfunction(value):
-                class_name = value.__qualname__.split('.')[0]
+                class_name = value.__qualname__.split(".")[0]
                 return class_name == self.name
             else:
                 return False
 
         self.methods = []
         for name, member in inspect.getmembers(self.obj, _predicate):
-            if inspect.isfunction(member): # unbound methods are just functions at this point
+            if inspect.isfunction(
+                member
+            ):  # unbound methods are just functions at this point
                 self.methods.append(MethodItem(name, member, self))
 
     def create_markdown(self):
         # pull relevant attributes into local variables
         class_name = self.name
-        docstring = self.docstring if self.docstring else ''
+        docstring = self.docstring if self.docstring else ""
         base_classes = [base.__name__ for base in self.obj.__bases__]
-        base_classes = ', '.join(base_classes)
+        base_classes = ", ".join(base_classes)
 
         # Substitute values into the template
         docs = dict()
         class_doc = self.template.format(**locals())
         docs[class_name] = class_doc
-        docs[class_name+'[all-methods]'] = class_doc + '\n' + self.create_method_markdown(False)
-        docs[class_name+'[methods-with-docstrings]'] = class_doc + '\n' + self.create_method_markdown(True)
+        docs[class_name + "[all-methods]"] = (
+            class_doc + "\n" + self.create_method_markdown(False)
+        )
+        docs[class_name + "[methods-with-docstrings]"] = (
+            class_doc + "\n" + self.create_method_markdown(True)
+        )
 
         return docs
-
 
     def create_method_markdown(self, only_with_docstrings=True):
         method_docs = []
@@ -356,7 +370,7 @@ class ClassItem(Item):
             # reorder self.methods so __init__ comes first, if it isn't already
             methods = self.methods[:]
             for idx, meth in enumerate(self.methods):
-                if meth.name == '__init__':
+                if meth.name == "__init__":
                     if idx != 0:
                         methods.remove(meth)
                         methods.insert(0, meth)
@@ -365,22 +379,24 @@ class ClassItem(Item):
             for item in methods:
                 if only_with_docstrings and not item.docstring:
                     continue
-                if not check_excluded(item.name) and \
-                   not check_excluded('{}.{}'.format(self.name, item.name)):
-                        doc = item.create_markdown()
-                        method_docs.append(doc)
+                if not check_excluded(item.name) and not check_excluded(
+                    f"{self.name}.{item.name}"
+                ):
+                    doc = item.create_markdown()
+                    method_docs.append(doc)
 
         # join the methods into a single string
-        method_docs = '\n'.join(method_docs)
+        method_docs = "\n".join(method_docs)
         return method_docs
 
 
-#----------------------------------------------------------------------------
+# ----------------------------------------------------------------------------
+
 
 def check_excluded(name):
     if name in EXCLUDES:
         return True
-    if name.startswith('_') and not (name.startswith('__') and name.endswith('__')):
+    if name.startswith("_") and not (name.startswith("__") and name.endswith("__")):
         # It's probably meant to be private
         return True
     return False
@@ -428,19 +444,18 @@ def update_api_document(doc_items):
     to DESTDOC.
     """
     # read
-    with open(SRCDOC, 'r') as f:
+    with open(SRCDOC) as f:
         srcdoc = f.read()
 
     # manipulate
     for name, doc in doc_items.items():
-        tag = '@@ {} @@'.format(name)
+        tag = f"@@ {name} @@"
         if tag in srcdoc:
             srcdoc = srcdoc.replace(tag, doc)
 
     # write results
-    with open(DESTDOC, 'w') as f:
+    with open(DESTDOC, "w") as f:
         f.write(srcdoc)
-
 
 
 def main(args):
@@ -449,6 +464,5 @@ def main(args):
     update_api_document(doc_items)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])

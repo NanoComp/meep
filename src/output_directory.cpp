@@ -109,9 +109,7 @@ const char *make_output_directory(const char *exename, const char *jobname) {
   snprintf(sourcename, buflen, "%s.cpp", stripped_name);
 
   if (jobname != NULL) { snprintf(basename, buflen, "%s", jobname); }
-  else {
-    snprintf(basename, buflen, "%s", stripped_name);
-  }
+  else { snprintf(basename, buflen, "%s", stripped_name); }
 
   static char outdirname[buflen];
   snprintf(outdirname, buflen, "%s-out", basename);

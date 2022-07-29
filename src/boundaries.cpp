@@ -68,13 +68,13 @@ comms_sequence optimize_comms_operations(const std::vector<comms_operation> &ope
   // Assemble send operations.
   for (const auto &size_pair : send_op_sizes) {
     int my_chunk_idx = size_pair.first;
-    const auto& ops_vector = send_ops_by_my_chunk_idx[my_chunk_idx];
+    const auto &ops_vector = send_ops_by_my_chunk_idx[my_chunk_idx];
     ret.send_ops.insert(std::end(ret.send_ops), std::begin(ops_vector), std::end(ops_vector));
   }
   return ret;
 }
 
-}  // namespace
+} // namespace
 
 void fields::set_boundary(boundary_side b, direction d, boundary_condition cond) {
   if (boundaries[b][d] != cond) {
@@ -120,9 +120,9 @@ ivec fields::ilattice_vector(direction d) const {
       switch (d) {
         case X: return ivec(user_volume.nx() * 2, 0);
         case Y: return ivec(0, user_volume.ny() * 2);
-        case Z:  // fall-thru
-        case R:  // fall-thru
-        case P:  // fall-thru
+        case Z: // fall-thru
+        case R: // fall-thru
+        case P: // fall-thru
         case NO_DIRECTION: break;
       }
     case D3:
@@ -130,8 +130,8 @@ ivec fields::ilattice_vector(direction d) const {
         case X: return ivec(user_volume.nx() * 2, 0, 0);
         case Y: return ivec(0, user_volume.ny() * 2, 0);
         case Z: return ivec(0, 0, user_volume.nz() * 2);
-        case R:  // fall-thru
-        case P:  // fall-thru
+        case R: // fall-thru
+        case P: // fall-thru
         case NO_DIRECTION: break;
       }
   }

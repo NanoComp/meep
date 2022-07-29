@@ -340,7 +340,7 @@ sx = dpml+dsub+gh+dpad+dpml
 sy = gp
 
 cell_size = mp.Vector3(sx,sy,0)
-pml_layers = [mp.PML(thickness=dpml,direction=mp.X)] 
+pml_layers = [mp.PML(thickness=dpml,direction=mp.X)]
 
 wvl = 0.5              # center wavelength
 fcen = 1/wvl           # center frequency

@@ -1,10 +1,10 @@
-name: CI
+name: run tests
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
+  push:
+  schedule:
+    - cron: 0 2 * * * # run at 2 AM UTC
   workflow_dispatch:
 
 jobs:

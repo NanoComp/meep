@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     }
     double T2 = 200;
     int iT2 = T2 / f.dt;
-    std::vector<complex<double>> vals(iT2);
+    std::vector<complex<double> > vals(iT2);
     while (f.t - iT < iT2) {
       if ((f.t - iT) % (iT2 / 10) == 0)
         master_printf("%g%% done with harminv\n", (f.t - iT) * 100.0 / iT2);

@@ -242,7 +242,7 @@ unix% convert holey-wvg-cavity-hz-*.png holey-wvg-cavity-hz.gif
 ![](../images/Holey-wvg-cavity-hz.gif)
 </center>
 
-The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where 
+The mode has a frequency of 0.235, just as we saw in the transmission spectrum, and a $Q$ of 373 which we could have also found by fitting the transmission spectrum. This lifetime $Q$ includes two independent decay channels: light can decay from the cavity into the waveguide with lifetime $Q_w$, or it can radiate from the cavity into the surrounding air with lifetime $Q_r$, where
 
 $$\frac{1}{Q} = \frac{1}{Q_w} + \frac{1}{Q_r}$$
 
@@ -363,7 +363,7 @@ unix% grep freqs: holey-wvg-bands.out > fre.dat
 unix% grep freqs-im: holey-wvg-bands.out > fim.dat
 ```
 
-Plotting the real parts of ω, where the light cone ω &gt; *ck* is shaded gray,  we find: 
+Plotting the real parts of ω, where the light cone ω &gt; *ck* is shaded gray,  we find:
 
 <center>
 ![](../images/Holey-wvg-bands.png)

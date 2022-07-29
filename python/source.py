@@ -1,17 +1,18 @@
-# -*- coding: utf-8 -*-
 import warnings
-import meep as mp
+
 from meep.geom import Vector3, check_nonnegative
+
+import meep as mp
 
 
 def check_positive(prop, val):
     if val > 0:
         return val
     else:
-        raise ValueError("{} must be positive. Got {}".format(prop, val))
+        raise ValueError(f"{prop} must be positive. Got {val}")
 
 
-class Source(object):
+class Source:
     """
     The `Source` class is used to specify the current sources via the `Simulation.sources`
     attribute. Note that all sources in Meep are separable in time and space, i.e. of the
@@ -33,8 +34,19 @@ class Source(object):
     the book [Advances in FDTD Computational Electrodynamics: Photonics and
     Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
     """
-    def __init__(self, src, component, center=None, volume=None, size=Vector3(), amplitude=1.0, amp_func=None,
-                 amp_func_file='', amp_data=None):
+
+    def __init__(
+        self,
+        src,
+        component,
+        center=None,
+        volume=None,
+        size=Vector3(),
+        amplitude=1.0,
+        amp_func=None,
+        amp_func_file="",
+        amp_data=None,
+    ):
         """
         Construct a `Source`.
 
@@ -115,11 +127,12 @@ class Source(object):
         self.amp_data = amp_data
 
 
-class SourceTime(object):
+class SourceTime:
     """
     This is the parent for classes describing the time dependence of sources; it should
     not be instantiated directly.
     """
+
     def __init__(self, is_integrated=False):
         self.is_integrated = is_integrated
 
@@ -132,9 +145,18 @@ class ContinuousSource(SourceTime):
     response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
     """
 
-    def __init__(self, frequency=None, start_time=0, end_time=1.0e20, width=0,
-                 fwidth=float('inf'), cutoff=3.0, wavelength=None,
-                 is_integrated=False, **kwargs):
+    def __init__(
+        self,
+        frequency=None,
+        start_time=0,
+        end_time=1.0e20,
+        width=0,
+        fwidth=float("inf"),
+        cutoff=3.0,
+        wavelength=None,
+        is_integrated=False,
+        **kwargs,
+    ):
         """
         Construct a `ContinuousSource`.
 
@@ -171,16 +193,19 @@ class ContinuousSource(SourceTime):
         """
 
         if frequency is None and wavelength is None:
-            raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
+            raise ValueError(
+                f"Must set either frequency or wavelength in {self.__class__.__name__}."
+            )
 
-        super(ContinuousSource, self).__init__(is_integrated=is_integrated, **kwargs)
+        super().__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
         self.width = max(width, 1 / fwidth)
         self.cutoff = cutoff
-        self.swigobj = mp.continuous_src_time(self.frequency, self.width, self.start_time,
-                                              self.end_time, self.cutoff)
+        self.swigobj = mp.continuous_src_time(
+            self.frequency, self.width, self.start_time, self.end_time, self.cutoff
+        )
         self.swigobj.is_integrated = self.is_integrated
 
 
@@ -192,8 +217,18 @@ class GaussianSource(SourceTime):
     (t-t_0)^2/2w^2)$, but the difference between this and a true Gaussian is usually
     irrelevant.
     """
-    def __init__(self, frequency=None, width=0, fwidth=float('inf'), start_time=0, cutoff=5.0,
-                 is_integrated=False, wavelength=None, **kwargs):
+
+    def __init__(
+        self,
+        frequency=None,
+        width=0,
+        fwidth=float("inf"),
+        start_time=0,
+        cutoff=5.0,
+        is_integrated=False,
+        wavelength=None,
+        **kwargs,
+    ):
         """
         Construct a `GaussianSource`.
 
@@ -238,16 +273,22 @@ class GaussianSource(SourceTime):
           `amplitude` or `amp_func` factor that you specified for the source.
         """
         if frequency is None and wavelength is None:
-            raise ValueError("Must set either frequency or wavelength in {}.".format(self.__class__.__name__))
+            raise ValueError(
+                f"Must set either frequency or wavelength in {self.__class__.__name__}."
+            )
 
-        super(GaussianSource, self).__init__(is_integrated=is_integrated, **kwargs)
+        super().__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.width = max(width, 1 / fwidth)
         self.start_time = start_time
         self.cutoff = cutoff
 
-        self.swigobj = mp.gaussian_src_time(self.frequency, self.width, self.start_time,
-                                            self.start_time + 2 * self.width * self.cutoff)
+        self.swigobj = mp.gaussian_src_time(
+            self.frequency,
+            self.width,
+            self.start_time,
+            self.start_time + 2 * self.width * self.cutoff,
+        )
         self.swigobj.is_integrated = self.is_integrated
 
     def fourier_transform(self, freq):
@@ -267,8 +308,16 @@ class CustomSource(SourceTime):
     [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
     """
 
-    def __init__(self, src_func, start_time=-1.0e20, end_time=1.0e20, is_integrated=False,
-                 center_frequency=0, fwidth=0, **kwargs):
+    def __init__(
+        self,
+        src_func,
+        start_time=-1.0e20,
+        end_time=1.0e20,
+        is_integrated=False,
+        center_frequency=0,
+        fwidth=0,
+        **kwargs,
+    ):
         """
         Construct a `CustomSource`.
 
@@ -301,14 +350,15 @@ class CustomSource(SourceTime):
           automatically determine the decimation factor of the time-series updates
           of the DFT fields monitors (if any).
         """
-        super(CustomSource, self).__init__(is_integrated=is_integrated, **kwargs)
+        super().__init__(is_integrated=is_integrated, **kwargs)
         self.src_func = src_func
         self.start_time = start_time
         self.end_time = end_time
         self.fwidth = fwidth
         self.center_frequency = center_frequency
-        self.swigobj = mp.custom_py_src_time(src_func, start_time, end_time,
-                                             center_frequency, fwidth)
+        self.swigobj = mp.custom_py_src_time(
+            src_func, start_time, end_time, center_frequency, fwidth
+        )
         self.swigobj.is_integrated = self.is_integrated
 
 
@@ -364,21 +414,24 @@ class EigenModeSource(Source):
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the
     source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
     """
-    def __init__(self,
-                 src,
-                 center=None,
-                 volume=None,
-                 eig_lattice_size=None,
-                 eig_lattice_center=None,
-                 component=mp.ALL_COMPONENTS,
-                 direction=mp.AUTOMATIC,
-                 eig_band=1,
-                 eig_kpoint=Vector3(),
-                 eig_match_freq=True,
-                 eig_parity=mp.NO_PARITY,
-                 eig_resolution=0,
-                 eig_tolerance=1e-12,
-                 **kwargs):
+
+    def __init__(
+        self,
+        src,
+        center=None,
+        volume=None,
+        eig_lattice_size=None,
+        eig_lattice_center=None,
+        component=mp.ALL_COMPONENTS,
+        direction=mp.AUTOMATIC,
+        eig_band=1,
+        eig_kpoint=Vector3(),
+        eig_match_freq=True,
+        eig_parity=mp.NO_PARITY,
+        eig_resolution=0,
+        eig_tolerance=1e-12,
+        **kwargs,
+    ):
         """
         Construct an `EigenModeSource`.
 
@@ -460,7 +513,7 @@ class EigenModeSource(Source):
           simulation.
         """
 
-        super(EigenModeSource, self).__init__(src, component, center, volume, **kwargs)
+        super().__init__(src, component, center, volume, **kwargs)
         self.eig_lattice_size = eig_lattice_size
         self.eig_lattice_center = eig_lattice_center
         self.component = component
@@ -478,10 +531,7 @@ class EigenModeSource(Source):
 
     @eig_lattice_size.setter
     def eig_lattice_size(self, val):
-        if val is None:
-            self._eig_lattice_size = self.size
-        else:
-            self._eig_lattice_size = val
+        self._eig_lattice_size = self.size if val is None else val
 
     @property
     def eig_lattice_center(self):
@@ -489,10 +539,7 @@ class EigenModeSource(Source):
 
     @eig_lattice_center.setter
     def eig_lattice_center(self, val):
-        if val is None:
-            self._eig_lattice_center = self.center
-        else:
-            self._eig_lattice_center = val
+        self._eig_lattice_center = self.center if val is None else val
 
     @property
     def component(self):
@@ -501,7 +548,10 @@ class EigenModeSource(Source):
     @component.setter
     def component(self, val):
         if val != mp.ALL_COMPONENTS:
-            warnings.warn("EigenModeSource component is not ALL_COMPONENTS (the default), which makes it non-unidirectional.",RuntimeWarning)
+            warnings.warn(
+                "EigenModeSource component is not ALL_COMPONENTS (the default), which makes it non-unidirectional.",
+                RuntimeWarning,
+            )
         self._component = val
 
     @property
@@ -511,7 +561,7 @@ class EigenModeSource(Source):
     @eig_band.setter
     def eig_band(self, val):
         if isinstance(val, int):
-            self._eig_band = check_positive('EigenModeSource.eig_band', val)
+            self._eig_band = check_positive("EigenModeSource.eig_band", val)
         else:
             self._eig_band = val
 
@@ -521,7 +571,7 @@ class EigenModeSource(Source):
 
     @eig_resolution.setter
     def eig_resolution(self, val):
-        self._eig_resolution = check_nonnegative('EigenModeSource.eig_resolution', val)
+        self._eig_resolution = check_nonnegative("EigenModeSource.eig_resolution", val)
 
     @property
     def eig_tolerance(self):
@@ -529,16 +579,17 @@ class EigenModeSource(Source):
 
     @eig_tolerance.setter
     def eig_tolerance(self, val):
-        self._eig_tolerance = check_positive('EigenModeSource.eig_tolerance', val)
+        self._eig_tolerance = check_positive("EigenModeSource.eig_tolerance", val)
 
-    def eig_power(self,freq):
+    def eig_power(self, freq):
         """
         Returns the total power of the fields from the eigenmode source at frequency `freq`.
         """
         amp = self.amplitude
         if callable(getattr(self.src, "fourier_transform", None)):
-           amp *= self.src.fourier_transform(freq)
-        return abs(amp)**2
+            amp *= self.src.fourier_transform(freq)
+        return abs(amp) ** 2
+
 
 class GaussianBeamSource(Source):
     """
@@ -549,16 +600,18 @@ class GaussianBeamSource(Source):
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
     """
 
-    def __init__(self,
-                 src,
-                 center=None,
-                 volume=None,
-                 component=mp.ALL_COMPONENTS,
-                 beam_x0=Vector3(),
-                 beam_kdir=Vector3(),
-                 beam_w0=None,
-                 beam_E0=Vector3(),
-                 **kwargs):
+    def __init__(
+        self,
+        src,
+        center=None,
+        volume=None,
+        component=mp.ALL_COMPONENTS,
+        beam_x0=Vector3(),
+        beam_kdir=Vector3(),
+        beam_w0=None,
+        beam_E0=Vector3(),
+        **kwargs,
+    ):
         """
         Construct a `GaussianBeamSource`.
 
@@ -571,7 +624,7 @@ class GaussianBeamSource(Source):
         + **`beam_E0` [`Vector3`]** — The polarization vector of the beam. Elements can be complex valued (i.e., for circular polarization). The polarization vector must be *parallel* to the source region in order to generate a transverse mode.
         """
 
-        super(GaussianBeamSource, self).__init__(src, component, center, volume, **kwargs)
+        super().__init__(src, component, center, volume, **kwargs)
         self._beam_x0 = beam_x0
         self._beam_kdir = beam_kdir
         self._beam_w0 = beam_w0
@@ -593,10 +646,12 @@ class GaussianBeamSource(Source):
     def beam_E0(self):
         return self._beam_E0
 
+
 class IndexedSource(Source):
     """
     created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
     """
+
     def __init__(self, src, srcdata, amp_arr, needs_boundary_fix=False):
         self.src = src
         self.num_pts = len(amp_arr)

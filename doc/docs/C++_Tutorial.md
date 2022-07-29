@@ -86,7 +86,7 @@ const double half_cavity_width = d2;
 const int N = 5;
 ```
 
-Meep supports perfectly matching layers (PML) as absorbing boundary conditions. The PML begins at the edge of the computational volume and works inwards. Hence, we specify the size of the cell as follows: 
+Meep supports perfectly matching layers (PML) as absorbing boundary conditions. The PML begins at the edge of the computational volume and works inwards. Hence, we specify the size of the cell as follows:
 
 ```c++
 const double pml_thickness = 1.0;

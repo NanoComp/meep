@@ -45,9 +45,7 @@ int compare(double a, double b, const char *n) {
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
   }
-  else {
-    return 1;
-  }
+  else { return 1; }
 }
 
 int compare_point(fields &f1, fields &f2, const vec &p) {
@@ -221,9 +219,7 @@ int test_pml(double eps(const vec &), int splitting) {
                       new_energy / last_energy);
         return 0;
       }
-      else {
-        master_printf("Got newE/oldE of %g\n", new_energy / last_energy);
-      }
+      else { master_printf("Got newE/oldE of %g\n", new_energy / last_energy); }
       field_energy_check_time += deltaT;
     }
   }
@@ -266,9 +262,7 @@ int test_pml_tm(double eps(const vec &), int splitting) {
                       new_energy / last_energy);
         return 0;
       }
-      else {
-        master_printf("Got newE/oldE of %g\n", new_energy / last_energy);
-      }
+      else { master_printf("Got newE/oldE of %g\n", new_energy / last_energy); }
       field_energy_check_time += deltaT;
     }
   }
@@ -313,9 +307,7 @@ int test_pml_te(double eps(const vec &), int splitting) {
                       new_energy / last_energy);
         return 0;
       }
-      else {
-        master_printf("Got newE/oldE of %g\n", new_energy / last_energy);
-      }
+      else { master_printf("Got newE/oldE of %g\n", new_energy / last_energy); }
       field_energy_check_time += deltaT;
     }
   }

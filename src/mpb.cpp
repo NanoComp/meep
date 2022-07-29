@@ -298,9 +298,9 @@ void special_kz_phasefix(eigenmode_data *edata, bool phase_flip) {
   complex<mpb_real> *H = (complex<mpb_real> *)edata->fft_data_H;
   complex<mpb_real> im(0, phase_flip ? -1 : 1);
   for (size_t i = 0; i < n; ++i) {
-    E[3*i + 2] *= im; // Ez
-    H[3*i + 0] *= im; // Hx
-    H[3*i + 1] *= im; // Hy
+    E[3 * i + 2] *= im; // Ez
+    H[3 * i + 0] *= im; // Hx
+    H[3 * i + 1] *= im; // Hy
   }
 }
 
@@ -352,8 +352,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
   // special case: 2d cell in x and y with non-zero kz
   if ((v.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
-      (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) &&
-      (real(k[Z]) != 0))
+      (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (real(k[Z]) != 0))
     empty_dim[2] = true;
 
   if (resolution <= 0.0) resolution = 2 * gv.a; // default to twice resolution
@@ -533,7 +532,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   if (am_master()) {
     set_random_seed(314159);
     for (int i = 0; i < H.n * H.p; ++i) {
-      ASSIGN_SCALAR(H.data[i], uniform_random(-1,1), uniform_random(-1,1));
+      ASSIGN_SCALAR(H.data[i], uniform_random(-1, 1), uniform_random(-1, 1));
     }
     restore_random_seed();
   }
@@ -604,17 +603,15 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
             k[i] = dot_product(R[i], kdir) * kmatch; // kdir*kmatch in reciprocal basis
           if (gv.dim == D2) k[2] = beta;
         }
-        else {
-          k[d - X] = kmatch * R[d - X][d - X];
-        }
+        else { k[d - X] = kmatch * R[d - X][d - X]; }
         update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       }
     } while (match_frequency &&
              fabs(sqrt(eigvals[band_num - 1]) - frequency) > frequency * match_tol);
 
   if (dp) {
-    scalar_complex s = {real(dp->get_s()),imag(dp->get_s())};
-    scalar_complex p = {real(dp->get_p()),imag(dp->get_p())};
+    scalar_complex s = {real(dp->get_s()), imag(dp->get_s())};
+    scalar_complex p = {real(dp->get_p()), imag(dp->get_p())};
 
     // compute sum of (kparallel+G)^2 in all the periodic directions
     double k2sum = 0, ktmp = 0;
@@ -622,14 +619,15 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     LOOP_OVER_DIRECTIONS(v.dim, dd) {
       m = dp->get_g()[dd - X];
       if (eig_vol.in_direction(dd) != 0) {
-        ktmp = kpoint.in_direction(dd) + m/eig_vol.in_direction(dd);
-        k2sum += ktmp*ktmp;
+        ktmp = kpoint.in_direction(dd) + m / eig_vol.in_direction(dd);
+        k2sum += ktmp * ktmp;
       }
     }
     if (((v.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
-        (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (real(k[Z]) != 0)) ||
+         (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) &&
+         (real(k[Z]) != 0)) ||
         ((v.dim == D2) && (real(k[Z]) != 0))) {
-      k2sum += k[Z]*k[Z];
+      k2sum += k[Z] * k[Z];
     }
 
     // compute kperp (if it is non evanescent) OR
@@ -647,23 +645,23 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       if (match_frequency) {
         vec cen = eig_vol.center();
         double nn = sqrt(real(get_eps(cen, frequency)) * real(get_mu(cen, frequency)));
-        double k2 = frequency*frequency*nn*nn - k2sum;
+        double k2 = frequency * frequency * nn * nn - k2sum;
         if (k2 < 0) {
           master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent!\n",
-                        dp->get_g()[0],dp->get_g()[1],dp->get_g()[2]);
+                        dp->get_g()[0], dp->get_g()[1], dp->get_g()[2]);
           return NULL;
         }
         else if (k2 > 0)
           k[dd - X] = sqrt(k2);
       }
       else
-        frequency = sqrt(kpoint.in_direction(dd)*kpoint.in_direction(dd) + k2sum);
+        frequency = sqrt(kpoint.in_direction(dd) * kpoint.in_direction(dd) + k2sum);
     }
 
     if (am_master()) {
       update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
       maxwell_set_planewave(mdata, H, band_num, dp->get_g(), s, p, dp->get_axis());
-      eigvals[band_num - 1] = frequency*frequency;
+      eigvals[band_num - 1] = frequency * frequency;
       evectmatrix_resize(&W[0], 1, 0);
       evectmatrix_resize(&W[1], 1, 0);
       for (int i = 0; i < H.n; ++i)
@@ -751,7 +749,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   // so we need to divide the E-field amplitudes by -frequency; we also take this
   // opportunity to rescale the overall E and H amplitudes to yield unit power flux.
   double scale = -1.0 / frequency, factor = 2.0 / sqrt(fabs(vgrp));
-  complex<double> *efield = (complex<double> *)fft_data_E, *hfield = (complex<double> *)(mdata->fft_data);
+  complex<double> *efield = (complex<double> *)fft_data_E,
+                  *hfield = (complex<double> *)(mdata->fft_data);
   for (int n = 0; n < NFFT; ++n) {
     efield[n] *= factor * scale;
     hfield[n] *= factor;
@@ -824,8 +823,7 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                                   const volume &where, const volume &eig_vol, int band_num,
                                   const vec &kpoint, bool match_frequency, int parity,
                                   double resolution, double eigensolver_tol, complex<double> amp,
-                                  complex<double> A(const vec &),
-                                  diffractedplanewave *dp) {
+                                  complex<double> A(const vec &), diffractedplanewave *dp) {
   /*--------------------------------------------------------------*/
   /* step 1: call MPB to compute the eigenmode                    */
   /*--------------------------------------------------------------*/
@@ -833,10 +831,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   double frequency = real(src.frequency());
 
   am_now_working_on(MPBTime);
-  global_eigenmode_data =
-      (eigenmode_data *)get_eigenmode(frequency, d, where, eig_vol, band_num, kpoint,
-                                      match_frequency, parity, resolution, eigensolver_tol,
-                                      NULL, NULL, dp);
+  global_eigenmode_data = (eigenmode_data *)get_eigenmode(
+      frequency, d, where, eig_vol, band_num, kpoint, match_frequency, parity, resolution,
+      eigensolver_tol, NULL, NULL, dp);
   finished_working();
 
   if (is_real && beta != 0) special_kz_phasefix(global_eigenmode_data, true /* phase_flip */);
@@ -849,8 +846,9 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   global_eigenmode_data->center -= where.center();
 
   if (!global_eigenmode_data)
-    meep::abort("eigenmode solver failed to find the requested mode; you may need to supply a better "
-          "guess for k");
+    meep::abort(
+        "eigenmode solver failed to find the requested mode; you may need to supply a better "
+        "guess for k");
 
   global_eigenmode_data->amp_func = A ? A : default_amp_func;
 
@@ -868,9 +866,10 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
   int n = (d == X ? 0 : (d == Y ? 1 : 2));
   if (d == NO_DIRECTION) {
-    n = where.in_direction(X) == 0
-            ? 0
-            : where.in_direction(Y) == 0 ? 1 : where.in_direction(Z) == 0 ? 2 : -1;
+    n = where.in_direction(X) == 0   ? 0
+        : where.in_direction(Y) == 0 ? 1
+        : where.in_direction(Z) == 0 ? 2
+                                     : -1;
     if (n == -1)
       meep::abort(
           "can't determine source direction for non-empty source volume with NO_DIRECTION source");
@@ -926,7 +925,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   bool match_frequency = true;
   if (flux.use_symmetry && S.multiplicity() > 1 && parity == 0)
     meep::abort("flux regions for eigenmode projection with symmetry should be created by "
-          "add_mode_monitor()");
+                "add_mode_monitor()");
 
   vec kpoint(0.0, 0.0, 0.0); // default guess
 
@@ -955,7 +954,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
         continue;
       }
 
-      if (is_real && beta != 0) special_kz_phasefix((eigenmode_data *) mode_data, false /* phase_flip */);
+      if (is_real && beta != 0)
+        special_kz_phasefix((eigenmode_data *)mode_data, false /* phase_flip */);
 
       double vg = get_group_velocity(mode_data);
       vec kfound = get_k(mode_data);

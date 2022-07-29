@@ -2,11 +2,11 @@ import abc
 import copy
 from typing import Optional, Tuple, Union
 
-import meep as mp
-from meep import binary_partition_utils as bpu
+import numpy as np
 from meep.timing_measurements import MeepTimingMeasurements
 
-import numpy as np
+import meep as mp
+from meep import binary_partition_utils as bpu
 
 
 class AbstractChunkBalancer(abc.ABC):
@@ -25,7 +25,8 @@ class AbstractChunkBalancer(abc.ABC):
     """
 
     def make_initial_chunk_layout(
-            self, sim: mp.Simulation) -> Union[mp.BinaryPartition, None]:
+        self, sim: mp.Simulation
+    ) -> Union[mp.BinaryPartition, None]:
         """Generates an initial chunk layout based on expected compute costs.
 
         Args:
@@ -66,21 +67,26 @@ class AbstractChunkBalancer(abc.ABC):
 
             timing_measurements = MeepTimingMeasurements.new_from_simulation(sim, -1)
 
-            new_chunk_layout = self.compute_new_chunk_layout(timing_measurements,
-                                                             old_chunk_layout,
-                                                             chunk_volumes,
-                                                             chunk_owners, **kwargs)
+            new_chunk_layout = self.compute_new_chunk_layout(
+                timing_measurements,
+                old_chunk_layout,
+                chunk_volumes,
+                chunk_owners,
+                **kwargs,
+            )
 
             sim.reset_meep()
             sim.chunk_layout = new_chunk_layout
             sim.init_sim()
 
     @abc.abstractmethod
-    def compute_new_chunk_layout(self,
-                                 timing_measurements: MeepTimingMeasurements,
-                                 old_partition: mp.BinaryPartition,
-                                 chunk_volumes: Tuple[mp.grid_volume],
-                                 chunk_owners: np.ndarray) -> mp.BinaryPartition:
+    def compute_new_chunk_layout(
+        self,
+        timing_measurements: MeepTimingMeasurements,
+        old_partition: mp.BinaryPartition,
+        chunk_volumes: Tuple[mp.grid_volume],
+        chunk_owners: np.ndarray,
+    ) -> mp.BinaryPartition:
         """Rebalances the partition to equalize simulation time for node's children.
 
         Args:
@@ -123,16 +129,14 @@ class AbstractChunkBalancer(abc.ABC):
         """
         # Check that chunk_layout does not contain duplicate nodes for same process
         if bpu.partition_has_duplicate_proc_ids(sim.chunk_layout):
-            raise ValueError('Duplicate proc_ids found in chunk_layout!')
+            raise ValueError("Duplicate proc_ids found in chunk_layout!")
         # Check that proc_ids in chunk_layout are assigned properly to grid owners
         chunk_owners = sim.structure.get_chunk_owners()
-        proc_ids = [
-            node.proc_id for node in bpu.enumerate_leaf_nodes(sim.chunk_layout)
-        ]
+        proc_ids = [node.proc_id for node in bpu.enumerate_leaf_nodes(sim.chunk_layout)]
         if set(chunk_owners) != set(proc_ids):
             raise ValueError(
-                'Processes {} present in chunk_layout but not grid_owners!'.format(
-                    set(proc_ids) - set(chunk_owners)))
+                f"Processes {set(proc_ids) - set(chunk_owners)} present in chunk_layout but not grid_owners!"
+            )
 
 
 class ChunkBalancer(AbstractChunkBalancer):
@@ -156,16 +160,16 @@ class ChunkBalancer(AbstractChunkBalancer):
     """
 
     def compute_new_chunk_layout(
-            self,
-            timing_measurements: MeepTimingMeasurements,
-            partition: mp.BinaryPartition,
-            chunk_volumes: Tuple[mp.grid_volume],
-            chunk_owners: np.ndarray,
-            new_partition: Optional[mp.BinaryPartition] = None,
-            new_partition_root: Optional[mp.BinaryPartition] = None,
-            xyz_bounds: Optional[Tuple[float, float, float, float, float,
-                                       float]] = None,
-            sensitivity: float = 0.5) -> mp.BinaryPartition:
+        self,
+        timing_measurements: MeepTimingMeasurements,
+        partition: mp.BinaryPartition,
+        chunk_volumes: Tuple[mp.grid_volume],
+        chunk_owners: np.ndarray,
+        new_partition: Optional[mp.BinaryPartition] = None,
+        new_partition_root: Optional[mp.BinaryPartition] = None,
+        xyz_bounds: Optional[Tuple[float, float, float, float, float, float]] = None,
+        sensitivity: float = 0.5,
+    ) -> mp.BinaryPartition:
         """Rebalances the partition to equalize simulation time for node's children.
 
         Args:
@@ -204,17 +208,17 @@ class ChunkBalancer(AbstractChunkBalancer):
         elif partition.split_dir == mp.Z:
             _, _, _, _, d_min, d_max = xyz_bounds
         else:
-            raise ValueError('Split direction must be mp.X, mp.Y, or mp.Z!')
+            raise ValueError("Split direction must be mp.X, mp.Y, or mp.Z!")
 
-        sim_times = list(
-            self._compute_working_times_per_process(timing_measurements))
+        sim_times = list(self._compute_working_times_per_process(timing_measurements))
 
         n_left = partition.left.numchunks()
         n_right = partition.right.numchunks()
 
         t_left, t_right = bpu.get_left_right_total_weights(partition, sim_times)
-        v_left, v_right = bpu.get_left_right_total_volumes(partition, chunk_volumes,
-                                                           chunk_owners)
+        v_left, v_right = bpu.get_left_right_total_volumes(
+            partition, chunk_volumes, chunk_owners
+        )
 
         v_left_new = v_left * t_right * n_left
         v_right_new = v_right * t_left * n_right
@@ -223,8 +227,7 @@ class ChunkBalancer(AbstractChunkBalancer):
         old_split_pos = partition.split_pos
 
         new_split_pos = (d_max - d_min) * split_frac + d_min
-        new_split_pos = sensitivity * new_split_pos + (1 -
-                                                       sensitivity) * old_split_pos
+        new_split_pos = sensitivity * new_split_pos + (1 - sensitivity) * old_split_pos
 
         # Adjust the split pos on new_partition. We can't modify the old partition
         # because it could affect left/right volume ratios for subsequent calls
@@ -250,7 +253,8 @@ class ChunkBalancer(AbstractChunkBalancer):
             new_partition=new_partition.left,
             new_partition_root=new_partition_root,
             xyz_bounds=left_xyz_bounds,
-            sensitivity=sensitivity)
+            sensitivity=sensitivity,
+        )
         self.compute_new_chunk_layout(
             timing_measurements,
             partition.right,
@@ -259,24 +263,26 @@ class ChunkBalancer(AbstractChunkBalancer):
             new_partition=new_partition.right,
             new_partition_root=new_partition_root,
             xyz_bounds=right_xyz_bounds,
-            sensitivity=sensitivity)
+            sensitivity=sensitivity,
+        )
 
         return new_partition
 
     def _compute_working_times_per_process(
-            self, timing_measurements: MeepTimingMeasurements) -> np.ndarray:
+        self, timing_measurements: MeepTimingMeasurements
+    ) -> np.ndarray:
         """Computes the time spent by each MPI process actively working."""
 
         time_sinks_to_include = [
-            'time_stepping',
-            'boundaries_copying',
-            'field_output',
-            'fourier_transform',
-            'mpb',
-            'near_to_farfield_transform',
+            "time_stepping",
+            "boundaries_copying",
+            "field_output",
+            "fourier_transform",
+            "mpb",
+            "near_to_farfield_transform",
         ]
 
-        num_processes = len(timing_measurements.measurements['time_stepping'])
+        num_processes = len(timing_measurements.measurements["time_stepping"])
         working_times = np.zeros(num_processes)
         for category in time_sinks_to_include:
             working_times += np.array(timing_measurements.measurements[category])

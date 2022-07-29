@@ -1,10 +1,11 @@
-import meep as mp
-from utils import ApproxComparisonTestCase
 import unittest
+
+from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestHoleyWvgCavity(ApproxComparisonTestCase):
-
     def setUp(self):
         eps = 13
         self.w = 1.2
@@ -21,22 +22,23 @@ class TestHoleyWvgCavity(ApproxComparisonTestCase):
 
         cell = mp.Vector3(self.sx, sy, 0)
 
-        blk = mp.Block(size=mp.Vector3(mp.inf, self.w, mp.inf),
-                       material=mp.Medium(epsilon=eps))
+        blk = mp.Block(
+            size=mp.Vector3(mp.inf, self.w, mp.inf), material=mp.Medium(epsilon=eps)
+        )
 
         geometry = [blk]
 
-        for i in range(3):
-            geometry.append(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)))
-
+        geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)) for i in range(3))
         for i in range(3):
             geometry.append(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)))
 
-        self.sim = mp.Simulation(cell_size=cell,
-                                 geometry=geometry,
-                                 sources=[],
-                                 boundary_layers=[mp.PML(self.dpml)],
-                                 resolution=20)
+        self.sim = mp.Simulation(
+            cell_size=cell,
+            geometry=geometry,
+            sources=[],
+            boundary_layers=[mp.PML(self.dpml)],
+            resolution=20,
+        )
 
     @classmethod
     def setUpClass(cls):
@@ -47,17 +49,19 @@ class TestHoleyWvgCavity(ApproxComparisonTestCase):
         mp.delete_directory(cls.temp_dir)
 
     def test_resonant_modes(self):
-        self.sim.sources = [mp.Source(mp.GaussianSource(self.fcen, fwidth=self.df),
-                                      mp.Hz, mp.Vector3())]
+        self.sim.sources = [
+            mp.Source(mp.GaussianSource(self.fcen, fwidth=self.df), mp.Hz, mp.Vector3())
+        ]
 
-        self.sim.symmetries = [mp.Mirror(mp.Y, phase=-1),
-                               mp.Mirror(mp.X, phase=-1)]
+        self.sim.symmetries = [mp.Mirror(mp.Y, phase=-1), mp.Mirror(mp.X, phase=-1)]
 
         self.sim.use_output_directory(self.temp_dir)
         h = mp.Harminv(mp.Hz, mp.Vector3(), self.fcen, self.df)
-        self.sim.run(mp.at_beginning(mp.output_epsilon),
-                     mp.after_sources(h),
-                     until_after_sources=400)
+        self.sim.run(
+            mp.at_beginning(mp.output_epsilon),
+            mp.after_sources(h),
+            until_after_sources=400,
+        )
 
         expected = [
             0.23445415346009466,
@@ -125,21 +129,29 @@ class TestHoleyWvgCavity(ApproxComparisonTestCase):
         ]
 
         self.sim.sources = [
-            mp.Source(mp.GaussianSource(self.fcen, fwidth=self.df), mp.Ey,
-                      mp.Vector3(self.dpml + (-0.5 * self.sx)), size=mp.Vector3(0, self.w))
+            mp.Source(
+                mp.GaussianSource(self.fcen, fwidth=self.df),
+                mp.Ey,
+                mp.Vector3(self.dpml + (-0.5 * self.sx)),
+                size=mp.Vector3(0, self.w),
+            )
         ]
 
         self.sim.symmetries = [mp.Mirror(mp.Y, phase=-1)]
 
-        freg = mp.FluxRegion(center=mp.Vector3((0.5 * self.sx) - self.dpml - 0.5),
-                             size=mp.Vector3(0, 2 * self.w))
+        freg = mp.FluxRegion(
+            center=mp.Vector3((0.5 * self.sx) - self.dpml - 0.5),
+            size=mp.Vector3(0, 2 * self.w),
+        )
 
-        trans = self.sim.add_flux(self.fcen, self.df, self.nfreq, freg,
-                                  decimation_factor=1)
+        trans = self.sim.add_flux(
+            self.fcen, self.df, self.nfreq, freg, decimation_factor=1
+        )
 
         self.sim.run(
             until_after_sources=mp.stop_when_fields_decayed(
-                50, mp.Ey, mp.Vector3((0.5 * self.sx) - self.dpml - 0.5, 0), 1e-1)
+                50, mp.Ey, mp.Vector3((0.5 * self.sx) - self.dpml - 0.5, 0), 1e-1
+            )
         )
 
         res = zip(mp.get_flux_freqs(trans), mp.get_fluxes(trans))
@@ -149,6 +161,5 @@ class TestHoleyWvgCavity(ApproxComparisonTestCase):
             self.assertClose(e, r, epsilon=tol)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
