@@ -289,7 +289,7 @@ chmod +x build-meep.sh
 ./build-meep.sh
 ```
 
-#### Ubuntu 16.04 and 18.04
+#### Ubuntu 16.04 and 18.04 (note 20.04 will not work without a few changes)
 
 There are a few differences in building for 16.04 and 18.04, so be sure to read the script and adjust appropriately.
 
@@ -371,7 +371,7 @@ pip3 install --user matplotlib>3.0.0
 pip3 install --user ffmpeg
 
 cd ~/install
-git clone git://github.com/stevengj/nlopt.git
+git clone https://github.com/stevengj/nlopt.git
 cd nlopt/
 cmake -DPYTHON_EXECUTABLE=/usr/bin/python3 && make && sudo make install
 
