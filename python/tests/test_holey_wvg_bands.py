@@ -3,10 +3,11 @@ import unittest
 
 
 class TestHoleyWvgBands(unittest.TestCase):
-
     def setUp(self):
         cell = mp.Vector3(1, 12)
-        b = mp.Block(size=mp.Vector3(mp.inf, 1.2, mp.inf), material=mp.Medium(epsilon=13))
+        b = mp.Block(
+            size=mp.Vector3(mp.inf, 1.2, mp.inf), material=mp.Medium(epsilon=13)
+        )
         c = mp.Cylinder(0.36)
 
         self.fcen = 0.25
@@ -15,7 +16,7 @@ class TestHoleyWvgBands(unittest.TestCase):
         s = mp.Source(
             src=mp.GaussianSource(self.fcen, fwidth=self.df),
             component=mp.Hz,
-            center=mp.Vector3(0.1234)
+            center=mp.Vector3(0.1234),
         )
 
         sym = mp.Mirror(direction=mp.Y, phase=-1)
@@ -26,17 +27,19 @@ class TestHoleyWvgBands(unittest.TestCase):
             sources=[s],
             symmetries=[sym],
             boundary_layers=[mp.PML(1, direction=mp.Y)],
-            resolution=20
+            resolution=20,
         )
 
     def test_run_k_points(self):
-        all_freqs = self.sim.run_k_points(5, mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)]))
+        all_freqs = self.sim.run_k_points(
+            5, mp.interpolate(19, [mp.Vector3(), mp.Vector3(0.5)])
+        )
 
         expected = [
             (0.1942497850393511, 0.001381460274205755),
             (0.19782709203322993, -0.0013233828667934015),
             (0.1927618763491877, 0.001034260690735336),
-            (0.19335527231544278, 4.6649450258959025e-4)
+            (0.19335527231544278, 4.6649450258959025e-4),
         ]
 
         self.assertTrue(any(all_freqs))
@@ -71,5 +74,5 @@ class TestHoleyWvgBands(unittest.TestCase):
             self.assertAlmostEqual(m.decay, i, places=places)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

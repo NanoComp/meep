@@ -7,7 +7,8 @@ from .filter_source import FilteredSource
 from meep.simulation import py_v3_to_vec
 from collections import namedtuple
 
-Grid = namedtuple('Grid', ['x', 'y', 'z', 'w'])
+Grid = namedtuple("Grid", ["x", "y", "z", "w"])
+
 
 class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.
@@ -17,6 +18,7 @@ class ObjectiveQuantity(abc.ABC):
         frequencies: the frequencies at which the objective quantity is evaluated.
         num_freq: the number of frequencies at which the objective quantity is evaluated.
     """
+
     def __init__(self, sim):
         self.sim = sim
         self._eval = None
@@ -48,7 +50,7 @@ class ObjectiveQuantity(abc.ABC):
             return self._eval
         else:
             raise RuntimeError(
-                'You must first run a forward simulation before requesting the evaluation of an objective quantity.'
+                "You must first run a forward simulation before requesting the evaluation of an objective quantity."
             )
 
     def _adj_src_scale(self, include_resolution=True):
@@ -68,23 +70,47 @@ class ObjectiveQuantity(abc.ABC):
         )  # scaled frequency factor with discrete time derivative fix
 
         # an ugly way to calcuate the scaled dtft of the forward source
-        y = np.array([src.swigobj.current(t, dt)
-                      for t in np.arange(0, T, dt)])  # time domain signal
-        fwd_dtft = np.matmul(
-            np.exp(1j * 2 * np.pi * self._frequencies[:, np.newaxis] *
-                   np.arange(y.size) * dt), y) * dt / np.sqrt(
-                       2 * np.pi)  # dtft
+        y = np.array(
+            [src.swigobj.current(t, dt) for t in np.arange(0, T, dt)]
+        )  # time domain signal
+        fwd_dtft = (
+            np.matmul(
+                np.exp(
+                    1j
+                    * 2
+                    * np.pi
+                    * self._frequencies[:, np.newaxis]
+                    * np.arange(y.size)
+                    * dt
+                ),
+                y,
+            )
+            * dt
+            / np.sqrt(2 * np.pi)
+        )  # dtft
 
         # Interestingly, the real parts of the DTFT and fourier transform match, but the imaginary parts are very different...
-        #fwd_dtft = src.fourier_transform(src.frequency)
-        '''
+        # fwd_dtft = src.fourier_transform(src.frequency)
+        """
         For some reason, there seems to be an additional phase
         factor at the center frequency that needs to be applied
         to *all* frequencies...
-        '''
-        src_center_dtft = np.matmul(
-            np.exp(1j * 2 * np.pi * np.array([src.frequency])[:, np.newaxis] *
-                   np.arange(y.size) * dt), y) * dt / np.sqrt(2 * np.pi)
+        """
+        src_center_dtft = (
+            np.matmul(
+                np.exp(
+                    1j
+                    * 2
+                    * np.pi
+                    * np.array([src.frequency])[:, np.newaxis]
+                    * np.arange(y.size)
+                    * dt
+                ),
+                y,
+            )
+            * dt
+            / np.sqrt(2 * np.pi)
+        )
         adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
 
         if self._frequencies.size == 1:
@@ -109,10 +135,11 @@ class ObjectiveQuantity(abc.ABC):
         The user may specify a scalar valued objective function across multiple frequencies (e.g. MSE) in
         which case we should check that all the frequencies fit in the specified bandwidth.
         """
-        self.fwidth_scale = np.exp(-2j*np.pi*adj_cutoff/fwidth_frac)
+        self.fwidth_scale = np.exp(-2j * np.pi * adj_cutoff / fwidth_frac)
         return mp.GaussianSource(
             np.mean(self._frequencies),
-            fwidth=fwidth_frac * np.mean(self._frequencies),cutoff=adj_cutoff
+            fwidth=fwidth_frac * np.mean(self._frequencies),
+            cutoff=adj_cutoff,
         )
 
 
@@ -129,20 +156,24 @@ class EigenmodeCoefficient(ObjectiveQuantity):
           specifying `kpoint_func`. When specified, this overrides the effect of
           `forward` and should have a value of either 0 or 1.
     """
-    def __init__(self,
-                 sim,
-                 volume,
-                 mode,
-                 forward=True,
-                 kpoint_func=None,
-                 kpoint_func_overlap_idx=0,
-                 decimation_factor=0,
-                 **kwargs):
+
+    def __init__(
+        self,
+        sim,
+        volume,
+        mode,
+        forward=True,
+        kpoint_func=None,
+        kpoint_func_overlap_idx=0,
+        decimation_factor=0,
+        **kwargs
+    ):
         super().__init__(sim)
         if kpoint_func_overlap_idx not in [0, 1]:
             raise ValueError(
-                '`kpoint_func_overlap_idx` should be either 0 or 1, but got %d'
-                % (kpoint_func_overlap_idx, ))
+                "`kpoint_func_overlap_idx` should be either 0 or 1, but got %d"
+                % (kpoint_func_overlap_idx,)
+            )
         self.volume = volume
         self.mode = mode
         self.forward = forward
@@ -174,13 +205,14 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         if self.kpoint_func:
             eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
         else:
-            center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
-                self.frequencies))
+            center_frequency = 0.5 * (
+                np.min(self.frequencies) + np.max(self.frequencies)
+            )
             direction = mp.Vector3(
-                *(np.eye(3)[self._monitor.normal_direction] *
-                  np.abs(center_frequency)))
+                *(np.eye(3)[self._monitor.normal_direction] * np.abs(center_frequency))
+            )
             eig_kpoint = -1 * direction if self.forward else direction
-        
+
         if self._frequencies.size == 1:
             amp = da_dE * dJ * scale
             src = time_src
@@ -211,10 +243,12 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             kpoint_func = self.kpoint_func
             overlap_idx = self.kpoint_func_overlap_idx
         else:
-            center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
-                self.frequencies))
-            kpoint = mp.Vector3(*(np.eye(3)[self._monitor.normal_direction] *
-                                  np.abs(center_frequency)))
+            center_frequency = 0.5 * (
+                np.min(self.frequencies) + np.max(self.frequencies)
+            )
+            kpoint = mp.Vector3(
+                *(np.eye(3)[self._monitor.normal_direction] * np.abs(center_frequency))
+            )
             kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
         ob = self.sim.get_eigenmode_coefficients(
@@ -242,22 +276,32 @@ class FourierFields(ObjectiveQuantity):
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
         self._monitor = self.sim.add_dft_fields(
-            [self.component], self._frequencies, where=self.volume, yee_grid=self.yee_grid, decimation_factor=self.decimation_factor)
+            [self.component],
+            self._frequencies,
+            where=self.volume,
+            yee_grid=self.yee_grid,
+            decimation_factor=self.decimation_factor,
+        )
         return self._monitor
 
     def place_adjoint_source(self, dJ):
         time_src = self._create_time_profile()
         sources = []
 
-        mon_size = self.sim.fields.dft_monitor_size(self._monitor.swigobj, self.volume.swigobj, self.component)
+        mon_size = self.sim.fields.dft_monitor_size(
+            self._monitor.swigobj, self.volume.swigobj, self.component
+        )
         dJ = dJ.astype(np.complex128)
-        if np.prod(mon_size)*self.num_freq != dJ.size and np.prod(mon_size)*self.num_freq**2 != dJ.size:
-            raise ValueError('The format of J is incorrect!')
+        if (
+            np.prod(mon_size) * self.num_freq != dJ.size
+            and np.prod(mon_size) * self.num_freq**2 != dJ.size
+        ):
+            raise ValueError("The format of J is incorrect!")
 
         # The objective function J is a vector. Each component corresponds to a frequency.
-        if np.prod(mon_size)*self.num_freq**2 == dJ.size and self.num_freq > 1:
-            dJ = np.sum(dJ,axis=1)
-        '''The adjoint solver requires the objective function
+        if np.prod(mon_size) * self.num_freq**2 == dJ.size and self.num_freq > 1:
+            dJ = np.sum(dJ, axis=1)
+        """The adjoint solver requires the objective function
         to be scalar valued with regard to objective arguments
         and position, but the function may be vector valued
         with regard to frequency. In this case, the Jacobian
@@ -265,28 +309,45 @@ class FourierFields(ObjectiveQuantity):
         frequencies. Because of linearity, we can sum across the
         second frequency dimension to calculate a frequency
         scale factor for each point (rather than a scale vector).
-        '''
+        """
 
-        self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(self.volume.swigobj, self.component, self.sim.fields, dJ)
+        self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(
+            self.volume.swigobj, self.component, self.sim.fields, dJ
+        )
 
         for fourier_data in self.all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
 
             if self.num_freq == 1:
-                sources += [mp.IndexedSource(time_src, fourier_data, scale[:,0], not self.yee_grid)]
+                sources += [
+                    mp.IndexedSource(
+                        time_src, fourier_data, scale[:, 0], not self.yee_grid
+                    )
+                ]
             else:
-                src = FilteredSource(time_src.frequency,self._frequencies,scale,self.sim.fields.dt)
+                src = FilteredSource(
+                    time_src.frequency, self._frequencies, scale, self.sim.fields.dt
+                )
                 (num_basis, num_pts) = src.nodes.shape
                 for basis_i in range(num_basis):
-                    sources += [mp.IndexedSource(src.time_src_bf[basis_i], fourier_data, src.nodes[basis_i], not self.yee_grid)]
+                    sources += [
+                        mp.IndexedSource(
+                            src.time_src_bf[basis_i],
+                            fourier_data,
+                            src.nodes[basis_i],
+                            not self.yee_grid,
+                        )
+                    ]
         return sources
 
     def __call__(self):
-        self._eval = np.array([
-            self.sim.get_dft_array(self._monitor, self.component, i)
-            for i in range(self.num_freq)
-        ])
+        self._eval = np.array(
+            [
+                self.sim.get_dft_array(self._monitor, self.component, i)
+                for i in range(self.num_freq)
+            ]
+        )
         return self._eval
 
 
@@ -294,7 +355,7 @@ class Near2FarFields(ObjectiveQuantity):
     def __init__(self, sim, Near2FarRegions, far_pts, decimation_factor=0):
         super().__init__(sim)
         self.Near2FarRegions = Near2FarRegions
-        self.far_pts = far_pts  #list of far pts
+        self.far_pts = far_pts  # list of far pts
         self._nfar_pts = len(far_pts)
         self.decimation_factor = decimation_factor
 
@@ -322,7 +383,8 @@ class Near2FarFields(ObjectiveQuantity):
         )
 
         all_nearsrcdata = self._monitor.swigobj.near_sourcedata(
-            far_pt_vec, farpt_list, self._nfar_pts, dJ)
+            far_pt_vec, farpt_list, self._nfar_pts, dJ
+        )
         for near_data in all_nearsrcdata:
             cur_comp = near_data.near_fd_comp
             amp_arr = np.array(near_data.amp_arr).reshape(-1, self.num_freq)
@@ -349,12 +411,12 @@ class Near2FarFields(ObjectiveQuantity):
         return sources
 
     def __call__(self):
-        self._eval = np.array([
-            self.sim.get_farfield(self._monitor, far_pt)
-            for far_pt in self.far_pts
-        ]).reshape((self._nfar_pts, self.num_freq, 6))
+        self._eval = np.array(
+            [self.sim.get_farfield(self._monitor, far_pt) for far_pt in self.far_pts]
+        ).reshape((self._nfar_pts, self.num_freq, 6))
         return self._eval
-        
+
+
 class LDOS(ObjectiveQuantity):
     def __init__(self, sim, decimation_factor=0, **kwargs):
         super().__init__(sim)
@@ -372,7 +434,9 @@ class LDOS(ObjectiveQuantity):
             dJ = np.sum(dJ, axis=1)
         dJ = dJ.flatten()
         sources = []
-        forward_f_scale = np.array([self.ldos_scale/self.ldos_Jdata[k] for k in range(self.num_freq)])
+        forward_f_scale = np.array(
+            [self.ldos_scale / self.ldos_Jdata[k] for k in range(self.num_freq)]
+        )
         if self._frequencies.size == 1:
             amp = (dJ * self._adj_src_scale(False) * forward_f_scale)[0]
             src = time_src
@@ -387,9 +451,25 @@ class LDOS(ObjectiveQuantity):
             amp = 1
         for forward_src_i in self.forward_src:
             if isinstance(forward_src_i, mp.EigenModeSource):
-                src_i = mp.EigenModeSource(src, component=forward_src_i.component, eig_kpoint = forward_src_i.eig_kpoint, amplitude=amp, eig_band=forward_src_i.eig_band, size = forward_src_i.size,center=forward_src_i.center, **self.srckwarg)
+                src_i = mp.EigenModeSource(
+                    src,
+                    component=forward_src_i.component,
+                    eig_kpoint=forward_src_i.eig_kpoint,
+                    amplitude=amp,
+                    eig_band=forward_src_i.eig_band,
+                    size=forward_src_i.size,
+                    center=forward_src_i.center,
+                    **self.srckwarg,
+                )
             else:
-                src_i = mp.Source(src, component=forward_src_i.component, amplitude=amp, size = forward_src_i.size,center=forward_src_i.center, **self.srckwarg)
+                src_i = mp.Source(
+                    src,
+                    component=forward_src_i.component,
+                    amplitude=amp,
+                    size=forward_src_i.size,
+                    center=forward_src_i.center,
+                    **self.srckwarg,
+                )
             if mp.is_electric(src_i.component):
                 src_i.amplitude *= -1
             sources += [src_i]

@@ -83,18 +83,20 @@ class Verbosity(object):
         Add a new verbosity flag to be managed. `cvar` should be some object
         that has a `verbosity` attribute, such as `meep.cvar` or `mpb.cvar`.
         """
-        if cvar is None or not hasattr(cvar, 'verbosity'):
+        if cvar is None or not hasattr(cvar, "verbosity"):
             # If we're not given a module.cvar (e.g., while testing) or if the
             # cvar does not have a verbosity member (e.g. the lib hasn't been
             # updated to have a verbosity flag yet) then use a dummy object so
             # things can still run without it.
-            class _dummy():
-                def __init__(self): self.verbosity = 1
+            class _dummy:
+                def __init__(self):
+                    self.verbosity = 1
+
             cvar = _dummy()
 
         # If a name is not given then manufacture one
         if name is None:
-            name = 'cvar_{}'.format(len(self._cvars))
+            name = "cvar_{}".format(len(self._cvars))
         self._cvars[name] = cvar
 
         # And create a property for so it can be accessed like `verbosity.mpb`
@@ -116,7 +118,7 @@ class Verbosity(object):
         is mostly intended for debugging this class and won't likely be useful
         otherwise.
         """
-        return [value.verbosity for value in self._cvars.values() ]
+        return [value.verbosity for value in self._cvars.values()]
 
     def set(self, level):
         """
@@ -124,7 +126,7 @@ class Verbosity(object):
         former value.
         """
         if level < 0 or level > 3:
-            raise ValueError('Only verbosity levels 0-3 are supported')
+            raise ValueError("Only verbosity levels 0-3 are supported")
         old = self._master_verbosity
         for cvar in self._cvars.values():
             cvar.verbosity = level
@@ -155,23 +157,36 @@ class Verbosity(object):
         return f"Verbosity: level={self.get()}"
 
     # Some comparison operators
-    def __gt__(self, o): return self.get() > o
-    def __lt__(self, o): return self.get() < o
-    def __eq__(self, o): return self.get() == o
-    def __ne__(self, o): return self.get() != o
-    def __le__(self, o): return self.get() <= o
-    def __ge__(self, o): return self.get() >= o
+    def __gt__(self, o):
+        return self.get() > o
+
+    def __lt__(self, o):
+        return self.get() < o
+
+    def __eq__(self, o):
+        return self.get() == o
+
+    def __ne__(self, o):
+        return self.get() != o
+
+    def __le__(self, o):
+        return self.get() <= o
+
+    def __ge__(self, o):
+        return self.get() >= o
 
     def make_property(self, name):
         """
         Add a property to the class with the given name that gets or sets the
         verbosity in the cvar with that name in self._cvars.
         """
+
         def _getter(self, name=name):
             return self._cvars[name].verbosity
+
         def _setter(self, level, name=name):
             if level < 0 or level > 3:
-                raise ValueError('Only verbosity levels 0-3 are supported')
+                raise ValueError("Only verbosity levels 0-3 are supported")
             self._cvars[name].verbosity = level
 
         setattr(Verbosity, name, property(_getter, _setter))

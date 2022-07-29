@@ -13,9 +13,11 @@ from meep import mpb
 
 supercell_y = 7  # the (odd) number of lateral supercell periods
 
-geometry_lattice = mp.Lattice(size=mp.Vector3(1, supercell_y),
-                              basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                              basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+geometry_lattice = mp.Lattice(
+    size=mp.Vector3(1, supercell_y),
+    basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+    basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+)
 
 eps = 12  # the dielectric constant of the rods
 r = 0.2  # the rod radius in the bulk crystal
@@ -29,7 +31,9 @@ geometry = mp.geometric_objects_lattice_duplicates(geometry_lattice, geometry)
 geometry += [mp.Cylinder(r, material=mp.air)]
 
 Gamma = mp.Vector3()
-K_prime = mp.lattice_to_reciprocal(mp.Vector3(0.5), geometry_lattice)  # edge of Brillouin zone.
+K_prime = mp.lattice_to_reciprocal(
+    mp.Vector3(0.5), geometry_lattice
+)  # edge of Brillouin zone.
 k_points = mp.interpolate(4, [Gamma, K_prime])
 
 # the bigger the supercell, the more bands you need to compute to get
@@ -44,7 +48,7 @@ ms = mpb.ModeSolver(
     geometry=geometry,
     k_points=k_points,
     num_bands=num_bands,
-    resolution=resolution
+    resolution=resolution,
 )
 
 
@@ -53,8 +57,12 @@ def main():
     # band.  (In general, the guided mode in such an air defect may have
     # exited the gap by the time it reaches the edge of the Brillouin
     # zone at K_prime.)
-    ms.run_tm(mpb.output_at_kpoint(k_points[len(k_points) // 2]), ms.fix_efield_phase,
-              mpb.output_efield_z)
+    ms.run_tm(
+        mpb.output_at_kpoint(k_points[len(k_points) // 2]),
+        ms.fix_efield_phase,
+        mpb.output_efield_z,
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

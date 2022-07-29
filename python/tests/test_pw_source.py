@@ -4,8 +4,8 @@ import math
 import unittest
 from utils import ApproxComparisonTestCase
 
-class TestPwSource(ApproxComparisonTestCase):
 
+class TestPwSource(ApproxComparisonTestCase):
     def setUp(self):
         s = 11
         dpml = 1
@@ -19,6 +19,7 @@ class TestPwSource(ApproxComparisonTestCase):
         def pw_amp(k, x0):
             def _pw_amp(x):
                 return cmath.exp(1j * k.dot(x + x0))
+
             return _pw_amp
 
         fcen = 0.8
@@ -32,22 +33,22 @@ class TestPwSource(ApproxComparisonTestCase):
                 component=mp.Ez,
                 center=mp.Vector3(-0.5 * s, 0),
                 size=mp.Vector3(0, s),
-                amp_func=pw_amp(self.k, mp.Vector3(x=-0.5 * s))
+                amp_func=pw_amp(self.k, mp.Vector3(x=-0.5 * s)),
             ),
             mp.Source(
                 mp.ContinuousSource(fcen, fwidth=df),
                 component=mp.Ez,
                 center=mp.Vector3(0, -0.5 * s),
                 size=mp.Vector3(s, 0),
-                amp_func=pw_amp(self.k, mp.Vector3(y=-0.5 * s))
-            )
+                amp_func=pw_amp(self.k, mp.Vector3(y=-0.5 * s)),
+            ),
         ]
 
         self.sim = mp.Simulation(
             cell_size=cell,
             sources=sources,
             boundary_layers=pml_layers,
-            resolution=resolution
+            resolution=resolution,
         )
         self.sim.use_output_directory(self.temp_dir)
         self.s = s
@@ -72,7 +73,11 @@ class TestPwSource(ApproxComparisonTestCase):
         tol = 1e-4 if mp.is_single_precision() else 1e-9
         self.assertClose(pt1 / pt2, 27.557668029008262, epsilon=tol)
 
-        self.assertAlmostEqual(cmath.exp(1j * self.k.dot(v1 - v2)), 0.7654030066070924 - 0.6435512702783076j)
+        self.assertAlmostEqual(
+            cmath.exp(1j * self.k.dot(v1 - v2)),
+            0.7654030066070924 - 0.6435512702783076j,
+        )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

@@ -18,7 +18,8 @@ def is_leaf_node(partition: mp.BinaryPartition) -> bool:
 
 
 def enumerate_leaf_nodes(
-        partition: mp.BinaryPartition) -> Generator[mp.BinaryPartition, None, None]:
+    partition: mp.BinaryPartition,
+) -> Generator[mp.BinaryPartition, None, None]:
     """Enumerates all leaf nodes of a partition.
 
     Args:
@@ -47,8 +48,9 @@ def partition_has_duplicate_proc_ids(partition: mp.BinaryPartition) -> bool:
     return len(set(proc_ids)) != len(proc_ids)
 
 
-def get_total_weight(partition: mp.BinaryPartition,
-                     weights_by_proc_id: List[float]) -> float:
+def get_total_weight(
+    partition: mp.BinaryPartition, weights_by_proc_id: List[float]
+) -> float:
     """Computes the total weights contained within a BinaryPartition subtree.
 
     Args:
@@ -62,7 +64,7 @@ def get_total_weight(partition: mp.BinaryPartition,
       ValueError: if sim.chunk_layout includes nodes with duplicate proc_ids
     """
     if partition_has_duplicate_proc_ids(partition):
-        raise ValueError('Duplicate proc_ids found in chunk_layout!')
+        raise ValueError("Duplicate proc_ids found in chunk_layout!")
     if partition.proc_id is not None:
         return weights_by_proc_id[partition.proc_id]
     elif partition.left is not None and partition.right is not None:
@@ -70,12 +72,12 @@ def get_total_weight(partition: mp.BinaryPartition,
         right_weight = get_total_weight(partition.right, weights_by_proc_id)
         return left_weight + right_weight
     else:
-        raise ValueError('Partition missing proc_id or left, right attributes!')
+        raise ValueError("Partition missing proc_id or left, right attributes!")
 
 
 def get_left_right_total_weights(
-        partition: mp.BinaryPartition,
-        weights_by_proc_id: List[float]) -> Tuple[float, float]:
+    partition: mp.BinaryPartition, weights_by_proc_id: List[float]
+) -> Tuple[float, float]:
     """Computes the total weights contained in left and right subtrees.
 
     Args:
@@ -94,7 +96,7 @@ def get_left_right_total_weights(
         right_weight = get_total_weight(partition.right, weights_by_proc_id)
         return (left_weight, right_weight)
     else:
-        raise ValueError('Partition missing left, right attributes!')
+        raise ValueError("Partition missing left, right attributes!")
 
 
 def pixel_volume(grid_volume: mp.grid_volume) -> int:
@@ -114,9 +116,11 @@ def pixel_volume(grid_volume: mp.grid_volume) -> int:
         return grid_volume.nx() * grid_volume.ny()
 
 
-def get_total_volume(partition: mp.BinaryPartition,
-                     chunk_volumes: Tuple[mp.grid_volume],
-                     chunk_owners: onp.ndarray) -> float:
+def get_total_volume(
+    partition: mp.BinaryPartition,
+    chunk_volumes: Tuple[mp.grid_volume],
+    chunk_owners: onp.ndarray,
+) -> float:
     """Computes the total pixel volume in a subtree from associated chunk volumes.
 
     NOTE: If multiple chunks are owned by the same process, this function may
@@ -133,14 +137,15 @@ def get_total_volume(partition: mp.BinaryPartition,
     Returns:
       The total pixel volume occupied by all chunks owned by the partition.
     """
-    my_grid_volumes = get_grid_volumes_in_tree(partition, chunk_volumes,
-                                               chunk_owners)
+    my_grid_volumes = get_grid_volumes_in_tree(partition, chunk_volumes, chunk_owners)
     return sum(pixel_volume(vol) for vol in my_grid_volumes)
 
 
 def get_left_right_total_volumes(
-        partition: mp.BinaryPartition, chunk_volumes: Tuple[mp.grid_volume],
-        chunk_owners: onp.ndarray) -> Tuple[float, float]:
+    partition: mp.BinaryPartition,
+    chunk_volumes: Tuple[mp.grid_volume],
+    chunk_owners: onp.ndarray,
+) -> Tuple[float, float]:
     """Computes the total pixel volume in left and right subtrees.
 
     Args:
@@ -159,16 +164,17 @@ def get_left_right_total_volumes(
     """
     if partition.left is not None and partition.right is not None:
         left_volume = get_total_volume(partition.left, chunk_volumes, chunk_owners)
-        right_volume = get_total_volume(partition.right, chunk_volumes,
-                                        chunk_owners)
+        right_volume = get_total_volume(partition.right, chunk_volumes, chunk_owners)
         return (left_volume, right_volume)
     else:
-        raise ValueError('Partition missing left, right attributes!')
+        raise ValueError("Partition missing left, right attributes!")
 
 
-def get_grid_volumes_in_tree(partition: mp.BinaryPartition,
-                             chunk_volumes: Tuple[mp.grid_volume],
-                             chunk_owners: onp.ndarray) -> List[mp.grid_volume]:
+def get_grid_volumes_in_tree(
+    partition: mp.BinaryPartition,
+    chunk_volumes: Tuple[mp.grid_volume],
+    chunk_owners: onp.ndarray,
+) -> List[mp.grid_volume]:
     """Fetches a list of grid_volumes contained in a BinaryPartition subtree.
 
     NOTE: If multiple chunks are owned by the same process, this function may
@@ -187,7 +193,7 @@ def get_grid_volumes_in_tree(partition: mp.BinaryPartition,
       the partition. The list is not necessarily ordered by proc_id values.
     """
     if partition_has_duplicate_proc_ids(partition):
-        warnings.warn('Partition has duplicate proc_ids, overcounting possible!')
+        warnings.warn("Partition has duplicate proc_ids, overcounting possible!")
 
     my_proc_ids = [node.proc_id for node in enumerate_leaf_nodes(partition)]
 
@@ -198,9 +204,11 @@ def get_grid_volumes_in_tree(partition: mp.BinaryPartition,
     ]
 
 
-def get_total_volume_per_process(partition: mp.BinaryPartition,
-                                 chunk_volumes: Tuple[mp.grid_volume],
-                                 chunk_owners: onp.ndarray) -> Dict[int, float]:
+def get_total_volume_per_process(
+    partition: mp.BinaryPartition,
+    chunk_volumes: Tuple[mp.grid_volume],
+    chunk_owners: onp.ndarray,
+) -> Dict[int, float]:
     """Computes the total pixel volume per process contained in a BinaryPartition.
 
     Args:
@@ -217,15 +225,20 @@ def get_total_volume_per_process(partition: mp.BinaryPartition,
     volumes_per_process = {}
     leaf_nodes_in_tree = enumerate_leaf_nodes(partition)
     for leaf in leaf_nodes_in_tree:
-        total_volume = sum(pixel_volume(chunk_volumes[i]) for i, owner in enumerate(chunk_owners) if owner == leaf.proc_id)
+        total_volume = sum(
+            pixel_volume(chunk_volumes[i])
+            for i, owner in enumerate(chunk_owners)
+            if owner == leaf.proc_id
+        )
 
         volumes_per_process[leaf.proc_id] = total_volume
     return volumes_per_process
 
 
 def get_box_ranges(
-        partition: mp.BinaryPartition, chunk_volumes: Tuple[mp.grid_volume],
-        chunk_owners: onp.ndarray
+    partition: mp.BinaryPartition,
+    chunk_volumes: Tuple[mp.grid_volume],
+    chunk_owners: onp.ndarray,
 ) -> Tuple[float, float, float, float, float, float]:
     """Gets the max and min x, y, z dimensions spanned by a partition.
 
@@ -268,12 +281,10 @@ def get_box_ranges(
             xmaxs.append(vol.surroundings().get_max_corner().x())
             ymaxs.append(vol.surroundings().get_max_corner().y())
             zmaxs.append(vol.surroundings().get_max_corner().z())
-    return (min(xmins), max(xmaxs), min(ymins), max(ymaxs), min(zmins),
-            max(zmaxs))
+    return (min(xmins), max(xmaxs), min(ymins), max(ymaxs), min(zmins), max(zmaxs))
 
 
-def partitions_are_equal(bp1: mp.BinaryPartition,
-                         bp2: mp.BinaryPartition) -> bool:
+def partitions_are_equal(bp1: mp.BinaryPartition, bp2: mp.BinaryPartition) -> bool:
     """Determines if two partitions have all nodes with identical attributes.
 
     Args:
@@ -286,10 +297,13 @@ def partitions_are_equal(bp1: mp.BinaryPartition,
     if is_leaf_node(bp1) and is_leaf_node(bp2):
         return bp1.proc_id == bp2.proc_id
     elif (not is_leaf_node(bp1)) and (not is_leaf_node(bp2)):
-        return all([
-            bp1.split_dir == bp2.split_dir, bp1.split_pos == bp2.split_pos,
-            partitions_are_equal(bp1.left, bp2.left),
-            partitions_are_equal(bp1.right, bp2.right)
-        ])
+        return all(
+            [
+                bp1.split_dir == bp2.split_dir,
+                bp1.split_pos == bp2.split_pos,
+                partitions_are_equal(bp1.left, bp2.left),
+                partitions_are_equal(bp1.right, bp2.right),
+            ]
+        )
     else:
         return False

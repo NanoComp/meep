@@ -30,13 +30,22 @@ def main():
     fcen = 0.25  # pulse center frequency
     df = 1.5  # pulse freq. width: large df = short impulse
 
-    s = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Hz,
-                  center=mp.Vector3(0.1234))
+    s = mp.Source(
+        src=mp.GaussianSource(fcen, fwidth=df),
+        component=mp.Hz,
+        center=mp.Vector3(0.1234),
+    )
 
     sym = mp.Mirror(direction=mp.Y, phase=-1)
 
-    sim = mp.Simulation(cell_size=cell, geometry=[b, c], sources=[s], symmetries=[sym],
-                        boundary_layers=[mp.PML(dpml, direction=mp.Y)], resolution=20)
+    sim = mp.Simulation(
+        cell_size=cell,
+        geometry=[b, c],
+        sources=[s],
+        symmetries=[sym],
+        boundary_layers=[mp.PML(dpml, direction=mp.Y)],
+        resolution=20,
+    )
 
     if kx := False:
         sim.k_point = mp.Vector3(kx)
@@ -44,7 +53,7 @@ def main():
         sim.run(
             mp.at_beginning(mp.output_epsilon),
             mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
-            until_after_sources=300
+            until_after_sources=300,
         )
 
         sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
@@ -55,5 +64,5 @@ def main():
         sim.run_k_points(300, mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

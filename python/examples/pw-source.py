@@ -26,12 +26,14 @@ resolution = 10
 def pw_amp(k, x0):
     def _pw_amp(x):
         return cmath.exp(1j * k.dot(x + x0))
+
     return _pw_amp
+
 
 fcen = 0.8  # pulse center frequency
 df = 0.02  # turn-on bandwidth
 kdir = mp.Vector3(1, 1)  # direction of k (length is irrelevant)
-n = 1 # refractive index of material containing the source
+n = 1  # refractive index of material containing the source
 k = kdir.unit().scale(2 * math.pi * fcen * n)  # k with correct length
 
 sources = [
@@ -40,15 +42,15 @@ sources = [
         component=mp.Ez,
         center=mp.Vector3(-0.5 * s, 0),
         size=mp.Vector3(0, s),
-        amp_func=pw_amp(k, mp.Vector3(x=-0.5 * s))
+        amp_func=pw_amp(k, mp.Vector3(x=-0.5 * s)),
     ),
     mp.Source(
         mp.ContinuousSource(fcen, fwidth=df),
         component=mp.Ez,
         center=mp.Vector3(0, -0.5 * s),
         size=mp.Vector3(s, 0),
-        amp_func=pw_amp(k, mp.Vector3(y=-0.5 * s))
-    )
+        amp_func=pw_amp(k, mp.Vector3(y=-0.5 * s)),
+    ),
 ]
 
 sim = mp.Simulation(

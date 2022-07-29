@@ -33,16 +33,19 @@ class TestFieldFunctions(unittest.TestCase):
         fcen = 1.0
         df = 1.0
 
-        sources = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(),
-                            component=mp.Ez)
+        sources = mp.Source(
+            src=mp.GaussianSource(fcen, fwidth=df), center=mp.Vector3(), component=mp.Ez
+        )
 
         symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
 
-        return mp.Simulation(resolution=resolution,
-                             cell_size=cell,
-                             boundary_layers=[pml_layers],
-                             sources=[sources],
-                             symmetries=symmetries)
+        return mp.Simulation(
+            resolution=resolution,
+            cell_size=cell,
+            boundary_layers=[pml_layers],
+            sources=[sources],
+            symmetries=symmetries,
+        )
 
     def init2(self):
         n = 3.4
@@ -55,7 +58,7 @@ class TestFieldFunctions(unittest.TestCase):
 
         geometry = [
             mp.Cylinder(radius=r + w, height=mp.inf, material=mp.Medium(index=n)),
-            mp.Cylinder(radius=r, height=mp.inf, material=mp.air)
+            mp.Cylinder(radius=r, height=mp.inf, material=mp.air),
         ]
 
         pml_layers = [mp.PML(dpml)]
@@ -63,17 +66,24 @@ class TestFieldFunctions(unittest.TestCase):
         fcen = 0.118
         df = 0.010
 
-        sources = [mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
-                             center=mp.Vector3(r + 0.1))]
+        sources = [
+            mp.Source(
+                src=mp.GaussianSource(fcen, fwidth=df),
+                component=mp.Ez,
+                center=mp.Vector3(r + 0.1),
+            )
+        ]
 
         symmetries = [mp.Mirror(mp.Y)]
 
-        return mp.Simulation(cell_size=cell,
-                             resolution=resolution,
-                             geometry=geometry,
-                             boundary_layers=pml_layers,
-                             sources=sources,
-                             symmetries=symmetries)
+        return mp.Simulation(
+            cell_size=cell,
+            resolution=resolution,
+            geometry=geometry,
+            boundary_layers=pml_layers,
+            sources=sources,
+            symmetries=symmetries,
+        )
 
     def test_integrate_field_function(self):
         sim = self.init()
@@ -107,5 +117,6 @@ class TestFieldFunctions(unittest.TestCase):
         res = sim.max_abs_field_function(self.cs, f, self.vol)
         self.assertAlmostEqual(res, 0.27593732304637586)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

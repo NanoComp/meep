@@ -32,7 +32,7 @@ ms = mpb.ModeSolver(
     geometry=geometry,
     k_points=k_points,
     resolution=resolution,
-    num_bands=num_bands
+    num_bands=num_bands,
 )
 
 
@@ -41,9 +41,12 @@ def main():
     t0 = time.time()
     ms.run_te()
     ms.run_tm()
-    print("total time for both TE and TM bands: {:.2f} seconds".format(time.time() - t0))
+    print(
+        "total time for both TE and TM bands: {:.2f} seconds".format(time.time() - t0)
+    )
 
     ms.display_eigensolver_stats()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

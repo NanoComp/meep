@@ -2,8 +2,8 @@ import unittest
 import meep as mp
 from utils import ApproxComparisonTestCase
 
-class TestRingCyl(ApproxComparisonTestCase):
 
+class TestRingCyl(ApproxComparisonTestCase):
     def setUp(self):
         n = 3.4
         w = 1
@@ -19,7 +19,7 @@ class TestRingCyl(ApproxComparisonTestCase):
             mp.Block(
                 center=mp.Vector3(self.r + (w / 2)),
                 size=mp.Vector3(w, mp.inf, mp.inf),
-                material=mp.Medium(index=n)
+                material=mp.Medium(index=n),
             )
         ]
 
@@ -32,7 +32,7 @@ class TestRingCyl(ApproxComparisonTestCase):
             mp.Source(
                 src=mp.GaussianSource(self.fcen, fwidth=self.df),
                 component=mp.Ez,
-                center=mp.Vector3(self.r + 0.1)
+                center=mp.Vector3(self.r + 0.1),
             )
         ]
 
@@ -44,7 +44,7 @@ class TestRingCyl(ApproxComparisonTestCase):
             sources=sources,
             dimensions=dimensions,
             m=m,
-            split_chunks_evenly=False
+            split_chunks_evenly=False,
         )
 
     def test_ring_cyl(self):
@@ -67,5 +67,5 @@ class TestRingCyl(ApproxComparisonTestCase):
         self.assertClose(expected, res, epsilon=tol)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

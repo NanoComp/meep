@@ -23,15 +23,20 @@ r = 0.3  # the radius of the holes
 supercell_h = 4  # height of the supercell
 
 # triangular lattice with vertical supercell:
-geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1, supercell_h),
-                              basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                              basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+geometry_lattice = mp.Lattice(
+    size=mp.Vector3(1, 1, supercell_h),
+    basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+    basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+)
 
 geometry = [
-    mp.Block(material=mp.Medium(epsilon=loweps), center=mp.Vector3(z=0.25 * supercell_h),
-             size=mp.Vector3(mp.inf, mp.inf, 0.5 * supercell_h)),
+    mp.Block(
+        material=mp.Medium(epsilon=loweps),
+        center=mp.Vector3(z=0.25 * supercell_h),
+        size=mp.Vector3(mp.inf, mp.inf, 0.5 * supercell_h),
+    ),
     mp.Block(material=mp.Medium(epsilon=eps), size=mp.Vector3(mp.inf, mp.inf, h)),
-    mp.Cylinder(r, material=mp.air, height=supercell_h)
+    mp.Cylinder(r, material=mp.air, height=supercell_h),
 ]
 
 # 1st Brillouin zone of a triangular lattice:
@@ -40,7 +45,7 @@ M = mp.Vector3(y=0.5)
 K = mp.Vector3(1 / -3, 1 / 3)
 
 only_K = False  # run with only_K=true to only do this k_point
-k_interp = 4   # the number of k points to interpolate
+k_interp = 4  # the number of k points to interpolate
 k_points = [K] if only_K else mp.interpolate(k_interp, [Gamma, M, K, Gamma])
 resolution = mp.Vector3(32, 32, 16)
 num_bands = 9
@@ -50,7 +55,7 @@ ms = mpb.ModeSolver(
     geometry=geometry,
     resolution=resolution,
     num_bands=num_bands,
-    k_points=k_points
+    k_points=k_points,
 )
 
 
@@ -65,5 +70,6 @@ def main():
 
     ms.display_eigensolver_stats()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -20,61 +20,57 @@ from meep.source import EigenModeSource, check_positive
 # for the different plotting routines.
 
 default_source_parameters = {
-        'color':'r',
-        'edgecolor':'r',
-        'facecolor':'none',
-        'hatch':'/',
-        'linewidth':2
-    }
+    "color": "r",
+    "edgecolor": "r",
+    "facecolor": "none",
+    "hatch": "/",
+    "linewidth": 2,
+}
 
 default_monitor_parameters = {
-        'color':'b',
-        'edgecolor':'b',
-        'facecolor':'none',
-        'hatch':'/',
-        'linewidth':2
-    }
+    "color": "b",
+    "edgecolor": "b",
+    "facecolor": "none",
+    "hatch": "/",
+    "linewidth": 2,
+}
 
 default_field_parameters = {
-        'interpolation':'spline36',
-        'cmap':'RdBu',
-        'alpha':0.8,
-        'post_process':np.real
-        }
+    "interpolation": "spline36",
+    "cmap": "RdBu",
+    "alpha": 0.8,
+    "post_process": np.real,
+}
 
 default_eps_parameters = {
-        'interpolation':'spline36',
-        'cmap':'binary',
-        'alpha':1.0,
-        'contour':False,
-        'contour_linewidth':1,
-        'frequency':None,
-        'resolution':None
-    }
+    "interpolation": "spline36",
+    "cmap": "binary",
+    "alpha": 1.0,
+    "contour": False,
+    "contour_linewidth": 1,
+    "frequency": None,
+    "resolution": None,
+}
 
 default_boundary_parameters = {
-        'color':'g',
-        'edgecolor':'g',
-        'facecolor':'none',
-        'hatch':'/'
-    }
+    "color": "g",
+    "edgecolor": "g",
+    "facecolor": "none",
+    "hatch": "/",
+}
 
 default_volume_parameters = {
-        'alpha':1.0,
-        'color':'k',
-        'linestyle':'-',
-        'linewidth':1,
-        'marker':'.',
-        'edgecolor':'k',
-        'facecolor':'none',
-        'hatch':'/'
-    }
-
-default_label_parameters = {
-    'label_color':'r',
-    'offset':20,
-    'label_alpha':0.3
+    "alpha": 1.0,
+    "color": "k",
+    "linestyle": "-",
+    "linewidth": 1,
+    "marker": ".",
+    "edgecolor": "k",
+    "facecolor": "none",
+    "hatch": "/",
 }
+
+default_label_parameters = {"label_color": "r", "offset": 20, "label_alpha": 0.3}
 
 # Used to remove the elements of a dictionary (dict_to_filter) that
 # don't correspond to the keyword arguments of a particular
@@ -82,6 +78,7 @@ default_label_parameters = {
 # Adapted from https://stackoverflow.com/questions/26515595/how-does-one-ignore-unexpected-keyword-arguments-passed-to-a-function/44052550
 def filter_dict(dict_to_filter, func_with_kwargs):
     import inspect
+
     filter_keys = []
     try:
         # Python3 ...
@@ -91,10 +88,16 @@ def filter_dict(dict_to_filter, func_with_kwargs):
         # Python2 ...
         filter_keys = inspect.getargspec(func_with_kwargs)[0]
 
-    return {filter_key: dict_to_filter[filter_key] for filter_key in filter_keys if filter_key in dict_to_filter}
+    return {
+        filter_key: dict_to_filter[filter_key]
+        for filter_key in filter_keys
+        if filter_key in dict_to_filter
+    }
+
 
 # ------------------------------------------------------- #
 # Routines to add legends to plot
+
 
 def place_label(ax, label_text, x, y, centerx, centery, label_parameters=None):
 
@@ -103,18 +106,24 @@ def place_label(ax, label_text, x, y, centerx, centery, label_parameters=None):
     else:
         label_parameters = dict(default_label_parameters, **label_parameters)
 
-    offset = label_parameters['offset']
-    alpha = label_parameters['label_alpha']
-    color = label_parameters['label_color']
+    offset = label_parameters["offset"]
+    alpha = label_parameters["label_alpha"]
+    color = label_parameters["label_color"]
 
     xtext = -offset if x > centerx else offset
     ytext = -offset if y > centery else offset
-    ax.annotate(label_text, xy=(x, y), xytext=(xtext, ytext),
-                textcoords='offset points', ha='center', va='bottom',
-                bbox=dict(boxstyle='round,pad=0.2', fc=color, alpha=alpha),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0.5',
-                                color=color))
+    ax.annotate(
+        label_text,
+        xy=(x, y),
+        xytext=(xtext, ytext),
+        textcoords="offset points",
+        ha="center",
+        va="bottom",
+        bbox=dict(boxstyle="round,pad=0.2", fc=color, alpha=alpha),
+        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.5", color=color),
+    )
     return ax
+
 
 # ------------------------------------------------------- #
 # Helper functions used to plot volumes on a 2D plane
@@ -127,41 +136,55 @@ def intersect_volume_volume(volume1, volume2):
     # volume2 ............... [volume]
 
     # Represent the volumes by an "upper" and "lower" coordinate
-    U1 = [volume1.center.x+volume1.size.x/2,
-          volume1.center.y+volume1.size.y/2,
-          volume1.center.z+volume1.size.z/2]
-    L1 = [volume1.center.x-volume1.size.x/2,
-          volume1.center.y-volume1.size.y/2,
-          volume1.center.z-volume1.size.z/2]
+    U1 = [
+        volume1.center.x + volume1.size.x / 2,
+        volume1.center.y + volume1.size.y / 2,
+        volume1.center.z + volume1.size.z / 2,
+    ]
+    L1 = [
+        volume1.center.x - volume1.size.x / 2,
+        volume1.center.y - volume1.size.y / 2,
+        volume1.center.z - volume1.size.z / 2,
+    ]
 
-    U2 = [volume2.center.x+volume2.size.x/2,
-          volume2.center.y+volume2.size.y/2,
-          volume2.center.z+volume2.size.z/2]
-    L2 = [volume2.center.x-volume2.size.x/2,
-          volume2.center.y-volume2.size.y/2,
-          volume2.center.z-volume2.size.z/2]
+    U2 = [
+        volume2.center.x + volume2.size.x / 2,
+        volume2.center.y + volume2.size.y / 2,
+        volume2.center.z + volume2.size.z / 2,
+    ]
+    L2 = [
+        volume2.center.x - volume2.size.x / 2,
+        volume2.center.y - volume2.size.y / 2,
+        volume2.center.z - volume2.size.z / 2,
+    ]
 
     # Evaluate intersection
-    U = np.min([U1,U2],axis=0)
-    L = np.max([L1,L2],axis=0)
+    U = np.min([U1, U2], axis=0)
+    L = np.max([L1, L2], axis=0)
 
     # For single points we have to check manually
-    if np.all(U - L == 0) and ((not volume1.pt_in_volume(Vector3(*U))) or (not volume2.pt_in_volume(Vector3(*U)))):
+    if np.all(U - L == 0) and (
+        (not volume1.pt_in_volume(Vector3(*U)))
+        or (not volume2.pt_in_volume(Vector3(*U)))
+    ):
         return []
 
     # Check for two volumes that don't intersect
-    if np.any(U-L < 0):
+    if np.any(U - L < 0):
         return []
 
     # Pull all possible vertices
     vertices = []
-    for x_vals in [L[0],U[0]]:
-        for y_vals in [L[1],U[1]]:
-            vertices.extend(Vector3(x_vals,y_vals,z_vals) for z_vals in [L[2],U[2]])
+    for x_vals in [L[0], U[0]]:
+        for y_vals in [L[1], U[1]]:
+            vertices.extend(Vector3(x_vals, y_vals, z_vals) for z_vals in [L[2], U[2]])
     # Remove any duplicate points caused by coplanar lines
-    vertices = [vertices[i] for i, x in enumerate(vertices) if x not in vertices[i+1:]]
+    vertices = [
+        vertices[i] for i, x in enumerate(vertices) if x not in vertices[i + 1 :]
+    ]
 
     return vertices
+
 
 # All of the 2D plotting routines need an output plane over which to plot.
 # The user has many options to specify this output plane. They can pass
@@ -181,27 +204,36 @@ def get_2D_dimensions(sim, output_plane):
     elif sim.output_volume:
         plane_center, plane_size = mp.get_center_and_size(sim.output_volume)
     elif (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-        plane_center, plane_size = (sim.geometry_center+mp.Vector3(sim.cell_size.x/2), sim.cell_size)
+        plane_center, plane_size = (
+            sim.geometry_center + mp.Vector3(sim.cell_size.x / 2),
+            sim.cell_size,
+        )
     else:
         plane_center, plane_size = (sim.geometry_center, sim.cell_size)
-    plane_volume = Volume(center=plane_center,size=plane_size)
+    plane_volume = Volume(center=plane_center, size=plane_size)
 
     if plane_size.x != 0 and plane_size.y != 0 and plane_size.z != 0:
         raise ValueError("Plane volume must be 2D (a plane).")
     if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-        center = sim.geometry_center+mp.Vector3(sim.cell_size.x/2)
-        check_volume = mp.Volume(center=center, size = sim.cell_size)
+        center = sim.geometry_center + mp.Vector3(sim.cell_size.x / 2)
+        check_volume = mp.Volume(center=center, size=sim.cell_size)
     else:
         check_volume = Volume(center=sim.geometry_center, size=sim.cell_size)
     vertices = intersect_volume_volume(check_volume, plane_volume)
 
     if len(vertices) == 0:
-        raise ValueError("The specified user volume is completely outside of the simulation domain.")
+        raise ValueError(
+            "The specified user volume is completely outside of the simulation domain."
+        )
 
     intersection_vol = Volume(vertices=vertices)
 
-    if (intersection_vol.size != plane_volume.size) or (intersection_vol.center != plane_volume.center):
-        warnings.warn('The specified user volume is larger than the simulation domain and has been truncated.')
+    if (intersection_vol.size != plane_volume.size) or (
+        intersection_vol.center != plane_volume.center
+    ):
+        warnings.warn(
+            "The specified user volume is larger than the simulation domain and has been truncated."
+        )
 
     sim_center, sim_size = (intersection_vol.center, intersection_vol.size)
     return sim_center, sim_size
@@ -215,19 +247,23 @@ def box_vertices(box_center, box_size, is_cylindrical=False):
         xmin = 0
         xmax = box_size.x
     else:
-        xmin = box_center.x - 0.5*box_size.x
-        xmax = box_center.x + 0.5*box_size.x
-    ymin = box_center.y - 0.5*box_size.y
-    ymax = box_center.y + 0.5*box_size.y
-    zmin = box_center.z - 0.5*box_size.z
-    zmax = box_center.z + 0.5*box_size.z
+        xmin = box_center.x - 0.5 * box_size.x
+        xmax = box_center.x + 0.5 * box_size.x
+    ymin = box_center.y - 0.5 * box_size.y
+    ymax = box_center.y + 0.5 * box_size.y
+    zmin = box_center.z - 0.5 * box_size.z
+    zmax = box_center.z + 0.5 * box_size.z
 
     return xmin, xmax, ymin, ymax, zmin, zmax
+
 
 # ------------------------------------------------------- #
 # actual plotting routines
 
-def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, label=None):
+
+def plot_volume(
+    sim, ax, volume, output_plane=None, plotting_parameters=None, label=None
+):
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
     from meep.simulation import Volume
@@ -246,36 +282,40 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
     size = volume.size
     center = volume.center
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(center,
-                                                      size,
-                                                      sim.is_cylindrical)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(center, size, sim.is_cylindrical)
 
     # Add labels if requested
     if label is not None and mp.am_master():
         if sim_size.x == 0:
-            ax = place_label(ax,
-                             label,
-                             center.y,
-                             center.z,
-                             sim_center.y,
-                             sim_center.z,
-                             label_parameters=plotting_parameters)
+            ax = place_label(
+                ax,
+                label,
+                center.y,
+                center.z,
+                sim_center.y,
+                sim_center.z,
+                label_parameters=plotting_parameters,
+            )
         elif sim_size.y == 0:
-            ax = place_label(ax,
-                             label,
-                             center.x,
-                             center.z,
-                             sim_center.x,
-                             sim_center.z,
-                             label_parameters=plotting_parameters)
+            ax = place_label(
+                ax,
+                label,
+                center.x,
+                center.z,
+                sim_center.x,
+                sim_center.z,
+                label_parameters=plotting_parameters,
+            )
         elif sim_size.z == 0:
-            ax = place_label(ax,
-                             label,
-                             center.x,
-                             center.y,
-                             sim_center.x,
-                             sim_center.y,
-                             label_parameters=plotting_parameters)
+            ax = place_label(
+                ax,
+                label,
+                center.x,
+                center.y,
+                sim_center.x,
+                sim_center.y,
+                label_parameters=plotting_parameters,
+            )
 
     # Intersect plane with volume
     intersection = intersect_volume_volume(volume, plane)
@@ -284,63 +324,100 @@ def plot_volume(sim, ax, volume, output_plane=None, plotting_parameters=None, la
     def sort_points(xy):
         xy = np.squeeze(xy)
         xy_mean = np.mean(xy, axis=0)
-        theta = np.arctan2(xy[:,1] - xy_mean[1], xy[:,0] - xy_mean[0])
+        theta = np.arctan2(xy[:, 1] - xy_mean[1], xy[:, 0] - xy_mean[0])
         return xy[np.argsort(theta, axis=0), :]
 
     if mp.am_master():
         # Point volume
         if len(intersection) == 1:
-            point_args = {key:value for key, value in plotting_parameters.items() if key in ['color','marker','alpha','linewidth']}
-            if sim_size.y==0:
-                ax.scatter(center.x,center.z, **point_args)
+            point_args = {
+                key: value
+                for key, value in plotting_parameters.items()
+                if key in ["color", "marker", "alpha", "linewidth"]
+            }
+            if sim_size.y == 0:
+                ax.scatter(center.x, center.z, **point_args)
                 return ax
-            elif sim_size.x==0:
-                ax.scatter(center.y,center.z, **point_args)
+            elif sim_size.x == 0:
+                ax.scatter(center.y, center.z, **point_args)
                 return ax
-            elif sim_size.z==0:
-                ax.scatter(center.x,center.y, **point_args)
+            elif sim_size.z == 0:
+                ax.scatter(center.x, center.y, **point_args)
                 return ax
             else:
                 return ax
 
         # Line volume
         elif len(intersection) == 2:
-            line_args = {key:value for key, value in plotting_parameters.items() if key in ['color','linestyle','linewidth','alpha']}
+            line_args = {
+                key: value
+                for key, value in plotting_parameters.items()
+                if key in ["color", "linestyle", "linewidth", "alpha"]
+            }
             # Plot YZ
             if sim_size.x == 0:
-                ax.plot([a.y for a in intersection], [a.z for a in intersection], **line_args)
+                ax.plot(
+                    [a.y for a in intersection],
+                    [a.z for a in intersection],
+                    **line_args,
+                )
                 return ax
             # Plot XZ
             elif sim_size.y == 0:
-                ax.plot([a.x for a in intersection], [a.z for a in intersection], **line_args)
+                ax.plot(
+                    [a.x for a in intersection],
+                    [a.z for a in intersection],
+                    **line_args,
+                )
                 return ax
             # Plot XY
             elif sim_size.z == 0:
-                ax.plot([a.x for a in intersection], [a.y for a in intersection], **line_args)
+                ax.plot(
+                    [a.x for a in intersection],
+                    [a.y for a in intersection],
+                    **line_args,
+                )
                 return ax
             else:
                 return ax
 
         # Planar volume
         elif len(intersection) > 2:
-            planar_args = {key:value for key, value in plotting_parameters.items() if key in ['edgecolor','linewidth','facecolor','hatch','alpha']}
+            planar_args = {
+                key: value
+                for key, value in plotting_parameters.items()
+                if key in ["edgecolor", "linewidth", "facecolor", "hatch", "alpha"]
+            }
             # Plot YZ
             if sim_size.x == 0:
-                ax.add_patch(patches.Polygon(sort_points([[a.y,a.z] for a in intersection]), **planar_args))
+                ax.add_patch(
+                    patches.Polygon(
+                        sort_points([[a.y, a.z] for a in intersection]), **planar_args
+                    )
+                )
                 return ax
             # Plot XZ
-            elif sim_size.y==0:
-                ax.add_patch(patches.Polygon(sort_points([[a.x,a.z] for a in intersection]), **planar_args))
+            elif sim_size.y == 0:
+                ax.add_patch(
+                    patches.Polygon(
+                        sort_points([[a.x, a.z] for a in intersection]), **planar_args
+                    )
+                )
                 return ax
             # Plot XY
             elif sim_size.z == 0:
-                ax.add_patch(patches.Polygon(sort_points([[a.x,a.y] for a in intersection]), **planar_args))
+                ax.add_patch(
+                    patches.Polygon(
+                        sort_points([[a.x, a.y] for a in intersection]), **planar_args
+                    )
+                )
                 return ax
             else:
                 return ax
         else:
             return ax
     return ax
+
 
 def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     # consolidate plotting parameters
@@ -351,33 +428,35 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
 
     # Determine a frequency to plot all epsilon
     if frequency is not None:
-        warnings.warn("The frequency parameter of plot2D has been deprecated. "
-                      "Use the frequency key of the eps_parameters dictionary instead.")
-        eps_parameters['frequency'] = frequency
-    if eps_parameters['frequency'] is None:
+        warnings.warn(
+            "The frequency parameter of plot2D has been deprecated. "
+            "Use the frequency key of the eps_parameters dictionary instead."
+        )
+        eps_parameters["frequency"] = frequency
+    if eps_parameters["frequency"] is None:
         try:
             # Continuous sources
-            eps_parameters['frequency'] = sim.sources[0].frequency
+            eps_parameters["frequency"] = sim.sources[0].frequency
         except:
             try:
                 # Gaussian sources
-                eps_parameters['frequency'] = sim.sources[0].src.frequency
+                eps_parameters["frequency"] = sim.sources[0].src.frequency
             except:
                 try:
                     # Custom sources
-                    eps_parameters['frequency'] = sim.sources[0].src.center_frequency
+                    eps_parameters["frequency"] = sim.sources[0].src.center_frequency
                 except:
                     # No sources
-                    eps_parameters['frequency'] = 0
+                    eps_parameters["frequency"] = 0
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center,
-                                                      sim_size,
-                                                      sim.is_cylindrical)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+        sim_center, sim_size, sim.is_cylindrical
+    )
 
-    grid_resolution = eps_parameters['resolution'] or sim.resolution
+    grid_resolution = eps_parameters["resolution"] or sim.resolution
     Nx = int((xmax - xmin) * grid_resolution + 1)
     Ny = int((ymax - ymin) * grid_resolution + 1)
     Nz = int((zmax - zmin) * grid_resolution + 1)
@@ -385,42 +464,55 @@ def plot_eps(sim, ax, output_plane=None, eps_parameters=None, frequency=None):
     if sim_size.x == 0:
         # Plot y on x axis, z on y axis (YZ plane)
         extent = [ymin, ymax, zmin, zmax]
-        xlabel = 'Y'
-        ylabel = 'Z'
+        xlabel = "Y"
+        ylabel = "Z"
         xtics = np.array([sim_center.x])
         ytics = np.linspace(ymin, ymax, Ny)
         ztics = np.linspace(zmin, zmax, Nz)
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
         extent = [xmin, xmax, zmin, zmax]
-        xlabel = 'R' if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical else "X"
+        xlabel = (
+            "R" if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical else "X"
+        )
 
-        ylabel = 'Z'
+        ylabel = "Z"
         xtics = np.linspace(xmin, xmax, Nx)
         ytics = np.array([sim_center.y])
         ztics = np.linspace(zmin, zmax, Nz)
     elif sim_size.z == 0:
         # Plot x on x axis, y on y axis (XY plane)
         extent = [xmin, xmax, ymin, ymax]
-        xlabel = 'X'
-        ylabel = 'Y'
+        xlabel = "X"
+        ylabel = "Y"
         xtics = np.linspace(xmin, xmax, Nx)
         ytics = np.linspace(ymin, ymax, Ny)
         ztics = np.array([sim_center.z])
     else:
         raise ValueError("A 2D plane has not been specified...")
 
-    eps_data = np.rot90(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters['frequency'])))
+    eps_data = np.rot90(
+        np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters["frequency"]))
+    )
 
     if mp.am_master():
-        if eps_parameters['contour']:
-            ax.contour(eps_data, 0, levels=np.unique(eps_data), colors='black', origin='upper', extent=extent, linewidths=eps_parameters['contour_linewidth'])
+        if eps_parameters["contour"]:
+            ax.contour(
+                eps_data,
+                0,
+                levels=np.unique(eps_data),
+                colors="black",
+                origin="upper",
+                extent=extent,
+                linewidths=eps_parameters["contour_linewidth"],
+            )
         else:
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
     return ax
+
 
 def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
     # consolidate plotting parameters
@@ -434,62 +526,59 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
 
         thickness = boundary.thickness
 
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center,
-                                                          sim.cell_size,
-                                                          sim.is_cylindrical)
+        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+            sim.geometry_center, sim.cell_size, sim.is_cylindrical
+        )
 
         if direction == mp.X and side == mp.Low:
-            return Volume(center=Vector3(xmin+0.5*thickness,
-                                         sim.geometry_center.y,
-                                         sim.geometry_center.z),
-                          size=Vector3(thickness,
-                                       sim.cell_size.y,
-                                       sim.cell_size.z))
+            return Volume(
+                center=Vector3(
+                    xmin + 0.5 * thickness, sim.geometry_center.y, sim.geometry_center.z
+                ),
+                size=Vector3(thickness, sim.cell_size.y, sim.cell_size.z),
+            )
         elif (direction == mp.X and side == mp.High) or direction == mp.R:
-            return Volume(center=Vector3(xmax-0.5*thickness,
-                                         sim.geometry_center.y,
-                                         sim.geometry_center.z),
-                          size=Vector3(thickness,
-                                       sim.cell_size.y,
-                                       sim.cell_size.z))
+            return Volume(
+                center=Vector3(
+                    xmax - 0.5 * thickness, sim.geometry_center.y, sim.geometry_center.z
+                ),
+                size=Vector3(thickness, sim.cell_size.y, sim.cell_size.z),
+            )
         elif direction == mp.Y and side == mp.Low:
-            return Volume(center=Vector3(sim.geometry_center.x,
-                                         ymin+0.5*thickness,
-                                         sim.geometry_center.z),
-                          size=Vector3(sim.cell_size.x,
-                                       thickness,
-                                       sim.cell_size.z))
+            return Volume(
+                center=Vector3(
+                    sim.geometry_center.x, ymin + 0.5 * thickness, sim.geometry_center.z
+                ),
+                size=Vector3(sim.cell_size.x, thickness, sim.cell_size.z),
+            )
         elif direction == mp.Y and side == mp.High:
-            return Volume(center=Vector3(sim.geometry_center.x,
-                                         ymax-0.5*thickness,
-                                         sim.geometry_center.z),
-                          size=Vector3(sim.cell_size.x,
-                                       thickness,
-                                       sim.cell_size.z))
+            return Volume(
+                center=Vector3(
+                    sim.geometry_center.x, ymax - 0.5 * thickness, sim.geometry_center.z
+                ),
+                size=Vector3(sim.cell_size.x, thickness, sim.cell_size.z),
+            )
         elif direction == mp.Z and side == mp.Low:
             xcen = sim.geometry_center.x
             if sim.is_cylindrical:
-                xcen += 0.5*sim.cell_size.x
-            return Volume(center=Vector3(xcen,
-                                         sim.geometry_center.y,
-                                         zmin+0.5*thickness),
-                          size=Vector3(sim.cell_size.x,
-                                       sim.cell_size.y,
-                                       thickness))
+                xcen += 0.5 * sim.cell_size.x
+            return Volume(
+                center=Vector3(xcen, sim.geometry_center.y, zmin + 0.5 * thickness),
+                size=Vector3(sim.cell_size.x, sim.cell_size.y, thickness),
+            )
         elif direction == mp.Z and side == mp.High:
             xcen = sim.geometry_center.x
             if sim.is_cylindrical:
-                xcen += 0.5*sim.cell_size.x
-            return Volume(center=Vector3(xcen,
-                                         sim.geometry_center.y,
-                                         zmax-0.5*thickness),
-                          size=Vector3(sim.cell_size.x,
-                                       sim.cell_size.y,
-                                       thickness))
+                xcen += 0.5 * sim.cell_size.x
+            return Volume(
+                center=Vector3(xcen, sim.geometry_center.y, zmax - 0.5 * thickness),
+                size=Vector3(sim.cell_size.x, sim.cell_size.y, thickness),
+            )
         else:
             raise ValueError("Invalid boundary type")
 
     import itertools
+
     for boundary in sim.boundary_layers:
         # boundary on all four sides
         if boundary.direction == mp.ALL and boundary.side == mp.ALL:
@@ -504,24 +593,39 @@ def plot_boundaries(sim, ax, output_plane=None, boundary_parameters=None):
             else:
                 raise ValueError("Invalid simulation dimensions")
             for permutation in itertools.product(dims, [mp.Low, mp.High]):
-                if ((permutation[0] == mp.X) and (permutation[1] == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
+                if ((permutation[0] == mp.X) and (permutation[1] == mp.Low)) and (
+                    sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical
+                ):
                     continue
-                vol = get_boundary_volumes(boundary.thickness,*permutation)
-                ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
+                vol = get_boundary_volumes(boundary.thickness, *permutation)
+                ax = plot_volume(
+                    sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
+                )
         # boundary on only two of four sides
         elif boundary.side == mp.ALL:
             for side in [mp.Low, mp.High]:
-                if ((boundary.direction == mp.X) and (side == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
+                if ((boundary.direction == mp.X) and (side == mp.Low)) and (
+                    sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical
+                ):
                     continue
-                vol = get_boundary_volumes(boundary.thickness,boundary.direction,side)
-                ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
+                vol = get_boundary_volumes(boundary.thickness, boundary.direction, side)
+                ax = plot_volume(
+                    sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
+                )
         # boundary on just one side
         else:
-            if ((boundary.direction == mp.X) and (boundary.side == mp.Low)) and (sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical):
+            if ((boundary.direction == mp.X) and (boundary.side == mp.Low)) and (
+                sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical
+            ):
                 continue
-            vol = get_boundary_volumes(boundary.thickness,boundary.direction,boundary.side)
-            ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=boundary_parameters)
+            vol = get_boundary_volumes(
+                boundary.thickness, boundary.direction, boundary.side
+            )
+            ax = plot_volume(
+                sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
+            )
     return ax
+
 
 def plot_sources(sim, ax, output_plane=None, labels=False, source_parameters=None):
     from meep.simulation import Volume
@@ -532,12 +636,20 @@ def plot_sources(sim, ax, output_plane=None, labels=False, source_parameters=Non
     else:
         source_parameters = dict(default_source_parameters, **source_parameters)
 
-    label = 'source' if labels else None
+    label = "source" if labels else None
 
     for src in sim.sources:
-        vol = Volume(center=src.center,size=src.size)
-        ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=source_parameters,label=label)
+        vol = Volume(center=src.center, size=src.size)
+        ax = plot_volume(
+            sim,
+            ax,
+            vol,
+            output_plane,
+            plotting_parameters=source_parameters,
+            label=label,
+        )
     return ax
+
 
 def plot_monitors(sim, ax, output_plane=None, labels=False, monitor_parameters=None):
     from meep.simulation import Volume
@@ -548,13 +660,21 @@ def plot_monitors(sim, ax, output_plane=None, labels=False, monitor_parameters=N
     else:
         monitor_parametesr = dict(default_monitor_parameters, **monitor_parameters)
 
-    label = 'monitor' if labels else None
+    label = "monitor" if labels else None
 
     for mon in sim.dft_objects:
         for reg in mon.regions:
-            vol = Volume(center=reg.center,size=reg.size)
-            ax = plot_volume(sim,ax,vol,output_plane,plotting_parameters=monitor_parameters,label=label)
+            vol = Volume(center=reg.center, size=reg.size)
+            ax = plot_volume(
+                sim,
+                ax,
+                vol,
+                output_plane,
+                plotting_parameters=monitor_parameters,
+                label=label,
+            )
     return ax
+
 
 def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=None):
     if not sim._is_initialized:
@@ -568,35 +688,48 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     else:
         field_parameters = dict(default_field_parameters, **field_parameters)
 
-    if fields not in [mp.Ex, mp.Ey, mp.Ez, mp.Er, mp.Ep, mp.Dx, mp.Dy, mp.Dz, mp.Hx, mp.Hy, mp.Hz]:
-        raise ValueError('Please specify a valid field component (mp.Ex, mp.Ey, ...')
-
+    if fields not in [
+        mp.Ex,
+        mp.Ey,
+        mp.Ez,
+        mp.Er,
+        mp.Ep,
+        mp.Dx,
+        mp.Dy,
+        mp.Dz,
+        mp.Hx,
+        mp.Hy,
+        mp.Hz,
+    ]:
+        raise ValueError("Please specify a valid field component (mp.Ex, mp.Ey, ...")
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim_center,
-                                                      sim_size,
-                                                      sim.is_cylindrical)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+        sim_center, sim_size, sim.is_cylindrical
+    )
 
     if sim_size.x == 0:
         # Plot y on x axis, z on y axis (YZ plane)
         extent = [ymin, ymax, zmin, zmax]
-        xlabel = 'Y'
-        ylabel = 'Z'
+        xlabel = "Y"
+        ylabel = "Z"
     elif sim_size.y == 0:
         # Plot x on x axis, z on y axis (XZ plane)
         extent = [xmin, xmax, zmin, zmax]
-        xlabel = 'R' if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical else "X"
+        xlabel = (
+            "R" if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical else "X"
+        )
 
-        ylabel = 'Z'
+        ylabel = "Z"
     elif sim_size.z == 0:
         # Plot x on x axis, y on y axis (XY plane)
         extent = [xmin, xmax, ymin, ymax]
-        xlabel = 'X'
-        ylabel = 'Y'
+        xlabel = "X"
+        ylabel = "Y"
     fields = sim.get_array(center=sim_center, size=sim_size, component=fields)
-    fields = field_parameters['post_process'](fields)
+    fields = field_parameters["post_process"](fields)
     if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
         fields = np.flipud(fields)
     else:
@@ -605,52 +738,88 @@ def plot_fields(sim, ax=None, fields=None, output_plane=None, field_parameters=N
     if not ax:
         return fields
     if mp.am_master():
-        ax.imshow(fields, extent=extent, **filter_dict(field_parameters,ax.imshow))
+        ax.imshow(fields, extent=extent, **filter_dict(field_parameters, ax.imshow))
     return ax
 
-def plot2D(sim, ax=None, output_plane=None, fields=None, labels=False,
-           eps_parameters=None, boundary_parameters=None,
-           source_parameters=None, monitor_parameters=None,
-           field_parameters=None, frequency=None,
-           plot_eps_flag=True, plot_sources_flag=True,
-           plot_monitors_flag=True, plot_boundaries_flag=True):
+
+def plot2D(
+    sim,
+    ax=None,
+    output_plane=None,
+    fields=None,
+    labels=False,
+    eps_parameters=None,
+    boundary_parameters=None,
+    source_parameters=None,
+    monitor_parameters=None,
+    field_parameters=None,
+    frequency=None,
+    plot_eps_flag=True,
+    plot_sources_flag=True,
+    plot_monitors_flag=True,
+    plot_boundaries_flag=True,
+):
 
     # Ensure a figure axis exists
     if ax is None and mp.am_master():
         from matplotlib import pyplot as plt
+
         ax = plt.gca()
 
     # validate the output plane to ensure proper 2D coordinates
     from meep.simulation import Volume
+
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
     output_plane = Volume(center=sim_center, size=sim_size)
 
     # Plot geometry
     if plot_eps_flag:
-        ax = plot_eps(sim, ax, output_plane=output_plane,
-                      eps_parameters=eps_parameters, frequency=frequency)
+        ax = plot_eps(
+            sim,
+            ax,
+            output_plane=output_plane,
+            eps_parameters=eps_parameters,
+            frequency=frequency,
+        )
 
     # Plot boundaries
     if plot_boundaries_flag:
-        ax = plot_boundaries(sim, ax, output_plane=output_plane,
-                             boundary_parameters=boundary_parameters)
+        ax = plot_boundaries(
+            sim, ax, output_plane=output_plane, boundary_parameters=boundary_parameters
+        )
 
     # Plot sources
     if plot_sources_flag:
-        ax = plot_sources(sim, ax, output_plane=output_plane,
-                          labels=labels, source_parameters=source_parameters)
+        ax = plot_sources(
+            sim,
+            ax,
+            output_plane=output_plane,
+            labels=labels,
+            source_parameters=source_parameters,
+        )
 
     # Plot monitors
     if plot_monitors_flag:
-        ax = plot_monitors(sim, ax, output_plane=output_plane,
-                           labels=labels, monitor_parameters=monitor_parameters)
+        ax = plot_monitors(
+            sim,
+            ax,
+            output_plane=output_plane,
+            labels=labels,
+            monitor_parameters=monitor_parameters,
+        )
 
     # Plot fields
     if fields is not None:
-        ax = plot_fields(sim, ax, fields, output_plane=output_plane,
-                         field_parameters=field_parameters)
+        ax = plot_fields(
+            sim,
+            ax,
+            fields,
+            output_plane=output_plane,
+            field_parameters=field_parameters,
+        )
 
     return ax
+
 
 def plot3D(sim):
     from mayavi import mlab
@@ -658,8 +827,9 @@ def plot3D(sim):
     if sim.dimensions < 3:
         raise ValueError("Simulation must have 3 dimensions to visualize 3D")
 
-    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(sim.geometry_center,
-                                                      sim.cell_size)
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+        sim.geometry_center, sim.cell_size
+    )
 
     Nx = int(sim.cell_size.x * sim.resolution) + 1
     Ny = int(sim.cell_size.y * sim.resolution) + 1
@@ -671,6 +841,7 @@ def plot3D(sim):
 
     eps_data = sim.get_epsilon_grid(xtics, ytics, ztics)
     return mlab.contour3d(eps_data, colormap="YlGnBu")
+
 
 def visualize_chunks(sim):
     if sim.structure is None:
@@ -713,10 +884,10 @@ def visualize_chunks(sim):
                 [points[0], points[3], points[5], points[7]],
                 [points[1], points[4], points[2], points[6]],
                 [points[3], points[4], points[1], points[5]],
-                [points[0], points[7], points[6], points[2]]
+                [points[0], points[7], points[6], points[2]],
             ]
 
-            faces = Poly3DCollection(edges, linewidths=1, edgecolors='k')
+            faces = Poly3DCollection(edges, linewidths=1, edgecolors="k")
             color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc], alpha=0.2)
             faces.set_facecolor(color_with_alpha)
             ax.add_collection3d(faces)
@@ -735,11 +906,9 @@ def visualize_chunks(sim):
             points += [low + y_len]
             points = np.array([np.array(v)[:-1] for v in points])
 
-            edges = [
-                [points[0], points[2], points[1], points[3]]
-            ]
+            edges = [[points[0], points[2], points[1], points[3]]]
 
-            faces = PolyCollection(edges, linewidths=1, edgecolors='k')
+            faces = PolyCollection(edges, linewidths=1, edgecolors="k")
             color_with_alpha = matplotlib.colors.to_rgba(chunk_colors[proc])
             faces.set_facecolor(color_with_alpha)
             ax.add_collection(faces)
@@ -749,28 +918,31 @@ def visualize_chunks(sim):
 
     if mp.am_master():
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d' if sim.structure.gv.dim == 2 else None)
+        ax = fig.add_subplot(
+            111, projection="3d" if sim.structure.gv.dim == 2 else None
+        )
         chunk_colors = matplotlib.cm.rainbow(np.linspace(0, 1, mp.count_processors()))
 
         for i, v in enumerate(vols):
             plot_box(mp.gv2box(v.surroundings()), owners[i], fig, ax)
 
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_aspect('equal')
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_aspect("equal")
 
         cell_box = mp.gv2box(sim.structure.gv.surroundings())
         if sim.structure.gv.dim == 2:
-            ax.set_xlim3d(left=cell_box.low.x,right=cell_box.high.x)
-            ax.set_ylim3d(bottom=cell_box.low.y,top=cell_box.high.y)
-            ax.set_zlim3d(bottom=cell_box.low.z,top=cell_box.high.z)
-            ax.set_zlabel('z')
+            ax.set_xlim3d(left=cell_box.low.x, right=cell_box.high.x)
+            ax.set_ylim3d(bottom=cell_box.low.y, top=cell_box.high.y)
+            ax.set_zlim3d(bottom=cell_box.low.z, top=cell_box.high.z)
+            ax.set_zlabel("z")
         else:
-            ax.set_xlim(left=cell_box.low.x,right=cell_box.high.x)
-            ax.set_ylim(bottom=cell_box.low.y,top=cell_box.high.y)
+            ax.set_xlim(left=cell_box.low.x, right=cell_box.high.x)
+            ax.set_ylim(bottom=cell_box.low.y, top=cell_box.high.y)
 
         plt.tight_layout()
         plt.show()
+
 
 # ------------------------------------------------------- #
 # Animate2D
@@ -791,6 +963,7 @@ def visualize_chunks(sim):
 #                       modify plot
 # customization_args .. [dict] other customization args
 #                       to pass to plot2D()
+
 
 class Animate2D(object):
     """
@@ -823,8 +996,17 @@ class Animate2D(object):
     Multiple `Animate2D` objects can be initialized and passed to the run function to
     track different volume locations (using `mp.in_volume`) or field components.
     """
-    def __init__(self, sim, fields, f=None, realtime=False, normalize=False,
-                 plot_modifiers=None, **customization_args):
+
+    def __init__(
+        self,
+        sim,
+        fields,
+        f=None,
+        realtime=False,
+        normalize=False,
+        plot_modifiers=None,
+        **customization_args,
+    ):
         """
         Construct an `Animate2D` object.
 
@@ -868,6 +1050,7 @@ class Animate2D(object):
             self.ax = self.f.gca()
         elif mp.am_master():
             from matplotlib import pyplot as plt
+
             self.f = plt.figure()
             self.ax = self.f.gca()
         else:
@@ -882,20 +1065,20 @@ class Animate2D(object):
         self.cumulative_fields = []
         self._saved_frames = []
 
-        self.frame_format = 'png' # format in which each frame is saved in memory
-        self.codec = 'h264' # encoding of mp4 video
-        self.default_mode = 'loop' # html5 video control mode
+        self.frame_format = "png"  # format in which each frame is saved in memory
+        self.codec = "h264"  # encoding of mp4 video
+        self.default_mode = "loop"  # html5 video control mode
 
         self.init = False
 
         # Needed for step functions
-        self.__code__ = namedtuple('gna_hack',['co_argcount'])
-        self.__code__.co_argcount=2
+        self.__code__ = namedtuple("gna_hack", ["co_argcount"])
+        self.__code__.co_argcount = 2
 
-    def __call__(self,sim,todo):
+    def __call__(self, sim, todo):
         from matplotlib import pyplot as plt
 
-        if todo == 'step':
+        if todo == "step":
             # Initialize the plot
             if not self.init:
                 filtered_plot2D = filter_dict(self.customization_args, plot2D)
@@ -912,11 +1095,13 @@ class Animate2D(object):
                 self.init = True
             else:
                 # Update the plot
-                filtered_plot_fields= filter_dict(self.customization_args, plot_fields)
+                filtered_plot_fields = filter_dict(self.customization_args, plot_fields)
                 fields = sim.plot_fields(fields=self.fields, **filtered_plot_fields)
                 if mp.am_master():
                     self.ax.images[-1].set_data(fields)
-                    self.ax.images[-1].set_clim(vmin=0.8*np.min(fields), vmax=0.8*np.max(fields))
+                    self.ax.images[-1].set_clim(
+                        vmin=0.8 * np.min(fields), vmax=0.8 * np.max(fields)
+                    )
 
             if self.realtime and mp.am_master():
                 # Redraw the current figure if requested
@@ -931,15 +1116,17 @@ class Animate2D(object):
                 # to avoid writing to disk.
                 self.grab_frame()
             return
-        elif todo == 'finish':
+        elif todo == "finish":
 
             # Normalize the frames, if requested, and export
             if self.normalize and mp.am_master():
                 if mp.verbosity.meep > 0:
                     print("Normalizing field data...")
-                fields = np.array(self.cumulative_fields) / np.max(np.abs(self.cumulative_fields), axis=(0,1,2))
+                fields = np.array(self.cumulative_fields) / np.max(
+                    np.abs(self.cumulative_fields), axis=(0, 1, 2)
+                )
                 for k in range(len(self.cumulative_fields)):
-                    self.ax.images[-1].set_data(fields[k,:,:])
+                    self.ax.images[-1].set_data(fields[k, :, :])
                     self.ax.images[-1].set_clim(vmin=-0.8, vmax=0.8)
                     self.grab_frame()
 
@@ -956,9 +1143,10 @@ class Animate2D(object):
         # Saves the figures frame to memory.
         # modified from matplotlib library
         from io import BytesIO
+
         bin_data = BytesIO()
         self.f.savefig(bin_data, format=self.frame_format)
-        #imgdata64 = base64.encodebytes(bin_data.getvalue()).decode('ascii')
+        # imgdata64 = base64.encodebytes(bin_data.getvalue()).decode('ascii')
         self._saved_frames.append(bin_data.getvalue())
 
     def _embedded_frames(self, frame_list, frame_format):
@@ -966,12 +1154,18 @@ class Animate2D(object):
         # frame_list should be a list of base64-encoded png files
         # modified from matplotlib
         import base64
+
         template = '  frames[{0}] = "data:image/{1};base64,{2}"\n'
         return "\n" + "".join(
-            template.format(i, frame_format, base64.encodebytes(frame_data).decode('ascii').replace('\n', '\\\n'))
-            for i, frame_data in enumerate(frame_list))
+            template.format(
+                i,
+                frame_format,
+                base64.encodebytes(frame_data).decode("ascii").replace("\n", "\\\n"),
+            )
+            for i, frame_data in enumerate(frame_list)
+        )
 
-    def to_jshtml(self,fps):
+    def to_jshtml(self, fps):
         """
         Outputs an interactable JSHTML animation object that is embeddable in Jupyter
         notebooks. The object is packaged with controls to manipulate the video's
@@ -984,36 +1178,44 @@ class Animate2D(object):
         # Only works with Python3 and matplotlib > 3.1.0
         from distutils.version import LooseVersion
         import matplotlib
+
         if LooseVersion(matplotlib.__version__) < LooseVersion("3.1.0"):
-            print('-------------------------------')
-            print('Warning: JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+')
-            print('-------------------------------')
+            print("-------------------------------")
+            print(
+                "Warning: JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+"
+            )
+            print("-------------------------------")
             return
         if mp.am_master():
             from uuid import uuid4
-            from matplotlib._animation_data import (DISPLAY_TEMPLATE, INCLUDED_FRAMES, JS_INCLUDE, STYLE_INCLUDE)
+            from matplotlib._animation_data import (
+                DISPLAY_TEMPLATE,
+                INCLUDED_FRAMES,
+                JS_INCLUDE,
+                STYLE_INCLUDE,
+            )
 
             # save the frames to an html file
             fill_frames = self._embedded_frames(self._saved_frames, self.frame_format)
             Nframes = len(self._saved_frames)
-            mode_dict = dict(once_checked='',
-                            loop_checked='',
-                            reflect_checked='')
-            mode_dict[f'{self.default_mode}_checked'] = 'checked'
+            mode_dict = dict(once_checked="", loop_checked="", reflect_checked="")
+            mode_dict[f"{self.default_mode}_checked"] = "checked"
 
             interval = 1000 // fps
 
             html_string = ""
             html_string += JS_INCLUDE
             html_string += STYLE_INCLUDE
-            html_string += DISPLAY_TEMPLATE.format(id=uuid4().hex,
-                                                Nframes=Nframes,
-                                                fill_frames=fill_frames,
-                                                interval=interval,
-                                                **mode_dict)
+            html_string += DISPLAY_TEMPLATE.format(
+                id=uuid4().hex,
+                Nframes=Nframes,
+                fill_frames=fill_frames,
+                interval=interval,
+                **mode_dict,
+            )
             return JS_Animation(html_string)
 
-    def to_gif(self,fps,filename):
+    def to_gif(self, fps, filename):
         """
         Generates and outputs a GIF file of the animation with the filename, `filename`,
         and the frame rate, `fps`. Note that GIFs are significantly larger than mp4 videos
@@ -1027,30 +1229,41 @@ class Animate2D(object):
         if mp.am_master():
             from subprocess import Popen, PIPE
             from io import TextIOWrapper, BytesIO
-            FFMPEG_BIN = 'ffmpeg'
-            command = [FFMPEG_BIN,
-                        '-f', 'image2pipe', # force piping of rawvideo
-                        '-vcodec', self.frame_format, # raw input codec
-                        '-s', '%dx%d' % (self.frame_size),
-                        '-r', str(fps), # frame rate in frames per second
-                        '-i', 'pipe:', # The input comes from a pipe
-                        '-vcodec', 'gif', # output gif format
-                        '-r', str(fps), # frame rate in frames per second
-                        '-y',
-                        '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
-                        '-an', filename  # output filename
+
+            FFMPEG_BIN = "ffmpeg"
+            command = [
+                FFMPEG_BIN,
+                "-f",
+                "image2pipe",  # force piping of rawvideo
+                "-vcodec",
+                self.frame_format,  # raw input codec
+                "-s",
+                "%dx%d" % (self.frame_size),
+                "-r",
+                str(fps),  # frame rate in frames per second
+                "-i",
+                "pipe:",  # The input comes from a pipe
+                "-vcodec",
+                "gif",  # output gif format
+                "-r",
+                str(fps),  # frame rate in frames per second
+                "-y",
+                "-vf",
+                "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2",
+                "-an",
+                filename,  # output filename
             ]
             if mp.verbosity.meep > 0:
                 print("Generating GIF...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)):
                 proc.stdin.write(self._saved_frames[i])
-            out, err = proc.communicate() # pipe in images
+            out, err = proc.communicate()  # pipe in images
             proc.stdin.close()
             proc.wait()
         return
 
-    def to_mp4(self,fps,filename):
+    def to_mp4(self, fps, filename):
         """
         Generates and outputs an mp4 video file of the animation with the filename,
         `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p
@@ -1062,27 +1275,39 @@ class Animate2D(object):
         if mp.am_master():
             from subprocess import Popen, PIPE
             from io import TextIOWrapper, BytesIO
-            FFMPEG_BIN = 'ffmpeg'
-            command = [FFMPEG_BIN,
-                        '-f', 'image2pipe', # force piping of rawvideo
-                        '-vcodec', self.frame_format, # raw input codec
-                        '-s', '%dx%d' % (self.frame_size),
-                        #'-pix_fmt', self.frame_format,
-                        '-r', str(fps), # frame rate in frames per second
-                        '-i', 'pipe:', # The input comes from a pipe
-                        '-vcodec', self.codec, # output mp4 format
-                        '-pix_fmt','yuv420p',
-                        '-r', str(fps), # frame rate in frames per second
-                        '-y',
-                        '-vf', 'pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2',
-                        '-an', filename  # output filename
+
+            FFMPEG_BIN = "ffmpeg"
+            command = [
+                FFMPEG_BIN,
+                "-f",
+                "image2pipe",  # force piping of rawvideo
+                "-vcodec",
+                self.frame_format,  # raw input codec
+                "-s",
+                "%dx%d" % (self.frame_size),
+                #'-pix_fmt', self.frame_format,
+                "-r",
+                str(fps),  # frame rate in frames per second
+                "-i",
+                "pipe:",  # The input comes from a pipe
+                "-vcodec",
+                self.codec,  # output mp4 format
+                "-pix_fmt",
+                "yuv420p",
+                "-r",
+                str(fps),  # frame rate in frames per second
+                "-y",
+                "-vf",
+                "pad=width=ceil(iw/2)*2:height=ceil(ih/2)*2",
+                "-an",
+                filename,  # output filename
             ]
             if mp.verbosity.meep > 0:
                 print("Generating MP4...")
             proc = Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             for i in range(len(self._saved_frames)):
                 proc.stdin.write(self._saved_frames[i])
-            out, err = proc.communicate() # pipe in images
+            out, err = proc.communicate()  # pipe in images
             proc.stdin.close()
             proc.wait()
         return
@@ -1092,8 +1317,9 @@ class Animate2D(object):
         self.ax = None
         self.f = None
 
-    def set_figure(self,f):
+    def set_figure(self, f):
         self.f = f
+
 
 # ------------------------------------------------------- #
 # JS_Animation
@@ -1101,10 +1327,13 @@ class Animate2D(object):
 # A helper class used to make jshtml animations embed
 # seamlessly within Jupyter notebooks.
 
-class JS_Animation():
-    def __init__(self,jshtml):
+
+class JS_Animation:
+    def __init__(self, jshtml):
         self.jshtml = jshtml
+
     def _repr_html_(self):
         return self.jshtml
+
     def get_jshtml(self):
         return self.jshtml

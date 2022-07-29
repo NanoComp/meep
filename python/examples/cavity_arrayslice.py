@@ -18,23 +18,23 @@ nfreq = 500
 
 cell = mp.Vector3(sx, sy, 0)
 
-blk = mp.Block(size=mp.Vector3(mp.inf, w, mp.inf),
-               material=mp.Medium(epsilon=eps))
+blk = mp.Block(size=mp.Vector3(mp.inf, w, mp.inf), material=mp.Medium(epsilon=eps))
 
 geometry = [blk]
 
 geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / 2 + i)) for i in range(3))
 geometry.extend(mp.Cylinder(r, center=mp.Vector3(d / -2 - i)) for i in range(3))
 
-sim = mp.Simulation(cell_size=cell,
-                    geometry=geometry,
-                    sources=[],
-                    boundary_layers=[mp.PML(dpml)],
-                    resolution=20)
+sim = mp.Simulation(
+    cell_size=cell,
+    geometry=geometry,
+    sources=[],
+    boundary_layers=[mp.PML(dpml)],
+    resolution=20,
+)
 
 # add sources
-sim.sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
-               mp.Hz, mp.Vector3())]
+sim.sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Hz, mp.Vector3())]
 
 # run until sources are finished (and no later)
 sim._run_sources_until(0, [])

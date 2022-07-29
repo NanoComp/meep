@@ -7,28 +7,28 @@ import numpy as np
 # https://meep.readthedocs.io/en/latest/Python_User_Interface/#simulation-time
 # for more information.
 TIMING_MEASUREMENT_IDS = {
-    'connecting_chunks': mp.Connecting,
-    'time_stepping': mp.Stepping,
-    'boundaries_copying': mp.Boundaries,
-    'mpi_all_to_all': mp.MpiAllTime,
-    'mpi_one_to_one': mp.MpiOneTime,
-    'field_output': mp.FieldOutput,
-    'fourier_transform': mp.FourierTransforming,
-    'mpb': mp.MPBTime,
-    'near_to_farfield_transform': mp.GetFarfieldsTime,
-    'other': mp.Other,
-    'field_update_b': mp.FieldUpdateB,
-    'field_update_h': mp.FieldUpdateH,
-    'field_update_d': mp.FieldUpdateD,
-    'field_update_e': mp.FieldUpdateE,
-    'boundary_stepping_b': mp.BoundarySteppingB,
-    'boundary_stepping_wh': mp.BoundarySteppingWH,
-    'boundary_stepping_ph': mp.BoundarySteppingPH,
-    'boundary_stepping_h': mp.BoundarySteppingH,
-    'boundary_stepping_d': mp.BoundarySteppingD,
-    'boundary_stepping_we': mp.BoundarySteppingWE,
-    'boundary_stepping_pe': mp.BoundarySteppingPE,
-    'boundary_stepping_e': mp.BoundarySteppingE,
+    "connecting_chunks": mp.Connecting,
+    "time_stepping": mp.Stepping,
+    "boundaries_copying": mp.Boundaries,
+    "mpi_all_to_all": mp.MpiAllTime,
+    "mpi_one_to_one": mp.MpiOneTime,
+    "field_output": mp.FieldOutput,
+    "fourier_transform": mp.FourierTransforming,
+    "mpb": mp.MPBTime,
+    "near_to_farfield_transform": mp.GetFarfieldsTime,
+    "other": mp.Other,
+    "field_update_b": mp.FieldUpdateB,
+    "field_update_h": mp.FieldUpdateH,
+    "field_update_d": mp.FieldUpdateD,
+    "field_update_e": mp.FieldUpdateE,
+    "boundary_stepping_b": mp.BoundarySteppingB,
+    "boundary_stepping_wh": mp.BoundarySteppingWH,
+    "boundary_stepping_ph": mp.BoundarySteppingPH,
+    "boundary_stepping_h": mp.BoundarySteppingH,
+    "boundary_stepping_d": mp.BoundarySteppingD,
+    "boundary_stepping_we": mp.BoundarySteppingWE,
+    "boundary_stepping_pe": mp.BoundarySteppingPE,
+    "boundary_stepping_e": mp.BoundarySteppingE,
 }
 
 
@@ -73,14 +73,16 @@ class MeepTimingMeasurements:
         transforming. This is zero if no simulation work has been performed.
     """
 
-    def __init__(self,
-                 measurements: Dict[str, List[float]],
-                 elapsed_time: float,
-                 num_time_steps: int,
-                 time_per_step: List[float],
-                 dft_relative_change: List[float],
-                 overlap_relative_change: List[float],
-                 relative_energy: List[float]):
+    def __init__(
+        self,
+        measurements: Dict[str, List[float]],
+        elapsed_time: float,
+        num_time_steps: int,
+        time_per_step: List[float],
+        dft_relative_change: List[float],
+        overlap_relative_change: List[float],
+        relative_energy: List[float],
+    ):
         self.measurements = measurements
         self.elapsed_time = elapsed_time
         self.num_time_steps = num_time_steps
@@ -91,14 +93,14 @@ class MeepTimingMeasurements:
 
     @classmethod
     def new_from_simulation(
-            cls,
-            sim: mp.Simulation,
-            elapsed_time: Optional[float] = -1,
-            time_per_step: Optional[List[float]] = None,
-            dft_relative_change: Optional[List[float]] = None,
-            overlap_relative_change: Optional[List[float]] = None,
-            relative_energy: Optional[List[float]] = None,
-    ) -> 'MeepTimingMeasurements':
+        cls,
+        sim: mp.Simulation,
+        elapsed_time: Optional[float] = -1,
+        time_per_step: Optional[List[float]] = None,
+        dft_relative_change: Optional[List[float]] = None,
+        overlap_relative_change: Optional[List[float]] = None,
+        relative_energy: Optional[List[float]] = None,
+    ) -> "MeepTimingMeasurements":
         """Creates a new `MeepTimingMeasurements` from a Meep simulation object.
 
         Usage example:
@@ -129,15 +131,22 @@ class MeepTimingMeasurements:
         Returns:
           the resulting `MeepTimingMeasurements`
         """
-        measurements = {name: sim.time_spent_on(timing_id).tolist() for name, timing_id in TIMING_MEASUREMENT_IDS.items()}
+        measurements = {
+            name: sim.time_spent_on(timing_id).tolist()
+            for name, timing_id in TIMING_MEASUREMENT_IDS.items()
+        }
 
         return cls(
             measurements=measurements,
             elapsed_time=elapsed_time,
             num_time_steps=get_current_time_step(sim),
             time_per_step=time_per_step if time_per_step is not None else [],
-            dft_relative_change=dft_relative_change if dft_relative_change is not None else [],
-            overlap_relative_change=overlap_relative_change if overlap_relative_change is not None else [],
+            dft_relative_change=dft_relative_change
+            if dft_relative_change is not None
+            else [],
+            overlap_relative_change=overlap_relative_change
+            if overlap_relative_change is not None
+            else [],
             relative_energy=relative_energy if relative_energy is not None else [],
         )
 
@@ -147,28 +156,36 @@ class MeepTimingMeasurements:
 
     @property
     def comm_efficiency(self) -> float:
-        computation_time = np.mean(self.measurements['time_stepping']) + np.mean(
-            self.measurements['fourier_transform'])
+        computation_time = np.mean(self.measurements["time_stepping"]) + np.mean(
+            self.measurements["fourier_transform"]
+        )
         if computation_time == 0:
             return 0
         else:
-            return np.mean(self.measurements['mpi_all_to_all'] +
-                           self.measurements['mpi_one_to_one']) / computation_time
+            return (
+                np.mean(
+                    self.measurements["mpi_all_to_all"]
+                    + self.measurements["mpi_one_to_one"]
+                )
+                / computation_time
+            )
 
     @property
     def comm_efficiency_one_to_one(self) -> float:
-        computation_time = np.mean(self.measurements['time_stepping']) + np.mean(
-            self.measurements['fourier_transform'])
+        computation_time = np.mean(self.measurements["time_stepping"]) + np.mean(
+            self.measurements["fourier_transform"]
+        )
         if computation_time == 0:
             return 0
         else:
-            return np.mean(self.measurements['mpi_one_to_one']) / computation_time
+            return np.mean(self.measurements["mpi_one_to_one"]) / computation_time
 
     @property
     def comm_efficiency_all_to_all(self) -> float:
-        computation_time = np.mean(self.measurements['time_stepping']) + np.mean(
-            self.measurements['fourier_transform'])
+        computation_time = np.mean(self.measurements["time_stepping"]) + np.mean(
+            self.measurements["fourier_transform"]
+        )
         if computation_time == 0:
             return 0
         else:
-            return np.mean(self.measurements['mpi_all_to_all']) / computation_time
+            return np.mean(self.measurements["mpi_all_to_all"]) / computation_time

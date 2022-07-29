@@ -10,19 +10,21 @@ class MPBData(object):
 
     TWOPI = 6.2831853071795864769252867665590057683943388
 
-    def __init__(self,
-                 lattice=None,
-                 kpoint=None,
-                 rectify=False,
-                 x=0,
-                 y=0,
-                 z=0,
-                 periods=0,
-                 resolution=0,
-                 phase_angle=0,
-                 pick_nearest=False,
-                 ve=None,
-                 verbose=False):
+    def __init__(
+        self,
+        lattice=None,
+        kpoint=None,
+        rectify=False,
+        x=0,
+        y=0,
+        z=0,
+        periods=0,
+        resolution=0,
+        phase_angle=0,
+        pick_nearest=False,
+        ve=None,
+        verbose=False,
+    ):
 
         self.lattice = lattice
         self.kpoint = kpoint
@@ -48,8 +50,10 @@ class MPBData(object):
         self.verbose = verbose
         self.scaleby = complex(1, 0)
 
-        self.phase = complex(math.cos(self.TWOPI * self.phase_angle / 360.0),
-                             math.sin(self.TWOPI * self.phase_angle / 360.0))
+        self.phase = complex(
+            math.cos(self.TWOPI * self.phase_angle / 360.0),
+            math.sin(self.TWOPI * self.phase_angle / 360.0),
+        )
         self.scaleby *= self.phase
 
     def handle_dataset(self, in_arr):
@@ -97,12 +101,24 @@ class MPBData(object):
             out_arr_im = np.array([])
 
         flat_in_arr_re = in_arr_re.ravel()
-        flat_in_arr_im = in_arr_im.ravel() if isinstance(in_arr_im, np.ndarray) else np.array([])
+        flat_in_arr_im = (
+            in_arr_im.ravel() if isinstance(in_arr_im, np.ndarray) else np.array([])
+        )
 
         kvector = [self.kpoint.x, self.kpoint.y, self.kpoint.z] if self.kpoint else []
-        map_data(flat_in_arr_re, flat_in_arr_im, np.array(in_dims, dtype=np.intc),
-                 out_arr_re, out_arr_im, np.array(out_dims, dtype=np.intc), self.coord_map,
-                 kvector, self.pick_nearest, self.verbose, False)
+        map_data(
+            flat_in_arr_re,
+            flat_in_arr_im,
+            np.array(in_dims, dtype=np.intc),
+            out_arr_re,
+            out_arr_im,
+            np.array(out_dims, dtype=np.intc),
+            self.coord_map,
+            kvector,
+            self.pick_nearest,
+            self.verbose,
+            False,
+        )
 
         if np.iscomplexobj(in_arr):
             # multiply * scaleby for complex data
@@ -137,9 +153,15 @@ class MPBData(object):
             fmt1 = "Rotating vectors by matrix [ {:.10g}, {:.10g}, {:.10g}"
             fmt2 = "                             {:.10g}, {:.10g}, {:.10g}"
             fmt3 = "                             {:.10g}, {:.10g}, {:.10g} ]"
-            print(fmt1.format(self.cart_map.c1.x, self.cart_map.c2.x, self.cart_map.c3.x))
-            print(fmt2.format(self.cart_map.c1.y, self.cart_map.c2.y, self.cart_map.c3.y))
-            print(fmt3.format(self.cart_map.c1.z, self.cart_map.c2.z, self.cart_map.c3.z))
+            print(
+                fmt1.format(self.cart_map.c1.x, self.cart_map.c2.x, self.cart_map.c3.x)
+            )
+            print(
+                fmt2.format(self.cart_map.c1.y, self.cart_map.c2.y, self.cart_map.c3.y)
+            )
+            print(
+                fmt3.format(self.cart_map.c1.z, self.cart_map.c2.z, self.cart_map.c3.z)
+            )
 
         N = in_dims[0] * in_dims[1]
         for ri in range(2):
@@ -177,9 +199,19 @@ class MPBData(object):
             out_arr_re = np.zeros(int(N))
             out_arr_im = np.zeros(int(N))
 
-            map_data(d_in[dim][0].ravel(), d_in[dim][1].ravel(), np.array(in_dims, dtype=np.intc),
-                     out_arr_re, out_arr_im, np.array(out_dims, dtype=np.intc), self.coord_map,
-                     kvector, self.pick_nearest, self.verbose, multiply_bloch_phase)
+            map_data(
+                d_in[dim][0].ravel(),
+                d_in[dim][1].ravel(),
+                np.array(in_dims, dtype=np.intc),
+                out_arr_re,
+                out_arr_im,
+                np.array(out_dims, dtype=np.intc),
+                self.coord_map,
+                kvector,
+                self.pick_nearest,
+                self.verbose,
+                multiply_bloch_phase,
+            )
 
             # multiply * scaleby
             complex_out = np.vectorize(complex)(out_arr_re, out_arr_im)
@@ -196,15 +228,13 @@ class MPBData(object):
     def init_output_lattice(self):
 
         cart_map = mp.Matrix(
-            mp.Vector3(1, 0, 0),
-            mp.Vector3(0, 1, 0),
-            mp.Vector3(0, 0, 1)
+            mp.Vector3(1, 0, 0), mp.Vector3(0, 1, 0), mp.Vector3(0, 0, 1)
         )
 
         Rin = mp.Matrix(
             mp.Vector3(*self.lattice[0]),
             mp.Vector3(*self.lattice[1]),
-            mp.Vector3(*self.lattice[2])
+            mp.Vector3(*self.lattice[2]),
         )
 
         if self.verbose:
@@ -213,9 +243,19 @@ class MPBData(object):
                 fmt = "Read Bloch wavevector ({:.6g}, {:.6g}, {:.6g})"
                 print(fmt.format(self.kpoint.x, self.kpoint.y, self.kpoint.z))
             fmt = "Input lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
-            print(fmt.format(Rin.c1.x, Rin.c1.y, Rin.c1.z,
-                             Rin.c2.x, Rin.c2.y, Rin.c2.z,
-                             Rin.c3.x, Rin.c3.y, Rin.c3.z))
+            print(
+                fmt.format(
+                    Rin.c1.x,
+                    Rin.c1.y,
+                    Rin.c1.z,
+                    Rin.c2.x,
+                    Rin.c2.y,
+                    Rin.c2.z,
+                    Rin.c3.x,
+                    Rin.c3.y,
+                    Rin.c3.z,
+                )
+            )
 
         Rout = mp.Matrix(Rin.c1, Rin.c2, Rin.c3)
 
@@ -239,8 +279,9 @@ class MPBData(object):
             # Now, orthogonalize c2 and c3
             Rout.c2 = Rout.c2 - ve.scale(ve.dot(Rout.c2))
             Rout.c3 = Rout.c3 - ve.scale(ve.dot(Rout.c3))
-            Rout.c3 = Rout.c3 - Rout.c2.scale(Rout.c2.dot(Rout.c3) /
-                                              Rout.c2.dot(Rout.c2))
+            Rout.c3 = Rout.c3 - Rout.c2.scale(
+                Rout.c2.dot(Rout.c3) / Rout.c2.dot(Rout.c2)
+            )
 
             cart_map.c1 = Rout.c1.unit()
             cart_map.c2 = Rout.c2.unit()
@@ -253,9 +294,19 @@ class MPBData(object):
 
         if self.verbose:
             fmt = "Output lattice = ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g}), ({:.6g}, {:.6g}, {:.6g})"
-            print(fmt.format(Rout.c1.x, Rout.c1.y, Rout.c1.z,
-                             Rout.c2.x, Rout.c2.y, Rout.c2.z,
-                             Rout.c3.x, Rout.c3.y, Rout.c3.z))
+            print(
+                fmt.format(
+                    Rout.c1.x,
+                    Rout.c1.y,
+                    Rout.c1.z,
+                    Rout.c2.x,
+                    Rout.c2.y,
+                    Rout.c2.z,
+                    Rout.c3.x,
+                    Rout.c3.y,
+                    Rout.c3.z,
+                )
+            )
 
         self.coord_map = Rin.inverse() * Rout
         self.Rout = Rout
@@ -267,11 +318,13 @@ class MPBData(object):
             self.kpoint = arr.kpoint
 
         if self.lattice is None:
-            err = ("Couldn't find 'lattice.' You must do one of the following:\n" +
-                   "  1. Pass the ModeSolver lattice to the MPBData constructor\n" +
-                   "     i.e., MPBData(lattice=ms.get_lattice())\n" +
-                   "  2. Create an MPBArray to pass to MPBData.convert()\n" +
-                   "     i.e., mpb_arr = MPBArray(arr, ms.get_lattice(), ... ); mpb_data.convert(mpb_arr))")
+            err = (
+                "Couldn't find 'lattice.' You must do one of the following:\n"
+                + "  1. Pass the ModeSolver lattice to the MPBData constructor\n"
+                + "     i.e., MPBData(lattice=ms.get_lattice())\n"
+                + "  2. Create an MPBArray to pass to MPBData.convert()\n"
+                + "     i.e., mpb_arr = MPBArray(arr, ms.get_lattice(), ... ); mpb_data.convert(mpb_arr))"
+            )
             raise ValueError(err)
 
         if kpoint:
