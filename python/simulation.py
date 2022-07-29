@@ -15,7 +15,6 @@ try:
 except ImportError:
     from collections.abc import Sequence
 
-import meep.visualization as vis
 import numpy as np
 from meep.geom import GeometricObject, Medium, Vector3, init_do_averaging
 from meep.source import (
@@ -4680,6 +4679,8 @@ class Simulation:
             - `post_process=np.real`: post processing function to apply to fields (must be
               a function object)
         """
+        import meep.visualization as vis
+
         return vis.plot2D(
             self,
             ax=ax,
@@ -4700,6 +4701,8 @@ class Simulation:
         )
 
     def plot_fields(self, **kwargs):
+        import meep.visualization as vis
+
         return vis.plot_fields(self, **kwargs)
 
     def plot3D(self):
@@ -4707,6 +4710,8 @@ class Simulation:
         Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D.
         Can also be embedded in Jupyter notebooks.
         """
+        import meep.visualization as vis
+
         return vis.plot3D(self)
 
     def visualize_chunks(self):
@@ -4715,6 +4720,8 @@ class Simulation:
         rectangular region is a chunk, and each color represents a different processor.
         Requires [matplotlib](https://matplotlib.org).
         """
+        import meep.visualization as vis
+
         vis.visualize_chunks(self)
 
 
