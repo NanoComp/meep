@@ -18,6 +18,7 @@ _build
 python/examples/.ipynb_checkpoints/
 h5utils/
 hdf5/
+extra/
 
 # autotools stuff
 Makefile
