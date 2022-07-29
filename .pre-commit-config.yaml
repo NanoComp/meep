@@ -11,12 +11,12 @@ repos:
   #   hooks:
   #     - id: unimport
   #       args: [--remove, --include-star-import]
-  - repo: https://github.com/pycqa/isort
-    rev: "12cc5fbd67eebf92eb2213b03c07b138ae1fb448"
-    hooks:
-      - id: isort
-        files: "python/.*"
-        args: ["--profile", "black", "--filter-files"]
+  # - repo: https://github.com/pycqa/isort
+  #   rev: "12cc5fbd67eebf92eb2213b03c07b138ae1fb448"
+  #   hooks:
+  #     - id: isort
+  #       files: "python/.*"
+  #       args: ["--profile", "black", "--filter-files"]
 
   - repo: https://github.com/psf/black
     rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
