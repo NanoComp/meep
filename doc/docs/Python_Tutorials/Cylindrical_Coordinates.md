@@ -144,19 +144,19 @@ unix% h5topng -S 2 -Zc dkbluered -C ring-cyl-eps-001200.00.h5 ring-cyl-e
 Note that, because of the `to_appended` command, the `ring-cyl-ez.h5` file is a 160$\times$18 dataset corresponding to an $r \times t$ slice. Repeating this for all three modes results in the images:
 
 $E_z$ for $\omega$=0.118 $m$=3 mode:
-<p align="center">
-  <img src="../images/Ring-cyl-ez-0.118.png">
-</p>
+
+![](../images/Ring-cyl-ez-0.118.png)
+
 
 $E_z$ for $\omega$=0.148 $m$=4 mode:
-<p align="center">
-  <img src="../images/Ring-cyl-ez-0.148.png">
-</p>
+
+![](../images/Ring-cyl-ez-0.148.png)
+
 
 $E_z$ for $\omega$=0.176 $m$=5 mode:
-<p align="center">
-  <img src="../images/Ring-cyl-ez-0.176.png">
-</p>
+
+![](../images/Ring-cyl-ez-0.176.png)
+
 
 Because only the $\phi$=0 slice is used, the visual distinction between $m$ values is much less than with the 2d simulation. What is apparent is that, as the frequency increases, the mode becomes more localized in the waveguide and the radiating field (seen in the $r \times t$ slice as curved waves extending outward) becomes less, as expected.
 
@@ -451,9 +451,9 @@ if mp.am_master():
 Note that the "closed" DFT flux box is comprised of just three flux objects: two along $z$ and one in the radial $r$ direction. The function `get_fluxes` which computes the integral of the Poynting vector does so over the annular volume in cylindrical coordinates. There is no need for additional post-processing of the flux values.
 
 As shown below, the results for the scattering cross section computed using cylindrical coordinates agree well with the 3d Cartesian simulation. However, there is a large discrepancy in performance: for a single Intel Xeon 4.2GHz processor, the runtime of the cylindrical simulation is nearly 90 times shorter than the 3d simulation.
-<p align="center">
-  <img src="../images/cylinder_cross_section.png">
-</p>
+
+![](../images/cylinder_cross_section.png)
+
 
 
 Focusing Properties of a Binary-Phase Zone Plate
@@ -466,9 +466,9 @@ Using [scalar theory](http://zoneplate.lbl.gov/theory), the radius of the $n$<su
 $$ r_n^2 = n\lambda (f+\frac{n\lambda}{4})$$
 
 where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with refractive index of 1.5 (glass), $\lambda$ of 0.5 μm, and height of 0.5 μm. The focusing property of the zone plate is verified by the concentration of the electric-field energy density at the focal length of 0.2 mm (which lies *outside* the cell). The planewave is incident from within a glass substrate and spans the entire length of the cell in the radial direction. The cell is surrounded on all sides by PML. A schematic of the simulation geometry for a design with 25 zones and flat-surface termination is shown below. The near-field monitor is positioned at the edge of the PML and captures the scattered fields in *all* directions.
-<p align="center">
-  <img src="../images/zone_plate_schematic.png">
-</p>
+
+
+![](../images/zone_plate_schematic.png)
 
 
 The simulation script is in [examples/zone_plate.py](https://github.com/NanoComp/meep/blob/master/python/examples/zone_plate.py). The notebook is [examples/zone_plate.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/zone_plate.ipynb).
@@ -584,6 +584,4 @@ Note that the volume specified in `get_farfields` via `center` and `size` is in 
 
 Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. The focus becomes sharper with increasing $N$ due to the enhanced constructive interference of the diffracted beam. As the number of zones $N$ increases, the size of the focal spot (full width at half maximum) at $z = 200$ μm decreases as $1/\sqrt{N}$ (see eq. 17 of the [reference](http://zoneplate.lbl.gov/theory)). This means that doubling the resolution (halving the spot width) requires quadrupling the number of zones.
 
-<p align="center">
-  <img src="../images/zone_plate_farfield.png">
-</p>
+![](../images/zone_plate_farfield.png)

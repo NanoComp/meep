@@ -80,9 +80,9 @@ The field within the cavity is initialized to arbitrary non-zero values and a fi
 
 The spectra of the field intensity is shown below.
 
-<center>
+
 ![Multilevel meep spectra](../images/multilevel_meep_n0_37_spectra.png)
-</center>
+
 
 There are two lasing modes above threshold in the vicinity of the center transition frequency ω$_a$=40 as we would expect. Remember, when finding the frequency axis that Meep uses a Courant factor of $\Delta t = 0.5 \Delta x$. We have also converted the electric field to SALT units using:
 
@@ -92,12 +92,11 @@ For two-level gain media, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. We can
 
 By varying $N_0$ or the pumping rate $R_p$, we can change the total gain available in the cavity. This is used to find the laser's modal intensities as a function of the strength of the gain. We can compare the simulated modal intensity with SALT as well as an independent FDTD solver based on the Maxwell-Bloch equations. All three methods produce results with good agreement close to the first lasing threshold.
 
-<center>
+
 ![Near threshold comparison](../images/meep_salt_comparison_thresh.png)
-</center>
+
 
 Further increasing the gain continues to yield good agreement.
 
-<center>
+
 ![Near threshold comparison](../images/meep_salt_comparison_full.png)
-</center>
