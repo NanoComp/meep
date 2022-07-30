@@ -5865,7 +5865,7 @@ def get_near2far_freqs(f):
 
 
 def scale_energy_fields(s, ef):
-    df.scale_dfts(s)
+    ef.scale_dfts(s)
 
 
 def get_energy_freqs(f):
