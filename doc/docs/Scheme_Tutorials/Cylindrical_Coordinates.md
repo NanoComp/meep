@@ -117,13 +117,13 @@ Note that, because of the `to-appended` command, the `ring-cyl-ez.h5` file is a 
 
 
 $E_z$ for $\omega$=0.118 $m$=3 mode:
-![](../images/Ring-cyl-ez-0.118.png)
+![](../images/Ring-cyl-ez-0.118.png#center)
 
 $E_z$ for $\omega$=0.148 $m$=4 mode:
-![](../images/Ring-cyl-ez-0.148.png)
+![](../images/Ring-cyl-ez-0.148.png#center)
 
 $E_z$ for $\omega$=0.176 $m$=5 mode:
-![](../images/Ring-cyl-ez-0.176.png)
+![](../images/Ring-cyl-ez-0.176.png#center)
 
 
 Because only the $\phi$=0 slice is used, the visual distinction between $m$ values is much less than with the 2d simulation. What is apparent is that, as the frequency increases, the mode becomes more localized in the waveguide and the radiating field (seen in the $r \times t$ slice as curved waves extending outward) becomes less, as expected.
@@ -426,7 +426,7 @@ set(gca, "yminorgrid", "on");
 As shown below, the results for the scattering cross section computed using cylindrical coordinates agree well with the 3d Cartesian simulation. However, there is a large discrepancy in performance: for a single Intel Xeon 4.2GHz processor, the runtime of the cylindrical simulation is nearly 90 times shorter than the 3d simulation.
 
 
-![](../images/cylinder_cross_section.png)
+![](../images/cylinder_cross_section.png#center)
 
 
 Focusing Properties of a Binary-Phase Zone Plate
@@ -445,7 +445,7 @@ $$ r_n^2 = n\lambda (f+\frac{n\lambda}{4})$$
 where $n$ is the zone index (1,2,3,...,$N$), $f$ is the focal length, and $\lambda$ is the operating wavelength. The main design variable is the number of zones $N$. The design specifications of the zone plate are similar to the binary-phase grating in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating) with refractive index of 1.5 (glass), $\lambda$ of 0.5 μm, and height of 0.5 μm. The focusing property of the zone plate is verified by the concentration of the electric-field energy density at the focal length of 0.2 mm (which lies *outside* the cell). The planewave is incident from within a glass substrate and spans the entire length of the cell in the radial direction. The cell is surrounded on all sides by PML. A schematic of the simulation geometry for a design with 25 zones and flat-surface termination is shown below. The near-field monitor is positioned at the edge of the PML and captures the scattered fields in *all* directions.
 
 
-![](../images/zone_plate_schematic.png)
+![](../images/zone_plate_schematic.png#center)
 
 
 The simulation script is in [examples/zone-plate.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/zone-plate.ctl).
@@ -550,4 +550,4 @@ set (gca, "yminorgrid", "on");
 
 Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. The focus becomes sharper with increasing $N$ due to the enhanced constructive interference of the diffracted beam. As the number of zones $N$ increases, the size of the focal spot (full width at half maximum) at $z = 200$ μm decreases as $1/\sqrt{N}$ (see eq. 17 of the [reference](http://zoneplate.lbl.gov/theory)). This means that doubling the resolution (halving the spot width) requires quadrupling the number of zones.
 
-![](../images/zone_plate_farfield.png)
+![](../images/zone_plate_farfield.png#center)

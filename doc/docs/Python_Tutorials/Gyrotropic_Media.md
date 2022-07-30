@@ -79,7 +79,7 @@ plt.show()
 ```
 
 <center>
-![](../images/Faraday-rotation.png)
+![](../images/Faraday-rotation.png#center)
 </center>
 
 We see that the wave indeed rotates in the *x*-*y* plane as it travels.
@@ -119,4 +119,4 @@ plt.show()
 
 As shown in the figure below, the results are in excellent agreement:
 
-![](../images/Faraday-rotation-comparison.png)
+![](../images/Faraday-rotation-comparison.png#center)

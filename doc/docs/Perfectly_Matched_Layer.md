@@ -19,7 +19,7 @@ Breakdown of PML in Inhomogeneous Media
 As shown in the figure below, there are two important cases involving *inhomogeneous* media where the fundamental coordinate stretching idea behind PML breaks down giving rise to reflection artifacts. The workaround is to replace the PML with an adiabatic [absorber](Python_User_Interface.md#absorber). Additionally, if you operate near a low-group velocity band edge in a periodic media, you may need to make the PML/absorber very thick (overlapping many periods) to be effective. For more details on why PML breaks down in these cases, see [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). Also, [Physical Review E, Vol. 79, 065601 (2011)](http://math.mit.edu/~stevenj/papers/LohOs09.pdf) describes a separate case where PML fails involving backward-wave modes which may occur at metal-dielectric interfaces (i.e., [surface-plasmon polaritons](https://en.wikipedia.org/wiki/Surface_plasmon_polariton)).
 
 
-![](images/PML_failure.png)
+![](images/PML_failure.png#center)
 
 
 Planewave Sources Extending into PML
@@ -54,13 +54,13 @@ plt.show()
 ```
 
 
-![](images/pwsource_Ez_PML.png)
+![](images/pwsource_Ez_PML.png#center)
 
 
 For an $E_y$-polarized source and `is_integrated=True`, the wavefronts are planar only in the non-PML region as shown below. This is because the $E_y$ fields in the $y$-PML are being rescaled by a Jacobian matrix. (The key thing to remember is that the fields in the PML region are not "physical," but are carefully designed artificial quantities in order to eliminate boundary reflections; you should generally extract physical data only from the interior of the computational cell (outside the PML).)
 
 
-![](images/pwsource_Ey_PML.png)
+![](images/pwsource_Ey_PML.png#center)
 
 
 In the future, `is_integrated=True` will be set automatically for sources extending into the PML ([#1049](https://github.com/NanoComp/meep/issues/1049)).

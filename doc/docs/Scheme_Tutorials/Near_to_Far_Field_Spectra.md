@@ -14,7 +14,7 @@ In this example, we compute the [radiation pattern](https://en.wikipedia.org/wik
 The simulation geometry is shown in the following schematic.
 
 
-![](../images/Near2far_simulation_geometry.png)
+![](../images/Near2far_simulation_geometry.png#center)
 
 
 In the first part of the simulation, we define the cell and source as well as the near field and flux regions. Since we are using a pulsed source (with center wavelength of 1 μm), the fields are timestepped until they have sufficiently decayed away.
@@ -137,7 +137,7 @@ set(gca, 'xtick', [0 0.5 1.0]);
 ```
 
 
-![](../images/Source_radiation_pattern.png)
+![](../images/Source_radiation_pattern.png#center)
 
 
 
@@ -337,7 +337,7 @@ grid on;
 The phasemap is shown below. The left figure shows the transmittance which is nearly unity for all values of the duty cycle; the Fresnel transmittance is 0.96 for the glass-air interface. This is expected since the periodicity is subwavelength. The right figure shows the phase. There is a subregion in the middle of the plot spanning the duty-cycle range of roughly 0.16 to 0.65 in which the phase varies continuously over the full range of -2π to 0. This structural regime is used to design the supercell lens.
 
 
-![](../images/metasurface_lens_phasemap.png)
+![](../images/metasurface_lens_phasemap.png#center)
 
 
 In the second part of the calculation, the far-field energy-density profile of three supercell lens designs, comprised of 201, 401, and 801 unit cells, are computed using the quadratic formula for the local phase. Initially, this involves fitting the unit-cell phase data to a finer duty-cycle grid in order to enhance the local-phase interpolation of the supercell. This is important since as the number of unit cells in the lens increases, the local phase via the duty cycle varies more gradually from unit cell to unit cell. However, if the duty cycle becomes too gradual (i.e., less than a tenth of the pixel dimensions), the `resolution` may also need to be increased in order to improve the accuracy of [subpixel smoothing](../Subpixel_Smoothing.md).
@@ -390,13 +390,13 @@ eval(sprintf("legend(\"num-cells = %d\",\"num-cells = %d\",\"num-cells = %d\")",
 Shown below is the supercell lens design involving 201 unit cells. Note that even though periodic boundaries are used in the supercell calculation (via the `k-point`), the choice of cell boundaries in the *y* (or longitudinal) direction is *irrelevant* given the finite length of the lens. For example, PMLs could also have been used (at the expense of a larger cell). Although [`add-near2far`](../Scheme_User_Interface.md#near-to-far-field-spectra) does support periodic boundaries (via the `nperiods` parameter), it is not necessary for this particular example.
 
 
-![](../images/metasurface_lens_epsilon.png)
+![](../images/metasurface_lens_epsilon.png#center)
 
 
 The far-field energy-density profile is shown below for the three lens designs. As the number of unit cells increases, the focal spot becomes sharper and sharper. This is expected since the longer the focal length, the bigger the lens required to demonstrate focusing (which means more unit cells). In this example, the largest lens design contains 801 unit cells which corresponds to 0.24 mm or 1.2X the focal length.
 
 
-![](../images/metasurface_lens_farfield.png)
+![](../images/metasurface_lens_farfield.png#center)
 
 
 Diffraction Spectrum of a Finite Binary Grating
@@ -581,7 +581,7 @@ eval(sprintf("title(\"f.-f. spectra @ %0.1f um\")",wvl_slice));
 ```
 
 
-![](../images/grating_diffraction_spectra_n2f.png)
+![](../images/grating_diffraction_spectra_n2f.png#center)
 
 
 For the case of `nperiods = 1`, three diffraction orders are present in the far-field spectra as broad peaks with finite angular width (a fourth peak/order is also visible). When `nperiods = 10`, the diffraction orders become sharp, narrow peaks. The three diffraction orders are labeled in the right inset of the bottom figure as m=1, 3, and 5 corresponding to angles 2.9°, 8.6°, and 14.5° which, along with the diffraction efficiency, can be computed analytically using scalar theory as described in [Tutorial/Mode Decomposition/Diffraction Spectrum of a Binary Grating](Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating). As an additional validation of the simulation results, the ratio of any two diffraction peaks p<sub>a</sub>/p<sub>b</sub> (a,b = 1,3,5,...) is consistent with that of its diffraction efficiencies: b<sup>2</sup>/a<sup>2</sup>.
@@ -595,7 +595,7 @@ Finally, we can validate the results for the diffraction spectra of a finite gra
 The simulation setup is shown in the schematic below. The binary grating has Λ = 1 μm at a wavelength of 0.5 μm via a normally-incident planewave pulse (which must [extend into the PML region in order to span the entire width of the cell](../Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml)). The grating structure is terminated with a flat-surface padding in order to give the scattered field space to decay at the edge of the cell.
 
 
-![](../images/finite_grating_schematic.png)
+![](../images/finite_grating_schematic.png#center)
 
 
 The simulation script is in [examples/finite_grating.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/finite_grating.ctl).
@@ -743,11 +743,11 @@ endif
 ```
 
 
-![](../images/finite_grating_nperiods5.png)
+![](../images/finite_grating_nperiods5.png#center)
 
 
 
-![](../images/finite_grating_nperiods20.png)
+![](../images/finite_grating_nperiods20.png#center)
 
 
 The scattered field amplitude profile (the top figure in each of the two sets of results) shows that the fields decay to zero away from the grating (which is positioned at the left edge of the figure in the region indicated by the bright spots). The middle figure is the field amplitude along a 1d slice above the grating (marked by the dotted green line in the top figure). Note the decaying fields at the edges due to the flat-surface termination. The bottom figure is the Fourier transform of the fields from the 1d slice. As expected, there are only three diffraction orders present at k<sub>y</sub>=2πm/Λ for m=0, ±1, ±2. These peaks are becoming sharper as the number of grating periods increases.
@@ -761,7 +761,7 @@ Far-Field Profile of a Cavity
 
 For this demonstration, we will compute the far-field spectra of a resonant cavity mode in a holey waveguide; a structure we had explored in [Tutorial/Resonant Modes and Transmission in a Waveguide Cavity](Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md). The script is in [examples/cavity-farfield.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/cavity-farfield.ctl). The structure is shown at the bottom of the left image below.
 
-![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png)
+![center|Schematic of the computational cell for a holey waveguide with cavity showing the location of the "near" boundary surface and the far-field region.](../images/N2ff_comp_cell.png#center)
 
 To set this up, we simply remove the last portion of [examples/holey-wvg-cavity.ctl](https://github.com/NanoComp/meep/blob/master/scheme/examples/holey-wvg-cavity.ctl), beginning right after the line:
 
