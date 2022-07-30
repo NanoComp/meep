@@ -56,7 +56,7 @@ pre code.python {
     font-size: 70%;
 }
 
-/* Align images in MarkDown without eTML or extensions - Method 2
+/* Align images in MarkDown without eTML or extensions
  * https://msudol.com/how-to-align-images-in-markdown-without-html-or-extensions/
  */
 img[src*='#left'] {
