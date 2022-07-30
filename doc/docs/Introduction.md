@@ -17,13 +17,13 @@ Meep simulates [Maxwell's equations](https://en.wikipedia.org/wiki/Maxwell's_equ
 
 
 
-$\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$
+$$\frac{d\mathbf{B}}{dt} = -\nabla\times\mathbf{E} - \mathbf{J}_B - \sigma_B \mathbf{B}$$
 
-$\mathbf{B} = \mu \mathbf{H}$
+$$\mathbf{B} = \mu \mathbf{H}$$
 
-$\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$
+$$\frac{d\mathbf{D}}{dt} = \nabla\times\mathbf{H} - \mathbf{J} - \sigma_D \mathbf{D}$$
 
-$\mathbf{D} = \varepsilon \mathbf{E}$
+$$\mathbf{D} = \varepsilon \mathbf{E}$$
 
 
 
@@ -31,9 +31,9 @@ where $\mathbf{D}$ is the displacement field, $\varepsilon$ is the dielectric co
 
 
 
-$\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$
+$$\nabla \cdot \mathbf{B} = - \int^t \nabla \cdot (\mathbf{J}_B(t') + \sigma_B \mathbf{B}) dt'$$
 
-$\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$
+$$\nabla \cdot \mathbf{D} = - \int^t \nabla \cdot (\mathbf{J}(t') + \sigma_D \mathbf{D})dt' \equiv \rho$$
 
 
 

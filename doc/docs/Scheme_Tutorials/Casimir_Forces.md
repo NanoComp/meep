@@ -23,7 +23,7 @@ In this section, we introduce the equations and basic considerations involved in
 The general setup for a Casimir force computation by integrating the Maxwell stress tensor on a surface *S* around an object is shown in the following figure:
 
 
-![](../images/Surface-force.jpg)
+![](../images/Surface-force.jpg#center)
 
 
 The goal is to determine the Casimir force on one object (shown in red) due to the presence of other objects (blue).
@@ -72,7 +72,7 @@ Example: Two-Dimensional Blocks
 In this section we calculate the Casimir force in the two-dimensional Casimir piston configuration ([Rodriguez et. al](http://math.mit.edu/~stevenj/papers/RodriguezIb07.pdf)) shown below:
 
 
-![](../images/Dblocks-config.jpg)
+![](../images/Dblocks-config.jpg#center)
 
 
 This is described in [rod-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). The dashed red lines indicate the surface $S$. This system consists of two metal $a\times a$ squares in between metallic sidewalls. To run a simulation in which the blocks are (nondispersive) dielectrics one can simply change their materials in the definitions as in a normal Meep simulation. For dispersive dielectrics a few extra steps are needed, which is discussed in a later section.
@@ -144,7 +144,7 @@ $$f_n(x) = \sqrt{\frac{c_n}{L}} \cos \left(\frac{n\pi x}{L}\right), ~n = 0,1,\ld
 where $c_n = 1$ if $n=0$ and $c_n=2$ otherwise, $L$ is the side length (if each side has a different length, then the functions $f_n(x)$ will differ for each side). An illustration of these functions for the system under consideration, compared to point sources, is shown below:
 
 
-![](../images/Point-dct.jpg)
+![](../images/Point-dct.jpg#center)
 
 
 For the simulation, we must truncate the sum over $n$ to some finite upper limit `n-max`. Typically, a value of 10 is sufficient to get results to within 1%:
@@ -156,7 +156,7 @@ For the simulation, we must truncate the sum over $n$ to some finite upper limit
 To illustrate the field profiles, below we show four snapshots at different times for what we term $\Gamma^E_{yy;n=2}(\mathbf{x},t)$, the $y$-component of the electric field response to a $y$-polarized current source with spatial dependence $f_2(x)$
 
 
-![](../images/Field-visualization.jpg)
+![](../images/Field-visualization.jpg#center)
 
 
 As the fields continue to propagate, the finite conductivity `Sigma` causes the fields to decay rapidly. By $T\simeq 20$ the fields have all but vanished. Note that the user is not confined to use this Cosine basis, but that this type is already built into meep and therefore offers the greatest convenience.
@@ -198,7 +198,7 @@ To find the casimir force, one simply iterates over the parameter lists construc
 The result, when sampled over many values of $h$, is a force curve that varies non monotonically in $h$:
 
 
-![](../images/Dblocks-force.jpg)
+![](../images/Dblocks-force.jpg#center)
 
 
 Here the force is measured relative to the value obtained by the PFA (proximity-force approximation), a simple approximation for the force used in lieu of an exact analytic expression or a numerically accurate value. As is clear from the figure, the behavior of the force deviates significantly from the PFA, indicating the need for accurate algorithms for computing the Casimir force.
@@ -219,7 +219,7 @@ This numerical artifact can be removed by a simple procedure, called vacuum subt
 The procedure for the double blocks case is illustrated below:
 
 
-![](../images/Vac.jpg)
+![](../images/Vac.jpg#center)
 
 
 In an ideal case of infinite spatial resolution, only the first term is nonzero. However, due to discretization effects, for finite resolution they can be quite large and will depend on the source surface. The total vacuum-subtracted force, however, will still be well-behaved for finite resolution.
@@ -367,7 +367,7 @@ A lossless dielectric material with a single Lorentzian resonance, e.g., Silicon
 
 
 
-$\epsilon(\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2}$
+$$\epsilon(\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2}$$
 
 
 
@@ -377,7 +377,7 @@ The conductivity mapping $\omega^2 = \xi^2 + i \sigma \xi$ must be applied to al
 
 
 
-$\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \xi}$
+$$\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \xi}$$
 
 
 
@@ -407,7 +407,7 @@ Example: Z-Invariant Geometry
 An example geometry in 3d which is $z$-invariant is shown below:
 
 
-![](../images/Extruded-blocks.jpg)
+![](../images/Extruded-blocks.jpg#center)
 
 
 This example is also treated in the [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl). Now there is another parameter in the fields, $k_z$, the out-of-plane wavevector component of the fields. The field dependence is now of the form $\mathbf{E}(x,y,z) = \mathbf{E}(x,y) e^{i\pi k_z z}$. Consequently, an integral over the stress tensor will involve an integral over $k_z$, where for each $k_z$, the green's function can be determined by a two-dimensional computation. Each two-dimensional computation gives a force $\mathbf{F}^{2D}(k_z)$, and the total force is expressed as an integral:
@@ -461,7 +461,7 @@ Example: Cylindrical Symmetry
 For systems with cylindrical symmetry, the Casimir force computation can be reduced as in the case of $z$-invariant geometries to a sum of forces obtained from two-dimensional computations. An example is a recently-discovered system [Levin et. al.](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.105.090403) that exhibits a repulsive Casimir force between vacuum-separated dielectrics. This system is shown below:
 
 
-![](../images/Repulsive.jpg)
+![](../images/Repulsive.jpg#center)
 
 
 The hole in the bottom plane, coupled with the high degree of anisotropy of the upper elliptical particle, results in a repulsive force when the particle is centered above the hole. This system is simulated in [repulsive-particle.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/repulsive-particle.ctl). The size parameters used in the ctl file are noted on the figure above.
@@ -495,7 +495,7 @@ Example: Three-Dimensional Periodic Systems
 Three-dimensional periodic systems are another example of systems that can be easily analyzed with Meep. In this example, we consider the Casimir force between a periodic array of dielectric spheres and a metallic plate, shown below and simulated in [periodic-sphere-plate.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/periodic-sphere-plate.ctl):
 
 
-![](../images/Spheres-plane.jpg)
+![](../images/Spheres-plane.jpg#center)
 
 
 In this example, the plate can either be perfect metal, or dispersive gold (the default). Set `dispersion?` to false to get a perfect metal plate. We denote the $z$-direction to be the vector normal to the plate, and the $x$ and $y$ directions to be parallel to the plate. In this case we have two directions of Bloch periodicity, $k_x$ and $k_y$. However, unlike the previous case of $z$-invariance, here the source surface $S$ intersects the periodic bounding surface.

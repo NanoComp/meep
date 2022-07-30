@@ -190,7 +190,7 @@ while (f.time() < curr_time + 1/w_midgap) {
 After we convert the HDF5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
 
 
-![](images/Fabryperot.gif)
+![](images/Fabryperot.gif#center)
 
 
 Compiling

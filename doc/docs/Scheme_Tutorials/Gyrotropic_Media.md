@@ -74,7 +74,7 @@ The simulation cell is one pixel wide in the *x* and *y* directions, with period
 After running the simulation, the `ex` and `ey` datasets in `faraday-rotation-efields.h5` contain the values of $\mathbf{E}_x$ and $\mathbf{E}_y$. These are plotted against *z* in the figure below:
 
 
-![](../images/Faraday-rotation.png)
+![](../images/Faraday-rotation.png#center)
 
 
 We see that the wave indeed rotates in the *x*-*y* plane as it travels.
@@ -86,4 +86,4 @@ $$\epsilon_\perp = \epsilon_\infty + \frac{\omega_n^2 \Delta_n}{\Delta_n^2 - \om
 From these expressions, we can calculate the rotation rate $\kappa_c$ at the operating frequency, and hence find the $\mathbf{E}_x$ and $\mathbf{E}_y$ field envelopes for the complex ansatz given at the top of this section. As shown in the figure below, the results are in excellent agreement:
 
 
-![](../images/Faraday-rotation-comparison.png)
+![](../images/Faraday-rotation-comparison.png#center)
