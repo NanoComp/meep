@@ -1058,6 +1058,7 @@ class Animate2D:
         realtime=False,
         normalize=False,
         plot_modifiers=None,
+        update_epsilon: bool = False,
         **customization_args
     ):
         """
@@ -1092,11 +1093,14 @@ class Animate2D:
           plot_modifiers = [mod1]
         ```
 
+        + **`update_epsilon=False`** — Redraw epsilon on each call. (Useful for topology optimization)
+
         + **`**customization_args`** — Customization keyword arguments passed to
           `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
         """
 
         self.fields = fields
+        self.update_epsilon = update_epsilon
 
         if f:
             self.f = f
@@ -1147,14 +1151,25 @@ class Animate2D:
                     self.w, self.h = self.f.get_size_inches()
                 self.init = True
             else:
-                # Update the plot
-                filtered_plot_fields = filter_dict(self.customization_args, plot_fields)
-                fields = sim.plot_fields(fields=self.fields, **filtered_plot_fields)
-                if mp.am_master():
-                    self.ax.images[-1].set_data(fields)
-                    self.ax.images[-1].set_clim(
-                        vmin=0.8 * np.min(fields), vmax=0.8 * np.max(fields)
+                if self.update_epsilon:
+                    # Update epsilon
+                    filtered_plot_eps = filter_dict(self.customization_args, plot_eps)
+                    eps = plot_eps(sim=sim, **filtered_plot_eps)
+                    if mp.am_master():
+                        eps_idx = -1 if not self.fields else -2
+                        self.ax.images[eps_idx].set_data(eps)
+
+                if self.fields:
+                    # Update fields
+                    filtered_plot_fields = filter_dict(
+                        self.customization_args, plot_fields
                     )
+                    fields = sim.plot_fields(fields=self.fields, **filtered_plot_fields)
+                    if mp.am_master():
+                        self.ax.images[-1].set_data(fields)
+                        self.ax.images[-1].set_clim(
+                            vmin=0.8 * np.min(fields), vmax=0.8 * np.max(fields)
+                        )
 
             if self.realtime and mp.am_master():
                 # Redraw the current figure if requested
