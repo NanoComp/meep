@@ -439,11 +439,11 @@ def plot_volume(
 
 def plot_eps(
     sim: Simulation,
-    ax: Axes,
+    ax: Axes = None,
     output_plane: Volume = None,
     eps_parameters: dict = None,
     frequency: float = None,
-) -> Axes:
+) -> Union[Axes, Any]:
     # consolidate plotting parameters
     if eps_parameters is None:
         eps_parameters = default_eps_parameters
@@ -524,22 +524,25 @@ def plot_eps(
     )
 
     if mp.am_master():
-        if eps_parameters["contour"]:
-            ax.contour(
-                eps_data,
-                0,
-                levels=np.unique(eps_data),
-                colors="black",
-                origin="upper",
-                extent=extent,
-                linewidths=eps_parameters["contour_linewidth"],
-            )
-        else:
-            ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-
-    return ax
+        if ax:
+            if eps_parameters["contour"]:
+                ax.contour(
+                    eps_data,
+                    0,
+                    levels=np.unique(eps_data),
+                    colors="black",
+                    origin="upper",
+                    extent=extent,
+                    linewidths=eps_parameters["contour_linewidth"],
+                )
+            else:
+                ax.imshow(
+                    eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow)
+                )
+            ax.set_xlabel(xlabel)
+            ax.set_ylabel(ylabel)
+            return ax
+        return eps_data
 
 
 def plot_boundaries(
