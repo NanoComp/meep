@@ -19,6 +19,8 @@ EOF
 [ -z "$1" ] && echo "(use -h for help)"
 
 installdeps=true
+with_guile=true
+with_parallel=true
 
 while [ ! -z "$1" ]; do
     case "$1" in
@@ -34,6 +36,12 @@ while [ ! -z "$1" ]; do
             ;;
         -n)         # do not check for distribution dependencies
             installdeps=false
+            ;;
+        -g)        # build without guile
+            with_guile=false
+            ;;
+        -se)        # build serial version
+            with_parallel=false
             ;;
         *)
             echo "'$1' ?"
@@ -61,7 +69,7 @@ Please ensure the following final paths fit your needs:
 
 Press return to continue
 EOF
-read junk
+#read junk
 
 if ! lsb_release; then
     echo "Minimum requirements:"
@@ -95,8 +103,27 @@ autogensh ()
 {
     sh autogen.sh PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" RPATH_FLAGS="${RPATH_FLAGS}" LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" \
         --disable-static --enable-shared --prefix="${DESTDIR}" \
-        --with-libctl=${DESTDIR}/share/libctl \
         "$@"
+}
+
+configure()
+{
+    ./configure PKG_CONFIG_PATH="${PKG_CONFIG_PATH}" RPATH_FLAGS="${RPATH_FLAGS}" LDFLAGS="${LDFLAGS}" CFLAGS="${CFLAGS}" CPPFLAGS="${CPPFLAGS}" \
+        --disable-static --enable-shared --prefix="${DESTDIR}" \
+        "$@"
+}
+
+getlibctl()
+{
+    if $with_guile; then
+        gitclone https://github.com/NanoComp/libctl.git
+    else
+        wget https://github.com/NanoComp/libctl/releases/download/v4.5.1/libctl-4.5.1.tar.gz
+        tar -xzf libctl-4.5.1.tar.gz
+        mv libctl-4.5.1 libctl
+        rm libctl-4.5.1.tar.gz
+        echo $PWD
+    fi
 }
 
 if $installdeps; then
@@ -222,52 +249,74 @@ if $installdeps; then
     CFLAGS="-I${DESTDIR}/include -I/usr/include/openmpi-x86_64/"
     fi
 else
-    RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib"
-    LDFLAGS="-L${DESTDIR}/lib ${RPATH_FLAGS}"
+    RPATH_FLAGS="-Wl,-rpath,-L${DESTDIR}/lib"
+    LDFLAGS="-L${DESTDIR}/lib"
     CFLAGS="-I${DESTDIR}/include"
 fi
 
 CPPFLAGS=${CFLAGS}
-PKG_CONFIG_PATH=${DESDTIR}/pkgconfig
-export PKG_CONFIG_PATH
-export PATH=${DESTDIR}/bin:${PATH}
+PKG_CONFIG_PATH=${DESTDIR}/pkgconfig
+PATH=${DESTDIR}/bin:${PATH}
+
+
+if $with_guile; then
+    if_guile_flag=""
+    guile_flag_mpb=""
+    guile_flag_meep=""
+else
+    if_guile_flag="--without-guile"
+    guile_flag_mpb="--without-libctl"
+    guile_flag_meep="--without-scheme"
+fi
+
+if $with_parallel; then
+    parallel_flags="--with-mpi --with-openmp"
+else
+    parallel_flags=""
+fi
 
 mkdir -p $SRCDIR
+
 
 cd $SRCDIR
 gitclone https://github.com/NanoComp/harminv.git
 cd harminv/
-autogensh
+autogensh ${CONFIGURE_harminv}
 make -j && $SUDO make install
 
 cd $SRCDIR
-gitclone https://github.com/NanoComp/libctl.git
-cd libctl/
-autogensh
+getlibctl
+cd libctl
+if $with_guile;then
+   autogensh ${CONFIGURE_libctl}
+else
+   configure ${if_guile_flag} ${CONFIGURE_libctl}
+fi
 make -j && $SUDO make install
+
 
 cd $SRCDIR
 gitclone https://github.com/NanoComp/h5utils.git
 cd h5utils/
-autogensh CC=mpicc
+autogensh ${if_guile_flag} ${CONFIGURE_h5utils}
 make -j && $SUDO make install
 
 cd $SRCDIR
 gitclone https://github.com/NanoComp/mpb.git
 cd mpb/
-autogensh CC=mpicc --with-hermitian-eps
+autogensh --with-hermitian-eps --with-libctl=${DESTDIR}/share/libctl ${guile_flag_mpb} ${CONFIGURE_mpb}
 make -j && $SUDO make install
 
 cd $SRCDIR
 gitclone https://github.com/HomerReid/libGDSII.git
 cd libGDSII/
-autogensh
+autogensh ${CONFIGURE_libGDSII}
 make -j && $SUDO make install
 
 cd $SRCDIR
 gitclone https://github.com/NanoComp/meep.git
 cd meep/
-autogensh --with-mpi --with-openmp PYTHON=python3
+autogensh ${parallel_flags} PYTHON=python3 --with-libctl=${DESTDIR}/share/libctl ${guile_flag_meep} ${CONFIGURE_meep}
 make -j && $SUDO make install
 
 # all done
