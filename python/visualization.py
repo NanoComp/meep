@@ -1052,8 +1052,8 @@ class Animate2D:
 
     def __init__(
         self,
-        sim,
         fields,
+        sim=None,
         f=None,
         realtime=False,
         normalize=False,
