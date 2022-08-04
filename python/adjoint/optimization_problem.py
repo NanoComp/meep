@@ -37,8 +37,9 @@ class OptimizationProblem:
         minimum_run_time=0,
         maximum_run_time=None,
         finite_difference_step=utils.FD_DEFAULT,
+        step_funcs: list = None,
     ):
-
+        self.step_funcs = step_funcs
         self.sim = simulation
 
         if isinstance(objective_functions, list):
@@ -184,15 +185,17 @@ class OptimizationProblem:
         if any(isinstance(m, LDOS) for m in self.objective_arguments):
             self.sim.run(
                 mp.dft_ldos(self.frequencies),
+                *self.step_funcs,
                 until_after_sources=mp.stop_when_dft_decayed(
                     self.decay_by, self.minimum_run_time, self.maximum_run_time
                 ),
             )
         else:
             self.sim.run(
+                *self.step_funcs,
                 until_after_sources=mp.stop_when_dft_decayed(
                     self.decay_by, self.minimum_run_time, self.maximum_run_time
-                )
+                ),
             )
 
         # record objective quantities from user specified monitors
@@ -254,9 +257,10 @@ class OptimizationProblem:
 
             # Adjoint run
             self.sim.run(
+                *self.step_funcs,
                 until_after_sources=mp.stop_when_dft_decayed(
                     self.decay_by, self.minimum_run_time, self.maximum_run_time
-                )
+                ),
             )
 
         # reset the m number
@@ -376,15 +380,17 @@ class OptimizationProblem:
             if any(isinstance(m, LDOS) for m in self.objective_arguments):
                 self.sim.run(
                     mp.dft_ldos(self.frequencies),
+                    *self.step_funcs,
                     until_after_sources=mp.stop_when_energy_decayed(
                         dt=1, decay_by=1e-11
                     ),
                 )
             else:
                 self.sim.run(
+                    *self.step_funcs,
                     until_after_sources=mp.stop_when_dft_decayed(
                         self.decay_by, self.minimum_run_time, self.maximum_run_time
-                    )
+                    ),
                 )
 
             # record final objective function value
@@ -409,15 +415,17 @@ class OptimizationProblem:
             if any(isinstance(m, LDOS) for m in self.objective_arguments):
                 self.sim.run(
                     mp.dft_ldos(self.frequencies),
+                    *self.step_funcs,
                     until_after_sources=mp.stop_when_energy_decayed(
                         dt=1, decay_by=1e-11
                     ),
                 )
             else:
                 self.sim.run(
+                    *self.step_funcs,
                     until_after_sources=mp.stop_when_dft_decayed(
                         self.decay_by, self.minimum_run_time, self.maximum_run_time
-                    )
+                    ),
                 )
 
             # record final objective function value
