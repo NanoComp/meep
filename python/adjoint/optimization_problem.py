@@ -39,7 +39,7 @@ class OptimizationProblem:
         finite_difference_step=utils.FD_DEFAULT,
         step_funcs: list = None,
     ):
-        self.step_funcs = step_funcs
+        self.step_funcs = step_funcs if step_funcs is not None else []
         self.sim = simulation
 
         if isinstance(objective_functions, list):
