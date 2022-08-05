@@ -36,8 +36,8 @@
 (set! pml-layers (list (make pml (thickness dpml))))
 (set-param! resolution 20)
 
-(define-param fcen 0.25) ; pulse center frequency                            
-(define-param df 0.2)  ; pulse width (in frequency) 
+(define-param fcen 0.25) ; pulse center frequency
+(define-param df 0.2)  ; pulse width (in frequency)
 
 (define-param nfreq 500) ; number of frequencies at which to compute flux
 
@@ -58,7 +58,7 @@
       (run-sources+ 400
 		    (at-beginning output-epsilon)
 		    (after-sources (harminv Hz (vector3 0) fcen df)))
-      (run-until (/ 1 fcen) (at-every (/ 1 fcen 20) output-hfield-z))      
+      (run-until (/ 1 fcen) (at-every (/ 1 fcen 20) output-hfield-z))
       )
     (begin
       (set! sources (list
@@ -69,12 +69,12 @@
 		       (size 0 w))))
 
       (set! symmetries (list (make mirror-sym (direction Y) (phase -1))))
-      
+
       (let ((trans ; transmitted flux
 	      (add-flux fcen df nfreq
 		        (make flux-region
 		          (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2))))))
-      
+
           (run-sources+ (stop-when-fields-decayed
 		        50 Ey
 		        (vector3 (- (* 0.5 sx) dpml 0.5) 0)
@@ -83,6 +83,6 @@
 		        (during-sources
                         (in-volume (volume (center 0 0) (size sx 0))
                                    (to-appended "hz-slice" (at-every 0.4 output-hfield-z)))))
-      
+
           (display-fluxes trans) ; print out the flux spectrum
       )))

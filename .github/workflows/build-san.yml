@@ -35,7 +35,7 @@ jobs:
           libfftw3-dev libgdsii-dev libgsl-dev libharminv-dev libhdf5-dev \
           libtool mpb mpb-dev
     - name: Check out repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Autoreconf
       run: autoreconf -if
     - name: configure
@@ -51,7 +51,7 @@ jobs:
     - name: Run sanitizer
       run: make -j$(nproc) check
     - name: Archive test logs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       if: failure()
       with:
         name: ${{ matrix.name-suffix }}-log

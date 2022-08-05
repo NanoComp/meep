@@ -335,9 +335,12 @@ int main(int argc, char **argv) {
   if (sizeof(realnum) == sizeof(double)) {
     if (pml1d_scaling(one)) meep::abort("pml doesn't scale properly with length.");
   }
-  if (pmlcyl_scaling(one, 0)) meep::abort("m=0 cylindrical pml doesn't scale properly with length.");
-  if (pmlcyl_scaling(one, 1)) meep::abort("m=1 cylindrical pml doesn't scale properly with length.");
-  if (pmlcyl_scaling(one, 2)) meep::abort("m=2 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 0))
+    meep::abort("m=0 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 1))
+    meep::abort("m=1 cylindrical pml doesn't scale properly with length.");
+  if (pmlcyl_scaling(one, 2))
+    meep::abort("m=2 cylindrical pml doesn't scale properly with length.");
 
   return 0;
 }

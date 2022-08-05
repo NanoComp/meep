@@ -80,7 +80,7 @@ control various parameters of the Meep computation.
 </div>
 
 
-   
+
 <a id="Simulation.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -356,7 +356,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 </div>
 
 </div>
-   
+
 <a id="Simulation.run"></a>
 
 <div class="class_members" markdown="1">
@@ -610,7 +610,7 @@ demonstrated in the following image for two
 [Cylinder](#cylinder) objects (the simulation script is in
 [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
-![](images/phase-in-material.png)
+![](images/phase-in-material.png#center)
 
 </div>
 
@@ -3771,7 +3771,7 @@ ax.set_aspect('equal')
 plt.show()
 ```
 
-![](images/PermittivityWithLabeledAxes.png)
+![](images/PermittivityWithLabeledAxes.png#center)
 
 **Computing Quantities Defined by Integrals of Field-Dependent Functions Over Grid Regions**
 
@@ -4452,7 +4452,7 @@ on the `size` property of the `Block` object as shown in the following example f
 with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the $z$ direction.
 The grid points are defined at the corners of the voxels.
 
-![](images/material_grid.png)
+![](images/material_grid.png#center)
 
 Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
 The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.

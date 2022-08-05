@@ -33,8 +33,8 @@ bool compare_hdf5_datasets(const char *file1, const char *name1, const char *fil
   int rank1;
   std::vector<size_t> dims1(expected_rank);
 
-  std::unique_ptr<realnum []> data1;
-  std::unique_ptr<realnum []> data2;
+  std::unique_ptr<realnum[]> data1;
+  std::unique_ptr<realnum[]> data2;
   data1.reset(static_cast<realnum *>(
       f1.read(name1, &rank1, dims1.data(), expected_rank, sizeof(realnum) == sizeof(float))));
   if (!data1) return false;
@@ -129,9 +129,7 @@ int main(int argc, char *argv[]) {
   //    (make ellipsoid (center 0 0 0) (size 1 2 infinity)
   //                   (material air))))
   double n = 3.5; // index of refraction
-  auto material_deleter = [](meep_geom::material_data *m) {
-    meep_geom::material_free(m);
-  };
+  auto material_deleter = [](meep_geom::material_data *m) { meep_geom::material_free(m); };
   std::unique_ptr<meep_geom::material_data, decltype(material_deleter)> dielectric(
       meep_geom::make_dielectric(n * n), material_deleter);
   geometric_object objects[2];

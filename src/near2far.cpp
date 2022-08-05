@@ -43,7 +43,7 @@ dft_near2far::dft_near2far(dft_chunk *F_, double fmin, double fmax, int Nf, doub
   }
 }
 
-dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double>& freq_, double eps_, double mu_,
+dft_near2far::dft_near2far(dft_chunk *F_, const std::vector<double> &freq_, double eps_, double mu_,
                            const volume &where_, const direction periodic_d_[2],
                            const int periodic_n_[2], const double periodic_k_[2],
                            const double period_[2])
@@ -151,8 +151,7 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
   vec p = zero_vec(rhat.dim);
   p.set_direction(component_direction(c0), 1);
   double pdotrhat = p & rhat;
-  vec rhatcrossp = vec(rhat.y() * p.z() - rhat.z() * p.y(),
-                       rhat.z() * p.x() - rhat.x() * p.z(),
+  vec rhatcrossp = vec(rhat.y() * p.z() - rhat.z() * p.y(), rhat.z() * p.x() - rhat.x() * p.z(),
                        rhat.x() * p.y() - rhat.y() * p.x());
 
   /* compute the various scalar quantities in the point source formulae */
@@ -632,7 +631,8 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
         double s = j == 0 ? 1 : -1; /* sign of n x c */
         if (is_electric(c)) s = -s;
 
-        F = add_dft(c, w->v, freq, Nfreq, true, s * w->weight, F, false, 1.0, false, c0, decimation_factor);
+        F = add_dft(c, w->v, freq, Nfreq, true, s * w->weight, F, false, 1.0, false, c0,
+                    decimation_factor);
       }
     }
   }
@@ -641,8 +641,10 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
                       period);
 }
 
-//Modified from farfield_lowlevel
-std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, const std::complex<double>* dJ) {
+// Modified from farfield_lowlevel
+std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double *farpt_list,
+                                                             size_t nfar_pts,
+                                                             const std::complex<double> *dJ) {
   if (x_0.dim != D3 && x_0.dim != D2 && x_0.dim != Dcyl)
     meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x_0.dim == D2 ? green2d : green3d;
@@ -657,49 +659,49 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-      std::complex<double> EH6[6];
-      size_t idx_dft = 0;
-      sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
+    std::complex<double> EH6[6];
+    size_t idx_dft = 0;
+    sourcedata temp_struct = {component(f->c), idx_arr, f->fc->chunk_idx, amp_arr};
 
-      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
-        IVEC_LOOP_ILOC(f->fc->gv, ix0);
-        IVEC_LOOP_LOC(f->fc->gv, x0);
-        x0 = f->S.transform(x0, f->sn) + rshift;
-        vec xs(x0);
-        double w;
-        w = IVEC_LOOP_WEIGHT(f->s0, f->s1, f->e0, f->e1, f->dV0 + f->dV1 * loop_i2);
+    LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+      IVEC_LOOP_ILOC(f->fc->gv, ix0);
+      IVEC_LOOP_LOC(f->fc->gv, x0);
+      x0 = f->S.transform(x0, f->sn) + rshift;
+      vec xs(x0);
+      double w;
+      w = IVEC_LOOP_WEIGHT(f->s0, f->s1, f->e0, f->e1, f->dV0 + f->dV1 * loop_i2);
 
-        temp_struct.idx_arr.push_back(idx);
-        for (size_t i = 0; i < Nfreq; ++i) {
-          std::complex<double> EH0 = std::complex<double>(0,0);
-          for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
-            if (periodic_d[0] != NO_DIRECTION)
-              xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
-            double phase0 = i0 * periodic_k[0];
-            for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
-              if (periodic_d[1] != NO_DIRECTION)
-                xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
-              double phase = phase0 + i1 * periodic_k[1];
-              std::complex<double> cphase = std::polar(1.0, phase);
-              for (size_t ipt = 0; ipt < nfar_pts; ++ipt){
-                vec x = vec(farpt_list[3*ipt], farpt_list[3*ipt+1], farpt_list[3*ipt+2]);
-                if (x_0.dim == Dcyl)
-                  greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
-                else
-                  green(EH6, x, freq[i], eps, mu, xs, c0, w);
-                for (int j = 0; j < 6; ++j)
-                  EH0 += EH6[j] * cphase * (f->stored_weight) * dJ[6*Nfreq*ipt + 6*i + j];
-              }
+      temp_struct.idx_arr.push_back(idx);
+      for (size_t i = 0; i < Nfreq; ++i) {
+        std::complex<double> EH0 = std::complex<double>(0, 0);
+        for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
+          if (periodic_d[0] != NO_DIRECTION)
+            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
+          double phase0 = i0 * periodic_k[0];
+          for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
+            if (periodic_d[1] != NO_DIRECTION)
+              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
+            double phase = phase0 + i1 * periodic_k[1];
+            std::complex<double> cphase = std::polar(1.0, phase);
+            for (size_t ipt = 0; ipt < nfar_pts; ++ipt) {
+              vec x = vec(farpt_list[3 * ipt], farpt_list[3 * ipt + 1], farpt_list[3 * ipt + 2]);
+              if (x_0.dim == Dcyl)
+                greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
+              else
+                green(EH6, x, freq[i], eps, mu, xs, c0, w);
+              for (int j = 0; j < 6; ++j)
+                EH0 += EH6[j] * cphase * (f->stored_weight) * dJ[6 * Nfreq * ipt + 6 * i + j];
+            }
           }
         }
         idx_dft++;
-        if (is_electric(temp_struct.near_fd_comp))
-          EH0 *= -1;
+        if (is_electric(temp_struct.near_fd_comp)) EH0 *= -1;
         EH0 /= f->S.multiplicity(ix0);
-        if (x_0.dim == Dcyl){
+        if (x_0.dim == Dcyl) {
           if (xs.r() != 0) EH0 /= xs.r();
-          //Somehow, a factor of (2pi)r for r of the near2far region was double counted.
-          //2pi is canceled out by the integral over design region, where an extra factor of 2pi*r' (r' of the design region) is needed. See meepgeom.cpp
+          // Somehow, a factor of (2pi)r for r of the near2far region was double counted.
+          // 2pi is canceled out by the integral over design region, where an extra factor of 2pi*r'
+          // (r' of the design region) is needed. See meepgeom.cpp
         }
         temp_struct.amp_arr.push_back(EH0);
       }

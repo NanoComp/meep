@@ -83,9 +83,9 @@ polarization is also zero.   This is demonstrated in the figure below showing a 
 
 In the [interface](Python_User_Interface.md#source), the source currents are labeled $E_x$ or $H_y$ etc. according to what components of the electric/magnetic fields they correspond to.
 
-<center>
-![](images/residue_fields_bound_charges.png)
-</center>
+
+![](images/residue_fields_bound_charges.png#center)
+
 
 ### How do I compute the local density of states (LDOS) in a lossy material?
 
@@ -150,9 +150,9 @@ For an example of the second approach, see [Tutorial/Eigenmode Source/Planewaves
 
 A focused beam with a Gaussian envelope can be created using the [`GaussianBeamSource`](Python_User_Interface.md#gaussianbeamsource) as demonstrated in this [script](https://github.com/NanoComp/meep/blob/master/python/examples/gaussian-beam.py). The following are four snapshots of the resulting field profile generated using a line source (red line) in 2d for different values of the beam waist radius/width $w_0$ (`beam_w0`), propagation direction $\vec{k}$ (`beam_kdir`), and focus (`beam_x0`):
 
-<center>
-![](images/gaussian_beam.png)
-</center>
+
+![](images/gaussian_beam.png#center)
+
 
 Note: beams in a homogeneous material do *not* have a fixed width in Maxwell's equations; they always spread out during propagation (i.e., diffraction). The [numerical aperture (NA)](https://en.wikipedia.org/wiki/Gaussian_beam#Beam_divergence) of a Gaussian beam with waist radius $w$ and vacuum wavelength $\lambda$ within a medium of index $n$ is $n\sin(\lambda/(\pi nw))$.
 
@@ -164,9 +164,9 @@ A circularly polarized planewave in [cylindrical coordinates](Python_Tutorials/C
 
 You can use an instantaneous [`ContinuousSource`](Python_User_Interface.md#continuoussource) with large wavelength (or nearly-zero frequency). This is analogous to a [direct current](https://en.wikipedia.org/wiki/Direct_current). You will also need to create a [run function](Python_User_Interface.md#run-functions) which contains [`change_sources`](Python_User_Interface.md#reloading-parameters) and specify the `center` property of the point source to be time dependent. As an example, the following image demonstrates [Cherenkov radiation](https://en.wikipedia.org/wiki/Cherenkov_radiation) involving a moving point charge with [superluminal phase velocity](https://en.wikipedia.org/wiki/Faster-than-light#Phase_velocities_above_c) (see [examples/cherenkov-radiation.py](https://github.com/NanoComp/meep/blob/master/python/examples/cherenkov-radiation.py)).
 
-<center>
-![](images/cherenkov_radiation.png)
-</center>
+
+![](images/cherenkov_radiation.png#center)
+
 
 ### Why doesn't the continuous-wave (CW) source produce an exact single-frequency response?
 
@@ -174,9 +174,9 @@ The [ContinuousSource](Python_User_Interface.md#continuoussource) does not produ
 
 If the `width` is 0 (the default) then the source turns on sharply which creates high-frequency transient effects. Otherwise, the source turns on with a shape of (1 + tanh(t/`width` - `slowness`))/2. That is, the `width` parameter controls the width of the turn-on. The `slowness` parameter controls how far into the exponential tail of the tanh function the source turns on. The default `slowness` of 3.0 means that the source turns on at $(1 + \tanh(-3))/2 = 0.00247$ of its maximum amplitude.  A larger value for `slowness` means that the source turns on even more gradually at the beginning (i.e., farther in the exponential tail). The effect of varying the two parameters `width` and `slowness` independently in the turn-on function is shown below.
 
-<center>
-![](images/cwsrc_turnon.png)
-</center>
+
+![](images/cwsrc_turnon.png#center)
+
 
 Note: even if you have a continuous wave (CW) source at a frequency $\omega$, the time dependence of the electric field after transients have died away won't necessarily be $cos(\omega t)$, because in general there is a phase difference between the current and the resulting fields. In general for a CW source you will eventually get fields proportional to $cos(\omega t-\phi)$ for some phase $\phi$ which depends on the field component, the source position, and the surrounding geometry.
 
@@ -192,9 +192,9 @@ No. A narrow-bandwidth Gaussian is still a Gaussian: it goes to zero at both the
 
 You can use a [`CustomSource`](Python_User_Interface.md#customsource) to define an arbitrary time-profile for the [`Source`](Python_User_Interface.md#source) object. As an example, the following snapshots of the out-of-plane electric field demonstrates a [linear-chirped pulse](https://www.rp-photonics.com/chirp.html) planewave propagating from the left to the right with higher frequencies (smaller wavelengths) at the front (i.e., a down chirp). For the simulation script, see [examples/chirped_pulse.py](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
 
-<center>
-![](images/chirped_pulse.png)
-</center>
+
+![](images/chirped_pulse.png#center)
+
 
 Usage: Fields
 -------------
@@ -251,9 +251,9 @@ For a linear system, you can use a [ContinuousSource](Python_User_Interface.md#c
 
 The decay coefficient of the fields within any PML contains a $\cos(\theta)$ factor where $\theta$ is the incidence angle ($\theta=0^{\circ}$ is normal incidence). The decay therefore becomes *slower* as glancing incidence ($\theta=90^{\circ}$) is approached. This is true in the continuum limit and can be demonstrated by verifying that the reflections from the PML do *not* change with resolution. Otherwise, if the reflection decreases with increasing resolution then it may be due to transition reflections (i.e., the impedance mismatch at the PML interface) which can also be reduced by making the PML thicker instead of increasing the resolution. Transition reflections also increase as glancing incidence is approached, because at glancing incidence the phase-velocity mismatch between incident and reflected waves goes to zero as described in [Optics Express, Vol. 16, pp. 11376-92 (2008)](http://www.opticsinfobase.org/abstract.cfm?URI=oe-16-15-11376). Glancing-angle fields commonly arise in simulations where one direction is periodic and the other is terminated by a PML (such as in [diffraction gratings](Python_Tutorials/Mode_Decomposition.md#diffraction-spectrum-of-a-binary-grating)), in which case you can have spurious solutions that travel *parallel* to the PML interface; a workaround is to use a thicker non-PML [absorber](Python_User_Interface.md#absorber). This is demonstrated in the figure below by the glancing-angle fields remaining in the cell after a [source planewave](Python_Tutorials/Eigenmode_Source.md#planewaves-in-homogeneous-media) at 45° has long been turned off: the PML (left inset) is unable to absorb these fields unlike the absorber (right inset).
 
-<center>
-![](images/pml_glancing_field.png)
-</center>
+
+![](images/pml_glancing_field.png#center)
+
 
 ### How do I compute the modes of a non-orthogonal (i.e., triangular) lattice?
 
@@ -320,7 +320,7 @@ Only the [harmonic mean](https://en.wikipedia.org/wiki/Harmonic_mean) of eigenva
 
 ### How do I model graphene or other 2d materials with single-atom thickness?
 
-Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength, where the conductivity is furthermore usually anisotropic (producing surface-parallel currents in response to the surface-parallel components of the electric field). In a discretized computer model like Meep, this is approximated by an anisotropic volume conductivity (or other polarizable dispersive material) whose thickness is proportional to (`1/resolution`) *and* whose amplitude is proportional `resolution`. For example, this could be represented by a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`. 
+Typically, graphene and similar "2d" materials are mathematically represented as a [delta function](https://en.wikipedia.org/wiki/Dirac_delta_function) conductivity in Maxwell's equations because their thickness is negligible compared to the wavelength, where the conductivity is furthermore usually anisotropic (producing surface-parallel currents in response to the surface-parallel components of the electric field). In a discretized computer model like Meep, this is approximated by an anisotropic volume conductivity (or other polarizable dispersive material) whose thickness is proportional to (`1/resolution`) *and* whose amplitude is proportional `resolution`. For example, this could be represented by a one-pixel-thick [conductor](Materials.md#conductivity-and-complex) can be represented by e.g. a [`Block`](Python_User_Interface.md#block) with `size=meep.Vector3(x,y,1/resolution)` in a 3d cell, with the value of the conductivity explicitly multiplied by `resolution`.
 ### How do I model a continuously varying permittivity?
 
 You can use a [material function](Python_User_Interface.md#medium) to model any arbitrary, position-dependent permittivity/permeability function $\varepsilon(\vec{r})$/$\mu(\vec{r})$ including anisotropic, [dispersive](Materials.md#material-dispersion), and [nonlinear](Materials.md#nonlinearity) media. For an example involving a non-dispersive, anisotropic material, see [Tutorial/Mode Decomposition/Diffraction Spectrum of Liquid-Crystal Polarization Gratings](Python_Tutorials/Mode_Decomposition.md#diffraction-spectrum-of-liquid-crystal-polarization-gratings). The material function construct can also be used to specify arbitrary *shapes* (e.g., curves such as parabolas, sinusoids, etc.) within: (1) the interior boundary of a [`GeometricObject`](Python_User_Interface.md#geometricobject) (e.g., `Block`, `Sphere`, `Cylinder`, etc.), (2) the entire cell via the [`material_function`](Python_User_Interface.md#material-function) parameter of the `Simulation` constructor, or (3) a combination of the two.
@@ -351,9 +351,9 @@ Still, there are times when, for whatever reason, you might not want this featur
 
 Even if you disable the subpixel averaging, however, when you output the dielectric function to a file and visualize it, you may notice that there are some pixels with intermediate ε values, right at the boundary between two materials. This is due to a completely different reason. Internally, Meep's simulation is performed on a [Yee grid](Yee_Lattice.md), in which every field component is stored on a slightly different grid which are offset from one another by half-pixels, and the ε values are also stored on this Yee grid. For output purposes, however, it is more user-friendly to output all fields etcetera on the same grid at the center of each pixel, so all quantities are interpolated onto this grid for output. Therefore, even though the internal $\varepsilon$ values are indeed discontinuous when you disable subpixel averaging, the output file will still contain some "averaged" values at interfaces due to the interpolation from the Yee grid to the center-pixel grid.   For the same reason, if `k_point` is set and the boundaries are Bloch-periodic, the permittivity function of the entire cell obtained via `get_epsilon` or `output_epsilon` will show that a little of the cell from one edge "leaks" over to the other edge: these extra pixels are added to implement the boundary conditions. This is independent of PML and the way the structure is defined (i.e., using geometric objects or a material function, etc.). An example is shown in the figure below comparing `output_epsilon` for two cases involving with and without `k_point`. The discretization artifacts are highlighted.
 
-<center>
-![](images/output_epsilon_kpoint.png)
-</center>
+
+![](images/output_epsilon_kpoint.png#center)
+
 
 ### Why does subpixel averaging take so long?
 

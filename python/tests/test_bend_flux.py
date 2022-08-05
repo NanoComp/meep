@@ -1,12 +1,13 @@
 import os
 import unittest
+
 import numpy as np
-import meep as mp
 from utils import ApproxComparisonTestCase
+
+import meep as mp
 
 
 class TestBendFlux(ApproxComparisonTestCase):
-
     def init(self, no_bend=False, gdsii=False):
         sx = 16
         sy = 32
@@ -16,61 +17,91 @@ class TestBendFlux(ApproxComparisonTestCase):
         wvg_ycen = -0.5 * (sy - w - (2 * pad))
         wvg_xcen = 0.5 * (sx - w - (2 * pad))
         height = mp.inf
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'data'))
-        gdsii_file = os.path.join(data_dir, 'bend-flux.gds')
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
+        gdsii_file = os.path.join(data_dir, "bend-flux.gds")
 
         if no_bend:
             if gdsii:
-                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 1, 0, height)
+                geometry = mp.get_GDSII_prisms(
+                    mp.Medium(epsilon=12), gdsii_file, 1, 0, height
+                )
             else:
-                no_bend_vertices = [mp.Vector3(-0.5 * sx - 5, wvg_ycen - 0.5 * w),
-                                    mp.Vector3(+0.5 * sx + 5, wvg_ycen - 0.5 * w),
-                                    mp.Vector3(+0.5 * sx + 5, wvg_ycen + 0.5 * w),
-                                    mp.Vector3(-0.5 * sx - 5, wvg_ycen + 0.5 * w)]
+                no_bend_vertices = [
+                    mp.Vector3(-0.5 * sx - 5, wvg_ycen - 0.5 * w),
+                    mp.Vector3(+0.5 * sx + 5, wvg_ycen - 0.5 * w),
+                    mp.Vector3(+0.5 * sx + 5, wvg_ycen + 0.5 * w),
+                    mp.Vector3(-0.5 * sx - 5, wvg_ycen + 0.5 * w),
+                ]
 
-                geometry = [mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))]
+                geometry = [
+                    mp.Prism(no_bend_vertices, height, material=mp.Medium(epsilon=12))
+                ]
+        elif gdsii:
+            geometry = mp.get_GDSII_prisms(
+                mp.Medium(epsilon=12), gdsii_file, 2, 0, height
+            )
         else:
-            if gdsii:
-                geometry = mp.get_GDSII_prisms(mp.Medium(epsilon=12), gdsii_file, 2, 0, height)
-            else:
-                bend_vertices = [mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
-                                 mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
-                                 mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
-                                 mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
-                                 mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
-                                 mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w)]
+            bend_vertices = [
+                mp.Vector3(-0.5 * sx, wvg_ycen - 0.5 * w),
+                mp.Vector3(wvg_xcen + 0.5 * w, wvg_ycen - 0.5 * w),
+                mp.Vector3(wvg_xcen + 0.5 * w, 0.5 * sy),
+                mp.Vector3(wvg_xcen - 0.5 * w, 0.5 * sy),
+                mp.Vector3(wvg_xcen - 0.5 * w, wvg_ycen + 0.5 * w),
+                mp.Vector3(-0.5 * sx, wvg_ycen + 0.5 * w),
+            ]
 
-                geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
+            geometry = [mp.Prism(bend_vertices, height, material=mp.Medium(epsilon=12))]
 
         fcen = 0.15
         df = 0.1
-        sources = [mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ez,
-                             center=mp.Vector3(1 + (-0.5 * sx), wvg_ycen), size=mp.Vector3(0, w))]
+        sources = [
+            mp.Source(
+                mp.GaussianSource(fcen, fwidth=df),
+                component=mp.Ez,
+                center=mp.Vector3(1 + (-0.5 * sx), wvg_ycen),
+                size=mp.Vector3(0, w),
+            )
+        ]
 
         pml_layers = [mp.PML(1.0)]
         resolution = 10
         nfreq = 100
 
-        self.sim = mp.Simulation(cell_size=cell,
-                                 boundary_layers=pml_layers,
-                                 geometry=geometry,
-                                 sources=sources,
-                                 resolution=resolution)
+        self.sim = mp.Simulation(
+            cell_size=cell,
+            boundary_layers=pml_layers,
+            geometry=geometry,
+            sources=sources,
+            resolution=resolution,
+        )
 
         if no_bend:
-            fr = mp.FluxRegion(center=mp.Vector3((sx / 2) - 1.5, wvg_ycen), size=mp.Vector3(0, w * 2))
+            fr = mp.FluxRegion(
+                center=mp.Vector3((sx / 2) - 1.5, wvg_ycen), size=mp.Vector3(0, w * 2)
+            )
         else:
-            fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen, (sy / 2) - 1.5), size=mp.Vector3(w * 2, 0))
+            fr = mp.FluxRegion(
+                center=mp.Vector3(wvg_xcen, (sy / 2) - 1.5), size=mp.Vector3(w * 2, 0)
+            )
 
         self.trans = self.sim.add_flux(fcen, df, nfreq, fr, decimation_factor=1)
-        self.trans_decimated = self.sim.add_flux(fcen, df, nfreq, fr, decimation_factor=5)
+        self.trans_decimated = self.sim.add_flux(
+            fcen, df, nfreq, fr, decimation_factor=5
+        )
 
-        refl_fr = mp.FluxRegion(center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen),
-                                size=mp.Vector3(0, w * 2))
-        self.refl = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr,
-                                      decimation_factor=1)
-        self.refl_decimated = self.sim.add_flux(np.linspace(fcen-0.5*df,fcen+0.5*df,nfreq), refl_fr,
-                                                decimation_factor=10)
+        refl_fr = mp.FluxRegion(
+            center=mp.Vector3((-0.5 * sx) + 1.5, wvg_ycen), size=mp.Vector3(0, w * 2)
+        )
+        self.refl = self.sim.add_flux(
+            np.linspace(fcen - 0.5 * df, fcen + 0.5 * df, nfreq),
+            refl_fr,
+            decimation_factor=1,
+        )
+        self.refl_decimated = self.sim.add_flux(
+            np.linspace(fcen - 0.5 * df, fcen + 0.5 * df, nfreq),
+            refl_fr,
+            decimation_factor=10,
+        )
 
         if no_bend:
             self.pt = mp.Vector3((sx / 2) - 1.5, wvg_ycen)
@@ -108,13 +139,21 @@ class TestBendFlux(ApproxComparisonTestCase):
             (0.119191919192, 0.0254987474079, 0.0252348211592),
         ]
 
-        res = list(zip(mp.get_flux_freqs(self.trans),
-                       mp.get_fluxes(self.trans),
-                       mp.get_fluxes(self.refl)))
+        res = list(
+            zip(
+                mp.get_flux_freqs(self.trans),
+                mp.get_fluxes(self.trans),
+                mp.get_fluxes(self.refl),
+            )
+        )
 
-        res_decimated = list(zip(mp.get_flux_freqs(self.trans_decimated),
-                                 mp.get_fluxes(self.trans_decimated),
-                                 mp.get_fluxes(self.refl_decimated)))
+        res_decimated = list(
+            zip(
+                mp.get_flux_freqs(self.trans_decimated),
+                mp.get_fluxes(self.trans_decimated),
+                mp.get_fluxes(self.refl_decimated),
+            )
+        )
 
         tol = 1e-6 if mp.is_single_precision() else 1e-8
         self.assertClose(np.array(expected), np.array(res[:20]), epsilon=tol)
@@ -151,13 +190,21 @@ class TestBendFlux(ApproxComparisonTestCase):
             (0.11919191919191931, 0.008646855439680507, -0.005614491919262783),
         ]
 
-        res = list(zip(mp.get_flux_freqs(self.trans),
-                       mp.get_fluxes(self.trans),
-                       mp.get_fluxes(self.refl)))
+        res = list(
+            zip(
+                mp.get_flux_freqs(self.trans),
+                mp.get_fluxes(self.trans),
+                mp.get_fluxes(self.refl),
+            )
+        )
 
-        res_decimated = list(zip(mp.get_flux_freqs(self.trans_decimated),
-                                 mp.get_fluxes(self.trans_decimated),
-                                 mp.get_fluxes(self.refl_decimated)))
+        res_decimated = list(
+            zip(
+                mp.get_flux_freqs(self.trans_decimated),
+                mp.get_fluxes(self.trans_decimated),
+                mp.get_fluxes(self.refl_decimated),
+            )
+        )
 
         tol = 1e-3
         self.assertClose(np.array(expected), np.array(res[:20]), epsilon=tol)
@@ -169,5 +216,5 @@ class TestBendFlux(ApproxComparisonTestCase):
             self.run_bend_flux(True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

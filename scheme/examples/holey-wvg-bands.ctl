@@ -26,7 +26,7 @@
 (set! pml-layers (list (make pml (direction Y) (thickness dpml))))
 (set-param! resolution 20)
 
-(define-param fcen 0.25) ; pulse center frequency                            
+(define-param fcen 0.25) ; pulse center frequency
 (define-param df 1.5) ; pulse freq. width: large df = short impulse
 
 (set! sources (list
@@ -42,7 +42,7 @@
 (if kx
     (begin
       (set! k-point (vector3 kx))
-      (run-sources+ 
+      (run-sources+
        300 (at-beginning output-epsilon)
        (after-sources (harminv Hz (vector3 0.1234 0) fcen df)))
       (run-until (/ 1 fcen) (at-every (/ 1 fcen 20) output-hfield-z)))

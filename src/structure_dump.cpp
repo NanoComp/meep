@@ -33,8 +33,7 @@ namespace meep {
 
 // Write the parameters required to reconstruct the susceptibility (id, noise_amp (for noisy),
 // omega_0, gamma, no_omega_0_denominator)
-void structure::write_susceptibility_params(h5file *file,
-                                            bool single_parallel_file,
+void structure::write_susceptibility_params(h5file *file, bool single_parallel_file,
                                             const char *dname, int EorH) {
   // Get number of susceptibility params from first chunk, since all chunks will have
   // the same susceptibility list.
@@ -88,7 +87,8 @@ void structure::dump_chunk_layout(const char *filename) {
 }
 
 void structure::dump(const char *filename, bool single_parallel_file) {
-  if (verbosity > 0) printf("creating epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
+  if (verbosity > 0)
+    printf("creating epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
 
   /*
    * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
@@ -122,9 +122,8 @@ void structure::dump(const char *filename, bool single_parallel_file) {
   if (single_parallel_file) {
     num_chi1inv.resize(num_chi1inv_size);
     sum_to_master(num_chi1inv_.data(), num_chi1inv.data(), num_chi1inv_size);
-  } else {
-    num_chi1inv = std::move(num_chi1inv_);
   }
+  else { num_chi1inv = std::move(num_chi1inv_); }
 
   // determine total dataset size and offset of this process's data
   size_t my_start = 0;
@@ -407,9 +406,7 @@ susceptibility *make_sus_list_from_params(h5file *file, int rank, size_t dims[3]
       }
       if (sus->next) sus = sus->next;
     }
-    else {
-      meep::abort("Invalid number of susceptibility parameters in structure::load");
-    }
+    else { meep::abort("Invalid number of susceptibility parameters in structure::load"); }
   }
   return res;
 }
@@ -437,7 +434,8 @@ binary_partition::binary_partition(const split_plane &_split_plane,
   if (!left || !right) { meep::abort("Binary partition tree is required to be full"); }
 }
 
-binary_partition::binary_partition(const binary_partition& other) : proc_id(other.proc_id), plane(other.plane) {
+binary_partition::binary_partition(const binary_partition &other)
+    : proc_id(other.proc_id), plane(other.plane) {
   if (!other.is_leaf()) {
     left.reset(new binary_partition(*other.left));
     right.reset(new binary_partition(*other.right));
@@ -476,10 +474,10 @@ void split_by_binarytree(grid_volume gvol, std::vector<grid_volume> &result_gvs,
   }
 
   const auto &plane = bp->get_plane();
-  int split_point = static_cast<int>(
-      (plane.pos - gvol.surroundings().in_direction_min(plane.dir)) /
-          gvol.surroundings().in_direction(plane.dir) * gvol.num_direction(plane.dir) +
-      0.5);
+  int split_point = static_cast<int>((plane.pos - gvol.surroundings().in_direction_min(plane.dir)) /
+                                         gvol.surroundings().in_direction(plane.dir) *
+                                         gvol.num_direction(plane.dir) +
+                                     0.5);
   // traverse left branch
   grid_volume left_gvol = gvol.split_at_fraction(false, split_point, plane.dir);
   split_by_binarytree(left_gvol, result_gvs, result_ids, bp->left_tree());
@@ -542,8 +540,7 @@ void structure::load_chunk_layout(const char *filename, boundary_region &br) {
   delete[] nums;
 }
 
-void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
-                                  const std::vector<int> &ids,
+void structure::load_chunk_layout(const std::vector<grid_volume> &gvs, const std::vector<int> &ids,
                                   boundary_region &br) {
   if (gvs.size() != size_t(num_chunks)) meep::abort("load_chunk_layout: wrong number of chunks.");
   // Recreate the chunks with the new grid_volumes
@@ -558,7 +555,8 @@ void structure::load_chunk_layout(const std::vector<grid_volume> &gvs,
 void structure::load(const char *filename, bool single_parallel_file) {
   h5file file(filename, h5file::READONLY, single_parallel_file, !single_parallel_file);
 
-  if (verbosity > 0) printf("reading epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
+  if (verbosity > 0)
+    printf("reading epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
 
   /*
    * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting
@@ -623,10 +621,9 @@ void structure::load(const char *filename, bool single_parallel_file) {
   // read the data
   file.read_size("chi1inv", &rank, dims, 1);
   if (rank != 1 || dims[0] != ntotal) {
-    meep::abort(
-        "inconsistent data size for chi1inv in structure::load (rank, dims[0]): "
-        "(%d, %zu) != (1, %zu)",
-        rank, dims[0], ntotal);
+    meep::abort("inconsistent data size for chi1inv in structure::load (rank, dims[0]): "
+                "(%d, %zu) != (1, %zu)",
+                rank, dims[0], ntotal);
   }
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) {
@@ -671,7 +668,9 @@ void structure::load(const char *filename, bool single_parallel_file) {
     int rank = 0;
     size_t dims[] = {0, 0, 0};
     file.read_size("num_sigmas", &rank, dims, 1);
-    if (dims[0] != (size_t)num_chunks * 2) { meep::abort("inconsistent data size for num_sigmas in structure::load"); }
+    if (dims[0] != (size_t)num_chunks * 2) {
+      meep::abort("inconsistent data size for num_sigmas in structure::load");
+    }
     if (am_master() || !single_parallel_file) {
       size_t start = 0;
       size_t count = num_chunks;

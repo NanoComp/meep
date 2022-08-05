@@ -76,9 +76,7 @@ std::complex<double> cdouble(std::complex<float> z) {
   return std::complex<double>(real(z), imag(z));
 }
 
-std::complex<double> cdouble(std::complex<double> z) {
-  return z;
-}
+std::complex<double> cdouble(std::complex<double> z) { return z; }
 
 typedef struct {
 
@@ -127,7 +125,8 @@ typedef struct {
 } array_slice_data;
 
 /* passthrough field function equivalent to component_fun in h5fields.cpp */
-static complex<double> default_field_func(const complex<realnum> *fields, const vec &loc, void *data_) {
+static complex<double> default_field_func(const complex<realnum> *fields, const vec &loc,
+                                          void *data_) {
   (void)loc;   // unused
   (void)data_; // unused
   return cdouble(fields[0]);
@@ -523,8 +522,11 @@ bool increment(size_t *n, size_t *nMax, int rank) {
   return true;
 }
 
-// get the dimensions of reduced arrays (i.e., arrays collapsed along empty dimensions of original volume)
-void reduce_array_dimensions(volume where, int rank, size_t dims[3], direction dirs[3], size_t stride[3], int &reduced_rank, size_t reduced_dims[3], direction reduced_dirs[3], size_t reduced_stride[3]) {
+// get the dimensions of reduced arrays (i.e., arrays collapsed along empty dimensions of original
+// volume)
+void reduce_array_dimensions(volume where, int rank, size_t dims[3], direction dirs[3],
+                             size_t stride[3], int &reduced_rank, size_t reduced_dims[3],
+                             direction reduced_dirs[3], size_t reduced_stride[3]) {
 
   reduced_rank = 0;
   reduced_dims[0] = reduced_dims[1] = reduced_dims[2] = stride[0] = stride[1] = stride[2] =
@@ -534,7 +536,8 @@ void reduce_array_dimensions(volume where, int rank, size_t dims[3], direction d
       reduced_stride[r] = 0; // degenerate dimension, to be collapsed
     else {
       reduced_dirs[reduced_rank] = dirs[r];
-      reduced_dims[reduced_rank++] = dims[r]; // reduced_dims is the size of the array after collapsing
+      reduced_dims[reduced_rank++] =
+          dims[r]; // reduced_dims is the size of the array after collapsing
     }
   }
   /*--------------------------------------------------------------*/
@@ -545,8 +548,7 @@ void reduce_array_dimensions(volume where, int rank, size_t dims[3], direction d
   else if (rank == 3) {
     stride[0] = dims[1] * dims[2];
     stride[1] = dims[2];
-    if (reduced_rank == 2)
-      reduced_stride[reduced_stride[0] != 0 ? 0 : 1] = reduced_dims[1];
+    if (reduced_rank == 2) reduced_stride[reduced_stride[0] != 0 ? 0 : 1] = reduced_dims[1];
   }
 }
 
@@ -563,10 +565,11 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
   direction reduced_dirs[3];
   size_t reduced_grid_size;
   int reduced_rank;
-  reduce_array_dimensions(where, full_rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs, reduced_stride);
+  reduce_array_dimensions(where, full_rank, dims, dirs, stride, reduced_rank, reduced_dims,
+                          reduced_dirs, reduced_stride);
 
   if (full_rank == 0) return array;
-  if (reduced_rank==0) {
+  if (reduced_rank == 0) {
     *rank = 0;
     return array; // return array as is for singleton use case
   }
@@ -575,10 +578,11 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
   /*--------------------------------------------------------------*/
   /*- allocate reduced array and compress full array into it     -*/
   /*--------------------------------------------------------------*/
-  reduced_grid_size = reduced_dims[0]*reduced_dims[1]*reduced_dims[2];
+  reduced_grid_size = reduced_dims[0] * reduced_dims[1] * reduced_dims[2];
   size_t reduced_array_size = data_size * reduced_grid_size;
   realnum *reduced_array = new realnum[reduced_array_size];
-  if (!reduced_array) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
+  if (!reduced_array)
+    meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, reduced_array_size);
   memset(reduced_array, 0, reduced_array_size * sizeof(realnum));
 
   size_t n[3] = {0, 0, 0};
@@ -598,8 +602,8 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
   return reduced_array;
 }
 
-complex<realnum> *collapse_array(complex<realnum> *array, int *rank, size_t dims[3], direction dirs[3],
-                                 volume where) {
+complex<realnum> *collapse_array(complex<realnum> *array, int *rank, size_t dims[3],
+                                 direction dirs[3], volume where) {
   return (complex<realnum> *)collapse_array((realnum *)array, rank, dims, dirs, where, 2);
 }
 
@@ -624,7 +628,8 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   int elem_size = complex_data ? 2 : 1;
   void *vslice_uncollapsed;
 
-  vslice_uncollapsed = memset(new realnum[slice_size * elem_size], 0, slice_size * elem_size * sizeof(realnum));
+  vslice_uncollapsed =
+      memset(new realnum[slice_size * elem_size], 0, slice_size * elem_size * sizeof(realnum));
 
   data.vslice = vslice_uncollapsed;
   data.snap = snap;
@@ -676,14 +681,15 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   loop_in_chunks(get_array_slice_chunkloop, (void *)&data, where, Centered, true, snap);
 
   if (!snap) {
-    realnum *slice = collapse_array((realnum *)vslice_uncollapsed, &rank, dims, dirs, where, elem_size);
+    realnum *slice =
+        collapse_array((realnum *)vslice_uncollapsed, &rank, dims, dirs, where, elem_size);
     rank = get_array_slice_dimensions(where, dims, dirs, true, false, 0, &data);
     slice_size = data.slice_size;
-    vslice_uncollapsed = (realnum*) slice;
+    vslice_uncollapsed = (realnum *)slice;
   }
   if (vslice) {
     memcpy(vslice, vslice_uncollapsed, slice_size * elem_size * sizeof(realnum));
-    delete[] (realnum*) vslice_uncollapsed;
+    delete[](realnum *) vslice_uncollapsed;
   }
   else
     vslice = vslice_uncollapsed;
@@ -709,9 +715,11 @@ realnum *fields::get_array_slice(const volume &where, std::vector<component> com
                                        frequency, snap);
 }
 
-complex<realnum> *fields::get_complex_array_slice(const volume &where, std::vector<component> components,
-                                                  field_function fun, void *fun_data, complex<realnum> *slice,
-                                                  double frequency, bool snap) {
+complex<realnum> *fields::get_complex_array_slice(const volume &where,
+                                                  std::vector<component> components,
+                                                  field_function fun, void *fun_data,
+                                                  complex<realnum> *slice, double frequency,
+                                                  bool snap) {
   return (complex<realnum> *)do_get_array_slice(where, components, fun, 0, fun_data, (void *)slice,
                                                 frequency, snap);
 }
@@ -730,16 +738,17 @@ realnum *fields::get_array_slice(const volume &where, derived_component c, realn
   component carray[12];
   field_rfunction rfun = derived_component_func(c, gv, nfields, carray);
   std::vector<component> cs(carray, carray + nfields);
-  return (realnum *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice,
-                                       frequency, snap);
+  return (realnum *)do_get_array_slice(where, cs, 0, rfun, &nfields, (void *)slice, frequency,
+                                       snap);
 }
 
-complex<realnum> *fields::get_complex_array_slice(const volume &where, component c, complex<realnum> *slice,
-                                                  double frequency, bool snap) {
+complex<realnum> *fields::get_complex_array_slice(const volume &where, component c,
+                                                  complex<realnum> *slice, double frequency,
+                                                  bool snap) {
   std::vector<component> components(1);
   components[0] = c;
-  return (complex<realnum> *)do_get_array_slice(where, components, default_field_func, 0, 0, (void *)slice,
-                                                frequency, snap);
+  return (complex<realnum> *)do_get_array_slice(where, components, default_field_func, 0, 0,
+                                                (void *)slice, frequency, snap);
 }
 
 complex<realnum> *fields::get_source_slice(const volume &where, component source_slice_component,
@@ -765,7 +774,7 @@ complex<realnum> *fields::get_source_slice(const volume &where, component source
 
   if (slice) {
     memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(realnum));
-    delete[] (complex<realnum>*) slice_collapsed;
+    delete[](complex<realnum> *) slice_collapsed;
   }
   else
     slice = slice_collapsed;

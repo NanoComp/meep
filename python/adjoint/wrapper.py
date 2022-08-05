@@ -46,16 +46,15 @@ def loss(x):
 value, grad = jax.value_and_grad(loss)(x)
 ```
 """
-
 from typing import Callable, List, Tuple
 
 import jax
 import jax.numpy as jnp
-import meep as mp
 import numpy as onp
 
-from . import utils
-from . import DesignRegion, EigenmodeCoefficient
+import meep as mp
+
+from . import DesignRegion, EigenmodeCoefficient, utils
 
 _norm_fn = onp.linalg.norm
 _reduce_fn = onp.max
@@ -90,6 +89,7 @@ class MeepJaxWrapper:
           https://meep.readthedocs.io/en/latest/Python_User_Interface/#Simulation
           for more information. The default is true.
     """
+
     _log_fn = print
 
     def __init__(
@@ -103,7 +103,7 @@ class MeepJaxWrapper:
         minimum_run_time: float = 0,
         maximum_run_time: float = onp.inf,
         until_after_sources: bool = True,
-        finite_difference_step: float = utils.FD_DEFAULT
+        finite_difference_step: float = utils.FD_DEFAULT,
     ):
         self.simulation = simulation
         self.sources = sources
@@ -150,23 +150,27 @@ class MeepJaxWrapper:
         )
         self.simulation.init_sim()
         sim_run_args = {
-            'until_after_sources' if self.until_after_sources else 'until':
-            mp.stop_when_dft_decayed(self.dft_threshold,self.minimum_run_time,self.maximum_run_time)
+            "until_after_sources"
+            if self.until_after_sources
+            else "until": mp.stop_when_dft_decayed(
+                self.dft_threshold, self.minimum_run_time, self.maximum_run_time
+            )
         }
         self.simulation.run(**sim_run_args)
 
         monitor_values = utils.gather_monitor_values(self.monitors)
-        return (jnp.asarray(monitor_values),
-                fwd_design_region_monitors)
+        return (jnp.asarray(monitor_values), fwd_design_region_monitors)
 
     def _run_adjoint_simulation(self, monitor_values_grad):
         """Runs adjoint simulation, returning design region fields."""
         if not self.design_regions:
             raise RuntimeError(
-                'An adjoint simulation was attempted when no design '
-                'regions are present.')
-        adjoint_sources = utils.create_adjoint_sources(self.monitors,
-                                                       monitor_values_grad)
+                "An adjoint simulation was attempted when no design "
+                "regions are present."
+            )
+        adjoint_sources = utils.create_adjoint_sources(
+            self.monitors, monitor_values_grad
+        )
         # TODO refactor with optimization_problem.py #
         self.simulation.restart_fields()
         self.simulation.clear_dft_monitors()
@@ -179,8 +183,11 @@ class MeepJaxWrapper:
         )
         self.simulation.init_sim()
         sim_run_args = {
-            'until_after_sources' if self.until_after_sources else 'until':
-            mp.stop_when_dft_decayed(self.dft_threshold,self.minimum_run_time,self.maximum_run_time)
+            "until_after_sources"
+            if self.until_after_sources
+            else "until": mp.stop_when_dft_decayed(
+                self.dft_threshold, self.minimum_run_time, self.maximum_run_time
+            )
         }
         self.simulation.run(**sim_run_args)
 
@@ -202,12 +209,12 @@ class MeepJaxWrapper:
             adj_fields,
             design_variable_shapes,
             sum_freq_partials=sum_freq_partials,
-            finite_difference_step=self.finite_difference_step
+            finite_difference_step=self.finite_difference_step,
         )
 
-    def _initialize_callable(
-            self) -> Callable[[List[jnp.ndarray]], jnp.ndarray]:
+    def _initialize_callable(self) -> Callable[[List[jnp.ndarray]], jnp.ndarray]:
         """Initializes the callable JAX function and registers its VJP."""
+
         @jax.custom_vjp
         def simulate(design_variables: List[jnp.ndarray]) -> jnp.ndarray:
             monitor_values, _ = self._run_fwd_simulation(design_variables)
@@ -216,17 +223,23 @@ class MeepJaxWrapper:
         def _simulate_fwd(design_variables):
             """Runs forward simulation, returning monitor values and fields."""
             monitor_values, self.fwd_design_region_monitors = self._run_fwd_simulation(
-                design_variables)
+                design_variables
+            )
             design_variable_shapes = [x.shape for x in design_variables]
             return monitor_values, (design_variable_shapes)
 
         def _simulate_rev(res, monitor_values_grad):
             """Runs adjoint simulation, returning VJP of design wrt monitor values."""
             design_variable_shapes = res
-            self.adj_design_region_monitors = self._run_adjoint_simulation(monitor_values_grad)
-            vjps = self._calculate_vjps(self.fwd_design_region_monitors, self.adj_design_region_monitors,
-                                        design_variable_shapes)
-            return ([jnp.asarray(vjp) for vjp in vjps], )
+            self.adj_design_region_monitors = self._run_adjoint_simulation(
+                monitor_values_grad
+            )
+            vjps = self._calculate_vjps(
+                self.fwd_design_region_monitors,
+                self.adj_design_region_monitors,
+                design_variable_shapes,
+            )
+            return ([jnp.asarray(vjp) for vjp in vjps],)
 
         simulate.defvjp(_simulate_fwd, _simulate_rev)
 

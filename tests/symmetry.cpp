@@ -56,9 +56,7 @@ int compare(double a, double b, const char *n) {
     master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
   }
-  else {
-    return 1;
-  }
+  else { return 1; }
 }
 
 int compare_point(fields &f1, fields &f2, const vec &p) {
@@ -978,7 +976,8 @@ int main(int argc, char **argv) {
 
   if (!nonlinear_ex(vol1d(1.0, 30.0), one)) meep::abort("error in 1D nonlinear vacuum\n");
   if (sizeof(realnum) == sizeof(double)) {
-    if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one)) meep::abort("error in 3D nonlinear vacuum\n");
+    if (!nonlinear_ex(vol3d(1.0, 1.2, 0.8, 10.0), one))
+      meep::abort("error in 3D nonlinear vacuum\n");
   }
 
   // disable for parallel runs due to a bug in splitting cylindrical cell
@@ -986,7 +985,8 @@ int main(int argc, char **argv) {
   if ((count_processors() == 1) && (!test_cyl_metal_mirror_nonlinear(one)))
     meep::abort("error in test_cyl_metal_mirror nonlinear vacuum\n");
 
-  if (!exact_metal_rot4z_nonlinear(one)) meep::abort("error in exact_metal_rot4z nonlinear vacuum\n");
+  if (!exact_metal_rot4z_nonlinear(one))
+    meep::abort("error in exact_metal_rot4z nonlinear vacuum\n");
   if (!exact_metal_rot4z_nonlinear(rods_2d))
     meep::abort("error in exact_metal_rot4z nonlinear rods_2d\n");
 

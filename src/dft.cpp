@@ -81,11 +81,11 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   by 1 pixel in each dimension, while ensuring
   we don't step outside of the chunk loop itself
   */
-  if(persist){
+  if (persist) {
     is_old = is_;
     ie_old = ie_;
-    is = max(is-one_ivec(fc->gv.dim)*2,fc->gv.little_corner());
-    ie = min(ie+one_ivec(fc->gv.dim)*2,fc->gv.big_corner());
+    is = max(is - one_ivec(fc->gv.dim) * 2, fc->gv.little_corner());
+    ie = min(ie + one_ivec(fc->gv.dim) * 2, fc->gv.big_corner());
   }
 
   if (use_centered_grid)
@@ -174,8 +174,8 @@ static void add_dft_chunkloop(fields_chunk *fc, int ichunk, component cgrid, ive
 dft_chunk *fields::add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
                            bool include_dV_and_interp_weights, complex<double> stored_weight,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
-                           complex<double> extra_weight, bool use_centered_grid,
-                           int vc, int decimation_factor, bool persist) {
+                           complex<double> extra_weight, bool use_centered_grid, int vc,
+                           int decimation_factor, bool persist) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
 
   /* If you call add_dft before adding sources, it will do nothing
@@ -185,7 +185,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
     meep::abort("allocate field components (by adding sources) before adding dft objects");
   if (!include_dV_and_interp_weights && sqrt_dV_and_interp_weights)
     meep::abort("include_dV_and_interp_weights must be true for sqrt_dV_and_interp_weights=true in "
-          "add_dft");
+                "add_dft");
 
   dft_chunk_data data;
   data.persist = persist;
@@ -198,13 +198,14 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
       if (s->get_fwidth() == 0)
         decimation_factor = 1;
       else
-        src_freq_max = std::max(src_freq_max, std::abs(s->frequency().real())+0.5*s->get_fwidth());
+        src_freq_max =
+            std::max(src_freq_max, std::abs(s->frequency().real()) + 0.5 * s->get_fwidth());
     }
     double freq_max = 0;
     for (size_t i = 0; i < Nfreq; ++i)
       freq_max = std::max(freq_max, std::abs(freq[i]));
     if ((freq_max > 0) && (src_freq_max > 0))
-      decimation_factor = std::max(1, int(std::floor(1/(dt*(freq_max + src_freq_max)))));
+      decimation_factor = std::max(1, int(std::floor(1 / (dt * (freq_max + src_freq_max)))));
     else
       decimation_factor = 1;
   }
@@ -294,7 +295,8 @@ void dft_chunk::update_dft(double time) {
     else {
       realnum fr = f[0];
       for (int i = 0; i < Nomega; ++i)
-        dft[Nomega * idx_dft + i] += std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
+        dft[Nomega * idx_dft + i] +=
+            std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
     }
   }
 }
@@ -318,7 +320,7 @@ double fields_chunk::dft_norm2(grid_volume fgv) const {
   return sum;
 }
 
-static double sqr(std::complex<realnum> x) { return (x*std::conj(x)).real(); }
+static double sqr(std::complex<realnum> x) { return (x * std::conj(x)).real(); }
 
 double dft_chunk::norm2(grid_volume fgv) const {
   if (!fc->f[c][0]) return 0.0;
@@ -331,22 +333,22 @@ double dft_chunk::norm2(grid_volume fgv) const {
   and can replicate results with different chunk combinations.
   */
   if (persist) {
-    grid_volume subgv = fgv.subvolume(is,ie,c);
+    grid_volume subgv = fgv.subvolume(is, ie, c);
     LOOP_OVER_IVECS(subgv, is_old, ie_old, idx) {
       for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx + i]);          
-    } 
-  } 
+        sum += sqr(dft[Nomega * idx + i]);
+    }
+  }
   /* note we place the if outside of the
   loop to avoid branching. This routine gets
   called a lot, so let's try to stay efficient
   (at the expense of uglier code).
    */
-  else{
+  else {
     LOOP_OVER_IVECS(fgv, is, ie, idx) {
-     idx_dft = IVEC_LOOP_COUNTER;
-     for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx_dft + i]); 
+      idx_dft = IVEC_LOOP_COUNTER;
+      for (size_t i = 0; i < Nomega; ++i)
+        sum += sqr(dft[Nomega * idx_dft + i]);
     }
   }
 
@@ -358,8 +360,7 @@ double dft_chunk::norm2(grid_volume fgv) const {
 int fields::max_decimation() const {
   int maxdec = 1;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine())
-      maxdec = std::max(maxdec, chunks[i]->max_decimation());
+    if (chunks[i]->is_mine()) maxdec = std::max(maxdec, chunks[i]->max_decimation());
   return max_to_all(maxdec);
 }
 
@@ -374,8 +375,7 @@ int fields_chunk::max_decimation() const {
 double fields::dft_maxfreq() const {
   double maxfreq = 0;
   for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine())
-      maxfreq = std::max(maxfreq, chunks[i]->dft_maxfreq());
+    if (chunks[i]->is_mine()) maxfreq = std::max(maxfreq, chunks[i]->dft_maxfreq());
   return max_to_all(maxfreq);
 }
 
@@ -383,12 +383,12 @@ double fields_chunk::dft_maxfreq() const {
   double maxomega = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk)
     maxomega = std::max(maxomega, cur->maxomega());
-  return maxomega / (2*meep::pi);
+  return maxomega / (2 * meep::pi);
 }
 
 double dft_chunk::maxomega() const {
   double maxomega = 0;
-  for (const auto& o : omega)
+  for (const auto &o : omega)
     maxomega = std::max(maxomega, std::abs(o));
   return maxomega;
 }
@@ -414,7 +414,7 @@ void dft_chunk::operator-=(const dft_chunk &chunk) {
 
 size_t my_dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
   // When writing to a sharded file, we write out only the chunks we own.
-size_t n = 0;
+  size_t n = 0;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft)
     n += cur->N * cur->omega.size() * 2;
 
@@ -431,12 +431,13 @@ size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start) {
 }
 
 size_t dft_chunks_Ntotal(dft_chunk *dft_chunks, size_t *my_start, bool single_parallel_file) {
-  return single_parallel_file ? dft_chunks_Ntotal(dft_chunks, my_start) :
-                                my_dft_chunks_Ntotal(dft_chunks, my_start);
+  return single_parallel_file ? dft_chunks_Ntotal(dft_chunks, my_start)
+                              : my_dft_chunks_Ntotal(dft_chunks, my_start);
 }
 
 // Note: the file must have been created in parallel mode, typically via fields::open_h5file.
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix, bool single_parallel_file) {
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix,
+                   bool single_parallel_file) {
   size_t istart;
   size_t n = dft_chunks_Ntotal(dft_chunks, &istart, single_parallel_file);
 
@@ -455,11 +456,13 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   file->done_writing_chunks();
 }
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix, bool single_parallel_file) {
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix,
+                   bool single_parallel_file) {
   save_dft_hdf5(dft_chunks, component_name(c), file, dprefix, single_parallel_file);
 }
 
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix, bool single_parallel_file) {
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix,
+                   bool single_parallel_file) {
   size_t istart;
   size_t n = dft_chunks_Ntotal(dft_chunks, &istart, single_parallel_file);
 
@@ -473,7 +476,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   file->read_size(dataname, &file_rank, &file_dims, 1);
   if (file_rank != 1 || file_dims != n)
     meep::abort("incorrect dataset size (%zd vs. %zd) in load_dft_hdf5 %s:%s", file_dims, n,
-          file->file_name(), dataname);
+                file->file_name(), dataname);
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
@@ -482,7 +485,8 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   }
 }
 
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix, bool single_parallel_file) {
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix,
+                   bool single_parallel_file) {
   load_dft_hdf5(dft_chunks, component_name(c), file, dprefix, single_parallel_file);
 }
 
@@ -602,10 +606,9 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
     }
 
     for (int i = 0; i < 2; ++i) {
-      E = add_dft(cE[i], where->v, freq, Nfreq, true,
-                  where->weight * double(1 - 2 * i), E, false, std::complex<double>(1.0,0),
-                  centered_grid, 0, decimation_factor);
-      H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0,0),
+      E = add_dft(cE[i], where->v, freq, Nfreq, true, where->weight * double(1 - 2 * i), E, false,
+                  std::complex<double>(1.0, 0), centered_grid, 0, decimation_factor);
+      H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0, 0),
                   centered_grid, 0, decimation_factor);
     }
 
@@ -702,14 +705,14 @@ dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq,
   volume_list *where_save = where;
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
-      E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E,
-                  false, 1.0, true, 0, decimation_factor);
-      D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D,
-                  false, 1.0, true, 0, decimation_factor);
-      H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H,
-                  false, 1.0, true, 0, decimation_factor);
-      B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B,
-                  false, 1.0, true, 0, decimation_factor);
+      E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E, false, 1.0, true,
+                  0, decimation_factor);
+      D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D, false, 1.0,
+                  true, 0, decimation_factor);
+      H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H, false, 1.0, true,
+                  0, decimation_factor);
+      B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B, false, 1.0,
+                  true, 0, decimation_factor);
     }
     where = where->next;
   }
@@ -794,7 +797,8 @@ direction fields::normal_direction(const volume &where) const {
     if (d == NO_DIRECTION && gv.dim == D2 && beta != 0 && where_pad.in_direction(X) > 0 &&
         where_pad.in_direction(Y) > 0)
       d = Z;
-    if (d == NO_DIRECTION) meep::abort("Could not determine normal direction for given grid_volume.");
+    if (d == NO_DIRECTION)
+      meep::abort("Could not determine normal direction for given grid_volume.");
   }
   return d;
 }
@@ -808,10 +812,10 @@ dft_flux fields::add_dft_flux(direction d, const volume &where, const double *fr
   return flux;
 }
 
-
 dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq,
                                   size_t Nfreq, bool centered_grid, int decimation_factor) {
-  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid, decimation_factor);
+  return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid,
+                      decimation_factor);
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max,
@@ -896,14 +900,17 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
 /***************************************************************/
 /* chunk-level processing for fields::process_dft_component.   */
 /***************************************************************/
-complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner, ivec max_corner,
-                                                 int num_freq, h5file *file, realnum *buffer, int reim,
-                                                 complex<realnum> *field_array, void *mode1_data, void *mode2_data,
-                                                 int ic_conjugate, bool retain_interp_weights,
-                                                 fields *parent) {
+complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec min_corner,
+                                                 ivec max_corner, int num_freq, h5file *file,
+                                                 realnum *buffer, int reim,
+                                                 complex<realnum> *field_array, void *mode1_data,
+                                                 void *mode2_data, int ic_conjugate,
+                                                 bool retain_interp_weights, fields *parent) {
 
-  if ((num_freq < 0) || (num_freq > static_cast<int>(omega.size())-1))
-    meep::abort("process_dft_component: frequency index %d is outside the range of the frequency array of size %lu",num_freq,omega.size());
+  if ((num_freq < 0) || (num_freq > static_cast<int>(omega.size()) - 1))
+    meep::abort("process_dft_component: frequency index %d is outside the range of the frequency "
+                "array of size %lu",
+                num_freq, omega.size());
 
   /*****************************************************************/
   /* compute the size of the chunk we own and its strides etc.     */
@@ -969,14 +976,13 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
     double interp_w = retain_interp_weights ? IVEC_LOOP_WEIGHT(s0i, s1i, e0i, e1i, 1.0) : 1.0;
 
     complex<double> dft_val =
-        (c_conjugate == NO_COMPONENT
-             ? w
-             : c_conjugate == Dielectric
-                   ? parent->get_eps(loc)
-                   : c_conjugate == Permeability
-                         ? parent->get_mu(loc)
-                         : complex<double>(dft[omega.size() * (chunk_idx++) + num_freq]) / stored_weight);
-    if (include_dV_and_interp_weights && dft_val!=0.0) dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
+        (c_conjugate == NO_COMPONENT ? w
+         : c_conjugate == Dielectric ? parent->get_eps(loc)
+         : c_conjugate == Permeability
+             ? parent->get_mu(loc)
+             : complex<double>(dft[omega.size() * (chunk_idx++) + num_freq]) / stored_weight);
+    if (include_dV_and_interp_weights && dft_val != 0.0)
+      dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 
     complex<double> mode1val = 0.0, mode2val = 0.0;
     if (mode1_data) mode1val = eigenmode_amplitude(mode1_data, loc, S.transform(c_conjugate, sn));
@@ -1023,7 +1029,10 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
 }
 
 // get variables that are needed by complex<double> fields::process_dft_component
-void fields::get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz, int &rank, direction *ds, size_t *dims, int *array_rank, size_t *array_dims, direction *array_dirs) {
+void fields::get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c,
+                                    ivec &min_corner, ivec &max_corner, size_t &array_size,
+                                    size_t &bufsz, int &rank, direction *ds, size_t *dims,
+                                    int *array_rank, size_t *array_dims, direction *array_dirs) {
   /***************************************************************/
   /* get statistics on the volume slice **************************/
   /***************************************************************/
@@ -1114,11 +1123,13 @@ void fields::get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, 
 /* if where is non-null, only field components inside *where   */
 /* are processed.                                              */
 /***************************************************************/
-complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists, int num_freq,
-                                              component c, const char *HDF5FileName, complex<realnum> **pfield_array,
-                                              int *array_rank, size_t *array_dims, direction *array_dirs,
-                                              void *mode1_data, void *mode2_data, component c_conjugate,
-                                              bool *first_component, bool retain_interp_weights) {
+complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_chunklists,
+                                              int num_freq, component c, const char *HDF5FileName,
+                                              complex<realnum> **pfield_array, int *array_rank,
+                                              size_t *array_dims, direction *array_dirs,
+                                              void *mode1_data, void *mode2_data,
+                                              component c_conjugate, bool *first_component,
+                                              bool retain_interp_weights) {
 
   /***************************************************************/
   /***************************************************************/
@@ -1134,7 +1145,8 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   int rank;
   direction ds[3];
   size_t array_size, bufsz, dims[3];
-  get_dft_component_dims(chunklists, num_chunklists, c, min_corner, max_corner, array_size, bufsz, rank, ds, dims, array_rank, array_dims, array_dirs);
+  get_dft_component_dims(chunklists, num_chunklists, c, min_corner, max_corner, array_size, bufsz,
+                         rank, ds, dims, array_rank, array_dims, array_dirs);
 
   if (rank == 0) {
     if (pfield_array) *pfield_array = 0;
@@ -1184,7 +1196,7 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
 /* repeatedly call sum_to_all to consolidate full field array  */
 /* on all cores                                                */
 /***************************************************************/
-#define BUFSIZE 1 << 20  // use 1M element (16 MB) buffer
+#define BUFSIZE 1 << 20 // use 1M element (16 MB) buffer
       complex<realnum> *buf = new complex<realnum>[BUFSIZE];
       ptrdiff_t offset = 0;
       size_t remaining = array_size;
@@ -1397,14 +1409,14 @@ void fields::get_overlap(void *mode1_data, void *mode2_data, dft_flux flux, int 
   dft_chunk *chunklists[2];
   chunklists[0] = flux.E;
   chunklists[1] = flux.H;
-  complex<double> ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, 0, mode1_data,
-                                               mode2_data, cH[0]);
-  complex<double> EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, 0, mode1_data,
-                                               mode2_data, cH[1]);
-  complex<double> HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, 0, mode1_data,
-                                               mode2_data, cE[0]);
-  complex<double> HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, 0, mode1_data,
-                                               mode2_data, cE[1]);
+  complex<double> ExHy = process_dft_component(chunklists, 2, num_freq, cE[0], 0, 0, 0, 0, 0,
+                                               mode1_data, mode2_data, cH[0]);
+  complex<double> EyHx = process_dft_component(chunklists, 2, num_freq, cE[1], 0, 0, 0, 0, 0,
+                                               mode1_data, mode2_data, cH[1]);
+  complex<double> HyEx = process_dft_component(chunklists, 2, num_freq, cH[0], 0, 0, 0, 0, 0,
+                                               mode1_data, mode2_data, cE[0]);
+  complex<double> HxEy = process_dft_component(chunklists, 2, num_freq, cH[1], 0, 0, 0, 0, 0,
+                                               mode1_data, mode2_data, cE[1]);
   overlaps[0] = ExHy - EyHx;
   overlaps[1] = HyEx - HxEy;
 }
@@ -1421,16 +1433,16 @@ void fields::get_mode_mode_overlap(void *mode1_data, void *mode2_data, dft_flux 
 
 /* deregister all of the remaining dft monitors
 from the fields object. Note that this does not
-delete the underlying dft_chunks! (useful for 
+delete the underlying dft_chunks! (useful for
 adjoint calculations, where we want to keep
 the chunk data around) */
 void fields::clear_dft_monitors() {
-for (int i = 0; i < num_chunks; i++)
-  if (chunks[i]->is_mine() && chunks[i]->dft_chunks) chunks[i]->dft_chunks = NULL;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine() && chunks[i]->dft_chunks) chunks[i]->dft_chunks = NULL;
 }
 
 // return the size of the dft monitor
-std::vector<size_t> fields::dft_monitor_size(dft_fields fdft, const volume &where, component c){
+std::vector<size_t> fields::dft_monitor_size(dft_fields fdft, const volume &where, component c) {
   ivec min_corner, max_corner;
   int rank, reduced_rank;
   direction dirs[3], reduced_dirs[3];
@@ -1438,14 +1450,18 @@ std::vector<size_t> fields::dft_monitor_size(dft_fields fdft, const volume &wher
   dft_chunk *chunklists[1];
   chunklists[0] = fdft.chunks;
 
-  get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs, dims);
-  reduce_array_dimensions(where, rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs, reduced_stride);
+  get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs,
+                         dims);
+  reduce_array_dimensions(where, rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs,
+                          reduced_stride);
   std::vector<size_t> reduced_dims_vec = {reduced_dims[0], reduced_dims[1], reduced_dims[2]};
 
   return reduced_dims_vec;
 }
 
-std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, component c, fields &f, const std::complex<double>* dJ){
+std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, component c,
+                                                              fields &f,
+                                                              const std::complex<double> *dJ) {
   const size_t Nfreq = freq.size();
 
   ivec min_corner, max_corner;
@@ -1455,9 +1471,12 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
   dft_chunk *chunklists[1];
   chunklists[0] = chunks;
 
-  f.get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs, dims);
-  reduce_array_dimensions(where, rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs, reduced_stride);
-  size_t reduced_grid_size = reduced_dims[0]*reduced_dims[1]*reduced_dims[2]; // total number of points in the monitor
+  f.get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs,
+                           dims);
+  reduce_array_dimensions(where, rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs,
+                          reduced_stride);
+  size_t reduced_grid_size =
+      reduced_dims[0] * reduced_dims[1] * reduced_dims[2]; // total number of points in the monitor
 
   std::vector<struct sourcedata> temp;
 
@@ -1467,12 +1486,13 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
 
     std::vector<ptrdiff_t> idx_arr;
     std::vector<std::complex<double> > amp_arr;
-    std::complex<double> EH0 = std::complex<double>(0,0);
+    std::complex<double> EH0 = std::complex<double>(0, 0);
     component c = component(f->c);
     direction cd = component_direction(c);
     sourcedata temp_struct = {c, idx_arr, f->fc->chunk_idx, amp_arr};
 
-    int position_array[3] = {0, 0, 0}; // array indicating the position of a point relative to the minimum corner of the monitor
+    int position_array[3] = {0, 0, 0}; // array indicating the position of a point relative to the
+                                       // minimum corner of the monitor
 
     LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
       IVEC_LOOP_LOC(f->fc->gv, x0);
@@ -1482,38 +1502,48 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
 
       double dJ_weight = 1; // weight for linear interpolation
       int nd = 0;
-      LOOP_OVER_DIRECTIONS(f->fc->gv.dim, d){
-        if (where.in_direction(d) > 0) position_array[nd++] = int((ix0.in_direction(d)-min_corner.in_direction(d))/2);
-        else dJ_weight *= (1-abs(x0.in_direction(d)-where.in_direction_min(d))/(f->fc->gv.inva)); // based on distances
+      LOOP_OVER_DIRECTIONS(f->fc->gv.dim, d) {
+        if (where.in_direction(d) > 0)
+          position_array[nd++] = int((ix0.in_direction(d) - min_corner.in_direction(d)) / 2);
+        else
+          dJ_weight *= (1 - abs(x0.in_direction(d) - where.in_direction_min(d)) /
+                                (f->fc->gv.inva)); // based on distances
       }
 
       // index when dJ is flattened to a one-dimenional array
-      size_t idx_1d = (position_array[0]*reduced_dims[1]+position_array[1])*reduced_dims[2]+position_array[2];
+      size_t idx_1d = (position_array[0] * reduced_dims[1] + position_array[1]) * reduced_dims[2] +
+                      position_array[2];
 
-      if (f->avg1==0 && f->avg2==0){ // yee_grid = true
+      if (f->avg1 == 0 && f->avg2 == 0) { // yee_grid = true
         temp_struct.idx_arr.push_back(idx);
         for (size_t i = 0; i < Nfreq; ++i) {
-          EH0 = dJ_weight*dJ[reduced_grid_size*i+idx_1d];
+          EH0 = dJ_weight * dJ[reduced_grid_size * i + idx_1d];
 
           if (is_electric(c)) EH0 *= -1;
-          if (is_D(c) && f->fc->s->chi1inv[c - Dx + Ex][cd]) EH0 /= -f->fc->s->chi1inv[c - Dx + Ex][cd][idx];
-          if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd]) EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
+          if (is_D(c) && f->fc->s->chi1inv[c - Dx + Ex][cd])
+            EH0 /= -f->fc->s->chi1inv[c - Dx + Ex][cd][idx];
+          if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd])
+            EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
 
           EH0 /= f->S.multiplicity(ix0);
           temp_struct.amp_arr.push_back(EH0);
         }
       }
-      else{ // yee_grid = false
-          // four or two neighbouring points in the yee lattice are involved in calculating the value at the center of a voxel
-        ptrdiff_t site_ind[4] = {idx,idx + f->avg1,idx + f->avg2,idx + f->avg1 + f->avg2};
-        for (size_t j = 0; j < 4; ++j){
+      else { // yee_grid = false
+        // four or two neighbouring points in the yee lattice are involved in calculating the value
+        // at the center of a voxel
+        ptrdiff_t site_ind[4] = {idx, idx + f->avg1, idx + f->avg2, idx + f->avg1 + f->avg2};
+        for (size_t j = 0; j < 4; ++j) {
           temp_struct.idx_arr.push_back(site_ind[j]);
           for (size_t i = 0; i < Nfreq; ++i) {
-            EH0 = dJ_weight*dJ[reduced_grid_size*i+idx_1d]*0.25; // split the amplitude of the adjoint source into four parts
+            EH0 = dJ_weight * dJ[reduced_grid_size * i + idx_1d] *
+                  0.25; // split the amplitude of the adjoint source into four parts
 
             if (is_electric(c)) EH0 *= -1;
-            if (is_D(c) && f->fc->s->chi1inv[c - Dx + Ex][cd]) EH0 /= -f->fc->s->chi1inv[c - Dx + Ex][cd][idx];
-            if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd]) EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
+            if (is_D(c) && f->fc->s->chi1inv[c - Dx + Ex][cd])
+              EH0 /= -f->fc->s->chi1inv[c - Dx + Ex][cd][idx];
+            if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd])
+              EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
 
             EH0 /= f->S.multiplicity(ix0);
             temp_struct.amp_arr.push_back(EH0);
