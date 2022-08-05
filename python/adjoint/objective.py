@@ -10,6 +10,8 @@ import meep as mp
 from .filter_source import FilteredSource
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
+E_CPTS = [mp.Ex, mp.Ey, mp.Ez]
+H_CPTS = [mp.Hx, mp.Hy, mp.Hz]
 
 
 class ObjectiveQuantity(abc.ABC):
@@ -268,12 +270,14 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    def __init__(self, sim, volume, component, yee_grid=False, decimation_factor=0):
+    def __init__(self, sim, volume, component, yee_grid=False, decimation_factor=0,scale = 1,conj = False):
         super().__init__(sim)
         self.volume = sim._fit_volume_to_simulation(volume)
         self.component = component
         self.yee_grid = yee_grid
         self.decimation_factor = decimation_factor
+        self.scale = scale
+        self.conj = conj
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -316,10 +320,13 @@ class FourierFields(ObjectiveQuantity):
         self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(
             self.volume.swigobj, self.component, self.sim.fields, dJ
         )
-
+        
         for fourier_data in self.all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
-            scale = amp_arr * self._adj_src_scale(include_resolution=False)
+            scale = self.scale * amp_arr * self._adj_src_scale(include_resolution=False)
+            
+            if self.conj:
+                scale = np.conjugate(scale)
 
             if self.num_freq == 1:
                 sources += [
@@ -483,3 +490,111 @@ class LDOS(ObjectiveQuantity):
         self.ldos_scale = self.sim.ldos_scale
         self.ldos_Jdata = self.sim.ldos_Jdata
         return np.array(self._eval)
+    
+class PoyntingFlux(ObjectiveQuantity):
+    """A frequency-dependent Poynting Flux adjoint source.
+    Attributes:
+        volume: The volume over which the Poynting Flux is calculated.
+        This function currently only works for monitors with a defined
+        normal vector (e.g. planes in 3d or lines in 2d). User supplied
+        normal vectors may be implemented in the future. It also only
+        works with monitors aligned to a coordinate direction.
+        decimation_factor: Whether to skip points in the time series every 
+        decimation_factor timesteps. See "add_dft_fields" documentation.
+        The biggest warning there is to be careful to avoid aliasing if
+        the fields vary quickly in time.
+        Note on yee_grid: For the Poynting Flux to work, H and E components
+        must lie at the same points. Therefore, the Yee grid will always be false.
+    """
+
+    def __init__(self, sim,volume, decimation_factor=0):
+        super().__init__(sim)
+        self.volume = sim._fit_volume_to_simulation(volume)
+        self.decimation_factor = decimation_factor
+        #_fit_volume_to_simulation increases the dimensionality of
+        #the volume, so we'll use the user input volume
+        self.normal = self.get_normal(volume)
+
+    #Slightly different from other objectives, this
+    #function returns a list of monitors
+    def register_monitors(self, frequencies):
+        #Some template vectors to take the cross product with
+        #unfortunately Ex is 0 which I want to mean "no component",
+        #so I'm adding a fraction then rounding it out when passing
+        #which component fourierfields will grab
+        E_components = mp.Vector3(mp.Ex+0.1,mp.Ey,mp.Ez)
+        H_components = mp.Vector3(mp.Hx,mp.Hy,mp.Hz)
+        
+        #These are the 4 components of interest transverse
+        #to the plane, two for electric, two for magnetic
+        J_source_comps = H_components.cross(self.normal)
+        K_source_comps = self.normal.cross(E_components)
+        self.F_fields_list = []
+        self.monitor_list = []
+        #create FourierFields monitors for the electric currents
+        #(for the Poynting Flux adjoint, Ja = 1/4 H x n)
+        #Js is the component that FourierFields will retrieve
+        #e.g. two of Hx, Hy, or Hz
+        for Js in J_source_comps:
+            #There should always be at least one zero
+            if Js != 0:
+                self.F_fields_list
+                F_fields_here = FourierFields(self.sim,self.volume,np.around(abs(Js)), scale = (-1/4 if Js <0 else 1/4))
+                self.F_fields_list.append(F_fields_here)
+                self.monitor_list.append(F_fields_here.register_monitors(frequencies))
+        
+        #create FourierFields monitors for the magnetic currents
+        #(for the Poynting Flux adjoint, Ka = 1/4 n x E)
+        #Ks is the component that FourierFields will retrieve
+        #e.g. two of Ex, Ey, or Ez
+        for Ks in K_source_comps:
+            #There should always be at least one zero
+            if Ks != 0:
+                self.F_fields_list
+                F_fields_here = FourierFields(self.sim,self.volume,np.around(abs(Ks)), scale = (-1/4 if Ks <0 else 1/4))
+                self.F_fields_list.append(F_fields_here)
+                self.monitor_list.append(F_fields_here.register_monitors(frequencies))
+        
+        return self.monitor_list
+    
+    
+    def place_adjoint_source(self, dJ):
+        sources = []
+
+        for F_fields in self.F_fields_list:
+            sources.append(F_fields.place_adjoint_source(dJ))
+        return sources
+    
+    def get_normal(self,volume):
+        #I'll add cylindrical later (since the normal vector gets a little different)
+        if (volume.dims == 2):
+            if (volume.size.x == 0):
+                return mp.Vector3(1,0,0)
+            elif(volume.size.y == 0):
+                return mp.Vector3(0,1,0)
+            else:
+                return mp.Vector3(0,0,1)
+        elif (volume.dims ==1):
+            if (volume.size.x == 0):
+                return mp.Vector3(1,0)
+            else:
+                return mp.Vector3(0,1)
+            
+        else :
+            return "Supported volumes are 1d or 2d"
+
+    #This returns an array containing the Poynting Flux at each frequency point
+    #Note the first two FourierFields objectives are H fields, the second 
+    #two are E fields.
+    #This covers the three cases of normal vectors using if statements.
+    #This assumes all the normal vectors point in the positive x,y,or z 
+    #direction. The user may need to multiply by -1 to get the direction
+    #they expect if they're doing, for example, a box.
+    def __call__(self):
+        #it turns out the normal vector is the same equation in the x and z directions, but needs a negative 1 in the y direction
+        self._eval =((np.real(self.F_fields_list[0]()*np.conj(self.F_fields_list[3]()) - self.F_fields_list[1]()*np.conj(self.F_fields_list[2]()))))
+        if(self.normal.y == 1):
+            self._eval = -self.eval
+        
+        return self._eval
+
