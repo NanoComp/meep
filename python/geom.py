@@ -1307,7 +1307,6 @@ class Prism(GeometricObject):
           radians. Default is 0.
         """
 
-
         centroid = sum(vertices, Vector3(0)) * (
             1.0 / len(vertices)
         )  # centroid of floor polygon
