@@ -10,8 +10,7 @@ import meep as mp
 from .filter_source import FilteredSource
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
-E_CPTS = [mp.Ex, mp.Ey, mp.Ez]
-H_CPTS = [mp.Hx, mp.Hy, mp.Hz]
+
 
 
 class ObjectiveQuantity(abc.ABC):
@@ -324,7 +323,12 @@ class FourierFields(ObjectiveQuantity):
         for fourier_data in self.all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
             scale = self.scale * amp_arr * self._adj_src_scale(include_resolution=False)
-            
+            print("HERE'S THE SCALE:")
+            print("---------------------------")
+            print(scale)
+            print("----------------------------")
+            print()
+            print()
             if self.conj:
                 scale = np.conjugate(scale)
 
@@ -539,7 +543,7 @@ class PoyntingFlux(ObjectiveQuantity):
             #There should always be at least one zero
             if Js != 0:
                 self.F_fields_list
-                F_fields_here = FourierFields(self.sim,self.volume,np.around(abs(Js)), scale = (-1/4 if Js <0 else 1/4))
+                F_fields_here = FourierFields(self.sim,self.volume,np.around(abs(Js)), scale = 1)#(-1/4 if Js <0 else 1/4))
                 self.F_fields_list.append(F_fields_here)
                 self.monitor_list.append(F_fields_here.register_monitors(frequencies))
         
@@ -551,7 +555,7 @@ class PoyntingFlux(ObjectiveQuantity):
             #There should always be at least one zero
             if Ks != 0:
                 self.F_fields_list
-                F_fields_here = FourierFields(self.sim,self.volume,np.around(abs(Ks)), scale = (-1/4 if Ks <0 else 1/4))
+                F_fields_here = FourierFields(self.sim,self.volume,np.around(abs(Ks)), scale =1)# (-1/4 if Ks <0 else 1/4))
                 self.F_fields_list.append(F_fields_here)
                 self.monitor_list.append(F_fields_here.register_monitors(frequencies))
         
@@ -560,9 +564,10 @@ class PoyntingFlux(ObjectiveQuantity):
     
     def place_adjoint_source(self, dJ):
         sources = []
-
+        i = 0
         for F_fields in self.F_fields_list:
-            sources.append(F_fields.place_adjoint_source(dJ))
+            if (np.abs(self.field_component_evaluations[i]) != 0):
+                sources.append(F_fields.place_adjoint_source(dJ))
         return sources
     
     def get_normal(self,volume):
@@ -592,7 +597,19 @@ class PoyntingFlux(ObjectiveQuantity):
     #they expect if they're doing, for example, a box.
     def __call__(self):
         #it turns out the normal vector is the same equation in the x and z directions, but needs a negative 1 in the y direction
-        self._eval =((np.real(self.F_fields_list[0]()*np.conj(self.F_fields_list[3]()) - self.F_fields_list[1]()*np.conj(self.F_fields_list[2]()))))
+        self.field_component_evaluations = []
+        for field in self.F_fields_list:
+            field_here = field()
+            print(field_here)
+            if (np.size(field_here)==1):
+                field_here = np.zeros(1)#np.shape(1))
+            self.field_component_evaluations.append(field_here) 
+        integral_volume = (1 if self.volume.size.x == 0 else self.volume.size.x)*(1 if self.volume.size.y == 0 else self.volume.size.y)*(1 if self.volume.size.z == 0 else self.volume.size.z)
+        
+        #subtracting one makes it closer to meep's flux (probably some sort of array size thing)
+        discretization_factor = (self.field_component_evaluations[1].size/integral_volume)-1
+        print(discretization_factor) 
+        self._eval =np.sum((self.field_component_evaluations[0]*np.conj(self.field_component_evaluations[3]) - np.conj(self.field_component_evaluations[2])*self.field_component_evaluations[1]))/discretization_factor
         if(self.normal.y == 1):
             self._eval = -self.eval
         

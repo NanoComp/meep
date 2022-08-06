@@ -31,7 +31,8 @@ Ny = int(design_region_size.y*design_region_resolution)
 rng = np.random.RandomState(9861548)
 
 # random design region
-p = 0.5*rng.rand(Nx*Ny)
+#p = 0.5*rng.rand(Nx*Ny)
+p = np.ones(Nx*Ny)
 
 # random perturbation for design region
 deps = 1e-5
@@ -87,7 +88,35 @@ sim = mp.Simulation(resolution=resolution,
 
 
 frequencies = [fcen]
-volume = mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0,1,0))
+print(fcen)
+volume = mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0,2,0))
+# interesting_components = [mp.Hz,mp.Hy,mp.Ez,mp.Ey]
+# dft_fields = sim.add_dft_fields(interesting_components, frequencies, where = volume,yee_grid = False)
+# sim.run(until_after_sources=mp.stop_when_fields_decayed(100,mp.Ez,mp.Vector3(1.25,0),1e-12))
+# dft_field_data = []
+# for comp in interesting_components:
+#     dft_field_data.append(sim.get_dft_array(dft_fields,comp,0))
+# print(dft_field_data)
+# discretization_factor = 1/2*dft_field_data[1].size
+# print(discretization_factor)
+# manual_flux_from_dft_fields = -np.sum(np.conj(dft_field_data[2])*dft_field_data[1])/(discretization_factor)
+# print("manual_flux_from_dft_fields:")
+# print(manual_flux_from_dft_fields)
+# manual_flux = np.conj(dft_field_data)
+
+# refl_fr = mp.FluxRegion(center=mp.Vector3(1.25,0), size=mp.Vector3(0,2,0))
+# refl = sim.add_flux(fcen, df, 1,refl_fr)
+# sim.run(until_after_sources=mp.stop_when_fields_decayed(100,mp.Ez,mp.Vector3(1.25,0),1e-2))
+
+# straight_tran_data = sim.get_flux_data(refl)
+# manual_flux = np.conj(straight_tran_data.H)*(straight_tran_data.E)
+# print("manual flux is:")
+# print(np.sum(manual_flux))
+# straight_tran_flux = mp.get_fluxes(refl)
+# print(mp.get_flux_freqs(refl))
+# print(straight_tran_data)
+# print(straight_tran_flux)
+
 obj_list = [mpa.PoyntingFlux(sim, volume)]
 eval_hist = []
 def J(mode_mon):
@@ -99,10 +128,12 @@ opt = mpa.OptimizationProblem(simulation=sim,
                                       design_regions=[matgrid_region],
                                       frequencies=frequencies)
 
-f, dJ_du = opt([p])
-algorithm = nlopt.LD_MMA
-n = Nx*Ny
-maxeval = 10
+f, dJ_du = opt([p],need_gradient=False)
+print(f)
+
+# algorithm = nlopt.LD_MMA
+# n = Nx*Ny
+# maxeval = 10
 
 # #all_fouriersrcdata = monitor.swigobj.fourier_sourcedata(self.volume.swigobj, self.component, self.sim.fields, dJ)
 
