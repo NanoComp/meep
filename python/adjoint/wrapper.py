@@ -46,7 +46,7 @@ def loss(x):
 value, grad = jax.value_and_grad(loss)(x)
 ```
 """
-from typing import Callable, List, Tuple
+from typing import Callable, Iterable, List, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -137,7 +137,9 @@ class MeepJaxWrapper:
         """
         return self._simulate_fn(designs)
 
-    def _run_fwd_simulation(self, design_variables):
+    def _run_fwd_simulation(
+        self, design_variables: Iterable[onp.ndarray]
+    ) -> (jnp.ndarray, List[List[mp.DftFields]]):
         """Runs forward simulation, returning monitor values and design region fields."""
         utils.validate_and_update_design(self.design_regions, design_variables)
         self.simulation.reset_meep()
@@ -161,7 +163,9 @@ class MeepJaxWrapper:
         monitor_values = utils.gather_monitor_values(self.monitors)
         return (jnp.asarray(monitor_values), fwd_design_region_monitors)
 
-    def _run_adjoint_simulation(self, monitor_values_grad):
+    def _run_adjoint_simulation(
+        self, monitor_values_grad: onp.ndarray
+    ) -> List[List[mp.DftFields]]:
         """Runs adjoint simulation, returning design region fields."""
         if not self.design_regions:
             raise RuntimeError(
@@ -195,11 +199,11 @@ class MeepJaxWrapper:
 
     def _calculate_vjps(
         self,
-        fwd_fields,
-        adj_fields,
-        design_variable_shapes,
-        sum_freq_partials=True,
-    ):
+        fwd_fields: List[List[mp.DftFields]],
+        adj_fields: List[List[mp.DftFields]],
+        design_variable_shapes: List[Tuple[int, ...]],
+        sum_freq_partials: bool = True,
+    ) -> List[onp.ndarray]:
         """Calculates the VJP for a given set of forward and adjoint fields."""
         return utils.calculate_vjps(
             self.simulation,

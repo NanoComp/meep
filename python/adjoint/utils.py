@@ -24,22 +24,33 @@ FD_DEFAULT = 1e-3
 
 
 class DesignRegion:
-    def __init__(self, design_parameters, volume=None, size=None, center=mp.Vector3()):
+    def __init__(
+        self,
+        design_parameters: Iterable[onp.ndarray],
+        volume: mp.Volume = None,
+        size: mp.Vector3 = None,
+        center: mp.Vector3 = mp.Vector3(),
+    ):
         self.volume = volume or mp.Volume(center=center, size=size)
         self.size = self.volume.size
         self.center = self.volume.center
         self.design_parameters = design_parameters
         self.num_design_params = design_parameters.num_params
 
-    def update_design_parameters(self, design_parameters):
+    def update_design_parameters(self, design_parameters) -> None:
         self.design_parameters.update_weights(design_parameters)
 
-    def update_beta(self, beta):
+    def update_beta(self, beta: float) -> None:
         self.design_parameters.beta = beta
 
     def get_gradient(
-        self, sim, fields_a, fields_f, frequencies, finite_difference_step
-    ):
+        self,
+        sim: mp.Simulation,
+        fields_a: List[mp.DftFields],
+        fields_f: List[mp.DftFields],
+        frequencies: List[float],
+        finite_difference_step: float,
+    ) -> onp.ndarray:
         num_freqs = onp.array(frequencies).size
         """We have the option to linearly scale the gradients up front
         using the scalegrad parameter (leftover from MPB API). Not
@@ -67,11 +78,11 @@ class DesignRegion:
         return onp.squeeze(grad).T
 
 
-def _check_if_cylindrical(sim):
+def _check_if_cylindrical(sim: mp.Simulation) -> bool:
     return sim.is_cylindrical or (sim.dimensions == mp.CYLINDRICAL)
 
 
-def _compute_components(sim):
+def _compute_components(sim: mp.Simulation) -> List[int]:
     return (
         _ADJOINT_FIELD_COMPONENTS_CYL
         if _check_if_cylindrical(sim)
@@ -88,8 +99,8 @@ def calculate_vjps(
     simulation: mp.Simulation,
     design_regions: List[DesignRegion],
     frequencies: List[float],
-    fwd_fields: List[List[onp.ndarray]],
-    adj_fields: List[List[onp.ndarray]],
+    fwd_fields: List[List[mp.DftFields]],
+    adj_fields: List[List[mp.DftFields]],
     design_variable_shapes: List[Tuple[int, ...]],
     sum_freq_partials: bool = True,
     finite_difference_step: float = FD_DEFAULT,
@@ -166,41 +177,6 @@ def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
     assert monitor_values.ndim in [1, 2]
     monitor_values = _make_at_least_nd(monitor_values, 2)
     return monitor_values
-
-
-def gather_design_region_fields(
-    simulation: mp.Simulation,
-    design_region_monitors: List[mp.DftFields],
-    frequencies: List[float],
-) -> List[List[onp.ndarray]]:
-    """Collects the design region DFT fields from the simulation.
-
-    Args:
-     simulation: the simulation object.
-     design_region_monitors: the installed design region monitors.
-     frequencies: the frequencies to monitor.
-
-    Returns:
-      A list of lists.  Each entry (list) in the overall list corresponds one-to-
-      one with a declared design region.  For each such contained list, the
-      entries correspond to the field components that are monitored.  The entries
-      are ndarrays of rank 4 with dimensions (freq, x, y, (z-or-pad)).
-
-      The design region fields are sampled on the *Yee grid*.  This makes them
-      fairly awkward to inspect directly.  Their primary use case is supporting
-      gradient calculations.
-    """
-    design_region_fields = []
-    for monitor in design_region_monitors:
-        fields_by_component = []
-        for component in _compute_components(simulation):
-            fields_by_freq = []
-            for freq_idx, _ in enumerate(frequencies):
-                fields = simulation.get_dft_array(monitor, component, freq_idx)
-                fields_by_freq.append(_make_at_least_nd(fields))
-            fields_by_component.append(onp.stack(fields_by_freq))
-        design_region_fields.append(fields_by_component)
-    return design_region_fields
 
 
 def validate_and_update_design(
