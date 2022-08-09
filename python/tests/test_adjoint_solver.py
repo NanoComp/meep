@@ -174,12 +174,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             obj_list = [
                 mpa.PoyntingFlux(
                     sim,
-                    mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0.25, 1, 0))
+                    mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0, 1, 0))
                 )
             ]
 
             def J(mode_mon):
-                return npa.sum(mode_mon)
+                return mode_mon
 
         opt = mpa.OptimizationProblem(
             simulation=sim,
