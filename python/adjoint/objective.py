@@ -17,11 +17,12 @@ EH_TRANSVERSE    = [ [mp.Hy, mp.Hz, mp.Ey, mp.Ez],
                      [mp.Hz, mp.Hx, mp.Ez, mp.Ex],
                      [mp.Hx, mp.Hy, mp.Ex, mp.Ey] ]
 
-#ToDO fix other two
-#and comment too
-JK_TRANSVERSE    = [ [mp.Ey, mp.Hz, mp.Ex, mp.Hy],
-                     [mp.Hz, mp.Hx, mp.Ez, mp.Ex],
-                     [mp.Hx, mp.Hy, mp.Ex, mp.Ey] ]
+#Holds the components for each current source
+#for the cases of x,y, and z normal vectors.
+#This is the same as swapping H and E in the above list
+JK_TRANSVERSE    = [ [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
+                     [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
+                     [mp.Ex, mp.Ey, mp.Hx, mp.Hy] ]
 
 class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.
@@ -333,7 +334,6 @@ class FourierFields(ObjectiveQuantity):
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
 
             if self.num_freq == 1:
-                print(fourier_data.this)
                 sources += [
                     mp.IndexedSource(
                         time_src, fourier_data, scale[:, 0], not self.yee_grid
@@ -555,10 +555,11 @@ class PoyntingFlux(ObjectiveQuantity):
             )
             amp = 1
         source = []
-        #TODO add self.norm to be the right index 0,1, or 2
+        #TODO: account for sign in the current sources
+        #(the K sources should have the negative)
         for field_t,field in  enumerate(JK_TRANSVERSE[self.normal]):
             #dft_fields returns a scalar value for components that aren't evaluated
-            #in these case, we don't need to add an adjoint source
+            #in these cases, we don't need to add an adjoint source
             if(self.field_component_evaluations[field_t].size != 1):
                 tuple_elements = np.zeros((1,self.metadata[3].size,1), dtype=np.complex128)
                 #TODO: Load up the source data for other normal vectors
@@ -567,7 +568,7 @@ class PoyntingFlux(ObjectiveQuantity):
                     tuple_elements[0,index,0] = element
                 source.append( mp.Source(
                     src,
-                    component = mp.Ex,
+                    component = field,
                     amplitude=amp,
                     size=self.volume.size,
                     center=self.volume.center,
