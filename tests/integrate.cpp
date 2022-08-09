@@ -271,7 +271,7 @@ void check_loop_vol(const grid_volume &gv, component c) {
     meep::abort("FAILED: LOOP_OVER_VOL has %zd iterations instead of ntot=%zd\n", count, gv.ntot());
   if (count_owned != gv.nowned(c))
     meep::abort("FAILED: LOOP_OVER_VOL has %zd owned points instead of nowned=%zd\n", count_owned,
-          gv.nowned(c));
+                gv.nowned(c));
   if (min_i != 0) meep::abort("FAILED: LOOP_OVER_VOL has minimum index %td instead of 0\n", min_i);
   if (size_t(max_i) != gv.ntot() - 1)
     meep::abort("FAILED: LOOP_OVER_VOL has max index %td instead of ntot-1\n", max_i);
@@ -284,12 +284,15 @@ void check_loop_vol(const grid_volume &gv, component c) {
     vec here0(gv[ihere0]);
     if (ihere0 != ihere) meep::abort("FAILED: wrong LOOP_OVER_VOL_OWNED iloc at i=%td\n", i);
     if (abs(here0 - here) > 1e-13)
-      meep::abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%td\n", abs(here0 - here), i);
-    if (!gv.owns(ihere)) meep::abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%td\n", i);
+      meep::abort("FAILED: wrong LOOP_OVER_VOL_OWNED loc (err = %g) at i=%td\n", abs(here0 - here),
+                  i);
+    if (!gv.owns(ihere))
+      meep::abort("FAILED: LOOP_OVER_VOL_OWNED includes non-owned at i=%td\n", i);
     ++count;
   }
   if (count != count_owned)
-    meep::abort("FAILED: LOOP_OVER_VOL_OWNED has %zd iterations instead of %zd\n", count, count_owned);
+    meep::abort("FAILED: LOOP_OVER_VOL_OWNED has %zd iterations instead of %zd\n", count,
+                count_owned);
 
   count = 0;
   LOOP_OVER_VOL_NOTOWNED(gv, c, i) {
@@ -299,7 +302,8 @@ void check_loop_vol(const grid_volume &gv, component c) {
     vec here0(gv[ihere0]);
     if (ihere0 != ihere) meep::abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED iloc at i=%td\n", i);
     if (abs(here0 - here) > 1e-13)
-      meep::abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%td\n", abs(here0 - here), i);
+      meep::abort("FAILED: wrong LOOP_OVER_VOL_NOTOWNED loc (err = %g) at i=%td\n",
+                  abs(here0 - here), i);
     if (gv.owns(ihere)) meep::abort("FAILED: LOOP_OVER_VOL_NOTOWNED includes owned at i=%td\n", i);
     if (ihere < vmin || ihere > vmax)
       meep::abort("FAILED: LOOP_OVER_VOL_NOTOWNED outside V at i=%td\n", i);
@@ -307,7 +311,7 @@ void check_loop_vol(const grid_volume &gv, component c) {
   }
   if (count != gv.ntot() - count_owned)
     meep::abort("FAILED: LOOP_OVER_VOL_NOTOWNED has %zd iterations instead of %zd\n", count,
-          gv.ntot() - count_owned);
+                gv.ntot() - count_owned);
 
   master_printf("...PASSED.\n");
 }
@@ -323,12 +327,11 @@ int main(int argc, char **argv) {
   const grid_volume v1d = vol1d(sz[0], a);
   const grid_volume vcyl = volcyl(sz[0], sz[1], a);
 
-
   srand(0); // use fixed random sequence
 
-    check_splitsym(v3d, 0, identity(), "identity");
-    check_splitsym(v3d, 0, mirror(X, v3d), "mirrorx");
-    return 0;
+  check_splitsym(v3d, 0, identity(), "identity");
+  check_splitsym(v3d, 0, mirror(X, v3d), "mirrorx");
+  return 0;
 
   for (int splitting = 0; splitting < 5; ++splitting) {
     check_splitsym(v3d, splitting, identity(), "identity");

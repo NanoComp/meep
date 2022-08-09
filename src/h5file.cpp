@@ -23,7 +23,9 @@
 
 #define CHECK(condition, message)                                                                  \
   do {                                                                                             \
-    if (!(condition)) { meep::abort("error on line %d of " __FILE__ ": " message "\n", __LINE__); }      \
+    if (!(condition)) {                                                                            \
+      meep::abort("error on line %d of " __FILE__ ": " message "\n", __LINE__);                    \
+    }                                                                                              \
   } while (0)
 
 #include "config.h"
@@ -311,7 +313,9 @@ void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
         close_data_id = false;
       }
       else {
-        if (!dataset_exists(dataname)) { meep::abort("missing dataset in HDF5 file: %s", dataname); }
+        if (!dataset_exists(dataname)) {
+          meep::abort("missing dataset in HDF5 file: %s", dataname);
+        }
         data_id = H5Dopen(file_id, dataname);
       }
     }
@@ -323,9 +327,7 @@ void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
         data_id = HID(cur_id);
         close_data_id = false;
       }
-      else {
-        data_id = H5Dopen(file_id, dname);
-      }
+      else { data_id = H5Dopen(file_id, dname); }
       delete[] dname;
     }
     space_id = H5Dget_space(data_id);
@@ -346,8 +348,8 @@ void *h5file::read(const char *dataname, int *rank, size_t *dims, int maxrank,
       data = new float[N];
     else
       data = new double[N];
-    H5Dread(data_id, single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE,
-            H5S_ALL, H5S_ALL, H5P_DEFAULT, (void *)data);
+    H5Dread(data_id, single_precision ? H5T_NATIVE_FLOAT : H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL,
+            H5P_DEFAULT, (void *)data);
 
     if (close_data_id) H5Dclose(data_id);
   }
@@ -619,8 +621,8 @@ void h5file::create_or_extend_data(const char *dataname, int rank, const size_t 
    that have no data can be skipped).
 */
 static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
-                         const size_t *chunk_start, const size_t *chunk_dims,
-                         hid_t datatype, void *data) {
+                         const size_t *chunk_start, const size_t *chunk_dims, hid_t datatype,
+                         void *data) {
 #ifdef HAVE_HDF5
   int i;
   bool do_write = true;
@@ -715,7 +717,8 @@ void h5file::done_writing_chunks() {
      I'm assuming(?) that non-extensible datasets will use different
      files, etcetera, for different timesteps.  All of this hackery
      goes away if we just use an MPI-compiled version of HDF5. */
-  if (parallel && !local && cur_dataname && get_extending(cur_dataname)) prevent_deadlock(); // closes id
+  if (parallel && !local && cur_dataname && get_extending(cur_dataname))
+    prevent_deadlock(); // closes id
 }
 
 void h5file::write(const char *dataname, int rank, const size_t *dims, void *data,
@@ -832,14 +835,12 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                         float *data) {
-  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
-              H5T_NATIVE_FLOAT, data);
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, H5T_NATIVE_FLOAT, data);
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                         double *data) {
-  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims,
-              H5T_NATIVE_DOUBLE, data);
+  _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, H5T_NATIVE_DOUBLE, data);
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,

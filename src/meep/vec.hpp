@@ -148,7 +148,6 @@ component first_field_component(field_type ft);
   for (meep::direction d = dim == meep::Dcyl ? meep::Z : meep::X;                                  \
        d < (dim == meep::Dcyl ? meep::NO_DIRECTION : meep::R); d = meep::direction(d + 1))
 
-
 #define LOOP_OVER_IVECS(gv, is, ie, idx)                                                           \
   for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
@@ -200,7 +199,7 @@ component first_field_component(field_type ft);
 // the most generic use case where the user
 // can specify a custom clause
 #define PLOOP_OVER_IVECS_C(gv, is, ie, idx, clause)                                                \
-for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
                  loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
                  loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
@@ -212,13 +211,18 @@ for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),       
                  idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
                         (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
                         (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
-                  dummy_first=0;dummy_first<1;dummy_first++)                                       \
-_Pragma(clause)                                                                                    \
-  for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1; loop_i1++)                                        \
-    for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
-      for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
-        for (ptrdiff_t idx = idx0 + loop_i1*loop_s1 + loop_i2*loop_s2 +                            \
-           loop_i3*loop_s3, dummy_last=0;dummy_last<1;dummy_last++)
+                 dummy_first = 0;                                                                  \
+       dummy_first < 1; dummy_first++)                                                             \
+  _Pragma(                                                                                         \
+      clause) for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1;                                       \
+                   loop_i1++) for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2;                       \
+                                   loop_i2++) for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3;       \
+                                                   loop_i3++) for (ptrdiff_t idx =                 \
+                                                                       idx0 + loop_i1 * loop_s1 +  \
+                                                                       loop_i2 * loop_s2 +         \
+                                                                       loop_i3 * loop_s3,          \
+                                                                   dummy_last = 0;                 \
+                                                                   dummy_last < 1; dummy_last++)
 
 // For the main timestepping events, we know
 // we want to do a simple collapse
@@ -227,7 +231,7 @@ _Pragma(clause)                                                                 
 
 #define PLOOP_OVER_VOL(gv, c, idx)                                                                 \
   PLOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                  \
-                  (gv).big_corner() + (gv).iyee_shift(c), idx)
+                   (gv).big_corner() + (gv).iyee_shift(c), idx)
 
 #define PLOOP_OVER_VOL_OWNED(gv, c, idx)                                                           \
   PLOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
@@ -256,7 +260,8 @@ _Pragma(clause)                                                                 
 // should only use these macros where that is true!  (Basically,
 // all of this is here to support performance hacks of step_generic.)
 
-#if !defined(__INTEL_COMPILER) && !defined(__clang__) && !defined(_OPENMP) && (defined(__GNUC__) || defined(__GNUG__))
+#if !defined(__INTEL_COMPILER) && !defined(__clang__) && !defined(_OPENMP) &&                      \
+    (defined(__GNUC__) || defined(__GNUG__))
 #define IVDEP _Pragma("GCC ivdep")
 #elif defined(_OPENMP)
 #define IVDEP _Pragma("omp simd")
@@ -307,7 +312,7 @@ _Pragma(clause)                                                                 
    We can use simd vectorization in addition to the usual par for optimization */
 // loop over indices idx from is to ie (inclusive) in gv
 #define PS1LOOP_OVER_IVECS(gv, is, ie, idx)                                                        \
-for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                          \
+  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
                  loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
                  loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
                  loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
@@ -317,22 +322,25 @@ for(ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),       
                  idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
                         (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
                         (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
-                  dummy_first=0;dummy_first<1;dummy_first++)                                       \
-_Pragma("omp parallel for collapse(2)")				                                                     \
-  for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1; loop_i1++)                                        \
-    for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
-      _Pragma("omp simd") \
-      for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3; loop_i3++)                                    \
-        for (ptrdiff_t idx = idx0 + loop_i1 * loop_s1 + loop_i2 * loop_s2 + loop_i3, dummy_last=0;dummy_last<1;dummy_last++)
+                 dummy_first = 0;                                                                  \
+       dummy_first < 1; dummy_first++)                                                             \
+  _Pragma("omp parallel for collapse(2)") for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1;           \
+                                               loop_i1++) for (ptrdiff_t loop_i2 = 0;              \
+                                                               loop_i2 < loop_n2; loop_i2++)       \
+      _Pragma("omp simd") for (ptrdiff_t loop_i3 = 0; loop_i3 < loop_n3;                           \
+                               loop_i3++) for (ptrdiff_t idx = idx0 + loop_i1 * loop_s1 +          \
+                                                               loop_i2 * loop_s2 + loop_i3,        \
+                                               dummy_last = 0;                                     \
+                                               dummy_last < 1; dummy_last++)
 
-#define PS1LOOP_OVER_VOL(gv, c, idx)                                                                \
-  PS1LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                 \
-                    (gv).big_corner() + (gv).iyee_shift(c), idx)
+#define PS1LOOP_OVER_VOL(gv, c, idx)                                                               \
+  PS1LOOP_OVER_IVECS(gv, (gv).little_corner() + (gv).iyee_shift(c),                                \
+                     (gv).big_corner() + (gv).iyee_shift(c), idx)
 
-#define PS1LOOP_OVER_VOL_OWNED(gv, c, idx)                                                          \
+#define PS1LOOP_OVER_VOL_OWNED(gv, c, idx)                                                         \
   PS1LOOP_OVER_IVECS(gv, (gv).little_owned_corner(c), (gv).big_corner(), idx)
 
-#define PS1LOOP_OVER_VOL_OWNED0(gv, c, idx)                                                         \
+#define PS1LOOP_OVER_VOL_OWNED0(gv, c, idx)                                                        \
   PS1LOOP_OVER_IVECS(gv, (gv).little_owned_corner0(c), (gv).big_corner(), idx)
 
 #define PS1LOOP_OVER_VOL_NOTOWNED(gv, c, idx)                                                      \
@@ -349,15 +357,15 @@ _Pragma("omp parallel for collapse(2)")				                                     
    (loop_s3 != 0 && (loop_i3 == 0 || loop_i3 == loop_n3 - 1)))
 
 #define IVEC_LOOP_ILOC(gv, iloc)                                                                   \
-  meep::ivec iloc((gv).dim);                                                                             \
-  iloc.set_direction(meep::direction(loop_d1), loop_is1 + 2 * loop_i1);                                  \
-  iloc.set_direction(meep::direction(loop_d2), loop_is2 + 2 * loop_i2);                                  \
+  meep::ivec iloc((gv).dim);                                                                       \
+  iloc.set_direction(meep::direction(loop_d1), loop_is1 + 2 * loop_i1);                            \
+  iloc.set_direction(meep::direction(loop_d2), loop_is2 + 2 * loop_i2);                            \
   iloc.set_direction(meep::direction(loop_d3), loop_is3 + 2 * loop_i3)
 
 #define IVEC_LOOP_LOC(gv, loc)                                                                     \
-  meep::vec loc((gv).dim);                                                                               \
-  loc.set_direction(meep::direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);                   \
-  loc.set_direction(meep::direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);                   \
+  meep::vec loc((gv).dim);                                                                         \
+  loc.set_direction(meep::direction(loop_d1), (0.5 * loop_is1 + loop_i1) * (gv).inva);             \
+  loc.set_direction(meep::direction(loop_d2), (0.5 * loop_is2 + loop_i2) * (gv).inva);             \
   loc.set_direction(meep::direction(loop_d3), (0.5 * loop_is3 + loop_i3) * (gv).inva)
 
 // integration weight for using LOOP_OVER_IVECS with field::integrate
@@ -365,9 +373,8 @@ _Pragma("omp parallel for collapse(2)")				                                     
   ((i > 1 && i < n - 2)                                                                            \
        ? 1.0                                                                                       \
        : (i == 0 ? (s0).in_direction(meep::direction(dir))                                         \
-                 : (i == 1 ? (s1).in_direction(meep::direction(dir))                               \
-                           : i == n - 1                                                            \
-                                 ? (e0).in_direction(meep::direction(dir))                         \
+                 : (i == 1       ? (s1).in_direction(meep::direction(dir))                         \
+                    : i == n - 1 ? (e0).in_direction(meep::direction(dir))                         \
                                  : (i == n - 2 ? (e1).in_direction(meep::direction(dir)) : 1.0))))
 #define IVEC_LOOP_WEIGHT1(s0, s1, e0, e1, k)                                                       \
   IVEC_LOOP_WEIGHT1x(s0, s1, e0, e1, loop_i##k, loop_n##k, loop_d##k)
@@ -412,6 +419,8 @@ inline bool is_electric(component c) { return c < Hx; }
 inline bool is_magnetic(component c) { return c >= Hx && c < Dx; }
 inline bool is_D(component c) { return c >= Dx && c < Bx; }
 inline bool is_B(component c) { return c >= Bx && c < Dielectric; }
+inline bool is_E_or_D(component c) { return is_electric(c) || is_D(c); }
+inline bool is_H_or_B(component c) { return is_magnetic(c) || is_B(c); }
 inline bool is_derived(int c) { return c >= Sx; }
 inline bool is_poynting(derived_component c) { return c < EnergyDensity; }
 inline bool is_energydensity(derived_component c) { return c >= EnergyDensity; }
@@ -1147,13 +1156,10 @@ public:
 
   const char *str(char *buffer = 0, size_t buflen = 0);
 
-  std::complex<double> get_split_costs(direction d, int split_point,
-                                       bool frag_cost) const;
-  void tile_split(int &best_split_point,
-                  direction &best_split_direction) const;
-  void find_best_split(int desired_chunks, bool frag_cost,
-                       int &best_split_point, direction &best_split_direction,
-                       double &left_effort_fraction) const;
+  std::complex<double> get_split_costs(direction d, int split_point, bool frag_cost) const;
+  void tile_split(int &best_split_point, direction &best_split_direction) const;
+  void find_best_split(int desired_chunks, bool frag_cost, int &best_split_point,
+                       direction &best_split_direction, double &left_effort_fraction) const;
 
 private:
   grid_volume(ndim d, double ta, int na, int nb, int nc);
@@ -1207,7 +1213,7 @@ public:
   volume_list *reduce(const volume_list *gl) const;
 
   symmetry operator+(const symmetry &) const;
-  symmetry operator*(std::complex<double>)const;
+  symmetry operator*(std::complex<double>) const;
   symmetry operator-(const symmetry &b) const { return *this + b * (-1.0); }
   symmetry operator-(void) const { return *this * (-1.0); }
   void operator=(const symmetry &);

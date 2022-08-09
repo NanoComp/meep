@@ -140,7 +140,7 @@ struct material_data {
   double beta;
   double eta;
   double damping;
-  bool trivial=true;
+  bool trivial = true;
   /*
   There are several possible scenarios when material grids overlap -- these
   different scenarios enable different applications.
@@ -167,7 +167,7 @@ struct material_data {
 
   material_data();
 
-  void copy_from(const material_data& from);
+  void copy_from(const material_data &from);
 };
 
 typedef material_data *material_type;

@@ -394,7 +394,8 @@ public:
   // If 'local_' is true, then 'parallel_' *must* be false and assumes that
   // each process is writing to a local non-shared file and the filename is
   // unique to the process.
-  h5file(const char *filename_, access_mode m = READWRITE, bool parallel_ = true, bool local_ = false);
+  h5file(const char *filename_, access_mode m = READWRITE, bool parallel_ = true,
+         bool local_ = false);
   ~h5file(); // closes the files (and any open dataset)
 
   bool ok();
@@ -729,8 +730,8 @@ enum in_or_out { Incoming = 0, Outgoing };
 const std::initializer_list<in_or_out> all_in_or_out{Incoming, Outgoing};
 
 enum connect_phase { CONNECT_PHASE = 0, CONNECT_NEGATE = 1, CONNECT_COPY = 2 };
-const std::initializer_list<connect_phase> all_connect_phases{
-     CONNECT_PHASE, CONNECT_NEGATE, CONNECT_COPY};
+const std::initializer_list<connect_phase> all_connect_phases{CONNECT_PHASE, CONNECT_NEGATE,
+                                                              CONNECT_COPY};
 constexpr int NUM_CONNECT_PHASE_TYPES = 3;
 
 // Communication pair(i, j) implies data being sent from i to j.
@@ -768,7 +769,7 @@ struct comms_operation {
   ptrdiff_t my_chunk_idx;
   ptrdiff_t other_chunk_idx;
   int other_proc_id;
-  int pair_idx;  // The numeric pair index used in many communications related arrays.
+  int pair_idx; // The numeric pair index used in many communications related arrays.
   size_t transfer_size;
   in_or_out comm_direction;
   int tag;
@@ -787,7 +788,7 @@ struct comms_sequence {
 // RAII based comms_manager that allows asynchronous send and receive functions to be initiated.
 // Upon destruction, the comms_manager waits for completion of all enqueued operations.
 class comms_manager {
- public:
+public:
   using receive_callback = std::function<void()>;
   virtual ~comms_manager() {}
   virtual void send_real_async(const void *buf, size_t count, int dest, int tag) = 0;
@@ -798,7 +799,6 @@ class comms_manager {
 
 // Factory function for `comms_manager`.
 std::unique_ptr<comms_manager> create_comms_manager();
-
 
 class structure {
 public:
@@ -867,13 +867,12 @@ public:
   // file after computing their respective offsets into this file. When set to
   // 'false', each process writes data for the chunks it owns to a separate
   // (process unique) file.
-  void dump(const char *filename, bool single_parallel_file=true);
-  void load(const char *filename, bool single_parallel_file=true);
+  void dump(const char *filename, bool single_parallel_file = true);
+  void load(const char *filename, bool single_parallel_file = true);
 
   void dump_chunk_layout(const char *filename);
   void load_chunk_layout(const char *filename, boundary_region &br);
-  void load_chunk_layout(const std::vector<grid_volume> &gvs,
-                         const std::vector<int> &ids,
+  void load_chunk_layout(const std::vector<grid_volume> &gvs, const std::vector<int> &ids,
                          boundary_region &br);
 
   // monitor.cpp
@@ -908,7 +907,8 @@ private:
   void changing_chunks();
   // Helper methods for dumping and loading susceptibilities
   void set_chiP_from_file(h5file *file, const char *dataset, field_type ft);
-  void write_susceptibility_params(h5file *file, bool single_parallel_file, const char *dname, int EorH);
+  void write_susceptibility_params(h5file *file, bool single_parallel_file, const char *dname,
+                                   int EorH);
 
   std::unique_ptr<binary_partition> bp;
 };
@@ -918,10 +918,8 @@ std::unique_ptr<binary_partition> choose_chunkdivision(grid_volume &gv, volume &
                                                        const symmetry &s);
 
 // defined in structure_dump.cpp
-void split_by_binarytree(grid_volume gvol,
-                         std::vector<grid_volume> &result_gvs,
-                         std::vector<int> &result_ids,
-                         const binary_partition *bp);
+void split_by_binarytree(grid_volume gvol, std::vector<grid_volume> &result_gvs,
+                         std::vector<int> &result_ids, const binary_partition *bp);
 class src_vol;
 class fields;
 class fields_chunk;
@@ -939,8 +937,8 @@ public:
   // sources are not, but this may change.
   bool is_integrated;
 
-   // a unique ID > 0 can be assigned to a src_time object by fields::register_src_time,
-   // in order to communicate it from one process to another; otherwise defaults to 0.
+  // a unique ID > 0 can be assigned to a src_time object by fields::register_src_time,
+  // in order to communicate it from one process to another; otherwise defaults to 0.
   size_t id;
 
   src_time() {
@@ -1212,14 +1210,18 @@ public:
 
   int vc; // component descriptor from the original volume
 
- private:
-   int decimation_factor;
+private:
+  int decimation_factor;
 };
 
-void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
-void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
-void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
-void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0, bool single_parallel_file=true);
+void save_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0,
+                   bool single_parallel_file = true);
+void load_dft_hdf5(dft_chunk *dft_chunks, component c, h5file *file, const char *dprefix = 0,
+                   bool single_parallel_file = true);
+void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0,
+                   bool single_parallel_file = true);
+void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const char *dprefix = 0,
+                   bool single_parallel_file = true);
 
 // dft.cpp (normally created with fields::add_dft_flux)
 class dft_flux {
@@ -1327,14 +1329,12 @@ public:
   volume where;
 };
 
-
 struct sourcedata {
   component near_fd_comp;
   std::vector<ptrdiff_t> idx_arr;
   int fc_idx;
   std::vector<std::complex<double> > amp_arr;
 };
-
 
 // near2far.cpp (normally created with fields::add_dft_near2far)
 class dft_near2far {
@@ -1392,7 +1392,8 @@ public:
   int periodic_n[2];
   double periodic_k[2], period[2];
 
-  std::vector<sourcedata> near_sourcedata(const vec &x_0, double* farpt_list, size_t nfar_pts, const std::complex<double>* dJ);
+  std::vector<sourcedata> near_sourcedata(const vec &x_0, double *farpt_list, size_t nfar_pts,
+                                          const std::complex<double> *dJ);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
@@ -1412,15 +1413,17 @@ public:
   }
 
   void update(fields &f);          // to be called after each timestep
-  double *ldos() const;            // returns array of Nomega values (after last timestep)
+  double *ldos();                  // returns array of Nomega values (after last timestep)
   std::complex<double> *F() const; // returns Fdft
   std::complex<double> *J() const; // returns Jdft
   std::vector<double> freq;
+  double overall_scale() const { return saved_overall_scale; }
 
 private:
-  std::complex<double> *Fdft;  // Nomega array of field * J*(x) DFT values
-  std::complex<double> *Jdft;  // Nomega array of J(t) DFT values
-  double Jsum;                 // sum of |J| over all points
+  std::complex<double> *Fdft; // Nomega array of field * J*(x) DFT values
+  std::complex<double> *Jdft; // Nomega array of J(t) DFT values
+  double Jsum;                // sum of |J| over all points
+  double saved_overall_scale; // saved overall scale for adjoint calculation
 };
 
 // dft.cpp (normally created with fields::add_dft_fields)
@@ -1429,7 +1432,8 @@ public:
   dft_fields(dft_chunk *chunks, double freq_min, double freq_max, int Nfreq, const volume &where);
   dft_fields(dft_chunk *chunks, const std::vector<double> &freq_, const volume &where);
   dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
-  std::vector<sourcedata> fourier_sourcedata(const volume &where, component c, fields &f, const std::complex<double>* dJ);
+  std::vector<sourcedata> fourier_sourcedata(const volume &where, component c, fields &f,
+                                             const std::complex<double> *dJ);
   void scale_dfts(std::complex<double> scale);
 
   void remove();
@@ -1438,7 +1442,6 @@ public:
   dft_chunk *chunks;
   volume where;
 };
-
 
 // data for each susceptibility
 typedef struct polarization_state_s {
@@ -1616,7 +1619,7 @@ enum time_sink {
   BoundarySteppingPE,
   BoundarySteppingE
 };
-using time_sink_to_duration_map = std::unordered_map<time_sink, double, std::hash<int>>;
+using time_sink_to_duration_map = std::unordered_map<time_sink, double, std::hash<int> >;
 
 // RAII-based profiling timer that accumulates wall time from creation until it
 // is destroyed or the `exit` method is invoked. Not thread-safe.
@@ -1631,7 +1634,7 @@ public:
   void exit();
 
 private:
-  time_sink_to_duration_map *timers;  // Not owned by us.
+  time_sink_to_duration_map *timers; // Not owned by us.
   time_sink sink;
   bool active;
   double t_start;
@@ -1683,26 +1686,26 @@ public:
   std::complex<double> get_p() const { return p; };
 
 private:
-  int g[3];                // diffraction order
-  double axis[3];          // axis vector
-  std::complex<double> s;  // s polarization amplitude
-  std::complex<double> p;  // p polarization ampiltude
+  int g[3];               // diffraction order
+  double axis[3];         // axis vector
+  std::complex<double> s; // s polarization amplitude
+  std::complex<double> p; // p polarization ampiltude
 };
 
 class gaussianbeam {
 
 public:
-  gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq,
-               double eps, double mu, std::complex<double> E0[3]);
+  gaussianbeam(const vec &x0, const vec &kdir, double w0, double freq, double eps, double mu,
+               std::complex<double> E0[3]);
   void get_fields(std::complex<double> *EH, const vec &x) const;
   std::complex<double> get_E0(int n) const { return E0[n]; };
 
 private:
-  vec x0;           // beam center
-  vec kdir;         // beam propagation direction
-  double w0;        // beam waist radius
-  double freq;      // beam frequency
-  double eps, mu;   // permittivity/permeability of homogeneous medium
+  vec x0;                     // beam center
+  vec kdir;                   // beam propagation direction
+  double w0;                  // beam waist radius
+  double freq;                // beam frequency
+  double eps, mu;             // permittivity/permeability of homogeneous medium
   std::complex<double> E0[3]; // polarization vector
 };
 
@@ -1747,7 +1750,7 @@ public:
   void remove_susceptibilities();
   void remove_fluxes();
   void reset();
-  void log(const char* prefix = "");
+  void log(const char *prefix = "");
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);
@@ -1770,8 +1773,8 @@ public:
   // file after computing their respective offsets into this file. When set to
   // 'false', each process writes data for the chunks it owns to a separate
   // (process unique) file.
-  void dump(const char *filename, bool single_parallel_file=true);
-  void load(const char *filename, bool single_parallel_file=true);
+  void dump(const char *filename, bool single_parallel_file = true);
+  void load(const char *filename, bool single_parallel_file = true);
 
   // h5fields.cpp:
   // low-level function:
@@ -1828,15 +1831,13 @@ public:
   // must eventually be caller-deallocated via delete[].
   realnum *get_array_slice(const volume &where, std::vector<component> components,
                            field_rfunction rfun, void *fun_data, realnum *slice = 0,
-                           double frequency = 0,
-                           bool snap = false);
+                           double frequency = 0, bool snap = false);
 
   std::complex<realnum> *get_complex_array_slice(const volume &where,
                                                  std::vector<component> components,
                                                  field_function fun, void *fun_data,
                                                  std::complex<realnum> *slice = 0,
-                                                 double frequency = 0,
-                                                 bool snap = false);
+                                                 double frequency = 0, bool snap = false);
 
   // alternative entry points for when you have no field
   // function, i.e. you want just a single component or
@@ -1847,8 +1848,7 @@ public:
                            double frequency = 0, bool snap = false);
   std::complex<realnum> *get_complex_array_slice(const volume &where, component c,
                                                  std::complex<realnum> *slice = 0,
-                                                 double frequency = 0,
-                                                 bool snap = false);
+                                                 double frequency = 0, bool snap = false);
 
   // like get_array_slice, but for *sources* instead of fields
   std::complex<realnum> *get_source_slice(const volume &where, component source_slice_component,
@@ -1859,7 +1859,8 @@ public:
                            field_function fun, field_rfunction rfun, void *fun_data, void *vslice,
                            double frequency = 0, bool snap = false);
 
-  /* fetch and return coordinates and integration weights of grid points covered by an array slice, */
+  /* fetch and return coordinates and integration weights of grid points covered by an array slice,
+   */
   /* packed into a vector with format [NX, xtics[:], NY, ytics[:], NZ, ztics[:], weights[:] ] */
   std::vector<double> get_array_metadata(const volume &where);
 
@@ -1901,8 +1902,12 @@ public:
   bool is_aniso2d();
   void require_source_components();
   void _require_component(component c, bool aniso2d);
-  void require_component(component c) { _require_component(c, is_aniso2d()); sync_chunk_connections(); }
-  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n, std::complex<double>* amp_arr, bool needs_boundary_fix);
+  void require_component(component c) {
+    _require_component(c, is_aniso2d());
+    sync_chunk_connections();
+  }
+  void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n,
+                   std::complex<double> *amp_arr, bool needs_boundary_fix);
   void register_src_time(src_time *src);
   src_time *lookup_src_time(size_t id);
 
@@ -1921,8 +1926,7 @@ public:
                             const volume &eig_vol, int band_num, const vec &kpoint,
                             bool match_frequency, int parity, double eig_resolution,
                             double eigensolver_tol, std::complex<double> amp,
-                            std::complex<double> A(const vec &) = 0,
-                            diffractedplanewave *dp = 0);
+                            std::complex<double> A(const vec &) = 0, diffractedplanewave *dp = 0);
 
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
@@ -1992,7 +1996,7 @@ public:
                      bool sqrt_dV_and_interp_weights = false,
                      std::complex<double> extra_weight = 1.0, bool use_centered_grid = true,
                      int vc = 0, int decimation_factor = 0, bool persist = false);
-  dft_chunk *add_dft(component c, const volume &where, const std::vector<double>& freq,
+  dft_chunk *add_dft(component c, const volume &where, const std::vector<double> &freq,
                      bool include_dV_and_interp_weights = true,
                      std::complex<double> stored_weight = 1.0, dft_chunk *chunk_next = 0,
                      bool sqrt_dV_and_interp_weights = false,
@@ -2064,15 +2068,15 @@ public:
   }
   dft_flux add_mode_monitor(direction d, const volume &where, const std::vector<double> &freq,
                             bool centered_grid = true, int decimation_factor = 0) {
-    return add_mode_monitor(d, where, freq.data(), freq.size(), centered_grid,
-                            decimation_factor);
+    return add_mode_monitor(d, where, freq.data(), freq.size(), centered_grid, decimation_factor);
   }
   dft_flux add_mode_monitor(direction d, const volume &where, const double *freq, size_t Nfreq,
                             bool centered_grid = true, int decimation_factor = 0);
 
   dft_fields add_dft_fields(component *components, int num_components, const volume where,
                             double freq_min, double freq_max, int Nfreq,
-                            bool use_centered_grid = true, int decimation_factor = 0, bool persist = false) {
+                            bool use_centered_grid = true, int decimation_factor = 0,
+                            bool persist = false) {
     return add_dft_fields(components, num_components, where, linspace(freq_min, freq_max, Nfreq),
                           use_centered_grid, decimation_factor, persist);
   }
@@ -2160,8 +2164,7 @@ public:
   }
   dft_near2far add_dft_near2far(const volume_list *where, const std::vector<double> &freq,
                                 int decimation_factor = 0, int Nperiods = 1) {
-    return add_dft_near2far(where, freq.data(), freq.size(), decimation_factor,
-                            Nperiods);
+    return add_dft_near2far(where, freq.data(), freq.size(), decimation_factor, Nperiods);
   }
   dft_near2far add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
                                 int decimation_factor = 0, int Nperiods = 1);
@@ -2181,7 +2184,10 @@ public:
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
   std::vector<size_t> dft_monitor_size(dft_fields fdft, const volume &where, component c);
-  void get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c, ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz, int &rank, direction *ds, size_t *dims, int *array_rank=0, size_t *array_dims=0, direction *array_dirs=0);
+  void get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c,
+                              ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz,
+                              int &rank, direction *ds, size_t *dims, int *array_rank = 0,
+                              size_t *array_dims = 0, direction *array_dirs = 0);
 
   // energy_and_flux.cpp
   void synchronize_magnetic_fields();
@@ -2235,7 +2241,8 @@ private:
   void figure_out_step_plan();
   // boundaries.cpp
   bool chunk_connections_valid;
-  bool changed_materials; // keep track of whether materials have changed (in case field chunk connections need sync'ing)
+  bool changed_materials; // keep track of whether materials have changed (in case field chunk
+                          // connections need sync'ing)
   void find_metals();
   void disconnect_chunks();
   void connect_chunks();
@@ -2263,9 +2270,9 @@ private:
   // Helper methods for dumping field chunks.
   using FieldPtrGetter = std::function<realnum **(fields_chunk *, int, int)>;
   void dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
-                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
+                               const std::string &field_name, FieldPtrGetter field_ptr_getter);
   void load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
-                               const std::string& field_name, FieldPtrGetter field_ptr_getter);
+                               const std::string &field_name, FieldPtrGetter field_ptr_getter);
 
 public:
   // monitor.cpp
@@ -2295,19 +2302,19 @@ private:
   // The sequence of send and receive operations for each field type.
   comms_sequence comms_sequence_for_field[NUM_FIELD_TYPES];
 
-  size_t get_comm_size(const comms_key& key) const {
+  size_t get_comm_size(const comms_key &key) const {
     auto it = comm_sizes.find(key);
     return (it != comm_sizes.end()) ? it->second : 0;
   }
 
-  size_t comm_size_tot(field_type ft, const chunk_pair& pair) const {
+  size_t comm_size_tot(field_type ft, const chunk_pair &pair) const {
     size_t sum = 0;
     for (auto ip : all_connect_phases)
       sum += get_comm_size({ft, ip, pair});
     return sum;
   }
 
-  int chunk_pair_to_index(const chunk_pair& pair) const {
+  int chunk_pair_to_index(const chunk_pair &pair) const {
     return pair.first + num_chunks * pair.second;
   }
 };
@@ -2391,8 +2398,8 @@ std::complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c
 double get_group_velocity(void *vedata);
 vec get_k(void *vedata);
 
-double linear_interpolate(double rx, double ry, double rz, double *data,
-                          int nx, int ny, int nz, int stride);
+double linear_interpolate(double rx, double ry, double rz, double *data, int nx, int ny, int nz,
+                          int stride);
 
 // Value class that combines split direction and position.
 struct split_plane {
@@ -2411,17 +2418,17 @@ public:
   // Takes ownership of `left_tree` and `right_tree`.
   binary_partition(const split_plane &_split_plane, std::unique_ptr<binary_partition> &&left_tree,
                    std::unique_ptr<binary_partition> &&right_tree);
-  binary_partition(const binary_partition& other);
+  binary_partition(const binary_partition &other);
 
   bool is_leaf() const;
   // Returns the leaf node ID iff is_leaf() == true.
   int get_proc_id() const;
   // Returns the split plane iff is_leaf() == false.
-  const split_plane& get_plane() const;
+  const split_plane &get_plane() const;
   // Returns a pointer to the left subtree node iff is_leaf() == false.
-  const binary_partition* left_tree() const;
+  const binary_partition *left_tree() const;
   // Returns a pointer to the right subtree node iff is_leaf() == false.
-  const binary_partition* right_tree() const;
+  const binary_partition *right_tree() const;
 
 private:
   int proc_id;

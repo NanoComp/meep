@@ -1,9 +1,11 @@
 import unittest
-import meep as mp
+
 from utils import ApproxComparisonTestCase
 
-class Test3rdHarm1d(ApproxComparisonTestCase):
+import meep as mp
 
+
+class Test3rdHarm1d(ApproxComparisonTestCase):
     def setUp(self):
         self.sz = 100
         fcen = 1 / 3.0
@@ -18,23 +20,31 @@ class Test3rdHarm1d(ApproxComparisonTestCase):
 
         pml_layers = mp.PML(self.dpml)
 
-        sources = mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Ex,
-                            center=mp.Vector3(0, 0, (-0.5 * self.sz) + self.dpml), amplitude=self.amp)
+        sources = mp.Source(
+            mp.GaussianSource(fcen, fwidth=df),
+            component=mp.Ex,
+            center=mp.Vector3(0, 0, (-0.5 * self.sz) + self.dpml),
+            amplitude=self.amp,
+        )
 
         nfreq = 400
         fmin = fcen / 2.0
         fmax = fcen * 4
 
-        self.sim = mp.Simulation(cell_size=cell,
-                                 geometry=[],
-                                 sources=[sources],
-                                 boundary_layers=[pml_layers],
-                                 default_material=default_material,
-                                 resolution=20,
-                                 dimensions=dimensions)
+        self.sim = mp.Simulation(
+            cell_size=cell,
+            geometry=[],
+            sources=[sources],
+            boundary_layers=[pml_layers],
+            default_material=default_material,
+            resolution=20,
+            dimensions=dimensions,
+        )
 
         fr = mp.FluxRegion(mp.Vector3(0, 0, (0.5 * self.sz) - self.dpml - 0.5))
-        self.trans = self.sim.add_flux(0.5 * (fmin + fmax), fmax - fmin, nfreq, fr, decimation_factor=1)
+        self.trans = self.sim.add_flux(
+            0.5 * (fmin + fmax), fmax - fmin, nfreq, fr, decimation_factor=1
+        )
         self.trans1 = self.sim.add_flux(fcen, 0, 1, fr, decimation_factor=1)
         self.trans3 = self.sim.add_flux(3 * fcen, 0, 1, fr, decimation_factor=1)
 
@@ -48,11 +58,16 @@ class Test3rdHarm1d(ApproxComparisonTestCase):
             )
         )
 
-        harmonics = [self.k, self.amp, mp.get_fluxes(self.trans1)[0], mp.get_fluxes(self.trans3)[0]]
+        harmonics = [
+            self.k,
+            self.amp,
+            mp.get_fluxes(self.trans1)[0],
+            mp.get_fluxes(self.trans3)[0],
+        ]
 
         tol = 3e-5 if mp.is_single_precision() else 1e-7
         self.assertClose(expected_harmonics, harmonics, epsilon=tol)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

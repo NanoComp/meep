@@ -15,5 +15,5 @@ LIBS = -lmeepgeom -lmeep -lctlgeom
 WriteChunkInfo:  	WriteChunkInfo.o
 			$(CXX) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-clean:	
+clean:
 		rm *.o *.a

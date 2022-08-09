@@ -10,7 +10,7 @@ from .utils import DesignRegion
 
 from .basis import BilinearInterpolationBasis
 
-from .optimization_problem import (OptimizationProblem)
+from .optimization_problem import OptimizationProblem
 
 from .filter_source import FilteredSource
 

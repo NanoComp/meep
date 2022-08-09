@@ -29,6 +29,7 @@ dft_ldos::dft_ldos(double freq_min, double freq_max, int Nfreq) {
   for (int i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
+  saved_overall_scale = 1.0;
 }
 
 dft_ldos::dft_ldos(const std::vector<double> freq_) {
@@ -39,6 +40,7 @@ dft_ldos::dft_ldos(const std::vector<double> freq_) {
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
+  saved_overall_scale = 1.0;
 }
 
 dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
@@ -49,12 +51,13 @@ dft_ldos::dft_ldos(const double *freq_, size_t Nfreq) : freq(Nfreq) {
   for (size_t i = 0; i < Nfreq; ++i)
     Fdft[i] = Jdft[i] = 0.0;
   Jsum = 1.0;
+  saved_overall_scale = 1.0;
 }
 
 // |c|^2
 static double abs2(complex<double> c) { return real(c) * real(c) + imag(c) * imag(c); }
 
-double *dft_ldos::ldos() const {
+double *dft_ldos::ldos() {
   // we try to get the overall scale factor right (at least for a point source)
   // so that we can compare against the analytical formula for testing
   // ... in most practical cases, the scale factor won't matter because
@@ -62,14 +65,14 @@ double *dft_ldos::ldos() const {
 
   // overall scale factor
   double Jsum_all = sum_to_all(Jsum);
-  double scale = 4.0 / pi                 // from definition of LDOS comparison to power
-                 * -0.5                   // power = -1/2 Re[E* J]
-                 / (Jsum_all * Jsum_all); // normalize to unit-integral current
+  saved_overall_scale = 4.0 / pi                 // from definition of LDOS comparison to power
+                        * -0.5                   // power = -1/2 Re[E* J]
+                        / (Jsum_all * Jsum_all); // normalize to unit-integral current
 
   const size_t Nfreq = freq.size();
   double *sum = new double[Nfreq];
   for (size_t i = 0; i < Nfreq; ++i) /* 4/pi * work done by unit dipole */
-    sum[i] = scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
+    sum[i] = saved_overall_scale * real(Fdft[i] * conj(Jdft[i])) / abs2(Jdft[i]);
   double *out = new double[Nfreq];
   sum_to_all(sum, out, Nfreq);
   delete[] sum;
@@ -86,7 +89,8 @@ complex<double> *dft_ldos::F() const {
 complex<double> *dft_ldos::J() const {
   const size_t Nfreq = freq.size();
   complex<double> *out = new complex<double>[Nfreq];
-  sum_to_all(Jdft, out, Nfreq);
+  // note: Jdft is the same on all processes, so no sum_to_all
+  memcpy(out, Jdft, Nfreq * sizeof(complex<double>));
   return out;
 }
 
@@ -109,34 +113,34 @@ void dft_ldos::update(fields &f) {
         if (fr && fi) // complex E
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
-            const complex<double>& A = sv.amplitude_at(j);
+            const complex<double> &A = sv.amplitude_at(j);
             EJ += complex<double>(fr[idx], fi[idx]) * conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // E is purely real
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
-            const complex<double>& A = sv.amplitude_at(j);
+            const complex<double> &A = sv.amplitude_at(j);
             EJ += double(fr[idx]) * conj(A);
             Jsum += abs(A);
           }
         }
       }
-      for (const src_vol& sv : f.chunks[ic]->get_sources(B_stuff)) {
+      for (const src_vol &sv : f.chunks[ic]->get_sources(B_stuff)) {
         component c = direction_component(Hx, component_direction(sv.c));
         realnum *fr = f.chunks[ic]->f[c][0];
         realnum *fi = f.chunks[ic]->f[c][1];
         if (fr && fi) // complex H
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
-            const complex<double>& A = sv.amplitude_at(j);
+            const complex<double> &A = sv.amplitude_at(j);
             HJ += complex<double>(fr[idx], fi[idx]) * conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // H is purely real
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
-            const complex<double>& A = sv.amplitude_at(j);
+            const complex<double> &A = sv.amplitude_at(j);
             HJ += double(fr[idx]) * conj(A);
             Jsum += abs(A);
           }

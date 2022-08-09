@@ -30,11 +30,11 @@ import meep as mp
 ## Parameters for a gyrotropic Lorentzian medium
 epsn = 1.5    # background permittivity
 f0   = 1.0    # natural frequency
-gamm = 1e-6   # damping rate
+gamma = 1e-6   # damping rate
 sn   = 0.1    # sigma parameter
 b0   = 0.15   # magnitude of bias vector
 
-susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sigma,
+susc = [mp.GyrotropicLorentzianSusceptibility(frequency=f0, gamma=gamma, sigma=sn,
                                               bias=mp.Vector3(0, 0, b0))]
 mat = mp.Medium(epsilon=epsn, mu=1, E_susceptibilities=susc)
 ```
@@ -118,7 +118,6 @@ plt.show()
 ```
 
 As shown in the figure below, the results are in excellent agreement:
-
-<center>
-![](../images/Faraday-rotation-comparison.png)
-</center>
+<p align="center">
+  <img src="../images/Faraday-rotation-comparison.png">
+</p>

@@ -27,7 +27,8 @@ double one(const vec &) { return 1.0; }
 double targets(const vec &pt) {
   const double r = sqrt(pt.x() * pt.x() + pt.y() * pt.y());
   double dr = r;
-  while (dr > 1) dr -= 1;
+  while (dr > 1)
+    dr -= 1;
   if (dr > 0.7001) return 12.0;
   return 1.0;
 }
@@ -41,12 +42,10 @@ static const double tol = 1e-9, thresh = 1e-15;
 int compare(double a, double b, const char *n) {
   if (fabs(a - b) > fabs(b) * tol && fabs(b) > thresh) {
     master_printf("%s differs by\t%g out of\t%g\n", n, a - b, b);
-    master_printf("This gives a fractional error of %g\n",
-                  fabs(a - b) / fabs(b));
+    master_printf("This gives a fractional error of %g\n", fabs(a - b) / fabs(b));
     return 0;
-  } else {
-    return 1;
   }
+  else { return 1; }
 }
 
 int compare_point(fields &f1, fields &f2, const vec &p) {
@@ -58,12 +57,11 @@ int compare_point(fields &f1, fields &f2, const vec &p) {
     if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > tol * abs(v2) && abs(v2) > thresh) {
-        master_printf("%s differs:  %g %g out of %g %g\n", component_name(c),
-                      real(v2 - v1), imag(v2 - v1), real(v2), imag(v2));
-        master_printf("This comes out to a fractional error of %g\n",
-                      abs(v1 - v2) / abs(v2));
-        master_printf("Right now I'm looking at %g %g %g, time %g\n", p.x(),
-                      p.y(), p.z(), f1.time());
+        master_printf("%s differs:  %g %g out of %g %g\n", component_name(c), real(v2 - v1),
+                      imag(v2 - v1), real(v2), imag(v2));
+        master_printf("This comes out to a fractional error of %g\n", abs(v1 - v2) / abs(v2));
+        master_printf("Right now I'm looking at %g %g %g, time %g\n", p.x(), p.y(), p.z(),
+                      f1.time());
         return 0;
       }
     }
@@ -80,12 +78,11 @@ int approx_point(fields &f1, fields &f2, const vec &p) {
     if (f1.gv.has_field(c)) {
       complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
       if (abs(v1 - v2) > tol * abs(v2) && abs(v2) > thresh) {
-        master_printf("%s differs:  %g %g out of %g %g\n", component_name(c),
-                      real(v2 - v1), imag(v2 - v1), real(v2), imag(v2));
-        master_printf("This comes out to a fractional error of %g\n",
-                      abs(v1 - v2) / abs(v2));
-        master_printf("Right now I'm looking at %g %g %g, time %g\n", p.x(),
-                      p.y(), p.z(), f1.time());
+        master_printf("%s differs:  %g %g out of %g %g\n", component_name(c), real(v2 - v1),
+                      imag(v2 - v1), real(v2), imag(v2));
+        master_printf("This comes out to a fractional error of %g\n", abs(v1 - v2) / abs(v2));
+        master_printf("Right now I'm looking at %g %g %g, time %g\n", p.x(), p.y(), p.z(),
+                      f1.time());
         return 0;
       }
     }
@@ -126,40 +123,34 @@ int test_metal(double eps(const vec &), int splitting, const char *tmpdir) {
   grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
   structure s(gv, eps, no_pml(), identity(), splitting);
 
-  std::string filename_prefix =
-      std::string(tmpdir) + "/test_metal_" + std::to_string(splitting);
-  std::string structure_filename =
-      structure_dump(&s, filename_prefix, "original");
+  std::string filename_prefix = std::string(tmpdir) + "/test_metal_" + std::to_string(splitting);
+  std::string structure_filename = structure_dump(&s, filename_prefix, "original");
 
   master_printf("Metal test using %d chunks...\n", splitting);
   fields f(&s);
   f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299, 0.299, 0.401), 1.0);
 
-  while (f.time() < ttot) f.step();
+  while (f.time() < ttot)
+    f.step();
 
-  std::string fields_filename =
-      fields_dump(&f, filename_prefix, "original");
+  std::string fields_filename = fields_dump(&f, filename_prefix, "original");
 
   structure s_load(gv, eps, no_pml(), identity(), splitting);
   structure_load(&s_load, structure_filename);
 
   fields f_load(&s_load);
-  f_load.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299, 0.299, 0.401),
-                          1.0);
+  f_load.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(1.299, 0.299, 0.401), 1.0);
   fields_load(&f_load, fields_filename);
 
   if (!compare_point(f, f_load, vec(0.5, 0.5, 0.01))) return 0;
   if (!compare_point(f, f_load, vec(0.46, 0.33, 0.33))) return 0;
   if (!compare_point(f, f_load, vec(1.301, 0.301, 0.399))) return 0;
-  if (!compare(f.field_energy(), f_load.field_energy(), "   total energy"))
-    return 0;
+  if (!compare(f.field_energy(), f_load.field_energy(), "   total energy")) return 0;
   if (!compare(f.electric_energy_in_box(gv.surroundings()),
-               f_load.electric_energy_in_box(gv.surroundings()),
-               "electric energy"))
+               f_load.electric_energy_in_box(gv.surroundings()), "electric energy"))
     return 0;
   if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
-               f_load.magnetic_energy_in_box(gv.surroundings()),
-               "magnetic energy"))
+               f_load.magnetic_energy_in_box(gv.surroundings()), "magnetic energy"))
     return 0;
   return 1;
 }
@@ -171,20 +162,18 @@ int test_periodic(double eps(const vec &), int splitting, const char *tmpdir) {
   grid_volume gv = vol3d(1.5, 0.5, 1.0, a);
   structure s(gv, eps, no_pml(), identity(), splitting);
 
-  std::string filename_prefix =
-      std::string(tmpdir) + "/test_periodic_" + std::to_string(splitting);
-  std::string structure_filename =
-      structure_dump(&s, filename_prefix, "original");
+  std::string filename_prefix = std::string(tmpdir) + "/test_periodic_" + std::to_string(splitting);
+  std::string structure_filename = structure_dump(&s, filename_prefix, "original");
 
   master_printf("Periodic test using %d chunks...\n", splitting);
   fields f(&s);
   f.use_bloch(vec(0.1, 0.7, 0.3));
   f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.3, 0.25, 0.5), 1.0);
 
-  while (f.time() < ttot) f.step();
+  while (f.time() < ttot)
+    f.step();
 
-  std::string fields_filename =
-      fields_dump(&f, filename_prefix, "original");
+  std::string fields_filename = fields_dump(&f, filename_prefix, "original");
 
   structure s_load(gv, eps, no_pml(), identity(), splitting);
   structure_load(&s_load, structure_filename);
@@ -197,15 +186,12 @@ int test_periodic(double eps(const vec &), int splitting, const char *tmpdir) {
   if (!compare_point(f, f_load, vec(0.5, 0.01, 0.5))) return 0;
   if (!compare_point(f, f_load, vec(0.46, 0.33, 0.2))) return 0;
   if (!compare_point(f, f_load, vec(1.0, 0.25, 0.301))) return 0;
-  if (!compare(f.field_energy(), f_load.field_energy(), "   total energy"))
-    return 0;
+  if (!compare(f.field_energy(), f_load.field_energy(), "   total energy")) return 0;
   if (!compare(f.electric_energy_in_box(gv.surroundings()),
-               f_load.electric_energy_in_box(gv.surroundings()),
-               "electric energy"))
+               f_load.electric_energy_in_box(gv.surroundings()), "electric energy"))
     return 0;
   if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
-               f_load.magnetic_energy_in_box(gv.surroundings()),
-               "magnetic energy"))
+               f_load.magnetic_energy_in_box(gv.surroundings()), "magnetic energy"))
     return 0;
 
   return 1;
@@ -219,12 +205,10 @@ int main(int argc, char **argv) {
   master_printf("Testing 3D dump/load: temp_dir = %s...\n", temp_dir.get());
 
   for (int s = 2; s < 7; s++)
-    if (!test_periodic(targets, s, temp_dir.get()))
-      abort("error in test_periodic targets\n");
+    if (!test_periodic(targets, s, temp_dir.get())) abort("error in test_periodic targets\n");
 
   for (int s = 2; s < 8; s++)
-    if (!test_metal(one, s, temp_dir.get()))
-      abort("error in test_metal vacuum\n");
+    if (!test_metal(one, s, temp_dir.get())) abort("error in test_metal vacuum\n");
 
   delete_directory(temp_dir.get());
   return 0;

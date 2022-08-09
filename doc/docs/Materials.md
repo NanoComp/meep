@@ -188,7 +188,7 @@ Similar relationships can be found for systems with more than two atomic levels 
 ### Natural Units for Saturable Media
 
 A conversion chart for different choices of parameter nomenclature for the saturable medium.
-	
+
 There is no standard convention in the literature on lasers and saturable gain media for defining the various constants in the equations above. The following are the relationships among these constants for the three different groups of work discussed in this section:
 
 $$ \omega_n \; (\textrm{Meep}) = \omega_{ba} \; (\textrm{Boyd}) = \omega_a \; (\textrm{SALT}) $$

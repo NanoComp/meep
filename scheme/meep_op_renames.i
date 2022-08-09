@@ -12,4 +12,3 @@
 
 %rename(meep_dft_chunk_subeq) meep::dft_chunk::operator-=;
 %rename(meep_dft_flux_subeq) meep::dft_flux::operator-=;
-

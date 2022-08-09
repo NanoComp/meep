@@ -91,9 +91,10 @@ else:
 
 The results are shown in the figure below. The error in the fields decreases monotonically with decreasing tolerance of the frequency-domain solver. The error is converging to an asymptotic limit of `1e-12` which is set by the lowest tolerance.
 
-<center>
-![](../images/CWsolver-python.png)
-</center>
+<p align="center">
+  <img src="../images/CWsolver-python.png">
+</p>
+
 
 As a further validation of the frequency-domain solver, we will compare its fields with those computed using time-stepping. This involves taking the Fourier transform of $E_z$ via the `add_dft_fields` routine. After the time stepping, the frequency-domain fields are accessed using [`get_dft_array`](../Python_User_Interface.md#array-slices).
 

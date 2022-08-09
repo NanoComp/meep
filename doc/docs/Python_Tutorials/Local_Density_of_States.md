@@ -10,21 +10,31 @@ $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}
 
 where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole assuming linear materials. In FDTD, computing the LDOS is straightforward: excite a point dipole source and accumulate the Fourier transforms of the field at a given point in space to obtain the entire LDOS spectrum in a single calculation. This is implemented in the `dft_ldos` feature which is the subject of this tutorial.
 
+[TOC]
 
 Planar Cavity with Lossless Metallic Walls
 ------------------------------------------
 
-The spontaneous-emission rate of a point-dipole emitter in a planar cavity bounded by a lossless metallic mirror can be tuned using the thickness of the cavity. A schematic of the cavity is shown in the figure inset below. In this example, the 3D cavity consists of two mirrors separated in the *z* direction by a distance $L$. The cavity consists of a homogeneous dielectric with $n$=2.4. The dipole wavelength ($\lambda$) is 1.0 μm with horizontal polarization along the *x* axis. The Purcell enhancement factor, a dimensionless quantity defined relative to the bulk medium, can be computed analytically in terms of the cavity thickness in units of the medium wavelength ($nL/\lambda$) for this system using equation (7) of [IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998)](https://ieeexplore.ieee.org/abstract/document/655009). We will validate the simulated results using the analytic theory.
+The spontaneous-emission rate of a point-dipole emitter in a planar cavity bounded by a lossless metallic mirror can be tuned using the thickness of the cavity. A schematic of the cavity structure is shown in the figure below. The planar cavity consists of two mirrors separated in the $z$ direction by a distance $L$. The cavity consists of a homogeneous dielectric with $n$=2.4. The dipole wavelength ($\lambda$) is 1.0 μm with polarization *parallel* to the mirrors. The Purcell enhancement factor can be computed analytically as a function of the cavity thickness expressed in units of the wavelength in the cavity medium ($nL/\lambda$) using equation 7 of [IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998)](https://ieeexplore.ieee.org/abstract/document/655009). We will validate the simulated results using the analytic theory. Since this system has cylindrical symmetry, we can perform an identical simulation in [cylindrical coordinates](Cylindrical_Coordinates.md) which is significantly faster because it is a 2D calculation.
 
 In this demonstration, the cavity thickness is swept over a range of 0.5 to 2.5. Below a thickness of 0.5 there are no guided modes and thus the Purcell enhancement factor is zero.
 
-Two types of simulations are necessary for computing the Purcell enhancement factor: (1) bulk medium and (2) cavity. The `dft_ldos` featured is used to compute the LDOS in each case at a single wavelength. The Purcell enhancement factor is computed as the ratio of the LDOS measured in (2) to that from (1). Each simulation uses three mirror symmetries to reduce the size of the 3D computation by a factor of eight. The cavity is infinitely extended in the *xy* plane and thus the cell is terminated using PMLs in these two directions. Because Meep uses a default boundary condition of a perfect electric conductor, there is no need to explicitly define the boundaries in the *z* direction. The fields are timestepped until they have decayed away sufficiently due to absorption by the PMLs at the location of the pulsed source.
+Two types of simulations are necessary for computing the Purcell enhancement factor: (1) bulk cavity medium and (2) cavity. The `dft_ldos` feature is used to compute the LDOS in each case. The Purcell enhancement factor is computed as the ratio of the LDOS measured in (2) to that from (1).
 
-As shown in the plot below, the results from Meep agree well with the analytic theory.
+In 3D, each simulation uses three [mirror symmetries](../Exploiting_Symmetry.md#rotations-and-reflections) to reduce the size of the computation by a factor of eight. The dipole is polarized in the $x$ direction. The cavity is infinitely extended in the $xy$ plane and the cell is therefore terminated using PMLs in $x$ and $y$. Because Meep uses a default boundary condition of a perfect-electric conductor, there is no need to explicitly define the boundaries in the $z$ direction. The fields are timestepped until they have decayed away sufficiently due to absorption by the PMLs.
 
-<center>
-![](../images/planar_cavity_purcell_enhancement.png)
-</center>
+In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordiantes is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example which involves a single point dipole rather than a planewave is one simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
+
+One important parameter when setting up this calculation is the grid resolution.
+
+A key feature of the LDOS in this geometry is that it experiences discontinuities, called  [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity), any time the cavity thickness/λ passes through the cutoff for a waveguide mode, which occurs for cavity-thickness/λ values of 0.5, 1.5, 2.5, etc.   (Mathematically, Van Hove singularities depend strongly on the dimensionality — it is a discontinuity in this case because the waves are propagating along two dimensions, i.e. each cutoff is a minimum in the 2d dispersion relation $\omega(k_x,k_y)$.)  This discontinuity also means that the LDOS *exactly at* the cutoff thickness/λ is ill-defined and convergence with discretization can be problematic at this point.  (In consequence, the LDOS *exactly* at the Van Hove discontinuity can behave erratically with resolution, and should be viewed with caution.)
+
+As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
+
+<p align="center">
+  <img src="../images/planar_cavity_purcell_enhancement.png">
+</p>
+
 
 The simulation script is [examples/planar_cavity_ldos.py](https://github.com/NanoComp/meep/blob/master/python/examples/planar_cavity_ldos.py).
 
@@ -36,27 +46,88 @@ matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 
-resolution = 50  # pixels/μm
+# important note:
+# Meep may round the cell dimensions to an integer number
+# of pixels which could modify the cavity structure.
+resolution = 70  # pixels/μm
+
+
 dpml = 0.5       # thickness of PML
 L = 6.0          # length of non-PML region
 n = 2.4          # refractive index of surrounding medium
 wvl = 1.0        # wavelength (in vacuum)
 
 fcen = 1/wvl
-sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
-                     component=mp.Ex,
-                     center=mp.Vector3())]
-
-symmetries = [mp.Mirror(direction=mp.X,phase=-1),
-              mp.Mirror(direction=mp.Y),
-              mp.Mirror(direction=mp.Z)]
 
 
-def bulk_ldos():
+def bulk_ldos_cyl():
+    sr = L+dpml
+    sz = L+2*dpml
+    cell_size = mp.Vector3(sr,0,sz)
+
+    pml_layers = [mp.PML(dpml)]
+
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         component=mp.Er,
+                         center=mp.Vector3())]
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=pml_layers,
+                        sources=sources,
+                        dimensions=mp.CYLINDRICAL,
+                        m=-1,
+                        default_material=mp.Medium(index=n))
+
+    sim.run(mp.dft_ldos(fcen,0,1),
+            until_after_sources=mp.stop_when_fields_decayed(20,
+                                                            mp.Er,
+                                                            mp.Vector3(),
+                                                            1e-6))
+
+    return sim.ldos_data[0]
+
+
+def cavity_ldos_cyl(sz):
+    sr = L+dpml
+    cell_size = mp.Vector3(sr,0,sz)
+
+    pml_layers = [mp.PML(dpml,direction=mp.R)]
+
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         component=mp.Er,
+                         center=mp.Vector3())]
+
+    sim = mp.Simulation(resolution=resolution,
+                        cell_size=cell_size,
+                        boundary_layers=pml_layers,
+                        sources=sources,
+                        dimensions=mp.CYLINDRICAL,
+                        m=-1,
+                        default_material=mp.Medium(index=n))
+
+    sim.run(mp.dft_ldos(fcen,0,1),
+            until_after_sources=mp.stop_when_fields_decayed(20,
+                                                            mp.Er,
+                                                            mp.Vector3(),
+                                                            1e-6))
+
+    return sim.ldos_data[0]
+
+
+def bulk_ldos_3D():
     s = L+2*dpml
     cell_size = mp.Vector3(s,s,s)
 
     pml_layers = [mp.PML(dpml)]
+
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         component=mp.Ex,
+                         center=mp.Vector3())]
+
+    symmetries = [mp.Mirror(direction=mp.X,phase=-1),
+                  mp.Mirror(direction=mp.Y),
+                  mp.Mirror(direction=mp.Z)]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -74,12 +145,20 @@ def bulk_ldos():
     return sim.ldos_data[0]
 
 
-def cavity_ldos(sz):
+def cavity_ldos_3D(sz):
     sxy = L+2*dpml
     cell_size = mp.Vector3(sxy,sxy,sz)
 
     boundary_layers = [mp.PML(dpml,direction=mp.X),
                        mp.PML(dpml,direction=mp.Y)]
+
+    sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=0.2*fcen),
+                         component=mp.Ex,
+                         center=mp.Vector3())]
+
+    symmetries = [mp.Mirror(direction=mp.X,phase=-1),
+                  mp.Mirror(direction=mp.Y),
+                  mp.Mirror(direction=mp.Z)]
 
     sim = mp.Simulation(resolution=resolution,
                         cell_size=cell_size,
@@ -98,21 +177,27 @@ def cavity_ldos(sz):
 
 
 if __name__ == '__main__':
-    ldos_bulk = bulk_ldos()
-    print("ldos_bulk:, {:.6f}".format(ldos_bulk))
+    ldos_bulk_cyl = bulk_ldos_cyl()
+    ldos_bulk_3D = bulk_ldos_3D()
 
-    # units of wavelength in medium
+    # units of wavelength in cavity medium
     cavity_thickness = np.arange(0.50,2.55,0.05)
 
     gap = cavity_thickness*wvl/n
 
-    ldos_cavity = np.zeros(len(cavity_thickness))
+    ldos_cavity_cyl = np.zeros(len(cavity_thickness))
+    ldos_cavity_3D = np.zeros(len(cavity_thickness))
     for idx,g in enumerate(gap):
-        ldos_cavity[idx] = cavity_ldos(g)
-        print("ldos_cavity:, {:.3f}, {:.6f}".format(g,ldos_cavity[idx]))
+        ldos_cavity_cyl[idx] = cavity_ldos_cyl(g)
+        ldos_cavity_3D[idx] = cavity_ldos_3D(g)
+        print("purcell-enh:, {:.3f}, "
+              "{:.6f} (cyl.), {:.6f} (3D)".format(cavity_thickness[idx],
+                                                  ldos_cavity_cyl[idx]/ldos_bulk_cyl,
+                                                  ldos_cavity_3D[idx]/ldos_bulk_3D))
 
     # Purcell enhancement factor (relative to bulk medium)
-    pe_meep = ldos_cavity/ldos_bulk
+    pe_meep_cyl = ldos_cavity_cyl / ldos_bulk_cyl
+    pe_meep_3D = ldos_cavity_3D / ldos_bulk_3D
 
     # equation 7 of reference
     pe_theory = (3*np.fix(cavity_thickness+0.5)/(4*cavity_thickness) +
@@ -121,21 +206,24 @@ if __name__ == '__main__':
                  (16*np.power(cavity_thickness,3)))
 
     if mp.am_master():
-        plt.plot(cavity_thickness,pe_meep,'b-',label='Meep')
-        plt.plot(cavity_thickness,pe_theory,'r-',label='theory')
+        plt.plot(cavity_thickness,pe_meep_3D,'b-',label='Meep (3D)')
+        plt.plot(cavity_thickness,pe_meep_cyl,'r-',label='Meep (cylin.)')
+        plt.plot(cavity_thickness,pe_theory,'g-',label='theory')
         plt.plot(cavity_thickness,np.ones(len(cavity_thickness)),'k--')
-        plt.xlabel('cavity thickness')
-        plt.ylabel('Purcell enhancement factor (relative to bulk)')
+        plt.xlabel('cavity thickness, $nL/\lambda$')
+        plt.ylabel('Purcell enhancement factor')
+        plt.title("parallel point dipole at λ=1.0 μm in a planar cavity\n"
+                  "with n=2.4 and lossless metallic walls")
         plt.axis([0.5,2.5,0.4,3.1])
         plt.legend()
-        plt.savefig('planar_cavity_purcell_factor_vs_thickness',
+        plt.savefig('cavity_purcell_factor_vs_thickness.png',
                     bbox_inches='tight')
 ```
 
 Square Box with a Small Opening
 -------------------------------
 
-We consider the simple example of a 2D perfect-metal $a$x$a$ cavity of finite thickness 0.1$a$, with a small notch of width $w$ on one side that allows the modes to escape. The nice thing about this example is that in the absence of the notch, the lowest-frequency $E_z$-polarized mode is known analytically to be $E_z^{(1)}=\frac{4}{a^2}\sin(\pi x/a)\sin(\pi \gamma/a)$, with a frequency $\omega^{(1)}=\sqrt{2}\pi c/a$ and modal volume $V^{(1)}=a^2/4$. The notch slightly perturbs this solution, but more importantly the opening allows the confined mode to radiate out into the surrounding air, yielding a finite $Q$. For $w \ll a$, this radiative escape occurs via an evanescent (sub-cutoff) mode of the channel waveguide formed by the notch, and it follows from inspection of the evanescent decay rate $\sqrt{(\pi/\omega)^2-(\omega^{(1)})^2}/c$ that the lifetime scales asymptotically as $Q^{(1)} \sim e^{\#/\omega}$ for some coefficient \#.
+We consider the simple example of a 2D perfect-metal $a$x$a$ cavity of finite thickness 0.1$a$, with a small notch of width $w$ on one side that allows the modes to escape. The nice thing about this example is that in the absence of the notch, the lowest-frequency $E_z$-polarized mode is known analytically to be $E_z^{(1)}=\frac{4}{a^2}\sin(\pi x/a)\sin(\pi \gamma/a)$, with a frequency $\omega^{(1)}=\sqrt{2}\pi c/a$ and modal volume $V^{(1)}=a^2/4$. The notch slightly perturbs this solution, but more importantly the opening allows the confined mode to radiate out into the surrounding air, yielding a finite $Q$. For $w \ll a$, this radiative escape occurs via an evanescent (sub-cutoff) mode of the channel waveguide formed by the notch, and it follows from inspection of the evanescent decay rate $\sqrt{(\pi/\omega)^2-(\omega^{(1)})^2}/c$ that the lifetime scales asymptotically as $Q^{(1)} \sim e^{\\#/\omega}$ for some coefficient \#.
 
 We will validate both this prediction and the expression for the LDOS shown above by computing the LDOS at the center of the cavity, the point of peak $|\vec{E}|$, in two ways. First, we compute the LDOS directly from the power radiated by a dipole, Fourier-transforming the result of a pulse using the `dft_ldos` command. Second, we compute the cavity mode and its lifetime $Q$ using Harminv and then compute the LDOS by the Purcell formula shown above. The latter technique is much more efficient for high Q (small $w$), since one must run the simulation for a very long time to directly accumulate the Fourier transform of a slowly-decaying mode. The two calculations, we will demonstrate, agree to within discretization error, verifying the LDOS analysis above, and $Q/V$ is asymptotically linear on a semilog scale versus $1/w$ as predicted.
 
@@ -225,7 +313,6 @@ plt.xlabel('a/w')
 plt.ylabel('2Q/(πωW) or LDOS')
 plt.show()
 ```
-
-<center>
-![](../images/Metalcavity_ldos.png)
-</center>
+<p align="center">
+  <img src="../images/Metalcavity_ldos.png">
+</p>

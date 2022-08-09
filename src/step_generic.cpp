@@ -12,7 +12,7 @@
    KSTRIDE_DEF defines the relevant strides etc. and goes outside the
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
 #define KSTRIDE_DEF(dsig, k, is, gv)                                                               \
-  const int k##0 = is.in_direction(dsig) - gv.little_corner().in_direction(dsig);              \
+  const int k##0 = is.in_direction(dsig) - gv.little_corner().in_direction(dsig);                  \
   const int s##k##1 = gv.yucky_direction(0) == dsig ? 2 : 0;                                       \
   const int s##k##2 = gv.yucky_direction(1) == dsig ? 2 : 0;                                       \
   const int s##k##3 = gv.yucky_direction(2) == dsig ? 2 : 0
@@ -63,13 +63,13 @@ namespace meep {
        df/dt = dfu/dt - sigma_u * f
    and fu replaces f in the equations above (fu += dt curl g etcetera).
 */
-void step_curl(RPR f, component c, const RPR g1, const RPR g2,
-               ptrdiff_t s1, ptrdiff_t s2, // strides for g1/g2 shift
-               const grid_volume &gv, const ivec is, const ivec ie,
-               realnum dtdx, direction dsig, const RPR sig, const RPR kap,
-               const RPR siginv, RPR fu, direction dsigu, const RPR sigu, const RPR kapu,
-               const RPR siginvu, realnum dt, const RPR cnd, const RPR cndinv, RPR fcnd) {
-  (void) c; // currently unused
+void step_curl(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
+               ptrdiff_t s2, // strides for g1/g2 shift
+               const grid_volume &gv, const ivec is, const ivec ie, realnum dtdx, direction dsig,
+               const RPR sig, const RPR kap, const RPR siginv, RPR fu, direction dsigu,
+               const RPR sigu, const RPR kapu, const RPR siginvu, realnum dt, const RPR cnd,
+               const RPR cndinv, RPR fcnd) {
+  (void)c;   // currently unused
   if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
     SWAP(ptrdiff_t, s1, s2);
@@ -253,10 +253,10 @@ void step_curl(RPR f, component c, const RPR g1, const RPR g2,
    and/or PML).  This is used in 2d calculations to add an exp(i beta z)
    time dependence, which gives an additional i \beta \hat{z} \times
    cross-product in the curl equations. */
-void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, const ivec is, const ivec ie, realnum betadt,
-               direction dsig, const RPR siginv, RPR fu, direction dsigu, const RPR siginvu,
-               const RPR cndinv, RPR fcnd) {
-  (void) c; // currently unused
+void step_beta(RPR f, component c, const RPR g, const grid_volume &gv, const ivec is, const ivec ie,
+               realnum betadt, direction dsig, const RPR siginv, RPR fu, direction dsigu,
+               const RPR siginvu, const RPR cndinv, RPR fcnd) {
+  (void)c; // currently unused
   if (!g) return;
   if (dsig != NO_DIRECTION) { // PML in f update
     KSTRIDE_DEF(dsig, k, is, gv);
@@ -364,11 +364,11 @@ inline realnum calc_nonlinear_u(const realnum Dsqr, const realnum Di, const real
 
 */
 
-void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is, const ivec ie, const RPR g, const RPR g1,
-                      const RPR g2, const RPR u, const RPR u1, const RPR u2, ptrdiff_t s,
-                      ptrdiff_t s1, ptrdiff_t s2, const RPR chi2, const RPR chi3, RPR fw,
-                      direction dsigw, const RPR sigw, const RPR kapw) {
-  (void) fc; // currently unused
+void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is, const ivec ie,
+                      const RPR g, const RPR g1, const RPR g2, const RPR u, const RPR u1,
+                      const RPR u2, ptrdiff_t s, ptrdiff_t s1, ptrdiff_t s2, const RPR chi2,
+                      const RPR chi3, RPR fw, direction dsigw, const RPR sigw, const RPR kapw) {
+  (void)fc; // currently unused
   if (!f) return;
 
   if ((!g1 && g2) || (g1 && g2 && !u1 && u2)) { /* swap g1 and g2 */
@@ -468,9 +468,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is,
             f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
           }
         }
-        else if (g2) {
-          meep::abort("bug - didn't swap off-diagonal terms!?");
-        }
+        else if (g2) { meep::abort("bug - didn't swap off-diagonal terms!?"); }
         else {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum gs = g[i];
@@ -565,9 +563,7 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is,
                    calc_nonlinear_u(gs * gs + 0.0625 * (g1s * g1s), gs, us, chi2[i], chi3[i]);
           }
         }
-        else if (g2) {
-          meep::abort("bug - didn't swap off-diagonal terms!?");
-        }
+        else if (g2) { meep::abort("bug - didn't swap off-diagonal terms!?"); }
         else {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum gs = g[i];

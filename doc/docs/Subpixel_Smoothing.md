@@ -85,7 +85,7 @@ for rad in np.arange(1.800,2.001,0.005):
                             radius=rad,
                             height=mp.inf,
                             center=mp.Vector3())]
-    
+
     sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                         geometry=geometry,
                         eps_averaging=True,

@@ -32,7 +32,7 @@
 #endif
 
 #ifndef SWIG_PYTHON_THREAD_SCOPED_BLOCK
-#define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
+#define SWIG_PYTHON_THREAD_SCOPED_BLOCK SWIG_PYTHON_THREAD_BEGIN_BLOCK
 #endif
 
 PyObject *py_callback = NULL;
@@ -57,9 +57,7 @@ static char *py2_string_as_utf8(PyObject *po) {
     Py_DECREF(s);
     return result;
   }
-  else {
-    return NULL;
-  }
+  else { return NULL; }
 }
 #endif
 
@@ -180,8 +178,7 @@ static PyObject *vec2py(const meep::vec &v, bool newobj = false) {
 
     Py_INCREF(py_callback_v3);
     return py_callback_v3;
-  }
-  ;
+  };
 }
 
 static void py_user_material_func_wrap(vector3 x, void *user_data, medium_struct *medium) {
@@ -463,9 +460,7 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
   std::string class_name = py_class_name_as_string(po);
 
   if (class_name.find(std::string("Drude")) != std::string::npos) { s->drude = true; }
-  else {
-    s->drude = false;
-  }
+  else { s->drude = false; }
 
   s->is_file = false;
 
@@ -495,7 +490,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   int rval = 1;
 
   // specify the type of material grid
-  PyObject * type = PyObject_GetAttrString(po, "grid_type");
+  PyObject *type = PyObject_GetAttrString(po, "grid_type");
   long gt_enum = PyInt_AsLong(type);
   Py_DECREF(type);
 
@@ -504,7 +499,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     case 1: md->material_grid_kinds = material_data::U_PROD; break;
     case 2: md->material_grid_kinds = material_data::U_MEAN; break;
     case 3: md->material_grid_kinds = material_data::U_DEFAULT; break;
-    default: meep::abort("Invalid material grid enumeration code: %d.\n", (int) gt_enum);
+    default: meep::abort("Invalid material grid enumeration code: %d.\n", (int)gt_enum);
   }
 
   // initialize grid size
@@ -526,8 +521,10 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   PyObject *po_dp = PyObject_GetAttrString(po, "weights");
   PyArrayObject *pao = (PyArrayObject *)po_dp;
   if (!PyArray_Check(pao)) { meep::abort("MaterialGrid weights failed to init."); }
-  if (!PyArray_ISCARRAY(pao)) {
-    meep::abort("Numpy array weights must be C-style contiguous.");
+  if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array weights must be C-style contiguous."); }
+  md->weights.clear();
+  for (size_t i = 0; i < PyArray_SIZE(pao); i++) {
+    md->weights.push_back(((double *)PyArray_DATA(pao))[i]);
   }
   md->weights.clear();
   for (size_t i=0;i<PyArray_SIZE(pao);i++){
@@ -588,7 +585,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyObject *py_damping = PyObject_GetAttrString(po, "damping");
     double damping = 0;
     if (py_damping) { damping = PyFloat_AsDouble(py_damping); }
-    md = make_material_grid(do_averaging,beta,eta,damping);
+    md = make_material_grid(do_averaging, beta, eta, damping);
     if (!pymaterial_grid_to_material_grid(po, md)) { return 0; }
     Py_XDECREF(py_do_averaging);
     Py_XDECREF(py_beta);
@@ -601,10 +598,10 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     PyErr_Clear(); // clear errors from attributes not present
     bool do_averaging = false;
     if (py_do_averaging) { do_averaging = PyObject_IsTrue(py_do_averaging); }
-    if (eps && PyObject_IsTrue(eps)) { md = make_user_material(py_epsilon_func_wrap, po, do_averaging); }
-    else {
-      md = make_user_material(py_user_material_func_wrap, po, do_averaging);
+    if (eps && PyObject_IsTrue(eps)) {
+      md = make_user_material(py_epsilon_func_wrap, po, do_averaging);
     }
+    else { md = make_user_material(py_user_material_func_wrap, po, do_averaging); }
     Py_XDECREF(eps);
     Py_XDECREF(py_do_averaging);
   }
@@ -629,9 +626,7 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     master_printf("read in %zdx%zdx%zd numpy array for epsilon\n", md->epsilon_dims[0],
                   md->epsilon_dims[1], md->epsilon_dims[2]);
   }
-  else {
-    meep::abort("Expected a Medium, a Material Grid, a function, or a filename");
-  }
+  else { meep::abort("Expected a Medium, a Material Grid, a function, or a filename"); }
 
   *mt = md;
 
@@ -779,15 +774,14 @@ static PyObject *material_to_py_material(material_type mat) {
       return py_mat;
     }
     case meep_geom::material_data::MATERIAL_USER: {
-      PyObject *py_mat = (PyObject *) mat->user_data;
+      PyObject *py_mat = (PyObject *)mat->user_data;
       Py_INCREF(py_mat);
       return py_mat;
     }
     default:
       // Only Medium is supported at this time.
       meep::abort("Can only convert C++ medium_struct subtype %d to Python", mat->which_subclass);
-  }
-  ;
+  };
 }
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m) {
@@ -1019,24 +1013,12 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   std::string go_type = py_class_name_as_string(po);
 
   if (go_type == "Sphere") { success = pysphere_to_sphere(po, o); }
-  else if (go_type == "Cylinder") {
-    success = pycylinder_to_cylinder(po, o);
-  }
-  else if (go_type == "Wedge") {
-    success = pywedge_to_wedge(po, o);
-  }
-  else if (go_type == "Cone") {
-    success = pycone_to_cone(po, o);
-  }
-  else if (go_type == "Block") {
-    success = pyblock_to_block(po, o);
-  }
-  else if (go_type == "Ellipsoid") {
-    success = pyellipsoid_to_ellipsoid(po, o);
-  }
-  else if (go_type == "Prism") {
-    success = pyprism_to_prism(po, o);
-  }
+  else if (go_type == "Cylinder") { success = pycylinder_to_cylinder(po, o); }
+  else if (go_type == "Wedge") { success = pywedge_to_wedge(po, o); }
+  else if (go_type == "Cone") { success = pycone_to_cone(po, o); }
+  else if (go_type == "Block") { success = pyblock_to_block(po, o); }
+  else if (go_type == "Ellipsoid") { success = pyellipsoid_to_ellipsoid(po, o); }
+  else if (go_type == "Prism") { success = pyprism_to_prism(po, o); }
   else {
     meep::abort("Error: %s is not a valid GeometricObject type\n", go_type.c_str());
     return 0;
@@ -1107,8 +1089,7 @@ static PyObject *gobj_to_py_obj(geometric_object *gobj) {
       // We currently only have the need to create python Prisms from C++.
       // Other geometry can be added as needed.
       meep::abort("Conversion of non-prism geometric_object to Python is not supported");
-  }
-  ;
+  };
 }
 
 static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
@@ -1127,13 +1108,13 @@ static PyObject *gobj_list_to_py_list(geometric_object_list *objs) {
   ;
 }
 
-void gobj_list_freearg(geometric_object_list* objs) {
+void gobj_list_freearg(geometric_object_list *objs) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
-    for(int i = 0; i < objs->num_items; ++i) {
-        material_free((material_data *)objs->items[i].material);
-        geometric_object_destroy(objs->items[i]);
-    }
-    delete[] objs->items;
+  for (int i = 0; i < objs->num_items; ++i) {
+    material_free((material_data *)objs->items[i].material);
+    geometric_object_destroy(objs->items[i]);
+  }
+  delete[] objs->items;
   ;
 }
 
@@ -1156,8 +1137,7 @@ static std::unique_ptr<meep::binary_partition> py_bp_to_bp(PyObject *pybp) {
   else {
     bp.reset(new meep::binary_partition(
         meep::split_plane{direction(PyLong_AsLong(split_dir)), PyFloat_AsDouble(split_pos)},
-        py_bp_to_bp(left),
-        py_bp_to_bp(right)));
+        py_bp_to_bp(left), py_bp_to_bp(right)));
   }
 
   Py_XDECREF(id);
@@ -1173,9 +1153,7 @@ static PyObject *py_binary_partition_object() {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   // Return value: Borrowed reference
   static PyObject *bp_type = NULL;
-  if (bp_type == NULL) {
-    bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition");
-  }
+  if (bp_type == NULL) { bp_type = PyObject_GetAttrString(get_meep_mod(), "BinaryPartition"); }
   return bp_type;
   ;
 }
@@ -1184,7 +1162,7 @@ static PyObject *py_binary_partition_object() {
 static PyObject *bp_to_py_bp(const meep::binary_partition *bp) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *bp_class = py_binary_partition_object();
-  PyObject *args = PyTuple_New(0);  // no numbered arguments to pass
+  PyObject *args = PyTuple_New(0); // no numbered arguments to pass
   if (bp->is_leaf()) {
     // leaf nodes will have proc_id and no other properties
     int proc_id = bp->get_proc_id();
@@ -1193,19 +1171,18 @@ static PyObject *bp_to_py_bp(const meep::binary_partition *bp) {
     Py_DECREF(args);
     Py_DECREF(kwargs);
     return py_bp;
-  } else {
+  }
+  else {
     // other nodes will have left, right, split_dir, split_pos
     PyObject *left = bp_to_py_bp(bp->left_tree());
     PyObject *right = bp_to_py_bp(bp->right_tree());
     meep::direction split_dir = bp->get_plane().dir;
     double split_pos = bp->get_plane().pos;
-    PyObject *kwargs =
-        Py_BuildValue("{s:O,s:O,s:i,s:d}", "left", left, "right", right,
-                      "split_dir", split_dir, "split_pos", split_pos);
+    PyObject *kwargs = Py_BuildValue("{s:O,s:O,s:i,s:d}", "left", left, "right", right, "split_dir",
+                                     split_dir, "split_pos", split_pos);
     PyObject *py_bp = PyObject_Call(bp_class, args, kwargs);
     Py_DECREF(args);
     Py_DECREF(kwargs);
     return py_bp;
-  }
-  ;
+  };
 }

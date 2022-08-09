@@ -1,7 +1,7 @@
 namespace meep {
 
 #ifndef SWIG_PYTHON_THREAD_SCOPED_BLOCK
-#define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
+#define SWIG_PYTHON_THREAD_SCOPED_BLOCK SWIG_PYTHON_THREAD_BEGIN_BLOCK
 #endif
 
 // like custom_src_time, but using Python function object, with proper reference counting

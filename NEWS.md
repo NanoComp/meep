@@ -1,5 +1,15 @@
 # Meep Release Notes
 
+## Meep 1.24.0
+
+7/21/2022
+
+* Support for adjoint gradients of local density of states (LDOS) ([#2077]).
+
+* Improvements to memory usage of adjoint solver ([#1855]).
+
+* Various bugfixes ([#1959], [#2044], [#2066], [#2073], [#2079], [#2091], [#2095], [#2114]) and additional unit tests ([#2032], [#2049], [#2053], [#2076], [#2082]).
+
 ## Meep 1.23.0
 
 4/6/2022

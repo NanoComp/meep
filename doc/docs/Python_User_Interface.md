@@ -80,7 +80,7 @@ control various parameters of the Meep computation.
 </div>
 
 
-   
+
 <a id="Simulation.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -356,7 +356,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 </div>
 
 </div>
-   
+
 <a id="Simulation.run"></a>
 
 <div class="class_members" markdown="1">

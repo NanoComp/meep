@@ -1,19 +1,21 @@
-# -*- coding: utf-8 -*-
 import functools
 import math
-import os
 import numbers
+import os
 import re
 import sys
 import time
 
 import h5py
 import numpy as np
-import meep as mp
-from . import mode_solver, with_hermitian_epsilon
 from meep.geom import init_do_averaging
 from meep.simulation import get_num_args
 from meep.verbosity_mgr import Verbosity
+
+import meep as mp
+
+from . import mode_solver, with_hermitian_epsilon
+
 try:
     basestring
 except NameError:
@@ -23,10 +25,10 @@ U_MIN = 0
 U_PROD = 1
 U_MEAN = 2
 
-verbosity = Verbosity(mp.cvar, 'meep', 1)
+verbosity = Verbosity(mp.cvar, "meep", 1)
+
 
 class MPBArray(np.ndarray):
-
     def __new__(cls, input_array, lattice, kpoint=None, bloch_phase=False):
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
@@ -64,53 +66,54 @@ class MPBArray(np.ndarray):
         # method sees all creation of default objects - with the
         # MPBArray.__new__ constructor, but also with
         # arr.view(MPBArray).
-        self.lattice = getattr(obj, 'lattice', None)
-        self.kpoint = getattr(obj, 'kpoint', None)
-        self.bloch_phase = getattr(obj, 'bloch_phase', False)
+        self.lattice = getattr(obj, "lattice", None)
+        self.kpoint = getattr(obj, "kpoint", None)
+        self.bloch_phase = getattr(obj, "bloch_phase", False)
 
 
-class ModeSolver(object):
-
-    def __init__(self,
-                 resolution=10,
-                 is_negative_epsilon_ok=False,
-                 eigensolver_flops=0,
-                 eigensolver_flags=68,
-                 use_simple_preconditioner=False,
-                 force_mu=False,
-                 mu_input_file='',
-                 epsilon_input_file='',
-                 mesh_size=3,
-                 target_freq=0.0,
-                 tolerance=1.0e-7,
-                 num_bands=1,
-                 k_points=None,
-                 ensure_periodicity=True,
-                 geometry=None,
-                 geometry_lattice=mp.Lattice(),
-                 geometry_center=mp.Vector3(0, 0, 0),
-                 default_material=mp.Medium(epsilon=1),
-                 dimensions=3,
-                 random_fields=False,
-                 filename_prefix='',
-                 deterministic=False,
-                 verbose=False,
-                 optimize_grid_size=True,
-                 eigensolver_nwork=3,
-                 eigensolver_block_size=-11):
+class ModeSolver:
+    def __init__(
+        self,
+        resolution=10,
+        is_negative_epsilon_ok=False,
+        eigensolver_flops=0,
+        eigensolver_flags=68,
+        use_simple_preconditioner=False,
+        force_mu=False,
+        mu_input_file="",
+        epsilon_input_file="",
+        mesh_size=3,
+        target_freq=0.0,
+        tolerance=1.0e-7,
+        num_bands=1,
+        k_points=None,
+        ensure_periodicity=True,
+        geometry=None,
+        geometry_lattice=mp.Lattice(),
+        geometry_center=mp.Vector3(0, 0, 0),
+        default_material=mp.Medium(epsilon=1),
+        dimensions=3,
+        random_fields=False,
+        filename_prefix="",
+        deterministic=False,
+        verbose=False,
+        optimize_grid_size=True,
+        eigensolver_nwork=3,
+        eigensolver_block_size=-11,
+    ):
 
         self.mode_solver = None
         self.resolution = resolution
         self.eigensolver_flags = eigensolver_flags
-        self.k_points = k_points if k_points else []
-        self.geometry = geometry if geometry else []
+        self.k_points = k_points or []
+        self.geometry = geometry or []
         self.geometry_lattice = geometry_lattice
         self.geometry_center = mp.Vector3(*geometry_center)
         self.default_material = default_material
         self.random_fields = random_fields
         self.filename_prefix = filename_prefix
         self.optimize_grid_size = optimize_grid_size
-        self.parity = ''
+        self.parity = ""
         self.iterations = 0
         self.all_freqs = None
         self.freqs = []
@@ -123,7 +126,9 @@ class ModeSolver(object):
 
         grid_size = self._adjust_grid_size()
 
-        if type(self.default_material) is not mp.Medium and callable(self.default_material):
+        if type(self.default_material) is not mp.Medium and callable(
+            self.default_material
+        ):
             init_do_averaging(self.default_material)
             self.default_material.eps = False
 
@@ -170,7 +175,7 @@ class ModeSolver(object):
             self._resolution = [val.x, val.y, val.z]
         else:
             t = type(val)
-            raise TypeError("resolution must be a number or a Vector3: Got {}".format(t))
+            raise TypeError(f"resolution must be a number or a Vector3: Got {t}")
 
         if self.mode_solver:
             self.mode_solver.resolution = self._resolution
@@ -323,14 +328,14 @@ class ModeSolver(object):
 
     def get_filename_prefix(self):
         if self.filename_prefix:
-            return self.filename_prefix + '-'
-        else:
-            _, filename = os.path.split(sys.argv[0])
+            return f"{self.filename_prefix}-"
+        _, filename = os.path.split(sys.argv[0])
 
-            if filename == 'ipykernel_launcher.py' or filename == '__main__.py':
-                return ''
-            else:
-                return re.sub(r'\.py$', '', filename) + '-'
+        return (
+            ""
+            if filename in ["ipykernel_launcher.py", "__main__.py"]
+            else re.sub(r"\.py$", "", filename) + "-"
+        )
 
     def get_freqs(self):
         return self.mode_solver.get_freqs()
@@ -362,7 +367,7 @@ class ModeSolver(object):
 
         flat_res = res.ravel()
         self.mode_solver.set_curfield_cmplx(flat_res)
-        self.mode_solver.set_curfield_type('v')
+        self.mode_solver.set_curfield_type("v")
 
         arr = np.reshape(res, dims)
         return MPBArray(arr, self.get_lattice(), self.current_k)
@@ -376,16 +381,16 @@ class ModeSolver(object):
         return self.get_curfield_as_array(False)
 
     def get_bfield(self, which_band, bloch_phase=True):
-        return self._get_field('b', which_band, bloch_phase)
+        return self._get_field("b", which_band, bloch_phase)
 
     def get_efield(self, which_band, bloch_phase=True):
-        return self._get_field('e', which_band, bloch_phase)
+        return self._get_field("e", which_band, bloch_phase)
 
     def get_dfield(self, which_band, bloch_phase=True):
-        return self._get_field('d', which_band, bloch_phase)
+        return self._get_field("d", which_band, bloch_phase)
 
     def get_hfield(self, which_band, bloch_phase=True):
-        return self._get_field('h', which_band, bloch_phase)
+        return self._get_field("h", which_band, bloch_phase)
 
     def get_charge_density(self, which_band, bloch_phase=True):
         self.get_efield(which_band, bloch_phase)
@@ -393,15 +398,17 @@ class ModeSolver(object):
 
     def _get_field(self, f, band, bloch_phase):
         if self.mode_solver is None:
-            raise ValueError("Must call a run function before attempting to get a field")
+            raise ValueError(
+                "Must call a run function before attempting to get a field"
+            )
 
-        if f == 'b':
+        if f == "b":
             self.mode_solver.get_bfield(band)
-        elif f == 'd':
+        elif f == "d":
             self.mode_solver.get_dfield(band)
-        elif f == 'e':
+        elif f == "e":
             self.mode_solver.get_efield(band)
-        elif f == 'h':
+        elif f == "h":
             self.mode_solver.get_hfield(band)
 
         dims = self.mode_solver.get_dims()
@@ -418,9 +425,9 @@ class ModeSolver(object):
         self.mode_solver.get_curfield_cmplx(arr)
 
         arr = np.reshape(arr, dims)
-        res = MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
-
-        return res
+        return MPBArray(
+            arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase
+        )
 
     def get_curfield_as_array(self, bloch_phase=True):
         dims = self.mode_solver.get_dims()
@@ -428,7 +435,9 @@ class ModeSolver(object):
         self.mode_solver.get_curfield(arr)
         arr = np.reshape(arr, dims)
 
-        return MPBArray(arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase)
+        return MPBArray(
+            arr, self.get_lattice(), self.current_k, bloch_phase=bloch_phase
+        )
 
     def get_dpwr(self, band):
         self.get_dfield(band, False)
@@ -465,7 +474,7 @@ class ModeSolver(object):
         tot_pwr = epwr + hpwr
 
         self.mode_solver.set_curfield(tot_pwr.ravel())
-        self.mode_solver.set_curfield_type('R')
+        self.mode_solver.set_curfield_type("R")
 
         return MPBArray(tot_pwr, self.get_lattice(), self.current_k, bloch_phase=False)
 
@@ -479,13 +488,13 @@ class ModeSolver(object):
         self.mode_solver.set_eigenvectors(first_band - 1, ev.flatten())
 
     def save_eigenvectors(self, filename):
-        with h5py.File(filename, 'w') as f:
+        with h5py.File(filename, "w") as f:
             ev = self.get_eigenvectors(1, self.num_bands)
-            f['rawdata'] = ev
+            f["rawdata"] = ev
 
     def load_eigenvectors(self, filename):
-        with h5py.File(filename, 'r') as f:
-            ev = f['rawdata'][()]
+        with h5py.File(filename, "r") as f:
+            ev = f["rawdata"][()]
             self.set_eigenvectors(ev, 1)
             self.mode_solver.curfield_reset()
 
@@ -495,24 +504,22 @@ class ModeSolver(object):
     # Here, we update this data with a new list of band frequencies, and return the new
     # data.  If band-range-data is null or too short, the needed entries will be created.
     def update_band_range_data(self, brd, freqs, kpoint):
-
         def update_brd(brd, freqs, br_start):
             if not freqs:
                 return br_start + brd
-            else:
-                br = ((mp.inf, -1), (-mp.inf, -1)) if not brd else brd[0]
-                br_rest = [] if not brd else brd[1:]
-                newmin = (freqs[0], kpoint) if freqs[0] < br[0][0] else br[0]
-                newmax = (freqs[0], kpoint) if freqs[0] > br[1][0] else br[1]
-                new_start = br_start + [(newmin, newmax)]
-                return update_brd(br_rest, freqs[1:], new_start)
+            br = brd[0] if brd else ((mp.inf, -1), (-mp.inf, -1))
+            br_rest = brd[1:] if brd else []
+            newmin = (freqs[0], kpoint) if freqs[0] < br[0][0] else br[0]
+            newmax = (freqs[0], kpoint) if freqs[0] > br[1][0] else br[1]
+            new_start = br_start + [(newmin, newmax)]
+            return update_brd(br_rest, freqs[1:], new_start)
 
         return update_brd(brd, freqs, [])
 
     def output_band_range_data(self, br_data):
         if verbosity.mpb > 0:
+            fmt = "Band {} range: {} at {} to {} at {}"
             for tup, band in zip(br_data, range(1, len(br_data) + 1)):
-                fmt = "Band {} range: {} at {} to {} at {}"
                 min_band, max_band = tup
                 min_freq, min_kpoint = min_band
                 max_freq, max_kpoint = max_band
@@ -521,27 +528,30 @@ class ModeSolver(object):
     # Output any gaps in the given band ranges, and return a list of the gaps as
     # a list of (percent, freq-min, freq-max) tuples.
     def output_gaps(self, br_data):
-
         def ogaps(br_cur, br_rest, i, gaps):
             if not br_rest:
-                ordered_gaps = []
                 gaps = list(reversed(gaps))
-                for i in range(0, len(gaps), 3):
-                    ordered_gaps.append((gaps[i + 2], gaps[i + 1], gaps[i]))
-                return ordered_gaps
+                return [
+                    (gaps[i + 2], gaps[i + 1], gaps[i]) for i in range(0, len(gaps), 3)
+                ]
             else:
                 br_rest_min_f = br_rest[0][0][0]
                 br_cur_max_f = br_cur[1][0]
                 if br_cur_max_f >= br_rest_min_f:
                     return ogaps(br_rest[0], br_rest[1:], i + 1, gaps)
-                else:
-                    gap_size = ((200 * (br_rest_min_f - br_cur_max_f)) /
-                                (br_rest_min_f + br_cur_max_f))
-                    if verbosity.mpb > 0:
-                        fmt = "Gap from band {} ({}) to band {} ({}), {}%"
-                        print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
-                    return ogaps(br_rest[0], br_rest[1:], i + 1,
-                                 [gap_size, br_cur_max_f, br_rest_min_f] + gaps)
+                gap_size = (200 * (br_rest_min_f - br_cur_max_f)) / (
+                    br_rest_min_f + br_cur_max_f
+                )
+                if verbosity.mpb > 0:
+                    fmt = "Gap from band {} ({}) to band {} ({}), {}%"
+                    print(fmt.format(i, br_cur_max_f, i + 1, br_rest_min_f, gap_size))
+                return ogaps(
+                    br_rest[0],
+                    br_rest[1:],
+                    i + 1,
+                    [gap_size, br_cur_max_f, br_rest_min_f] + gaps,
+                )
+
         if not br_data:
             return []
         else:
@@ -565,7 +575,6 @@ class ModeSolver(object):
     # given by index (in 0..num-1), along with the index in L of the first
     # element of the piece, as a list: [first-index, piece-of-L]
     def list_split(self, l, num, index):
-
         def list_sub(l, start, length, index, rest):
             if not l:
                 return list(reversed(rest))
@@ -615,39 +624,36 @@ class ModeSolver(object):
         curfield_type = self.mode_solver.get_curfield_type()
         output_k = self.mode_solver.get_output_k()
 
-        if curfield_type in 'Rv':
+        if curfield_type in "Rv":
             # Generic scalar/vector field. Don't know k
             output_k = [0, 0, 0]
 
-        if curfield_type in 'dhbecv':
+        if curfield_type in "dhbecv":
             self._output_vector_field(curfield_type, fname_prefix, output_k, component)
-        elif curfield_type == 'C':
+        elif curfield_type == "C":
             self._output_complex_scalar_field(fname_prefix, output_k)
-        elif curfield_type in 'DHBnmR':
+        elif curfield_type in "DHBnmR":
             self._output_scalar_field(curfield_type, fname_prefix)
         else:
-            raise ValueError("Unkown field type: {}".format(curfield_type))
+            raise ValueError(f"Unkown field type: {curfield_type}")
 
         self.mode_solver.curfield_reset()
 
     def _output_complex_scalar_field(self, fname_prefix, output_k):
-        curfield_type = 'C'
+        curfield_type = "C"
         kpoint_index = self.mode_solver.get_kpoint_index()
         curfield_band = self.mode_solver.curfield_band
-        fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+        fname = f"{curfield_type}.k{kpoint_index:02d}.b{curfield_band:02d}"
         description = "{} field, kpoint {}, band {}, freq={:.6g}".format(
-            curfield_type,
-            kpoint_index,
-            curfield_band,
-            self.freqs[curfield_band - 1]
+            curfield_type, kpoint_index, curfield_band, self.freqs[curfield_band - 1]
         )
         fname = self._create_fname(fname, fname_prefix, True)
         if verbosity.mpb > 0:
-            print("Outputting complex scalar field to {}...".format(fname))
+            print(f"Outputting complex scalar field to {fname}...")
 
-        with h5py.File(fname, 'w') as f:
-            f['description'] = description.encode()
-            f['Bloch wavevector'] = np.array(output_k)
+        with h5py.File(fname, "w") as f:
+            f["description"] = description.encode()
+            f["Bloch wavevector"] = np.array(output_k)
             self._write_lattice_vectors(f)
 
             dims = self.mode_solver.get_dims()
@@ -656,35 +662,32 @@ class ModeSolver(object):
 
             reshaped_field = field.reshape(dims)
 
-            f['c.r'] = np.real(reshaped_field)
-            f['c.i'] = np.imag(reshaped_field)
+            f["c.r"] = np.real(reshaped_field)
+            f["c.i"] = np.imag(reshaped_field)
 
     def _output_vector_field(self, curfield_type, fname_prefix, output_k, component):
-        components = ['x', 'y', 'z']
+        components = ["x", "y", "z"]
         kpoint_index = self.mode_solver.get_kpoint_index()
         curfield_band = self.mode_solver.curfield_band
-        fname = "{}.k{:02d}.b{:02d}".format(curfield_type, kpoint_index, curfield_band)
+        fname = f"{curfield_type}.k{kpoint_index:02d}.b{curfield_band:02d}"
 
         if component >= 0:
-            fname += ".{}".format(components[component])
+            fname += f".{components[component]}"
 
         description = "{} field, kpoint {}, band {}, freq={:.6g}".format(
-            curfield_type,
-            kpoint_index,
-            curfield_band,
-            self.freqs[curfield_band - 1]
+            curfield_type, kpoint_index, curfield_band, self.freqs[curfield_band - 1]
         )
 
         fname = self._create_fname(fname, fname_prefix, True)
         if verbosity.mpb > 0:
-            print("Outputting fields to {}...".format(fname))
+            print(f"Outputting fields to {fname}...")
 
-        with h5py.File(fname, 'w') as f:
-            f['description'] = description.encode()
-            f['Bloch wavevector'] = np.array(output_k)
+        with h5py.File(fname, "w") as f:
+            f["description"] = description.encode()
+            f["Bloch wavevector"] = np.array(output_k)
             self._write_lattice_vectors(f)
 
-            if curfield_type != 'v':
+            if curfield_type != "v":
                 self.mode_solver.multiply_bloch_phase()
 
             for c_idx, c in enumerate(components):
@@ -696,70 +699,70 @@ class ModeSolver(object):
                 self.mode_solver.get_curfield_cmplx(field)
                 component_field = field[c_idx::3].reshape(dims)
 
-                name = "{}.r".format(c)
+                name = f"{c}.r"
                 f[name] = np.real(component_field)
-                name = "{}.i".format(c)
+                name = f"{c}.i"
                 f[name] = np.imag(component_field)
 
     def _output_scalar_field(self, curfield_type, fname_prefix):
-        components = ['x', 'y', 'z']
+        components = ["x", "y", "z"]
 
-        if curfield_type == 'n':
-            fname = 'epsilon'
-            description = 'dielectric function, epsilon'
-        elif curfield_type == 'm':
-            fname = 'mu'
-            description = 'permeability mu'
+        if curfield_type == "n":
+            fname = "epsilon"
+            description = "dielectric function, epsilon"
+        elif curfield_type == "m":
+            fname = "mu"
+            description = "permeability mu"
         else:
             kpoint_index = self.mode_solver.get_kpoint_index()
             curfield_band = self.mode_solver.curfield_band
-            fname = "{}pwr.k{:02d}.b{:02d}".format(curfield_type.lower(),
-                                                   kpoint_index, curfield_band)
+            fname = "{}pwr.k{:02d}.b{:02d}".format(
+                curfield_type.lower(), kpoint_index, curfield_band
+            )
             descr_fmt = "{} field energy density, kpoint {}, band {}, freq={:.6g}"
-            description = descr_fmt.format(curfield_type, kpoint_index, curfield_band,
-                                           self.freqs[curfield_band - 1])
+            description = descr_fmt.format(
+                curfield_type,
+                kpoint_index,
+                curfield_band,
+                self.freqs[curfield_band - 1],
+            )
 
-        parity_suffix = False if curfield_type in 'mn' else True
+        parity_suffix = curfield_type not in "mn"
         fname = self._create_fname(fname, fname_prefix, parity_suffix)
         if verbosity.mpb > 0:
-            print("Outputting {}...".format(fname))
+            print(f"Outputting {fname}...")
 
-        with h5py.File(fname, 'w') as f:
-            f['description'] = description.encode()
-            self._create_h5_dataset(f, 'data')
+        with h5py.File(fname, "w") as f:
+            f["description"] = description.encode()
+            self._create_h5_dataset(f, "data")
             self._write_lattice_vectors(f)
 
-            if curfield_type == 'n':
+            if curfield_type == "n":
                 for inv in [False, True]:
-                    inv_str = 'epsilon_inverse' if inv else 'epsilon'
+                    inv_str = "epsilon_inverse" if inv else "epsilon"
                     for c1 in range(3):
                         for c2 in range(c1, 3):
                             self.mode_solver.get_epsilon_tensor(c1, c2, 0, inv)
-                            dataname = "{}.{}{}".format(inv_str, components[c1],
-                                                        components[c2])
+                            dataname = f"{inv_str}.{components[c1]}{components[c2]}"
                             self._create_h5_dataset(f, dataname)
 
                             if with_hermitian_epsilon() and c1 != c2:
                                 self.mode_solver.get_epsilon_tensor(c1, c2, 1, inv)
-                                dataname += '.i'
+                                dataname += ".i"
                                 self._create_h5_dataset(f, dataname)
 
     def _write_lattice_vectors(self, h5file):
         lattice = np.zeros((3, 3))
         self.mode_solver.get_lattice(lattice)
-        h5file['lattice vectors'] = lattice
+        h5file["lattice vectors"] = lattice
 
     def _create_h5_dataset(self, h5file, key):
         h5file[key] = self.get_curfield_as_array(False)
 
     def _create_fname(self, fname, prefix, parity_suffix):
         parity_str = self.mode_solver.get_parity_string()
-        if parity_suffix and parity_str:
-            suffix = ".{}".format(parity_str)
-        else:
-            suffix = ''
-
-        return prefix + fname + suffix + '.h5'
+        suffix = f".{parity_str}" if parity_suffix and parity_str else ""
+        return prefix + fname + suffix + ".h5"
 
     def compute_field_energy(self):
         return self.mode_solver.compute_field_energy()
@@ -796,8 +799,9 @@ class ModeSolver(object):
         return self.mode_solver.compute_1_group_velocity(which_band)
 
     def compute_one_group_velocity_component(self, direction, which_band):
-        return self.mode_solver.compute_1_group_velocity_component(direction,
-                                                                   which_band)
+        return self.mode_solver.compute_1_group_velocity_component(
+            direction, which_band
+        )
 
     def compute_zparities(self):
         return self.mode_solver.compute_zparities()
@@ -809,12 +813,12 @@ class ModeSolver(object):
         self.mode_solver.randomize_fields()
 
     def display_kpoint_data(self, name, data):
-        k_index = self.mode_solver.get_kpoint_index()
         if verbosity.mpb > 0:
-            print("{}{}:, {}".format(self.parity, name, k_index), end='')
+            k_index = self.mode_solver.get_kpoint_index()
+            print(f"{self.parity}{name}:, {k_index}", end="")
 
             for d in data:
-                print(", {}".format(d), end='')
+                print(f", {d}", end="")
             print()
 
     def display_eigensolver_stats(self):
@@ -828,27 +832,29 @@ class ModeSolver(object):
         mean_iters = np.mean(self.eigensolver_iters)
         if verbosity.mpb > 0:
             fmt = "eigensolver iterations for {} kpoints: {}-{}, mean = {}"
-            print(fmt.format(num_runs, min_iters, max_iters, mean_iters), end='')
+            print(fmt.format(num_runs, min_iters, max_iters, mean_iters), end="")
 
         sorted_iters = sorted(self.eigensolver_iters)
         idx1 = num_runs // 2
         idx2 = ((num_runs + 1) // 2) - 1
         median_iters = 0.5 * (sorted_iters[idx1] + sorted_iters[idx2])
         if verbosity.mpb > 0:
-            print(", median = {}".format(median_iters))
+            print(f", median = {median_iters}")
 
         mean_flops = self.eigensolver_flops / (num_runs * mean_iters)
         if verbosity.mpb > 0:
-            print("mean flops per iteration = {}".format(mean_flops))
+            print(f"mean flops per iteration = {mean_flops}")
 
         mean_time = self.total_run_time / (mean_iters * num_runs)
         if verbosity.mpb > 0:
-            print("mean time per iteration = {} s".format(mean_time))
+            print(f"mean time per iteration = {mean_time} s")
 
     def _get_grid_size(self):
-        grid_size = mp.Vector3(self.resolution[0] * self.geometry_lattice.size.x,
-                               self.resolution[1] * self.geometry_lattice.size.y,
-                               self.resolution[2] * self.geometry_lattice.size.z)
+        grid_size = mp.Vector3(
+            self.resolution[0] * self.geometry_lattice.size.x,
+            self.resolution[1] * self.geometry_lattice.size.y,
+            self.resolution[2] * self.geometry_lattice.size.z,
+        )
 
         grid_size.x = max(math.ceil(grid_size.x), 1)
         grid_size.y = max(math.ceil(grid_size.y), 1)
@@ -863,13 +869,10 @@ class ModeSolver(object):
         return grid_size
 
     def next_factor2357(self, n):
-
         def is_factor2357(n):
-
             def divby(n, p):
-                if n % p == 0:
-                    return divby(n // p, p)
-                return n
+                return divby(n // p, p) if n % p == 0 else n
+
             return divby(divby(divby(divby(n, 2), 3), 5), 7) == 1
 
         if is_factor2357(n):
@@ -899,7 +902,7 @@ class ModeSolver(object):
 
         if verbosity.mpb > 0:
             print("Initializing eigensolver data")
-            print("Computing {} bands with {} tolerance".format(self.num_bands, self.tolerance))
+            print(f"Computing {self.num_bands} bands with {self.tolerance} tolerance")
 
         self.init_params(p, reset_fields)
 
@@ -907,12 +910,12 @@ class ModeSolver(object):
             self.load_eigenvectors(reset_fields)
 
         if verbosity.mpb > 0:
-            print("{} k-points".format(len(self.k_points)))
+            print(f"{len(self.k_points)} k-points")
 
             for kp in self.k_points:
-                print("  {}".format(kp))
+                print(f"  {kp}")
 
-            print("elapsed time for initialization: {}".format(time.time() - init_time))
+            print(f"elapsed time for initialization: {time.time() - init_time}")
 
         # TODO: Split over multiple processes
         # k_split = list_split(self.k_points, self.k_split_num, self.k_split_index)
@@ -926,10 +929,13 @@ class ModeSolver(object):
                 self.solve_kpoint(k)
                 self.iterations = self.mode_solver.get_iterations()
                 if verbosity.mpb > 0:
-                    print("elapsed time for k point: {}".format(time.time() - solve_kpoint_time))
+                    print(
+                        f"elapsed time for k point: {time.time() - solve_kpoint_time}"
+                    )
                 self.all_freqs[i, :] = np.array(self.freqs)
-                self.band_range_data = self.update_band_range_data(self.band_range_data,
-                                                                   self.freqs, k)
+                self.band_range_data = self.update_band_range_data(
+                    self.band_range_data, self.freqs, k
+                )
                 self.eigensolver_iters += [self.iterations / self.num_bands]
 
                 for f in band_functions:
@@ -942,8 +948,10 @@ class ModeSolver(object):
                             f(self, band)
                             band += 1
                     else:
-                        raise ValueError("Band function should take 1 or 2 arguments. "
-                                         "The first must be a ModeSolver instance")
+                        raise ValueError(
+                            "Band function should take 1 or 2 arguments. "
+                            "The first must be a ModeSolver instance"
+                        )
 
             if len(k_split[1]) > 1:
                 self.output_band_range_data(self.band_range_data)
@@ -953,7 +961,7 @@ class ModeSolver(object):
 
         end = time.time() - start
         if verbosity.mpb > 0:
-            print("total elapsed time for run: {}".format(end))
+            print(f"total elapsed time for run: {end}")
         self.total_run_time += end
         self.eigensolver_flops = self.mode_solver.get_eigensolver_flops()
         self.parity = self.mode_solver.get_parity_string()
@@ -994,15 +1002,28 @@ class ModeSolver(object):
     run_tm_yeven = run_yeven_zodd
     run_tm_yodd = run_yodd_zodd
 
-    def find_k(self, p, omega, band_min, band_max, korig_and_kdir, tol,
-               kmag_guess, kmag_min, kmag_max, *band_funcs):
+    def find_k(
+        self,
+        p,
+        omega,
+        band_min,
+        band_max,
+        korig_and_kdir,
+        tol,
+        kmag_guess,
+        kmag_min,
+        kmag_max,
+        *band_funcs,
+    ):
 
         num_bands_save = self.num_bands
         kpoints_save = self.k_points
         nb = band_max - band_min + 1
         kdir = korig_and_kdir[1] if type(korig_and_kdir) is list else korig_and_kdir
         lat = self.geometry_lattice
-        kdir1 = mp.cartesian_to_reciprocal(mp.reciprocal_to_cartesian(kdir, lat).unit(), lat)
+        kdir1 = mp.cartesian_to_reciprocal(
+            mp.reciprocal_to_cartesian(kdir, lat).unit(), lat
+        )
 
         if type(korig_and_kdir) is list:
             korig = korig_and_kdir[0]
@@ -1019,15 +1040,13 @@ class ModeSolver(object):
         bktab = {}
 
         def rootfun(b):
-
             def _rootfun(k):
                 # First, look in the cached table
                 tab_val = bktab.get((b, k), None)
                 if tab_val:
                     if verbosity.mpb > 0:
-                        print("find-k {} at {}: {} (cached)".format(b, k, tab_val[0]))
+                        print(f"find-k {b} at {k}: {tab_val[0]} (cached)")
                     return tab_val
-                # Otherwise, compute bands and cache results
                 else:
                     self.num_bands = b
                     self.k_points = [korig + kdir1.scale(k)]
@@ -1035,9 +1054,11 @@ class ModeSolver(object):
                     v = self.mode_solver.compute_group_velocity_component(kdir1)
 
                     # Cache computed values
-                    for _b, _f, _v in zip(range(band_min, b - band_min + 1, 1),
-                                          self.freqs[band_min - 1:],
-                                          v[band_min - 1:]):
+                    for _b, _f, _v in zip(
+                        range(band_min, b - band_min + 1),
+                        self.freqs[band_min - 1 :],
+                        v[band_min - 1 :],
+                    ):
                         tabval = bktab.get((_b, k0s[_b - band_min]), None)
 
                         if not tabval or abs(_f - omega) < abs(tabval[0]):
@@ -1047,7 +1068,7 @@ class ModeSolver(object):
 
                     fun = self.freqs[-1] - omega
                     if verbosity.mpb > 0:
-                        print("find-k {} at {}: {}".format(b, k, fun))
+                        print(f"find-k {b} at {k}: {fun}")
                     return (fun, v[-1])
 
             return _rootfun
@@ -1058,10 +1079,14 @@ class ModeSolver(object):
 
         ks = []
         for b in range(band_max, band_max - nb, -1):
-            ks.append(mp.find_root_deriv(rootfun(b), tol, kmag_min, kmag_max, k0s[b - band_min]))
+            ks.append(
+                mp.find_root_deriv(
+                    rootfun(b), tol, kmag_min, kmag_max, k0s[b - band_min]
+                )
+            )
 
         if band_funcs:
-            for b, k in zip(range(1, band_max +1), reversed(ks)):
+            for b, k in zip(range(1, band_max + 1), reversed(ks)):
                 self.num_bands = b
                 self.k_points = [korig + kdir1.scale(k)]
 
@@ -1076,13 +1101,16 @@ class ModeSolver(object):
         self.k_points = kpoints_save
         ks = list(reversed(ks))
         if verbosity.mpb > 0:
-            print("{}kvals:, {}, {}, {}".format(self.parity, omega, band_min, band_max), end='')
+            print(
+                f"{self.parity}kvals:, {omega}, {band_min}, {band_max}",
+                end="",
+            )
             for k in korig:
-                print(", {}".format(k), end='')
+                print(f", {k}", end="")
             for k in kdir1:
-                print(", {}".format(k), end='')
+                print(f", {k}", end="")
             for k in ks:
-                print(", {}".format(k), end='')
+                print(f", {k}", end="")
             print()
 
         return ks
@@ -1092,23 +1120,29 @@ class ModeSolver(object):
         Function to convert a k-point k into an equivalent point in the
         first Brillouin zone (not necessarily the irreducible Brillouin zone)
         """
+
         def n(k):
             return mp.reciprocal_to_cartesian(k, self.geometry_lattice).norm()
 
         def try_plus(k, v):
-            if n(k + v) < n(k):
-                return try_plus(k + v, v)
-            else:
-                return k
+            return try_plus(k + v, v) if n(k + v) < n(k) else k
 
         def _try(k, v):
             return try_plus(try_plus(k, v), mp.Vector3() - v)
 
         try_list = [
-            mp.Vector3(1, 0, 0), mp.Vector3(0, 1, 0), mp.Vector3(0, 0, 1),
-            mp.Vector3(0, 1, 1), mp.Vector3(1, 0, 1), mp.Vector3(1, 1, 0),
-            mp.Vector3(0, 1, -1), mp.Vector3(1, 0, -1), mp.Vector3(1, -1, 0),
-            mp.Vector3(1, 1, 1), mp.Vector3(-1, 1, 1), mp.Vector3(1, -1, 1),
+            mp.Vector3(1, 0, 0),
+            mp.Vector3(0, 1, 0),
+            mp.Vector3(0, 0, 1),
+            mp.Vector3(0, 1, 1),
+            mp.Vector3(1, 0, 1),
+            mp.Vector3(1, 1, 0),
+            mp.Vector3(0, 1, -1),
+            mp.Vector3(1, 0, -1),
+            mp.Vector3(1, -1, 0),
+            mp.Vector3(1, 1, 1),
+            mp.Vector3(-1, 1, 1),
+            mp.Vector3(1, -1, 1),
             mp.Vector3(1, 1, -1),
         ]
 
@@ -1131,15 +1165,16 @@ class ModeSolver(object):
 
     def compute_symmetry(self, band, W, w):
         return self.mode_solver.compute_symmetry(band, W, w)
-   
+
     def compute_symmetries(self, W, w):
-        symvals = []
-        for band in range(1, self.num_bands+1):
-            symvals.append(self.mode_solver.compute_symmetry(band, W, w))
-        return symvals
+        return [
+            self.mode_solver.compute_symmetry(band, W, w)
+            for band in range(1, self.num_bands + 1)
+        ]
 
 
 # Predefined output functions (functions of the band index), for passing to `run`
+
 
 def output_hfield(ms, which_band):
     ms.get_hfield(which_band, False)
@@ -1235,7 +1270,7 @@ def output_dpwr(ms, which_band):
 
 def output_tot_pwr(ms, which_band):
     ms.get_tot_pwr(which_band)
-    ms.output_field_to_file(-1, ms.get_filename_prefix() + 'tot.')
+    ms.output_field_to_file(-1, f"{ms.get_filename_prefix()}tot.")
 
 
 def output_dpwr_in_objects(output_func, min_energy, objects=[]):
@@ -1267,38 +1302,39 @@ def output_charge_density(ms, which_band):
 
 def output_poynting(ms, which_band):
     ms.get_poynting(which_band)
-    ms.output_field_to_file(-1, ms.get_filename_prefix() + 'flux.')
+    ms.output_field_to_file(-1, f"{ms.get_filename_prefix()}flux.")
 
 
 def output_poynting_x(ms, which_band):
     ms.get_poynting(which_band)
-    ms.output_field_to_file(0, ms.get_filename_prefix() + 'flux.')
+    ms.output_field_to_file(0, f"{ms.get_filename_prefix()}flux.")
 
 
 def output_poynting_y(ms, which_band):
     ms.get_poynting(which_band)
-    ms.output_field_to_file(1, ms.get_filename_prefix() + 'flux.')
+    ms.output_field_to_file(1, f"{ms.get_filename_prefix()}flux.")
 
 
 def output_poynting_z(ms, which_band):
     ms.get_poynting(which_band)
-    ms.output_field_to_file(2, ms.get_filename_prefix() + 'flux.')
+    ms.output_field_to_file(2, f"{ms.get_filename_prefix()}flux.")
 
 
 def display_yparities(ms):
-    ms.display_kpoint_data('yparity', ms.mode_solver.compute_yparities())
+    ms.display_kpoint_data("yparity", ms.mode_solver.compute_yparities())
 
 
 def display_zparities(ms):
-    ms.display_kpoint_data('zparity', ms.mode_solver.compute_zparities())
+    ms.display_kpoint_data("zparity", ms.mode_solver.compute_zparities())
 
 
 def display_group_velocities(ms):
-    ms.display_kpoint_data('velocity', ms.compute_group_velocities())
+    ms.display_kpoint_data("velocity", ms.compute_group_velocities())
 
 
 # Band functions to pick a canonical phase for the eigenstate of the
 # given band based upon the spatial representation of the given field
+
 
 def fix_hfield_phase(ms, which_band):
     ms.get_hfield(which_band, False)
@@ -1343,6 +1379,7 @@ def combine_band_functions(*band_funcs):
     def _combine(ms, which_band):
         for f in band_funcs:
             apply_band_func(ms, f, which_band)
+
     return _combine
 
 

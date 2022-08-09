@@ -1,6 +1,5 @@
-from __future__ import division
-
 import math
+
 import meep as mp
 from meep import mpb
 
@@ -11,17 +10,19 @@ from meep import mpb
 
 # first, define the lattice vectors and k-points for a triangular lattice:
 
-geometry_lattice = mp.Lattice(size=mp.Vector3(1, 1),
-                              basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                              basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+geometry_lattice = mp.Lattice(
+    size=mp.Vector3(1, 1),
+    basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+    basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+)
 
 kz = 0  # use non-zero kz to consider vertical propagation
 
 k_points = [
-    mp.Vector3(z=kz),               # Gamma
-    mp.Vector3(0, 0.5, kz),         # M
+    mp.Vector3(z=kz),  # Gamma
+    mp.Vector3(0, 0.5, kz),  # M
     mp.Vector3(1 / -3, 1 / 3, kz),  # K
-    mp.Vector3(z=kz)                # Gamma
+    mp.Vector3(z=kz),  # Gamma
 ]
 
 k_interp = 4
@@ -44,7 +45,7 @@ ms = mpb.ModeSolver(
     k_points=k_points,
     default_material=default_material,
     resolution=resolution,
-    num_bands=num_bands
+    num_bands=num_bands,
 )
 
 
@@ -55,5 +56,6 @@ def main():
     else:
         ms.run()  # if kz != 0 there are no purely te and tm bands
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

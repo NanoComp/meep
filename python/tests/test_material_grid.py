@@ -12,6 +12,9 @@ try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
+
+import unittest
+
 import numpy as np
 import unittest
 
@@ -173,7 +176,6 @@ def compute_resonant_mode_mpb(resolution=512):
     return ms.freqs[0]
 
 class TestMaterialGrid(unittest.TestCase):
-
     def test_subpixel_smoothing(self):
         res = 25
 
@@ -215,17 +217,20 @@ class TestMaterialGrid(unittest.TestCase):
 
         # verify that the relative error is decreasing with increasing resolution
         # and is better than linear convergence because of subpixel smoothing
-        self.assertLess(abs(freq_matgrid[1]-freq_ref)*(res[1]/res[0]),
-                        abs(freq_matgrid[0]-freq_ref))
+        self.assertLess(
+            abs(freq_matgrid[1] - freq_ref) * (res[1] / res[0]),
+            abs(freq_matgrid[0] - freq_ref),
+        )
 
         # ensure that a material grid as a default material works
         freq_matgrid_default_mat = compute_resonant_mode_2d(res[0], rad, True)
         self.assertAlmostEqual(freq_matgrid[0], freq_matgrid_default_mat)
 
     def test_symmetry(self):
-            tran_nosym = compute_transmittance(False)
-            tran_sym = compute_transmittance(True)
-            self.assertAlmostEqual(tran_nosym, tran_sym, places=5)
+        tran_nosym = compute_transmittance(False)
+        tran_sym = compute_transmittance(True)
+        self.assertAlmostEqual(tran_nosym, tran_sym, places=5)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
