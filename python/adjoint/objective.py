@@ -20,9 +20,9 @@ EH_TRANSVERSE    = [ [mp.Hy, mp.Hz, mp.Ey, mp.Ez],
 #Holds the components for each current source
 #for the cases of x,y, and z normal vectors.
 #This is the same as swapping H and E in the above list
-JK_TRANSVERSE    = [ [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
-                     [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
-                     [mp.Ex, mp.Ey, mp.Hx, mp.Hy] ]
+JK_TRANSVERSE    = [ [mp.Ez, mp.Ey, mp.Hz, mp.Hy],
+                     [mp.Ex, mp.Ez, mp.Hx, mp.Hz],
+                     [mp.Ey, mp.Ex, mp.Hy, mp.Hx] ]
 
 class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.
@@ -511,31 +511,34 @@ class PoyntingFlux(ObjectiveQuantity):
         Note on yee_grid: For the Poynting Flux to work, H and E components
         must lie at the same points. Therefore, the Yee grid will always be false.
     """
-
-    def __init__(self, sim,volume, decimation_factor=0):
+    def __init__(
+        self,
+        sim,
+        volume,
+        scale = 1,
+        decimation_factor=0
+    ):
         super().__init__(sim)
         #_fit_volume_to_simulation increases the dimensionality of
         #the volume, so we'll use the user input volume
         self.volume = sim._fit_volume_to_simulation(volume)
         self.decimation_factor = decimation_factor
+        self.scale = scale
         #get_normal returns an index for the two 
         # dictionaries of cross products
         self.normal = self.get_normal(volume)
-        
 
-    
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
-        
+
         #Add the dft monitors for the interesting components
         self._monitor =self.sim.add_dft_fields(EH_TRANSVERSE[self.normal], 
                                             frequencies, 
                                             where = self.volume,
                                             yee_grid = False) 
-        
+
         return self._monitor
-    
-    
+
     def place_adjoint_source(self, dJ):
         dJ = np.atleast_1d(dJ)
         if dJ.ndim == 2:
@@ -574,8 +577,22 @@ class PoyntingFlux(ObjectiveQuantity):
                     center=self.volume.center,
                     amp_data = tuple_elements
                     ))
-        
         return source
+
+    def __call__(self):
+        self.field_component_evaluations = []
+        #Loop over the relevant field components for this case of normal vector
+        for field in EH_TRANSVERSE[self.normal]:
+            field_here = self.sim.get_dft_array(self._monitor,field,0)
+            self.field_component_evaluations.append(field_here) 
+        #Get weights for integration from cubature rule
+        self.metadata = self.sim.get_array_metadata(dft_cell = self._monitor)
+        flux_density =np.real(-(self.field_component_evaluations[0]*np.conj(self.field_component_evaluations[3])) + (np.conj(self.field_component_evaluations[2])*self.field_component_evaluations[1]))
+        #Apply cubature weights and user-supplied scale
+        self._eval =self.scale * np.sum(self.metadata[3]*flux_density)
+        return self._eval
+        
+    
     
     #returns 0,1, or 2 corresponding to x,y, or z normal vectors
     #TODO: Handle user-specified normal vectors and cases when 2d
@@ -597,25 +614,4 @@ class PoyntingFlux(ObjectiveQuantity):
             
         else :
             return "Supported volumes are 1d or 2d"
-
-    #Returns an array containing the Poynting Flux at each frequency point
-    #Note the first two FourierFields objectives are H fields, the second 
-    #two are E fields.
-    #This assumes all the normal vectors point in the positive x,y,or z 
-    #direction. The user may need to multiply by -1 to get the direction
-    #they expect if they're doing, for example, a box. 
-    #TODO: Add an extra parameter to let the user negate the flux, similar
-    #to the default meep ponynting flux
-    def __call__(self):
-        self.field_component_evaluations = []
-        #Loop over the relevant field components for this case of normal vector
-        for field in EH_TRANSVERSE[self.normal]:
-            field_here = self.sim.get_dft_array(self.monitor_list,field,0)
-            self.field_component_evaluations.append(field_here) 
-        #Get weights for integration from cubature rule
-        self.metadata = self.sim.get_array_metadata(dft_cell = self.monitor_list)
-        flux_density =np.real(-(self.field_component_evaluations[0]*np.conj(self.field_component_evaluations[3])) + (np.conj(self.field_component_evaluations[2])*self.field_component_evaluations[1]))
-        #Apply cubature weights
-        self._eval = np.sum(self.metadata[3]*flux_density)
-        return self._eval
 

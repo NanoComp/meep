@@ -342,6 +342,33 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         projected_field = mpa.tanh_projection(filtered_field, beta, eta)
 
         return projected_field.flatten()
+    
+    def test_Poynting_Flux(self):
+        print("*** TESTING POYNTING OBJECTIVE ***")
+
+        # test the single frequency and multi frequency cases
+        for frequencies in [[self.fcen], [1 / 1.58, self.fcen, 1 / 1.53]]:
+            # compute objective value and its gradient for unperturbed design
+            unperturbed_val, unperturbed_grad = self.adjoint_solver(
+                self.p, MonitorObject.POYNTING, frequencies
+            )
+
+            # compute objective value for perturbed design
+            perturbed_val = self.adjoint_solver(
+                self.p + self.dp, MonitorObject.POYNTING, frequencies, need_gradient=False
+            )
+
+            # compare directional derivative
+            if unperturbed_grad.ndim < 2:
+                unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
+            adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
+            fnd_dd = perturbed_val - unperturbed_val
+            print(
+                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
+            )
+
+            tol = 0.07 if mp.is_single_precision() else 0.006
+            self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_DFT_fields(self):
         print("*** TESTING DFT OBJECTIVE ***")
@@ -370,34 +397,6 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             tol = 0.07 if mp.is_single_precision() else 0.006
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             
-    def test_Poynting_Flux(self):
-        print("*** TESTING POYNTING OBJECTIVE ***")
-
-        # test the single frequency and multi frequency cases
-        for frequencies in [[self.fcen], [1 / 1.58, self.fcen, 1 / 1.53]]:
-            # compute objective value and its gradient for unperturbed design
-            unperturbed_val, unperturbed_grad = self.adjoint_solver(
-                self.p, MonitorObject.POYNTING, frequencies
-            )
-
-            # compute objective value for perturbed design
-            perturbed_val = self.adjoint_solver(
-                self.p + self.dp, MonitorObject.POYNTING, frequencies, need_gradient=False
-            )
-
-            # compare directional derivative
-            if unperturbed_grad.ndim < 2:
-                unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
-            adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
-            fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
-
-            tol = 0.07 if mp.is_single_precision() else 0.006
-            self.assertClose(adj_dd, fnd_dd, epsilon=tol)
-            
-
     def test_eigenmode(self):
         print("*** TESTING EIGENMODE OBJECTIVE ***")
 
