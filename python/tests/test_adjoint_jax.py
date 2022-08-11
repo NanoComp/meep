@@ -9,16 +9,20 @@ from utils import ApproxComparisonTestCase
 
 import meep as mp
 
-# The calculation of finite difference gradients requires that JAX be operated with double precision
+# The calculation of finite-difference gradients
+# requires that JAX be operated with double precision
 jax.config.update("jax_enable_x64", True)
 
-# The step size for the finite difference gradient calculation
+# The step size for the finite-difference
+# gradient calculation
 _FD_STEP = 1e-4
 
-# The tolerance for the adjoint and finite difference gradient comparison
+# The tolerance for the adjoint and finite-difference
+# gradient comparison
 _TOL = 0.1 if mp.is_single_precision() else 0.025
 
-# We expect 3 design region monitor pointers (one for each field component)
+# We expect 3 design region monitor pointers
+# (one for each field component)
 _NUM_DES_REG_MON = 3
 
 mp.verbosity(0)
@@ -257,8 +261,8 @@ class WrapperTest(ApproxComparisonTestCase):
                 frequencies,
             )
             monitor_values = wrapped_meep([x])
-            s1p, s1m, s2m, s2p = monitor_values
-            t = s2m / s1p if excite_port_idx == 0 else s1m / s2p
+            s1p, s1m, s2p, s2m = monitor_values
+            t = s2p / s1p if excite_port_idx == 0 else s1m / s2m
             return jnp.mean(jnp.square(jnp.abs(t)))
 
         value, adjoint_grad = jax.value_and_grad(loss_fn)(
