@@ -499,9 +499,10 @@ cvector3 matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   // iterate through object tree at current point
   if (tp) {
     do {
-      gradient = cvector_add(gradient,material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
-                                     (material_data *)tp->objects[oi].o->material,
-                                     tp->objects[oi].o));
+      gradient =
+          cvector_add(gradient, material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
+                                                   (material_data *)tp->objects[oi].o->material,
+                                                   tp->objects[oi].o));
       if (md->material_grid_kinds == material_data::U_DEFAULT) break;
       ++matgrid_val_count;
       tp = geom_tree_search_next(p, tp, &oi);
@@ -1173,18 +1174,18 @@ void kottke_algorithm(meep::component c, symm_matrix *chi1inv_matrix, symm_matri
   duals::duald Rot[3][3];
   eps1 = meps;
 
-  Rot[0][0] = cnormal.x.re + 1_e*cnormal.x.im;
-  Rot[1][0] = cnormal.y.re + 1_e*cnormal.y.im;
-  Rot[2][0] = cnormal.z.re + 1_e*cnormal.z.im;
+  Rot[0][0] = cnormal.x.re + 1_e * cnormal.x.im;
+  Rot[1][0] = cnormal.y.re + 1_e * cnormal.y.im;
+  Rot[2][0] = cnormal.z.re + 1_e * cnormal.z.im;
   if (fabs(cnormal.x.re) > 1e-2 || fabs(cnormal.y.re) > 1e-2) {
-    Rot[0][2] = cnormal.y.re + 1_e*cnormal.y.im;
-    Rot[1][2] = -(cnormal.x.re + 1_e*cnormal.x.im);
+    Rot[0][2] = cnormal.y.re + 1_e * cnormal.y.im;
+    Rot[1][2] = -(cnormal.x.re + 1_e * cnormal.x.im);
     Rot[2][2] = 0;
   }
   else { /* n is not parallel to z direction, use (x x n) instead */
     Rot[0][2] = 0;
-    Rot[1][2] = -(cnormal.z.re + 1_e*cnormal.z.im);
-    Rot[2][2] = cnormal.y.re + 1_e*cnormal.y.im;
+    Rot[1][2] = -(cnormal.z.re + 1_e * cnormal.z.im);
+    Rot[2][2] = cnormal.y.re + 1_e * cnormal.y.im;
   }
   { /* normalize second column */
     duals::duald s = Rot[0][2] * Rot[0][2] + Rot[1][2] * Rot[1][2] + Rot[2][2] * Rot[2][2];

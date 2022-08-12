@@ -22,6 +22,7 @@ _Z_AXIS = 1
 # default finite difference step size when calculating Aᵤ
 FD_DEFAULT = 1e-6
 
+
 class DesignRegion:
     def __init__(self, design_parameters, volume=None, size=None, center=mp.Vector3()):
         self.volume = volume or mp.Volume(center=center, size=size)

@@ -154,49 +154,70 @@ inline vector3 make_vector3(double x = 0.0, double y = 0.0, double z = 0.0) {
 }
 
 inline cvector3 cvector3_scale(number s, cvector3 v) {
-  return make_cvector3(vector3_scale(s,cvector3_re(v)),vector3_scale(s,cvector3_im(v)));
+  return make_cvector3(vector3_scale(s, cvector3_re(v)), vector3_scale(s, cvector3_im(v)));
 }
 
-inline cvector3 cvector_zero(){
-  return make_cvector3(make_vector3(),make_vector3());
+inline cvector3 cvector_zero() { return make_cvector3(make_vector3(), make_vector3()); }
+
+inline cvector3 cvector_add(cvector3 cv1, cvector3 cv2) {
+  return make_cvector3(vector3_plus(cvector3_re(cv1), cvector3_re(cv2)),
+                       vector3_plus(cvector3_im(cv1), cvector3_im(cv2)));
 }
 
-inline cvector3 cvector_add(cvector3 cv1, cvector3 cv2){
-  return make_cvector3(vector3_plus(cvector3_re(cv1),cvector3_re(cv2)),vector3_plus(cvector3_im(cv1),cvector3_im(cv2)));
-}
-
-struct symm_matrix{
+struct symm_matrix {
   duals::duald m00, m01, m02, m11, m12, m22;
-  struct symm_matrix& operator+=(const symm_matrix& rhs) { 
-    m00 += rhs.m00; m11 += rhs.m11; m22 += rhs.m22;
-    m01 += rhs.m01; m02 += rhs.m02; m12 += rhs.m12;
-    return *this; 
+  struct symm_matrix &operator+=(const symm_matrix &rhs) {
+    m00 += rhs.m00;
+    m11 += rhs.m11;
+    m22 += rhs.m22;
+    m01 += rhs.m01;
+    m02 += rhs.m02;
+    m12 += rhs.m12;
+    return *this;
   }
-  struct symm_matrix& operator+=(const duals::duald& k) { 
-    m00 += k; m11 += k; m22 += k;
-    return *this; 
-   }
-  struct symm_matrix& operator+(const symm_matrix& rhs) { 
-    m00 += rhs.m00; m11 += rhs.m11; m22 += rhs.m22;
-    m01 += rhs.m01; m02 += rhs.m02; m12 += rhs.m12;
-    return *this; 
-   }
-  struct symm_matrix& operator*( const duals::duald& k) { 
-    m00 *= k; m11 *= k; m22 *= k;
-    m01 *= k; m02 *= k; m12 *= k;
-    return *this; 
-   }
-  struct symm_matrix& operator/( const duals::duald& k) { 
-    m00 /= k; m11 /= k; m22 /= k;
-    m01 /= k; m02 /= k; m12 /= k;
-    return *this; 
-   }
-  struct symm_matrix& operator-() { 
-    m00 = -m00; m11 = -m11; m22 = -m22;
-    m01 = -m01; m02 = -m02; m12 = -m12;
-    return *this; 
-   }
-} ;
+  struct symm_matrix &operator+=(const duals::duald &k) {
+    m00 += k;
+    m11 += k;
+    m22 += k;
+    return *this;
+  }
+  struct symm_matrix &operator+(const symm_matrix &rhs) {
+    m00 += rhs.m00;
+    m11 += rhs.m11;
+    m22 += rhs.m22;
+    m01 += rhs.m01;
+    m02 += rhs.m02;
+    m12 += rhs.m12;
+    return *this;
+  }
+  struct symm_matrix &operator*(const duals::duald &k) {
+    m00 *= k;
+    m11 *= k;
+    m22 *= k;
+    m01 *= k;
+    m02 *= k;
+    m12 *= k;
+    return *this;
+  }
+  struct symm_matrix &operator/(const duals::duald &k) {
+    m00 /= k;
+    m11 /= k;
+    m22 /= k;
+    m01 /= k;
+    m02 /= k;
+    m12 /= k;
+    return *this;
+  }
+  struct symm_matrix &operator-() {
+    m00 = -m00;
+    m11 = -m11;
+    m22 = -m22;
+    m01 = -m01;
+    m02 = -m02;
+    m12 = -m12;
+    return *this;
+  }
+};
 
 struct pol {
   meep_geom::susceptibility user_s;

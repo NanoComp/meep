@@ -527,11 +527,11 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     md->weights.push_back(((double *)PyArray_DATA(pao))[i]);
   }
   md->weights.clear();
-  for (size_t i=0;i<PyArray_SIZE(pao);i++){
+  for (size_t i = 0; i < PyArray_SIZE(pao); i++) {
     md->weights.push_back(((double *)PyArray_DATA(pao))[i]);
   }
-  //md->weights = new double[PyArray_SIZE(pao)];
-  //memcpy(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
+  // md->weights = new double[PyArray_SIZE(pao)];
+  // memcpy(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
 
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");

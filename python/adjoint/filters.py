@@ -879,18 +879,19 @@ def gray_indicator(x):
     """
     return npa.mean(4 * x.flatten() * (1 - x.flatten())) * 100
 
+
 def make_sdf(data):
-    '''
+    """
     Assume the input, data, is the desired output shape
     (i.e. 1d, 2d, or 3d) and that it's values are between
     0 and 1.
-    '''
+    """
     # create signed distance function
-    sd = skfmm.distance(data- 0.5 , dx = 1)
+    sd = skfmm.distance(data - 0.5, dx=1)
 
     # interpolate zero-levelset onto 0.5-levelset
     x = [np.min(sd.flatten()), 0, np.max(sd.flatten())]
     y = [0, 0.5, 1]
-    f = interpolate.interp1d(x, y, kind='linear')
+    f = interpolate.interp1d(x, y, kind="linear")
 
     return f(sd)
