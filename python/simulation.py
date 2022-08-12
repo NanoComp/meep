@@ -4278,6 +4278,25 @@ class Simulation:
                     self.fields.use_bloch(
                         py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical)
                     )
+    
+    def change_m_number(self, m):
+        """
+        Change the `m` number (the angular ϕ dependence).
+        """
+        self.m = m
+        
+        if self.fields:
+            needs_complex_fields = not (
+                not self.m or self.m == 0
+            )
+
+            if needs_complex_fields and self.fields.is_real:
+                self.fields = None
+                self._is_initialized = False
+                self.init_sim()
+            else:
+                if self.m is not None:
+                    self.fields.m = self.m
 
     def change_sources(self, new_sources):
         """
