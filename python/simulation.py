@@ -4284,7 +4284,7 @@ class Simulation:
         Change the `m` number (the angular ϕ dependence).
         """
         self.m = m
-        
+
         if self.fields:
             needs_complex_fields = not (
                 not self.m or self.m == 0
@@ -4296,7 +4296,7 @@ class Simulation:
                 self.init_sim()
             else:
                 if self.m is not None:
-                    self.fields.m = self.m
+                    self.fields.change_m_number(m)
 
     def change_sources(self, new_sources):
         """
