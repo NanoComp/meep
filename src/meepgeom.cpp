@@ -2654,19 +2654,12 @@ get_material_gradient(const meep::vec &r,              // current point
   // get the tensor column index corresponding to the forward component
   int dir_idx = 0;
   switch (meep::component_direction(forward_c)) {
-      case meep::X:
-      case meep::R:
-        dir_idx = 0;
-        break;
-      case meep::Y:
-      case meep::P:
-        dir_idx = 1;
-        break;
-      case meep::Z:
-        dir_idx = 2;
-        break;
-      case meep::NO_DIRECTION:
-        meep::abort("Invalid forward component!\n");
+    case meep::X:
+    case meep::R: dir_idx = 0; break;
+    case meep::Y:
+    case meep::P: dir_idx = 1; break;
+    case meep::Z: dir_idx = 2; break;
+    case meep::NO_DIRECTION: meep::abort("Invalid forward component!\n");
   }
 
   // materials are non-dispersive
@@ -2685,7 +2678,6 @@ get_material_gradient(const meep::vec &r,              // current point
     geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
     u[idx] = orig;
     return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du);
-
   }
   // materials have some dispersion
   else {
@@ -2697,7 +2689,8 @@ get_material_gradient(const meep::vec &r,              // current point
     eff_chi1inv_row_disp(adjoint_c, row_2, r, freq, geps);
     u[idx] = orig;
 
-    return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du) * cond_cmp(forward_c, r, freq, geps);
+    return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du) *
+           cond_cmp(forward_c, r, freq, geps);
   }
 }
 
