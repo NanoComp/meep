@@ -1,6 +1,9 @@
 from collections import namedtuple
 import warnings
 
+from time import sleep
+
+import matplotlib.pyplot as plt
 import numpy as np
 
 import meep as mp
@@ -10,6 +13,7 @@ from meep.simulation import Simulation, Volume
 
 ## Typing imports
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from typing import Callable, Union, Any, Iterable
 
 # ------------------------------------------------------- #
@@ -791,9 +795,7 @@ def plot_fields(
         if mp.am_master():
             ax.imshow(fields, extent=extent, **filter_dict(field_parameters, ax.imshow))
         return ax
-    else:
-        return fields
-    return ax
+    return fields
 
 
 def plot2D(
@@ -812,12 +814,14 @@ def plot2D(
     plot_sources_flag: bool = True,
     plot_monitors_flag: bool = True,
     plot_boundaries_flag: bool = True,
+    nb: bool = False,
 ) -> Axes:
 
     # Ensure a figure axis exists
     if ax is None and mp.am_master():
         from matplotlib import pyplot as plt
 
+        # nb = plt.get_backend() == 'module://ipympl.backend_nbagg'
         ax = plt.gca()
 
     # validate the output plane to ensure proper 2D coordinates
@@ -837,7 +841,10 @@ def plot2D(
     # Plot boundaries
     if plot_boundaries_flag:
         ax = plot_boundaries(
-            sim, ax, output_plane=output_plane, boundary_parameters=boundary_parameters
+            sim,
+            ax,
+            output_plane=output_plane,
+            boundary_parameters=boundary_parameters,
         )
 
     # Plot sources
@@ -869,7 +876,10 @@ def plot2D(
             output_plane=output_plane,
             field_parameters=field_parameters,
         )
-
+    # If using %matplotlib ipympl magic, we need to force the figure to be displayed immediately
+    if mp.am_master() and nb:
+        display_immediately(ax.figure)
+        sleep(0.05)
     return ax
 
 
@@ -1016,6 +1026,21 @@ def visualize_chunks(sim: Simulation):
 #                       modify plot
 # customization_args .. [dict] other customization args
 #                       to pass to plot2D()
+#
+def display_immediately(fig: Figure):
+    """
+    Trigger the specified figure to display immediately, rather than waiting on the cell execution to end.
+    Due to limitations in ipympl: https://github.com/matplotlib/ipympl/issues/290, which might be fixed at some
+    point in the future.
+    """
+    from IPython.display import display
+
+    canvas = fig.canvas
+    display(canvas)
+    canvas._handle_message(canvas, {"type": "send_image_mode"}, [])
+    canvas._handle_message(canvas, {"type": "refresh"}, [])
+    canvas._handle_message(canvas, {"type": "initialized"}, [])
+    canvas._handle_message(canvas, {"type": "draw"}, [])
 
 
 class Animate2D:
@@ -1059,6 +1084,7 @@ class Animate2D:
         normalize=False,
         plot_modifiers=None,
         update_epsilon: bool = False,
+        nb: bool = False,
         **customization_args
     ):
         """
@@ -1073,8 +1099,7 @@ class Animate2D:
           initialization.
 
         + **`realtime=False`** — Whether or not to update a figure window in realtime as
-          the simulation progresses. Disabled by default. Not compatible with
-          IPython/Jupyter notebooks.
+          the simulation progresses. Disabled by default.
 
         + **`normalize=False`** — Records fields at each time step in memory in a NumPy
           array and then normalizes the result by dividing by the maximum field value at a
@@ -1095,21 +1120,26 @@ class Animate2D:
 
         + **`update_epsilon=False`** — Redraw epsilon on each call. (Useful for topology optimization)
 
+        + **`nb=False`** — For the animation work in a Jupyter notebook, set to True and use the cell magic:
+            `%matplotlib ipympl`
         + **`**customization_args`** — Customization keyword arguments passed to
           `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
         """
 
         self.fields = fields
         self.update_epsilon = update_epsilon
+        self.nb = nb
 
         if f:
-            self.f = f
-            self.ax = self.f.gca()
+            self.f: Figure = f
+            self.ax: Axes = self.f.gca()
         elif mp.am_master():
             from matplotlib import pyplot as plt
 
-            self.f = plt.figure()
-            self.ax = self.f.gca()
+            self.f: Figure = plt.figure()
+            self.ax: Axes = self.f.gca()
+            # This is another option for enabling notebook plotting
+            # self.nb = plt.get_backend() == 'module://ipympl.backend_nbagg'
         else:
             self.f = None
             self.ax = None
@@ -1139,7 +1169,9 @@ class Animate2D:
             # Initialize the plot
             if not self.init:
                 filtered_plot2D = filter_dict(self.customization_args, plot2D)
-                ax = sim.plot2D(ax=self.ax, fields=self.fields, **filtered_plot2D)
+                ax = sim.plot2D(
+                    ax=self.ax, fields=self.fields, nb=self.nb, **filtered_plot2D
+                )
                 # Run the plot modifier functions
                 if self.plot_modifiers:
                     for k in range(len(self.plot_modifiers)):
@@ -1154,6 +1186,7 @@ class Animate2D:
                 if self.update_epsilon:
                     # Update epsilon
                     filtered_plot_eps = filter_dict(self.customization_args, plot_eps)
+                    # when calling with no 'ax', returns array of epsilon data
                     eps = plot_eps(sim=sim, **filtered_plot_eps)
                     if mp.am_master():
                         eps_idx = -1 if not self.fields else -2
@@ -1164,16 +1197,22 @@ class Animate2D:
                     filtered_plot_fields = filter_dict(
                         self.customization_args, plot_fields
                     )
+                    # when calling with no 'ax', returns array of fields data
                     fields = sim.plot_fields(fields=self.fields, **filtered_plot_fields)
                     if mp.am_master():
                         self.ax.images[-1].set_data(fields)
                         self.ax.images[-1].set_clim(
                             vmin=0.8 * np.min(fields), vmax=0.8 * np.max(fields)
                         )
+                # If in a Jupyter notebook, we need to redraw the canvas
+                if self.nb and mp.am_master():
+                    self.f.canvas.draw()
 
             if self.realtime and mp.am_master():
                 # Redraw the current figure if requested
-                plt.pause(0.05)
+                # For some reason, plt.pause() causes ipympl to redraw the same figure, and we end up with
+                # a new copy of the figure every time this class is called.
+                plt.pause(0.05) if not self.nb else sleep(0.05)
 
             if self.normalize and mp.am_master():
                 # Save fields as a numpy array to be normalized
