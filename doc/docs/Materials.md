@@ -23,13 +23,13 @@ where $\varepsilon_\infty$, which [must be positive](FAQ.md#why-does-my-simulati
 
 Meep supports a Lorentzian susceptibility profile which consists of a sum of harmonic resonances plus a term for the frequency-independent electric conductivity:
 
-<center>
+
 
 $$\varepsilon(\omega,\mathbf{x}) = \left( 1 + \frac{i \cdot \sigma_D(\mathbf{x})}{\omega}  \right) \left[ \varepsilon_\infty(\mathbf{x})  + \sum_n \frac{\sigma_n(\mathbf{x}) \cdot \omega_n^2 }{\omega_n^2 - \omega^2 - i\omega\gamma_n} \right] ,$$
 
 $= \left( 1 + \frac{i \cdot \sigma_D(\mathbf{x})}{2\pi f}  \right) \left[ \varepsilon_\infty(\mathbf{x})  + \sum_n \frac{\sigma_n(\mathbf{x}) \cdot f_n^2 }{f_n^2 - f^2 - if\gamma_n/2\pi} \right] ,$
 
-</center>
+
 
 where $\sigma_D$ is the electric conductivity, $\omega_n$ and $\gamma_n$ are user-specified constants. Actually, the numbers that one specifies are $f_n = \omega_n/2\pi$ and $\gamma_n/2\pi$. The $\sigma_n(\mathbf{x})$ is a user-specified function of position giving the strength of the $n$-th resonance. The $\sigma$ parameters can be anisotropic (real-symmetric) tensors, while the frequency-independent term $\varepsilon_\infty$ can be an arbitrary real-symmetric tensor as well. This corresponds to evolving $\mathbf{P}$ via the equations:
 
@@ -85,11 +85,11 @@ If $\gamma$ above is nonzero, then the dielectric function $\varepsilon(\omega)$
 
 If you look at Maxwell's equations, then $d\mathbf{P}/dt$ plays exactly the same role as a current $\mathbf{J}$. Just as $\mathbf{J} \cdot \mathbf{E}$ is the rate of change of mechanical energy (the power expended by the electric field on moving the currents), therefore, the rate at which energy is lost to absorption is given by:
 
-<center>
+
 
 absorption rate $\sim \frac{d\mathbf{P}}{dt} \cdot \mathbf{E}$
 
-</center>
+
 
 Meep can keep track of this energy for the Lorentzian polarizability terms but not for the conductivity terms. For gain, this gives the amount of energy expended in amplifying the field.
 
@@ -171,12 +171,12 @@ Analytically, what this means is that the resonances that are present in the sys
 
 Although Meep is using an oscillator model equation for the atomic polarization and level populations, instead of the Bloch equations, Meep retains the two terms usually approximated to zero when deriving the oscillator model equations from the Bloch equations, and so these equations are exactly equivalent to the Bloch equations. For more details, see [arXiv:2007.09329](https://arxiv.org/abs/2007.09329) and Section 6.4.1 of [Nonlinear Optics (third edition)](https://www.amazon.com/Nonlinear-Optics-Third-Robert-Boyd/dp/0123694701) by R. W. Boyd. To verify this equivalence between the different equations for modeling the polarization, as well as confirm that saturable media have been properly implemented in Meep, we compare the results of Meep with an independent FDTD solver using the Bloch equations and the frequency domain steady-state ab initio laser theory (SALT), in a 1d, one-sided, Fabry-Perot cavity containing a two-level gain medium that exhibits steady-state, multi-mode lasing. The cavity has a length of $a = 1$, a background index of $n = 1.5$, an atomic transition frequency of $\omega_n = 40/(2\pi)$, with width $\gamma_n = 8/(2\pi)$, the decay rate from level $2$ to $1$ is $\Gamma_{21} = 0.005$, the pumping rate from $1$ to $2$ is $\Gamma_{12} = 0.0051$, and the total atomic density, $N_0$, of the system was varied to produce different amounts of gain. These plots are given in terms of the equilibrium inversion, $D_0$, which is the inversion of the saturable gain medium in the absence of an electric field, i.e. the value of $\Delta N$ when $\mathbf{E} = 0$. There is agreement among the three methods close to the initial as well as past the third lasing threshold as shown in the following two figures.
 
-<center>
-![Near threshold comparison](images/meep_salt_comparison_thresh.png)
-</center>
-<center>
-![Near threshold comparison](images/meep_salt_comparison_full.png)
-</center>
+
+![Near threshold comparison](images/meep_salt_comparison_thresh.png#center)
+
+
+![Near threshold comparison](images/meep_salt_comparison_full.png#center)
+
 
 For the two-level atomic gain model used in this example, $D_0$ can be calculated as:
 
@@ -312,8 +312,8 @@ plt.subplots_adjust(wspace=0.4)
 plt.show()
 ```
 
-<center>
-![SiO2 from the materials library](images/SiO2_materials_library.png)
-</center>
+
+![SiO2 from the materials library](images/SiO2_materials_library.png#center)
+
 
 **Note:** for narrowband calculations, some of the Lorentzian susceptibility terms may be unnecessary and will contribute to consuming more computational resources than are required (due to the additional storage and time stepping of the polarization fields). Computational efficiency can be improved (without significantly affecting accuracy) by removing from the material definitions those Lorentzian susceptibility terms which are far outside the spectral region of interest. In addition, when using the materials library the Courant parameter may need to be reduced to achieve meaningful results, see [Numerical Stability](Materials.md#numerical-stability).

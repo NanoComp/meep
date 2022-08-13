@@ -15,7 +15,6 @@ try:
 except ImportError:
     from collections.abc import Sequence
 
-import meep.visualization as vis
 import numpy as np
 from meep.geom import GeometricObject, Medium, Vector3, init_do_averaging
 from meep.source import (
@@ -4280,6 +4279,23 @@ class Simulation:
                         py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical)
                     )
 
+    def change_m_number(self, m):
+        """
+        Change the `m` number (the angular ϕ dependence).
+        """
+        self.m = m
+
+        if self.fields:
+            needs_complex_fields = not (not self.m or self.m == 0)
+
+            if needs_complex_fields and self.fields.is_real:
+                self.fields = None
+                self._is_initialized = False
+                self.init_sim()
+            else:
+                if self.m is not None:
+                    self.fields.change_m_number(m)
+
     def change_sources(self, new_sources):
         """
         Change the list of sources in `Simulation.sources` to `new_sources`, and changes
@@ -4680,6 +4696,8 @@ class Simulation:
             - `post_process=np.real`: post processing function to apply to fields (must be
               a function object)
         """
+        import meep.visualization as vis
+
         return vis.plot2D(
             self,
             ax=ax,
@@ -4700,6 +4718,8 @@ class Simulation:
         )
 
     def plot_fields(self, **kwargs):
+        import meep.visualization as vis
+
         return vis.plot_fields(self, **kwargs)
 
     def plot3D(self):
@@ -4707,6 +4727,8 @@ class Simulation:
         Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D.
         Can also be embedded in Jupyter notebooks.
         """
+        import meep.visualization as vis
+
         return vis.plot3D(self)
 
     def visualize_chunks(self):
@@ -4715,6 +4737,8 @@ class Simulation:
         rectangular region is a chunk, and each color represents a different processor.
         Requires [matplotlib](https://matplotlib.org).
         """
+        import meep.visualization as vis
+
         vis.visualize_chunks(self)
 
 
@@ -5858,7 +5882,7 @@ def get_near2far_freqs(f):
 
 
 def scale_energy_fields(s, ef):
-    df.scale_dfts(s)
+    ef.scale_dfts(s)
 
 
 def get_energy_freqs(f):

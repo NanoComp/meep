@@ -1,0 +1,24 @@
+[flake8]
+max-line-length = 88
+max-complexity = 57
+select = B,C,E,F,W,T4,B9
+ignore = E501, E503, E722, W503, W503, E203, B950, B305, B018, B902, B020
+
+extend-ignore =
+    RST303
+
+exclude =
+    .git,
+    __pycache__,
+    lib/,
+    docs/source/conf.py,
+    build,
+    dist,
+    .ipynb_checkpoints,
+    .tox,
+    extra,
+    deprecated,
+    gdslib,
+    .tox,
+    .mypy_cache,
+    venv

@@ -55,3 +55,17 @@ pre code.python {
     border: solid 1px #e1e4e5;
     font-size: 70%;
 }
+
+/* Align images in MarkDown without eTML or extensions
+ * https://msudol.com/how-to-align-images-in-markdown-without-html-or-extensions/
+ */
+img[src*='#left'] {
+    float: left;
+}
+img[src*='#right'] {
+    float: right;
+}
+img[src*='#center'] {
+    display: block;
+    margin: auto;
+}

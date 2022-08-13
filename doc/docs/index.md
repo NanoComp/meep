@@ -1,6 +1,6 @@
-<center>
-![](images/Meep-banner.png)
-</center>
+
+![](images/Meep-banner.png#center)
+
 
  **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method spanning a broad range of applications.
 
