@@ -1136,7 +1136,13 @@ class Animate2D:
         elif mp.am_master():
             from matplotlib import pyplot as plt
 
+            # To prevent 2 figures from being created in a notebook, interactive must be turned off and back on here
+            # https://matplotlib.org/ipympl/examples/full-example.html#fixing-the-double-display-with-ioff
+            if self.nb:
+                plt.ioff()
             self.f: Figure = plt.figure()
+            if self.nb:
+                plt.ion()
             self.ax: Axes = self.f.gca()
             # This is another option for enabling notebook plotting
             # self.nb = plt.get_backend() == 'module://ipympl.backend_nbagg'
