@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import Callable, List, Union, Optional
 
 import numpy as np
 from autograd import grad, jacobian
@@ -24,20 +25,27 @@ class OptimizationProblem:
 
     def __init__(
         self,
-        simulation,
-        objective_functions,
-        objective_arguments,
-        design_regions,
-        frequencies=None,
-        fcen=None,
-        df=None,
-        nf=None,
-        decay_by=1e-11,
-        decimation_factor=0,
-        minimum_run_time=0,
-        maximum_run_time=None,
-        finite_difference_step=utils.FD_DEFAULT,
+        simulation: mp.Simulation,
+        objective_functions: List[Callable],
+        objective_arguments: List[ObjectiveQuantity],
+        design_regions: [DesignRegion],
+        frequencies: Optional[Union[float, List[float]]] = None,
+        fcen: Optional[float] = None,
+        df: Optional[float] = None,
+        nf: Optional[int] = None,
+        decay_by: Optional[float] = 1e-11,
+        decimation_factor: Optional[int] = 0,
+        minimum_run_time: Optional[float] = 0,
+        maximum_run_time: Optional[float] = None,
+        finite_difference_step: Optional[float] = utils.FD_DEFAULT,
     ):
+        """
+        + **`simulation` [ `Simulation` ]** — The corresponding Meep
+        `Simulation` object that describeds the problem (e.g. sources,
+        geometry)
+
+        + **`objective_functions` [ `list of ` ]** —
+        """
 
         self.sim = simulation
 

@@ -1,6 +1,7 @@
 """Handling of objective functions and objective quantities."""
 import abc
 from collections import namedtuple
+from typing import Callable, List, Union, Optional
 
 import numpy as np
 from meep.simulation import py_v3_to_vec
@@ -8,6 +9,7 @@ from meep.simulation import py_v3_to_vec
 import meep as mp
 
 from .filter_source import FilteredSource
+from . import MEEP_COMPONENTS
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
 
@@ -161,15 +163,18 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
     def __init__(
         self,
-        sim,
-        volume,
-        mode,
-        forward=True,
-        kpoint_func=None,
-        kpoint_func_overlap_idx=0,
-        decimation_factor=0,
+        sim: mp.Simulation,
+        volume: mp.Volume,
+        mode: int,
+        forward: Optional[bool] = True,
+        kpoint_func: Optional[Callable] = None,
+        kpoint_func_overlap_idx: Optional[idx] = 0,
+        decimation_factor: Optional[idx] = 0,
         **kwargs
     ):
+        """
+        + **`sim` [ `Simulation` ]** —
+        """
         super().__init__(sim)
         if kpoint_func_overlap_idx not in [0, 1]:
             raise ValueError(
@@ -268,7 +273,15 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    def __init__(self, sim, volume, component, yee_grid=False, decimation_factor=0):
+    def __init__(
+        self,
+        sim: mp.Simulation,
+        volume: mp.Volume,
+        component: List[MEEP_COMPONENTS],
+        yee_grid: Optional[bool] = False,
+        decimation_factor: Optional[idx] = 0,
+    ):
+        """ """
         super().__init__(sim)
         self.volume = sim._fit_volume_to_simulation(volume)
         self.component = component
@@ -354,7 +367,14 @@ class FourierFields(ObjectiveQuantity):
 
 
 class Near2FarFields(ObjectiveQuantity):
-    def __init__(self, sim, Near2FarRegions, far_pts, decimation_factor=0):
+    def __init__(
+        self,
+        sim: mp.Simulation,
+        Near2FarRegions: mp.Near2FarRegions,
+        far_pts: List[mp.Vector3],
+        decimation_factor: Optional[idx] = 0,
+    ):
+        """ """
         super().__init__(sim)
         self.Near2FarRegions = Near2FarRegions
         self.far_pts = far_pts  # list of far pts
@@ -420,7 +440,10 @@ class Near2FarFields(ObjectiveQuantity):
 
 
 class LDOS(ObjectiveQuantity):
-    def __init__(self, sim, decimation_factor=0, **kwargs):
+    def __init__(
+        self, sim: mp.Simulation, decimation_factor: Optional[idx] = 0, **kwargs
+    ):
+        """ """
         super().__init__(sim)
         self.decimation_factor = decimation_factor
         self.srckwarg = kwargs

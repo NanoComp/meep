@@ -1,4 +1,4 @@
-from typing import Iterable, List, Tuple
+from typing import Iterable, List, Tuple, Union
 
 import numpy as onp
 
@@ -21,6 +21,11 @@ _Z_AXIS = 1
 
 # default finite difference step size when calculating Aᵤ
 FD_DEFAULT = 1e-3
+
+# Type hint for all components
+MEEP_COMPONENTS = Union[
+    mp.Ex, mp.Ey, mp.Ez, mp.Hx, mp.Hy, mp.Hz, mp.Dx, mp.Dy, mp.Dz, mp.Bx, mp.By, mp.Bz
+]
 
 
 class DesignRegion:
