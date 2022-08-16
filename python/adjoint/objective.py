@@ -13,16 +13,19 @@ Grid = namedtuple("Grid", ["x", "y", "z", "w"])
 
 #3 possible components for E x n and H x n 
 #signs are handled in code
-EH_TRANSVERSE    = [ [mp.Hy, mp.Hz, mp.Ey, mp.Ez],
-                     [mp.Hz, mp.Hx, mp.Ez, mp.Ex],
-                     [mp.Hx, mp.Hy, mp.Ex, mp.Ey] ]
+EH_TRANSVERSE    = [ [mp.Hz, mp.Hy, mp.Ez, mp.Ey],
+                     [mp.Hx, mp.Hz, mp.Ex, mp.Ez],
+                     [mp.Hy, mp.Hx, mp.Ey, mp.Ex] ]
 
 #Holds the components for each current source
 #for the cases of x,y, and z normal vectors.
 #This is the same as swapping H and E in the above list
-JK_TRANSVERSE    = [ [mp.Ez, mp.Ey, mp.Hz, mp.Hy],
-                     [mp.Ex, mp.Ez, mp.Hx, mp.Hz],
-                     [mp.Ey, mp.Ex, mp.Hy, mp.Hx] ]
+JK_TRANSVERSE    = [ [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
+                     [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
+                     [mp.Ex, mp.Ey, mp.Hx, mp.Hy] ]
+
+#Holds the amplitudes used in Poynting Flux adjoint sources
+FLUX_AMPLITUDES = np.array([1/4,-1/4,-1/4,1/4], dtype = np.complex128)
 
 class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.
@@ -544,7 +547,7 @@ class PoyntingFlux(ObjectiveQuantity):
         if dJ.ndim == 2:
             dJ = np.sum(dJ, axis=1)
         time_src = self._create_time_profile()
-        scale = self._adj_src_scale()
+        scale = self._adj_src_scale(include_resolution = False)
         if self._frequencies.size == 1:
             amp =  dJ * scale
             src = time_src
@@ -557,27 +560,42 @@ class PoyntingFlux(ObjectiveQuantity):
                 self.sim.fields.dt,
             )
             amp = 1
+        #Sometimes a couple field component arrays contain a single zero (typically
+        # due to symmetries). Make a list of where field components with multiple elements are
+        nonzero_comps = []
+        for field_index,field_comp in enumerate(self.field_component_evaluations):
+            if(field_comp.size != 1):
+                nonzero_comps.append(field_index)
         source = []
-        #TODO: account for sign in the current sources
-        #(the K sources should have the negative)
-        for field_t,field in  enumerate(JK_TRANSVERSE[self.normal]):
-            #dft_fields returns a scalar value for components that aren't evaluated
-            #in these cases, we don't need to add an adjoint source
-            if(self.field_component_evaluations[field_t].size != 1):
-                tuple_elements = np.zeros((1,self.metadata[3].size,1), dtype=np.complex128)
-                #TODO: Load up the source data for other normal vectors
-                #TODO: Remove this unnecessary for loop
-                for index,element in enumerate(self.field_component_evaluations[field_t]):
-                    tuple_elements[0,index,0] = element
-                source.append( mp.Source(
-                    src,
-                    component = field,
-                    amplitude=amp,
-                    size=self.volume.size,
-                    center=self.volume.center,
-                    amp_data = tuple_elements
-                    ))
+        #Get the right components for this normal vector
+        field_components_for_sources = JK_TRANSVERSE[self.normal]
+        for idx in range(self.metadata[0].size):
+            for idy in range(self.metadata[1].size):
+                for idz in range(self.metadata[2].size):
+                    #Iterate over the relevant indices in the constants defined above
+                    for field_idx in nonzero_comps:
+                    #dft_fields returns a scalar value for components that aren't evaluated
+                    #in these cases, we don't need to add an adjoint source
+                        field_component_array = self.field_component_evaluations[field_idx]
+                        source_component = field_components_for_sources[field_idx]
+                        #scale the amplitude by +/- 1/4 from FLUX_AMPLITUDES, then apply the amplitude at this spatial point
+                        #from the field component
+                        #TODO: use the not-yet-implemented uncollapse dimensions function to make field commponent array 3 dimensional
+                        #It currently only works for x-directed normal vectors in a 2-d simulation
+                        amplitude = FLUX_AMPLITUDES[field_idx]*np.conj(field_component_array[idy])*amp
+                        center = mp.Vector3(self.metadata[0][idx],self.metadata[1][idy],self.metadata[2][idz])
+                        source.append(mp.Source(src, 
+                                        component = source_component,
+                                        amplitude= amplitude,
+                                        center=center
+                                        ))
         return source
+    
+    #Will eventually turn 1xn arrays of component amplitudes along a boundary
+    #into 1xnxn or nx1x1, etc. arrays depending on the normal vector
+    #so that they can be looped over in three dimensions correctly
+    #def uncollapse_dimensions(self,component_array, metadata):
+    
 
     def __call__(self):
         self.field_component_evaluations = []
@@ -587,31 +605,26 @@ class PoyntingFlux(ObjectiveQuantity):
             self.field_component_evaluations.append(field_here) 
         #Get weights for integration from cubature rule
         self.metadata = self.sim.get_array_metadata(dft_cell = self._monitor)
-        flux_density =np.real(-(self.field_component_evaluations[0]*np.conj(self.field_component_evaluations[3])) + (np.conj(self.field_component_evaluations[2])*self.field_component_evaluations[1]))
+        flux_density =np.real((self.field_component_evaluations[0]*np.conj(self.field_component_evaluations[3])) - (np.conj(self.field_component_evaluations[2])*self.field_component_evaluations[1]))
         #Apply cubature weights and user-supplied scale
+        # print("Here are the metadata weights:")
+        # print(self.metadata[3])
         self._eval =self.scale * np.sum(self.metadata[3]*flux_density)
+        print("Here is the evaluation:")
+        print(self._eval)
         return self._eval
         
     
     
-    #returns 0,1, or 2 corresponding to x,y, or z normal vectors
+    #returns 0,1, or 2 corresponding to x, y, or z normal vectors
     #TODO: Handle user-specified normal vectors and cases when 2d
     #is projected into a dimension other than z
     def get_normal(self,volume):
         #I'll add cylindrical later (since the normal vector gets a little different)
-        if (volume.dims == 2):
-            if (volume.size.x == 0):
-                return 0
-            elif(volume.size.y == 0):
-                return 1
-            else:
-                return 2
-        elif (volume.dims ==1):
-            if (volume.size.x == 0):
-                return 0
-            else:
-                return 1
-            
-        else :
-            return "Supported volumes are 1d or 2d"
+        if (volume.size.x == 0):
+            return 0
+        elif(volume.size.y == 0):
+            return 1
+        else:
+            return 2
 
