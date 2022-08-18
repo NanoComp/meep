@@ -2311,7 +2311,7 @@ class Simulation:
         return not (self.force_complex_fields or cond1 or cond2 or cond5)
 
     def initialize_field(
-        self, cmpnt: int = None, amp_func: Callable[[Vector3Type], complex] = None
+        self, cmpnt: int = None, amp_func: Callable[[Vector3Type], Union[float,complex]] = None
     ):
         """
         Initialize the component `c` fields using the function `func` which has a single
