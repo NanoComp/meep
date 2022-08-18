@@ -1333,6 +1333,11 @@ void dual_interpolate_mat(material_type mat, symm_matrix &eps, duals::duald u) {
             u_bar * (mat->medium_2.epsilon_offdiag.z.re - mat->medium_1.epsilon_offdiag.z.re);
 }
 
+template<typename T>
+static bool AreEqual(T f1, T f2) { 
+  return (std::fabs(f1 - f2) <= 2*std::numeric_limits<T>::epsilon() * std::fmax(std::fabs(f1), std::fabs(f2)));
+}
+
 void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
                                       const meep::volume &v, double tol, int maxeval,
                                       bool &fallback) {
@@ -1406,15 +1411,22 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
       tp = geom_tree_search(p_mat, restricted_tree, &oi);
       uval = matgrid_val(p_mat, tp, oi, mat);
       normal = matgrid_grad(p_mat, tp, oi, mat);
-      if (cvector3_re(normal).x == 0 && cvector3_re(normal).y == 0 && cvector3_re(normal).z == 0)
+      double TOL = 4*std::numeric_limits<double>::epsilon();
+      
+      if (AreEqual(cvector3_re(normal).x,0.0) && 
+          AreEqual(cvector3_re(normal).y,0.0) && 
+          AreEqual(cvector3_re(normal).z,0.0)
+        )
         /* couldn't get normal vector for this point; no averaging is needed,
         but we still need to interpolate onto our grid using duals */
         goto mgavg;
       duals::duald u_prime = normalize_dual(normal);
-      duals::duald d = (mat->eta - uval) / u_prime;
+      duals::duald d;
+      /* we need to be careful when mat->eta = uval and u_prime is very small...*/
+      d = (mat->eta - uval) / u_prime;
       double r = v.diameter() / 2;
       fill = get_material_grid_fill(v.dim, d, r, uval, mat->eta);
-      if (fill.rpart() < 0) {
+      if (fill < 0) {
         /* we are far enough away from an interface that
         we don't need any averaging -- but we still need
         to interpolate from the material grid */
@@ -1454,7 +1466,6 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     /* ------------------------------------------- */
   }
   else {
-
     vector3 normal_re = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
     if (normal_re.x == 0 && normal_re.y == 0 && normal_re.z == 0)
       goto noavg; // couldn't get normal vector for this point, punt
@@ -1503,57 +1514,6 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
 
 static int eps_ever_negative = 0;
 static meep::field_type func_ft = meep::E_stuff;
-
-struct matgrid_volavg {
-  meep::ndim dim;   // dimensionality of voxel
-  double rad;       // (spherical) voxel radius
-  double uval;      // bilinearly-interpolated weight at voxel center
-  double ugrad_abs; // magnitude of gradient of uval
-  double beta;      // thresholding bias
-  double eta;       // thresholding erosion/dilation
-  double eps1;      // trace of epsilon tensor from medium 1
-  double eps2;      // trace of epsilon tensor from medium 2
-};
-
-static void get_uproj_w(const matgrid_volavg *mgva, double x0, double &u_proj, double &w) {
-  // use a linear approximation for the material grid weights around the Yee grid point
-  // u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
-  if (mgva->dim == meep::D1)
-    w = 1 / (2 * mgva->rad);
-  else if (mgva->dim == meep::D2 || mgva->dim == meep::Dcyl)
-    w = 2 * sqrt(mgva->rad * mgva->rad - x0 * x0) / (meep::pi * mgva->rad * mgva->rad);
-  else if (mgva->dim == meep::D3)
-    w = meep::pi * (mgva->rad * mgva->rad - x0 * x0) /
-        (4 / 3 * meep::pi * mgva->rad * mgva->rad * mgva->rad);
-}
-
-#ifdef CTL_HAS_COMPLEX_INTEGRATION
-static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
-  (void)n; // unused
-  double u_proj = 0, w = 0;
-  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  get_uproj_w(mgva, x[0], u_proj, w);
-  cnumber ret;
-  ret.re = (1 - u_proj) * mgva->eps1 + u_proj * mgva->eps2;
-  ret.im = (1 - u_proj) / mgva->eps1 + u_proj / mgva->eps2;
-  return ret * w;
-}
-#else
-static number matgrid_eps_func(int n, number *x, void *mgva_) {
-  (void)n; // unused
-  double u_proj = 0, w = 0;
-  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  get_uproj_w(mgva, x[0], u_proj, w);
-  return w * ((1 - u_proj) * mgva->eps1 + u_proj * mgva->eps2);
-}
-static number matgrid_inveps_func(int n, number *x, void *mgva_) {
-  (void)n; // unused
-  double u_proj = 0, w = 0;
-  matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
-  get_uproj_w(mgva, x[0], u_proj, w);
-  return w * ((1 - u_proj) / mgva->eps1 + u_proj / mgva->eps2);
-}
-#endif
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
 static cnumber ceps_func(int n, number *x, void *geomeps_) {
@@ -2924,6 +2884,7 @@ get_material_gradient(const meep::vec &r,              // current point
 
   // locate the proper material
   material_type md;
+  if (!gv.contains(r)) meep::abort("Location (%f, %f, %f) is outside of grid volume\n",r.x(),r.y(),r.z());
   geps->get_material_pt(md, r);
 
   // get the tensor column index corresponding to the forward component
@@ -2955,7 +2916,6 @@ get_material_gradient(const meep::vec &r,              // current point
     u[idx] += 1_e; // add dual component
     geps->eff_chi1inv_row_grad(adjoint_c, dA_du, v, geps->tol, maxevals, true);
     u[idx] -= 1_e; // remove dual component
-
     return -dA_du[dir_idx] * fields_f; // note the minus sign! (from Steven's adjoint notes)
   }
   // materials have some dispersion
