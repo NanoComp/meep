@@ -35,6 +35,8 @@
 #define SWIG_PYTHON_THREAD_SCOPED_BLOCK SWIG_PYTHON_THREAD_BEGIN_BLOCK
 #endif
 
+#include "shared_memory.hpp"
+
 PyObject *py_callback = NULL;
 PyObject *py_callback_v3 = NULL;
 PyObject *py_amp_func = NULL;
@@ -522,8 +524,10 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   PyArrayObject *pao = (PyArrayObject *)po_dp;
   if (!PyArray_Check(pao)) { meep::abort("MaterialGrid weights failed to init."); }
   if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array weights must be C-style contiguous."); }
-  md->weights = new double[PyArray_SIZE(pao)];
-  memcpy(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
+  md->weights = SharedMemoryArray<double>(PyArray_SIZE(pao));
+  memcpy_shared(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
+  // md->weights = new double[PyArray_SIZE(pao)];
+  // memcpy(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
 
   // if needed, combine sus structs to main object
   PyObject *py_e_sus_m1 = PyObject_GetAttrString(po_medium1, "E_susceptibilities");
@@ -608,8 +612,10 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     md = new material_data();
     md->which_subclass = material_data::MATERIAL_FILE;
     md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
-    md->epsilon_data = new double[PyArray_SIZE(pao)];
-    memcpy(md->epsilon_data, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
+    md->epsilon_data = SharedMemoryArray<double>(PyArray_SIZE(pao));
+    memcpy_shared(md->epsilon_data, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
+    //md->epsilon_data = new double[PyArray_SIZE(pao)];
+    //memcpy(md->epsilon_data, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
 
     for (int i = 0; i < PyArray_NDIM(pao); ++i) {
       md->epsilon_dims[i] = (size_t)PyArray_DIMS(pao)[i];
