@@ -1378,6 +1378,9 @@ class Simulation:
     # on the settings in the Simulation instance. This method must be called on
     # any user-defined Volume before passing it to meep via its `swigobj`.
     def _fit_volume_to_simulation(self, vol: Volume) -> Volume:
+        if self.dimensions == mp.CYLINDRICAL:
+            self.dimensions = 2
+            self.is_cylindrical = True
         return Volume(
             vol.center,
             vol.size,
