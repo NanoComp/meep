@@ -1,7 +1,7 @@
 """Handling of objective functions and objective quantities."""
 import abc
 from collections import namedtuple
-
+from autograd import numpy as npa
 import numpy as np
 from meep.simulation import py_v3_to_vec
 
@@ -11,21 +11,26 @@ from .filter_source import FilteredSource
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
 
-#3 possible components for E x n and H x n 
-#signs are handled in code
-EH_TRANSVERSE    = [ [mp.Hz, mp.Hy, mp.Ez, mp.Ey],
-                     [mp.Hx, mp.Hz, mp.Ex, mp.Ez],
-                     [mp.Hy, mp.Hx, mp.Ey, mp.Ex] ]
+# 3 possible components for E x n and H x n
+# signs are handled in code
+EH_TRANSVERSE = [
+    [mp.Hz, mp.Hy, mp.Ez, mp.Ey],
+    [mp.Hx, mp.Hz, mp.Ex, mp.Ez],
+    [mp.Hy, mp.Hx, mp.Ey, mp.Ex],
+]
 
-#Holds the components for each current source
-#for the cases of x,y, and z normal vectors.
-#This is the same as swapping H and E in the above list
-JK_TRANSVERSE    = [ [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
-                     [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
-                     [mp.Ex, mp.Ey, mp.Hx, mp.Hy] ]
+# Holds the components for each current source
+# for the cases of x,y, and z normal vectors.
+# This is the same as swapping H and E in the above list
+JK_TRANSVERSE = [
+    [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
+    [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
+    [mp.Ex, mp.Ey, mp.Hx, mp.Hy],
+]
 
-#Holds the amplitudes used in Poynting Flux adjoint sources
-FLUX_AMPLITUDES = np.array([1/4,-1/4,-1/4,1/4], dtype = np.complex128)
+# Holds the amplitudes used in Poynting Flux adjoint sources
+FLUX_AMPLITUDES = np.array([1 / 4, -1 / 4, -1 / 4, 1 / 4], dtype=np.complex128)
+
 
 class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.
@@ -331,7 +336,7 @@ class FourierFields(ObjectiveQuantity):
         self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(
             self.volume.swigobj, self.component, self.sim.fields, dJ
         )
-        
+
         for fourier_data in self.all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
@@ -498,7 +503,8 @@ class LDOS(ObjectiveQuantity):
         self.ldos_scale = self.sim.ldos_scale
         self.ldos_Jdata = self.sim.ldos_Jdata
         return np.array(self._eval)
-    
+
+
 class PoyntingFlux(ObjectiveQuantity):
     """A frequency-dependent Poynting Flux adjoint source.
     Attributes:
@@ -507,124 +513,85 @@ class PoyntingFlux(ObjectiveQuantity):
         normal vector (e.g. planes in 3d or lines in 2d). User supplied
         normal vectors may be implemented in the future. It also only
         works with monitors aligned to a coordinate direction.
-        decimation_factor: Whether to skip points in the time series every 
+        decimation_factor: Whether to skip points in the time series every
         decimation_factor timesteps. See "add_dft_fields" documentation.
         The biggest warning there is to be careful to avoid aliasing if
         the fields vary quickly in time.
         Note on yee_grid: For the Poynting Flux to work, H and E components
         must lie at the same points. Therefore, the Yee grid will always be false.
     """
-    def __init__(
-        self,
-        sim,
-        volume,
-        scale = 1,
-        decimation_factor=0
-    ):
+
+    def __init__(self, sim, volume, scale=1, decimation_factor=0):
         super().__init__(sim)
-        #_fit_volume_to_simulation increases the dimensionality of
-        #the volume, so we'll use the user input volume
+        # _fit_volume_to_simulation increases the dimensionality of
+        # the volume, so we'll use the user input volume
         self.volume = sim._fit_volume_to_simulation(volume)
         self.decimation_factor = decimation_factor
         self.scale = scale
-        #get_normal returns an index for the two 
+        # get_normal returns an index for the two
         # dictionaries of cross products
         self.normal = self.get_normal(volume)
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
-
-        #Add the dft monitors for the interesting components
-        self._monitor =self.sim.add_dft_fields(EH_TRANSVERSE[self.normal], 
-                                            frequencies, 
-                                            where = self.volume,
-                                            yee_grid = False) 
-
+        self._monitor = []
+        # List to hold FourierFields objects
+        self.F_fields_list = []
+        for comp in EH_TRANSVERSE[self.normal]:
+            # instantiate the FourierFields monitors
+            F_field = FourierFields(self.sim, self.volume, comp)
+            self.F_fields_list.append(F_field)
+            self._monitor.append(F_field.register_monitors(self._frequencies))
         return self._monitor
 
     def place_adjoint_source(self, dJ):
-        dJ = np.atleast_1d(dJ)
-        if dJ.ndim == 2:
-            dJ = np.sum(dJ, axis=1)
-        time_src = self._create_time_profile()
-        scale = self._adj_src_scale(include_resolution = False)
-        if self._frequencies.size == 1:
-            amp =  dJ * scale
-            src = time_src
-        else:
-            scale =  dJ * scale
-            src = FilteredSource(
-                time_src.frequency,
-                self._frequencies,
-                scale,
-                self.sim.fields.dt,
-            )
-            amp = 1
-        #Sometimes a couple field component arrays contain a single zero (typically
-        # due to symmetries). Make a list of where field components with multiple elements are
-        nonzero_comps = []
-        for field_index,field_comp in enumerate(self.field_component_evaluations):
-            if(field_comp.size != 1):
-                nonzero_comps.append(field_index)
         source = []
-        #Get the right components for this normal vector
-        field_components_for_sources = JK_TRANSVERSE[self.normal]
-        for idx in range(self.metadata[0].size):
-            for idy in range(self.metadata[1].size):
-                for idz in range(self.metadata[2].size):
-                    #Iterate over the relevant indices in the constants defined above
-                    for field_idx in nonzero_comps:
-                    #dft_fields returns a scalar value for components that aren't evaluated
-                    #in these cases, we don't need to add an adjoint source
-                        field_component_array = self.field_component_evaluations[field_idx]
-                        source_component = field_components_for_sources[field_idx]
-                        #scale the amplitude by +/- 1/4 from FLUX_AMPLITUDES, then apply the amplitude at this spatial point
-                        #from the field component
-                        #TODO: use the not-yet-implemented uncollapse dimensions function to make field commponent array 3 dimensional
-                        #It currently only works for x-directed normal vectors in a 2-d simulation
-                        amplitude = FLUX_AMPLITUDES[field_idx]*np.conj(field_component_array[idy])*amp
-                        center = mp.Vector3(self.metadata[0][idx],self.metadata[1][idy],self.metadata[2][idz])
-                        source.append(mp.Source(src, 
-                                        component = source_component,
-                                        amplitude= amplitude,
-                                        center=center
-                                        ))
+        for pos, field in enumerate(self.F_fields_list):
+            source.append(field.place_adjoint_source(np.flipud(dJ[pos].flatten()))[0])
         return source
-    
-    #Will eventually turn 1xn arrays of component amplitudes along a boundary
-    #into 1xnxn or nx1x1, etc. arrays depending on the normal vector
-    #so that they can be looped over in three dimensions correctly
-    #def uncollapse_dimensions(self,component_array, metadata):
-    
 
     def __call__(self):
         self.field_component_evaluations = []
-        #Loop over the relevant field components for this case of normal vector
-        for field in EH_TRANSVERSE[self.normal]:
-            field_here = self.sim.get_dft_array(self._monitor,field,0)
-            self.field_component_evaluations.append(field_here) 
-        #Get weights for integration from cubature rule
-        self.metadata = self.sim.get_array_metadata(dft_cell = self._monitor)
-        flux_density =np.real((self.field_component_evaluations[0]*np.conj(self.field_component_evaluations[3])) - (np.conj(self.field_component_evaluations[2])*self.field_component_evaluations[1]))
-        #Apply cubature weights and user-supplied scale
-        # print("Here are the metadata weights:")
-        # print(self.metadata[3])
-        self._eval =self.scale * np.sum(self.metadata[3]*flux_density)
-        print("Here is the evaluation:")
-        print(self._eval)
-        return self._eval
-        
-    
-    
-    #returns 0,1, or 2 corresponding to x, y, or z normal vectors
-    #TODO: Handle user-specified normal vectors and cases when 2d
-    #is projected into a dimension other than z
-    def get_normal(self,volume):
-        #I'll add cylindrical later (since the normal vector gets a little different)
-        if (volume.size.x == 0):
+        for field in self.F_fields_list:
+            # Get the dft evaluation from a call to the underlying
+            # FourierFields object
+            field_here = field()
+            self.field_component_evaluations.append(field_here)
+        # Get integration weights Meep uses
+        self.metadata = self.sim.get_array_metadata(vol=self.volume)
+        self.field_component_evaluations.append(
+            np.array([self.metadata[3]]).astype(complex)
+        )
+        [H1, H2, E1, E2, meta] = self.field_component_evaluations
+        self._eval = self.field_component_evaluations
+        print("This is meta*E2")
+        print(meta * E2)
+        return np.array([H1, H2, E1, E2, meta])
+
+    # takes in a 1x5xNxM vector where the size five array corresponds to
+    # [H1,H2,E1,E1,meta]
+    # multiple frequencies will be tested later
+    @staticmethod
+    def compute_flux(*inputs):
+        flux = npa.sum(
+            npa.real(
+                inputs[0][4]
+                * (
+                    npa.conj(inputs[0][0]) * inputs[0][3]
+                    - npa.conj(inputs[0][1]) * inputs[0][2]
+                )
+            )
+        )
+        return flux
+
+    # returns 0,1, or 2 corresponding to x, y, or z normal vectors
+    # TODO: Handle user-specified normal vectors and cases when 2d
+    # has a zero-size dimension other than z
+    def get_normal(self, volume):
+        # I'll add cylindrical later (since the normal vector gets a little different)
+        if volume.size.x == 0:
             return 0
-        elif(volume.size.y == 0):
+        elif volume.size.y == 0:
             return 1
         else:
             return 2
-

@@ -13,7 +13,8 @@ from autograd import numpy as npa
 from autograd import tensor_jacobian_product
 from utils import ApproxComparisonTestCase
 
-MonitorObject = Enum("MonitorObject", "EIGENMODE DFT LDOS POYNTING")
+# MonitorObject = Enum("MonitorObject", "EIGENMODE DFT LDOS POYNTING")
+MonitorObject = Enum("MonitorObject", "POYNTING")
 
 
 class TestAdjointSolver(ApproxComparisonTestCase):
@@ -23,7 +24,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         cls.silicon = mp.Medium(epsilon=12)
         cls.sapphire = mp.Medium(
-            epsilon_diag=(10.225, 10.225, 9.95),
+            epsilon_cddiag=(10.225, 10.225, 9.95),
             epsilon_offdiag=(-0.825, -0.55 * np.sqrt(3 / 2), 0.55 * np.sqrt(3 / 2)),
         )
 
@@ -169,17 +170,17 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             def J(mode_mon):
                 return npa.array(mode_mon)
-            
+
         elif mon_type.name == "POYNTING":
             obj_list = [
                 mpa.PoyntingFlux(
-                    sim,
-                    mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0, 1, 0))
+                    sim, mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0, 1, 0))
                 )
             ]
-
-            def J(mode_mon):
-                return mode_mon
+            # inputs contains H1, H2, E1, E2, and metadata (in that order)
+            def J(*inputs):
+                flux = obj_list[0].compute_flux(*inputs)
+                return flux
 
         opt = mpa.OptimizationProblem(
             simulation=sim,
@@ -342,7 +343,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         projected_field = mpa.tanh_projection(filtered_field, beta, eta)
 
         return projected_field.flatten()
-    
+
     def test_Poynting_Flux(self):
         print("*** TESTING POYNTING OBJECTIVE ***")
 
@@ -350,12 +351,15 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         for frequencies in [[self.fcen], [1 / 1.58, self.fcen, 1 / 1.53]]:
             # compute objective value and its gradient for unperturbed design
             unperturbed_val, unperturbed_grad = self.adjoint_solver(
-                self.p, MonitorObject.POYNTING, frequencies
+                self.p, MonitorObject.POYNTING, frequencies, need_gradient=False
             )
 
             # compute objective value for perturbed design
             perturbed_val = self.adjoint_solver(
-                self.p + self.dp, MonitorObject.POYNTING, frequencies, need_gradient=False
+                self.p + self.dp,
+                MonitorObject.POYNTING,
+                frequencies,
+                need_gradient=False,
             )
 
             # compare directional derivative
@@ -373,7 +377,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             tol = 0.07 if mp.is_single_precision() else 0.006
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
-            
+
     def test_eigenmode(self):
         print("*** TESTING EIGENMODE OBJECTIVE ***")
 
@@ -434,7 +438,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             tol = 0.07 if mp.is_single_precision() else 0.006
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
-            
+
     def test_eigenmode(self):
         print("*** TESTING EIGENMODE OBJECTIVE ***")
 

@@ -45,6 +45,7 @@ class OptimizationProblem:
             self.objective_functions = objective_functions
         else:
             self.objective_functions = [objective_functions]
+
         self.objective_arguments = objective_arguments
         self.f_bank = []  # objective function evaluation history
 
@@ -197,6 +198,7 @@ class OptimizationProblem:
 
         # record objective quantities from user specified monitors
         self.results_list = [m() for m in self.objective_arguments]
+
         # evaluate objectives
         self.f0 = [fi(*self.results_list) for fi in self.objective_functions]
         if len(self.f0) == 1:
