@@ -454,12 +454,8 @@ bool grid_volume::owns(const ivec &p) const {
     return o.x() > 0 && o.x() <= nx() * 2 && o.y() > 0 && o.y() <= ny() * 2 && o.z() > 0 &&
            o.z() <= nz() * 2;
   }
-  else if (dim == D2) {
-    return o.x() > 0 && o.x() <= nx() * 2 && o.y() > 0 && o.y() <= ny() * 2;
-  }
-  else if (dim == D1) {
-    return o.z() > 0 && o.z() <= nz() * 2;
-  }
+  else if (dim == D2) { return o.x() > 0 && o.x() <= nx() * 2 && o.y() > 0 && o.y() <= ny() * 2; }
+  else if (dim == D1) { return o.z() > 0 && o.z() <= nz() * 2; }
   else {
     meep::abort("Unsupported dimension in owns.\n");
     return false;
@@ -683,9 +679,7 @@ double grid_volume::rmin() const {
   const double qinva = 0.25 * inva;
   if (dim == Dcyl) {
     if (origin.r() == 0.0) { return 0.0; }
-    else {
-      return origin.r() + qinva;
-    }
+    else { return origin.r() + qinva; }
   }
   meep::abort("No rmin in these dimensions.\n");
   return 0.0; // This is never reached.
@@ -814,7 +808,7 @@ bool grid_volume::intersect_with(const grid_volume &vol_in, grid_volume *interse
     }
     if (initial_points != final_points)
       meep::abort("intersect_with: initial_points != final_points,  %zd, %zd\n", initial_points,
-            final_points);
+                  final_points);
   }
   return true;
 }
@@ -858,11 +852,11 @@ ivec grid_volume::iloc(component c, ptrdiff_t ind) const {
 }
 
 size_t grid_volume::surface_area() const {
-  switch(dim) {
-    case Dcyl: return 2*(nr()+nz());
+  switch (dim) {
+    case Dcyl: return 2 * (nr() + nz());
     case D1: return 2;
-    case D2: return 2*(nx()+ny());
-    case D3: return 2*(nx()*ny()+nx()*nz()+ny()*nz());
+    case D2: return 2 * (nx() + ny());
+    case D3: return 2 * (nx() * ny() + nx() * nz() + ny() * nz());
   }
   return 0; // This is never reached.
 }
@@ -909,15 +903,15 @@ vec grid_volume::dz() const {
 
 grid_volume volone(double zsize, double a) {
   if (!isinteger(zsize * a))
-    master_printf_stderr(
-      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
+    master_printf_stderr("Warning: grid volume is not an integer number of pixels; cell size will "
+                         "be rounded to nearest pixel.\n");
   return grid_volume(D1, a, 0, 0, (int)(zsize * a + 0.5));
 }
 
 grid_volume voltwo(double xsize, double ysize, double a) {
   if (!isinteger(xsize * a) || !isinteger(ysize * a))
-    master_printf_stderr(
-      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
+    master_printf_stderr("Warning: grid volume is not an integer number of pixels; cell size will "
+                         "be rounded to nearest pixel.\n");
   return grid_volume(D2, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
                      (ysize == 0) ? 1 : (int)(ysize * a + 0.5), 0);
 }
@@ -928,8 +922,8 @@ grid_volume vol2d(double xsize, double ysize, double a) { return voltwo(xsize, y
 
 grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
   if (!isinteger(xsize * a) || !isinteger(ysize * a) || !isinteger(zsize * a))
-    master_printf_stderr(
-      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
+    master_printf_stderr("Warning: grid volume is not an integer number of pixels; cell size will "
+                         "be rounded to nearest pixel.\n");
   return grid_volume(D3, a, (xsize == 0) ? 1 : (int)(xsize * a + 0.5),
                      (ysize == 0) ? 1 : (int)(ysize * a + 0.5),
                      (zsize == 0) ? 1 : (int)(zsize * a + 0.5));
@@ -937,8 +931,8 @@ grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
 
 grid_volume volcyl(double rsize, double zsize, double a) {
   if (!isinteger(rsize) || !isinteger(zsize))
-    master_printf_stderr(
-      "Warning: grid volume is not an integer number of pixels; cell size will be rounded to nearest pixel.\n");
+    master_printf_stderr("Warning: grid volume is not an integer number of pixels; cell size will "
+                         "be rounded to nearest pixel.\n");
 
   if (zsize == 0.0)
     return grid_volume(Dcyl, a, (int)(rsize * a + 0.5), 0, 1);
@@ -978,26 +972,27 @@ static double cost_diff(int desired_chunks, std::complex<double> costs) {
   return right_cost - left_cost;
 }
 
-void grid_volume::tile_split(int &best_split_point,
-                             direction &best_split_direction) const {
+void grid_volume::tile_split(int &best_split_point, direction &best_split_direction) const {
   const size_t ntot_thresh = 10;
   if (ntot() < ntot_thresh) {
     best_split_point = 0;
     best_split_direction = NO_DIRECTION;
-  } else if (nx() > 1) {
+  }
+  else if (nx() > 1) {
     best_split_point = nx() / 2;
     best_split_direction = X;
-  } else if (ny() > 1) {
+  }
+  else if (ny() > 1) {
     best_split_point = ny() / 2;
     best_split_direction = Y;
-  } else {
+  }
+  else {
     best_split_point = nz() / 2;
     best_split_direction = Z;
   }
 }
 
-void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
-                                  int &best_split_point,
+void grid_volume::find_best_split(int desired_chunks, bool fragment_cost, int &best_split_point,
                                   direction &best_split_direction,
                                   double &left_effort_fraction) const {
   if (size_t(desired_chunks) > nowned_min()) {
@@ -1037,9 +1032,11 @@ void grid_volume::find_best_split(int desired_chunks, bool fragment_cost,
     std::complex<double> costs = get_split_costs(d, split_point, fragment_cost);
     double left_cost = real(costs), right_cost = imag(costs);
     double total_cost = left_cost + right_cost;
-    double split_measure = std::max(left_cost / (desired_chunks / 2), right_cost / (desired_chunks - (desired_chunks / 2)));
+    double split_measure = std::max(left_cost / (desired_chunks / 2),
+                                    right_cost / (desired_chunks - (desired_chunks / 2)));
     // Give a 30% preference to the longest axis, as a heuristic to prefer lower communication costs
-    // when the split_measure is somewhat close.   TODO: use a data-driven communication cost function.
+    // when the split_measure is somewhat close.   TODO: use a data-driven communication cost
+    // function.
     if (d == longest_axis) split_measure *= 0.7;
     if (split_measure < best_split_measure) {
       best_split_measure = split_measure;
@@ -1072,8 +1069,8 @@ grid_volume grid_volume::split_at_fraction(bool side_high, int split_pt, int spl
 // Halve the grid_volume for symmetry exploitation...must contain icenter!
 grid_volume grid_volume::halve(direction d) const {
   grid_volume retval(*this);
-  retval.set_num_direction(d, 1+(big_corner().in_direction(d)-icenter().in_direction(d)) / 2);
-  retval.set_origin(d, icenter().in_direction(d)-2);
+  retval.set_num_direction(d, 1 + (big_corner().in_direction(d) - icenter().in_direction(d)) / 2);
+  retval.set_origin(d, icenter().in_direction(d) - 2);
   return retval;
 }
 
@@ -1088,7 +1085,6 @@ void grid_volume::pad_self(direction d) {
   num_changed();
   shift_origin(d, -2);
 }
-
 
 ivec grid_volume::icenter() const {
   /* Find the center of the user's cell.  This will be used as the
@@ -1218,9 +1214,8 @@ int symmetry::multiplicity() const {
 
 int symmetry::multiplicity(ivec &x) const {
   int m = multiplicity();
-  for (int n=1; n<m; ++n){
-    if (transform(x,n) == x)
-      return n;
+  for (int n = 1; n < m; ++n) {
+    if (transform(x, n) == x) return n;
   }
   return m;
 }
@@ -1285,9 +1280,7 @@ signed_direction symmetry::transform(direction d, int n) const {
       else
         return next->transform(sd.d, nrest) * ph;
     }
-    else {
-      return sd * ph;
-    }
+    else { return sd * ph; }
   }
 }
 
@@ -1600,8 +1593,7 @@ const char *volume::str(char *buffer, size_t buflen) {
     buffer = sbuf;
     buflen = sizeof(sbuf);
   }
-  snprintf(buffer, buflen, "min_corner:%s, max_corner:%s",
-           min_corner.str(), max_corner.str());
+  snprintf(buffer, buflen, "min_corner:%s, max_corner:%s", min_corner.str(), max_corner.str());
   return buffer;
 }
 
@@ -1613,22 +1605,20 @@ const char *grid_volume::str(char *buffer, size_t buflen) {
     buflen = sizeof(sbuf);
   }
 
-  written += snprintf(buffer+written, buflen-written,
+  written += snprintf(buffer + written, buflen - written,
                       "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
                       dimension_name(dim), a, inva, num[0], num[1], num[2]);
 
   // Adapted from the print() method
   LOOP_OVER_DIRECTIONS(dim, d) {
-    written += snprintf(buffer+written, buflen-written,
-              "  %s =%5g - %5g (%5g) \t", direction_name(d), origin.in_direction(d),
-              origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
-    if (buflen-written <=0)
-        break;
+    written += snprintf(buffer + written, buflen - written, "  %s =%5g - %5g (%5g) \t",
+                        direction_name(d), origin.in_direction(d),
+                        origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
+    if (buflen - written <= 0) break;
   }
-  snprintf(buffer+written, buflen-written, "\n}");
+  snprintf(buffer + written, buflen - written, "\n}");
   return buffer;
 }
-
 
 /********************************************************************/
 /********************************************************************/
@@ -1645,13 +1635,14 @@ grid_volume grid_volume::subvolume(ivec is, ivec ie, component c) {
 
 void grid_volume::init_subvolume(ivec is, ivec ie, component c) {
   ivec origin(dim, 0);
-  for (int i=0;i<3;i++) num[i] = 0;
+  for (int i = 0; i < 3; i++)
+    num[i] = 0;
   LOOP_OVER_DIRECTIONS(dim, d) {
-    num[(int)d] = (ie - is).in_direction(d)/2;
-    origin.set_direction(d, is.in_direction(d)-iyee_shift(c).in_direction(d));
+    num[(int)d] = (ie - is).in_direction(d) / 2;
+    origin.set_direction(d, is.in_direction(d) - iyee_shift(c).in_direction(d));
   }
   num_changed();
-  //center_origin();
+  // center_origin();
   set_origin(origin);
 }
 

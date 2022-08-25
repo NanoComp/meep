@@ -1,10 +1,11 @@
 # Python port of meep/examples/ring.ctl
 # Calculating 2d ring-resonator modes, from the Meep tutorial.
 import unittest
+
 import meep as mp
 
-class TestRing(unittest.TestCase):
 
+class TestRing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = mp.make_output_directory()
@@ -21,7 +22,7 @@ class TestRing(unittest.TestCase):
         dpml = 2
         sxy = 2 * (r + w + pad + dpml)
 
-        dielectric = mp.Medium(epsilon=n * n)
+        dielectric = mp.Medium(epsilon=n**2)
         air = mp.Medium()
 
         c1 = mp.Cylinder(r + w, material=dielectric)
@@ -32,12 +33,14 @@ class TestRing(unittest.TestCase):
 
         src = mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1))
 
-        self.sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
-                                 geometry=[c1, c2],
-                                 sources=[src],
-                                 resolution=10,
-                                 symmetries=[mp.Mirror(mp.Y)],
-                                 boundary_layers=[mp.PML(dpml)])
+        self.sim = mp.Simulation(
+            cell_size=mp.Vector3(sxy, sxy),
+            geometry=[c1, c2],
+            sources=[src],
+            resolution=10,
+            symmetries=[mp.Mirror(mp.Y)],
+            boundary_layers=[mp.PML(dpml)],
+        )
 
         self.sim.use_output_directory(self.temp_dir)
         self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
@@ -48,7 +51,7 @@ class TestRing(unittest.TestCase):
         self.sim.run(
             mp.at_beginning(mp.output_epsilon),
             mp.after_sources(self.h),
-            until_after_sources=300
+            until_after_sources=300,
         )
 
         m1 = self.h.modes[0]
@@ -68,5 +71,5 @@ class TestRing(unittest.TestCase):
         self.assertAlmostEqual(fp, -0.08185972142450348, places=places)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

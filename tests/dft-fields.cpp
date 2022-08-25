@@ -33,8 +33,8 @@ double dummy_eps(const vec &) { return 1.0; }
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void Run(bool Pulse, double resolution, std::complex<meep::realnum> **field_array = 0, int *array_rank = 0,
-         size_t *array_dims = 0) {
+void Run(bool Pulse, double resolution, std::complex<meep::realnum> **field_array = 0,
+         int *array_rank = 0, size_t *array_dims = 0) {
   /***************************************************************/
   /* initialize geometry                                         */
   /***************************************************************/
@@ -102,16 +102,18 @@ void Run(bool Pulse, double resolution, std::complex<meep::realnum> **field_arra
 /***************************************************************/
 /* return L2 norm of error normalized by average of L2 norms   */
 /***************************************************************/
-double compare_array_to_dataset(std::complex<meep::realnum> *field_array, int array_rank, size_t *array_dims,
-                                const char *file, const char *name) {
+double compare_array_to_dataset(std::complex<meep::realnum> *field_array, int array_rank,
+                                size_t *array_dims, const char *file, const char *name) {
   int file_rank;
   size_t file_dims[3];
   h5file f(file, h5file::READONLY, false);
   char dataname[100];
   snprintf(dataname, 100, "%s.r", name);
-  double *rdata = (double *)f.read(dataname, &file_rank, file_dims, 2, false /* single_precision */);
+  double *rdata =
+      (double *)f.read(dataname, &file_rank, file_dims, 2, false /* single_precision */);
   snprintf(dataname, 100, "%s.i", name);
-  double *idata = (double *)f.read(dataname, &file_rank, file_dims, 2, false /* single_precision */);
+  double *idata =
+      (double *)f.read(dataname, &file_rank, file_dims, 2, false /* single_precision */);
   if (!rdata || !idata) return -1.0;
   if (file_rank != array_rank) return -1.0;
   for (int n = 0; n < file_rank; n++)
@@ -148,9 +150,11 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
   int rank1;
   size_t *dims1 = new size_t[expected_rank];
   snprintf(dataname, 100, "%s.r", name1);
-  double *rdata1 = (double *)f1.read(dataname, &rank1, dims1, expected_rank, false /* single_precision */);
+  double *rdata1 =
+      (double *)f1.read(dataname, &rank1, dims1, expected_rank, false /* single_precision */);
   snprintf(dataname, 100, "%s.i", name1);
-  double *idata1 = (double *)f1.read(dataname, &rank1, dims1, expected_rank, false /* single_precision */);
+  double *idata1 =
+      (double *)f1.read(dataname, &rank1, dims1, expected_rank, false /* single_precision */);
   if (!rdata1 || !idata1) return -1.0;
 
   // read dataset 2
@@ -158,9 +162,11 @@ double compare_complex_hdf5_datasets(const char *file1, const char *name1, const
   int rank2;
   size_t *dims2 = new size_t[expected_rank];
   snprintf(dataname, 100, "%s.r", name2);
-  double *rdata2 = (double *)f2.read(dataname, &rank2, dims2, expected_rank, false /* single_precision */);
+  double *rdata2 =
+      (double *)f2.read(dataname, &rank2, dims2, expected_rank, false /* single_precision */);
   snprintf(dataname, 100, "%s.i", name2);
-  double *idata2 = (double *)f2.read(dataname, &rank2, dims2, expected_rank, false /* single_precision */);
+  double *idata2 =
+      (double *)f2.read(dataname, &rank2, dims2, expected_rank, false /* single_precision */);
   if (!rdata2 || !idata2) return -1.0;
 
   // check same size

@@ -4,9 +4,9 @@
 
 Meep uses a [second-order accurate finite-difference scheme](https://en.wikipedia.org/wiki/Finite_difference_method#Accuracy_and_order) for discretizing [Maxwell's equations](Introduction.md#maxwells-equations). This means that the results from Meep converge to the "exact" result from the non-discretized (i.e., continuous) system quadratically with the grid resolution $\Delta x$. However, this second-order error $\mathcal{O}(\Delta x^2)$ is generally spoiled to first-order error $\mathcal{O}(\Delta x)$ if the discretization involves a *discontinuous* material boundary. Moreover, directly discretizing a discontinuity in $\varepsilon$ or $\mu$ leads to "stairstepped" interfaces that can only be varied in discrete jumps of one voxel. Meep solves both of these problems by smoothing $\varepsilon$ and $\mu$: before discretizing, discontinuities are smoothed into continuous transitions over a distance of one voxel $\Delta x$, using a second-order accurate averaging procedure summarized [below](#smoothed-permittivity-tensor-via-perturbation-theory). Subpixel smoothing, illustrated in the following schematic, enables the discretized solution to converge as quickly as possible to the exact solution as the `resolution` increases.
 
-<center>
-![](images/subpixel_smoothing.png)
-</center>
+
+![](images/subpixel_smoothing.png#center)
+
 
 However, subpixel smoothing has five limitations:
 
@@ -27,11 +27,11 @@ Smoothed Permittivity Tensor via Perturbation Theory
 
 Any scheme for smoothing the interface perturbs the problem you are solving, as shown in the schematic above, and a second-order accurate smoothing scheme must mean that the perturbation's effect is zero to first order in the smoothing diameter (the grid resolution). This turns out to require that the smoothing scheme be anisotropic. The smoothing scheme is based on formulating an effective tensor $\tilde{\varepsilon}$ (or $\tilde{\mu}$) which uses the mean $\varepsilon$ for fields parallel to the interface and the harmonic mean (inverse of mean of $\varepsilon^{-1}$) for fields perpendicular to the interface:
 
-<center>
+
 
 $$ \tilde{\varepsilon}^{-1} = \textbf{P}\langle\varepsilon^{-1}\rangle + \big(1-\textbf{P}\big)\langle\varepsilon\rangle^{-1} $$
 
-</center>
+
 
 where $\textbf{P}$ is the projection matrix $P_{ij}=n_{i}n_{j}$ onto the normal $\vec{n}$. The $\langle\cdots\rangle$ denotes an average over the voxel $sΔx\times sΔy\times sΔz$ surrounding the grid point in question where $s$ is a smoothing diameter in grid units equal to 1/`resolution`. (This analysis assumes that the interface is approximately planar throughout the voxel, which will hold in the regime where the voxels are small compared to the geometric feature sizes.) If the initial materials are anisotropic (via `epsilon_diag` and `epsilon_offdiag`), a more complicated formula is used. The key point is that, even if the structure consists entirely of isotropic materials, the discretized structure will use anisotropic materials. Also, the smoothing will transform a discontinuous interface separating $\varepsilon_1$ and $\varepsilon_2$ into a continuously varying interface in the range [$\varepsilon_1$, $\varepsilon_2$]. For interface voxels, Meep computes the effective permittivity tensor automatically at the start of the simulation prior to time stepping via analytic expressions for the filling fraction and local normal vector. For details involving derivation of the effective permittivity tensor and its implementation in Meep/FDTD, see [Optics Letters, Vol. 36, pp. 2972-4 (2006)](https://www.osapublishing.org/ol/abstract.cfm?uri=ol-31-20-2972) and [Optics Letters, Vol. 35, pp. 2778-80 (2009)](https://www.osapublishing.org/abstract.cfm?uri=ol-34-18-2778).
 
@@ -85,7 +85,7 @@ for rad in np.arange(1.800,2.001,0.005):
                             radius=rad,
                             height=mp.inf,
                             center=mp.Vector3())]
-    
+
     sim = mp.Simulation(cell_size=mp.Vector3(sxy,sxy),
                         geometry=geometry,
                         eps_averaging=True,
@@ -104,15 +104,15 @@ A plot of the resonant frequency versus the ring radius is shown below for subpi
 
 This particular resonant mode has a [quality (Q) factor](https://en.wikipedia.org/wiki/Q_factor) of ~10<sup>7</sup> at a frequency of 0.25 and radius of 2.0 μm. This means that roughly 4x10<sup>7</sup> optical periods are required to accurately resolve the field decay due to the Fourier uncertainty relation. Instead, [`Harminv`](Python_User_Interface.md#harminv) can resolve the $Q$ using just ~1000 periods. This is nearly a four orders of magnitude reduction in the run time.
 
-<center>
-![](images/ring_vary_radius.png)
-</center>
+
+![](images/ring_vary_radius.png#center)
+
 
 To compare the convergence rate of the discretization error, the following plot shows the error in the resonant frequency (relative to the "exact" result at a resolution of 300 voxels/μm) as a function of the grid resolution for a ring geometry with a fixed inner radius of 2.0 μm. The no-smoothing results have a linear error due to the stairstepped interface discontinuities. The subpixel-smoothing results have roughly second-order convergence.
 
-<center>
-![](images/ring_subpixel_smoothing_rate.png)
-</center>
+
+![](images/ring_subpixel_smoothing_rate.png#center)
+
 
 Enabling Averaging for Material Function
 ----------------------------------------
@@ -192,9 +192,9 @@ geometry = [mp.Prism(vertices_outer, height=mp.inf, material=mp.Medium(index=n))
 
 The following convergence plot shows the frequency for the resonant mode with $H_z$ polarization and $Q$ of ~10<sup>7</sup> as a function of resolution.
 
-<center>
-![](images/ring_freq_vs_resolution.png)
-</center>
+
+![](images/ring_freq_vs_resolution.png#center)
+
 
 There are three important items to note. (1) The pixel grid and prism representations are each converging to a different frequency than the material function and cylinder. This is because in the limit of infinite resolution, they are *different* structures than the cylinders. (2) The material function is the same structure as the cylinder with no smoothing. In the limit of infinite resolution, the material function and cylinder converge to the same frequency. The only difference is the *rate* of convergence: the cylinder is second order (due to subpixel smoothing) whereas the material function is first order. See the convergence plot above (third figure from the top). (3) The non-interpolated pixel grid shows irregular convergence compared with the interpolated grid. This is expected because the non-interpolated grid is discontinuous but the interpolated grid is not. Also, because these are different structures the two pixel grids converge to different frequencies. To see this trend clearly requires reducing the "jumpiness" of the non-interpolated grid: the Meep resolution needs to be increased beyond 200 which is already ~3X the grid resolution.
 
@@ -265,8 +265,8 @@ geometry = [mp.Block(center=mp.Vector3(),
 
 The plot of the resonant mode frequency with resolution is shown in the figure below. There are two items to note: (1) three structures — "no smoothing", "Gaussian blur", and Sigmoid smoothed with pixel-sized smoothing width (`dr = 1/resolution`) labeled "Sigmoid boundaries (width=1/resolution)" — are converging to the same frequency. This is expected because the smoothing radius/width is going to zero as the resolution approaches infinity and thus the two smoothed structures are converging to the same discontinuous structure. The effect of the smoothing has been to make the convergence more regular compared with no smoothing. The Sigmoid-smoothed structure has the slowest convergence rate of the three. (2) The Sigmoid-smoothed structure with constant smoothing width (`dr = 0.05`) labeled "Sigmoid boundaries (width=constant)" is converging to a different frequency than the other three structures because it is a different structure.
 
-<center>
-![](images/ring_matfunc_freq_vs_resolution.png)
-</center>
+
+![](images/ring_matfunc_freq_vs_resolution.png#center)
+
 
 Finally, it is worth mentioning that a Gaussian blur (which provides only first-order accuracy) would probably be slower than doing the second-order accurate anisotropic smoothing using a [level set](https://en.wikipedia.org/wiki/Level_set) since the smoothing (e.g., via a Sigmoid function) as well as the normal vector can be computed analytically for the level set (see [\#1229](https://github.com/NanoComp/meep/issues/1229)).

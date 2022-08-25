@@ -4,7 +4,7 @@ Meep simulations are Python scripts which involve specifying the device geometry
 
 Python libraries such as NumPy, SciPy, and Matplotlib can be used to augment the simulation functionality and will also be demonstrated. Much of the functionality of the low-level C++ interface has been abstracted in Python which means that you don't need to be an experienced programmer to set up simulations. Reasonable defaults are available where necessary.
 
-Several tutorials and examples are found here. These tutorials are meant to illustrate Meep's various features in an interactive and application-oriented manner. 
+Several tutorials and examples are found here. These tutorials are meant to illustrate Meep's various features in an interactive and application-oriented manner.
 
 ## iPython/Jupyter Notebooks
 
@@ -16,7 +16,7 @@ The recommended method to run the tutorial notebooks is by 1.) installing `meep`
 
 ### nbviewer
 
-`nbviewer` is a web platform that can render interactive features found inside Jupyter notebooks openly stored on web-servers. While `nbviewer` can't run python code, it can execute stored javascript code used to animate the simulations. 
+`nbviewer` is a web platform that can render interactive features found inside Jupyter notebooks openly stored on web-servers. While `nbviewer` can't run python code, it can execute stored javascript code used to animate the simulations.
 
 ### GitHub
 
@@ -26,7 +26,7 @@ GitHub is able to render some of the smaller notebooks as plain text. However, t
 
 Below are summaries for each tutorial, along with the features the tutorials highlight. While there is no particular order to the tutorials, they progressively incorporate more complicated features.
 
-#### Basics 
+#### Basics
 
 * __`straight-waveguide.ipynb`__ -
 A simple 2D straight waveguide tutorial that explores basic meep features like `geometry`, `sources`, and `PML` layers. The tutorial also explores basic visualization and animation features.
@@ -47,12 +47,12 @@ Computes the resonant mode frequencies of a 2D ring resonator using `harminv`.
 * __`holey-wg-cavity.ipynb`__ -
 Calculates the transmission and resonant modes of a waveguide photonic crystal cavity. Demonstrates the `harminv` routines and how to estimate the $Q$ of cavities.
 
-* __`holey-wg-bands.ipynb`__ - 
+* __`holey-wg-bands.ipynb`__ -
 Computes the band diagram of the infinite periodic waveguide by itself with no defects in the time domain. Explores the `k_point`, `run_k_point`, and periodic boundary conditions features.
 
 #### MPB and Band diagrams
 
-* __`mpb_strip.ipynb`__ - 
+* __`mpb_strip.ipynb`__ -
 
 #### Eigenmode Source
 
@@ -79,12 +79,12 @@ Computes the band diagram of the infinite periodic waveguide by itself with no d
 
 #### Nonlinear Optics
 
-* __`3rd-harm-1d.ipynb`__ - 
+* __`3rd-harm-1d.ipynb`__ -
 Examines 3rd harmonic generation in a $\chi^{(3)}$ material. Explores the proper way to do 1d simulations, how to include nonlinearities in materials, and compares experimental results to theory.
 
 #### Near to Far Field Spectra
 
-* __`antenna-radiation.ipynb`__ - 
+* __`antenna-radiation.ipynb`__ -
 Computes the radiation pattern of a simple point source "antenna". Explores `add_near2far`, `add_flux`, `get_fluxes`, and `get_farfield` features.
 
 * __`metasurface_lens.ipynb`__ -

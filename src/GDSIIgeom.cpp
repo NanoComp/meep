@@ -152,8 +152,7 @@ geometric_object_list get_GDSII_prisms(material_type material, const char *GDSII
     }
     double height = zmax - zmin;
     vector3 zaxis = {0, 0, 1};
-    prisms.items[np] =
-        make_prism(material, vertices.get(), num_vertices, height, zaxis);
+    prisms.items[np] = make_prism(material, vertices.get(), num_vertices, height, zaxis);
   }
   return prisms;
 }

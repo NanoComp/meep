@@ -1,4 +1,5 @@
 import math
+
 import meep as mp
 from meep import mpb
 
@@ -16,8 +17,11 @@ index_max = 3
 #                        * (1 + cos(2*pi*x))
 # This is periodic, and also has inversion symmetry.
 def eps_func(p):
-    return mp.Medium(index=index_min + 0.5 * (index_max - index_min) *
-                     (1 + math.cos(2 * math.pi * p.x)))
+    return mp.Medium(
+        index=index_min
+        + 0.5 * (index_max - index_min) * (1 + math.cos(2 * math.pi * p.x))
+    )
+
 
 geometry_lattice = mp.Lattice(size=mp.Vector3(1))  # 1d cell
 
@@ -34,7 +38,7 @@ ms = mpb.ModeSolver(
     k_points=k_points,
     geometry_lattice=geometry_lattice,
     resolution=resolution,
-    default_material=default_material
+    default_material=default_material,
 )
 
 
@@ -42,5 +46,6 @@ def main():
     # the TM and TE bands are degenerate, so we only need TM:
     ms.run_tm()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

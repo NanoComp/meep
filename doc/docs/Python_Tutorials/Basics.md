@@ -51,7 +51,9 @@ geometry = [mp.Block(mp.Vector3(mp.inf,1,mp.inf),
 
 The waveguide is specified by a `Block` (parallelepiped) of size $\infty \times 1 \times \infty$, with $ε=12$, centered at (0,0) which is the center of the cell. By default, any place where there are no objects there is air ($ε=1$), although this can be changed by setting the `default_material` variable. The resulting structure is shown below.
 
-<center>![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png)</center>
+
+![](../images/Python-Tutorial-wvg-straight-eps-000000.00.png#center)
+
 
 We have the structure and need to specify the current sources using the `sources` object. The simplest thing is to add a single point source $J_z$:
 
@@ -121,7 +123,8 @@ plt.axis('off')
 plt.show()
 ```
 
-<center>![](../images/Python-Tutorial-wvg-straight-ez-000200.00.png)</center>
+![](../images/Python-Tutorial-wvg-straight-ez-000200.00.png#center)
+
 
 We see that the the source has excited the waveguide mode but has also excited radiating fields propagating away from the waveguide. At the boundaries, the field quickly goes to zero due to the PML.
 
@@ -149,7 +152,9 @@ resolution = 10
 
 Note that we have *two* blocks, both off-center to produce the bent waveguide structure pictured below. As illustrated in the figure, the origin (0,0) of the coordinate system is at the center of the cell, with positive $y$ being downwards, and thus the block of size 12$\times$1 is centered at (-2,-3.5). Also shown in green is the source plane at $x=-7$ which is shifted to $y=-3.5$ so that it is still inside the waveguide.
 
-<center>![](../images/Tutorial-wvg-bent-eps-000000.00.png)</center>
+
+![](../images/Tutorial-wvg-bent-eps-000000.00.png#center)
+
 
 There are a couple of items to note. First, a point source does not couple very efficiently to the waveguide mode, so we'll expand this into a line source, centered at (-7,-3.5), with the same width as the waveguide by adding a `size` property to the source. This is shown in green in the figure above. An [eigenmode source](../Python_User_Interface.md#eigenmodesource) can also be used which is described in [Tutorial/Optical Forces](Optical_Forces.md). Second, instead of turning the source on suddenly at $t=0$ which excites many other frequencies because of the discontinuity, we will ramp it on slowly. Meep uses a hyperbolic tangent (tanh) turn-on function over a time proportional to the `width` of 20 time units which is a little over three periods. Finally, just for variety, we'll specify the vacuum wavelength instead of the frequency; again, we'll use a wavelength such that the waveguide is half a wavelength wide.
 
@@ -197,11 +202,15 @@ unix% convert ez.t*.png ez.gif
 
 We are using an animated GIF format for the output. This results in the following animation:
 
-<center>![](../images/Tutorial-wvg-ez.gif)</center>
+
+![](../images/Tutorial-wvg-ez.gif#center)
+
 
 It is clear that the transmission around the bend is rather low for this frequency and structure &mdash; both large reflection and large radiation loss are clearly visible. Moreover, since we are operating just barely below the cutoff for single-mode behavior, we are able to excite a second *leaky* mode after the waveguide bend, whose second-order mode pattern (superimposed with the fundamental mode) is apparent in the animation. Below, we show a field snapshot from a simulation with a larger cell along the $y$ direction, in which you can see that the second-order leaky mode decays away, leaving us with the fundamental mode propagating downward.
 
-<center>![](../images/Tutorial-wvg-bent2-ez-000300.00.png)</center>
+
+![](../images/Tutorial-wvg-bent2-ez-000300.00.png#center)
+
 
 Instead of doing an animation, another interesting possibility is to make an image from a $x \times t$ slice. To get the $y=-3.5$ slice, which gives us an image of the fields in the first waveguide branch as a function of time, we can use `get_array` in a step function to collect a slice for each time step:
 
@@ -223,7 +232,8 @@ plt.axis('off')
 plt.show()
 ```
 
-<center>![](../images/Python-Tutorial-wvg-bent-ez-tslice.png)</center>
+![](../images/Python-Tutorial-wvg-bent-ez-tslice.png#center)
+
 
 #### Output Tips and Tricks
 
@@ -232,7 +242,7 @@ Above, we outputted the full 2d data slice at every 0.6 time units, resulting in
 To create the movie above, all we really need are the *images* corresponding to each time. Images can be stored much more efficiently than raw arrays of numbers &mdash; to exploit this fact, Meep allows you to output PNG images instead of HDF5 files. In particular, instead of `output_efield_z` as above, we can use `mp.output_png(mp.Ez, "-Zc dkbluered")`, where Ez is the component to output and the `"-Zc` `dkbluered"` are options for `h5topng` of [h5utils](https://github.com/NanoComp/h5utils/blob/master/README.md) which is the program that is actually used to create the image files. That is:
 
 ```py
-sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)        
+sim.run(mp.at_every(0.6 , mp.output_png(mp.Ez, "-Zc dkbluered")), until=200)
 ```
 
 will output a PNG file file every 0.6 time units, which can then be combined with `convert` as above to create a movie. The movie will be similar to the one before, but not identical because of how the color scale is determined. Before, we used the `-R` option to make h5topng use a uniform color scale for all images, based on the minimum/maximum field values over <i>all</i> time steps. That is not possible because we output an image before knowing the field values at future time steps. Thus, what `output_png` does is to set its color scale based on the minimum/maximum field values from all *past* times &mdash; therefore, the color scale will slowly "ramp up" as the source turns on.
@@ -248,7 +258,7 @@ This will put *all* of the output files (.h5, .png, etcetera) into a newly-creat
 What if we want to output an $x \times t$ slice, as above? To do this, we only really wanted the values at $y=-3.5$, and therefore we can exploit another powerful output feature &mdash; Meep allows us to output only **a subset of the computational cell**. This is done using the `in_volume` function, which like `at_every` and `to_appended` is another function that modifies the behavior of other output functions. In particular, we can do:
 
 ```
-sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)), until=200)        
+sim.run(mp.in_volume(mp.Volume(mp.Vector3(0,-3.5), size=mp.Vector3(16,0)), mp.to_appended("ez-slice", mp.output_efield_z)), until=200)
 ```
 
 The first argument to `in_volume` is a volume which applies to all of the nested output functions. Note that `to_appended`, `at_every`, and `in_volume` are cumulative regardless of what order you put them in. This creates the output file `ez-slice.h5` which contains a dataset of size 162x330 corresponding to the desired $x \times t$ slice.
@@ -324,7 +334,7 @@ sim = mp.Simulation(cell_size=cell,
 nfreq = 100  # number of frequencies at which to compute flux
 
 # reflected flux
-refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))                            
+refl_fr = mp.FluxRegion(center=mp.Vector3(-0.5*sx+dpml+0.5,wvg_ycen,0), size=mp.Vector3(0,2*w,0))
 refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
 # transmitted flux
@@ -338,7 +348,7 @@ The fluxes will be computed for `nfreq=100` frequencies centered on `fcen`, from
 
 As described in [Introduction/Transmittance/Reflectance Spectra](../Introduction.md#transmittancereflectance-spectra), computing the reflection spectra requires some care because we need to separate the incident and reflected fields. We do this by first saving the Fourier-transformed fields from the normalization run. And then, before we start the second run, we load these fields, *negated*. The latter subtracts the Fourier-transformed incident fields from the Fourier transforms of the scattered fields. Logically, we might subtract these after the run, but it turns out to be more convenient to subtract the incident fields first and then accumulate the Fourier transform. All of this is accomplished with two commands which use the raw simulation data: `get_flux_data` and `load_minus_flux_data`. We run the first simulation as follows:
 
-```py    
+```py
 pt = mp.Vector3(0.5*sx-dpml-0.5,wvg_ycen)
 
 sim.run(until_after_sources=mp.stop_when_fields_decayed(50,mp.Ez,pt,1e-3))
@@ -362,7 +372,7 @@ We need to run the second simulation which involves the waveguide bend. We reset
 
 ```py
 sim.reset_meep()
-    
+
 geometry = [mp.Block(mp.Vector3(sx-pad,w,mp.inf), center=mp.Vector3(-0.5*pad,wvg_ycen), material=mp.Medium(epsilon=12)),
             mp.Block(mp.Vector3(w,sy-pad,mp.inf), center=mp.Vector3(wvg_xcen,0.5*pad), material=mp.Medium(epsilon=12))]
 
@@ -377,7 +387,7 @@ refl = sim.add_flux(fcen, df, nfreq, refl_fr)
 
 tran_fr = mp.FluxRegion(center=mp.Vector3(wvg_xcen,0.5*sy-dpml-0.5,0), size=mp.Vector3(2*w,0,0))
 tran = sim.add_flux(fcen, df, nfreq, tran_fr)
-    
+
 # for normal run, load negated fields to subtract incident from refl. fields
 sim.load_minus_flux_data(refl, straight_refl_data)
 
@@ -392,7 +402,7 @@ flux_freqs = mp.get_flux_freqs(refl)
 ```
 
 With the flux data, we are ready to compute and plot the reflectance and transmittance. The reflectance is the reflected flux divided by the incident flux. We also have to multiply by -1 because all fluxes in Meep are computed in the positive-coordinate direction by default, and we want the flux in the $-x$ direction. The transmittance is the transmitted flux divided by the incident flux. Finally, the scattered loss is simply $1-transmittance-reflectance$. The results are plotted in the accompanying figure.
- 
+
 ```py
 wl = []
 Rs = []
@@ -400,7 +410,7 @@ Ts = []
 for i in range(nfreq):
     wl = np.append(wl, 1/flux_freqs[i])
     Rs = np.append(Rs,-bend_refl_flux[i]/straight_tran_flux[i])
-    Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])    
+    Ts = np.append(Ts,bend_tran_flux[i]/straight_tran_flux[i])
 
 if mp.am_master():
     plt.figure()
@@ -413,7 +423,8 @@ if mp.am_master():
     plt.show()
 ```
 
-<center>![](../images/Tut-bend-flux.png)</center>
+![](../images/Tut-bend-flux.png#center)
+
 
 We should also check whether our data is converged. We can do this by increasing the resolution and cell size and seeing by how much the numbers change. In this case, we'll try doubling the cell size:
 
@@ -458,7 +469,7 @@ def main(args):
     fcen = 0.5*(fmin+fmax)  # center frequency
     df = fmax-fmin          # frequency width
     nfreq = 50              # number of frequency bins
-    
+
     # rotation angle (in degrees) of source: CCW around Y axis, 0 degrees along +Z axis
     theta_r = math.radians(args.theta)
 
@@ -470,7 +481,7 @@ def main(args):
         dimensions = 1
     else:
         dimensions = 3
-    
+
     sources = [mp.Source(mp.GaussianSource(fcen,fwidth=df),
                          component=mp.Ex,
                          center=mp.Vector3(0,0,-0.5*sz+dpml))]
@@ -484,7 +495,7 @@ def main(args):
 
     refl_fr = mp.FluxRegion(center=mp.Vector3(0,0,-0.25*sz))
     refl = sim.add_flux(fcen, df, nfreq, refl_fr)
-    
+
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mp.Vector3(0,0,-0.5*sz+dpml), 1e-9))
 
     empty_flux = mp.get_fluxes(refl)
@@ -511,10 +522,10 @@ def main(args):
 
     refl_flux = mp.get_fluxes(refl)
     freqs = mp.get_flux_freqs(refl)
-    
+
     for i in range(nfreq):
         print("refl:, {}, {}, {}, {}".format(k.x,1/freqs[i],math.degrees(math.asin(k.x/freqs[i])),-refl_flux[i]/empty_flux[i]))
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-res', type=int, default=200, help='resolution (default: 200 pixels/um)')
@@ -616,7 +627,8 @@ cbar.set_ticklabels(["{:.1f}".format(t) for t in np.arange(0,0.4,0.1)])
 plt.show()
 ```
 
-<center>![](../images/reflectance_angular_spectrum.png)</center>
+![](../images/reflectance_angular_spectrum.png#center)
+
 
 Mie Scattering of a Lossless Dielectric Sphere
 ----------------------------------------------
@@ -627,7 +639,9 @@ The scattering cross section ($\sigma_{scat}$) is the scattered power in all dir
 
 A schematic of the 2d cross section at $z=0$ of the 3d cell is shown below.
 
-<center>![](../images/mie_scattering_schematic.png)</center>
+
+![](../images/mie_scattering_schematic.png#center)
+
 
 The simulation script is in [examples/mie_scattering.py](https://github.com/NanoComp/meep/blob/master/python/examples/mie_scattering.py). The notebook is [examples/mie_scattering.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/mie_scattering.ipynb). As an estimate of runtime, the [parallel simulation](../Parallel_Meep.md) on a machine with three Intel Xeon 4.20 GHz cores takes less than five minutes.
 
@@ -755,7 +769,9 @@ The incident intensity (`intensity`) is the flux in one of the six monitor plane
 
 Results are shown below. Overall, the Meep results agree well with the analytic theory.
 
-<center>![](../images/mie_scattering.png)</center>
+
+![](../images/mie_scattering.png#center)
+
 
 Finally, for the case of a *lossy* dielectric material (i.e. complex refractive index) with non-zero absorption, the procedure to obtain the scattering efficiency is the same. The absorption efficiency is the ratio of the absorption cross section ($\sigma_{abs}$) to the cross sectional area of the sphere. The absorption cross section is the total absorbed power divided by the incident intensity. The absorbed power is simply flux into the same box as for the scattered power, but *without* subtracting the incident field (and with the opposite sign, since absorption is flux *into* the box and scattering is flux *out of* the box): omit the `load_minus_flux_data` calls. The extinction cross section ($\sigma_{ext}$) is simply the sum of the scattering and absorption cross sections: $\sigma_{scat}+\sigma_{abs}$.
 
@@ -765,11 +781,8 @@ As an extension of the [Mie scattering example](#mie-scattering-of-a-lossless-di
 
 The scattering cross section can be obtained by integrating the differential cross section over all [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
-<center>
-
 $$ \sigma_{scatt} = \int_0^{2\pi} d\phi \int_0^{\pi} \sigma_{diff}(\phi,\theta)\sin(\theta)d\theta $$
 
-</center>
 
 (In fact, this relationship is essentially the reason for the DCS definition: while the scattering cross section is *total* scattered power divided by incident intensity, the DCS is power *per [solid angle](https://en.wikipedia.org/wiki/Solid_angle)*, such that integrating it over spherical angles gives the total cross section.  That's why we compute DCS using the flux density in a given direction multiplied by $R^2$: in the limit $R \to \infty$, this gives the outward flux through an infinitesimal patch of an infinite sphere, divided by the solid angle of the patch.   The RCS is similar, but the scattering cross section is the *average* of the RCS over all angles rather than the integral, which gives an additional factor of $4\pi$.)
 
@@ -869,7 +882,7 @@ for n in range(npts):
     E[n,:] = [np.conj(ff[j]) for j in range(3)]
     H[n,:] = [ff[j+3] for j in range(3)]
 
-# compute Poynting flux Pr in the radial direction.  At large r, 
+# compute Poynting flux Pr in the radial direction.  At large r,
 # all of the flux is radial so we can simply compute the magnitude of the Poynting vector.
 Px = np.real(np.multiply(E[:,1],H[:,2])-np.multiply(E[:,2],H[:,1]))
 Py = np.real(np.multiply(E[:,2],H[:,0])-np.multiply(E[:,0],H[:,2]))
@@ -1004,15 +1017,17 @@ There is one important item to note: in order to eliminate discretization artifa
 
 A schematic of the simulation layout generated using [`plot2D`](../Python_User_Interface.md#data-visualization) shows the line source (red), PMLs (green hatch region), `dft_flux` box (solid blue contour line), and `dft_fields` surface (blue hatch region).
 
-<center>
-![](../images/power_density_cell.png)
-</center>
+
+![](../images/power_density_cell.png#center)
+
+
 
 The spatial map of the absorbed power density shows that most of the absorption occurs in a small region near the back surface of the cylinder (i.e., on the opposite side of the incident planewave).
 
-<center>
-![](../images/power_density_map.png)
-</center>
+
+![](../images/power_density_map.png#center)
+
+
 
 Finally, the two values for the total absorbed power which are displayed at the end of the run are nearly equivalent. The relative error between the two methods is ~1.0%.
 
@@ -1063,7 +1078,7 @@ Finally, we are ready to run the simulation. The basic idea is to run until the 
 sim = mp.Simulation(cell_size=mp.Vector3(sxy, sxy),
                     geometry=[c1, c2],
                     sources=[src],
-                    resolution=10,                    
+                    resolution=10,
                     boundary_layers=[mp.PML(dpml)])
 
 sim.run(mp.at_beginning(mp.output_epsilon),
@@ -1084,7 +1099,7 @@ There are six, comma-delimited columns in addition to the label. These results a
 
 $$f(t) = \sum_n a_n e^{-i \omega_n t}$$
 
-for complex amplitudes $a_n$ and complex frequencies ω$_n$. The six columns relate to these quantities. The first column is the *real* part of ω$_n$, expressed in our usual 2πc units, and the second column is the *imaginary* part &mdash; a negative imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
+for complex amplitudes $a_n$ and complex frequencies $\omega_n$. The six columns relate to these quantities. The first column is the *real* part of $\omega_n$, expressed in our usual 2πc units, and the second column is the *imaginary* part &mdash; a negative imaginary part corresponds to an exponential decay. This decay rate, for a cavity, is more often expressed as a dimensionless "lifetime" $Q$, defined by:
 
 $$Q = \frac{\mathrm{Re}\,\omega}{-2 \mathrm{Im}\,\omega}.$$
 
@@ -1116,11 +1131,11 @@ unix% convert ring-ez-*.png ring-ez-0.118.gif
 
 The resulting animations for (from left to right) 0.118, 0.147, and 0.175, are below, in which you can clearly see the radiating fields that produce the losses:
 
-<center>
-![](../images/Tut-ring-ez-0.118.gif)
-![](../images/Tut-ring-ez-0.147.gif)
-![](../images/Tut-ring-ez-0.175.gif)
-</center>
+![](../images/Tut-ring-ez-0.118.gif#center)
+![](../images/Tut-ring-ez-0.147.gif#center)
+![](../images/Tut-ring-ez-0.175.gif#center)
+
+
 
 Each of these modes is, of course, doubly-degenerate according to the representations of the $C_{\infty\mathrm{v}}$ symmetry group. The other mode is simply a slight rotation of this mode to make it *odd* through the $x$ axis, whereas we excited only the *even* modes due to our source symmetry. Equivalently, one can form clockwise and counter-clockwise propagating modes by taking linear combinations of the even/odd modes, corresponding to an angular $\phi$ dependence $e^{\pm i m\phi}$ for m=3, 4, and 5 in this case.
 
@@ -1186,8 +1201,8 @@ s = mlab.contour3d(eps_data, colormap="YlGnBu")
 mlab.show()
 ```
 
-<center>
-![](../images/prism_epsilon.png)
-</center>
+![](../images/prism_epsilon.png#center)
+
+
 
 Alternatively, the permittivity can be visualized from outside of Python. This involves writing the permittivity data to an HDF5 file using [`output_epsilon`](../Python_User_Interface.md#output-functions). The HDF5 data is then converted to [VTK](https://en.wikipedia.org/wiki/VTK) via [h5tovtk](https://github.com/NanoComp/h5utils/blob/master/doc/h5tovtk-man.md) of the [h5utils](https://github.com/NanoComp/h5utils) package. VTK data can be visualized using Mayavi or Paraview.

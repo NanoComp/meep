@@ -32,24 +32,14 @@ bool transition::operator==(const transition &other) const {
 
 bool transition::operator!=(const transition &other) const { return !(*this == other); }
 
-medium_struct::medium_struct(double epsilon) :
-      epsilon_diag{epsilon, epsilon, epsilon},
-      epsilon_offdiag{},
-      mu_diag{1, 1, 1},
-      mu_offdiag{},
-      E_susceptibilities(), H_susceptibilities(),
-      E_chi2_diag{},
-      E_chi3_diag{},
-      H_chi2_diag{},
-      H_chi3_diag{},
-      D_conductivity_diag{},
-      B_conductivity_diag{}
-    {}
+medium_struct::medium_struct(double epsilon)
+    : epsilon_diag{epsilon, epsilon, epsilon}, epsilon_offdiag{}, mu_diag{1, 1, 1}, mu_offdiag{},
+      E_susceptibilities(), H_susceptibilities(), E_chi2_diag{}, E_chi3_diag{}, H_chi2_diag{},
+      H_chi3_diag{}, D_conductivity_diag{}, B_conductivity_diag{} {}
 
 void medium_struct::check_offdiag_im_zero_or_abort() const {
-  if (epsilon_offdiag.x.im != 0 || epsilon_offdiag.y.im != 0 ||
-      epsilon_offdiag.z.im != 0 || mu_offdiag.x.im != 0 || mu_offdiag.y.im != 0 ||
-      mu_offdiag.z.im != 0) {
+  if (epsilon_offdiag.x.im != 0 || epsilon_offdiag.y.im != 0 || epsilon_offdiag.z.im != 0 ||
+      mu_offdiag.x.im != 0 || mu_offdiag.y.im != 0 || mu_offdiag.z.im != 0) {
     meep::abort("Found non-zero imaginary part of epsilon or mu offdiag.\n");
   }
 }
@@ -92,4 +82,4 @@ void material_data::copy_from(const material_data &from) {
 
 material_type_list::material_type_list() : items(NULL), num_items(0) {}
 
-}  // namespace meep_geom
+} // namespace meep_geom

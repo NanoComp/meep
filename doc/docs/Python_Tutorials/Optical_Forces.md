@@ -4,9 +4,7 @@
 
 This tutorial demonstrates Meep's ability to compute classical forces via the [Maxwell stress tensor](https://en.wikipedia.org/wiki/Maxwell_stress_tensor). The geometry consists of two identical, parallel, silicon waveguides with square cross section in vacuum. A schematic of the geometry is shown below. Due to the parallel orientation of the waveguides (propagation axis along $z$ and separation in $x$), the two modes can be chosen to be either symmetric or anti-symmetric with respect to an $x$ mirror-symmetry plane between them. As the two waveguides are brought closer and closer together, their modes couple and give rise to a gradient force that is *transverse* to the waveguide axis (i.e., in the $x$ direction). This is different from [radiation pressure](https://en.wikipedia.org/wiki/Radiation_pressure) which involves momentum exchange between photons and is longitudinal in nature (i.e., along the $z$ direction). An interesting phenomena that occurs for this coupled waveguide system is that the force can be tuned to be either attractive or repulsive depending on the relative phase of the two modes. This tutorial will demonstrate this effect.
 
-<center>
-![](../images/Waveguide_forces.png)
-</center>
+![](../images/Waveguide_forces.png#center)
 
 The gradient force $F$ on each waveguide arising from the evanescent coupling of the two waveguide modes can be computed analytically:
 
@@ -28,12 +26,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 resolution = 40   # pixels/μm
-    
+
 Si = mp.Medium(index=3.45)
 
 dpml = 1.0
 pml_layers = [mp.PML(dpml)]
-    
+
 sx = 5
 sy = 3
 cell = mp.Vector3(sx+2*dpml,sy+2*dpml,0)
@@ -132,9 +130,7 @@ plt.show()
 
 The following figure shows the $E_y$ mode profiles at a waveguide separation distance of 0.1 μm. This figure was generated using the [`plot2D`](../Python_User_Interface.md#data-visualization) routine and shows the source and flux monitor (red hatches), force monitors (blue lines), and PMLs (green hatches) surrounding the cell. From the force spectra shown above, at this separation distance the anti-symmetric mode is repulsive whereas the symmetric mode is attractive.
 
-<center>
-![](../images/parallel_wvgs_s0.1.png)
-</center>
+![](../images/parallel_wvgs_s0.1.png#center)
 
 The MPB simulation is in [examples/parallel-wvgs-mpb.py](https://github.com/NanoComp/meep/blob/master/python/examples/parallel-wvgs-mpb.py). There are important differences related to the coordinate dimensions between the MPB and Meep scripts. In the MPB script, the 2d cell is defined using the $yz$ plane, the waveguide propagation axis is $x$, and the waveguide separation axis is $y$. As a consequence, the `num_bands` parameter is always `1` since the $y$ parity of the mode can be defined explicitly (i.e., `run_yodd_zodd` vs. `run_yeven_zodd`). This is different from the Meep script since Meep requires that a 2d cell be defined in the $xy$ plane. MPB has no such requirement.
 

@@ -3,7 +3,7 @@
 ---
 
 <center>
-![](images/Yee-cube.png)
+![](images/Yee-cube.png#center)
 </center>
 
 In order to discretize Maxwell's equations with [second-order accuracy](https://en.wikipedia.org/wiki/Finite_difference_method#Accuracy_and_order) for homogeneous regions where there are no discontinuous material boundaries, FDTD methods *store different field components for different grid locations*. This discretization is known as a **Yee lattice**.
@@ -25,7 +25,7 @@ $$(i+\frac{1}{2},j+\frac{1}{2},k+\frac{1}{2})-\frac{1}{2} \hat{\mathbf{e}}_\ell 
 In two dimensions, the arrangement is similar except that we set $\hat{\mathbf{e}}_3=0$. The 2d Yee lattice for the $H_z$-polarization ($\mathbf{E}$ in the $xy$ plane and $\mathbf{H}$ in the $z$ direction) is shown in the figure below.
 
 <center>
-![](images/Yee-te.png)
+![](images/Yee-te.png#center)
 </center>
 
 The consequence of the Yee lattice is that, whenever you need to access field components, e.g. to find the energy density $(\mathbf{E}^* \cdot \mathbf{D} + |\mathbf{H}|^2)/2$ or the flux $\textrm{Re}\, \mathbf{E}^* \times \mathbf{H}$, then the components need to be **interpolated** to some common point in order to remain second-order accurate. Meep automatically does this [interpolation](Introduction.md#the-illusion-of-continuity) for you wherever necessary &mdash; in particular, whenever you compute [energy density](Python_User_Interface.md#energy-density-spectra) or [Poynting flux](Python_User_Interface.md#flux-spectra), or whenever you [output a field to a file](Python_User_Interface.md#output-functions), it is stored at the centers of each grid voxel: $(i+0.5,j+0.5,k+0.5)$.

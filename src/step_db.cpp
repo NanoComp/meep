@@ -44,7 +44,7 @@ void fields::step_db(field_type ft) {
 bool fields_chunk::step_db(field_type ft) {
   bool allocated_u = false;
 
-  for (const auto& sub_gv : gvs_tiled) {
+  for (const auto &sub_gv : gvs_tiled) {
     DOCMP FOR_FT_COMPONENTS(ft, cc) {
       if (f[cc][cmp]) {
         const component c_p = plus_component[cc], c_m = minus_component[cc];
@@ -116,12 +116,10 @@ bool fields_chunk::step_db(field_type ft) {
             default: meep::abort("bug - non-cylindrical field component in Dcyl");
           }
 
-        STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m,
-                  gv, sub_gv.little_owned_corner0(cc), sub_gv.big_corner(),
-                  Courant, dsig, s->sig[dsig],
-                  s->kap[dsig], s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
-                  s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
-                  f_cond[cc][cmp]);
+        STEP_CURL(the_f, cc, f_p, f_m, stride_p, stride_m, gv, sub_gv.little_owned_corner0(cc),
+                  sub_gv.big_corner(), Courant, dsig, s->sig[dsig], s->kap[dsig], s->siginv[dsig],
+                  f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu], dt,
+                  s->conductivity[cc][d_c], s->condinv[cc][d_c], f_cond[cc][cmp]);
       }
     }
   }
@@ -149,10 +147,10 @@ bool fields_chunk::step_db(field_type ft) {
       const direction dsigu0 = cycle_direction(gv.dim, d_c, 2);
       const direction dsigu = s->sigsize[dsigu0] > 1 ? dsigu0 : NO_DIRECTION;
       const realnum betadt = 2 * pi * beta * dt * (d_c == X ? +1 : -1) *
-                            (f[c_g][1 - cmp] ? (ft == D_stuff ? -1 : +1) * (2 * cmp - 1) : 1);
-      STEP_BETA(the_f, cc, g, gv, gv.little_owned_corner0(cc), gv.big_corner(),
-                betadt, dsig, s->siginv[dsig], f_u[cc][cmp], dsigu,
-                s->siginv[dsigu], s->condinv[cc][d_c], f_cond[cc][cmp]);
+                             (f[c_g][1 - cmp] ? (ft == D_stuff ? -1 : +1) * (2 * cmp - 1) : 1);
+      STEP_BETA(the_f, cc, g, gv, gv.little_owned_corner0(cc), gv.big_corner(), betadt, dsig,
+                s->siginv[dsig], f_u[cc][cmp], dsigu, s->siginv[dsigu], s->condinv[cc][d_c],
+                f_cond[cc][cmp]);
     }
 
   // in cylindrical coordinates, we now have to add the i*m/r terms... */
@@ -336,7 +334,7 @@ bool fields_chunk::step_db(field_type ft) {
         for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
           realnum df;
           realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
-                         (cndinv ? cndinv[iz] : 1);
+                          (cndinv ? cndinv[iz] : 1);
           if (fcnd) fcnd[iz] += dfcnd;
           the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
           if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;

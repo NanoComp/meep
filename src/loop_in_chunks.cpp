@@ -339,8 +339,8 @@ void compute_boundary_weights(grid_volume gv, const volume &where, ivec &is, ive
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, const volume &where,
                             component cgrid, bool use_symmetry, bool snap_empty_dimensions) {
   if (coordinate_mismatch(gv.dim, cgrid))
-    meep::abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n", component_name(cgrid),
-          dimension_name(gv.dim));
+    meep::abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n",
+                component_name(cgrid), dimension_name(gv.dim));
   if (where.dim != gv.dim)
     meep::abort("Invalid dimensions %d for WHERE in fields::loop_in_chunks", where.dim);
 
@@ -359,11 +359,15 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
 
   int original_vol = 1;
-  LOOP_OVER_DIRECTIONS(gv.dim, d){
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
     if (boundaries[High][d] == Periodic && boundaries[Low][d] == Periodic) {
-      original_vol *= (ie.in_direction(d) - is.in_direction(d))/2+1;
-    } else {
-      int vol_size_d = (min(user_volume.big_owned_corner(cgrid), ie).in_direction(d) - max(user_volume.little_owned_corner(cgrid),is).in_direction(d))/2+1;
+      original_vol *= (ie.in_direction(d) - is.in_direction(d)) / 2 + 1;
+    }
+    else {
+      int vol_size_d = (min(user_volume.big_owned_corner(cgrid), ie).in_direction(d) -
+                        max(user_volume.little_owned_corner(cgrid), is).in_direction(d)) /
+                           2 +
+                       1;
       original_vol *= (vol_size_d > 0 ? vol_size_d : 0);
     }
   }
@@ -390,9 +394,8 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         min_ishift.set_direction(
             d,
             int(floor((where.in_direction_min(d) - gvS.in_direction_max(d)) / L.in_direction(d))));
-        max_ishift.set_direction(
-            d,
-            int(ceil((where.in_direction_max(d) - gvS.in_direction_min(d)) / L.in_direction(d))));
+        max_ishift.set_direction(d, int(ceil((where.in_direction_max(d) - gvS.in_direction_min(d)) /
+                                             L.in_direction(d))));
       }
       else {
         min_ishift.set_direction(d, 0);
@@ -417,26 +420,31 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
         grid_volume gvu(chunks[i]->gv);
         ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
         ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
-        ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))), iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
-        
-        //With symmetry, the upper half of the original chunk is kept and includes one extra pixel. 
-        //When looped over all symmetries, pixels outside the lower boundary "user_volume.little_owned_corner(cgrid)" is excluded.  
-        //isym finds the lower boundary of the upper half chunk. Then in each direction that chunk isn't the upper, 
-        //checked by ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)),
-        //the end point iecoS will shift to not go beyond isym
+        ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))),
+            iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
+
+        // With symmetry, the upper half of the original chunk is kept and includes one extra pixel.
+        // When looped over all symmetries, pixels outside the lower boundary
+        // "user_volume.little_owned_corner(cgrid)" is excluded. isym finds the lower boundary of
+        // the upper half chunk. Then in each direction that chunk isn't the upper, checked by
+        // ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)), the end point iecoS will
+        // shift to not go beyond isym
         ivec isym(gvu.dim, INT_MAX);
-        LOOP_OVER_DIRECTIONS(gvu.dim, d){
-          int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0) ? gv.iyee_shift(cgrid).in_direction(d)+2 : 2);
+        LOOP_OVER_DIRECTIONS(gvu.dim, d) {
+          int off_sym_shift = ((gv.iyee_shift(cgrid).in_direction(d) != 0)
+                                   ? gv.iyee_shift(cgrid).in_direction(d) + 2
+                                   : 2);
           isym.set_direction(d, S.i_symmetry_point.in_direction(d) - off_sym_shift);
         }
 
         ivec iscS(max(is - shifti, iscoS));
         ivec chunk_corner(gvu.little_owned_corner(cgrid));
         LOOP_OVER_DIRECTIONS(gv.dim, d) {
-          if ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped)) iecoS.set_direction(d, min(isym, iecoS).in_direction(d));  
-        } 
-        ivec iecS( min(ie - shifti, iecoS));
-                
+          if ((S.transform(d, sn).d != d) != (S.transform(d, sn).flipped))
+            iecoS.set_direction(d, min(isym, iecoS).in_direction(d));
+        }
+        ivec iecS(min(ie - shifti, iecoS));
+
         if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
           ivec isc(S.transform(iscS, -sn)), iec(S.transform(iecS, -sn));
@@ -501,15 +509,14 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
           }
           if (gv.dim == Dcyl) {
             dV1 = dV0 * 2 * pi * gv.inva;
-            dV0 *= 2 * pi *
-                   fabs((S.transform(chunks[i]->gv[isc], sn) + shift).in_direction(R));
+            dV0 *= 2 * pi * fabs((S.transform(chunks[i]->gv[isc], sn) + shift).in_direction(R));
           }
 
-          chunkloop(chunks[i], i, cS, isc, iec, s0c, s1c, e0c, e1c, dV0, dV1,
-                    shifti, ph, S, sn, chunkloop_data);
+          chunkloop(chunks[i], i, cS, isc, iec, s0c, s1c, e0c, e1c, dV0, dV1, shifti, ph, S, sn,
+                    chunkloop_data);
           int loop_vol = 1;
-          LOOP_OVER_DIRECTIONS(gv.dim, d){
-            loop_vol *= (iec.in_direction(d) - isc.in_direction(d))/2+1;
+          LOOP_OVER_DIRECTIONS(gv.dim, d) {
+            loop_vol *= (iec.in_direction(d) - isc.in_direction(d)) / 2 + 1;
           }
           vol_sum += loop_vol;
         }
@@ -525,7 +532,9 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
     } while (ishift != min_ishift);
   }
   int vol_sum_all = sum_to_all(vol_sum);
-  if (use_symmetry && vol_sum_all != original_vol) master_printf("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol, vol_sum_all);
+  if (use_symmetry && vol_sum_all != original_vol)
+    master_printf("WARNING vol mismatch:, original_vol %i, looped vol_sum %i \n", original_vol,
+                  vol_sum_all);
 }
 
 } // namespace meep

@@ -159,7 +159,8 @@ void multilevel_susceptibility::init_internal_data(realnum *W[NUM_FIELD_COMPONEN
   for (int i = 0; i < L; ++i)
     for (int j = 0; j < L; ++j)
       d->GammaInv[i * L + j] = (i == j) + Gamma[i * L + j] * dt / 2;
-  if (!invert(d->GammaInv, L)) meep::abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
+  if (!invert(d->GammaInv, L))
+    meep::abort("multilevel_susceptibility: I + Gamma*dt/2 matrix singular");
 
   realnum *P = d->data + L * L;
   realnum *P_prev = P + ntot;

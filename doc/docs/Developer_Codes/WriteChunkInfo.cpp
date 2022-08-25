@@ -123,8 +123,9 @@ structure create_structure(double resolution, int symmetries) {
   geometry_lattice.size.z = 0.0;
   grid_volume gv = voltwo(sx, sy, resolution);
   gv.center_origin();
-  symmetry S = (symmetries == 1 ? mirror(Y, gv)
-                                : symmetries == 2 ? mirror(X, gv) + mirror(Y, gv) : symmetry());
+  symmetry S = (symmetries == 1   ? mirror(Y, gv)
+                : symmetries == 2 ? mirror(X, gv) + mirror(Y, gv)
+                                  : symmetry());
   structure the_structure(gv, dummy_eps, pml(dpml), S);
 
   vector3 e1 = v3(1.0, 0.0, 0.0);

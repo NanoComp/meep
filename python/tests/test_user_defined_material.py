@@ -1,4 +1,5 @@
 import unittest
+
 import meep as mp
 
 
@@ -39,22 +40,28 @@ def my_epsilon_func(p):
 
 
 class TestUserMaterials(unittest.TestCase):
-
     def setUp(self):
         self.resolution = 10
         self.cell = mp.Vector3(10, 10)
         self.symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
         self.boundary_layers = [mp.PML(1.0)]
-        self.sources = [mp.Source(src=mp.GaussianSource(0.2, fwidth=0.1),
-                                  component=mp.Ez, center=mp.Vector3())]
+        self.sources = [
+            mp.Source(
+                src=mp.GaussianSource(0.2, fwidth=0.1),
+                component=mp.Ez,
+                center=mp.Vector3(),
+            )
+        ]
 
     def test_user_material_func(self):
-        sim = mp.Simulation(cell_size=self.cell,
-                            resolution=self.resolution,
-                            symmetries=self.symmetries,
-                            boundary_layers=self.boundary_layers,
-                            sources=self.sources,
-                            material_function=my_material_func)
+        sim = mp.Simulation(
+            cell_size=self.cell,
+            resolution=self.resolution,
+            symmetries=self.symmetries,
+            boundary_layers=self.boundary_layers,
+            sources=self.sources,
+            material_function=my_material_func,
+        )
 
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
@@ -63,12 +70,14 @@ class TestUserMaterials(unittest.TestCase):
         self.assertAlmostEqual(fp, 4.816403627871773e-4, places=places)
 
     def test_epsilon_func(self):
-        sim = mp.Simulation(cell_size=self.cell,
-                            resolution=self.resolution,
-                            symmetries=self.symmetries,
-                            boundary_layers=self.boundary_layers,
-                            sources=self.sources,
-                            epsilon_func=my_epsilon_func)
+        sim = mp.Simulation(
+            cell_size=self.cell,
+            resolution=self.resolution,
+            symmetries=self.symmetries,
+            boundary_layers=self.boundary_layers,
+            sources=self.sources,
+            epsilon_func=my_epsilon_func,
+        )
 
         sim.run(until=100)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
@@ -78,12 +87,14 @@ class TestUserMaterials(unittest.TestCase):
     def test_geometric_obj_with_user_material(self):
         geometry = [mp.Cylinder(5, material=my_material_func)]
 
-        sim = mp.Simulation(cell_size=self.cell,
-                            resolution=self.resolution,
-                            symmetries=self.symmetries,
-                            geometry=geometry,
-                            boundary_layers=self.boundary_layers,
-                            sources=self.sources)
+        sim = mp.Simulation(
+            cell_size=self.cell,
+            resolution=self.resolution,
+            symmetries=self.symmetries,
+            geometry=geometry,
+            boundary_layers=self.boundary_layers,
+            sources=self.sources,
+        )
         sim.run(until=200)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
@@ -93,16 +104,19 @@ class TestUserMaterials(unittest.TestCase):
     def test_geometric_obj_with_epsilon_func(self):
         geometry = [mp.Cylinder(5, epsilon_func=my_epsilon_func)]
 
-        sim = mp.Simulation(cell_size=self.cell,
-                            resolution=self.resolution,
-                            symmetries=self.symmetries,
-                            geometry=geometry,
-                            boundary_layers=self.boundary_layers,
-                            sources=self.sources)
+        sim = mp.Simulation(
+            cell_size=self.cell,
+            resolution=self.resolution,
+            symmetries=self.symmetries,
+            geometry=geometry,
+            boundary_layers=self.boundary_layers,
+            sources=self.sources,
+        )
         sim.run(until=100)
         fp = sim.get_field_point(mp.Ez, mp.Vector3(x=1))
 
         self.assertAlmostEqual(fp, -7.895783750440999e-4)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

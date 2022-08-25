@@ -1,147 +1,106 @@
-"""
-Connectivity constraint inspired by https://link.springer.com/article/10.1007/s00158-016-1459-5
-Solve and find adjoint gradients for [-div (k grad) + alpha^2 (1-rho)k + alpha0^2]T=0.
-BC: Dirichlet on last slice rho[-Nx*Ny:], 0 outside the first slice, and Neumann on sides.
-Mo Chen <mochen@mit.edu>
-"""
-
 import numpy as np
 from scipy.sparse.linalg import cg, spsolve
-from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix, lil_matrix
+from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix
+from autograd import numpy as npa
+from autograd import grad
 
-class ConnectivityConstraint(object):
-    def __init__(self, nx, ny, nz, k0=1000, zeta=0, sp_solver=cg, alpha=None, alpha0=None, thresh=0.1, p=2):
-        #zeta is to prevent singularity when damping is zero; with damping, zeta should be zero
-        #set ny=1 for 2D
-        self.nx, self.ny, self.nz= nx, ny, nz
-        self.n = nx*ny*nz
-        self.m = nx*ny*(nz-1)
-        self.solver = sp_solver
-        self.k0, self.zeta = k0, zeta
-        self.thresh = thresh
-        self.p = p
+def constraint_connectivity(rho, nx, ny, nz, cond_v = 1, cond_s = 1e6, src_v=0, src_s = 1, solver=spsolve, thresh=None, p=4, need_grad=True):
+    rho = np.reshape(rho, (nz,ny,nx))
+    n = nx*ny*nz
+    
+    if ny == 1:
+        path = nx*nz/2
+        phi = 0.5*path*path/cond_s #estimate of warmest connected structure
+    else:
+        path = nx*ny*nz/4
+        phi = 0.5*path*path/cond_s
+    if not thresh:
+        thresh = phi
+        
+    #gradient matrices
+    gx = diags([-1,1], [0,1], shape=(nx-1, nx), format='csr')
+    gy = diags([-1,1], [0,1], shape=(ny-1, ny), format='csr')
+    gz = diags([-1,1], [0, 1], shape=(nz, nz), format='csr')
+    #-div matrices
+    dx, dy, dz = gx.copy().transpose(), gy.copy().transpose(), gz.copy().transpose()
+    #1D -> 3D
+    Ix, Iy, Iz = eye(nx), eye(ny), eye(nz)
+    gx, gy, gz = kron(Iz, kron(Iy, gx)), kron(Iz, kron(gy, Ix)), kron(gz, kron(Iy,Ix))
+    dx, dy, dz = kron(Iz, kron(Iy, dx)), kron(Iz, kron(dy, Ix)), kron(dz, kron(Iy, Ix))
+    
+    #harmonic mean as mid-point conductivity and derivatives
+    f = lambda x,y: 2*x*y/(x+y)
+    fx = lambda x,y: 2*(y/(x+y))**2
+    fy = lambda x,y: 2*(x/(x+y))**2
+    
+    cond = cond_v + (cond_s - cond_v) * rho
+    condx = [f(cond[k, j, i],cond[k, j, i+1]) for k in range(nz) for j in range(ny) for i in range(nx-1)]
+    condy = [f(cond[k, j, i],cond[k, j+1, i]) for k in range(nz) for j in range(ny-1) for i in range(nx)]
+    condz = [f(cond[k, j, i],cond[k+1, j, i]) for k in range(nz-1) for j in range(ny) for i in range(nx)]
+    condz = np.append(condz, [cond_s]*nx*ny) #Dirichlet boundary conductivity
+    condx, condy, condz = diags(condx, 0), diags(condy, 0), diags(condz, 0)
 
-        #default alpha and alpha0
-        if alpha != None:
-            self.alpha=alpha
-        else:
-            self.alpha = 0.1*min(1/nx, 1/ny, 1/nz)
-        if alpha0 != None:
-            self.alpha0 = alpha0
-        else:
-            self.alpha0 = -np.log(thresh)/min(nx, nz)
+    src = src_v + (src_s - src_v) * rho.flatten()
+    eq = (dx @ condx @ gx + dy @ condy @ gy + dz @ condz @ gz)    
+    if solver == spsolve:
+        T = solver(eq, src)
+    else:
+        T, info = (solver(eq, src)).reshape(1,-1)
+        
+    heat_func = lambda x: npa.sum(x**p)**(1/p) / thresh
+    heat = heat_func(T)
+    if not need_grad:
+        return heat/thresh-1
 
-    def forward(self, rho_vector):
-        self.rho_vector = rho_vector
-        # gradient and -div operator
-        gx = diags([-1,1], [0,1], shape=(self.nx-1, self.nx), format='csr')
-        dx = gx.copy().transpose()
-        gy = diags([-1,1], [0,1], shape=(self.ny-1, self.ny), format='csr')
-        dy = gy.copy().transpose()
-        gz = diags([1,-1], [0, -1], shape=(self.nz, self.nz), format='csr')
-        dz = diags([1,-1], [0, 1], shape=(self.nz-1, self.nz), format='csr')
+    dgdx = grad(heat_func)(T)
+    if solver == spsolve:
+        aT = (solver(eq, dgdx)).reshape(1,-1)
+    else:
+        aT, sinfo = (solver(eq, dgdx)).reshape(1,-1)
+    
+    #conductivity matrix derivative w.r.t 1st and 2nd argument of each entries (e.g. fx and fy)
+    dcondx_r = [k*(nx-1)*ny+j*(nx-1)+i for k in range(nz) for j in range(ny) for i in range(nx-1)]
+    dcondx_c1 = [k*nx*ny+j*nx+i for k in range(nz) for j in range(ny) for i in range(nx-1)]
+    dcondx_d1 = [fx(cond[k, j, i],cond[k, j, i+1]) for k in range(nz) for j in range(ny) for i in range(nx-1)]
+    dcondx1 = csc_matrix((dcondx_d1, (dcondx_r, dcondx_c1)), shape=(nz*ny*(nx-1), nx*ny*nz))
+    
+    dcondx_c2 = [k*nx*ny+j*nx+i+1 for k in range(nz) for j in range(ny) for i in range(nx-1)]
+    dcondx_d2 = [fy(cond[k, j, i],cond[k, j, i+1]) for k in range(nz) for j in range(ny) for i in range(nx-1)]
+    dcondx2 = csc_matrix((dcondx_d2, (dcondx_r, dcondx_c2)), shape=(nz*ny*(nx-1), nx*ny*nz)) 
+    
+    dcondy_r = [k*nx*(ny-1)+j*nx+i for k in range(nz) for j in range(ny-1) for i in range(nx)]
+    dcondy_c1 = [k*nx*ny+j*nx+i for k in range(nz) for j in range(ny-1) for i in range(nx)]
+    dcondy_d1 = [fx(cond[k, j, i],cond[k, j+1, i]) for k in range(nz) for j in range(ny-1) for i in range(nx)]
+    dcondy1 = csc_matrix((dcondy_d1, (dcondy_r, dcondy_c1)), shape=(nz*(ny-1)*nx, nx*ny*nz))
+    
+    dcondy_c2 = [k*nx*ny+(j+1)*nx+i for k in range(nz) for j in range(ny-1) for i in range(nx)]
+    dcondy_d2 = [fy(cond[k, j, i],cond[k, j+1, i]) for k in range(nz) for j in range(ny-1) for i in range(nx)]
+    dcondy2 = csc_matrix((dcondy_d2, (dcondy_r, dcondy_c2)), shape=(nz*(ny-1)*nx, nx*ny*nz))
+    
+    dcondz_r = [k*nx*ny+j*nx+i for k in range(nz-1) for j in range(ny) for i in range(nx)]
+    dcondz_c1 = [k*nx*ny+j*nx+i for k in range(nz-1) for j in range(ny) for i in range(nx)]
+    dcondz_d1 = [fx(cond[k, j, i],cond[k+1, j, i]) for k in range(nz-1) for j in range(ny) for i in range(nx)]
+    dcondz1 = csc_matrix((dcondz_d1, (dcondz_r, dcondz_c1)), shape=(nx*ny*nz, nx*ny*nz))
+    
+    dcondz_c2 = [(k+1)*nx*ny+j*nx+i for k in range(nz-1) for j in range(ny) for i in range(nx)]
+    dcondz_d2 = [fy(cond[k, j, i],cond[k+1, j, i]) for k in range(nz-1) for j in range(ny) for i in range(nx)]
+    dcondz2 = csc_matrix((dcondz_d2, (dcondz_r, dcondz_c2)), shape=(nx*ny*nz, nx*ny*nz))
 
-        # kron product for 2D
-        Ix, Iy, Iz = eye(self.nx), eye(self.ny), eye(self.nz-1)
-        self.gx, self.gy, self.gz = kron(Iz, kron(Iy, gx)), kron(Iz, kron(gy, Ix)), kron(gz, kron(Iy,Ix))
-        self.dx, self.dy, self.dz = kron(Iz, kron(Iy, dx)), kron(Iz, kron(dy, Ix)), kron(dz, kron(Iy, Ix))
+    dcondx, dcondy, dcondz = dcondx1 + dcondx2, dcondy1 + dcondy2, dcondz1 + dcondz2
+    dAdp_x = dz @ dcondz.multiply(gz@T.reshape(-1,1)) + dy @ dcondy.multiply(gy@T.reshape(-1,1)) + dx @ dcondx.multiply(gx@T.reshape(-1,1))
+    
+    gradient = aT * (src_s - src_v) - (cond_s - cond_v) * (aT @ dAdp_x)
+    return T, heat/thresh - 1, gradient
 
-        #conductivity based on rho
-        rho_pad = np.reshape(rho_vector, (self.nz, self.ny, self.nx))
-        rhox = np.array([0.5*(rho_pad[k, j, i]+rho_pad[k, j, i+1]) for k in range(self.nz-1) for j in range(self.ny) for i in range(self.nx-1)])
-        self.rhox = rhox
-        rhoy = np.array([0.5*(rho_pad[k, j, i]+rho_pad[k, j+1, i]) for k in range(self.nz-1) for j in range(self.ny-1) for i in range(self.nx)])
-        self.rhoy = rhoy
-        rhoz = np.array([0.5*(rho_pad[k, j, i]+rho_pad[k+1, j, i]) for k in range(self.nz-1) for j in range(self.ny) for i in range(self.nx)])
-        rhoz = np.insert(rhoz, [0]*self.nx*self.ny, 0)#0 outside first row
-        self.rhoz = rhoz
-        kx, ky, kz = diags((self.zeta+(1-self.zeta)*rhox)*self.k0), diags((self.zeta+(1-self.zeta)*rhoy)*self.k0), diags((self.zeta+(1-self.zeta)*rhoz)*self.k0)
-        self.kx, self.ky, self.kz = kx, ky, kz
-        #matrices in x, y, z
-        self.Lx, self.Ly, self.Lz = self.dx * kx * self.gx, self.dy * ky * self.gy, self.dz * kz * self.gz
-
-        # Dirichlet condition on the last row becomes term on the RHS
-        Bz = csc_matrix(self.Lz)[:,-self.nx*self.ny:]
-        rhs = -Bz.sum(axis=1)
-        self.rhs=rhs
-
-        #LHS operator after moving the boundary term to the RHS
-        eq = self.Lz[:, :-self.nx*self.ny]+self.Lx+self.Ly
-        self.eq=eq
-        #add damping
-        damping = self.k0*self.alpha**2*diags(1-rho_vector[:-self.nx*self.ny]) + diags([self.alpha0**2], shape=(self.m, self.m))
-        self.A = eq + damping
-        self.damping = damping
-        if self.solver == spsolve:
-            self.T = self.solver(csr_matrix(self.A), rhs)
-        else:
-            self.T, sinfo = self.solver(csr_matrix(self.A), rhs)
-        #exclude last row of rho and calculate weighted average of temperature
-        self.rho_vec = rho_vector[:-self.nx*self.ny]
-
-        self.Td_p = (1 - self.T)**self.p
-        self.Td = (sum(self.Td_p * self.rho_vec)/sum(self.rho_vec))**(1/self.p)
-        return self.Td
-
-    def adjoint(self):
-        T_p1 = -(self.T-1) ** (self.p-1)
-        dg_dT = self.Td**(1-self.p) * (T_p1*self.rho_vec)/sum(self.rho_vec)
-        if self.solver == spsolve:
-            return self.solver(csr_matrix(self.A.transpose()), dg_dT)
-        aT, _ = self.solver(csr_matrix(self.A.transpose()), dg_dT)
-        return aT
-
-    def calculate_grad(self):
-        dg_dp = np.zeros(self.n)
-        dg_dp[:-self.nx*self.ny] = (self.Td_p*sum(self.rho_vec))/sum(self.rho_vec)**2
-        dg_dp[:-self.nx*self.ny] = dg_dp[:-self.nx*self.ny] - sum(self.Td_p*self.rho_vec)/sum(self.rho_vec)**2
-        dg_dp = self.Td ** (1-self.p) * dg_dp / self.p
-
-        dAx = lil_matrix((self.m, self.n))
-        gxT = np.reshape(self.gx * self.T, (-1,1))
-        drhox = kron(eye(self.nz-1), kron(eye(self.ny), diags([0.5,0.5], [0, 1], shape=[self.nx-1,self.nx])))
-        dAx[:, :-self.nx*self.ny] =  (1-self.zeta)*self.k0*lil_matrix(self.dx * drhox.multiply(gxT)) #element-wise product
-
-        dAy = lil_matrix((self.m, self.n))
-        gyT = np.reshape(self.gy * self.T, (-1,1))
-        drhoy = kron(kron(eye(self.nz-1), diags([0.5,0.5], [0, 1], shape=[self.ny-1,self.ny])), eye(self.nx))
-        dAy[:, :-self.nx*self.ny] =  (1-self.zeta)*self.k0*lil_matrix(self.dy * drhoy.multiply(gyT)) #element-wise product
-
-        Tz = np.pad(self.T, (0, self.nx*self.ny), 'constant', constant_values=1)
-        gzTz = np.reshape(self.gz * Tz, (-1,1))
-        drhoz = diags([0.5,0.5], [0, -1], shape=[self.nz,self.nz], format="lil")
-        drhoz[0,0]=0
-        drhoz = kron(drhoz,eye(self.nx*self.ny))
-        dAz =  (1-self.zeta)*self.k0*self.dz * drhoz.multiply(gzTz)
-        d_damping = self.k0*self.alpha**2*diags(-self.T, shape=(self.m, self.n))
-
-        self.grad = dg_dp + self.adjoint().reshape(1, -1) * csr_matrix(dAz + dAx + dAy + d_damping)
-        return self.grad[0]
-
-    def __call__(self, rho_vector):
-        Td = self.forward(rho_vector)
-        grad = self.calculate_grad()
-        return Td-self.thresh, grad
-
-    def calculate_fd_grad(self, rho_vector, num, db=1e-4):
-        fdidx = np.random.choice(self.n, num)
-        fdgrad = []
-        for k in fdidx:
-            rho_vector[k]+=db
-            fp = self.forward(rho_vector)
-            rho_vector[k]-=2*db
-            fm = self.forward(rho_vector)
-            fdgrad.append((fp-fm)/(2*db))
-            rho_vector[k]+=db
-        return fdidx, fdgrad
-
-    def calculate_all_fd_grad(self, rho_vector, db=1e-4):
-        fdgrad = []
-        for k in range(self.n):
-            rho_vector[k]+=db
-            fp = self.forward(rho_vector)
-            rho_vector[k]-=2*db
-            fm = self.forward(rho_vector)
-            fdgrad.append((fp-fm)/(2*db))
-            rho_vector[k]+=db
-        return range(self.n), np.array(fdgrad)
+def cc_fd(rho, nx, ny, nz, cond_v = 1, cond_s = 1e4, src_v=0, src_s = 1, solver=spsolve, thresh=1, p=4, num_grad = 6, db = 1e-4):
+    n = nx*ny*nz
+    fdidx = np.random.choice(n, num_grad)
+    fdgrad = []
+    for k in fdidx:
+        rho[k]+=db
+        fp = constraint_connectivity(rho.reshape((nz,ny, nx)), nx, ny, nz, cond_v, cond_s, src_v, src_s, solver, thresh, p, need_grad=False)
+        rho[k]-=2*db
+        fm = constraint_connectivity(rho.reshape((nz,ny, nx)), nx, ny, nz, cond_v, cond_s, src_v, src_s, solver, thresh, p, need_grad=False)
+        fdgrad.append((fp-fm)/(2*db))
+        rho[k]+=db
+    return fdidx, fdgrad

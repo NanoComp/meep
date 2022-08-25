@@ -12,4 +12,3 @@ class {class_name}({base_classes}):
 {docstring}
 
 </div>
-

@@ -68,9 +68,7 @@ Finally, we'll run the sources, plus additional time for the field to decay at t
 
 In a linear calculation, we normalize the transmission against some reference spectrum, but in this case there is no obvious normalization so we will just plot the raw data for several values of `k` (i.e. of χ$^{(3)}$):
 
-<center>
-![](../images/3rd-harm-1d-flux.png)
-</center>
+![](../images/3rd-harm-1d-flux.png#center)
 
 For small values of χ$^{(3)}$, we see a peak from our source at ω=1/3 and another peak precisely at the third-harmonic frequency 3ω=1. As the χ$^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for χ$^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
 
@@ -108,9 +106,9 @@ harmonics:, 0, 1.0, 225.25726603587043, 5.026979706160964e-16
 
 That is, the linear transmission is 225.25726603587043 at ω, so we'll divide by this value and plot the fractional transmission at ω and 3ω as a function of χ$^{(3)}$ on a log-log scale:
 
-<center>
-![](../images/3rd-harm-1d-vs-chi.png)
-</center>
+
+![](../images/3rd-harm-1d-vs-chi.png#center)
+
 
 As can be shown from coupled-mode theory or, equivalently, follows from [Fermi's golden rule](https://en.wikipedia.org/wiki/Fermi's_golden_rule), the third-harmonic power must go as the *square* of χ$^{(3)}$ as long as the nonlinearity is weak (i.e. in the first Born approximation limit, where the ω source is not depleted significantly). This is precisely what we see on the above graph, where the slope of the black line indicates an exact quadratic dependence, for comparison. Once the nonlinearity gets strong enough, however, this approximation is no longer valid and the dependence is complicated.
 
