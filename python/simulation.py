@@ -11,9 +11,9 @@ from collections import OrderedDict, namedtuple
 from typing import Callable, List, Optional, Tuple, Union
 
 try:
-    from collections.abc import Sequence
+    from collections.abc import Sequence, Iterable
 except ImportError:
-    from collections.abc import Sequence
+    from collections.abc import Sequence, Iterable
 
 import numpy as np
 from meep.geom import GeometricObject, Medium, Vector3, init_do_averaging
@@ -57,6 +57,8 @@ EigCoeffsResult = namedtuple(
 FluxData = namedtuple("FluxData", ["E", "H"])
 ForceData = namedtuple("ForceData", ["offdiag1", "offdiag2", "diag"])
 NearToFarData = namedtuple("NearToFarData", ["F"])
+
+Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 
 def fix_dft_args(args, i):
@@ -104,7 +106,7 @@ def vec(*args):
             raise
 
 
-def py_v3_to_vec(dims, iterable, is_cylindrical=False):
+def py_v3_to_vec(dims: int, iterable: Iterable, is_cylindrical: bool = False):
     v3 = Vector3(*iterable)
     if dims == 1:
         return mp.vec(v3.z)
@@ -150,7 +152,13 @@ class DiffractedPlanewave:
     For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
     """
 
-    def __init__(self, g=None, axis=None, s=None, p=None):
+    def __init__(
+        self,
+        g: List[int] = None,
+        axis: Vector3Type = None,
+        s: complex = None,
+        p: complex = None,
+    ):
         """
         Construct a `DiffractedPlanewave`.
 
@@ -185,7 +193,6 @@ class DiffractedPlanewave:
 
 
 DefaultPMLProfile = lambda u: u * u
-Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 
 class PML:
@@ -591,7 +598,9 @@ class EnergyRegion(FluxRegion):
 
 
 class FieldsRegion:
-    def __init__(self, where=None, center=None, size=None):
+    def __init__(
+        self, where: Volume = None, center: Vector3Type = None, size: Vector3Type = None
+    ):
         if where:
             self.center = where.center
             self.size = where.size
@@ -1531,7 +1540,7 @@ class Simulation:
 
         return v1
 
-    def _boundaries_to_vols_2d_3d(self, boundaries, cyl=False):
+    def _boundaries_to_vols_2d_3d(self, boundaries, cyl: bool = False):
         side_thickness = OrderedDict()
         side_thickness["top"] = 0
         side_thickness["bottom"] = 0
@@ -1915,7 +1924,7 @@ class Simulation:
                 self.load_structure_file, self.load_single_parallel_file
             )
 
-    def _is_outer_boundary(self, vol, direction, side):
+    def _is_outer_boundary(self, vol: Volume, direction: int, side: int):
 
         if direction == mp.X:
             cell_size_in_dir = self.cell_size.x
@@ -1941,7 +1950,7 @@ class Simulation:
 
         return False
 
-    def _get_chunk_communication_area(self, vol):
+    def _get_chunk_communication_area(self, vol: Volume):
 
         result = 0
 
@@ -2311,7 +2320,9 @@ class Simulation:
         return not (self.force_complex_fields or cond1 or cond2 or cond5)
 
     def initialize_field(
-        self, cmpnt: int = None, amp_func: Callable[[Vector3Type], Union[float,complex]] = None
+        self,
+        cmpnt: int = None,
+        amp_func: Callable[[Vector3Type], Union[float, complex]] = None,
     ):
         """
         Initialize the component `c` fields using the function `func` which has a single
@@ -2434,7 +2445,7 @@ class Simulation:
         [Cylinder](#cylinder) objects (the simulation script is in
         [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
-        ![](images/phase-in-material.png)
+        ![](images/phase-in-material.png#center)
         """
         if self.fields is None:
             self.init_sim()
@@ -2942,7 +2953,7 @@ class Simulation:
             components, where, freq, use_centered_grid, decimation_factor, persist
         )
 
-    def output_dft(self, dft_fields, fname):
+    def output_dft(self, dft_fields: DftFields, fname: str):
         """
         Output the Fourier-transformed fields in `dft_fields` (created by
         `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5`
@@ -3048,7 +3059,7 @@ class Simulation:
                     zip(freqs, *[func(f) for f in energys]),
                 )
 
-    def display_electric_energy(self, *energys):
+    def display_electric_energy(self, *energys: List[DftEnergy]):
         """
         Given a number of energy objects, this displays a comma-separated table of
         frequencies and energy density spectra for the electric fields prefixed by
@@ -3058,7 +3069,7 @@ class Simulation:
         """
         self._display_energy("electric", get_electric_energy, energys)
 
-    def display_magnetic_energy(self, *energys):
+    def display_magnetic_energy(self, *energys: List[DftEnergy]):
         """
         Given a number of energy objects, this displays a comma-separated table of
         frequencies and energy density spectra for the magnetic fields prefixed by
@@ -3068,7 +3079,7 @@ class Simulation:
         """
         self._display_energy("magnetic", get_magnetic_energy, energys)
 
-    def display_total_energy(self, *energys):
+    def display_total_energy(self, *energys: List[DftEnergy]):
         """
         Given a number of energy objects, this displays a comma-separated table of
         frequencies and energy density spectra for the total fields "total_energy1:" or
@@ -3078,7 +3089,7 @@ class Simulation:
         """
         self._display_energy("total", get_total_energy, energys)
 
-    def load_energy(self, fname, energy):
+    def load_energy(self, fname: str, energy: DftEnergy):
         """
         Load the Fourier-transformed fields into the given energy object (replacing any
         values currently there) from an HDF5 file of the given `filename` without the
@@ -3091,7 +3102,7 @@ class Simulation:
             self.init_sim()
         energy.load_hdf5(self.fields, fname, "", self.get_filename_prefix())
 
-    def save_energy(self, fname, energy):
+    def save_energy(self, fname: str, energy: DftEnergy):
         """
         Save the Fourier-transformed fields corresponding to the given energy object in an
         HDF5 file of the given `filename` without the `.h5` suffix (the current
@@ -3101,7 +3112,7 @@ class Simulation:
             self.init_sim()
         energy.save_hdf5(self.fields, fname, "", self.get_filename_prefix())
 
-    def load_minus_energy(self, fname, energy):
+    def load_minus_energy(self, fname: str, energy: DftEnergy):
         """
         As `load_energy`, but negates the Fourier-transformed fields after they are
         loaded. This means that they will be *subtracted* from any future field Fourier
