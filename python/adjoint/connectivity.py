@@ -37,7 +37,7 @@ def constraint_connectivity(rho, nx, ny, nz, cond_v = 1, cond_s = 1e6, src_v=0, 
     condx = [f(cond[k, j, i],cond[k, j, i+1]) for k in range(nz) for j in range(ny) for i in range(nx-1)]
     condy = [f(cond[k, j, i],cond[k, j+1, i]) for k in range(nz) for j in range(ny-1) for i in range(nx)]
     condz = [f(cond[k, j, i],cond[k+1, j, i]) for k in range(nz-1) for j in range(ny) for i in range(nx)]
-    condz = np.append(condz, [cond_s]*nx*ny) #Dirichlet boundary conductivity
+    condz = np.append(condz, [cond_s]*nx*ny) #conductivity at Dirichlet boundary
     condx, condy, condz = diags(condx, 0), diags(condy, 0), diags(condz, 0)
 
     src = src_v + (src_s - src_v) * rho.flatten()
@@ -92,7 +92,7 @@ def constraint_connectivity(rho, nx, ny, nz, cond_v = 1, cond_s = 1e6, src_v=0, 
     gradient = aT * (src_s - src_v) - (cond_s - cond_v) * (aT @ dAdp_x)
     return T, heat/thresh - 1, gradient
 
-def cc_fd(rho, nx, ny, nz, cond_v = 1, cond_s = 1e4, src_v=0, src_s = 1, solver=spsolve, thresh=1, p=4, num_grad = 6, db = 1e-4):
+def cc_fd(rho, nx, ny, nz, cond_v = 1, cond_s = 1e6, src_v=0, src_s = 1, solver=spsolve, thresh=None, p=4, num_grad = 6, db = 1e-4):
     n = nx*ny*nz
     fdidx = np.random.choice(n, num_grad)
     fdgrad = []
