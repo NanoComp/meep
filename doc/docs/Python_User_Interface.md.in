@@ -498,7 +498,7 @@ A common point of confusion is described in [The Run Function Is Not A Loop](The
 
 @@ Simulation.run @@
 
-In particular, a useful value for `until_after_sources` or `until` is often `stop_when_field_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These top-level functions are available:
+In particular, a useful value for `until_after_sources` or `until` is often `stop_when_fields_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These top-level functions are available:
 
 @@ stop_when_fields_decayed @@
 @@ stop_when_energy_decayed @@
@@ -606,7 +606,7 @@ ax.set_aspect('equal')
 plt.show()
 ```
 
-![](images/PermittivityWithLabeledAxes.png)
+![](images/PermittivityWithLabeledAxes.png#center)
 
 **Computing Quantities Defined by Integrals of Field-Dependent Functions Over Grid Regions**
 

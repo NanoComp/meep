@@ -80,7 +80,6 @@ control various parameters of the Meep computation.
 </div>
 
 
-
 <a id="Simulation.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -89,20 +88,20 @@ control various parameters of the Meep computation.
 def __init__(self,
              cell_size: Union[meep.geom.Vector3, Tuple[float, ...], NoneType] = None,
              resolution: float = None,
-             geometry: Optional[List[meep.geom.GeometricObject]] = None,
-             sources: Optional[List[meep.source.Source]] = None,
+             geometry: Union[List[meep.geom.GeometricObject], NoneType] = None,
+             sources: Union[List[meep.source.Source], NoneType] = None,
              eps_averaging: bool = True,
              dimensions: int = 3,
-             boundary_layers: Optional[List[meep.simulation.PML]] = None,
-             symmetries: Optional[List[meep.simulation.Symmetry]] = None,
+             boundary_layers: Union[List[meep.simulation.PML], NoneType] = None,
+             symmetries: Union[List[meep.simulation.Symmetry], NoneType] = None,
              force_complex_fields: bool = False,
              default_material: meep.geom.Medium = Medium(),
              m: float = 0,
              k_point: Union[meep.geom.Vector3, Tuple[float, ...], bool] = False,
              kz_2d: str = 'complex',
-             extra_materials: Optional[List[meep.geom.Medium]] = None,
-             material_function: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium]] = None,
-             epsilon_func: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float]] = None,
+             extra_materials: Union[List[meep.geom.Medium], NoneType] = None,
+             material_function: Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium], NoneType] = None,
+             epsilon_func: Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float], NoneType] = None,
              epsilon_input_file: str = '',
              progress_interval: float = 4,
              subpixel_tol: float = 0.0001,
@@ -113,8 +112,8 @@ def __init__(self,
              num_chunks: int = 0,
              Courant: float = 0.5,
              accurate_fields_near_cylorigin: bool = False,
-             filename_prefix: Optional[str] = None,
-             output_volume: Optional[meep.simulation.Volume] = None,
+             filename_prefix: Union[str, NoneType] = None,
+             output_volume: Union[meep.simulation.Volume, NoneType] = None,
              output_single_precision: bool = False,
              geometry_center: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
              force_all_components: bool = False,
@@ -357,6 +356,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 
 </div>
 
+
 <a id="Simulation.run"></a>
 
 <div class="class_members" markdown="1">
@@ -393,6 +393,7 @@ stopping conditions.
 </div>
 
 
+
 ### Output File Names
 
 The output filenames used by Meep, e.g. for HDF5 files, are automatically prefixed by the
@@ -425,12 +426,13 @@ by calling `Simulation.use_output_directory([dirname])`
 
 </div>
 
+
 <a id="Simulation.use_output_directory"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def use_output_directory(self, dname=''):
+def use_output_directory(self, dname: str = ''):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -445,6 +447,7 @@ name is set to `filename_prefix` + "-out" and `filename_prefix` is then reset to
 </div>
 
 </div>
+
 
 
 ### Simulation Time
@@ -476,6 +479,7 @@ rounded to single precision.
 
 </div>
 
+
 <a id="Simulation.print_times"></a>
 
 <div class="class_members" markdown="1">
@@ -505,6 +509,7 @@ Field time usage:
 
 </div>
 
+
 <a id="Simulation.time_spent_on"></a>
 
 <div class="class_members" markdown="1">
@@ -521,6 +526,7 @@ is the same as for `mean_time_spent_on`.
 </div>
 
 </div>
+
 
 <a id="Simulation.mean_time_spent_on"></a>
 
@@ -546,6 +552,7 @@ can be one of the following integer constants: `0`: "time stepping", `1`: "conne
 
 </div>
 
+
 <a id="Simulation.output_times"></a>
 
 <div class="class_members" markdown="1">
@@ -563,6 +570,7 @@ for each column and one row per process.
 </div>
 
 </div>
+
 
 ### Field Computations
 
@@ -586,6 +594,7 @@ section for valid `side`, `direction`, and `boundary_condition` values.
 </div>
 
 </div>
+
 
 <a id="Simulation.phase_in_material"></a>
 
@@ -616,12 +625,15 @@ demonstrated in the following image for two
 
 </div>
 
+
 <a id="Simulation.get_field_point"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def get_field_point(self, c, pt):
+def get_field_point(self,
+                    c: int = None,
+                    pt: Union[meep.geom.Vector3, Tuple[float, ...]] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -633,12 +645,15 @@ returns the value of that component at that point.
 
 </div>
 
+
 <a id="Simulation.get_epsilon_point"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def get_epsilon_point(self, pt, frequency=0):
+def get_epsilon_point(self,
+                      pt: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+                      frequency: float = 0.0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -652,12 +667,15 @@ frequency-independent part of $\varepsilon$ (the $\omega\to\infty$ limit).
 
 </div>
 
+
 <a id="Simulation.get_mu_point"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def get_mu_point(self, pt, frequency=0):
+def get_mu_point(self,
+                 pt: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+                 frequency: float = 0.0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -671,16 +689,17 @@ frequency-independent part of $\mu$ (the $\omega\to\infty$ limit).
 
 </div>
 
+
 <a id="Simulation.get_epsilon_grid"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
 def get_epsilon_grid(self,
-                     xtics=None,
-                     ytics=None,
-                     ztics=None,
-                     frequency=0):
+                     xtics: numpy.ndarray = None,
+                     ytics: numpy.ndarray = None,
+                     ztics: numpy.ndarray = None,
+                     frequency: float = 0.0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -699,12 +718,15 @@ equivalent to `numpy.meshgrid(xtics,ytics,ztics)`. Empty dimensions are collapse
 
 </div>
 
+
 <a id="Simulation.initialize_field"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def initialize_field(self, cmpnt, amp_func):
+def initialize_field(self,
+                     cmpnt: int = None,
+                     amp_func: Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], Union[float, complex]] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -717,13 +739,14 @@ of the field at that point.
 
 </div>
 
+
 <a id="Simulation.add_dft_fields"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
 def add_dft_fields(self, *args, **kwargs):
-def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0):
+def add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0, persist=False):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -750,6 +773,7 @@ with care, as the decimated timeseries may be corrupted by
 
 </div>
 
+
 <a id="Simulation.flux_in_box"></a>
 
 <div class="class_members" markdown="1">
@@ -772,6 +796,7 @@ construct the appropriate volume for you.
 </div>
 
 </div>
+
 
 <a id="Simulation.electric_energy_in_box"></a>
 
@@ -797,6 +822,7 @@ volume.
 
 </div>
 
+
 <a id="Simulation.magnetic_energy_in_box"></a>
 
 <div class="class_members" markdown="1">
@@ -821,6 +847,7 @@ volume.
 
 </div>
 
+
 <a id="Simulation.field_energy_in_box"></a>
 
 <div class="class_members" markdown="1">
@@ -844,6 +871,7 @@ volume.
 </div>
 
 </div>
+
 
 <a id="Simulation.modal_volume_in_box"></a>
 
@@ -882,6 +910,7 @@ via the functions:
 
 </div>
 
+
 <a id="Simulation.integrate_field_function"></a>
 
 <div class="class_members" markdown="1">
@@ -915,6 +944,7 @@ volume.
 </div>
 
 </div>
+
 
 <a id="Simulation.max_abs_field_function"></a>
 
@@ -951,6 +981,7 @@ and the same PML layers (if any).
 </div>
 
 </div>
+
 
 <a id="Simulation.integrate2_field_function"></a>
 
@@ -1002,6 +1033,7 @@ this requires you to call much lower-level functions like `fields_step()`.
 </div>
 
 
+
 ### Reloading Parameters
 
 Once the fields/simulation have been initialized, you can change the values of various parameters by using the following functions (which are members of the `Simulation` class):
@@ -1026,6 +1058,7 @@ values passed in at instantiation.
 
 </div>
 
+
 <a id="Simulation.restart_fields"></a>
 
 <div class="class_members" markdown="1">
@@ -1043,6 +1076,7 @@ transforms of the flux planes, which continue to be accumulated.
 
 </div>
 
+
 <a id="Simulation.change_k_point"></a>
 
 <div class="class_members" markdown="1">
@@ -1058,6 +1092,7 @@ Change the `k_point` (the Bloch periodicity).
 </div>
 
 </div>
+
 
 <a id="Simulation.change_sources"></a>
 
@@ -1077,12 +1112,15 @@ the sources used for the current simulation. `new_sources` must be a list of
 
 </div>
 
+
 <a id="Simulation.set_materials"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def set_materials(self, geometry=None, default_material=None):
+def set_materials(self,
+                  geometry: List[meep.geom.GeometricObject] = None,
+                  default_material: meep.geom.Medium = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1093,6 +1131,7 @@ default material as a function of time.
 </div>
 
 </div>
+
 
 
 ### Flux Spectra
@@ -1132,6 +1171,7 @@ in the simulation as well as the frequency range of the DFT field monitor.
 
 </div>
 
+
 As described in the tutorial, you normally use `add_flux` via statements like:
 
 ```python
@@ -1163,6 +1203,7 @@ subsequent columns are the flux spectra.
 
 </div>
 
+
 You might have to do something lower-level if you have multiple flux regions corresponding to *different* frequency ranges, or have other special needs. `display_fluxes(f1, f2, f3)` is actually equivalent to `meep.display_csv("flux", meep.get_flux_freqs(f1), meep.get_fluxes(f1), meep.get_fluxes(f2), meep.get_fluxes(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
 
@@ -1179,6 +1220,7 @@ spectrum for.
 
 </div>
 
+
 <a id="get_fluxes"></a>
 
 ```python
@@ -1191,6 +1233,7 @@ Given a flux object, returns a list of the current flux spectrum that it has
 accumulated.
 
 </div>
+
 
 As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend), for a reflection spectrum you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
@@ -1213,6 +1256,7 @@ filename-prefix is prepended automatically).
 
 </div>
 
+
 <a id="Simulation.load_flux"></a>
 
 <div class="class_members" markdown="1">
@@ -1234,6 +1278,7 @@ processors and chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_flux"></a>
 
 <div class="class_members" markdown="1">
@@ -1251,6 +1296,7 @@ that are accumulated.
 </div>
 
 </div>
+
 
 Sometimes it is more convenient to keep the Fourier-transformed fields in memory rather than writing them to a file and immediately loading them back again. To that end, the `Simulation` class exposes the following three methods:
 
@@ -1273,6 +1319,7 @@ only useful for passing to `load_flux_data` below and should be considered opaqu
 
 </div>
 
+
 <a id="Simulation.load_flux_data"></a>
 
 <div class="class_members" markdown="1">
@@ -1293,6 +1340,7 @@ chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_flux_data"></a>
 
 <div class="class_members" markdown="1">
@@ -1310,6 +1358,7 @@ transforms that are accumulated.
 </div>
 
 </div>
+
 
 
 The `Simulation` class also provides some aliases for the corresponding "flux" methods.
@@ -1362,6 +1411,7 @@ following fields:
 
 </div>
 
+
 The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenModeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue $\omega$; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 Technically, MPB computes $\omega_n(\mathbf{k})$ and then inverts it with Newton's method to find the wavevector $\mathbf{k}$ normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for $\mathbf{k}$ in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the $\mathbf{k}$ of band number $n$ at frequency $f=\omega/2\pi$. (By default, the $\mathbf{k}$ components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's $\mathbf{k}$ components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.) If `direction` is set to `mp.NO_DIRECTION`, then `kpoint_func` is not only the initial guess and the search direction of the $\mathbf{k}$ vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides) (not perpendicular to the flux plane).
@@ -1388,6 +1438,7 @@ Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
 </div>
 
 </div>
+
 
 `add_mode_monitor` works properly with arbitrary symmetries, but may be suboptimal because the Fourier-transformed region does not exploit the symmetry.  As an optimization, if you have a mirror plane that bisects the mode monitor, you can instead use `add_flux` to gain a factor of two, but in that case you *must* also pass the corresponding `eig_parity` to `get_eigenmode_coefficients` in order to only compute eigenmodes with the corresponding mirror symmetry.
 
@@ -1435,6 +1486,7 @@ If `match_frequency=False` or `kpoint` is not zero in the given `direction`, the
 
 </div>
 
+
 The following top-level function is also available:
 
 
@@ -1450,6 +1502,7 @@ Given a flux object, returns a list of the frequencies that it is computing the
 spectrum for.
 
 </div>
+
 
 ---
 <a id="DiffractedPlanewave"></a>
@@ -1467,13 +1520,16 @@ For mode decomposition or eigenmode source, specify a diffracted planewave in ho
 </div>
 
 
-
 <a id="DiffractedPlanewave.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, g=None, axis=None, s=None, p=None):
+def __init__(self,
+             g: List[int] = None,
+             axis: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+             s: complex = None,
+             p: complex = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1491,6 +1547,7 @@ Construct a `DiffractedPlanewave`.
 </div>
 
 </div>
+
 
 ### Energy Density Spectra
 
@@ -1531,6 +1588,7 @@ with care, as the decimated timeseries may be corrupted by
 
 </div>
 
+
 As for flux regions, you normally use `add_energy` via statements like:
 
 ```py
@@ -1562,6 +1620,7 @@ column are the frequencies, and subsequent columns are the energy density spectr
 
 </div>
 
+
 <a id="Simulation.display_magnetic_energy"></a>
 
 <div class="class_members" markdown="1">
@@ -1581,6 +1640,7 @@ column are the frequencies, and subsequent columns are the energy density spectr
 </div>
 
 </div>
+
 
 <a id="Simulation.display_total_energy"></a>
 
@@ -1603,6 +1663,7 @@ frequencies, and subsequent columns are the energy density spectra.
 </div>
 
 
+
 You might have to do something lower-level if you have multiple energy regions corresponding to *different* frequency ranges, or have other special needs. `display_electric_energy(e1, e2, e3)` is actually equivalent to `meep.display_csv("electric_energy", meep.get_energy_freqs(e1), meep.get_electric_energy(e1), meep.get_electric_energy(e2), meep.get_electric_energy(e3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling lower-level functions:
 
 
@@ -1619,6 +1680,7 @@ spectrum for.
 
 </div>
 
+
 <a id="get_electric_energy"></a>
 
 ```python
@@ -1631,6 +1693,7 @@ Given an energy object, returns a list of the current energy density spectrum fo
 electric fields that it has accumulated.
 
 </div>
+
 
 <a id="get_magnetic_energy"></a>
 
@@ -1645,6 +1708,7 @@ magnetic fields that it has accumulated.
 
 </div>
 
+
 <a id="get_total_energy"></a>
 
 ```python
@@ -1658,6 +1722,7 @@ total fields that it has accumulated.
 
 </div>
 
+
 As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the energy density from the scattered fields you often want to save the Fourier-transformed fields from a "normalization" run and then load them into another run to be subtracted. This can be done via:
 
 
@@ -1666,7 +1731,9 @@ As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md
 <div class="class_members" markdown="1">
 
 ```python
-def save_energy(self, fname, energy):
+def save_energy(self,
+                fname: str,
+                energy: meep.simulation.DftEnergy):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1679,12 +1746,15 @@ filename-prefix is prepended automatically).
 
 </div>
 
+
 <a id="Simulation.load_energy"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def load_energy(self, fname, energy):
+def load_energy(self,
+                fname: str,
+                energy: meep.simulation.DftEnergy):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1700,12 +1770,15 @@ processors and chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_energy"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def load_minus_energy(self, fname, energy):
+def load_minus_energy(self,
+                      fname: str,
+                      energy: meep.simulation.DftEnergy):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1717,6 +1790,7 @@ transforms that are accumulated.
 </div>
 
 </div>
+
 
 
 ### Force Spectra
@@ -1764,6 +1838,7 @@ with care, as the decimated timeseries may be corrupted by
 
 </div>
 
+
 As for flux regions, you normally use `add_force` via statements like:
 
 ```py
@@ -1795,6 +1870,7 @@ subsequent columns are the force spectra.
 
 </div>
 
+
 You might have to do something lower-level if you have multiple force regions corresponding to *different* frequency ranges, or have other special needs. `display_forces(f1, f2, f3)` is actually equivalent to `meep.display_csv("force", meep.get_force_freqs(f1), meep.get_forces(f1), meep.get_forces(f2), meep.get_forces(f3))`, where `display_csv` takes a bunch of lists of numbers and prints them as a comma-separated table; this involves calling two lower-level functions:
 
 
@@ -1812,6 +1888,7 @@ spectrum for.
 
 </div>
 
+
 <a id="get_forces"></a>
 
 ```python
@@ -1824,6 +1901,7 @@ Given a force object, returns a list of the current force spectrum that it has
 accumulated.
 
 </div>
+
 
 
 As described in [Introduction/Transmittance/Reflectance Spectra](Introduction.md#transmittancereflectance-spectra) and [Tutorial/Basics/Transmittance Spectrum of a Waveguide Bend](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend) for flux computations, to compute the force from the scattered fields often requires saving the Fourier-transformed fields from a "normalization" run and then loading them into another run to be subtracted. This can be done via these `Simulation` methods:
@@ -1847,6 +1925,7 @@ filename-prefix is prepended automatically).
 
 </div>
 
+
 <a id="Simulation.load_force"></a>
 
 <div class="class_members" markdown="1">
@@ -1868,6 +1947,7 @@ processors and chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_force"></a>
 
 <div class="class_members" markdown="1">
@@ -1885,6 +1965,7 @@ that are accumulated.
 </div>
 
 </div>
+
 
 To keep the fields in memory and avoid writing to and reading from a file, use the following three `Simulation` methods:
 
@@ -1908,6 +1989,7 @@ opaque.
 
 </div>
 
+
 <a id="Simulation.load_force_data"></a>
 
 <div class="class_members" markdown="1">
@@ -1928,6 +2010,7 @@ chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_force_data"></a>
 
 <div class="class_members" markdown="1">
@@ -1945,6 +2028,7 @@ transforms that are accumulated.
 </div>
 
 </div>
+
 
 ### LDOS spectra
 
@@ -1968,6 +2052,7 @@ argument.
 
 </div>
 
+
 <a id="get_ldos_freqs"></a>
 
 ```python
@@ -1980,6 +2065,7 @@ Given an LDOS object, returns a list of the frequencies that it is computing the
 spectrum for.
 
 </div>
+
 
 <a id="dft_ldos"></a>
 
@@ -2002,6 +2088,7 @@ is also stored in the `ldos_data` variable of the `Simulation` object after the 
 is complete.
 
 </div>
+
 
 
 Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, refer to the relevant discussion in Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now it is defined as:
@@ -2049,6 +2136,7 @@ with care, as the decimated timeseries may be corrupted by
 
 </div>
 
+
 Each `Near2FarRegion` is identical to `FluxRegion` except for the name: in 3d, these give a set of planes (**important:** all these "near surfaces" must lie in a single *homogeneous* material with *isotropic* ε and μ &mdash; and they should *not* lie in the PML regions) surrounding the source(s) of outgoing radiation that you want to capture and convert to a far field. Ideally, these should form a closed surface, but in practice it is sufficient for the `Near2FarRegion`s to capture all of the radiation in the direction of the far-field points. **Important:** as for flux computations, each `Near2FarRegion` should be assigned a `weight` of &#177;1 indicating the direction of the outward normal relative to the +coordinate direction. So, for example, if you have six regions defining the six faces of a cube, i.e. the faces in the $+x$, $-x$, $+y$, $-y$, $+z$, and $-z$ directions, then they should have weights +1, -1, +1, -1, +1, and -1 respectively. Note that, neglecting discretization errors, all near-field surfaces that enclose the same outgoing fields are equivalent and will yield the same far fields with a discretization-induced difference that vanishes with increasing resolution etc.
 
 After the simulation run is complete, you can compute the far fields. This is usually for a pulsed source so that the fields have decayed away and the Fourier transforms have finished accumulating.
@@ -2078,6 +2166,7 @@ in cylindrical coordinates for the frequencies 1,2,...,`nfreq`.
 
 </div>
 
+
 <a id="Simulation.output_farfields"></a>
 
 <div class="class_members" markdown="1">
@@ -2085,11 +2174,11 @@ in cylindrical coordinates for the frequencies 1,2,...,`nfreq`.
 ```python
 def output_farfields(self,
                      near2far,
-                     fname,
-                     resolution,
-                     where=None,
-                     center=None,
-                     size=None):
+                     fname: str = None,
+                     resolution: float = None,
+                     where: meep.simulation.Volume = None,
+                     center: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+                     size: Union[meep.geom.Vector3, Tuple[float, ...]] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2109,6 +2198,7 @@ specified via `center` and `size`.
 
 </div>
 
+
 <a id="Simulation.get_farfields"></a>
 
 <div class="class_members" markdown="1">
@@ -2116,10 +2206,10 @@ specified via `center` and `size`.
 ```python
 def get_farfields(self,
                   near2far,
-                  resolution,
-                  where=None,
-                  center=None,
-                  size=None):
+                  resolution: float = None,
+                  where: meep.simulation.Volume = None,
+                  center: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+                  size: Union[meep.geom.Vector3, Tuple[float, ...]] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2138,6 +2228,7 @@ far fields in one region vs. another region.
 
 </div>
 
+
 This lower-level function is also available:
 
 
@@ -2153,6 +2244,7 @@ Given a `near2far` object, returns a list of the frequencies that it is computin
 spectrum for.
 
 </div>
+
 
 
 (Multi-frequency `get_farfields` and `output_farfields` can be accelerated by
@@ -2180,6 +2272,7 @@ filename-prefix is prepended automatically.
 
 </div>
 
+
 <a id="Simulation.load_near2far"></a>
 
 <div class="class_members" markdown="1">
@@ -2201,6 +2294,7 @@ processors and chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_near2far"></a>
 
 <div class="class_members" markdown="1">
@@ -2218,6 +2312,7 @@ transforms that are accumulated.
 </div>
 
 </div>
+
 
 
 To keep the fields in memory and avoid writing to and reading from a file, use the following three methods:
@@ -2242,6 +2337,7 @@ considered opaque.
 
 </div>
 
+
 <a id="Simulation.load_near2far_data"></a>
 
 <div class="class_members" markdown="1">
@@ -2262,6 +2358,7 @@ processors and chunk layout.
 
 </div>
 
+
 <a id="Simulation.load_minus_near2far_data"></a>
 
 <div class="class_members" markdown="1">
@@ -2280,6 +2377,7 @@ transforms that are accumulated.
 
 </div>
 
+
 See also this lower-level function:
 
 
@@ -2297,6 +2395,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 
 </div>
 
+
 And this [`DftNear2Far`](#DftNear2Far) method:
 
 
@@ -2305,7 +2404,10 @@ And this [`DftNear2Far`](#DftNear2Far) method:
 <div class="class_members" markdown="1">
 
 ```python
-def flux(self, direction, where, resolution):
+def flux(self,
+         direction: int = None,
+         where: meep.simulation.Volume = None,
+         resolution: float = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2319,6 +2421,7 @@ is a 1d array of `nfreq` dimensions.
 </div>
 
 </div>
+
 
 
 ### Load and Dump Simulation State
@@ -2343,7 +2446,9 @@ These functions dump the raw ε and μ data to disk and load it back for doing m
 <div class="class_members" markdown="1">
 
 ```python
-def dump_structure(self, fname, single_parallel_file=True):
+def dump_structure(self,
+                   fname: str = None,
+                   single_parallel_file: bool = True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2354,12 +2459,15 @@ Dumps the structure to the file `fname`.
 
 </div>
 
+
 <a id="Simulation.load_structure"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def load_structure(self, fname, single_parallel_file=True):
+def load_structure(self,
+                   fname: str = None,
+                   single_parallel_file: bool = True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2370,6 +2478,7 @@ Loads a structure from the file `fname`.
 
 </div>
 
+
 #### Load and Dump Chunk Layout
 
 
@@ -2378,7 +2487,7 @@ Loads a structure from the file `fname`.
 <div class="class_members" markdown="1">
 
 ```python
-def dump_chunk_layout(self, fname):
+def dump_chunk_layout(self, fname: str = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2388,6 +2497,7 @@ Dumps the chunk layout to file `fname`.
 </div>
 
 </div>
+
 
 To load a chunk layout into a `Simulation`, use the `chunk_layout` argument to the constructor, passing either a file obtained from `dump_chunk_layout` or another `Simulation` instance. Note that when using `split_chunks_evenly=False` this parameter is required when saving and loading flux spectra, force spectra, or near-to-far spectra so that the two runs have the same chunk layout. Just pass the `Simulation` object from the first run to the second run:
 
@@ -2420,7 +2530,9 @@ same as the one it was dumped from.
 <div class="class_members" markdown="1">
 
 ```python
-def dump_fields(self, fname, single_parallel_file=True):
+def dump_fields(self,
+                fname: str = None,
+                single_parallel_file: bool = True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2431,12 +2543,15 @@ Dumps the fields to the file `fname`.
 
 </div>
 
+
 <a id="Simulation.load_fields"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def load_fields(self, fname, single_parallel_file=True):
+def load_fields(self,
+                fname: str = None,
+                single_parallel_file: bool = True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2446,6 +2561,7 @@ Loads a fields from the file `fname`.
 </div>
 
 </div>
+
 
 #### Checkpoint and Restore
 
@@ -2462,10 +2578,10 @@ object to be *exactly* the same as the one the state was dumped from.
 
 ```python
 def dump(self,
-         dirname,
-         dump_structure=True,
-         dump_fields=True,
-         single_parallel_file=True):
+         dirname: str = None,
+         dump_structure: bool = True,
+         dump_fields: bool = True,
+         single_parallel_file: bool = True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2476,16 +2592,17 @@ Dumps simulation state.
 
 </div>
 
+
 <a id="Simulation.load"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
 def load(self,
-         dirname,
-         load_structure=True,
-         load_fields=True,
-         single_parallel_file=True):
+         dirname: str,
+         load_structure: bool = True,
+         load_fields: bool = True,
+         single_parallel_file: bool = True):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2498,6 +2615,7 @@ but before 'init_sim' is called.
 </div>
 
 </div>
+
 
 Example usage:
 
@@ -2580,6 +2698,7 @@ Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 
 </div>
 
+
 <a id="GDSII_prisms"></a>
 
 ```python
@@ -2592,6 +2711,7 @@ Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer numb
 `layer` of a GDSII file `fname` with `zmin` and `zmax` (default 0).
 
 </div>
+
 
 <a id="GDSII_vol"></a>
 
@@ -2610,6 +2730,7 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 ```
 
 </div>
+
 
 
 ### Data Visualization
@@ -2733,6 +2854,7 @@ to be called on all processes, but only generates a plot on the master process.
 
 </div>
 
+
 <a id="Simulation.plot3D"></a>
 
 <div class="class_members" markdown="1">
@@ -2749,6 +2871,7 @@ Can also be embedded in Jupyter notebooks.
 </div>
 
 </div>
+
 
 <a id="Simulation.visualize_chunks"></a>
 
@@ -2767,6 +2890,7 @@ Requires [matplotlib](https://matplotlib.org).
 </div>
 
 </div>
+
 
 An animated visualization is also possible via the [Animate2D](#Animate2D) class.
 
@@ -2816,6 +2940,7 @@ stopping conditions.
 
 </div>
 
+
 In particular, a useful value for `until_after_sources` or `until` is often `stop_when_fields_decayed`, which is demonstrated in [Tutorial/Basics](Python_Tutorials/Basics.md#transmittance-spectrum-of-a-waveguide-bend). These top-level functions are available:
 
 
@@ -2843,6 +2968,7 @@ slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.m
 
 </div>
 
+
 <a id="stop_when_energy_decayed"></a>
 
 ```python
@@ -2864,6 +2990,7 @@ slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.m
 
 </div>
 
+
 <a id="stop_when_dft_decayed"></a>
 
 ```python
@@ -2884,6 +3011,7 @@ maximum run time `maximum_run_time` (no default).
 
 </div>
 
+
 <a id="stop_after_walltime"></a>
 
 ```python
@@ -2896,6 +3024,7 @@ Return a `condition` function, suitable for passing to `Simulation.run` as the `
 parameter. Stops the simulation after `t` seconds of wall time have passed.
 
 </div>
+
 
 <a id="stop_on_interrupt"></a>
 
@@ -2912,6 +3041,7 @@ follows the `run` function (e.g., outputting fields).
 
 </div>
 
+
 Finally, another run function, useful for computing $\omega(\mathbf{k})$ band diagrams, is available via these `Simulation` methods:
 
 
@@ -2920,7 +3050,9 @@ Finally, another run function, useful for computing $\omega(\mathbf{k})$ band di
 <div class="class_members" markdown="1">
 
 ```python
-def run_k_points(self, t, k_points):
+def run_k_points(self,
+                 t: float = None,
+                 k_points: List[Union[meep.geom.Vector3, Tuple[float, ...]]] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2942,12 +3074,15 @@ Cavity](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.m
 
 </div>
 
+
 <a id="Simulation.run_k_point"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def run_k_point(self, t, k):
+def run_k_point(self,
+                t: float = None,
+                k: Union[meep.geom.Vector3, Tuple[float, ...]] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2959,6 +3094,7 @@ access more `Harminv` data than just the frequencies.
 </div>
 
 </div>
+
 
 
 ### Predefined Step Functions
@@ -2978,7 +3114,9 @@ Note that although the various field components are stored at different places i
 <div class="class_members" markdown="1">
 
 ```python
-def output_dft(self, dft_fields, fname):
+def output_dft(self,
+               dft_fields: meep.simulation.DftFields,
+               fname: str):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -2990,6 +3128,7 @@ suffix).
 </div>
 
 </div>
+
 
 
 <a id="output_epsilon"></a>
@@ -3011,6 +3150,7 @@ the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 
 </div>
 
+
 <a id="output_mu"></a>
 
 ```python
@@ -3030,6 +3170,7 @@ the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 
 </div>
 
+
 <a id="output_poynting"></a>
 
 ```python
@@ -3045,6 +3186,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
 
+
 <a id="output_hpwr"></a>
 
 ```python
@@ -3057,6 +3199,7 @@ Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 
 </div>
 
+
 <a id="output_dpwr"></a>
 
 ```python
@@ -3068,6 +3211,7 @@ def output_dpwr(sim):
 Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 
 </div>
+
 
 <a id="output_tot_pwr"></a>
 
@@ -3083,6 +3227,7 @@ wrap this step function in `synchronized_magnetic` to compute it more accurately
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
+
 
 <a id="output_png"></a>
 
@@ -3114,6 +3259,7 @@ file requires `output_png(component, h5topng_options, rm_h5=False)`.
 </div>
 
 
+
 <a id="output_hfield"></a>
 
 ```python
@@ -3126,6 +3272,7 @@ Outputs *all* the components of the field *h*, (magnetic) to an HDF5 file. That 
 the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_hfield_x"></a>
 
@@ -3141,6 +3288,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_hfield_y"></a>
 
 ```python
@@ -3154,6 +3302,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_hfield_z"></a>
 
@@ -3169,6 +3318,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_hfield_r"></a>
 
 ```python
@@ -3182,6 +3332,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_hfield_p"></a>
 
@@ -3198,6 +3349,7 @@ and imaginary parts, respectively.
 </div>
 
 
+
 <a id="output_bfield"></a>
 
 ```python
@@ -3210,6 +3362,7 @@ Outputs *all* the components of the field *b*, (magnetic) to an HDF5 file. That 
 the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_bfield_x"></a>
 
@@ -3225,6 +3378,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_bfield_y"></a>
 
 ```python
@@ -3238,6 +3392,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_bfield_z"></a>
 
@@ -3253,6 +3408,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_bfield_r"></a>
 
 ```python
@@ -3266,6 +3422,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_bfield_p"></a>
 
@@ -3285,6 +3442,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 
+
 <a id="output_efield"></a>
 
 ```python
@@ -3297,6 +3455,7 @@ Outputs *all* the components of the field *e*, (electric) to an HDF5 file. That 
 the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_efield_x"></a>
 
@@ -3312,6 +3471,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_efield_y"></a>
 
 ```python
@@ -3325,6 +3485,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_efield_z"></a>
 
@@ -3340,6 +3501,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_efield_r"></a>
 
 ```python
@@ -3353,6 +3515,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_efield_p"></a>
 
@@ -3372,6 +3535,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 
+
 <a id="output_dfield"></a>
 
 ```python
@@ -3384,6 +3548,7 @@ Outputs *all* the components of the field *d*, (displacement) to an HDF5 file. T
 is, the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_dfield_x"></a>
 
@@ -3399,6 +3564,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_dfield_y"></a>
 
 ```python
@@ -3412,6 +3578,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_dfield_z"></a>
 
@@ -3427,6 +3594,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_dfield_r"></a>
 
 ```python
@@ -3440,6 +3608,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_dfield_p"></a>
 
@@ -3459,6 +3628,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 
+
 <a id="output_sfield"></a>
 
 ```python
@@ -3475,6 +3645,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
 
+
 <a id="output_sfield_x"></a>
 
 ```python
@@ -3488,6 +3659,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_sfield_y"></a>
 
@@ -3503,6 +3675,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_sfield_z"></a>
 
 ```python
@@ -3517,6 +3690,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_sfield_r"></a>
 
 ```python
@@ -3530,6 +3704,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_sfield_p"></a>
 
@@ -3547,6 +3722,7 @@ accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
+
 
 
 More generally, it is possible to output an arbitrary function of position and zero or more field components, similar to the `Simulation.integrate_field_function` method, described above. This is done by:
@@ -3576,6 +3752,7 @@ field components corresponding to `cs`: a list of `component` constants. If
 </div>
 
 </div>
+
 
 See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic and Electric Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md) if you want to do computations combining the electric and magnetic fields.
 
@@ -3668,6 +3845,7 @@ arrays; rather, you should simply rely on Meep's output.
 
 </div>
 
+
 <a id="Simulation.get_dft_array"></a>
 
 <div class="class_members" markdown="1">
@@ -3695,6 +3873,7 @@ or `numpy.complex128` depending on the [floating-point precision of the fields](
 </div>
 
 </div>
+
 
 
 #### Array Metadata
@@ -3752,6 +3931,7 @@ default the return value is a 4-tuple `(x,y,z,w)`.
 </div>
 
 </div>
+
 
 The following are some examples of how array metadata can be used.
 
@@ -3833,6 +4013,7 @@ Not supported for [cylindrical coordinates](Python_Tutorials/Cylindrical_Coordin
 </div>
 
 
+
 #### Harminv Step Function
 
 The following step function collects field data from a given point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract the frequencies, decay rates, and other information.
@@ -3861,6 +4042,7 @@ all of the passed step functions.
 
 </div>
 
+
 <a id="synchronized_magnetic"></a>
 
 ```python
@@ -3875,6 +4057,7 @@ electric field. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
+
 
 
 #### Controlling When a Step Function Executes
@@ -3893,6 +4076,7 @@ no arguments), evaluate the step functions whenever `condition` returns `True`.
 
 </div>
 
+
 <a id="when_false"></a>
 
 ```python
@@ -3905,6 +4089,7 @@ Given zero or more step functions and a condition function `condition` (a functi
 no arguments), evaluate the step functions whenever `condition` returns `False`.
 
 </div>
+
 
 <a id="at_every"></a>
 
@@ -3919,6 +4104,7 @@ Given zero or more step functions, evaluates them at every time interval of $dT$
 
 </div>
 
+
 <a id="after_time"></a>
 
 ```python
@@ -3931,6 +4117,7 @@ Given zero or more step functions, evaluates them only for times after a $T$ tim
 units have elapsed from the start of the run.
 
 </div>
+
 
 <a id="before_time"></a>
 
@@ -3945,6 +4132,7 @@ units have elapsed from the start of the run.
 
 </div>
 
+
 <a id="at_time"></a>
 
 ```python
@@ -3957,6 +4145,7 @@ Given zero or more step functions, evaluates them only once, after a $T$ time un
 have elapsed from the start of the run.
 
 </div>
+
 
 <a id="after_sources"></a>
 
@@ -3971,6 +4160,7 @@ sources have turned off.
 
 </div>
 
+
 <a id="after_sources_and_time"></a>
 
 ```python
@@ -3983,6 +4173,7 @@ Given zero or more step functions, evaluates them only for times after all of th
 sources have turned off, plus an additional $T$ time units have elapsed.
 
 </div>
+
 
 <a id="during_sources"></a>
 
@@ -3997,6 +4188,7 @@ sources have turned off.
 
 </div>
 
+
 <a id="at_beginning"></a>
 
 ```python
@@ -4010,6 +4202,7 @@ run.
 
 </div>
 
+
 <a id="at_end"></a>
 
 ```python
@@ -4021,6 +4214,7 @@ def at_end(*step_funcs):
 Given zero or more step functions, evaluates them only once, at the end of the run.
 
 </div>
+
 
 
 #### Modifying HDF5 Output
@@ -4040,6 +4234,7 @@ output a subset (or a superset) of the cell, corresponding to the `meep::volume*
 
 </div>
 
+
 <a id="in_point"></a>
 
 ```python
@@ -4052,6 +4247,7 @@ Given zero or more step functions, modifies any output functions among them to o
 output a single *point* of data, at `pt` (a `Vector3`).
 
 </div>
+
 
 <a id="to_appended"></a>
 
@@ -4068,6 +4264,7 @@ dimension* to their datasets, corresponding to time.
 
 </div>
 
+
 <a id="with_prefix"></a>
 
 ```python
@@ -4080,6 +4277,7 @@ Given zero or more step functions, modifies any output functions among them to p
 the string `prefix` to the file names (much like `filename_prefix`, above).
 
 </div>
+
 
 ### Writing Your Own Step Functions
 
@@ -4226,7 +4424,6 @@ objects that are subclasses of type `Susceptibility`.
 </div>
 
 
-
 <a id="Medium.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -4328,6 +4525,7 @@ Creates a `Medium` object.
 
 </div>
 
+
 <a id="Medium.__repr__"></a>
 
 <div class="class_members" markdown="1">
@@ -4343,6 +4541,7 @@ Return repr(self).
 </div>
 
 </div>
+
 
 <a id="Medium.epsilon"></a>
 
@@ -4362,6 +4561,7 @@ of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 
 </div>
 
+
 <a id="Medium.mu"></a>
 
 <div class="class_members" markdown="1">
@@ -4379,6 +4579,7 @@ of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
 </div>
 
 </div>
+
 
 <a id="Medium.transform"></a>
 
@@ -4405,6 +4606,7 @@ media](FAQ.md#why-does-my-simulation-diverge-if-0).
 
 </div>
 
+
 ---
 <a id="MaterialGrid"></a>
 
@@ -4423,7 +4625,6 @@ argument of the [`Simulation`](#Simulation) constructor (similar to a [material 
 </div>
 
 
-
 <a id="MaterialGrid.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -4435,7 +4636,7 @@ def __init__(self,
              medium2,
              weights=None,
              grid_type='U_DEFAULT',
-             do_averaging=False,
+             do_averaging=True,
              beta=0,
              eta=0.5,
              damping=0):
@@ -4493,6 +4694,7 @@ allow you to combine any material grids that overlap in space with no intervenin
 
 </div>
 
+
 <a id="MaterialGrid.update_weights"></a>
 
 <div class="class_members" markdown="1">
@@ -4509,6 +4711,7 @@ Reset the `weights` to `x`.
 
 </div>
 
+
 ---
 <a id="Susceptibility"></a>
 
@@ -4524,7 +4727,6 @@ Parent class for various dispersive susceptibility terms, parameterized by an
 anisotropic amplitude $\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
 
 </div>
-
 
 
 <a id="Susceptibility.__init__"></a>
@@ -4554,6 +4756,7 @@ corresponds to a $\sigma$ tensor
 
 </div>
 
+
 ---
 <a id="LorentzianSusceptibility"></a>
 
@@ -4570,7 +4773,6 @@ oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), w
 the parameters (in addition to $\sigma$):
 
 </div>
-
 
 
 <a id="LorentzianSusceptibility.__init__"></a>
@@ -4595,6 +4797,7 @@ preliminary simulation info output.
 
 </div>
 
+
 ---
 <a id="DrudeSusceptibility"></a>
 
@@ -4610,7 +4813,6 @@ Specifies a single dispersive susceptibility of Drude form. See [Material
 Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\sigma$):
 
 </div>
-
 
 
 <a id="DrudeSusceptibility.__init__"></a>
@@ -4632,6 +4834,7 @@ def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
 
 </div>
 
+
 ---
 <a id="MultilevelAtom"></a>
 
@@ -4651,7 +4854,6 @@ atomic level. See [Materials/Saturable Gain and
 Absorption](Materials.md#saturable-gain-and-absorption).
 
 </div>
-
 
 
 <a id="MultilevelAtom.__init__"></a>
@@ -4681,6 +4883,7 @@ corresponds to a $\sigma$ tensor
 
 </div>
 
+
 ---
 <a id="Transition"></a>
 
@@ -4695,7 +4898,6 @@ class Transition(object):
 
 
 </div>
-
 
 
 <a id="Transition.__init__"></a>
@@ -4736,6 +4938,7 @@ Construct a `Transition`.
 
 </div>
 
+
 ---
 <a id="NoisyLorentzianSusceptibility"></a>
 
@@ -4754,7 +4957,6 @@ Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency
 space and time, zero mean) added to the **P** damped-oscillator equation.
 
 </div>
-
 
 
 <a id="NoisyLorentzianSusceptibility.__init__"></a>
@@ -4787,6 +4989,7 @@ e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g.
 
 </div>
 
+
 ---
 <a id="NoisyDrudeSusceptibility"></a>
 
@@ -4805,7 +5008,6 @@ Dispersion](Materials.md#material-dispersion), with the same `sigma`, `frequency
 space and time, zero mean) added to the **P** damped-oscillator equation.
 
 </div>
-
 
 
 <a id="NoisyDrudeSusceptibility.__init__"></a>
@@ -4838,6 +5040,7 @@ e.g. via [SCUFF-EM](https://github.com/HomerReid/scuff-em), as described e.g.
 
 </div>
 
+
 ---
 <a id="GyrotropicLorentzianSusceptibility"></a>
 
@@ -4858,7 +5061,6 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 </div>
 
 
-
 <a id="GyrotropicLorentzianSusceptibility.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -4876,6 +5078,7 @@ frequency $|\mathbf{b}_n|/2\pi$.
 </div>
 
 </div>
+
 
 ---
 <a id="GyrotropicDrudeSusceptibility"></a>
@@ -4897,7 +5100,6 @@ meanings](#susceptibility), and an additional 3-vector `bias`:
 </div>
 
 
-
 <a id="GyrotropicDrudeSusceptibility.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -4915,6 +5117,7 @@ frequency $|\mathbf{b}_n|/2\pi$.
 </div>
 
 </div>
+
 
 ---
 <a id="GyrotropicSaturatedSusceptibility"></a>
@@ -4936,7 +5139,6 @@ different from the Lorentzian and Drude case. It also takes a 3-vector `bias`
 parameter and an `alpha` parameter:
 
 </div>
-
 
 
 <a id="GyrotropicSaturatedSusceptibility.__init__"></a>
@@ -4980,6 +5182,7 @@ def __init__(self,
 
 </div>
 
+
 ---
 <a id="Vector3"></a>
 
@@ -4998,7 +5201,6 @@ vector. Generally, functions that take a `Vector3` as an argument will accept an
 iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
 
 </div>
-
 
 
 <a id="Vector3.__add__"></a>
@@ -5020,6 +5222,7 @@ v3 = v1 + v2
 </div>
 
 </div>
+
 
 <a id="Vector3.__eq__"></a>
 
@@ -5043,12 +5246,16 @@ v1 == v2
 
 </div>
 
+
 <a id="Vector3.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, x=0.0, y=0.0, z=0.0):
+def __init__(self,
+             x: float = 0.0,
+             y: float = 0.0,
+             z: float = 0.0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5059,6 +5266,7 @@ zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
 </div>
 
 </div>
+
 
 <a id="Vector3.__mul__"></a>
 
@@ -5080,6 +5288,7 @@ c = v1 * other
 </div>
 
 </div>
+
 
 <a id="Vector3.__ne__"></a>
 
@@ -5103,6 +5312,7 @@ v1 != v2
 
 </div>
 
+
 <a id="Vector3.__repr__"></a>
 
 <div class="class_members" markdown="1">
@@ -5118,6 +5328,7 @@ Return repr(self).
 </div>
 
 </div>
+
 
 <a id="Vector3.__rmul__"></a>
 
@@ -5140,6 +5351,7 @@ c = other * v1
 
 </div>
 
+
 <a id="Vector3.__sub__"></a>
 
 <div class="class_members" markdown="1">
@@ -5160,6 +5372,7 @@ v3 = v1 - v2
 
 </div>
 
+
 <a id="Vector3.cdot"></a>
 
 <div class="class_members" markdown="1">
@@ -5175,6 +5388,7 @@ Returns the conjugated dot product: `conj(self)` dot `v`.
 </div>
 
 </div>
+
 
 <a id="Vector3.close"></a>
 
@@ -5197,6 +5411,7 @@ v1.close(v2, [tol])
 
 </div>
 
+
 <a id="Vector3.cross"></a>
 
 <div class="class_members" markdown="1">
@@ -5216,6 +5431,7 @@ v3 = v1.cross(v2)
 </div>
 
 </div>
+
 
 <a id="Vector3.dot"></a>
 
@@ -5237,6 +5453,7 @@ v3 = v1.dot(v2)
 
 </div>
 
+
 <a id="Vector3.norm"></a>
 
 <div class="class_members" markdown="1">
@@ -5256,6 +5473,7 @@ v2 = v1.norm()
 </div>
 
 </div>
+
 
 <a id="Vector3.rotate"></a>
 
@@ -5280,6 +5498,7 @@ v2 = v1.rotate(axis, theta)
 
 </div>
 
+
 <a id="Vector3.unit"></a>
 
 <div class="class_members" markdown="1">
@@ -5299,6 +5518,7 @@ v2 = v1.unit()
 </div>
 
 </div>
+
 
 ---
 <a id="GeometricObject"></a>
@@ -5365,7 +5585,6 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 </div>
 
 
-
 <a id="GeometricObject.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -5401,6 +5620,7 @@ constructor via keyword arguments.
 
 </div>
 
+
 <a id="GeometricObject.info"></a>
 
 <div class="class_members" markdown="1">
@@ -5417,6 +5637,7 @@ Displays all properties and current values of a `GeometricObject`, indented by
 </div>
 
 </div>
+
 
 <a id="GeometricObject.shift"></a>
 
@@ -5441,6 +5662,7 @@ Using `+=` will shift the object in place.
 
 </div>
 
+
 ---
 <a id="Sphere"></a>
 
@@ -5461,7 +5683,6 @@ Represents a sphere.
 </div>
 
 
-
 <a id="Sphere.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -5477,6 +5698,7 @@ Constructs a `Sphere`
 </div>
 
 </div>
+
 
 ---
 <a id="Cylinder"></a>
@@ -5503,7 +5725,6 @@ A cylinder, with circular cross-section and finite height.
 </div>
 
 
-
 <a id="Cylinder.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -5524,6 +5745,7 @@ Constructs a `Cylinder`.
 
 </div>
 
+
 ---
 <a id="Wedge"></a>
 
@@ -5538,7 +5760,6 @@ class Wedge(Cylinder):
 Represents a cylindrical wedge.
 
 </div>
-
 
 
 <a id="Wedge.__init__"></a>
@@ -5561,6 +5782,7 @@ Constructs a `Wedge`.
 
 </div>
 
+
 ---
 <a id="Cone"></a>
 
@@ -5579,7 +5801,6 @@ the radius of the tip is given by the new property, `radius2`. The `center` of a
 is halfway between the two circular ends.
 
 </div>
-
 
 
 <a id="Cone.__init__"></a>
@@ -5602,6 +5823,7 @@ Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis`
 
 </div>
 
+
 ---
 <a id="Block"></a>
 
@@ -5616,7 +5838,6 @@ class Block(GeometricObject):
 A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
 
 </div>
-
 
 
 <a id="Block.__init__"></a>
@@ -5648,6 +5869,7 @@ Construct a `Block`.
 
 </div>
 
+
 ---
 <a id="Ellipsoid"></a>
 
@@ -5663,7 +5885,6 @@ An ellipsoid. This is actually a subclass of `Block`, and inherits all the same
 properties, but defines an ellipsoid inscribed inside the block.
 
 </div>
-
 
 
 <a id="Ellipsoid.__init__"></a>
@@ -5682,6 +5903,7 @@ Construct an `Ellipsoid`.
 
 </div>
 
+
 ---
 <a id="Prism"></a>
 
@@ -5696,7 +5918,6 @@ class Prism(GeometricObject):
 Polygonal prism type.
 
 </div>
-
 
 
 <a id="Prism.__init__"></a>
@@ -5742,6 +5963,7 @@ Construct a `Prism`.
 </div>
 
 </div>
+
 
 ---
 <a id="Matrix"></a>
@@ -5792,7 +6014,6 @@ Scales the matrix `m` by the number `s`.
 </div>
 
 
-
 <a id="Matrix.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -5814,6 +6035,7 @@ Constructs a `Matrix`.
 
 </div>
 
+
 <a id="Matrix.__repr__"></a>
 
 <div class="class_members" markdown="1">
@@ -5829,6 +6051,7 @@ Return repr(self).
 </div>
 
 </div>
+
 
 **Related function:**
 
@@ -5849,6 +6072,7 @@ as `v.rotate(axis, theta)`.
 + `theta` [`number`] — The rotation angle (in radians).
 
 </div>
+
 
 
 ---
@@ -5884,13 +6108,14 @@ the axis of the rotation.
 </div>
 
 
-
 <a id="Symmetry.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, direction, phase=1):
+def __init__(self,
+             direction: int = None,
+             phase: complex = (1+0j)):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5911,6 +6136,7 @@ Construct a `Symmetry`.
 
 </div>
 
+
 ---
 <a id="Rotate2"></a>
 
@@ -5926,7 +6152,6 @@ A 180° (twofold) rotational symmetry (a.k.a. $C_2$). `direction` is the axis of
 rotation.
 
 </div>
-
 
 
 
@@ -5948,7 +6173,6 @@ rotation.
 
 
 
-
 ---
 <a id="Mirror"></a>
 
@@ -5966,7 +6190,6 @@ A mirror symmetry plane. `direction` is the direction *normal* to the mirror pla
 
 
 
-
 ---
 <a id="Identity"></a>
 
@@ -5981,7 +6204,6 @@ class Identity(Symmetry):
 
 
 </div>
-
 
 
 
@@ -6007,19 +6229,18 @@ properties.
 </div>
 
 
-
 <a id="PML.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
 def __init__(self,
-             thickness,
-             direction=mp.ALL,
-             side=mp.ALL,
-             R_asymptotic=1e-15,
-             mean_stretch=1.0,
-             pml_profile=DefaultPMLProfile):
+             thickness: float = None,
+             direction: int = -1,
+             side: int = -1,
+             R_asymptotic: float = 1e-15,
+             mean_stretch: float = 1.0,
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f3ad518a310>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6065,6 +6286,7 @@ def __init__(self,
 
 </div>
 
+
 ---
 <a id="Absorber"></a>
 
@@ -6105,7 +6327,6 @@ The main reason to use `Absorber` is if you have **a case in which PML fails:**
 
 
 
-
 ---
 <a id="Source"></a>
 
@@ -6138,7 +6359,6 @@ the book [Advances in FDTD Computational Electrodynamics: Photonics and
 Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
 
 </div>
-
 
 
 <a id="Source.__init__"></a>
@@ -6225,6 +6445,7 @@ should use an `EigenModeSource`.
 
 </div>
 
+
 ---
 <a id="SourceTime"></a>
 
@@ -6240,7 +6461,6 @@ This is the parent for classes describing the time dependence of sources; it sho
 not be instantiated directly.
 
 </div>
-
 
 
 ---
@@ -6305,7 +6525,6 @@ The `SourceTime` object (`Source.src`), which specifies the time dependence of t
 source, can be one of `ContinuousSource`, `GaussianSource` or `CustomSource`.
 
 </div>
-
 
 
 <a id="EigenModeSource.__init__"></a>
@@ -6415,6 +6634,7 @@ Construct an `EigenModeSource`.
 
 </div>
 
+
 <a id="EigenModeSource.eig_power"></a>
 
 <div class="class_members" markdown="1">
@@ -6430,6 +6650,7 @@ Returns the total power of the fields from the eigenmode source at frequency `fr
 </div>
 
 </div>
+
 
 ---
 <a id="GaussianBeamSource"></a>
@@ -6449,7 +6670,6 @@ This is a subclass of `Source` and has **all of the properties** of `Source` abo
 The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
 
 </div>
-
 
 
 <a id="GaussianBeamSource.__init__"></a>
@@ -6485,6 +6705,7 @@ Construct a `GaussianBeamSource`.
 
 </div>
 
+
 ---
 <a id="ContinuousSource"></a>
 
@@ -6502,7 +6723,6 @@ an exact single-frequency
 response](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
 </div>
-
 
 
 <a id="ContinuousSource.__init__"></a>
@@ -6561,6 +6781,7 @@ Construct a `ContinuousSource`.
 
 </div>
 
+
 ---
 <a id="GaussianSource"></a>
 
@@ -6579,7 +6800,6 @@ Gaussian, i.e. they are $(-i\omega)^{-1} \frac{\partial}{\partial t} \exp(-i\ome
 irrelevant.
 
 </div>
-
 
 
 <a id="GaussianSource.__init__"></a>
@@ -6646,6 +6866,7 @@ Construct a `GaussianSource`.
 
 </div>
 
+
 ---
 <a id="CustomSource"></a>
 
@@ -6668,7 +6889,6 @@ demonstration of a [linear-chirped pulse](FAQ.md#how-do-i-create-a-chirped-pulse
 [`examples/chirped_pulse.py`](https://github.com/NanoComp/meep/blob/master/python/examples/chirped_pulse.py).
 
 </div>
-
 
 
 <a id="CustomSource.__init__"></a>
@@ -6723,6 +6943,7 @@ Construct a `CustomSource`.
 
 </div>
 
+
 ---
 <a id="FluxRegion"></a>
 
@@ -6748,18 +6969,17 @@ the box add instead of subtract.
 </div>
 
 
-
 <a id="FluxRegion.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
 def __init__(self,
-             center=None,
-             size=Vector3<0.0, 0.0, 0.0>,
-             direction=mp.AUTOMATIC,
-             weight=1.0,
-             volume=None):
+             center: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+             size: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
+             direction: int = -1,
+             weight: float = 1.0,
+             volume: Union[meep.simulation.Volume, NoneType] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6788,6 +7008,7 @@ Construct a `FluxRegion` object.
 
 </div>
 
+
 ---
 <a id="EnergyRegion"></a>
 
@@ -6811,7 +7032,6 @@ energy density of the Fourier-transformed fields. Its properties are:
   is computed. Default is 1.0.
 
 </div>
-
 
 
 
@@ -6853,7 +7073,6 @@ force.
 
 
 
-
 ---
 <a id="Volume"></a>
 
@@ -6877,18 +7096,17 @@ specify a list of `Vector3` vertices using the `vertices` parameter. The `center
 </div>
 
 
-
 <a id="Volume.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
 def __init__(self,
-             center=Vector3<0.0, 0.0, 0.0>,
-             size=Vector3<0.0, 0.0, 0.0>,
-             dims=2,
-             is_cylindrical=False,
-             vertices=[]):
+             center: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
+             size: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
+             dims: int = 2,
+             is_cylindrical: bool = False,
+             vertices: List[Union[meep.geom.Vector3, Tuple[float, ...]]] = []):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6898,6 +7116,7 @@ Construct a Volume.
 </div>
 
 </div>
+
 
 ** Related function:**
 
@@ -6913,6 +7132,7 @@ Utility function that takes a `meep::volume` `vol` and returns the center and si
 the volume as a tuple of `Vector3`.
 
 </div>
+
 
 ---
 <a id="Animate2D"></a>
@@ -6957,7 +7177,6 @@ track different volume locations (using `mp.in_volume`) or field components.
 </div>
 
 
-
 <a id="Animate2D.__call__"></a>
 
 <div class="class_members" markdown="1">
@@ -6973,6 +7192,7 @@ Call self as a function.
 </div>
 
 </div>
+
 
 <a id="Animate2D.__init__"></a>
 
@@ -7029,6 +7249,7 @@ Construct an `Animate2D` object.
 
 </div>
 
+
 <a id="Animate2D.to_gif"></a>
 
 <div class="class_members" markdown="1">
@@ -7049,6 +7270,7 @@ format only supports 256 colors from a _predefined_ color palette. Requires
 
 </div>
 
+
 <a id="Animate2D.to_jshtml"></a>
 
 <div class="class_members" markdown="1">
@@ -7067,6 +7289,7 @@ playback. User must specify a frame rate `fps` in frames per second.
 
 </div>
 
+
 <a id="Animate2D.to_mp4"></a>
 
 <div class="class_members" markdown="1">
@@ -7084,6 +7307,7 @@ format. Requires `ffmpeg`.
 </div>
 
 </div>
+
 
 ---
 <a id="Harminv"></a>
@@ -7144,7 +7368,6 @@ sim.run(mp.after_sources(h))
 </div>
 
 
-
 <a id="Harminv.__call__"></a>
 
 <div class="class_members" markdown="1">
@@ -7161,12 +7384,18 @@ Allows a Haminv instance to be used as a step function.
 
 </div>
 
+
 <a id="Harminv.__init__"></a>
 
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(self, c, pt, fcen, df, mxbands=None):
+def __init__(self,
+             c: int = None,
+             pt: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+             fcen: float = None,
+             df: float = None,
+             mxbands: Union[int, NoneType] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7184,6 +7413,7 @@ search for. Defaults to 100.
 </div>
 
 </div>
+
 
 ---
 <a id="Verbosity"></a>
@@ -7242,7 +7472,6 @@ verbosity.mpb = 1
 </div>
 
 
-
 <a id="Verbosity.__init__"></a>
 
 <div class="class_members" markdown="1">
@@ -7258,6 +7487,7 @@ See `add_verbosity_var()`
 </div>
 
 </div>
+
 
 <a id="Verbosity.__call__"></a>
 
@@ -7282,6 +7512,7 @@ verbosity(0)
 
 </div>
 
+
 <a id="Verbosity.add_verbosity_var"></a>
 
 <div class="class_members" markdown="1">
@@ -7299,6 +7530,7 @@ that has a `verbosity` attribute, such as `meep.cvar` or `mpb.cvar`.
 
 </div>
 
+
 <a id="Verbosity.get"></a>
 
 <div class="class_members" markdown="1">
@@ -7314,6 +7546,7 @@ Returns the current global verbosity level.
 </div>
 
 </div>
+
 
 <a id="Verbosity.set"></a>
 
@@ -7332,6 +7565,7 @@ former value.
 
 </div>
 
+
 ---
 <a id="BinaryPartition"></a>
 
@@ -7347,7 +7581,6 @@ Binary tree class used for specifying a cell partition of arbitrary sized chunks
 `chunk_layout` parameter of the `Simulation` class object.
 
 </div>
-
 
 
 <a id="BinaryPartition.__init__"></a>
@@ -7380,6 +7613,7 @@ of processes.
 
 </div>
 
+
 <a id="BinaryPartition.print"></a>
 
 <div class="class_members" markdown="1">
@@ -7395,6 +7629,7 @@ Pretty-prints the tree structure of the BinaryPartition object.
 </div>
 
 </div>
+
 
 Miscellaneous Functions Reference
 ---------------------------------
@@ -7414,6 +7649,7 @@ original list.
 
 </div>
 
+
 #### Flux functions
 
 
@@ -7431,6 +7667,7 @@ spectrum for.
 </div>
 
 
+
 <a id="get_fluxes"></a>
 
 ```python
@@ -7443,6 +7680,7 @@ Given a flux object, returns a list of the current flux spectrum that it has
 accumulated.
 
 </div>
+
 
 
 <a id="scale_flux_fields"></a>
@@ -7460,6 +7698,7 @@ Scale the Fourier-transformed fields in `flux` by the complex number `s`. e.g.
 </div>
 
 
+
 <a id="get_eigenmode_freqs"></a>
 
 ```python
@@ -7472,6 +7711,7 @@ Given a flux object, returns a list of the frequencies that it is computing the
 spectrum for.
 
 </div>
+
 
 
 #### Energy Functions
@@ -7490,6 +7730,7 @@ spectrum for.
 
 </div>
 
+
 <a id="get_electric_energy"></a>
 
 ```python
@@ -7502,6 +7743,7 @@ Given an energy object, returns a list of the current energy density spectrum fo
 electric fields that it has accumulated.
 
 </div>
+
 
 <a id="get_magnetic_energy"></a>
 
@@ -7516,6 +7758,7 @@ magnetic fields that it has accumulated.
 
 </div>
 
+
 <a id="get_total_energy"></a>
 
 ```python
@@ -7528,6 +7771,7 @@ Given an energy object, returns a list of the current energy density spectrum fo
 total fields that it has accumulated.
 
 </div>
+
 
 
 #### Force Functions
@@ -7546,6 +7790,7 @@ spectrum for.
 
 </div>
 
+
 <a id="get_forces"></a>
 
 ```python
@@ -7558,6 +7803,7 @@ Given a force object, returns a list of the current force spectrum that it has
 accumulated.
 
 </div>
+
 
 
 #### LDOS Functions
@@ -7580,6 +7826,7 @@ argument.
 
 </div>
 
+
 <a id="get_ldos_freqs"></a>
 
 ```python
@@ -7592,6 +7839,7 @@ Given an LDOS object, returns a list of the frequencies that it is computing the
 spectrum for.
 
 </div>
+
 
 <a id="dft_ldos"></a>
 
@@ -7616,6 +7864,7 @@ is complete.
 </div>
 
 
+
 #### Near2Far Functions
 
 
@@ -7632,6 +7881,7 @@ spectrum for.
 
 </div>
 
+
 <a id="scale_near2far_fields"></a>
 
 ```python
@@ -7645,6 +7895,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 `scale_near2far_fields` with `s=-1`.
 
 </div>
+
 
 
 #### GDSII Functions
@@ -7668,6 +7919,7 @@ Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
 
 </div>
 
+
 <a id="GDSII_prisms"></a>
 
 ```python
@@ -7680,6 +7932,7 @@ Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer numb
 `layer` of a GDSII file `fname` with `zmin` and `zmax` (default 0).
 
 </div>
+
 
 <a id="GDSII_vol"></a>
 
@@ -7698,6 +7951,7 @@ fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
 ```
 
 </div>
+
 
 
 #### Run and Step Functions
@@ -7727,6 +7981,7 @@ slow group velocities and are absorbed poorly by [PML](Perfectly_Matched_Layer.m
 
 </div>
 
+
 <a id="stop_after_walltime"></a>
 
 ```python
@@ -7739,6 +7994,7 @@ Return a `condition` function, suitable for passing to `Simulation.run` as the `
 parameter. Stops the simulation after `t` seconds of wall time have passed.
 
 </div>
+
 
 <a id="stop_on_interrupt"></a>
 
@@ -7754,6 +8010,7 @@ system, the simulation will abort time stepping and continue executing any code 
 follows the `run` function (e.g., outputting fields).
 
 </div>
+
 
 
 #### Output Functions
@@ -7778,6 +8035,7 @@ the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 
 </div>
 
+
 <a id="output_mu"></a>
 
 ```python
@@ -7797,6 +8055,7 @@ the `sim` argument specifying the `Simulation` object can be omitted, e.g.,
 
 </div>
 
+
 <a id="output_poynting"></a>
 
 ```python
@@ -7812,6 +8071,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
 
+
 <a id="output_hpwr"></a>
 
 ```python
@@ -7824,6 +8084,7 @@ Output the magnetic-field energy density $\mathbf{H}^* \cdot \mathbf{B} / 2$
 
 </div>
 
+
 <a id="output_dpwr"></a>
 
 ```python
@@ -7835,6 +8096,7 @@ def output_dpwr(sim):
 Output the electric-field energy density $\mathbf{E}^* \cdot \mathbf{D} / 2$
 
 </div>
+
 
 <a id="output_tot_pwr"></a>
 
@@ -7850,6 +8112,7 @@ wrap this step function in `synchronized_magnetic` to compute it more accurately
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
+
 
 <a id="output_png"></a>
 
@@ -7881,6 +8144,7 @@ file requires `output_png(component, h5topng_options, rm_h5=False)`.
 </div>
 
 
+
 <a id="output_hfield"></a>
 
 ```python
@@ -7893,6 +8157,7 @@ Outputs *all* the components of the field *h*, (magnetic) to an HDF5 file. That 
 the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_hfield_x"></a>
 
@@ -7908,6 +8173,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_hfield_y"></a>
 
 ```python
@@ -7921,6 +8187,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_hfield_z"></a>
 
@@ -7936,6 +8203,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_hfield_r"></a>
 
 ```python
@@ -7949,6 +8217,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_hfield_p"></a>
 
@@ -7965,6 +8234,7 @@ and imaginary parts, respectively.
 </div>
 
 
+
 <a id="output_bfield"></a>
 
 ```python
@@ -7977,6 +8247,7 @@ Outputs *all* the components of the field *b*, (magnetic) to an HDF5 file. That 
 the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_bfield_x"></a>
 
@@ -7992,6 +8263,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_bfield_y"></a>
 
 ```python
@@ -8005,6 +8277,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_bfield_z"></a>
 
@@ -8020,6 +8293,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_bfield_r"></a>
 
 ```python
@@ -8033,6 +8307,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_bfield_p"></a>
 
@@ -8052,6 +8327,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 
+
 <a id="output_efield"></a>
 
 ```python
@@ -8064,6 +8340,7 @@ Outputs *all* the components of the field *e*, (electric) to an HDF5 file. That 
 the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_efield_x"></a>
 
@@ -8079,6 +8356,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_efield_y"></a>
 
 ```python
@@ -8092,6 +8370,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_efield_z"></a>
 
@@ -8107,6 +8386,7 @@ imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_efield_r"></a>
 
 ```python
@@ -8120,6 +8400,7 @@ two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the real and
 imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_efield_p"></a>
 
@@ -8139,6 +8420,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 
+
 <a id="output_dfield"></a>
 
 ```python
@@ -8151,6 +8433,7 @@ Outputs *all* the components of the field *d*, (displacement) to an HDF5 file. T
 is, the different components are stored as different datasets within the *same* file.
 
 </div>
+
 
 <a id="output_dfield_x"></a>
 
@@ -8166,6 +8449,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_dfield_y"></a>
 
 ```python
@@ -8179,6 +8463,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_dfield_z"></a>
 
@@ -8194,6 +8479,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_dfield_r"></a>
 
 ```python
@@ -8207,6 +8493,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_dfield_p"></a>
 
@@ -8226,6 +8513,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 </div>
 
 
+
 <a id="output_sfield"></a>
 
 ```python
@@ -8242,6 +8530,7 @@ Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
 
+
 <a id="output_sfield_x"></a>
 
 ```python
@@ -8255,6 +8544,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_sfield_y"></a>
 
@@ -8270,6 +8560,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_sfield_z"></a>
 
 ```python
@@ -8284,6 +8575,7 @@ and imaginary parts, respectively.
 
 </div>
 
+
 <a id="output_sfield_r"></a>
 
 ```python
@@ -8297,6 +8589,7 @@ outputs two datasets, e.g. `ex.r` and `ex.i`, within the same HDF5 file for the 
 and imaginary parts, respectively.
 
 </div>
+
 
 <a id="output_sfield_p"></a>
 

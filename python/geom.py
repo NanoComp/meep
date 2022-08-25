@@ -35,7 +35,7 @@ class Vector3:
     iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
     """
 
-    def __init__(self, x=0.0, y=0.0, z=0.0):
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
         """
         Create a new `Vector3` with the given components. All three components default to
         zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
@@ -607,7 +607,7 @@ class MaterialGrid:
         with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the $z$ direction.
         The grid points are defined at the corners of the voxels.
 
-        ![](images/material_grid.png)
+        ![](images/material_grid.png#center)
 
         Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
         The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
