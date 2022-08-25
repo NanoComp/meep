@@ -97,12 +97,6 @@ class ObjectiveQuantity(abc.ABC):
         For some reason, there seems to be an additional phase
         factor at the center frequency that needs to be applied
         to *all* frequencies...
-<<<<<<< HEAD
-        '''
-        src_center_dtft = np.matmul(
-            np.exp(1j * 2 * np.pi * np.array([src.frequency])[:, np.newaxis] *
-                   np.arange(y.size) * dt), y) * dt / np.sqrt(2 * np.pi)
-=======
         """
         src_center_dtft = (
             np.matmul(
@@ -119,7 +113,6 @@ class ObjectiveQuantity(abc.ABC):
             * dt
             / np.sqrt(2 * np.pi)
         )
->>>>>>> 63cd51ffc735ed0f2dc0623e5318def41be11d1c
         adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
 
         if self._frequencies.size == 1:
@@ -144,18 +137,11 @@ class ObjectiveQuantity(abc.ABC):
         The user may specify a scalar valued objective function across multiple frequencies (e.g. MSE) in
         which case we should check that all the frequencies fit in the specified bandwidth.
         """
-<<<<<<< HEAD
-        self.fwidth_scale = np.exp(-2j*np.pi*adj_cutoff/fwidth_frac)
-        return mp.GaussianSource(
-            np.mean(self._frequencies),
-            fwidth=fwidth_frac * np.mean(self._frequencies),cutoff=adj_cutoff
-=======
         self.fwidth_scale = np.exp(-2j * np.pi * adj_cutoff / fwidth_frac)
         return mp.GaussianSource(
             np.mean(self._frequencies),
             fwidth=fwidth_frac * np.mean(self._frequencies),
             cutoff=adj_cutoff,
->>>>>>> 63cd51ffc735ed0f2dc0623e5318def41be11d1c
         )
 
 
