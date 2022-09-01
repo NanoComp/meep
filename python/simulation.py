@@ -5825,7 +5825,8 @@ def dft_ldos(*args, **kwargs):
 
     The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and
     is also stored in the `ldos_data` variable of the `Simulation` object after the `run`
-    is complete.
+    is complete. The Fourier-transformed electric field and current source are stored in
+    the `ldos_Fdata` and `ldos_Jdata` of the `Simulation` object, respectively.
     """
     ldos = kwargs.get("ldos", None)
     if ldos is None:
