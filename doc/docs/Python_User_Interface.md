@@ -88,20 +88,20 @@ control various parameters of the Meep computation.
 def __init__(self,
              cell_size: Union[meep.geom.Vector3, Tuple[float, ...], NoneType] = None,
              resolution: float = None,
-             geometry: Union[List[meep.geom.GeometricObject], NoneType] = None,
-             sources: Union[List[meep.source.Source], NoneType] = None,
+             geometry: Optional[List[meep.geom.GeometricObject]] = None,
+             sources: Optional[List[meep.source.Source]] = None,
              eps_averaging: bool = True,
              dimensions: int = 3,
-             boundary_layers: Union[List[meep.simulation.PML], NoneType] = None,
-             symmetries: Union[List[meep.simulation.Symmetry], NoneType] = None,
+             boundary_layers: Optional[List[meep.simulation.PML]] = None,
+             symmetries: Optional[List[meep.simulation.Symmetry]] = None,
              force_complex_fields: bool = False,
              default_material: meep.geom.Medium = Medium(),
              m: float = 0,
              k_point: Union[meep.geom.Vector3, Tuple[float, ...], bool] = False,
              kz_2d: str = 'complex',
-             extra_materials: Union[List[meep.geom.Medium], NoneType] = None,
-             material_function: Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium], NoneType] = None,
-             epsilon_func: Union[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float], NoneType] = None,
+             extra_materials: Optional[List[meep.geom.Medium]] = None,
+             material_function: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], meep.geom.Medium]] = None,
+             epsilon_func: Optional[Callable[[Union[meep.geom.Vector3, Tuple[float, ...]]], float]] = None,
              epsilon_input_file: str = '',
              progress_interval: float = 4,
              subpixel_tol: float = 0.0001,
@@ -112,8 +112,8 @@ def __init__(self,
              num_chunks: int = 0,
              Courant: float = 0.5,
              accurate_fields_near_cylorigin: bool = False,
-             filename_prefix: Union[str, NoneType] = None,
-             output_volume: Union[meep.simulation.Volume, NoneType] = None,
+             filename_prefix: Optional[str] = None,
+             output_volume: Optional[meep.simulation.Volume] = None,
              output_single_precision: bool = False,
              geometry_center: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
              force_all_components: bool = False,
@@ -2085,7 +2085,8 @@ arbitrarily spaced frequencies. One can also pass in an `Ldos` object as
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and
 is also stored in the `ldos_data` variable of the `Simulation` object after the `run`
-is complete.
+is complete. The Fourier-transformed electric field and current source are stored in
+the `ldos_Fdata` and `ldos_Jdata` of the `Simulation` object, respectively.
 
 </div>
 
@@ -6240,7 +6241,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f3ad518a310>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f3a89740ca0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6979,7 +6980,7 @@ def __init__(self,
              size: Union[meep.geom.Vector3, Tuple[float, ...]] = Vector3<0.0, 0.0, 0.0>,
              direction: int = -1,
              weight: float = 1.0,
-             volume: Union[meep.simulation.Volume, NoneType] = None):
+             volume: Optional[meep.simulation.Volume] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7395,7 +7396,7 @@ def __init__(self,
              pt: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
              fcen: float = None,
              df: float = None,
-             mxbands: Union[int, NoneType] = None):
+             mxbands: Optional[int] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7859,7 +7860,8 @@ arbitrarily spaced frequencies. One can also pass in an `Ldos` object as
 
 The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and
 is also stored in the `ldos_data` variable of the `Simulation` object after the `run`
-is complete.
+is complete. The Fourier-transformed electric field and current source are stored in
+the `ldos_Fdata` and `ldos_Jdata` of the `Simulation` object, respectively.
 
 </div>
 
