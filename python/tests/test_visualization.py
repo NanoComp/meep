@@ -221,10 +221,10 @@ class TestVisualization(unittest.TestCase):
         sim = setup_sim()  # generate 2D simulation
 
         Animate = mp.Animate2D(
-            sim, fields=mp.Ez, realtime=False, normalize=False
+            sim=sim, fields=mp.Ez, realtime=False, normalize=False
         )  # Check without normalization
         Animate_norm = mp.Animate2D(
-            sim, mp.Ez, realtime=False, normalize=True
+            sim=sim, fields=mp.Ez, realtime=False, normalize=True
         )  # Check with normalization
 
         # test both animation objects during same run
@@ -252,10 +252,10 @@ class TestVisualization(unittest.TestCase):
         sim = setup_sim(5)  # generate 2D simulation
 
         Animate_xy = mp.Animate2D(
-            sim, fields=mp.Ey, realtime=False, normalize=True
+            sim=sim, fields=mp.Ey, realtime=False, normalize=True
         )  # Check without normalization
         Animate_xz = mp.Animate2D(
-            sim, mp.Ey, realtime=False, normalize=True
+            sim=sim, fields=mp.Ey, realtime=False, normalize=True
         )  # Check with normalization
 
         # test both animation objects during same run
