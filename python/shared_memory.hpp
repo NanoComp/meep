@@ -42,7 +42,6 @@
       int *model; 
       int i, flag;
       int windisp;
-      int *winptr;
       MPI_Aint winsize;
       MPI_Win winarray;
       
@@ -50,7 +49,7 @@
       localarraysize = 0;
       if (node_rank == 0) localarraysize = arraysize;
 
-      MPI_Win_allocate_shared(localarraysize*sizeof(int), sizeof(int),
+      MPI_Win_allocate_shared(localarraysize*sizeof(T), sizeof(T),
               MPI_INFO_NULL, nodecomm, &localarray, &winarray);
 
       MPI_Win_get_attr(winarray, MPI_WIN_MODEL, &model, &flag);
@@ -63,6 +62,9 @@
       {
           MPI_Win_shared_query(winarray, 0, &winsize, &windisp, &array);
       }
+
+      printf("POINTER TO SHARED ARRAY IN PROCESS %d:   = %p,  SHARED= %p\n", world_rank , (void *) &array, (void *) array);
+
 
       MPI_Win_fence(0, winarray);
 
@@ -81,7 +83,7 @@
 
     if (node_rank == 0) {
         memcpy(dest, src, count);
-        std::cout << "copying the values from process ["<<node_rank << "/" <<node_size<<"] \n" ;
+        std::cout << "copying the values in the shared memory ["<<node_rank << "/" <<node_size<<"] \n" ;
     }
     MPI_Barrier(MPI_COMM_WORLD);
   }
@@ -95,7 +97,7 @@
   
   template<class T>
   void memcpy_shared(T* dest, const T* src, size_t count ) {
-    std::cout << "copying the values from all processes \n" ;
+    std::cout << "copying the values on every process \n" ;
     memcpy(dest, src, count);
     }
 
