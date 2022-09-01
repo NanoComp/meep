@@ -79,7 +79,7 @@ def constraint_connectivity(
     heat_func = lambda x: npa.sum(x**p) ** (1 / p) / thresh
     heat = heat_func(T)
     if not need_grad:
-        return heat / thresh - 1
+        return heat - 1
 
     dgdx = grad(heat_func)(T)
     if solver == spsolve:
@@ -210,7 +210,7 @@ def constraint_connectivity(
     )
 
     gradient = aT * (src_s - src_v) - (cond_s - cond_v) * (aT @ dAdp_x)
-    return T, heat / thresh - 1, gradient
+    return T, heat - 1, gradient
 
 
 def cc_fd(
@@ -226,7 +226,7 @@ def cc_fd(
     thresh=None,
     p=4,
     num_grad=6,
-    db=1e-4,
+    db=1e-6,
 ):
     n = nx * ny * nz
     fdidx = np.random.choice(n, num_grad)
