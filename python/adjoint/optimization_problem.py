@@ -217,6 +217,8 @@ class OptimizationProblem:
             for mi, m in enumerate(self.objective_arguments):
                 dJ = jacobian(self.objective_functions[ar], mi)(*self.results_list)
                 # get gradient of objective w.r.t. monitor
+                print(np.any(dJ))
+                print(dJ)
                 if np.any(dJ):
                     self.adjoint_sources[ar] += m.place_adjoint_source(
                         dJ

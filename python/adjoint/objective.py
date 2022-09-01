@@ -546,26 +546,52 @@ class PoyntingFlux(ObjectiveQuantity):
 
     def place_adjoint_source(self, dJ):
         source = []
+        print("This is dJ[0]")
+        print(dJ[0])
+        print(dJ[0].shape)
+        print("This is metadata's shape:")
+        print(self.field_component_evaluations[4].shape)
         for pos, field in enumerate(self.F_fields_list):
-            source.append(field.place_adjoint_source(np.flipud(dJ[pos].flatten()))[0])
+            # Make sure there's a nonzero value in the gradient
+            # (zero sources don't converge)
+            # Check is also in prepare_adjoint_run,
+            # but necessary here too
+            if np.any(dJ[pos]):
+                source.append(
+                    field.place_adjoint_source(np.flipud(np.array(dJ[pos]).squeeze()))[
+                        0
+                    ]
+                )
         return source
 
     def __call__(self):
         self.field_component_evaluations = []
+        # Get integration weights Meep uses
+        self.metadata = self.sim.get_array_metadata(vol=self.volume)
         for field in self.F_fields_list:
             # Get the dft evaluation from a call to the underlying
             # FourierFields object
             field_here = field()
+            # make sure it isn't a list of scalar zeros equal to the number of
+            # frequencies (usually caused by symmetries making fields 0)
+            # fixes the np.array error in the return
+            # when we give it a "ragged" array
+            if (np.squeeze(field_here).size) == self._frequencies.size:
+                print("does the empty array check work")
+                print(field_here)
+                field_here = np.array([np.zeros(self.metadata[3].shape)])
             self.field_component_evaluations.append(field_here)
-        # Get integration weights Meep uses
-        self.metadata = self.sim.get_array_metadata(vol=self.volume)
+
         self.field_component_evaluations.append(
             np.array([self.metadata[3]]).astype(complex)
         )
         [H1, H2, E1, E2, meta] = self.field_component_evaluations
+
         self._eval = self.field_component_evaluations
         print("This is meta*E2")
         print(meta * E2)
+        print("This is the np array")
+        print(np.array([H1, H2, E1, E2, meta]))
         return np.array([H1, H2, E1, E2, meta])
 
     # takes in a 1x5xNxM vector where the size five array corresponds to
@@ -573,6 +599,7 @@ class PoyntingFlux(ObjectiveQuantity):
     # multiple frequencies will be tested later
     @staticmethod
     def compute_flux(*inputs):
+        # Check if all the inputs are nonzero
         flux = npa.sum(
             npa.real(
                 inputs[0][4]
