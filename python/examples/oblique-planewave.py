@@ -20,26 +20,26 @@ default_material = mp.Medium(index=n)
 
 k_point = mp.Vector3(fsrc * n).rotate(mp.Vector3(z=1), rot_angle)
 
-# sources = [
-#     mp.EigenModeSource(
-#         src=mp.ContinuousSource(fsrc),
-#         center=mp.Vector3(),
-#         size=mp.Vector3(y=10),
-#         direction=mp.AUTOMATIC if rot_angle == 0 else mp.NO_DIRECTION,
-#         eig_kpoint=k_point,
-#         eig_parity=mp.EVEN_Y + mp.ODD_Z if rot_angle == 0 else mp.ODD_Z,
-#     )
-# ]
-
-## equivalent definition
 sources = [
     mp.EigenModeSource(
         src=mp.ContinuousSource(fsrc),
         center=mp.Vector3(),
         size=mp.Vector3(y=10),
-        eig_band=mp.DiffractedPlanewave((0, 0, 0), mp.Vector3(0, 1, 0), 1, 0),
+        direction=mp.AUTOMATIC if rot_angle == 0 else mp.NO_DIRECTION,
+        eig_kpoint=k_point,
+        eig_parity=mp.EVEN_Y + mp.ODD_Z if rot_angle == 0 else mp.ODD_Z,
     )
 ]
+
+## equivalent definition
+# sources = [
+#     mp.EigenModeSource(
+#         src=mp.ContinuousSource(fsrc),
+#         center=mp.Vector3(),
+#         size=mp.Vector3(y=10),
+#         eig_band=mp.DiffractedPlanewave((0, 0, 0), mp.Vector3(0, 1, 0), 1, 0),
+#     )
+# ]
 
 sim = mp.Simulation(
     cell_size=cell_size,
@@ -53,7 +53,7 @@ sim = mp.Simulation(
 
 sim.run(until=20.0)
 
-nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10, 10, 0))
+nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10.0, 10.0, 0))
 
 sim.plot2D(fields=mp.Ez, output_plane=nonpml_vol)
 

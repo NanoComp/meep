@@ -23,7 +23,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
         cls.pml_layers = [mp.PML(thickness=cls.dpml, direction=mp.X)]
 
-    def run_binary_grating_diffraction(self, gp, gh, gdc, theta):
+    def run_binary_grating_diffraction(self, gp, gh, gdc, theta_pw):
         """Computes the mode coefficient of the transmitted orders of
            a binary grating given an incident planewave and verifies
            that the results are the same when using either a band number
@@ -33,25 +33,23 @@ class TestDiffractedPlanewave(unittest.TestCase):
           gp: grating periodicity (μm).
           gh: grating height (μm).
           gdc: grating duty cycle (dimensionless).
-          theta: angle of incident planewave (degrees).
+          theta: angle (in degrees) of incident planewave rotated counter
+                 clockwise (CCW) about z axis. 0 degrees along +x axis.
         """
         sx = self.dpml + self.dsub + gh + self.dpad + self.dpml
         sy = gp
         cell_size = mp.Vector3(sx, sy, 0)
 
-        # rotation angle of incident planewave
-        # counter clockwise (CCW) about z axis, 0 degrees along +x axis
-        theta_in = math.radians(theta)
-
-        # k (in source medium) with correct length (plane of incidence: xy)
-        k = mp.Vector3(self.fcen * self.ng).rotate(mp.Vector3(z=1), theta_in)
-
         eig_parity = mp.ODD_Z  # S polarization
-        if theta == 0:
+        if theta_pw == 0:
             k = mp.Vector3()
             eig_parity += mp.EVEN_Y
             symmetries = [mp.Mirror(direction=mp.Y)]
         else:
+            # k (in source medium) with correct length (plane of incidence: xy)
+            k = mp.Vector3(self.fcen * self.ng).rotate(
+                mp.Vector3(z=1), math.radians(theta_pw)
+            )
             symmetries = []
 
         def pw_amp(k, x0):
@@ -106,7 +104,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
         m_plus = int(np.floor((self.fcen - k.y) * gp))
         m_minus = int(np.ceil((-self.fcen - k.y) * gp))
 
-        if theta == 0:
+        if theta_pw == 0:
             orders = range(m_plus + 1)
         else:
             ms = range(m_minus, m_plus + 1)
@@ -126,7 +124,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
             # contain identical power which means that to obtain the power in
             # each order requires halving the total power. This applies
             # to all orders except m=0.
-            if theta == 0 and band != 0:
+            if theta_pw == 0 and band != 0:
                 tran_ref = 0.5 * tran_ref
             vg_ref = res.vgrp[0]
             kdom_ref = res.kdom[0]
@@ -148,7 +146,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
             self.assertAlmostEqual(vg_ref, vg_dp, places=4)
             self.assertAlmostEqual(tran_ref, tran_dp, places=4)
-            if theta == 0:
+            if theta_pw == 0:
                 self.assertAlmostEqual(abs(kdom_ref.x), kdom_dp.x, places=5)
                 self.assertAlmostEqual(abs(kdom_ref.y), kdom_dp.y, places=5)
                 self.assertAlmostEqual(abs(kdom_ref.z), kdom_dp.z, places=5)
@@ -166,65 +164,65 @@ class TestDiffractedPlanewave(unittest.TestCase):
         # self.run_binary_grating_diffraction(10.0,0.5,0.5,0)
         # self.run_binary_grating_diffraction(10.0,0.5,0.5,10.7)
 
-    def run_mode_source(self, gp, gh, gdc, m, diffpw):
-        """Computes the transmitted flux of a
-           binary grating given an incident planewave
-           specified by the diffraction order `m` in the
-           y direction. The incident planewave is defined
-           using a mode source with either a band number
-           or `DiffractedPlanewave` object.
+    def run_mode_source(self, gp, gh, gdc, m, use_diffpw):
+        """Computes the flux of a transmitted order of a binary grating
+           given an incident planewave. The incident planewave is defined
+           using a mode source specified using a band number and parity or
+           `DiffractedPlanewave` object.
 
         Args:
           gp: grating periodicity (μm).
           gh: grating height (μm).
           gdc: grating duty cycle (dimensionless).
-          m: diffraction order (integer).
-          diffpw: use a `DiffractedPlanewave`?
+          m: diffraction order in y direction (integer).
+          use_diffpw: use a `DiffractedPlanewave` (True) or band number
+                      and parity (False).
         """
         sx = self.dpml + self.dsub + gh + self.dpad + self.dpml
         sy = gp
         cell_size = mp.Vector3(sx, sy, 0)
 
-        ky = m / gp
-        theta_pw = math.asin(ky / (self.fcen * self.ng))
-
-        # k (in source medium) with correct length (plane of incidence: xy)
-        k = mp.Vector3(self.fcen * self.ng).rotate(mp.Vector3(z=1), theta_pw)
-
         eig_parity = mp.ODD_Z  # S polarization
-        if theta_pw == 0:
+        if m == 0:
             k = mp.Vector3()
             eig_parity += mp.EVEN_Y
             symmetries = [mp.Mirror(direction=mp.Y)]
         else:
+            ky = m / gp
+            theta_pw = math.asin(ky / (self.fcen * self.ng))
+            # k (in source medium) with correct length (plane of incidence: xy)
+            k = mp.Vector3(self.fcen * self.ng).rotate(mp.Vector3(z=1), theta_pw)
             symmetries = []
+
+        if use_diffpw:
+            # The *zeroth* diffraction order specifies a planewave with a
+            # wavevector equal to the `k_point` of the `Simulation` object.
+            eigsrc_args = {
+                "eig_band": mp.DiffractedPlanewave(
+                    (0, 0, 0),
+                    mp.Vector3(0, 1, 0),
+                    1,
+                    0,
+                )
+            }
+        else:
+            eigsrc_args = {
+                "eig_band": 1,
+                "eig_parity": eig_parity,
+                "direction": mp.NO_DIRECTION,
+                "eig_kpoint": k,
+            }
 
         src_pt = mp.Vector3(-0.5 * sx + self.dpml, 0, 0)
         src_time = mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen)
-        if diffpw:
-            # The *zeroth* diffraction order specifies a planewave with a
-            # wavevector equal to the `k_point` of the `Simulation` object.
-            sources = [
-                mp.EigenModeSource(
-                    src_time,
-                    center=src_pt,
-                    size=mp.Vector3(0, sy, 0),
-                    eig_band=mp.DiffractedPlanewave(
-                        (0, 0, 0), mp.Vector3(0, 1, 0), 1, 0
-                    ),
-                )
-            ]
-        else:
-            sources = [
-                mp.EigenModeSource(
-                    src_time,
-                    center=src_pt,
-                    size=mp.Vector3(0, sy, 0),
-                    direction=mp.NO_DIRECTION,
-                    eig_kpoint=k,
-                    eig_parity=eig_parity,
-                )
-            ]
+        sources = [
+            mp.EigenModeSource(
+                src_time,
+                center=src_pt,
+                size=mp.Vector3(0, sy, 0),
+                **eigsrc_args,
+            )
+        ]
 
         geometry = [
             mp.Block(
