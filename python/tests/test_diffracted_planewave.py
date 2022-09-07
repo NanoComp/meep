@@ -131,7 +131,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
 
             res = sim.get_eigenmode_coefficients(
                 tran_flux,
-                mp.DiffractedPlanewave((0, order, 0), mp.Vector3(0, 1, 0), 1, 0),
+                mp.DiffractedPlanewave([0, order, 0], mp.Vector3(0, 1, 0), 1, 0),
             )
             tran_dp = abs(res.alpha[0, 0, 0]) ** 2
             vg_dp = res.vgrp[0]
@@ -199,7 +199,7 @@ class TestDiffractedPlanewave(unittest.TestCase):
             # wavevector equal to the `k_point` of the `Simulation` object.
             eigsrc_args = {
                 "eig_band": mp.DiffractedPlanewave(
-                    (0, 0, 0),
+                    [0, 0, 0],
                     mp.Vector3(0, 1, 0),
                     1,
                     0,
