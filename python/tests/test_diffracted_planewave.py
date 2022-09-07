@@ -214,10 +214,9 @@ class TestDiffractedPlanewave(unittest.TestCase):
             }
 
         src_pt = mp.Vector3(-0.5 * sx + self.dpml, 0, 0)
-        src_time = mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen)
         sources = [
             mp.EigenModeSource(
-                src_time,
+                mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
                 center=src_pt,
                 size=mp.Vector3(0, sy, 0),
                 **eigsrc_args,
