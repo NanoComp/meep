@@ -142,12 +142,12 @@ getlibctl()
 fetch_compile_install()
 {
     repo=$1
-    name=${repo%%.*}
-    flags="${@:2}"
+    name=$2
+    shift 2
     cd $SRCDIR
     gitclone $repo
     cd $name
-    autogensh $flags
+    autogensh $@
     make -j && $SUDO make install
 }
 
@@ -186,7 +186,7 @@ ubuntudeps()
         pkg-config              \
         $libpng                 \
         git                     \
-        guile-2.0-dev           \
+        $libguile               \
         libfftw3-dev            \
         libhdf5-openmpi-dev     \
         hdf5-tools              \
@@ -203,8 +203,8 @@ ubuntudeps()
     sudo -H pip3 install matplotlib>3.0.0
 
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi"
+    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -L/usr/lib/x86_64-linux-gnu/ ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include"
 }
 
 centosdeps()
@@ -320,6 +320,7 @@ mkdir -p $SRCDIR
 #harminv
 fetch_compile_install \
     https://github.com/NanoComp/harminv.git \
+    harminv \
     ${CONFIGURE_harminv}
 
 #libctl
@@ -337,21 +338,25 @@ make -j && $SUDO make install
 #h5utils
 fetch_compile_install \
     https://github.com/NanoComp/h5utils.git \
+    h5utils \
     ${if_guile_flag} ${CONFIGURE_h5utils} \
 
 #mpb
 fetch_compile_install \
     https://github.com/NanoComp/mpb.git\
+    mpb \
      --with-hermitian-eps --with-libctl=${DESTDIR}/share/libctl ${guile_flag_mpb} ${CONFIGURE_mpb}
 
 #libGDSII
 fetch_compile_install \
     https://github.com/HomerReid/libGDSII.git\
+    libGDSII \
     ${CONFIGURE_libGDSII}
 
 #meep
 fetch_compile_install \
     https://github.com/NanoComp/meep.git\
-    autogensh ${parallel_flags} PYTHON=python3 --with-libctl=${DESTDIR}/share/libctl ${guile_flag_meep} ${CONFIGURE_meep}
+    meep \
+    ${parallel_flags} PYTHON=python3 --with-libctl=${DESTDIR}/share/libctl ${guile_flag_meep} ${CONFIGURE_meep}
 
 # all done
