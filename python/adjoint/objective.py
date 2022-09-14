@@ -9,7 +9,6 @@ from meep.simulation import py_v3_to_vec
 import meep as mp
 
 from .filter_source import FilteredSource
-from . import MEEP_COMPONENTS
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
 
@@ -277,7 +276,7 @@ class FourierFields(ObjectiveQuantity):
         self,
         sim: mp.Simulation,
         volume: mp.Volume,
-        component: List[MEEP_COMPONENTS],
+        component: List[int],
         yee_grid: Optional[bool] = False,
         decimation_factor: Optional[idx] = 0,
     ):

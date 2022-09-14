@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Callable, List, Union, Optional
+from typing import Callable, List, Union, Optional, Tuple
 
 import numpy as np
 from autograd import grad, jacobian
@@ -115,7 +115,12 @@ class OptimizationProblem:
 
         self.gradient = []
 
-    def __call__(self, rho_vector=None, need_value=True, need_gradient=True, beta=None):
+    def __call__(self,
+        rho_vector=None: List[List[float]],
+        need_value=True: bool,
+        need_gradient=True: bool,
+        beta=None: float
+        ) -> Tuple[List[float],List[float]]:
         """Evaluate value and/or gradient of objective function."""
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
@@ -147,7 +152,7 @@ class OptimizationProblem:
 
         return self.f0, self.gradient
 
-    def get_fdf_funcs(self):
+    def get_fdf_funcs(self) -> Tuple[Callable, Callable]:
         """construct callable functions for objective function value and gradient
 
         Returns
@@ -310,11 +315,11 @@ class OptimizationProblem:
 
     def calculate_fd_gradient(
         self,
-        num_gradients=1,
-        db=1e-4,
-        design_variables_idx=0,
-        filter=None,
-    ):
+        num_gradients=1: int,
+        db=1e-4: float,
+        design_variables_idx=0: int,
+        filter=None: Callable,
+    ) -> List[float]:
         """
         Estimate central difference gradients.
 
@@ -448,7 +453,7 @@ class OptimizationProblem:
 
         return fd_gradient, fd_gradient_idx
 
-    def update_design(self, rho_vector, beta=None):
+    def update_design(self, rho_vector: List[float], beta=None: float) -> None:
         """Update the design permittivity function.
 
         rho_vector ....... a list of numpy arrays that maps to each design region
@@ -465,11 +470,11 @@ class OptimizationProblem:
         self.sim.reset_meep()
         self.current_state = "INIT"
 
-    def get_objective_arguments(self):
+    def get_objective_arguments(self) -> List[float]:
         """Return list of evaluated objective arguments."""
         return [m.get_evaluation() for m in self.objective_arguments]
 
-    def plot2D(self, init_opt=False, **kwargs):
+    def plot2D(self, init_opt=False, **kwargs) -> None:
         """Produce a graphical visualization of the geometry and/or fields,
         as appropriately autodetermined based on the current state of
         progress.
