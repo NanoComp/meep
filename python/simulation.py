@@ -11,9 +11,9 @@ from collections import OrderedDict, namedtuple
 from typing import Callable, List, Optional, Tuple, Union
 
 try:
-    from collections.abc import Sequence
+    from collections.abc import Sequence, Iterable
 except ImportError:
-    from collections.abc import Sequence
+    from collections.abc import Sequence, Iterable
 
 import numpy as np
 from meep.geom import GeometricObject, Medium, Vector3, init_do_averaging
@@ -57,6 +57,8 @@ EigCoeffsResult = namedtuple(
 FluxData = namedtuple("FluxData", ["E", "H"])
 ForceData = namedtuple("ForceData", ["offdiag1", "offdiag2", "diag"])
 NearToFarData = namedtuple("NearToFarData", ["F"])
+
+Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 
 def fix_dft_args(args, i):
@@ -104,7 +106,7 @@ def vec(*args):
             raise
 
 
-def py_v3_to_vec(dims, iterable, is_cylindrical=False):
+def py_v3_to_vec(dims: int, iterable: Iterable, is_cylindrical: bool = False):
     v3 = Vector3(*iterable)
     if dims == 1:
         return mp.vec(v3.z)
@@ -150,7 +152,13 @@ class DiffractedPlanewave:
     For mode decomposition or eigenmode source, specify a diffracted planewave in homogeneous media. Should be passed as the `bands` argument of `get_eigenmode_coefficients`, `band_num` of `get_eigenmode`, or `eig_band` of `EigenModeSource`.
     """
 
-    def __init__(self, g=None, axis=None, s=None, p=None):
+    def __init__(
+        self,
+        g: List[int] = None,
+        axis: Vector3Type = None,
+        s: complex = None,
+        p: complex = None,
+    ):
         """
         Construct a `DiffractedPlanewave`.
 
@@ -185,7 +193,6 @@ class DiffractedPlanewave:
 
 
 DefaultPMLProfile = lambda u: u * u
-Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 
 class PML:
@@ -201,12 +208,12 @@ class PML:
 
     def __init__(
         self,
-        thickness,
-        direction=mp.ALL,
-        side=mp.ALL,
-        R_asymptotic=1e-15,
-        mean_stretch=1.0,
-        pml_profile=DefaultPMLProfile,
+        thickness: float = None,
+        direction: int = mp.ALL,
+        side: int = mp.ALL,
+        R_asymptotic: float = 1e-15,
+        mean_stretch: float = 1.0,
+        pml_profile: Callable[[float], float] = DefaultPMLProfile,
     ):
         """
         + **`thickness` [`number`]** — The spatial thickness of the PML layer which
@@ -246,6 +253,9 @@ class PML:
           example, one can use a cubic profile $f(u) = u^3$ by specifying
           `pml_profile=lambda u: u*u*u`.
         """
+        if thickness is None:
+            raise ValueError("PML thickness must be specified.")
+
         self.thickness = thickness
         self.direction = direction
         self.side = side
@@ -275,8 +285,8 @@ class PML:
         return self._mean_stretch
 
     @mean_stretch.setter
-    def mean_stretch(self, val):
-        if val >= 1:
+    def mean_stretch(self, val: float):
+        if val >= 1.0:
             self._mean_stretch = val
         else:
             raise ValueError(f"PML.mean_stretch must be >= 1. Got {val}")
@@ -333,7 +343,7 @@ class Symmetry:
     the axis of the rotation.
     """
 
-    def __init__(self, direction, phase=1):
+    def __init__(self, direction: int = None, phase: complex = 1.0 + 0j):
         """
         Construct a `Symmetry`.
 
@@ -390,11 +400,11 @@ class Volume:
 
     def __init__(
         self,
-        center=Vector3(),
-        size=Vector3(),
-        dims=2,
-        is_cylindrical=False,
-        vertices=[],
+        center: Vector3Type = Vector3(),
+        size: Vector3Type = Vector3(),
+        dims: int = 2,
+        is_cylindrical: bool = False,
+        vertices: List[Vector3Type] = [],
     ):
         """
         Construct a Volume.
@@ -466,7 +476,7 @@ class Volume:
                     edges.append([vertices[iter1], vertices[iter2]])
         return edges
 
-    def pt_in_volume(self, pt):
+    def pt_in_volume(self, pt: Vector3Type):
         xmin = self.center.x - self.size.x / 2
         xmax = self.center.x + self.size.x / 2
         ymin = self.center.y - self.size.y / 2
@@ -500,11 +510,11 @@ class FluxRegion:
 
     def __init__(
         self,
-        center=None,
-        size=Vector3(),
-        direction=mp.AUTOMATIC,
-        weight=1.0,
-        volume=None,
+        center: Vector3Type = None,
+        size: Vector3Type = Vector3(),
+        direction: int = mp.AUTOMATIC,
+        weight: float = 1.0,
+        volume: Optional[Volume] = None,
     ):
         """
         Construct a `FluxRegion` object.
@@ -588,7 +598,9 @@ class EnergyRegion(FluxRegion):
 
 
 class FieldsRegion:
-    def __init__(self, where=None, center=None, size=None):
+    def __init__(
+        self, where: Volume = None, center: Vector3Type = None, size: Vector3Type = None
+    ):
         if where:
             self.center = where.center
             self.size = where.size
@@ -760,7 +772,9 @@ class DftNear2Far(DftObj):
     def mu(self):
         return self.swigobj_attr("mu")
 
-    def flux(self, direction, where, resolution):
+    def flux(
+        self, direction: int = None, where: Volume = None, resolution: float = None
+    ):
         """
         Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid
         points / distance unit), compute the far fields in `where` (which may lie
@@ -821,7 +835,15 @@ Mode = namedtuple("Mode", ["freq", "decay", "Q", "amp", "err"])
 
 
 class EigenmodeData:
-    def __init__(self, band_num, freq, group_velocity, k, swigobj, kdom):
+    def __init__(
+        self,
+        band_num,
+        freq: float,
+        group_velocity: float,
+        k: Vector3Type,
+        swigobj,
+        kdom: Vector3Type,
+    ):
         """Construct an `EigenmodeData`."""
         self.band_num = band_num
         self.freq = freq
@@ -883,7 +905,14 @@ class Harminv:
     ```
     """
 
-    def __init__(self, c, pt, fcen, df, mxbands=None):
+    def __init__(
+        self,
+        c: int = None,
+        pt: Vector3Type = None,
+        fcen: float = None,
+        df: float = None,
+        mxbands: Optional[int] = None,
+    ):
         """
         Construct a Harminv object.
 
@@ -1346,7 +1375,7 @@ class Simulation:
     # to Volumes they create, the library will adjust them appropriately based
     # on the settings in the Simulation instance. This method must be called on
     # any user-defined Volume before passing it to meep via its `swigobj`.
-    def _fit_volume_to_simulation(self, vol):
+    def _fit_volume_to_simulation(self, vol: Volume) -> Volume:
         return Volume(
             vol.center,
             vol.size,
@@ -1356,7 +1385,9 @@ class Simulation:
 
     # Every function that takes a user volume can be specified either by a volume
     # (a Python Volume or a SWIG-wrapped meep::volume), or a center and a size
-    def _volume_from_kwargs(self, vol=None, center=None, size=None):
+    def _volume_from_kwargs(
+        self, vol: Volume = None, center: Vector3Type = None, size: Vector3Type = None
+    ) -> Volume:
         if vol:
             if isinstance(vol, Volume):
                 # A pure Python Volume
@@ -1374,7 +1405,7 @@ class Simulation:
         else:
             raise ValueError("Need either a Volume, or a size and center")
 
-    def _infer_dimensions(self, k):
+    def _infer_dimensions(self, k: Vector3Type = None):
         if self.dimensions == 3:
 
             def use_2d(self, k):
@@ -1437,7 +1468,7 @@ class Simulation:
                     warn_dft_fmt.format(dftf, min_freq, max_freq), RuntimeWarning
                 )
 
-    def _create_grid_volume(self, k):
+    def _create_grid_volume(self, k: Vector3Type = None):
         dims = self._infer_dimensions(k)
 
         if dims == 0 or dims == 1:
@@ -1462,7 +1493,7 @@ class Simulation:
         )
         return gv
 
-    def _create_symmetries(self, gv):
+    def _create_symmetries(self, gv) -> Symmetry:
         sym = mp.symmetry()
 
         # Initialize swig objects for each symmetry and combine them into one
@@ -1483,7 +1514,7 @@ class Simulation:
 
         return sym
 
-    def _get_dft_volumes(self):
+    def _get_dft_volumes(self) -> List[Volume]:
         volumes = [
             self._volume_from_kwargs(
                 vol=r.where if hasattr(r, "where") else None,
@@ -1496,7 +1527,7 @@ class Simulation:
 
         return volumes
 
-    def _boundaries_to_vols_1d(self, boundaries):
+    def _boundaries_to_vols_1d(self, boundaries) -> List[Volume]:
         v1 = []
 
         for bl in boundaries:
@@ -1509,7 +1540,7 @@ class Simulation:
 
         return v1
 
-    def _boundaries_to_vols_2d_3d(self, boundaries, cyl=False):
+    def _boundaries_to_vols_2d_3d(self, boundaries, cyl: bool = False):
         side_thickness = OrderedDict()
         side_thickness["top"] = 0
         side_thickness["bottom"] = 0
@@ -1893,7 +1924,7 @@ class Simulation:
                 self.load_structure_file, self.load_single_parallel_file
             )
 
-    def _is_outer_boundary(self, vol, direction, side):
+    def _is_outer_boundary(self, vol: Volume, direction: int, side: int):
 
         if direction == mp.X:
             cell_size_in_dir = self.cell_size.x
@@ -1919,7 +1950,7 @@ class Simulation:
 
         return False
 
-    def _get_chunk_communication_area(self, vol):
+    def _get_chunk_communication_area(self, vol: Volume):
 
         result = 0
 
@@ -1993,7 +2024,9 @@ class Simulation:
     def get_estimated_costs(self):
         return [self.structure.estimated_cost(i) for i in range(mp.count_processors())]
 
-    def set_materials(self, geometry=None, default_material=None):
+    def set_materials(
+        self, geometry: List[GeometricObject] = None, default_material: Medium = None
+    ):
         """
         This can be called in a step function, and is useful for changing the geometry or
         default material as a function of time.
@@ -2060,7 +2093,7 @@ class Simulation:
             None,
         )
 
-    def dump_structure(self, fname, single_parallel_file=True):
+    def dump_structure(self, fname: str = None, single_parallel_file: bool = True):
         """
         Dumps the structure to the file `fname`.
         """
@@ -2076,7 +2109,7 @@ class Simulation:
                 )
             )
 
-    def load_structure(self, fname, single_parallel_file=True):
+    def load_structure(self, fname: str = None, single_parallel_file: bool = True):
         """
         Loads a structure from the file `fname`.
         """
@@ -2092,7 +2125,7 @@ class Simulation:
                 % (fname, str(single_parallel_file))
             )
 
-    def dump_fields(self, fname, single_parallel_file=True):
+    def dump_fields(self, fname: str = None, single_parallel_file: bool = True):
         """
         Dumps the fields to the file `fname`.
         """
@@ -2106,7 +2139,7 @@ class Simulation:
                 )
             )
 
-    def load_fields(self, fname, single_parallel_file=True):
+    def load_fields(self, fname: str = None, single_parallel_file: bool = True):
         """
         Loads a fields from the file `fname`.
         """
@@ -2124,7 +2157,7 @@ class Simulation:
                 )
             )
 
-    def dump_chunk_layout(self, fname):
+    def dump_chunk_layout(self, fname: str = None):
         """
         Dumps the chunk layout to file `fname`.
         """
@@ -2149,7 +2182,9 @@ class Simulation:
             ## source is either filename (string)
             self.structure.load_chunk_layout(source, br)
 
-    def get_load_dump_dirname(self, dirname, single_parallel_file):
+    def get_load_dump_dirname(
+        self, dirname: str = None, single_parallel_file: bool = None
+    ):
         """
         Get the (possibly rank specific) dirname to dump simulation state to.
         """
@@ -2162,7 +2197,11 @@ class Simulation:
         return dump_dirname
 
     def dump(
-        self, dirname, dump_structure=True, dump_fields=True, single_parallel_file=True
+        self,
+        dirname: str = None,
+        dump_structure: bool = True,
+        dump_fields: bool = True,
+        single_parallel_file: bool = True,
     ):
         """
         Dumps simulation state.
@@ -2179,7 +2218,11 @@ class Simulation:
             self.dump_fields(fields_dump_filename, single_parallel_file)
 
     def load(
-        self, dirname, load_structure=True, load_fields=True, single_parallel_file=True
+        self,
+        dirname: str,
+        load_structure: bool = True,
+        load_fields: bool = True,
+        single_parallel_file: bool = True,
     ):
         """
         Loads simulation state.
@@ -2276,7 +2319,11 @@ class Simulation:
         cond5 = not (cond3 or cond4 or self.k_point == Vector3())
         return not (self.force_complex_fields or cond1 or cond2 or cond5)
 
-    def initialize_field(self, cmpnt, amp_func):
+    def initialize_field(
+        self,
+        cmpnt: int = None,
+        amp_func: Callable[[Vector3Type], Union[float, complex]] = None,
+    ):
         """
         Initialize the component `c` fields using the function `func` which has a single
         argument, a `Vector3` giving a position and returns a complex number for the value
@@ -2398,7 +2445,7 @@ class Simulation:
         [Cylinder](#cylinder) objects (the simulation script is in
         [examples/phase_in_material.py](https://github.com/NanoComp/meep/blob/master/python/examples/phase_in_material.py)).
 
-        ![](images/phase-in-material.png)
+        ![](images/phase-in-material.png#center)
         """
         if self.fields is None:
             self.init_sim()
@@ -2416,7 +2463,7 @@ class Simulation:
 
         self.fields.set_boundary(side, direction, condition)
 
-    def get_field_point(self, c, pt):
+    def get_field_point(self, c: int = None, pt: Vector3Type = None):
         """
         Given a `component` or `derived_component` constant `c` and a `Vector3` `pt`,
         returns the value of that component at that point.
@@ -2424,7 +2471,7 @@ class Simulation:
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_field_from_comp(c, v3)
 
-    def get_epsilon_point(self, pt, frequency=0):
+    def get_epsilon_point(self, pt: Vector3Type = None, frequency: float = 0.0):
         """
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permittivity tensor at that location and frequency. If `frequency` is
@@ -2434,7 +2481,7 @@ class Simulation:
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_eps(v3, frequency)
 
-    def get_mu_point(self, pt, frequency=0):
+    def get_mu_point(self, pt: Vector3Type = None, frequency: float = 0.0):
         """
         Given a frequency `frequency` and a `Vector3` `pt`, returns the average eigenvalue
         of the permeability tensor at that location and frequency. If `frequency` is
@@ -2444,7 +2491,13 @@ class Simulation:
         v3 = py_v3_to_vec(self.dimensions, pt, self.is_cylindrical)
         return self.fields.get_mu(v3, frequency)
 
-    def get_epsilon_grid(self, xtics=None, ytics=None, ztics=None, frequency=0):
+    def get_epsilon_grid(
+        self,
+        xtics: np.ndarray = None,
+        ytics: np.ndarray = None,
+        ztics: np.ndarray = None,
+        frequency: float = 0.0,
+    ):
         """
         Given three 1d NumPy arrays (`xtics`,`ytics`,`ztics`) which define the coordinates of a Cartesian
         grid anywhere within the cell volume, compute the trace of the $\\varepsilon(f)$ tensor at frequency
@@ -2504,7 +2557,7 @@ class Simulation:
                 "Expected a string for filename_prefix, or None for the default."
             )
 
-    def use_output_directory(self, dname=""):
+    def use_output_directory(self, dname: str = ""):
         """
         Output all files into a subdirectory, which is created if necessary. If the optional
         argument `dname` is specified, that is the name of the directory. If `dname`
@@ -2625,7 +2678,7 @@ class Simulation:
         """
         self._run_sources_until(self, 0, step_funcs)
 
-    def run_k_point(self, t, k):
+    def run_k_point(self, t: float = None, k: Vector3Type = None):
         """
         Lower level function called by `run_k_points` that runs a simulation for a single
         *k* point `k_point` and returns a `Harminv` instance. Useful when you need to
@@ -2660,7 +2713,7 @@ class Simulation:
 
         return h
 
-    def run_k_points(self, t, k_points):
+    def run_k_points(self, t: float = None, k_points: List[Vector3Type] = None):
         """
         Given a list of `Vector3`, `k_points` of *k* vectors, runs a simulation for each
         *k* point (i.e. specifying Bloch-periodic boundary conditions) and extracts the
@@ -2900,7 +2953,7 @@ class Simulation:
             components, where, freq, use_centered_grid, decimation_factor, persist
         )
 
-    def output_dft(self, dft_fields, fname):
+    def output_dft(self, dft_fields: DftFields, fname: str):
         """
         Output the Fourier-transformed fields in `dft_fields` (created by
         `add_dft_fields`) to an HDF5 file with name `fname` (does *not* include the `.h5`
@@ -3006,7 +3059,7 @@ class Simulation:
                     zip(freqs, *[func(f) for f in energys]),
                 )
 
-    def display_electric_energy(self, *energys):
+    def display_electric_energy(self, *energys: List[DftEnergy]):
         """
         Given a number of energy objects, this displays a comma-separated table of
         frequencies and energy density spectra for the electric fields prefixed by
@@ -3016,7 +3069,7 @@ class Simulation:
         """
         self._display_energy("electric", get_electric_energy, energys)
 
-    def display_magnetic_energy(self, *energys):
+    def display_magnetic_energy(self, *energys: List[DftEnergy]):
         """
         Given a number of energy objects, this displays a comma-separated table of
         frequencies and energy density spectra for the magnetic fields prefixed by
@@ -3026,7 +3079,7 @@ class Simulation:
         """
         self._display_energy("magnetic", get_magnetic_energy, energys)
 
-    def display_total_energy(self, *energys):
+    def display_total_energy(self, *energys: List[DftEnergy]):
         """
         Given a number of energy objects, this displays a comma-separated table of
         frequencies and energy density spectra for the total fields "total_energy1:" or
@@ -3036,7 +3089,7 @@ class Simulation:
         """
         self._display_energy("total", get_total_energy, energys)
 
-    def load_energy(self, fname, energy):
+    def load_energy(self, fname: str, energy: DftEnergy):
         """
         Load the Fourier-transformed fields into the given energy object (replacing any
         values currently there) from an HDF5 file of the given `filename` without the
@@ -3049,7 +3102,7 @@ class Simulation:
             self.init_sim()
         energy.load_hdf5(self.fields, fname, "", self.get_filename_prefix())
 
-    def save_energy(self, fname, energy):
+    def save_energy(self, fname: str, energy: DftEnergy):
         """
         Save the Fourier-transformed fields corresponding to the given energy object in an
         HDF5 file of the given `filename` without the `.h5` suffix (the current
@@ -3059,7 +3112,7 @@ class Simulation:
             self.init_sim()
         energy.save_hdf5(self.fields, fname, "", self.get_filename_prefix())
 
-    def load_minus_energy(self, fname, energy):
+    def load_minus_energy(self, fname: str, energy: DftEnergy):
         """
         As `load_energy`, but negates the Fourier-transformed fields after they are
         loaded. This means that they will be *subtracted* from any future field Fourier
@@ -3083,7 +3136,14 @@ class Simulation:
             py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical),
         )
 
-    def get_farfields(self, near2far, resolution, where=None, center=None, size=None):
+    def get_farfields(
+        self,
+        near2far,
+        resolution: float = None,
+        where: Volume = None,
+        center: Vector3Type = None,
+        size: Vector3Type = None,
+    ):
         """
         Like `output_farfields` but returns a dictionary of NumPy arrays instead of
         writing to a file. The dictionary keys are `Ex`, `Ey`, `Ez`, `Hx`, `Hy`, `Hz`.
@@ -3117,7 +3177,13 @@ class Simulation:
         }
 
     def output_farfields(
-        self, near2far, fname, resolution, where=None, center=None, size=None
+        self,
+        near2far,
+        fname: str = None,
+        resolution: float = None,
+        where: Volume = None,
+        center: Vector3Type = None,
+        size: Vector3Type = None,
     ):
         """
         Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume`
@@ -5759,7 +5825,8 @@ def dft_ldos(*args, **kwargs):
 
     The resulting spectrum is outputted as comma-delimited text, prefixed by `ldos:,`, and
     is also stored in the `ldos_data` variable of the `Simulation` object after the `run`
-    is complete.
+    is complete. The Fourier-transformed electric field and current source are stored in
+    the `ldos_Fdata` and `ldos_Jdata` of the `Simulation` object, respectively.
     """
     ldos = kwargs.get("ldos", None)
     if ldos is None:
