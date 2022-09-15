@@ -1,7 +1,7 @@
 """Handling of objective functions and objective quantities."""
 import abc
 from collections import namedtuple
-
+from autograd import numpy as npa
 import numpy as np
 from meep.simulation import py_v3_to_vec
 
@@ -10,6 +10,26 @@ import meep as mp
 from .filter_source import FilteredSource
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
+
+# 3 possible components for E x n and H x n
+# signs are handled in code
+EH_TRANSVERSE = [
+    [mp.Hz, mp.Hy, mp.Ez, mp.Ey],
+    [mp.Hx, mp.Hz, mp.Ex, mp.Ez],
+    [mp.Hy, mp.Hx, mp.Ey, mp.Ex],
+]
+
+# Holds the components for each current source
+# for the cases of x,y, and z normal vectors.
+# This is the same as swapping H and E in the above list
+JK_TRANSVERSE = [
+    [mp.Ey, mp.Ez, mp.Hy, mp.Hz],
+    [mp.Ez, mp.Ex, mp.Hz, mp.Hx],
+    [mp.Ex, mp.Ey, mp.Hx, mp.Hy],
+]
+
+# Holds the amplitudes used in Poynting Flux adjoint sources
+FLUX_AMPLITUDES = np.array([1 / 4, -1 / 4, -1 / 4, 1 / 4], dtype=np.complex128)
 
 
 class ObjectiveQuantity(abc.ABC):
@@ -483,3 +503,145 @@ class LDOS(ObjectiveQuantity):
         self.ldos_scale = self.sim.ldos_scale
         self.ldos_Jdata = self.sim.ldos_Jdata
         return np.array(self._eval)
+
+
+class PoyntingFlux(ObjectiveQuantity):
+    """A frequency-dependent Poynting Flux adjoint source.
+    Attributes:
+        volume: The volume over which the Poynting Flux is calculated.
+        This function currently only works for monitors with a defined
+        normal vector (e.g. planes in 3d or lines in 2d). User supplied
+        normal vectors may be implemented in the future. It also only
+        works with monitors aligned to a coordinate direction.
+        decimation_factor: Whether to skip points in the time series every
+        decimation_factor timesteps. See "add_dft_fields" documentation.
+        The biggest warning there is to be careful to avoid aliasing if
+        the fields vary quickly in time.
+        Note on yee_grid: For the Poynting Flux to work, H and E components
+        must lie at the same points. Therefore, the Yee grid will always be false.
+    """
+
+    def __init__(self, sim, volume, scale=1, decimation_factor=0):
+        super().__init__(sim)
+        # _fit_volume_to_simulation increases the dimensionality of
+        # the volume, so we'll use the user input volume
+        self.volume = sim._fit_volume_to_simulation(volume)
+        self.decimation_factor = decimation_factor
+        self.scale = scale
+        # get_normal returns an index for the two
+        # dictionaries of cross products
+        self.normal = self.get_normal(volume)
+
+    def register_monitors(self, frequencies):
+        self._frequencies = np.asarray(frequencies)
+        self._monitor = []
+        # List to hold FourierFields objects
+        self.F_fields_list = []
+        for comp in EH_TRANSVERSE[self.normal]:
+            # instantiate the FourierFields monitors
+            F_field = FourierFields(self.sim, self.volume, comp)
+            self.F_fields_list.append(F_field)
+            self._monitor.append(F_field.register_monitors(self._frequencies))
+        return self._monitor
+
+    def place_adjoint_source(self, dJ):
+        source = []
+        print("This is dJ[0]'s shape:")
+        print(np.array(dJ[0]).shape)
+        squeezed_dJ_0 = np.array(dJ[0]).squeeze()
+        print("This is squeezed dj0 shape:")
+        print(squeezed_dJ_0.shape)
+
+        print("This is metadata's shape:")
+        print(self.field_component_evaluations[4].shape)
+        for pos, field in enumerate(self.F_fields_list):
+            # Make sure there's a nonzero value in the gradient
+            # (zero sources don't converge)
+            # Check is also in prepare_adjoint_run,
+            # but necessary here too since the source is a vector
+            if np.any(dJ[pos]):
+                reshaped_dJ = np.reshape(
+                    np.array(dJ[pos]).squeeze(),
+                    self.field_component_evaluations[4].shape,
+                )
+                # new_source = field.place_adjoint_source(reshaped_dJ)
+                new_source = field.place_adjoint_source(np.array(dJ[pos]).squeeze())
+                print("This is the new source:")
+                print(new_source)
+                print("new soruce's shape")
+                print(np.array(new_source).shape)
+                source.append(
+                    # field.place_adjoint_source(np.flipud(np.array(dJ[pos]).squeeze()))[
+                    #     0
+                    # ]
+                    new_source
+                )
+        final_array = np.array(source).flatten()
+        print("This is the final array shape:")
+        # print(final_array)
+        print(np.array(final_array).shape)
+        # print("This is the final_array with an extra array")
+
+        # test_arr = [final_array]
+        # print(test_arr)
+        # print(test_arr.shape)
+        return final_array.tolist()
+
+    def __call__(self):
+        self.field_component_evaluations = []
+        # Get integration weights Meep uses
+        self.metadata = self.sim.get_array_metadata(vol=self.volume)
+        for field in self.F_fields_list:
+            # Get the dft evaluation from a call to the underlying
+            # FourierFields object
+            field_here = field()
+            # make sure it isn't a list of scalar zeros equal to the number of
+            # frequencies (usually caused by symmetries making fields 0)
+            # fixes the np.array error in the return
+            # when we give it a "ragged" array
+            if (np.squeeze(field_here).size) == self._frequencies.size:
+                print("does the empty array check work")
+                print(field_here)
+                field_here = np.array([np.zeros(self.metadata[3].shape)])
+            self.field_component_evaluations.append(field_here)
+
+        self.field_component_evaluations.append(
+            np.array([self.metadata[3]]).astype(complex)
+        )
+        [H1, H2, E1, E2, meta] = self.field_component_evaluations
+
+        self._eval = self.field_component_evaluations
+        print("This is meta*E2")
+        print(meta * E2)
+        print("This is the np array")
+        print(np.array([H1, H2, E1, E2, meta]))
+        return np.array([H1, H2, E1, E2, meta])
+
+    # takes in a 1x5xNxM vector where the size five array corresponds to
+    # [H1,H2,E1,E1,meta]
+    # multiple frequencies will be tested later
+    @staticmethod
+    def compute_flux(*inputs):
+        # Check if all the inputs are nonzero
+        flux = npa.sum(
+            npa.real(
+                inputs[0][4]
+                * (
+                    npa.conj(inputs[0][0]) * inputs[0][3]
+                    - npa.conj(inputs[0][1]) * inputs[0][2]
+                )
+            )
+        )
+        return flux
+
+    # returns 0,1, or 2 corresponding to x, y, or z normal vectors
+    # TODO: Handle user-specified normal vectors and cases when 2d
+    # has a zero-size dimension other than z
+    def get_normal(self, volume):
+        # I'll add cylindrical later (since the normal vector gets a little different)
+        if volume.size.x == 0:
+            return 0
+        elif volume.size.y == 0:
+            return 1
+        else:
+            return 2
