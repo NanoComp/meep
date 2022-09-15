@@ -546,23 +546,46 @@ class PoyntingFlux(ObjectiveQuantity):
 
     def place_adjoint_source(self, dJ):
         source = []
-        print("This is dJ[0]")
-        print(dJ[0])
-        print(dJ[0].shape)
+        print("This is dJ[0]'s shape:")
+        print(np.array(dJ[0]).shape)
+        squeezed_dJ_0 = np.array(dJ[0]).squeeze()
+        print("This is squeezed dj0 shape:")
+        print(squeezed_dJ_0.shape)
+
         print("This is metadata's shape:")
         print(self.field_component_evaluations[4].shape)
         for pos, field in enumerate(self.F_fields_list):
             # Make sure there's a nonzero value in the gradient
             # (zero sources don't converge)
             # Check is also in prepare_adjoint_run,
-            # but necessary here too
+            # but necessary here too since the source is a vector
             if np.any(dJ[pos]):
-                source.append(
-                    field.place_adjoint_source(np.flipud(np.array(dJ[pos]).squeeze()))[
-                        0
-                    ]
+                reshaped_dJ = np.reshape(
+                    np.array(dJ[pos]).squeeze(),
+                    self.field_component_evaluations[4].shape,
                 )
-        return source
+                # new_source = field.place_adjoint_source(reshaped_dJ)
+                new_source = field.place_adjoint_source(np.array(dJ[pos]).squeeze())
+                print("This is the new source:")
+                print(new_source)
+                print("new soruce's shape")
+                print(np.array(new_source).shape)
+                source.append(
+                    # field.place_adjoint_source(np.flipud(np.array(dJ[pos]).squeeze()))[
+                    #     0
+                    # ]
+                    new_source
+                )
+        final_array = np.array(source).flatten()
+        print("This is the final array shape:")
+        # print(final_array)
+        print(np.array(final_array).shape)
+        # print("This is the final_array with an extra array")
+
+        # test_arr = [final_array]
+        # print(test_arr)
+        # print(test_arr.shape)
+        return final_array.tolist()
 
     def __call__(self):
         self.field_component_evaluations = []
