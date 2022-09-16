@@ -167,8 +167,8 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         mode: int,
         forward: Optional[bool] = True,
         kpoint_func: Optional[Callable] = None,
-        kpoint_func_overlap_idx: Optional[idx] = 0,
-        decimation_factor: Optional[idx] = 0,
+        kpoint_func_overlap_idx: Optional[int] = 0,
+        decimation_factor: Optional[int] = 0,
         **kwargs
     ):
         """
@@ -278,7 +278,7 @@ class FourierFields(ObjectiveQuantity):
         volume: mp.Volume,
         component: List[int],
         yee_grid: Optional[bool] = False,
-        decimation_factor: Optional[idx] = 0,
+        decimation_factor: Optional[int] = 0,
     ):
         """ """
         super().__init__(sim)
@@ -371,7 +371,7 @@ class Near2FarFields(ObjectiveQuantity):
         sim: mp.Simulation,
         Near2FarRegions: mp.Near2FarRegions,
         far_pts: List[mp.Vector3],
-        decimation_factor: Optional[idx] = 0,
+        decimation_factor: Optional[int] = 0,
     ):
         """ """
         super().__init__(sim)
@@ -440,7 +440,7 @@ class Near2FarFields(ObjectiveQuantity):
 
 class LDOS(ObjectiveQuantity):
     def __init__(
-        self, sim: mp.Simulation, decimation_factor: Optional[idx] = 0, **kwargs
+        self, sim: mp.Simulation, decimation_factor: Optional[int] = 0, **kwargs
     ):
         """ """
         super().__init__(sim)

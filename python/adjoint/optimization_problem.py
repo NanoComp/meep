@@ -115,12 +115,13 @@ class OptimizationProblem:
 
         self.gradient = []
 
-    def __call__(self,
-        rho_vector=None: List[List[float]],
-        need_value=True: bool,
-        need_gradient=True: bool,
-        beta=None: float
-        ) -> Tuple[List[float],List[float]]:
+    def __call__(
+        self,
+        rho_vector: List[List[float]] = None,
+        need_value: bool = True,
+        need_gradient: bool = True,
+        beta: float = None,
+    ) -> Tuple[List[float], List[float]]:
         """Evaluate value and/or gradient of objective function."""
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
@@ -318,10 +319,10 @@ class OptimizationProblem:
 
     def calculate_fd_gradient(
         self,
-        num_gradients=1: int,
-        db=1e-4: float,
-        design_variables_idx=0: int,
-        filter=None: Callable,
+        num_gradients: int = 1,
+        db: float = 1e-4,
+        design_variables_idx: int = 0,
+        filter: Callable = None,
     ) -> List[float]:
         """
         Estimate central difference gradients.
@@ -460,7 +461,7 @@ class OptimizationProblem:
 
         return fd_gradient, fd_gradient_idx
 
-    def update_design(self, rho_vector: List[float], beta=None: float) -> None:
+    def update_design(self, rho_vector: List[float], beta: float = None) -> None:
         """Update the design permittivity function.
 
         rho_vector ....... a list of numpy arrays that maps to each design region
