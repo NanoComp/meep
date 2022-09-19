@@ -58,9 +58,7 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
       for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c) {
         for (int d = 0; d < 2; ++d) {
           realnum **f = field_ptr_getter(chunks[i], c, d);
-          if (*f) {
-            my_ntot += (num_f_[(chunk_i * NUM_FIELD_COMPONENTS + c) * 2 + d] = ntot);
-          }
+          if (*f) { my_ntot += (num_f_[(chunk_i * NUM_FIELD_COMPONENTS + c) * 2 + d] = ntot); }
         }
       }
     }
@@ -71,9 +69,8 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
   if (single_parallel_file) {
     num_f.resize(num_f_size);
     sum_to_master(num_f_.data(), num_f.data(), num_f_size);
-  } else {
-    num_f = std::move(num_f_);
   }
+  else { num_f = std::move(num_f_); }
 
   /* determine total dataset size and offset of this process's data */
   size_t my_start = 0;
@@ -87,12 +84,11 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
   size_t start[3] = {0, 0, 0};
   std::string num_f_name = std::string("num_") + field_name;
   h5f->create_data(num_f_name.c_str(), 3, dims);
-  if (am_master() || !single_parallel_file) {
-    h5f->write_chunk(3, start, dims, num_f.data());
-  }
+  if (am_master() || !single_parallel_file) { h5f->write_chunk(3, start, dims, num_f.data()); }
 
   /* write the data */
-  h5f->create_data(field_name.c_str(), 1, &ntotal, false /* append_data */, false /* single_precision */);
+  h5f->create_data(field_name.c_str(), 1, &ntotal, false /* append_data */,
+                   false /* single_precision */);
   for (int i = 0; i < num_chunks; i++) {
     if (chunks[i]->is_mine()) {
       size_t ntot = chunks[i]->gv.ntot();
@@ -123,18 +119,14 @@ void fields::dump(const char *filename, bool single_parallel_file) {
   file.create_data("t", 1, dims);
   if (am_master() || !single_parallel_file) file.write_chunk(1, start, dims, _t);
 
-  dump_fields_chunk_field(
-      &file, single_parallel_file, "f",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f[c][d]); });
-  dump_fields_chunk_field(
-      &file, single_parallel_file, "f_u",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_u[c][d]); });
-  dump_fields_chunk_field(
-      &file, single_parallel_file, "f_w",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w[c][d]); });
-  dump_fields_chunk_field(
-      &file, single_parallel_file, "f_cond",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
+  dump_fields_chunk_field(&file, single_parallel_file, "f",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f[c][d]); });
+  dump_fields_chunk_field(&file, single_parallel_file, "f_u",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f_u[c][d]); });
+  dump_fields_chunk_field(&file, single_parallel_file, "f_w",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w[c][d]); });
+  dump_fields_chunk_field(&file, single_parallel_file, "f_cond",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
   dump_fields_chunk_field(
       &file, single_parallel_file, "f_w_prev",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w_prev[c][d]); });
@@ -184,11 +176,11 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
           size_t n = num_f[(chunk_i * NUM_FIELD_COMPONENTS + c) * 2 + d];
           realnum **f = field_ptr_getter(chunks[i], c, d);
           if (n == 0) {
-            delete[] *f;
+            delete[] * f;
             *f = NULL;
-          } else {
-            if (n != ntot)
-              meep::abort("grid size mismatch %zd vs %zd in fields::load", n, ntot);
+          }
+          else {
+            if (n != ntot) meep::abort("grid size mismatch %zd vs %zd in fields::load", n, ntot);
             // here we need to allocate the fields array for H in the PML region
             // because of H = B in fields_chunk::alloc_f whereby H is lazily
             // allocated in fields_chunk::update_eh during the first timestep
@@ -214,10 +206,9 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
   /* read the data */
   h5f->read_size(field_name.c_str(), &rank, dims, 1);
   if (rank != 1 || dims[0] != ntotal) {
-    meep::abort(
-        "inconsistent data size for '%s' in fields::load (rank, dims[0]): "
-        "(%d, %zu) != (1, %zu)",
-        field_name.c_str(), rank, dims[0], ntotal);
+    meep::abort("inconsistent data size for '%s' in fields::load (rank, dims[0]): "
+                "(%d, %zu) != (1, %zu)",
+                field_name.c_str(), rank, dims[0], ntotal);
   }
   for (int i = 0; i < num_chunks; i++) {
     if (chunks[i]->is_mine()) {
@@ -258,18 +249,14 @@ void fields::load(const char *filename, bool single_parallel_file) {
   t = static_cast<int>(_t[0]);
   calc_sources(time());
 
-  load_fields_chunk_field(
-      &file, single_parallel_file, "f",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f[c][d]); });
-  load_fields_chunk_field(
-      &file, single_parallel_file, "f_u",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_u[c][d]); });
-  load_fields_chunk_field(
-      &file, single_parallel_file, "f_w",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w[c][d]); });
-  load_fields_chunk_field(
-      &file, single_parallel_file, "f_cond",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
+  load_fields_chunk_field(&file, single_parallel_file, "f",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f[c][d]); });
+  load_fields_chunk_field(&file, single_parallel_file, "f_u",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f_u[c][d]); });
+  load_fields_chunk_field(&file, single_parallel_file, "f_w",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w[c][d]); });
+  load_fields_chunk_field(&file, single_parallel_file, "f_cond",
+                          [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
   load_fields_chunk_field(
       &file, single_parallel_file, "f_w_prev",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w_prev[c][d]); });
@@ -284,4 +271,4 @@ void fields::load(const char *filename, bool single_parallel_file) {
   }
 }
 
-}  // namespace meep
+} // namespace meep

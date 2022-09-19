@@ -45,9 +45,7 @@ void compare(double b, double a, const char *n) {
   if (fabs(a - b) > fabs(b) * thresh || b != b) {
     meep::abort("Failed %s (%g instead of %g, relerr %0.2g)\n", n, a, b, fabs(a - b) / fabs(b));
   }
-  else {
-    master_printf("Passed %s\n", n);
-  }
+  else { master_printf("Passed %s\n", n); }
 }
 
 static double dpml = 1.0;

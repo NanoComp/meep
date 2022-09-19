@@ -14,7 +14,7 @@
 
 (set! default-material
       (make dielectric (epsilon 2.25)
-	    (polarizations 
+	    (polarizations
 	     (make polarizability
 	       (omega 1.1) (gamma 1e-5) (sigma 0.5))
 	     (make polarizability
@@ -35,8 +35,8 @@
 (define all-freqs (run-k-points 200 kpts)) ; a list of lists of frequencies
 
 (map (lambda (kx fs)
-       (map (lambda (f) 
-	      (print "eps:, " (real-part f) ", " (imag-part f) 
+       (map (lambda (f)
+	      (print "eps:, " (real-part f) ", " (imag-part f)
 		     ", " (sqr (/ kx f)) "\n"))
 	    fs))
      (map vector3-x kpts) all-freqs)

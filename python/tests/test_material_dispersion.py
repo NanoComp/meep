@@ -1,14 +1,15 @@
 import unittest
+
 import numpy as np
+
 import meep as mp
 
 
 class TestMaterialDispersion(unittest.TestCase):
-
     def test_material_dispersion_with_user_material(self):
         susceptibilities = [
             mp.LorentzianSusceptibility(frequency=1.1, gamma=1e-5, sigma=0.5),
-            mp.LorentzianSusceptibility(frequency=0.5, gamma=0.1, sigma=2e-5)
+            mp.LorentzianSusceptibility(frequency=0.5, gamma=0.1, sigma=2e-5),
         ]
 
         def mat_func(p):
@@ -18,9 +19,7 @@ class TestMaterialDispersion(unittest.TestCase):
         df = 2.0
 
         sources = mp.Source(
-            mp.GaussianSource(fcen, fwidth=df),
-            component=mp.Ez,
-            center=mp.Vector3()
+            mp.GaussianSource(fcen, fwidth=df), component=mp.Ez, center=mp.Vector3()
         )
 
         kmin = 0.3
@@ -35,7 +34,7 @@ class TestMaterialDispersion(unittest.TestCase):
             sources=[sources],
             material_function=mat_func,
             default_material=mp.air,
-            resolution=20
+            resolution=20,
         )
 
         all_freqs = self.sim.run_k_points(200, kpts)
@@ -54,5 +53,5 @@ class TestMaterialDispersion(unittest.TestCase):
         np.testing.assert_allclose(expected, res)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

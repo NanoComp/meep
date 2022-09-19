@@ -347,8 +347,9 @@ void noisy_lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   *start += num_params;
 }
 
-gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, realnum omega_0, realnum gamma,
-                                                     realnum alpha, gyrotropy_model model)
+gyrotropic_susceptibility::gyrotropic_susceptibility(const vec &bias, realnum omega_0,
+                                                     realnum gamma, realnum alpha,
+                                                     gyrotropy_model model)
     : omega_0(omega_0), gamma(gamma), alpha(alpha), model(model) {
   // Precalculate g_{ij} = sum_k epsilon_{ijk} b_k, used in update_P.
   // Ignore |b| for Landau-Lifshitz-Gilbert gyrotropy model.
@@ -619,8 +620,8 @@ void gyrotropic_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 9;
   size_t params_dims[1] = {num_params};
   realnum bias[] = {gyro_tensor[Y][Z], gyro_tensor[Z][X], gyro_tensor[X][Y]};
-  realnum params_data[] = {8, (realnum)get_id(), bias[X], bias[Y], bias[Z], omega_0, gamma,
-                          alpha, (realnum)model};
+  realnum params_data[] = {8,     (realnum)get_id(), bias[X], bias[Y], bias[Z], omega_0, gamma,
+                           alpha, (realnum)model};
   h5f->write_chunk(1, start, params_dims, params_data);
   *start += num_params;
 }

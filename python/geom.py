@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import functools
 import math
 import numbers
@@ -9,24 +8,25 @@ from copy import deepcopy
 from numbers import Number
 
 import numpy as np
+
 import meep as mp
 
-
-FreqRange = namedtuple('FreqRange', ['min', 'max'])
+FreqRange = namedtuple("FreqRange", ["min", "max"])
 
 
 def check_nonnegative(prop, val):
     if val >= 0:
         return val
     else:
-        raise ValueError("{} cannot be negative. Got {}".format(prop, val))
+        raise ValueError(f"{prop} cannot be negative. Got {val}")
+
 
 def init_do_averaging(mat_func):
-    if not hasattr(mat_func, 'do_averaging'):
+    if not hasattr(mat_func, "do_averaging"):
         mat_func.do_averaging = False
 
 
-class Vector3(object):
+class Vector3:
     """
     Properties:
 
@@ -35,7 +35,7 @@ class Vector3(object):
     iterable (e.g., a tuple or list) and automatically convert to a `Vector3`.
     """
 
-    def __init__(self, x=0.0, y=0.0, z=0.0):
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
         """
         Create a new `Vector3` with the given components. All three components default to
         zero. This can also be represented simply as `(x,y,z)` or `[x,y,z]`.
@@ -113,7 +113,7 @@ class Vector3(object):
         elif isinstance(other, Number):
             return self.scale(other)
         else:
-            raise TypeError("No operation known for 'Vector3 * {}'".format(type(other)))
+            raise TypeError(f"No operation known for 'Vector3 * {type(other)}'")
 
     def __truediv__(self, other):
         if type(other) is Vector3:
@@ -121,7 +121,7 @@ class Vector3(object):
         elif isinstance(other, Number):
             return Vector3(self.x / other, self.y / other, self.z / other)
         else:
-            raise TypeError("No operation known for 'Vector3 / {}'".format(type(other)))
+            raise TypeError(f"No operation known for 'Vector3 / {type(other)}'")
 
     def __rmul__(self, other):
         """
@@ -135,7 +135,7 @@ class Vector3(object):
         if isinstance(other, Number):
             return self.scale(other)
         else:
-            raise TypeError("No operation known for '{} * Vector3'".format(type(other)))
+            raise TypeError(f"No operation known for '{type(other)} * Vector3'")
 
     def __getitem__(self, i):
         if i == 0:
@@ -145,10 +145,10 @@ class Vector3(object):
         elif i == 2:
             return self.z
         else:
-            raise IndexError("No value at index {}".format(i))
+            raise IndexError(f"No value at index {i}")
 
     def __repr__(self):
-        return "Vector3<{}, {}, {}>".format(self.x, self.y, self.z)
+        return f"Vector3<{self.x}, {self.y}, {self.z}>"
 
     def __array__(self):
         return np.array([self.x, self.y, self.z])
@@ -220,9 +220,11 @@ class Vector3(object):
         v1.close(v2, [tol])
         ```
         """
-        return (abs(self.x - v.x) <= tol and
-                abs(self.y - v.y) <= tol and
-                abs(self.z - v.z) <= tol)
+        return (
+            abs(self.x - v.x) <= tol
+            and abs(self.y - v.y) <= tol
+            and abs(self.z - v.z) <= tol
+        )
 
     def rotate(self, axis, theta):
         """
@@ -255,7 +257,7 @@ class Vector3(object):
         return cartesian_to_reciprocal(v.rotate(a, theta), lat)
 
 
-class Medium(object):
+class Medium:
     """
     This class is used to specify the materials that geometric objects are made of. It
     represents an electromagnetic medium which is possibly nonlinear and/or dispersive.
@@ -307,32 +309,36 @@ class Medium(object):
     Dispersive dielectric and magnetic materials, above, are specified via a list of
     objects that are subclasses of type `Susceptibility`.
     """
-    def __init__(self, epsilon_diag=Vector3(1, 1, 1),
-                 epsilon_offdiag=Vector3(),
-                 mu_diag=Vector3(1, 1, 1),
-                 mu_offdiag=Vector3(),
-                 E_susceptibilities=None,
-                 H_susceptibilities=None,
-                 E_chi2_diag=Vector3(),
-                 E_chi3_diag=Vector3(),
-                 H_chi2_diag=Vector3(),
-                 H_chi3_diag=Vector3(),
-                 D_conductivity_diag=Vector3(),
-                 D_conductivity_offdiag=Vector3(),
-                 B_conductivity_diag=Vector3(),
-                 B_conductivity_offdiag=Vector3(),
-                 epsilon=None,
-                 index=None,
-                 mu=None,
-                 chi2=None,
-                 chi3=None,
-                 D_conductivity=None,
-                 B_conductivity=None,
-                 E_chi2=None,
-                 E_chi3=None,
-                 H_chi2=None,
-                 H_chi3=None,
-                 valid_freq_range=FreqRange(min=-mp.inf, max=mp.inf)):
+
+    def __init__(
+        self,
+        epsilon_diag=Vector3(1, 1, 1),
+        epsilon_offdiag=Vector3(),
+        mu_diag=Vector3(1, 1, 1),
+        mu_offdiag=Vector3(),
+        E_susceptibilities=None,
+        H_susceptibilities=None,
+        E_chi2_diag=Vector3(),
+        E_chi3_diag=Vector3(),
+        H_chi2_diag=Vector3(),
+        H_chi3_diag=Vector3(),
+        D_conductivity_diag=Vector3(),
+        D_conductivity_offdiag=Vector3(),
+        B_conductivity_diag=Vector3(),
+        B_conductivity_offdiag=Vector3(),
+        epsilon=None,
+        index=None,
+        mu=None,
+        chi2=None,
+        chi3=None,
+        D_conductivity=None,
+        B_conductivity=None,
+        E_chi2=None,
+        E_chi3=None,
+        H_chi2=None,
+        H_chi3=None,
+        valid_freq_range=FreqRange(min=-mp.inf, max=mp.inf),
+    ):
         """
         Creates a `Medium` object.
 
@@ -406,9 +412,13 @@ class Medium(object):
             mu_diag = Vector3(mu, mu, mu)
 
         if D_conductivity:
-            D_conductivity_diag = Vector3(D_conductivity, D_conductivity, D_conductivity)
+            D_conductivity_diag = Vector3(
+                D_conductivity, D_conductivity, D_conductivity
+            )
         if B_conductivity:
-            B_conductivity_diag = Vector3(B_conductivity, B_conductivity, B_conductivity)
+            B_conductivity_diag = Vector3(
+                B_conductivity, B_conductivity, B_conductivity
+            )
 
         if E_chi2:
             E_chi2_diag = Vector3(E_chi2, E_chi2, E_chi2)
@@ -423,8 +433,8 @@ class Medium(object):
         self.epsilon_offdiag = Vector3(*epsilon_offdiag)
         self.mu_diag = Vector3(*mu_diag)
         self.mu_offdiag = Vector3(*mu_offdiag)
-        self.E_susceptibilities = E_susceptibilities if E_susceptibilities else []
-        self.H_susceptibilities = H_susceptibilities if H_susceptibilities else []
+        self.E_susceptibilities = E_susceptibilities or []
+        self.H_susceptibilities = H_susceptibilities or []
         self.E_chi2_diag = Vector3(chi2, chi2, chi2) if chi2 else Vector3(*E_chi2_diag)
         self.E_chi3_diag = Vector3(chi3, chi3, chi3) if chi3 else Vector3(*E_chi3_diag)
         self.H_chi2_diag = Vector3(*H_chi2_diag)
@@ -436,7 +446,7 @@ class Medium(object):
         self.valid_freq_range = valid_freq_range
 
     def __repr__(self):
-        return 'Medium()'
+        return "Medium()"
 
     def transform(self, m):
         """
@@ -451,12 +461,22 @@ class Medium(object):
         left-handed materials, which are [problematic in nondispersive
         media](FAQ.md#why-does-my-simulation-diverge-if-0).
         """
-        eps = Matrix(mp.Vector3(self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y),
-                     mp.Vector3(self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z),
-                     mp.Vector3(self.epsilon_offdiag.y, self.epsilon_offdiag.z, self.epsilon_diag.z))
-        mu = Matrix(mp.Vector3(self.mu_diag.x, self.mu_offdiag.x, self.mu_offdiag.y),
-                    mp.Vector3(self.mu_offdiag.x, self.mu_diag.y, self.mu_offdiag.z),
-                    mp.Vector3(self.mu_offdiag.y, self.mu_offdiag.z, self.mu_diag.z))
+        eps = Matrix(
+            mp.Vector3(
+                self.epsilon_diag.x, self.epsilon_offdiag.x, self.epsilon_offdiag.y
+            ),
+            mp.Vector3(
+                self.epsilon_offdiag.x, self.epsilon_diag.y, self.epsilon_offdiag.z
+            ),
+            mp.Vector3(
+                self.epsilon_offdiag.y, self.epsilon_offdiag.z, self.epsilon_diag.z
+            ),
+        )
+        mu = Matrix(
+            mp.Vector3(self.mu_diag.x, self.mu_offdiag.x, self.mu_offdiag.y),
+            mp.Vector3(self.mu_offdiag.x, self.mu_diag.y, self.mu_offdiag.z),
+            mp.Vector3(self.mu_offdiag.y, self.mu_offdiag.z, self.mu_diag.z),
+        )
 
         new_eps = (m * eps * m.transpose()) / abs(m.determinant())
         new_mu = (m * mu * m.transpose()) / abs(m.determinant())
@@ -472,26 +492,48 @@ class Medium(object):
             s.transform(m)
 
     def rotate(self, axis, theta):
-        T = get_rotation_matrix(axis,theta)
+        T = get_rotation_matrix(axis, theta)
         self.transform(T)
 
-    def epsilon(self,freq):
+    def epsilon(self, freq):
         """
         Returns the medium's permittivity tensor as a 3x3 Numpy array at the specified
         frequency `freq` which can be either a scalar, list, or Numpy array. In the case
         of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
         """
-        return self._get_epsmu(self.epsilon_diag, self.epsilon_offdiag, self.E_susceptibilities, self.D_conductivity_diag, self.D_conductivity_offdiag, freq)
+        return self._get_epsmu(
+            self.epsilon_diag,
+            self.epsilon_offdiag,
+            self.E_susceptibilities,
+            self.D_conductivity_diag,
+            self.D_conductivity_offdiag,
+            freq,
+        )
 
-    def mu(self,freq):
+    def mu(self, freq):
         """
         Returns the medium's permeability tensor as a 3x3 Numpy array at the specified
         frequency `freq` which can be either a scalar, list, or Numpy array. In the case
         of a list/array of N frequency points, a Numpy array of size Nx3x3 is returned.
         """
-        return self._get_epsmu(self.mu_diag, self.mu_offdiag, self.H_susceptibilities, self.B_conductivity_diag, self.B_conductivity_offdiag, freq)
+        return self._get_epsmu(
+            self.mu_diag,
+            self.mu_offdiag,
+            self.H_susceptibilities,
+            self.B_conductivity_diag,
+            self.B_conductivity_offdiag,
+            freq,
+        )
 
-    def _get_epsmu(self, diag, offdiag, susceptibilities, conductivity_diag, conductivity_offdiag, freq):
+    def _get_epsmu(
+        self,
+        diag,
+        offdiag,
+        susceptibilities,
+        conductivity_diag,
+        conductivity_offdiag,
+        freq,
+    ):
         # Clean the input
         if np.isscalar(freq):
             freqs = np.array(freq)[np.newaxis, np.newaxis, np.newaxis]
@@ -501,48 +543,60 @@ class Medium(object):
 
         # Check for values outside of allowed ranges
         if np.min(np.squeeze(freqs)) < self.valid_freq_range.min:
-            raise ValueError('User specified frequency {} is below the Medium\'s limit, {}.'.format(np.min(np.squeeze(freqs)),self.valid_freq_range.min))
+            raise ValueError(
+                f"User specified frequency {np.min(np.squeeze(freqs))} is below the Medium's limit, {self.valid_freq_range.min}."
+            )
+
         if np.max(np.squeeze(freqs)) > self.valid_freq_range.max:
-            raise ValueError('User specified frequency {} is above the Medium\'s limit, {}.'.format(np.max(np.squeeze(freqs)),self.valid_freq_range.max))
+            raise ValueError(
+                f"User specified frequency {np.max(np.squeeze(freqs))} is above the Medium's limit, {self.valid_freq_range.max}."
+            )
 
         # Initialize with instantaneous dielectric tensor
-        epsmu = np.expand_dims(Matrix(diag=diag,offdiag=offdiag),axis=0)
+        epsmu = np.expand_dims(Matrix(diag=diag, offdiag=offdiag), axis=0)
 
         # Iterate through susceptibilities
         for i_sus in range(len(susceptibilities)):
             epsmu = epsmu + susceptibilities[i_sus].eval_susceptibility(freqs)
 
         # Account for conductivity term (only multiply if nonzero to avoid unnecessary complex numbers)
-        conductivity = np.expand_dims(Matrix(diag=conductivity_diag,offdiag=conductivity_offdiag),axis=0)
+        conductivity = np.expand_dims(
+            Matrix(diag=conductivity_diag, offdiag=conductivity_offdiag), axis=0
+        )
         if np.count_nonzero(conductivity) > 0:
-            epsmu = (1 + 1j/(2*np.pi*freqs) * conductivity) * epsmu
+            epsmu = (1 + 1j / (2 * np.pi * freqs) * conductivity) * epsmu
 
         # Convert list matrix to 3D numpy array size [freqs,3,3]
         return np.squeeze(epsmu)
 
-class MaterialGrid(object):
+
+class MaterialGrid:
     """
     This class is used to specify materials on a rectilinear grid. A class object is passed
     as the `material` argument of a [`Block`](#block) geometric object or the `default_material`
     argument of the [`Simulation`](#Simulation) constructor (similar to a [material function](#medium)).
     """
-    def check_weights(self, w):
-        if np.amin(w) < 0. or np.amax(w) > 1.:
-            warnings.warn('The weights parameter of MaterialGrid must be in the range [0,1].')
-            return np.clip(w, 0., 1.)
-        else:
-            return w
 
-    def __init__(self,
-                 grid_size,
-                 medium1,
-                 medium2,
-                 weights=None,
-                 grid_type="U_DEFAULT",
-                 do_averaging=True,
-                 beta=0,
-                 eta=0.5,
-                 damping=0):
+    def check_weights(self, w):
+        if np.amin(w) >= 0.0 and np.amax(w) <= 1.0:
+            return w
+        warnings.warn(
+            "The weights parameter of MaterialGrid must be in the range [0,1]."
+        )
+        return np.clip(w, 0.0, 1.0)
+
+    def __init__(
+        self,
+        grid_size,
+        medium1,
+        medium2,
+        weights=None,
+        grid_type="U_DEFAULT",
+        do_averaging=True,
+        beta=0,
+        eta=0.5,
+        damping=0,
+    ):
         """
         Creates a `MaterialGrid` object.
 
@@ -553,7 +607,7 @@ class MaterialGrid(object):
         with $N_x=5$ and $N_y=4$. $N_z=0$ implies that the `MaterialGrid` is extruded in the $z$ direction.
         The grid points are defined at the corners of the voxels.
 
-        ![](images/material_grid.png)
+        ![](images/material_grid.png#center)
 
         Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
         The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
@@ -593,15 +647,17 @@ class MaterialGrid(object):
         self.grid_size = mp.Vector3(*grid_size)
         self.medium1 = medium1
         self.medium2 = medium2
+
         def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
-            return abs(a-b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
-        if isclose(self.grid_size.x,0):
+            return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
+
+        if isclose(self.grid_size.x, 0):
             self.grid_size.x = 1
-        if isclose(self.grid_size.y,0):
+        if isclose(self.grid_size.y, 0):
             self.grid_size.y = 1
-        if isclose(self.grid_size.z,0):
+        if isclose(self.grid_size.z, 0):
             self.grid_size.z = 1
-        self.num_params=int(self.grid_size.x*self.grid_size.y*self.grid_size.z)
+        self.num_params = int(self.grid_size.x * self.grid_size.y * self.grid_size.z)
         self.do_averaging = do_averaging
         self.beta = beta
         self.eta = eta
@@ -609,18 +665,21 @@ class MaterialGrid(object):
         if weights is None:
             self.weights = np.zeros((self.num_params,))
         elif weights.size != self.num_params:
-            raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(weights.size,self.grid_size))
+            raise ValueError(
+                "weights of shape {} do not match user specified grid dimension: {}".format(
+                    weights.size, self.grid_size
+                )
+            )
         else:
             self.weights = self.check_weights(weights).flatten().astype(np.float64)
 
-        grid_type_dict = {
-            "U_MIN":0,
-            "U_PROD":1,
-            "U_MEAN":2,
-            "U_DEFAULT":3
-        }
+        grid_type_dict = {"U_MIN": 0, "U_PROD": 1, "U_MEAN": 2, "U_DEFAULT": 3}
         if grid_type not in grid_type_dict:
-            raise ValueError("Invalid grid_type: {}. Must be either U_MIN, U_PROD, U_MEAN, or U_DEFAULT".format(grid_type_dict))
+            raise ValueError(
+                "Invalid grid_type: {}. Must be either U_MIN, U_PROD, U_MEAN, or U_DEFAULT".format(
+                    grid_type_dict
+                )
+            )
         self.grid_type = grid_type_dict[grid_type]
 
         self.swigobj = None
@@ -630,14 +689,19 @@ class MaterialGrid(object):
         Reset the `weights` to `x`.
         """
         if x.size != self.num_params:
-            raise ValueError("weights of shape {} do not match user specified grid dimension: {}".format(self.weights.size,self.grid_size))
+            raise ValueError(
+                f"weights of shape {self.weights.size} do not match user specified grid dimension: {self.grid_size}"
+            )
+
         self.weights[:] = self.check_weights(x).flatten().astype(np.float64)
 
-class Susceptibility(object):
+
+class Susceptibility:
     """
     Parent class for various dispersive susceptibility terms, parameterized by an
     anisotropic amplitude $\\sigma$. See [Material Dispersion](Materials.md#material-dispersion).
     """
+
     def __init__(self, sigma_diag=Vector3(), sigma_offdiag=Vector3(), sigma=None):
         """
         + **`sigma` [`number`]** — The scale factor $\\sigma$.
@@ -650,11 +714,13 @@ class Susceptibility(object):
 
         \\begin{pmatrix} a & u & v \\\\ u & b & w \\\\ v & w & c \\end{pmatrix}
         """
-        self.sigma_diag = Vector3(sigma, sigma, sigma) if sigma else Vector3(*sigma_diag)
+        self.sigma_diag = (
+            Vector3(sigma, sigma, sigma) if sigma else Vector3(*sigma_diag)
+        )
         self.sigma_offdiag = Vector3(*sigma_offdiag)
 
     def transform(self, m):
-        sigma = Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag)
+        sigma = Matrix(diag=self.sigma_diag, offdiag=self.sigma_offdiag)
         new_sigma = (m * sigma * m.transpose()) / abs(m.determinant())
         self.sigma_diag = mp.Vector3(new_sigma.c1.x, new_sigma.c2.y, new_sigma.c3.z)
         self.sigma_offdiag = mp.Vector3(new_sigma.c2.x, new_sigma.c3.x, new_sigma.c3.y)
@@ -666,6 +732,7 @@ class LorentzianSusceptibility(Susceptibility):
     oscillator) form. See [Material Dispersion](Materials.md#material-dispersion), with
     the parameters (in addition to $\\sigma$):
     """
+
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
         + **`frequency` [`number`]** — The resonance frequency $f_n = \\omega_n / 2\\pi$.
@@ -676,16 +743,32 @@ class LorentzianSusceptibility(Susceptibility):
         different `sigma` will appear as a *single* Lorentzian susceptibility term in the
         preliminary simulation info output.
         """
-        super(LorentzianSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
 
-    def eval_susceptibility(self,freq):
-        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+    def eval_susceptibility(self, freq):
+        sigma = np.expand_dims(
+            Matrix(diag=self.sigma_diag, offdiag=self.sigma_offdiag), axis=0
+        )
         if self.gamma == 0:
-            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq) * sigma
+            return (
+                self.frequency
+                * self.frequency
+                / (self.frequency * self.frequency - freq * freq)
+                * sigma
+            )
         else:
-            return self.frequency*self.frequency / (self.frequency*self.frequency - freq*freq - 1j*self.gamma*freq) * sigma
+            return (
+                self.frequency
+                * self.frequency
+                / (
+                    self.frequency * self.frequency
+                    - freq * freq
+                    - 1j * self.gamma * freq
+                )
+                * sigma
+            )
 
 
 class DrudeSusceptibility(Susceptibility):
@@ -693,6 +776,7 @@ class DrudeSusceptibility(Susceptibility):
     Specifies a single dispersive susceptibility of Drude form. See [Material
     Dispersion](Materials.md#material-dispersion), with the parameters (in addition to $\\sigma$):
     """
+
     def __init__(self, frequency=0.0, gamma=0.0, **kwargs):
         """
         + **`frequency` [`number`]** — The frequency scale factor $f_n = \\omega_n / 2\\pi$
@@ -700,16 +784,23 @@ class DrudeSusceptibility(Susceptibility):
 
         + **`gamma` [`number`]** — The loss rate $\\gamma_n / 2\\pi$.
         """
-        super(DrudeSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
 
-    def eval_susceptibility(self,freq):
-        sigma = np.expand_dims(Matrix(diag=self.sigma_diag,offdiag=self.sigma_offdiag),axis=0)
+    def eval_susceptibility(self, freq):
+        sigma = np.expand_dims(
+            Matrix(diag=self.sigma_diag, offdiag=self.sigma_offdiag), axis=0
+        )
         if self.gamma == 0:
-            return -self.frequency*self.frequency / (freq*(freq)) * sigma
+            return -self.frequency * self.frequency / (freq * (freq)) * sigma
         else:
-            return -self.frequency*self.frequency / (freq*(freq + 1j*self.gamma)) * sigma
+            return (
+                -self.frequency
+                * self.frequency
+                / (freq * (freq + 1j * self.gamma))
+                * sigma
+            )
 
 
 class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
@@ -720,6 +811,7 @@ class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
     `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in
     space and time, zero mean) added to the **P** damped-oscillator equation.
     """
+
     def __init__(self, noise_amp=0.0, **kwargs):
         """
         + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\\times$
@@ -738,7 +830,7 @@ class NoisyLorentzianSusceptibility(LorentzianSusceptibility):
         [here](http://doi.org/10.1103/PhysRevB.92.134202) or
         [here](http://doi.org/10.1103/PhysRevB.88.054305).
         """
-        super(NoisyLorentzianSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.noise_amp = noise_amp
 
 
@@ -750,6 +842,7 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
     `gamma` parameters, but with an additional Gaussian random noise term (uncorrelated in
     space and time, zero mean) added to the **P** damped-oscillator equation.
     """
+
     def __init__(self, noise_amp=0.0, **kwargs):
         """
         + **`noise_amp` [`number`]** — The noise has root-mean square amplitude σ $\\times$
@@ -768,7 +861,7 @@ class NoisyDrudeSusceptibility(DrudeSusceptibility):
         [here](http://doi.org/10.1103/PhysRevB.92.134202) or
         [here](http://doi.org/10.1103/PhysRevB.88.054305).
         """
-        super(NoisyDrudeSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.noise_amp = noise_amp
 
 
@@ -780,13 +873,14 @@ class GyrotropicLorentzianSusceptibility(LorentzianSusceptibility):
     parameters are `sigma`, `frequency`, and `gamma`, which have the [usual
     meanings](#susceptibility), and an additional 3-vector `bias`:
     """
+
     def __init__(self, bias=Vector3(), **kwargs):
         """
         + **`bias` [`Vector3`]** — The gyrotropy vector.  Its direction determines the
           orientation of the gyrotropic response, and the magnitude is the precession
           frequency $|\\mathbf{b}_n|/2\\pi$.
         """
-        super(GyrotropicLorentzianSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.bias = bias
 
 
@@ -798,13 +892,14 @@ class GyrotropicDrudeSusceptibility(DrudeSusceptibility):
     parameters are `sigma`, `frequency`, and `gamma`, which have the [usual
     meanings](#susceptibility), and an additional 3-vector `bias`:
     """
+
     def __init__(self, bias=Vector3(), **kwargs):
         """
         + **`bias` [`Vector3`]** — The gyrotropy vector.  Its direction determines the
           orientation of the gyrotropic response, and the magnitude is the precession
           frequency $|\\mathbf{b}_n|/2\\pi$.
         """
-        super(GyrotropicDrudeSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.bias = bias
 
 
@@ -818,6 +913,7 @@ class GyrotropicSaturatedSusceptibility(Susceptibility):
     different from the Lorentzian and Drude case. It also takes a 3-vector `bias`
     parameter and an `alpha` parameter:
     """
+
     def __init__(self, bias=Vector3(), frequency=0.0, gamma=0.0, alpha=0.0, **kwargs):
         """
         + **`sigma` [`number`]** — The coupling factor $\\sigma_n / 2\\pi$ between the
@@ -842,7 +938,7 @@ class GyrotropicSaturatedSusceptibility(Susceptibility):
           the magnitude is ignored; instead, the relevant precession frequencies are
           determined by the `sigma` and `frequency` parameters.
         """
-        super(GyrotropicSaturatedSusceptibility, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.frequency = frequency
         self.gamma = gamma
         self.bias = bias
@@ -858,24 +954,26 @@ class MultilevelAtom(Susceptibility):
     atomic level. See [Materials/Saturable Gain and
     Absorption](Materials.md#saturable-gain-and-absorption).
     """
+
     def __init__(self, initial_populations=None, transitions=None, **kwargs):
-        super(MultilevelAtom, self).__init__(**kwargs)
-        self.initial_populations = initial_populations if initial_populations else []
-        self.transitions = transitions if transitions else []
+        super().__init__(**kwargs)
+        self.initial_populations = initial_populations or []
+        self.transitions = transitions or []
 
 
-class Transition(object):
-    """
-    """
+class Transition:
+    """ """
 
-    def __init__(self,
-                 from_level,
-                 to_level,
-                 transition_rate=0,
-                 frequency=0,
-                 sigma_diag=Vector3(1, 1, 1),
-                 gamma=0,
-                 pumping_rate=0):
+    def __init__(
+        self,
+        from_level,
+        to_level,
+        transition_rate=0,
+        frequency=0,
+        sigma_diag=Vector3(1, 1, 1),
+        gamma=0,
+        pumping_rate=0,
+    ):
         """
         Construct a `Transition`.
 
@@ -894,8 +992,8 @@ class Transition(object):
 
         + **`pumping_rate` [`number`]** — The pumping rate $f = \\omega / 2\\pi$. Default is 0.
         """
-        self.from_level = check_nonnegative('from_level', from_level)
-        self.to_level = check_nonnegative('to_level', to_level)
+        self.from_level = check_nonnegative("from_level", from_level)
+        self.to_level = check_nonnegative("to_level", to_level)
         self.transition_rate = transition_rate
         self.frequency = frequency
         self.sigma_diag = sigma_diag
@@ -903,7 +1001,7 @@ class Transition(object):
         self.pumping_rate = pumping_rate
 
 
-class GeometricObject(object):
+class GeometricObject:
     """
     This class, and its descendants, are used to specify the solid geometric objects that
     form the dielectric structure being simulated.
@@ -956,6 +1054,7 @@ class GeometricObject(object):
     geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
     ```
     """
+
     def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
         """
         Construct a `GeometricObject`.
@@ -1035,7 +1134,7 @@ class Sphere(GeometricObject):
     def __init__(self, radius, **kwargs):
         """Constructs a `Sphere`"""
         self.radius = float(radius)
-        super(Sphere, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def radius(self):
@@ -1067,7 +1166,7 @@ class Cylinder(GeometricObject):
         self.axis = Vector3(*axis)
         self.radius = float(radius)
         self.height = float(height)
-        super(Cylinder, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @property
     def radius(self):
@@ -1090,13 +1189,16 @@ class Wedge(Cylinder):
     """
     Represents a cylindrical wedge.
     """
-    def __init__(self, radius, wedge_angle=2 * math.pi, wedge_start=Vector3(1, 0, 0), **kwargs):
+
+    def __init__(
+        self, radius, wedge_angle=2 * math.pi, wedge_start=Vector3(1, 0, 0), **kwargs
+    ):
         """
         Constructs a `Wedge`.
         """
         self.wedge_angle = wedge_angle
         self.wedge_start = Vector3(*wedge_start)
-        super(Wedge, self).__init__(radius, **kwargs)
+        super().__init__(radius, **kwargs)
 
 
 class Cone(Cylinder):
@@ -1107,6 +1209,7 @@ class Cone(Cylinder):
     the radius of the tip is given by the new property, `radius2`. The `center` of a cone
     is halfway between the two circular ends.
     """
+
     def __init__(self, radius, radius2=0, **kwargs):
         """
         Construct a `Cone`.
@@ -1116,14 +1219,22 @@ class Cone(Cylinder):
         Radius of the tip of the cone (i.e. the end of the cone pointed to by the `axis` vector). Defaults to zero (a "sharp" cone).
         """
         self.radius2 = radius2
-        super(Cone, self).__init__(radius, **kwargs)
+        super().__init__(radius, **kwargs)
 
 
 class Block(GeometricObject):
     """
     A parallelepiped (i.e., a brick, possibly with non-orthogonal axes).
     """
-    def __init__(self, size, e1=Vector3(1, 0, 0), e2=Vector3(0, 1, 0), e3=Vector3(0, 0, 1), **kwargs):
+
+    def __init__(
+        self,
+        size,
+        e1=Vector3(1, 0, 0),
+        e2=Vector3(0, 1, 0),
+        e3=Vector3(0, 0, 1),
+        **kwargs,
+    ):
         """
         Construct a `Block`.
 
@@ -1140,7 +1251,7 @@ class Block(GeometricObject):
         self.e1 = Vector3(*e1)
         self.e2 = Vector3(*e2)
         self.e3 = Vector3(*e3)
-        super(Block, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class Ellipsoid(Block):
@@ -1148,18 +1259,28 @@ class Ellipsoid(Block):
     An ellipsoid. This is actually a subclass of `Block`, and inherits all the same
     properties, but defines an ellipsoid inscribed inside the block.
     """
+
     def __init__(self, **kwargs):
         """
         Construct an `Ellipsoid`.
         """
-        super(Ellipsoid, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
 
 class Prism(GeometricObject):
     """
     Polygonal prism type.
     """
-    def __init__(self, vertices, height, axis=Vector3(z=1), center=None, sidewall_angle=0, **kwargs):
+
+    def __init__(
+        self,
+        vertices,
+        height,
+        axis=Vector3(z=1),
+        center=None,
+        sidewall_angle=0,
+        **kwargs,
+    ):
         """
         Construct a `Prism`.
 
@@ -1186,8 +1307,12 @@ class Prism(GeometricObject):
           radians. Default is 0.
         """
 
-        centroid = sum(vertices, Vector3(0)) * (1.0 / len(vertices)) # centroid of floor polygon
-        original_center = centroid + (0.5*height)*axis               # center as computed from vertices, height, axis
+        centroid = sum(vertices, Vector3(0)) * (
+            1.0 / len(vertices)
+        )  # centroid of floor polygon
+        original_center = (
+            centroid + (0.5 * height) * axis
+        )  # center as computed from vertices, height, axis
         if center is not None and len(vertices):
             center = Vector3(*center)
             # translate vertices to center prism at requested center
@@ -1200,10 +1325,10 @@ class Prism(GeometricObject):
         self.axis = axis
         self.sidewall_angle = sidewall_angle
 
-        super(Prism, self).__init__(center=center, **kwargs)
+        super().__init__(center=center, **kwargs)
 
 
-class Matrix(object):
+class Matrix:
     """
     The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
 
@@ -1240,7 +1365,15 @@ class Matrix(object):
 
     Scales the matrix `m` by the number `s`.
     """
-    def __init__(self, c1=Vector3(), c2=Vector3(), c3=Vector3(), diag=Vector3(), offdiag=Vector3()):
+
+    def __init__(
+        self,
+        c1=Vector3(),
+        c2=Vector3(),
+        c3=Vector3(),
+        diag=Vector3(),
+        offdiag=Vector3(),
+    ):
         """
         Constructs a `Matrix`.
         """
@@ -1263,13 +1396,13 @@ class Matrix(object):
         elif isinstance(m, Number):
             return self.scale(m)
         else:
-            raise TypeError("No operation known for 'Matrix * {}'".format(type(m)))
+            raise TypeError(f"No operation known for 'Matrix * {type(m)}'")
 
     def __rmul__(self, left_arg):
         if isinstance(left_arg, Number):
             return self.scale(left_arg)
         else:
-            raise TypeError("No operation known for 'Matrix * {}'".format(type(left_arg)))
+            raise TypeError(f"No operation known for 'Matrix * {type(left_arg)}'")
 
     def __truediv__(self, scalar):
         return Matrix(self.c1 / scalar, self.c2 / scalar, self.c3 / scalar)
@@ -1284,28 +1417,26 @@ class Matrix(object):
         r0 = self.row(0)
         r1 = self.row(1)
         r2 = self.row(2)
-        return "<<{} {} {}>\n <{} {} {}>\n <{} {} {}>>".format(r0[0], r0[1], r0[2],
-                                                               r1[0], r1[1], r1[2],
-                                                               r2[0], r2[1], r2[2])
+        return f"<<{r0[0]} {r0[1]} {r0[2]}>\n <{r1[0]} {r1[1]} {r1[2]}>\n <{r2[0]} {r2[1]} {r2[2]}>>"
 
     def __array__(self):
-        return np.array([self.row(0).__array__(),
-                         self.row(1).__array__(),
-                         self.row(2).__array__()])
+        return np.array(
+            [self.row(0).__array__(), self.row(1).__array__(), self.row(2).__array__()]
+        )
 
     def row(self, i):
         return Vector3(self.c1[i], self.c2[i], self.c3[i])
 
     def mm_mult(self, m):
-        c1 = Vector3(self.row(0).dot(m.c1),
-                     self.row(1).dot(m.c1),
-                     self.row(2).dot(m.c1))
-        c2 = Vector3(self.row(0).dot(m.c2),
-                     self.row(1).dot(m.c2),
-                     self.row(2).dot(m.c2))
-        c3 = Vector3(self.row(0).dot(m.c3),
-                     self.row(1).dot(m.c3),
-                     self.row(2).dot(m.c3))
+        c1 = Vector3(
+            self.row(0).dot(m.c1), self.row(1).dot(m.c1), self.row(2).dot(m.c1)
+        )
+        c2 = Vector3(
+            self.row(0).dot(m.c2), self.row(1).dot(m.c2), self.row(2).dot(m.c2)
+        )
+        c3 = Vector3(
+            self.row(0).dot(m.c3), self.row(1).dot(m.c3), self.row(2).dot(m.c3)
+        )
 
         return Matrix(c1, c2, c3)
 
@@ -1316,16 +1447,20 @@ class Matrix(object):
         return Matrix(self.c1.scale(s), self.c2.scale(s), self.c3.scale(s))
 
     def determinant(self):
-        sum1 = sum([
-            functools.reduce(operator.mul, [self[x][x] for x in range(3)]),
-            functools.reduce(operator.mul, [self[0][1], self[1][2], self[2][0]]),
-            functools.reduce(operator.mul, [self[1][0], self[2][1], self[0][2]])
-        ])
-        sum2 = sum([
-            functools.reduce(operator.mul, [self[0][2], self[1][1], self[2][0]]),
-            functools.reduce(operator.mul, [self[0][1], self[1][0], self[2][2]]),
-            functools.reduce(operator.mul, [self[1][2], self[2][1], self[0][0]])
-        ])
+        sum1 = sum(
+            [
+                functools.reduce(operator.mul, [self[x][x] for x in range(3)]),
+                functools.reduce(operator.mul, [self[0][1], self[1][2], self[2][0]]),
+                functools.reduce(operator.mul, [self[1][0], self[2][1], self[0][2]]),
+            ]
+        )
+        sum2 = sum(
+            [
+                functools.reduce(operator.mul, [self[0][2], self[1][1], self[2][0]]),
+                functools.reduce(operator.mul, [self[0][1], self[1][0], self[2][2]]),
+                functools.reduce(operator.mul, [self[1][2], self[2][1], self[0][0]]),
+            ]
+        )
         return sum1 - sum2
 
     def conj(self):
@@ -1360,14 +1495,15 @@ class Matrix(object):
     H = property(getH, None)
 
 
-class Lattice(object):
-
-    def __init__(self,
-                 size=Vector3(1, 1, 1),
-                 basis_size=Vector3(1, 1, 1),
-                 basis1=Vector3(1, 0, 0),
-                 basis2=Vector3(0, 1, 0),
-                 basis3=Vector3(0, 0, 1)):
+class Lattice:
+    def __init__(
+        self,
+        size=Vector3(1, 1, 1),
+        basis_size=Vector3(1, 1, 1),
+        basis1=Vector3(1, 0, 0),
+        basis2=Vector3(0, 1, 0),
+        basis3=Vector3(0, 0, 1),
+    ):
 
         self.size = Vector3(*size)
         self.basis_size = Vector3(*basis_size)
@@ -1446,10 +1582,7 @@ def reciprocal_to_cartesian(x, lat):
     m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
     Rst = (lat.basis * m).transpose()
 
-    if isinstance(x, Vector3):
-        return Rst.inverse() * x
-    else:
-        return (Rst.inverse() * x) * Rst
+    return Rst.inverse() * x if isinstance(x, Vector3) else (Rst.inverse() * x) * Rst
 
 
 def cartesian_to_reciprocal(x, lat):
@@ -1458,10 +1591,7 @@ def cartesian_to_reciprocal(x, lat):
     m = Matrix(Vector3(s.x), Vector3(y=s.y), Vector3(z=s.z))
     Rst = (lat.basis * m).transpose()
 
-    if isinstance(x, Vector3):
-        return Rst * x
-    else:
-        return (Rst * x) * Rst.inverse()
+    return Rst * x if isinstance(x, Vector3) else (Rst * x) * Rst.inverse()
 
 
 def lattice_to_reciprocal(x, lat):
@@ -1475,12 +1605,12 @@ def reciprocal_to_lattice(x, lat):
 def geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go):
 
     shift_vector = Vector3(*shift_vector)
+
     def _dup(min_multiple, lst):
-        if min_multiple <= max_multiple:
-            shifted = go.shift(shift_vector.scale(min_multiple))
-            return _dup(min_multiple + 1, [shifted] + lst)
-        else:
+        if min_multiple > max_multiple:
             return lst
+        shifted = go.shift(shift_vector.scale(min_multiple))
+        return _dup(min_multiple + 1, [shifted] + lst)
 
     return _dup(min_multiple, [])
 
@@ -1489,12 +1619,13 @@ def geometric_objects_duplicates(shift_vector, min_multiple, max_multiple, go_li
     dups = []
     shift_vector = Vector3(*shift_vector)
     for go in go_list:
-        dups += geometric_object_duplicates(shift_vector, min_multiple, max_multiple, go)
+        dups += geometric_object_duplicates(
+            shift_vector, min_multiple, max_multiple, go
+        )
     return dups
 
 
 def geometric_objects_lattice_duplicates(lat, go_list, *usize):
-
     def lat_to_lattice(v):
         return cartesian_to_lattice(lat.basis * v, lat)
 
@@ -1538,6 +1669,7 @@ def memoize(f):
         fy = f(y)
         f_memo_tab[y] = fy
         return fy
+
     return _mem
 
 
@@ -1550,9 +1682,7 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
     f_memo = memoize(f)
 
     def lazy(x):
-        if isinstance(x, numbers.Number):
-            return x
-        return x()
+        return x if isinstance(x, numbers.Number) else x()
 
     def pick_bound(which):
         def _pb():
@@ -1567,6 +1697,7 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
                 return x_max
             else:
                 raise ValueError("failed to bracket the root in find_root_deriv")
+
         return _pb
 
     def in_bounds(x, f, df, a, b):
@@ -1586,7 +1717,11 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
         a_prime = x if f < 0 else a
         b_prime = x if f > 0 else b
 
-        if dx != x_max - x_min and dx * (f / df) < 0 and f_memo(lazy(a_prime))[0] * f_memo(lazy(b_prime))[0] > 0:
+        if (
+            dx != x_max - x_min
+            and dx * (f / df) < 0
+            and f_memo(lazy(a_prime))[0] * f_memo(lazy(b_prime))[0] > 0
+        ):
             raise ValueError("failed to bracket the root in find_root_deriv")
 
         if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
@@ -1608,8 +1743,12 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
     if x_guess is None:
         x_guess = (x_min + x_max) * 0.5
 
-    return newton(x_guess, pick_bound(lambda aa: aa < 0),
-                  pick_bound(lambda aa: aa > 0), x_max - x_min)
+    return newton(
+        x_guess,
+        pick_bound(lambda aa: aa < 0),
+        pick_bound(lambda aa: aa > 0),
+        x_max - x_min,
+    )
 
 
 def get_rotation_matrix(axis, theta):
@@ -1622,6 +1761,8 @@ def get_rotation_matrix(axis, theta):
 
     + `theta` [`number`] — The rotation angle (in radians).
     """
-    return Matrix(Vector3(x=1).rotate(axis, theta),
-                  Vector3(y=1).rotate(axis, theta),
-                  Vector3(z=1).rotate(axis, theta))
+    return Matrix(
+        Vector3(x=1).rotate(axis, theta),
+        Vector3(y=1).rotate(axis, theta),
+        Vector3(z=1).rotate(axis, theta),
+    )

@@ -27,13 +27,13 @@
 ; put a single point source at some arbitrary place, pointing in some
 ; arbitrary direction.  We will only look for Ez-polarized modes.
 
-(define-param fcen 0.15) ; pulse center frequency                            
-(define-param df 0.1)  ; pulse width (in frequency) 
+(define-param fcen 0.15) ; pulse center frequency
+(define-param df 0.1)  ; pulse width (in frequency)
 (set! sources (list
                (make source
                  (src (make gaussian-src (frequency fcen) (fwidth df)))
                  (component Ez) (center (+ r 0.1) 0))))
-	       
+
 
 ; note that the r -> -r mirror symmetry is exploited automatically
 
@@ -44,8 +44,8 @@
 ; almost zero and get a distorted view.)  We'll append the fields
 ; to a file to get an r-by-t picture.  We'll also output from -sr to -sr
 ; instead of from 0 to sr.
-(run-until (/ 1 fcen) 
+(run-until (/ 1 fcen)
 	   (in-volume (volume (center 0) (size (* 2 sr)))
 		      (at-beginning output-epsilon)
-		      (to-appended "ez" 
+		      (to-appended "ez"
 				   (at-every (/ 1 fcen 20) output-efield-z))))

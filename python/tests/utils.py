@@ -1,5 +1,7 @@
 import unittest
+
 import numpy as np
+
 
 def compare_arrays(test_instance, exp, res, tol=1e-3):
     exp_1d = exp.ravel()
@@ -18,7 +20,7 @@ def compare_arrays(test_instance, exp, res, tol=1e-3):
 class ApproxComparisonTestCase(unittest.TestCase):
     """A mixin for adding proper floating point value and vector comparison."""
 
-    def assertClose(self, x, y, epsilon = 1e-2, msg = ''):
+    def assertClose(self, x, y, epsilon=1e-2, msg=""):
         """Asserts that two values or vectors satisfy ‖x-y‖ ≤ ε * max(‖x‖, ‖y‖)."""
         x = np.atleast_1d(x).ravel()
         y = np.atleast_1d(y).ravel()

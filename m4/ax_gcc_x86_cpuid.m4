@@ -57,7 +57,7 @@ AC_CACHE_CHECK(for x86 cpuid $1 output, ax_cv_gcc_x86_cpuid_$1,
      fprintf(f, "%x:%x:%x:%x\n", eax, ebx, ecx, edx);
      fclose(f);
      return 0;
-])], 
+])],
      [ax_cv_gcc_x86_cpuid_$1=`cat conftest_cpuid`; rm -f conftest_cpuid],
      [ax_cv_gcc_x86_cpuid_$1=unknown; rm -f conftest_cpuid],
      [ax_cv_gcc_x86_cpuid_$1=unknown])])

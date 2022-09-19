@@ -90,9 +90,10 @@ sim.run(mp.after_time(endt-250, print_field), until=endt)
 
 The spectra of the field intensity is shown below.
 
-<center>
-![Multilevel meep spectra](../images/multilevel_meep_n0_37_spectra.png)
-</center>
+
+![Multilevel meep spectra](../images/multilevel_meep_n0_37_spectra.png#center)
+
+
 
 There are two lasing modes above threshold in the vicinity of the center transition frequency ω$_a$=40 as we would expect. Remember, when finding the frequency axis that Meep uses a Courant factor of $\Delta t = 0.5 \Delta x$. We have also converted the electric field to SALT units using:
 
@@ -100,14 +101,12 @@ $$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{\gamma_\perp \g
 
 For two-level gain media, $\gamma_\parallel = \gamma_{12} + \gamma_{21}$. We can also verify that the system is not exhibiting relaxation oscillations by directly plotting the electric field as a function of time and looking for very long time-scale oscillations. In the continuum limit, these modes would appear as Dirac delta functions in the spectra. The discretized model, however, produces peaks with finite width. Thus, we need to integrate a fixed number of points around each peak to calculate the correct modal intensity.
 
-By varying $N_0$ or the pumping rate $R_p$, we can change the total gain available in the cavity. This is used to find the laser's modal intensities as a function of the strength of the gain. We can compare the simulated modal intensity with SALT as well as an independent FDTD solver based on the Maxwell-Bloch equations. All three methods produce results with good agreement close to the first lasing threshold. 
+By varying $N_0$ or the pumping rate $R_p$, we can change the total gain available in the cavity. This is used to find the laser's modal intensities as a function of the strength of the gain. We can compare the simulated modal intensity with SALT as well as an independent FDTD solver based on the Maxwell-Bloch equations. All three methods produce results with good agreement close to the first lasing threshold.
 
-<center>
-![Near threshold comparison](../images/meep_salt_comparison_thresh.png)
-</center>
+
+![Near threshold comparison](../images/meep_salt_comparison_thresh.png#center)
+
 
 Further increasing the gain continues to yield good agreement.
 
-<center>
-![Near threshold comparison](../images/meep_salt_comparison_full.png)
-</center>
+![Near threshold comparison](../images/meep_salt_comparison_full.png#center)

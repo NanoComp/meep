@@ -177,8 +177,8 @@ public:
   geom_box_tree restricted_tree;
   geometric_object_list geometry;
   cond_profile cond[5][2]; // [direction][side]
-  double tol=DEFAULT_SUBPIXEL_TOL;
-  int maxeval=DEFAULT_SUBPIXEL_MAXEVAL;
+  double tol = DEFAULT_SUBPIXEL_TOL;
+  int maxeval = DEFAULT_SUBPIXEL_MAXEVAL;
 
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
   geom_epsilon(const geom_epsilon &geps1); // copy constructor
@@ -207,8 +207,8 @@ public:
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                double tol, int maxeval);
 
-  void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
-                          const meep::volume &v, double tol, int maxeval, bool &fallback);
+  void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix, const meep::volume &v,
+                          double tol, int maxeval, bool &fallback);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                             double tol, int maxeval);
@@ -218,17 +218,17 @@ public:
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
   void get_material_pt(material_type &material, const meep::vec &r);
+
 private:
   material_type_list extra_materials;
   pol *current_pol;
 };
 
 void set_dimensions(int dims);
-geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g,
-                                 vector3 center = make_vector3(),
-                                 bool ensure_periodicity = false,
-                                 material_type _default_material = vacuum,
-                                 material_type_list extra_materials = material_type_list());
+geom_epsilon *make_geom_epsilon(meep::structure *s, geometric_object_list *g,
+                                vector3 center = make_vector3(), bool ensure_periodicity = false,
+                                material_type _default_material = vacuum,
+                                material_type_list extra_materials = material_type_list());
 //, geometric_object_list g, material_type_list extra_materials
 void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  vector3 center = make_vector3(),
@@ -239,10 +239,10 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g,
                                  material_type _default_material = vacuum, absorber_list alist = 0,
                                  material_type_list extra_materials = material_type_list());
 void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
-                                 bool use_anisotropic_averaging = true,
-                                 double tol = DEFAULT_SUBPIXEL_TOL,
-                                 int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
-                                 absorber_list alist = 0);
+                                     bool use_anisotropic_averaging = true,
+                                     double tol = DEFAULT_SUBPIXEL_TOL,
+                                     int maxeval = DEFAULT_SUBPIXEL_MAXEVAL,
+                                     absorber_list alist = 0);
 
 material_type make_dielectric(double epsilon);
 material_type make_user_material(user_material_func user_func, void *user_data, bool do_averaging);
@@ -272,21 +272,13 @@ bool is_medium(material_type md, medium_struct **m);
 bool is_medium(void *md, medium_struct **m);
 bool is_metal(meep::field_type ft, const material_type *material);
 geom_box gv2box(const meep::volume &v);
-void get_epsilon_grid(geometric_object_list gobj_list,
-                      material_type_list mlist,
-                      material_type _default_material,
-                      bool _ensure_periodicity,
-                      meep::grid_volume gv,
-                      vector3 cell_size,
-                      vector3 cell_center,
-                      int nx, const double *x,
-                      int ny, const double *y,
-                      int nz, const double *z,
-                      std::complex<double> *grid_vals,
-                      double frequency = 0);
-void init_libctl(material_type default_mat, bool ensure_per,
-                 meep::grid_volume *gv, vector3 cell_size, vector3 cell_center,
-                 geometric_object_list *geom_list);
+void get_epsilon_grid(geometric_object_list gobj_list, material_type_list mlist,
+                      material_type _default_material, bool _ensure_periodicity,
+                      meep::grid_volume gv, vector3 cell_size, vector3 cell_center, int nx,
+                      const double *x, int ny, const double *y, int nz, const double *z,
+                      std::complex<double> *grid_vals, double frequency = 0);
+void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
+                 vector3 cell_size, vector3 cell_center, geometric_object_list *geom_list);
 
 /***************************************************************/
 // material grid functions
@@ -297,10 +289,11 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
-void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<meep::dft_fields *> fields_a,
-                                std::vector<meep::dft_fields *>fields_f,
-                                double *frequencies, double scalegrad, meep::grid_volume &gv,
-                                meep::volume &where, geom_epsilon *geps, double du = 1e-6);
+void material_grids_addgradient(double *v, size_t ng, size_t nf,
+                                std::vector<meep::dft_fields *> fields_a,
+                                std::vector<meep::dft_fields *> fields_f, double *frequencies,
+                                double scalegrad, meep::grid_volume &gv, meep::volume &where,
+                                geom_epsilon *geps, double du = 1e-6);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/

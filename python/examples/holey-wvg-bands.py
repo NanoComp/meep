@@ -7,7 +7,6 @@
 #    J. D. Joannopoulos, "Guided and defect modes in periodic dielectric
 #    waveguides," J. Opt. Soc. Am. B, 12 (7), 1267-1272 (1995).
 
-from __future__ import division
 
 import meep as mp
 
@@ -30,31 +29,40 @@ def main():
     fcen = 0.25  # pulse center frequency
     df = 1.5  # pulse freq. width: large df = short impulse
 
-    s = mp.Source(src=mp.GaussianSource(fcen, fwidth=df), component=mp.Hz,
-                  center=mp.Vector3(0.1234))
+    s = mp.Source(
+        src=mp.GaussianSource(fcen, fwidth=df),
+        component=mp.Hz,
+        center=mp.Vector3(0.1234),
+    )
 
     sym = mp.Mirror(direction=mp.Y, phase=-1)
 
-    sim = mp.Simulation(cell_size=cell, geometry=[b, c], sources=[s], symmetries=[sym],
-                        boundary_layers=[mp.PML(dpml, direction=mp.Y)], resolution=20)
+    sim = mp.Simulation(
+        cell_size=cell,
+        geometry=[b, c],
+        sources=[s],
+        symmetries=[sym],
+        boundary_layers=[mp.PML(dpml, direction=mp.Y)],
+        resolution=20,
+    )
 
     kx = False  # if true, do run at specified kx and get fields
-    k_interp = 19  # # k-points to interpolate, otherwise
-
     if kx:
         sim.k_point = mp.Vector3(kx)
 
         sim.run(
             mp.at_beginning(mp.output_epsilon),
             mp.after_sources(mp.Harminv(mp.Hz, mp.Vector3(0.1234), fcen, df)),
-            until_after_sources=300
+            until_after_sources=300,
         )
 
         sim.run(mp.at_every(1 / fcen / 20, mp.output_hfield_z), until=1 / fcen)
 
     else:
+        k_interp = 19  # # k-points to interpolate, otherwise
+
         sim.run_k_points(300, mp.interpolate(k_interp, [mp.Vector3(), mp.Vector3(0.5)]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

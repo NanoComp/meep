@@ -86,7 +86,7 @@ const double half_cavity_width = d2;
 const int N = 5;
 ```
 
-Meep supports perfectly matching layers (PML) as absorbing boundary conditions. The PML begins at the edge of the computational volume and works inwards. Hence, we specify the size of the cell as follows: 
+Meep supports perfectly matching layers (PML) as absorbing boundary conditions. The PML begins at the edge of the computational volume and works inwards. Hence, we specify the size of the cell as follows:
 
 ```c++
 const double pml_thickness = 1.0;
@@ -189,9 +189,9 @@ while (f.time() < curr_time + 1/w_midgap) {
 
 After we convert the HDF5 files to PNG format and superimpose the images on the dielectric background to produce an animated, we obtain the following:
 
-<center>
-![](images/Fabryperot.gif)
-</center>
+
+![](images/Fabryperot.gif#center)
+
 
 Compiling
 ---------

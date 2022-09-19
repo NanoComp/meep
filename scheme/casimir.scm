@@ -6,15 +6,15 @@
 ; return a list (source-vol mx my mz)
 ; given the volume integration-vol and n, pick out the appropriate side and mx my mz to use
 ; sides are ordered by decreasing weight
-; weights are w(side, m) = area(side)/total area * 1/(m+1)^4, a rough estimate of the 
-; contribution to the stress tensor from that side and that m 
+; weights are w(side, m) = area(side)/total area * 1/(m+1)^4, a rough estimate of the
+; contribution to the stress tensor from that side and that m
 (define (casimir-source-info integration-vol n)
   (define (modround x n) (modulo (inexact->exact (round x)) n))
-  (define (get-src-index n) ;given n, extract out the two values of m for 3-d 
+  (define (get-src-index n) ;given n, extract out the two values of m for 3-d
     (let* ((s 0) ;sum of diagonals
 	 (r 0) ;row intersection
 	 (c 0));column intersection
-      (while (< (+ s r) n) 
+      (while (< (+ s r) n)
 	     (set! r (+ r 1))
 	     (set! s (+ s r)))
       (set! c (- n s))
@@ -43,8 +43,8 @@
 		(list (vector3- center-vec xshift) (vector3+ center-vec xshift)
 		      (vector3- center-vec yshift) (vector3+ center-vec yshift)
 		      (vector3- center-vec zshift) (vector3+ center-vec zshift)))
-	       (m-list 
-		(list (vector3 0 m1 m2) (vector3 0 m1 m2) (vector3 m1 0 m2) 
+	       (m-list
+		(list (vector3 0 m1 m2) (vector3 0 m1 m2) (vector3 m1 0 m2)
 		      (vector3 m1 0 m2) (vector3 m1 m2 0) (vector3 m1 m2 0)))
 	       (orientation-list (list -1 1 -1 1 -1 1))
 	       (size-list
@@ -75,7 +75,7 @@
 		    (list (vector3- new-center-vec z-shift) (vector3+ new-center-vec z-shift)
 			  (vector3+ new-center-vec r-shift) (vector3- new-center-vec r-shift)))
 		   (m-list
-		    (list (vector3 m-dct m-phi 0) (vector3 m-dct m-phi 0) 
+		    (list (vector3 m-dct m-phi 0) (vector3 m-dct m-phi 0)
 			  (vector3 0 m-phi m-dct) (vector3 0 m-phi m-dct)))
 		   (orientation-list (list -1 1 1 -1))
 		   (size-list
@@ -91,7 +91,7 @@
 		   (m (/ (- n s) 4))
 		   (x-const-size (vector3 0 sy )) ;sz may be non-zero for quasi-3d systems
 		   (y-const-size (vector3 sx 0 ))
-		   (center-list 
+		   (center-list
 		    (list (vector3- center-vec xshift) (vector3+ center-vec xshift)
 			  (vector3- center-vec yshift) (vector3+ center-vec yshift)))
 		   (m-list
@@ -105,7 +105,7 @@
 	      (print "Casimir.scm: working in 2 dimensions\n")
 	      (print "  Surface center: "(list-ref center-list s)"\n")
 	      (print "  Surface size: "(list-ref size-list s)"\n")
-	      (list surface-vol 
+	      (list surface-vol
 		    (vector3-x surface-m) (vector3-y surface-m) (vector3-z surface-m)
 		    (list-ref orientation-list s) 1))))))
 
@@ -113,7 +113,7 @@
 ;n contains both the side number and the harmonic expansion index
 (define (casimir-force-contrib force-direction integration-vol n Sigma T source-component gt . step-funcs)
   (define (cos-func X mx my mz source-vol)
-    (let* 
+    (let*
 	((min-corner (meep-volume-get-min-corner source-vol))
 	 (max-corner (meep-volume-get-max-corner source-vol))
 	 (size-vec (vector3- max-corner min-corner))
@@ -147,11 +147,11 @@
 	(begin
 	  (set! global-B-conductivity Sigma)
 	  (set! global-D-conductivity 0)))
-    (if (eq? dimensions -2) 
+    (if (eq? dimensions -2)
 	(begin (print "Cylindricals: m = "my" and (nr nz) = ("mx", "mz")\n")
 	       (print "  surface center = "(meep-volume-center source-vol)"\n")
-	       (print "  source size = "(vector3- 
-					  (meep-volume-get-max-corner source-vol) 
+	       (print "  source size = "(vector3-
+					  (meep-volume-get-max-corner source-vol)
 					  (meep-volume-get-min-corner source-vol)))
 	       (set! m my))) ;set exp(i m phi) field dependence
     (set! sources
@@ -173,13 +173,13 @@
       (define (integrate-function)
 	(let* ((f-temp (meep-fields-casimir-stress-dct-integral
 			fields
-			force-direction 
+			force-direction
 			(meep-component-direction source-component)
 			mx (if (eq? dimensions -2) 0 my) mz
 			ft source-vol)))
 	  (set! force-integral
 		(+ force-integral
-		   (imag-part (* (list-ref gt counter) dt 
+		   (imag-part (* (list-ref gt counter) dt
 				 source-orientation
 				 (if (eq? dimensions -2)
 				     (* (if (eq? my 0) 1 2)
@@ -190,8 +190,8 @@
       force-integral)))
 
 ;%%%%%%%%%%%%%%%%%%%%% BLOCH PBCS %%%%%%%%%%%%%%%%%%%%%%
-;here the source is specified in 
-;the form exp(i k x), k = pi/L (m + k_red), 
+;here the source is specified in
+;the form exp(i k x), k = pi/L (m + k_red),
 ;m = (mx,my,mz) are integers (reciprocal lattice vectors
 ;k_red = (kx,ky,kz) is in the 1st BZ, m an integer
 ;source-vol is assumed to occupy one entire plane intersecting

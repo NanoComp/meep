@@ -232,9 +232,7 @@ int sym_matrix_positive_definite(symm_matrix *V) {
 static meep::ndim dim = meep::D3;
 void set_dimensions(int dims) {
   if (dims == CYLINDRICAL) { dim = meep::Dcyl; }
-  else {
-    dim = meep::ndim(dims - 1);
-  }
+  else { dim = meep::ndim(dims - 1); }
 }
 
 vector3 vec_to_vector3(const meep::vec &pt) {
@@ -328,12 +326,10 @@ bool is_metal(meep::field_type ft, const material_type *material) {
 }
 
 bool has_offdiag(const medium_struct *material) {
- if ((material->epsilon_offdiag.x.re != 0) ||   /* account for offdiagonal components */
-    (material->epsilon_offdiag.y.re != 0) ||
-    (material->epsilon_offdiag.z.re != 0) ||
-    (material->epsilon_offdiag.x.im != 0) ||
-    (material->epsilon_offdiag.y.im != 0) ||
-    (material->epsilon_offdiag.z.im != 0))
+  if ((material->epsilon_offdiag.x.re != 0) || /* account for offdiagonal components */
+      (material->epsilon_offdiag.y.re != 0) || (material->epsilon_offdiag.z.re != 0) ||
+      (material->epsilon_offdiag.x.im != 0) || (material->epsilon_offdiag.y.im != 0) ||
+      (material->epsilon_offdiag.z.im != 0))
     return true;
   else
     return false;
@@ -362,8 +358,8 @@ vector3 to_geom_object_coords_VJP(vector3 v, const geometric_object *o) {
       if (size.z != 0.0) v.z /= size.z;
       return matrix3x3_transpose_vector3_mult(o->subclass.block_data->projection_matrix, v);
     }
-    /* case geometric_object::PRISM:
-       NOT YET IMPLEMENTED */
+      /* case geometric_object::PRISM:
+         NOT YET IMPLEMENTED */
   }
 }
 
@@ -383,9 +379,7 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
   double dx, dy, dz;
   bool signflip_dx = false, signflip_dy = false, signflip_dz = false;
 
-  meep::map_coordinates(rx, ry, rz, nx, ny, nz,
-                        x1, y1, z1, x2, y2, z2,
-                        dx, dy, dz,
+  meep::map_coordinates(rx, ry, rz, nx, ny, nz, x1, y1, z1, x2, y2, z2, dx, dy, dz,
                         false /* do_fabs */);
 
   if (dx != fabs(dx)) {
@@ -405,21 +399,23 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
      in row-major order: */
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 
-  double du_dx = (signflip_dx ? -1.0 : 1.0) *
-    (((-D(x1, y1, z1) + D(x2, y1, z1)) * (1.0 - dy) +
-      (-D(x1, y2, z1) + D(x2, y2, z1)) * dy) * (1.0 - dz) +
-     ((-D(x1, y1, z2) + D(x2, y1, z2)) * (1.0 - dy) +
-      (-D(x1, y2, z2) + D(x2, y2, z2)) * dy) * dz);
-  double du_dy = (signflip_dy ? -1.0 : 1.0) *
-    ((-(D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) +
-      (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx)) * (1.0 - dz) +
-     (-(D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) +
-      (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx)) * dz);
+  double du_dx =
+      (signflip_dx ? -1.0 : 1.0) *
+      (((-D(x1, y1, z1) + D(x2, y1, z1)) * (1.0 - dy) + (-D(x1, y2, z1) + D(x2, y2, z1)) * dy) *
+           (1.0 - dz) +
+       ((-D(x1, y1, z2) + D(x2, y1, z2)) * (1.0 - dy) + (-D(x1, y2, z2) + D(x2, y2, z2)) * dy) *
+           dz);
+  double du_dy = (signflip_dy ? -1.0 : 1.0) * ((-(D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) +
+                                                (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx)) *
+                                                   (1.0 - dz) +
+                                               (-(D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) +
+                                                (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx)) *
+                                                   dz);
   double du_dz = (signflip_dz ? -1.0 : 1.0) *
-    (-((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
-       (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) +
-     ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
-      (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy));
+                 (-((D(x1, y1, z1) * (1.0 - dx) + D(x2, y1, z1) * dx) * (1.0 - dy) +
+                    (D(x1, y2, z1) * (1.0 - dx) + D(x2, y2, z1) * dx) * dy) +
+                  ((D(x1, y1, z2) * (1.0 - dx) + D(x2, y1, z2) * dx) * (1.0 - dy) +
+                   (D(x1, y2, z2) * (1.0 - dx) + D(x2, y2, z2) * dx) * dy));
 
 #undef D
 
@@ -439,27 +435,28 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
     gradient.set_direction(meep::Z, grad_u_J.z);
   }
   else {
-    gradient.set_direction(meep::X, geometry_lattice.size.x == 0 ? 0 : grad_u.x / geometry_lattice.size.x);
-    gradient.set_direction(meep::Y, geometry_lattice.size.y == 0 ? 0 : grad_u.y / geometry_lattice.size.y);
-    gradient.set_direction(meep::Z, geometry_lattice.size.z == 0 ? 0 : grad_u.z / geometry_lattice.size.z);
+    gradient.set_direction(meep::X,
+                           geometry_lattice.size.x == 0 ? 0 : grad_u.x / geometry_lattice.size.x);
+    gradient.set_direction(meep::Y,
+                           geometry_lattice.size.y == 0 ? 0 : grad_u.y / geometry_lattice.size.y);
+    gradient.set_direction(meep::Z,
+                           geometry_lattice.size.z == 0 ? 0 : grad_u.z / geometry_lattice.size.z);
   }
 
   return gradient;
 }
 
 void map_lattice_coordinates(double &px, double &py, double &pz) {
-  px = geometry_lattice.size.x == 0 ? 0
-    : 0.5 + (px - geometry_center.x) / geometry_lattice.size.x;
-  py = geometry_lattice.size.y == 0 ? 0
-    : 0.5 + (py - geometry_center.y) / geometry_lattice.size.y;
-  pz = geometry_lattice.size.z == 0 ? 0
-    : 0.5 + (pz - geometry_center.z) / geometry_lattice.size.z;
+  px = geometry_lattice.size.x == 0 ? 0 : 0.5 + (px - geometry_center.x) / geometry_lattice.size.x;
+  py = geometry_lattice.size.y == 0 ? 0 : 0.5 + (py - geometry_center.y) / geometry_lattice.size.y;
+  pz = geometry_lattice.size.z == 0 ? 0 : 0.5 + (pz - geometry_center.z) / geometry_lattice.size.z;
 }
 
 meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   if (md->material_grid_kinds == material_data::U_MIN ||
       md->material_grid_kinds == material_data::U_PROD)
-    meep::abort("%s:%i:matgrid_grad does not support overlapping grids with U_MIN or U_PROD\n",__FILE__,__LINE__);
+    meep::abort("%s:%i:matgrid_grad does not support overlapping grids with U_MIN or U_PROD\n",
+                __FILE__, __LINE__);
 
   meep::vec gradient(zero_vec(dim));
   int matgrid_val_count = 0;
@@ -467,9 +464,9 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   // iterate through object tree at current point
   if (tp) {
     do {
-      gradient += material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
-                                     (material_data *)tp->objects[oi].o->material,
-                                     tp->objects[oi].o);
+      gradient +=
+          material_grid_grad(to_geom_box_coords(p, &tp->objects[oi]),
+                             (material_data *)tp->objects[oi].o->material, tp->objects[oi].o);
       if (md->material_grid_kinds == material_data::U_DEFAULT) break;
       ++matgrid_val_count;
       tp = geom_tree_search_next(p, tp, &oi);
@@ -477,13 +474,14 @@ meep::vec matgrid_grad(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   }
   // perhaps there is no object tree and the default material is a material grid
   if (!tp && is_material_grid(default_material)) {
-    map_lattice_coordinates(p.x,p.y,p.z);
-    gradient = material_grid_grad(p, (material_data *)default_material, NULL /* geometric_object *o */);
+    map_lattice_coordinates(p.x, p.y, p.z);
+    gradient =
+        material_grid_grad(p, (material_data *)default_material, NULL /* geometric_object *o */);
     ++matgrid_val_count;
   }
 
   if (md->material_grid_kinds == material_data::U_MEAN)
-    gradient = gradient * 1.0/matgrid_val_count;
+    gradient = gradient * 1.0 / matgrid_val_count;
 
   return gradient;
 }
@@ -492,17 +490,15 @@ double material_grid_val(vector3 p, material_data *md) {
   // given the relative location, p, interpolate the material grid point.
 
   if (!is_material_grid(md)) { meep::abort("Invalid material grid detected.\n"); }
-  return meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x,
-                                  md->grid_size.y, md->grid_size.z, 1);
-
+  return meep::linear_interpolate(p.x, p.y, p.z, md->weights, md->grid_size.x, md->grid_size.y,
+                                  md->grid_size.z, 1);
 }
 
 static double tanh_projection(double u, double beta, double eta) {
   if (beta == 0) return u;
   if (u == eta) return 0.5; // avoid NaN when beta is Inf
-  double tanh_beta_eta = tanh(beta*eta);
-  return (tanh_beta_eta + tanh(beta*(u-eta))) /
-    (tanh_beta_eta + tanh(beta*(1-eta)));
+  double tanh_beta_eta = tanh(beta * eta);
+  return (tanh_beta_eta + tanh(beta * (u - eta))) / (tanh_beta_eta + tanh(beta * (1 - eta)));
 }
 
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
@@ -527,7 +523,7 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   }
   // perhaps there is no object tree and the default material is a material grid
   if (!tp && is_material_grid(default_material)) {
-    map_lattice_coordinates(p.x,p.y,p.z);
+    map_lattice_coordinates(p.x, p.y, p.z);
     u = material_grid_val(p, (material_data *)default_material);
     if (matgrid_val_count == 0) udefault = u;
     if (u < umin) umin = u;
@@ -537,11 +533,11 @@ double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md) {
   }
 
   return (md->material_grid_kinds == material_data::U_MIN
-          ? umin
-          : (md->material_grid_kinds == material_data::U_PROD
-             ? uprod
-             : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
-                : udefault)));
+              ? umin
+              : (md->material_grid_kinds == material_data::U_PROD
+                     ? uprod
+                     : (md->material_grid_kinds == material_data::U_MEAN ? usum / matgrid_val_count
+                                                                         : udefault)));
 }
 static void cinterp_tensors(vector3 diag_in_1, cvector3 offdiag_in_1, vector3 diag_in_2,
                             cvector3 offdiag_in_2, vector3 *diag_out, cvector3 *offdiag_out,
@@ -589,16 +585,14 @@ void epsilon_material_grid(material_data *md, double u) {
   for (size_t i = 0; i < m1->E_susceptibilities.size(); i++) {
     // iterate through medium1 sus list first
     interp_tensors(zero_vec, zero_vec, m1->E_susceptibilities[i].sigma_diag,
-                   m1->E_susceptibilities[i].sigma_offdiag,
-                   &mm->E_susceptibilities[i].sigma_diag,
+                   m1->E_susceptibilities[i].sigma_offdiag, &mm->E_susceptibilities[i].sigma_diag,
                    &mm->E_susceptibilities[i].sigma_offdiag, (1 - u));
   }
   for (size_t i = 0; i < m2->E_susceptibilities.size(); i++) {
     // iterate through medium2 sus list next
     size_t j = i + m1->E_susceptibilities.size();
     interp_tensors(zero_vec, zero_vec, m2->E_susceptibilities[i].sigma_diag,
-                   m2->E_susceptibilities[i].sigma_offdiag,
-                   &mm->E_susceptibilities[j].sigma_diag,
+                   m2->E_susceptibilities[i].sigma_offdiag, &mm->E_susceptibilities[j].sigma_diag,
                    &mm->E_susceptibilities[j].sigma_offdiag, u);
   }
 
@@ -624,16 +618,15 @@ void epsilon_material_grid(material_data *md, double u) {
     // TODO: dampen the lorentzians to improve stability
     // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
     // omega_mean;
-    md->trivial=false;
+    md->trivial = false;
   }
-  double fake_damping = u*(1-u)*(md->damping);
+  double fake_damping = u * (1 - u) * (md->damping);
   mm->D_conductivity_diag.x += fake_damping;
   mm->D_conductivity_diag.y += fake_damping;
   mm->D_conductivity_diag.z += fake_damping;
 
   // set the trivial flag
-  if (md->damping != 0)
-    md->trivial=false;
+  if (md->damping != 0) md->trivial = false;
 }
 
 // return material of the point p from the file (assumed already read)
@@ -665,10 +658,11 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   int length = g.num_items;
   geometry.num_items = length;
   geometry.items = new geometric_object[length];
-  for (int i = 0; i < length; i++){
-    geometric_object_copy(&g.items[i],&geometry.items[i]);
+  for (int i = 0; i < length; i++) {
+    geometric_object_copy(&g.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();
-    static_cast<material_data*>(geometry.items[i].material)->copy_from(*(material_data *)(g.items[i].material));
+    static_cast<material_data *>(geometry.items[i].material)
+        ->copy_from(*(material_data *)(g.items[i].material));
   }
 
   extra_materials = mlist;
@@ -719,10 +713,11 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
   int length = geps1.geometry.num_items;
   geometry.num_items = length;
   geometry.items = new geometric_object[length];
-  for (int i = 0; i < length; i++){
-    geometric_object_copy(&geps1.geometry.items[i],&geometry.items[i]);
+  for (int i = 0; i < length; i++) {
+    geometric_object_copy(&geps1.geometry.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();
-    static_cast<material_data*>(geometry.items[i].material)->copy_from(*(material_data *)(geps1.geometry.items[i].material));
+    static_cast<material_data *>(geometry.items[i].material)
+        ->copy_from(*(material_data *)(geps1.geometry.items[i].material));
   }
 
   geometry_tree = geps1.geometry_tree;
@@ -731,11 +726,10 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
   current_pol = NULL;
 
   FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = geps1.cond[d][b].prof; }
-
 }
 geom_epsilon::~geom_epsilon() {
   int length = geometry.num_items;
-  for (int i = 0; i < length; i++){
+  for (int i = 0; i < length; i++) {
     material_free((material_type)geometry.items[i].material);
     geometric_object_destroy(geometry.items[i]);
   }
@@ -780,8 +774,7 @@ void geom_epsilon::set_volume(const meep::volume &v) {
   unset_volume();
 
   geom_box box = gv2box(v);
-  if (!restricted_tree)
-    restricted_tree = create_geom_box_tree0(geometry, box);
+  if (!restricted_tree) restricted_tree = create_geom_box_tree0(geometry, box);
 }
 
 static void material_epsmu(meep::field_type ft, material_type material, symm_matrix *epsmu,
@@ -865,7 +858,7 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
 
       tp = geom_tree_search(p, restricted_tree, &oi);
       // interpolate and project onto material grid
-      u = tanh_projection(matgrid_val(p, tp, oi, md)+this->u_p, md->beta, md->eta);
+      u = tanh_projection(matgrid_val(p, tp, oi, md) + this->u_p, md->beta, md->eta);
       // interpolate material from material grid point
       epsilon_material_grid(md, u);
 
@@ -1084,15 +1077,14 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
 
   if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
     get_material_pt(mat, v.center());
-    if (mat && (mat->which_subclass == material_data::MATERIAL_USER ||
-                mat->which_subclass == material_data::MATERIAL_GRID)
-        && mat->do_averaging) {
+    if (mat &&
+        (mat->which_subclass == material_data::MATERIAL_USER ||
+         mat->which_subclass == material_data::MATERIAL_GRID) &&
+        mat->do_averaging) {
       fallback = true;
       return;
     }
-    else {
-      goto trivial;
-    }
+    else { goto trivial; }
   }
 
   /* check for trivial case of only one object/material */
@@ -1203,25 +1195,26 @@ static int eps_ever_negative = 0;
 static meep::field_type func_ft = meep::E_stuff;
 
 struct matgrid_volavg {
-  meep::ndim dim;        // dimensionality of voxel
-  double rad;            // (spherical) voxel radius
-  double uval;           // bilinearly-interpolated weight at voxel center
-  double ugrad_abs;      // magnitude of gradient of uval
-  double beta;           // thresholding bias
-  double eta;            // thresholding erosion/dilation
-  double eps1;           // trace of epsilon tensor from medium 1
-  double eps2;           // trace of epsilon tensor from medium 2
+  meep::ndim dim;   // dimensionality of voxel
+  double rad;       // (spherical) voxel radius
+  double uval;      // bilinearly-interpolated weight at voxel center
+  double ugrad_abs; // magnitude of gradient of uval
+  double beta;      // thresholding bias
+  double eta;       // thresholding erosion/dilation
+  double eps1;      // trace of epsilon tensor from medium 1
+  double eps2;      // trace of epsilon tensor from medium 2
 };
 
 static void get_uproj_w(const matgrid_volavg *mgva, double x0, double &u_proj, double &w) {
   // use a linear approximation for the material grid weights around the Yee grid point
-  u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs*x0, mgva->beta, mgva->eta);
+  u_proj = tanh_projection(mgva->uval + mgva->ugrad_abs * x0, mgva->beta, mgva->eta);
   if (mgva->dim == meep::D1)
-    w = 1/(2*mgva->rad);
+    w = 1 / (2 * mgva->rad);
   else if (mgva->dim == meep::D2 || mgva->dim == meep::Dcyl)
-    w = 2*sqrt(mgva->rad*mgva->rad - x0*x0)/(meep::pi * mgva->rad*mgva->rad);
+    w = 2 * sqrt(mgva->rad * mgva->rad - x0 * x0) / (meep::pi * mgva->rad * mgva->rad);
   else if (mgva->dim == meep::D3)
-    w = meep::pi*(mgva->rad*mgva->rad - x0*x0)/(4/3 * meep::pi * mgva->rad*mgva->rad*mgva->rad);
+    w = meep::pi * (mgva->rad * mgva->rad - x0 * x0) /
+        (4 / 3 * meep::pi * mgva->rad * mgva->rad * mgva->rad);
 }
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
@@ -1231,8 +1224,8 @@ static cnumber matgrid_ceps_func(int n, number *x, void *mgva_) {
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   get_uproj_w(mgva, x[0], u_proj, w);
   cnumber ret;
-  ret.re = (1-u_proj)*mgva->eps1 + u_proj*mgva->eps2;
-  ret.im = (1-u_proj)/mgva->eps1 + u_proj/mgva->eps2;
+  ret.re = (1 - u_proj) * mgva->eps1 + u_proj * mgva->eps2;
+  ret.im = (1 - u_proj) / mgva->eps1 + u_proj / mgva->eps2;
   return ret * w;
 }
 #else
@@ -1241,14 +1234,14 @@ static number matgrid_eps_func(int n, number *x, void *mgva_) {
   double u_proj = 0, w = 0;
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   get_uproj_w(mgva, x[0], u_proj, w);
-  return w * ((1-u_proj)*mgva->eps1 + u_proj*mgva->eps2);
+  return w * ((1 - u_proj) * mgva->eps1 + u_proj * mgva->eps2);
 }
 static number matgrid_inveps_func(int n, number *x, void *mgva_) {
   (void)n; // unused
   double u_proj = 0, w = 0;
   matgrid_volavg *mgva = (matgrid_volavg *)mgva_;
   get_uproj_w(mgva, x[0], u_proj, w);
-  return w * ((1-u_proj)/mgva->eps1 + u_proj/mgva->eps2);
+  return w * ((1 - u_proj) / mgva->eps1 + u_proj / mgva->eps2);
 }
 #endif
 
@@ -1329,11 +1322,9 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     int oi;
     tp = geom_tree_search(p, restricted_tree, &oi);
     gradient = matgrid_grad(p, tp, oi, md);
-    uval = matgrid_val(p, tp, oi, md)+this->u_p;
+    uval = matgrid_val(p, tp, oi, md) + this->u_p;
   }
-  else {
-    gradient = normal_vector(meep::type(c), v);
-  }
+  else { gradient = normal_vector(meep::type(c), v); }
 
   get_material_pt(material, v.center());
   material_epsmu(meep::type(c), material, &chi1p1, &chi1p1_inv);
@@ -1368,23 +1359,27 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     mgva.dim = v.dim;
     mgva.ugrad_abs = meep::abs(gradient);
     mgva.uval = uval;
-    mgva.rad = v.diameter()/2;
+    mgva.rad = v.diameter() / 2;
     mgva.beta = md->beta;
     mgva.eta = md->eta;
-    mgva.eps1 = (md->medium_1.epsilon_diag.x+md->medium_1.epsilon_diag.y+md->medium_1.epsilon_diag.z)/3;
-    mgva.eps2 = (md->medium_2.epsilon_diag.x+md->medium_2.epsilon_diag.y+md->medium_2.epsilon_diag.z)/3;
-    xmin[0] = -v.diameter()/2;
-    xmax[0] = v.diameter()/2;
+    mgva.eps1 =
+        (md->medium_1.epsilon_diag.x + md->medium_1.epsilon_diag.y + md->medium_1.epsilon_diag.z) /
+        3;
+    mgva.eps2 =
+        (md->medium_2.epsilon_diag.x + md->medium_2.epsilon_diag.y + md->medium_2.epsilon_diag.z) /
+        3;
+    xmin[0] = -v.diameter() / 2;
+    xmax[0] = v.diameter() / 2;
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
-    cnumber ret = cadaptive_integration(matgrid_ceps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval,
-                                        &esterr, &errflag);
+    cnumber ret = cadaptive_integration(matgrid_ceps_func, xmin, xmax, 1, (void *)&mgva, 0, tol,
+                                        maxeval, &esterr, &errflag);
     meps = ret.re;
     minveps = ret.im;
 #else
-    meps = adaptive_integration(matgrid_eps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval, &esterr,
-                                &errflag);
-    minveps = adaptive_integration(matgrid_inveps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval, &esterr,
-                                   &errflag);
+    meps = adaptive_integration(matgrid_eps_func, xmin, xmax, 1, (void *)&mgva, 0, tol, maxeval,
+                                &esterr, &errflag);
+    minveps = adaptive_integration(matgrid_inveps_func, xmin, xmax, 1, (void *)&mgva, 0, tol,
+                                   maxeval, &esterr, &errflag);
 #endif
   }
   else {
@@ -1424,9 +1419,11 @@ void geom_epsilon::fallback_chi1inv_row(meep::component c, double chi1inv_row[3]
     minveps = ret.im / vol;
 #else
     meps = adaptive_integration(eps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
-                                &errflag) / vol;
-    minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval, &esterr,
-                                   &errflag) / vol;
+                                &errflag) /
+           vol;
+    minveps = adaptive_integration(inveps_func, xmin, xmax, n, (void *)this, 0, tol, maxeval,
+                                   &esterr, &errflag) /
+              vol;
 #endif
   }
   if (eps_ever_negative) // averaging negative eps causes instability
@@ -1562,12 +1559,12 @@ static double get_cnd(meep::component c, const medium_struct *m) {
 }
 
 static bool has_conductivity(const material_type &md, meep::component c) {
-    medium_struct *mm;
-    if (is_medium(md, &mm) && get_cnd(c, mm)) return true;
-    if (md->which_subclass == material_data::MATERIAL_GRID &&
-        (get_cnd(c, &md->medium_1) || get_cnd(c, &md->medium_2) ||
-          md->damping != 0)) return true;
-    return false;
+  medium_struct *mm;
+  if (is_medium(md, &mm) && get_cnd(c, mm)) return true;
+  if (md->which_subclass == material_data::MATERIAL_GRID &&
+      (get_cnd(c, &md->medium_1) || get_cnd(c, &md->medium_2) || md->damping != 0))
+    return true;
+  return false;
 }
 
 bool geom_epsilon::has_conductivity(meep::component c) {
@@ -1575,10 +1572,10 @@ bool geom_epsilon::has_conductivity(meep::component c) {
     if (cond[d][b].prof) return true;
   }
   for (int i = 0; i < geometry.num_items; ++i)
-    if (meep_geom::has_conductivity((material_type) geometry.items[i].material, c)) return true;
+    if (meep_geom::has_conductivity((material_type)geometry.items[i].material, c)) return true;
   for (int i = 0; i < extra_materials.num_items; ++i)
-    if (meep_geom::has_conductivity((material_type) extra_materials.items[i], c)) return true;
-  return meep_geom::has_conductivity((material_type) default_material, c);
+    if (meep_geom::has_conductivity((material_type)extra_materials.items[i], c)) return true;
+  return meep_geom::has_conductivity((material_type)default_material, c);
 }
 
 static meep::vec geometry_edge; // geometry_lattice.size / 2
@@ -1670,8 +1667,8 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
 
     tp = geom_tree_search(p, restricted_tree, &oi);
     // interpolate and project onto material grid
-    u = tanh_projection(matgrid_val(p, tp, oi, mat)+this->u_p, mat->beta, mat->eta);
-    epsilon_material_grid(mat, u);   // interpolate material from material grid point
+    u = tanh_projection(matgrid_val(p, tp, oi, mat) + this->u_p, mat->beta, mat->eta);
+    epsilon_material_grid(mat, u); // interpolate material from material grid point
     mat->medium.check_offdiag_im_zero_or_abort();
   }
 
@@ -1852,21 +1849,21 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
                                                         ss->drude);
       }
       else if (gyrotropic) {
-        meep::gyrotropy_model model =
-            ss->saturated_gyrotropy
-                ? meep::GYROTROPIC_SATURATED
-                : ss->drude ? meep::GYROTROPIC_DRUDE : meep::GYROTROPIC_LORENTZIAN;
+        meep::gyrotropy_model model = ss->saturated_gyrotropy ? meep::GYROTROPIC_SATURATED
+                                      : ss->drude             ? meep::GYROTROPIC_DRUDE
+                                                              : meep::GYROTROPIC_LORENTZIAN;
         sus = new meep::gyrotropic_susceptibility(meep::vec(ss->bias.x, ss->bias.y, ss->bias.z),
                                                   ss->frequency, ss->gamma, ss->alpha, model);
       }
-      else {
-        sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude);
-      }
+      else { sus = new meep::lorentzian_susceptibility(ss->frequency, ss->gamma, ss->drude); }
       if (meep::verbosity > 0) {
         master_printf("%s%s susceptibility: frequency=%g, gamma=%g",
-                      noisy ? "noisy " : gyrotropic ? "gyrotropic " : "",
+                      noisy        ? "noisy "
+                      : gyrotropic ? "gyrotropic "
+                                   : "",
                       ss->saturated_gyrotropy ? "Landau-Lifshitz-Gilbert-type"
-                                              : ss->drude ? "drude" : "lorentzian",
+                      : ss->drude             ? "drude"
+                                              : "lorentzian",
                       ss->frequency, ss->gamma);
         if (noisy) master_printf(", amp=%g ", ss->noise_amp);
         if (gyrotropic) {
@@ -1937,7 +1934,7 @@ void add_absorbing_layer(absorber_list alist, double thickness, int direction, i
 
 /* create a geom_epsilon object that can persist
 if needed */
-geom_epsilon* make_geom_epsilon(meep::structure *s, geometric_object_list *g, vector3 center,
+geom_epsilon *make_geom_epsilon(meep::structure *s, geometric_object_list *g, vector3 center,
                                 bool _ensure_periodicity, material_type _default_material,
                                 material_type_list extra_materials) {
   // set global variables in libctlgeom based on data fields in s
@@ -2001,16 +1998,15 @@ void set_materials_from_geometry(meep::structure *s, geometric_object_list g, ve
                                  absorber_list alist, material_type_list extra_materials) {
   meep_geom::geom_epsilon *geps = meep_geom::make_geom_epsilon(s, &g, center, _ensure_periodicity,
                                                                _default_material, extra_materials);
-  set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
-                                  maxeval, alist);
+  set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol, maxeval, alist);
   delete geps;
 }
 
 /* from a previously created geom_epsilon object,
 set the materials as specified */
 void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
-                                     bool use_anisotropic_averaging,
-                                     double tol, int maxeval, absorber_list alist) {
+                                     bool use_anisotropic_averaging, double tol, int maxeval,
+                                     absorber_list alist) {
 
   // store for later use in gradient calculations
   geps->tol = tol;
@@ -2220,8 +2216,7 @@ fragment_stats::fragment_stats(geom_box &bx)
 }
 
 void init_libctl(material_type default_mat, bool ensure_per, meep::grid_volume *gv,
-                 vector3 cell_size, vector3 cell_center,
-                 geometric_object_list *geom_) {
+                 vector3 cell_size, vector3 cell_center, geometric_object_list *geom_) {
   geom_initialize();
   set_default_material(default_mat);
   ensure_periodicity = ensure_per;
@@ -2289,8 +2284,9 @@ void fragment_stats::compute_stats() {
 
   for (int i = 0; i < geom.num_items; ++i) {
     geometric_object *go = &geom.items[i];
-    // tolerance and max number of function evaluations of numerical quadrature are increased and decreased
-    // from default values of 0.0001 and 100000, respectively, to obtain fast, approximate result
+    // tolerance and max number of function evaluations of numerical quadrature are increased and
+    // decreased from default values of 0.0001 and 100000, respectively, to obtain fast, approximate
+    // result
     double overlap = box_overlap_with_object(box, *go, 0.05 /* tol */, 1000 /* maxeval */);
 
     bool anisotropic_pixels_already_added = false;
@@ -2486,35 +2482,16 @@ geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g) {
 static std::complex<double> cvec_to_value(vector3 diag, cvector3 offdiag, int idx) {
   std::complex<double> val = std::complex<double>(0, 0);
   switch (idx) {
-    case 0:
-      val = std::complex<double>(diag.x, 0);
-      break;
-    case 1:
-      val = std::complex<double>(offdiag.x.re, offdiag.x.im);
-      break;
-    case 2:
-      val = std::complex<double>(offdiag.y.re, offdiag.y.im);
-      break;
-    case 3:
-      val = std::complex<double>(offdiag.x.re, -offdiag.x.im);
-      break;
-    case 4:
-      val = std::complex<double>(diag.y, 0);
-      break;
-    case 5:
-      val = std::complex<double>(offdiag.z.re, offdiag.z.im);
-      break;
-    case 6:
-      val = std::complex<double>(offdiag.y.re, -offdiag.y.im);
-      break;
-    case 7:
-      val = std::complex<double>(offdiag.z.re, -offdiag.z.im);
-      break;
-    case 8:
-      val = std::complex<double>(diag.z, 0);
-      break;
-    default:
-      meep::abort("Invalid value in switch statement.");
+    case 0: val = std::complex<double>(diag.x, 0); break;
+    case 1: val = std::complex<double>(offdiag.x.re, offdiag.x.im); break;
+    case 2: val = std::complex<double>(offdiag.y.re, offdiag.y.im); break;
+    case 3: val = std::complex<double>(offdiag.x.re, -offdiag.x.im); break;
+    case 4: val = std::complex<double>(diag.y, 0); break;
+    case 5: val = std::complex<double>(offdiag.z.re, offdiag.z.im); break;
+    case 6: val = std::complex<double>(offdiag.y.re, -offdiag.y.im); break;
+    case 7: val = std::complex<double>(offdiag.z.re, -offdiag.z.im); break;
+    case 8: val = std::complex<double>(diag.z, 0); break;
+    default: meep::abort("Invalid value in switch statement.");
   }
   return val;
 }
@@ -2523,46 +2500,27 @@ static std::complex<double> cvec_to_value(vector3 diag, cvector3 offdiag, int id
 double vec_to_value(vector3 diag, vector3 offdiag, int idx) {
   double val = 0.0;
   switch (idx) {
-    case 0:
-      val = diag.x;
-      break;
-    case 1:
-      val = offdiag.x;
-      break;
-    case 2:
-      val = offdiag.y;
-      break;
-    case 3:
-      val = offdiag.x;
-      break;
-    case 4:
-      val = diag.y;
-      break;
-    case 5:
-      val = offdiag.z;
-      break;
-    case 6:
-      val = offdiag.y;
-      break;
-    case 7:
-      val = offdiag.z;
-      break;
-    case 8:
-      val = diag.z;
-      break;
-    default:
-      meep::abort("Invalid value in switch statement.");
+    case 0: val = diag.x; break;
+    case 1: val = offdiag.x; break;
+    case 2: val = offdiag.y; break;
+    case 3: val = offdiag.x; break;
+    case 4: val = diag.y; break;
+    case 5: val = offdiag.z; break;
+    case 6: val = offdiag.y; break;
+    case 7: val = offdiag.z; break;
+    case 8: val = diag.z; break;
+    default: meep::abort("Invalid value in switch statement.");
   }
   return val;
 }
 
 void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
 
-#define m(x,y) t[x*3+y]
-#define minv(x,y) t_inv[x*3+y]
+#define m(x, y) t[x * 3 + y]
+#define minv(x, y) t_inv[x * 3 + y]
   std::complex<double> det = m(0, 0) * (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) -
-             m(0, 1) * (m(1, 0) * m(2, 2) - m(1, 2) * m(2, 0)) +
-             m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
+                             m(0, 1) * (m(1, 0) * m(2, 2) - m(1, 2) * m(2, 0)) +
+                             m(0, 2) * (m(1, 0) * m(2, 1) - m(1, 1) * m(2, 0));
   std::complex<double> invdet = 1.0 / det;
   minv(0, 0) = (m(1, 1) * m(2, 2) - m(2, 1) * m(1, 2)) * invdet;
   minv(0, 1) = (m(0, 2) * m(2, 1) - m(0, 1) * m(2, 2)) * invdet;
@@ -2577,7 +2535,8 @@ void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
 #undef minv
 }
 
-void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, double freq, geom_epsilon *geps) {
+void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, double freq,
+                          geom_epsilon *geps) {
   // locate the proper material
   material_type md;
   geps->get_material_pt(md, r);
@@ -2585,18 +2544,18 @@ void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, do
 
   // loop over all the tensor components
   for (int i = 0; i < 9; i++) {
-    std::complex<double> a,b;
+    std::complex<double> a, b;
     // compute first part containing conductivity
     vector3 dummy;
     dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
-    a = std::complex<double>(1.0, conductivityCur / (2*meep::pi*freq));
+    a = std::complex<double>(1.0, conductivityCur / (2 * meep::pi * freq));
 
     // compute lorentzian component including the instantaneous ε
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
-    for (const auto &mm_susc: mm->E_susceptibilities) {
-      meep::lorentzian_susceptibility sus = meep::lorentzian_susceptibility(
-          mm_susc.frequency, mm_susc.gamma, mm_susc.drude);
+    for (const auto &mm_susc : mm->E_susceptibilities) {
+      meep::lorentzian_susceptibility sus =
+          meep::lorentzian_susceptibility(mm_susc.frequency, mm_susc.gamma, mm_susc.drude);
       double sigma = vec_to_value(mm_susc.sigma_diag, mm_susc.sigma_offdiag, i);
       b += sus.chi1(freq, sigma);
     }
@@ -2607,63 +2566,67 @@ void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, do
 }
 
 void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3],
-  const meep::vec &r, double freq, geom_epsilon *geps) {
+                          const meep::vec &r, double freq, geom_epsilon *geps) {
   std::complex<double> tensor[9], tensor_inv[9];
   get_chi1_tensor_disp(tensor, r, freq, geps);
   // invert the matrix
   invert_tensor(tensor_inv, tensor);
 
   // get the row we care about
-      switch (component_direction(c)) {
-      case meep::X:
-      case meep::R:
-        chi1inv_row[0] = tensor_inv[0];
-        chi1inv_row[1] = tensor_inv[1];
-        chi1inv_row[2] = tensor_inv[2];
-        break;
-      case meep::Y:
-      case meep::P:
-        chi1inv_row[0] = tensor_inv[3];
-        chi1inv_row[1] = tensor_inv[4];
-        chi1inv_row[2] = tensor_inv[5];
-        break;
-      case meep::Z:
-        chi1inv_row[0] = tensor_inv[6];
-        chi1inv_row[1] = tensor_inv[7];
-        chi1inv_row[2] = tensor_inv[8];
-        break;
-      case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
-    }
+  switch (component_direction(c)) {
+    case meep::X:
+    case meep::R:
+      chi1inv_row[0] = tensor_inv[0];
+      chi1inv_row[1] = tensor_inv[1];
+      chi1inv_row[2] = tensor_inv[2];
+      break;
+    case meep::Y:
+    case meep::P:
+      chi1inv_row[0] = tensor_inv[3];
+      chi1inv_row[1] = tensor_inv[4];
+      chi1inv_row[2] = tensor_inv[5];
+      break;
+    case meep::Z:
+      chi1inv_row[0] = tensor_inv[6];
+      chi1inv_row[1] = tensor_inv[7];
+      chi1inv_row[2] = tensor_inv[8];
+      break;
+    case meep::NO_DIRECTION: chi1inv_row[0] = chi1inv_row[1] = chi1inv_row[2] = 0; break;
+  }
 }
 
-std::complex<double> cond_cmp(meep::component c, const meep::vec &r, double freq, geom_epsilon *geps) {
+std::complex<double> cond_cmp(meep::component c, const meep::vec &r, double freq,
+                              geom_epsilon *geps) {
   // locate the proper material
   material_type md;
   geps->get_material_pt(md, r);
   const medium_struct *mm = &(md->medium);
 
   // get the row we care about
-      switch (component_direction(c)) {
-      case meep::X:
-      case meep::R: return std::complex<double>(1.0, mm->D_conductivity_diag.x / (2*meep::pi*freq));
-      case meep::Y:
-      case meep::P: return std::complex<double>(1.0, mm->D_conductivity_diag.y / (2*meep::pi*freq));
-      case meep::Z: return std::complex<double>(1.0, mm->D_conductivity_diag.z / (2*meep::pi*freq));
-      case meep::NO_DIRECTION: meep::abort("Invalid adjoint field component");
-    }
+  switch (component_direction(c)) {
+    case meep::X:
+    case meep::R:
+      return std::complex<double>(1.0, mm->D_conductivity_diag.x / (2 * meep::pi * freq));
+    case meep::Y:
+    case meep::P:
+      return std::complex<double>(1.0, mm->D_conductivity_diag.y / (2 * meep::pi * freq));
+    case meep::Z:
+      return std::complex<double>(1.0, mm->D_conductivity_diag.z / (2 * meep::pi * freq));
+    case meep::NO_DIRECTION: meep::abort("Invalid adjoint field component");
+  }
 }
 
-std::complex<double> get_material_gradient(
-    const meep::vec &r,               // current point
-    const meep::component adjoint_c,  // adjoint field component
-    const meep::component forward_c,  // forward field component
-    std::complex<double> fields_f,    // forward field at current point
-    double freq,                      // frequency
-    geom_epsilon *geps,               // material
-    meep::grid_volume &gv,            // simulation grid volume
-    double du,                        // step size
-    double *u,                        // matgrid
-    int idx                           // matgrid index
+std::complex<double>
+get_material_gradient(const meep::vec &r,              // current point
+                      const meep::component adjoint_c, // adjoint field component
+                      const meep::component forward_c, // forward field component
+                      std::complex<double> fields_f,   // forward field at current point
+                      double freq,                     // frequency
+                      geom_epsilon *geps,              // material
+                      meep::grid_volume &gv,           // simulation grid volume
+                      double du,                       // step size
+                      double *u,                       // matgrid
+                      int idx                          // matgrid index
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
   The current adjoint (λ) field component (adjoint_c)
@@ -2702,30 +2665,33 @@ std::complex<double> get_material_gradient(
     const double sd = 1.0; // FIXME: make user-changable?
     meep::volume v(r);
     LOOP_OVER_DIRECTIONS(dim, d) {
-      v.set_direction_min(d, r.in_direction(d) - 0.5*gv.inva*sd);
-      v.set_direction_max(d, r.in_direction(d) + 0.5*gv.inva*sd);
+      v.set_direction_min(d, r.in_direction(d) - 0.5 * gv.inva * sd);
+      v.set_direction_max(d, r.in_direction(d) + 0.5 * gv.inva * sd);
     }
     double row_1[3], row_2[3], dA_du[3];
     double orig = u[idx];
     u[idx] -= du;
     geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
-    u[idx] += 2*du;
+    u[idx] += 2 * du;
     geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
     u[idx] = orig;
 
-    for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
+    for (int i = 0; i < 3; i++)
+      dA_du[i] = (row_1[i] - row_2[i]) / (2 * du);
     return dA_du[dir_idx] * fields_f;
-  } else {
+  }
+  else {
     double orig = u[idx];
     std::complex<double> row_1[3], row_2[3], dA_du[3];
     u[idx] -= du;
-    eff_chi1inv_row_disp(adjoint_c,row_1,r,freq,geps);
-    u[idx] += 2*du;
-    eff_chi1inv_row_disp(adjoint_c,row_2,r,freq,geps);
+    eff_chi1inv_row_disp(adjoint_c, row_1, r, freq, geps);
+    u[idx] += 2 * du;
+    eff_chi1inv_row_disp(adjoint_c, row_2, r, freq, geps);
     u[idx] = orig;
 
-    for (int i=0;i<3;i++) dA_du[i] = (row_1[i] - row_2[i])/(2*du);
-    return dA_du[dir_idx] * fields_f  * cond_cmp(forward_c,r,freq,geps);
+    for (int i = 0; i < 3; i++)
+      dA_du[i] = (row_1[i] - row_2[i]) / (2 * du);
+    return dA_du[dir_idx] * fields_f * cond_cmp(forward_c, r, freq, geps);
   }
 }
 
@@ -2736,27 +2702,24 @@ With the addition of subpixel smoothing, however, the vJp became
 much more complicated and it is easier to calculate the entire gradient
 using finite differences (at the cost of slightly less accurate gradients
 due to floating-point roundoff errors). */
-void add_interpolate_weights(double rx, double ry, double rz,
-                             double *data, int nx, int ny, int nz, int stride,
-                             double scaleby, double *udata, int ukind, double uval,
-                             meep::vec r, geom_epsilon *geps,
-                             meep::component adjoint_c, meep::component forward_c,
-                             std::complex<double> fwd, std::complex<double> adj,
-                             double freq, meep::grid_volume &gv, double du) {
+void add_interpolate_weights(double rx, double ry, double rz, double *data, int nx, int ny, int nz,
+                             int stride, double scaleby, double *udata, int ukind, double uval,
+                             meep::vec r, geom_epsilon *geps, meep::component adjoint_c,
+                             meep::component forward_c, std::complex<double> fwd,
+                             std::complex<double> adj, double freq, meep::grid_volume &gv,
+                             double du) {
   int x1, y1, z1, x2, y2, z2;
   double dx, dy, dz, u;
 
-  meep::map_coordinates(rx, ry, rz, nx, ny, nz,
-                        x1, y1, z1, x2, y2, z2,
-                        dx, dy, dz);
-  int x_list[2] = {x1,x2}, y_list[2] = {y1,y2}, z_list[2] = {z1,z2};
+  meep::map_coordinates(rx, ry, rz, nx, ny, nz, x1, y1, z1, x2, y2, z2, dx, dy, dz);
+  int x_list[2] = {x1, x2}, y_list[2] = {y1, y2}, z_list[2] = {z1, z2};
   int lx = (x1 == x2) ? 1 : 2;
   int ly = (y1 == y2) ? 1 : 2;
   int lz = (z1 == z2) ? 1 : 2;
 
 /* define a macro to give us data(x,y,z) on the grid,
 in row-major order (the order used by HDF5): */
-#define IDX(x,y,z) (((x)*ny + (y)) * nz + (z)) * stride
+#define IDX(x, y, z) (((x)*ny + (y)) * nz + (z)) * stride
 #define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
 #define U(x, y, z) (udata[(((x)*ny + (y)) * nz + (z)) * stride])
 
@@ -2770,13 +2733,13 @@ in row-major order (the order used by HDF5): */
   if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
   if (ukind == material_data::U_PROD) scaleby *= uval / u;
 
-  for (int xi=0;xi<lx;xi++){
-    for (int yi=0;yi<ly;yi++){
-      for (int zi=0;zi<lz;zi++){
-        int x=x_list[xi], y=y_list[yi], z=z_list[zi];
-        int u_idx = IDX(x,y,z);
-        std::complex<double> prod = adj*get_material_gradient(
-          r,adjoint_c,forward_c,fwd,freq,geps,gv,du,udata,u_idx);
+  for (int xi = 0; xi < lx; xi++) {
+    for (int yi = 0; yi < ly; yi++) {
+      for (int zi = 0; zi < lz; zi++) {
+        int x = x_list[xi], y = y_list[yi], z = z_list[zi];
+        int u_idx = IDX(x, y, z);
+        std::complex<double> prod = adj * get_material_gradient(r, adjoint_c, forward_c, fwd, freq,
+                                                                geps, gv, du, udata, u_idx);
         D(x, y, z) += prod.real() * scaleby;
       }
     }
@@ -2821,7 +2784,9 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
   }
   else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||
                     (mg->material_grid_kinds == material_data::U_PROD))) {
-    meep::abort("%s:%i:material_grids_addgradient_point does not support overlapping MATERIAL_GRIDs with U_MIN or U_PROD.\n",__FILE__,__LINE__);
+    meep::abort("%s:%i:material_grids_addgradient_point does not support overlapping "
+                "MATERIAL_GRIDs with U_MIN or U_PROD.\n",
+                __FILE__, __LINE__);
   }
 
   // Iterate through grids and add weights as needed
@@ -2843,62 +2808,66 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     uval = tanh_projection(matgrid_val(p, tp, oi, mg), mg->beta, mg->eta);
     do {
       vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
-      add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1,
-                              scalegrad, ucur, kind, uval,
-                              vector3_to_vec(p), geps, adjoint_c, forward_c,
-                              fwd, adj, freq, gv, tol);
+      add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1, scalegrad, ucur, kind,
+                              uval, vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq,
+                              gv, tol);
       if (kind == material_data::U_DEFAULT) break;
       tp = geom_tree_search_next(p, tp, &oi);
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
   }
   // no object tree -- the whole domain is the material grid
   if (!tp && is_material_grid(default_material)) {
-    map_lattice_coordinates(p.x,p.y,p.z);
+    map_lattice_coordinates(p.x, p.y, p.z);
     vector3 sz = mg->grid_size;
     double *vcur = v;
     double *ucur = mg->weights;
     uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
-    add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1,
-                            scalegrad, ucur, kind, uval,
-                            vector3_to_vec(p), geps, adjoint_c, forward_c,
-                            fwd, adj, freq, gv, tol);
+    add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1, scalegrad, ucur, kind, uval,
+                            vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq, gv, tol);
   }
 }
 
-void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<meep::dft_fields *> fields_a, std::vector<meep::dft_fields *> fields_f,
-                                double *frequencies, double scalegrad, meep::grid_volume &gv,
-                                meep::volume &where, geom_epsilon *geps, double du) {
+void material_grids_addgradient(double *v, size_t ng, size_t nf,
+                                std::vector<meep::dft_fields *> fields_a,
+                                std::vector<meep::dft_fields *> fields_f, double *frequencies,
+                                double scalegrad, meep::grid_volume &gv, meep::volume &where,
+                                geom_epsilon *geps, double du) {
   /* ------------------------------------------------------------ */
   // initialize local gradient array
   /* ------------------------------------------------------------ */
-  double *v_local = new double[ng*nf];
-  for (int i = 0; i < ng*nf; i++) {
+  double *v_local = new double[ng * nf];
+  for (int i = 0; i < ng * nf; i++) {
     v_local[i] = 0;
   }
 
   /* ------------------------------------------------------------ */
   // store chunk info in vectors for simplicity
   /* ------------------------------------------------------------ */
-  std::vector<std::vector<meep::dft_chunk*>> adjoint_dft_chunks;
-  std::vector<std::vector<meep::dft_chunk*>> forward_dft_chunks;
-  for (int i=0;i<3;i++){
-    std::vector<meep::dft_chunk*> c_adjoint_dft_chunks;
-    std::vector<meep::dft_chunk*> c_forward_dft_chunks;
+  std::vector<std::vector<meep::dft_chunk *> > adjoint_dft_chunks;
+  std::vector<std::vector<meep::dft_chunk *> > forward_dft_chunks;
+  for (int i = 0; i < 3; i++) {
+    std::vector<meep::dft_chunk *> c_adjoint_dft_chunks;
+    std::vector<meep::dft_chunk *> c_forward_dft_chunks;
     meep::dft_chunk *current_adjoint_chunk = fields_a[i]->chunks;
     meep::dft_chunk *current_forward_chunk = fields_f[i]->chunks;
-    while(current_adjoint_chunk) {
-      if (current_adjoint_chunk->omega.size() != nf) meep::abort("Supplied frequencies %d don't match dft frequencies %d\n",nf,current_adjoint_chunk->omega.size());
+    while (current_adjoint_chunk) {
+      if (current_adjoint_chunk->omega.size() != nf)
+        meep::abort("Supplied frequencies %d don't match dft frequencies %d\n", nf,
+                    current_adjoint_chunk->omega.size());
       c_adjoint_dft_chunks.push_back(current_adjoint_chunk);
       current_adjoint_chunk = current_adjoint_chunk->next_in_dft;
     }
-    while(current_forward_chunk) {
-      if (current_forward_chunk->omega.size() != nf) meep::abort("Supplied frequencies %d don't match dft frequencies %d\n",nf,current_forward_chunk->omega.size());
+    while (current_forward_chunk) {
+      if (current_forward_chunk->omega.size() != nf)
+        meep::abort("Supplied frequencies %d don't match dft frequencies %d\n", nf,
+                    current_forward_chunk->omega.size());
       c_forward_dft_chunks.push_back(current_forward_chunk);
       current_forward_chunk = current_forward_chunk->next_in_dft;
     }
     if (c_adjoint_dft_chunks.size() != c_forward_dft_chunks.size())
-      meep::abort("The number of adjoint chunks (%ld) is not equal to the number of forward chunks (%ld).\n",
-        c_adjoint_dft_chunks.size(),c_forward_dft_chunks.size());
+      meep::abort("The number of adjoint chunks (%ld) is not equal to the number of forward chunks "
+                  "(%ld).\n",
+                  c_adjoint_dft_chunks.size(), c_forward_dft_chunks.size());
     adjoint_dft_chunks.push_back(c_adjoint_dft_chunks);
     forward_dft_chunks.push_back(c_forward_dft_chunks);
   }
@@ -2909,56 +2878,58 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
   // loop over frequency
   for (size_t f_i = 0; f_i < nf; f_i++) {
-    
+
     // loop over adjoint components
-    for (int ci_adjoint=0; ci_adjoint<3; ci_adjoint++){
+    for (int ci_adjoint = 0; ci_adjoint < 3; ci_adjoint++) {
       int num_chunks = adjoint_dft_chunks[ci_adjoint].size();
       if (num_chunks == 0) continue;
-      
+
       // loop over each chunk
-      for (int cur_chunk=0;cur_chunk<num_chunks;cur_chunk++){
-        meep::dft_chunk* adj_chunk = adjoint_dft_chunks[ci_adjoint][cur_chunk];
+      for (int cur_chunk = 0; cur_chunk < num_chunks; cur_chunk++) {
+        meep::dft_chunk *adj_chunk = adjoint_dft_chunks[ci_adjoint][cur_chunk];
         meep::component adjoint_c = adj_chunk->c;
-        meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is,adj_chunk->ie,adjoint_c);
+        meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is, adj_chunk->ie, adjoint_c);
 
         // loop over forward components
-        for (int ci_forward=0; ci_forward<3; ci_forward++){
+        for (int ci_forward = 0; ci_forward < 3; ci_forward++) {
           size_t num_f_chunks = forward_dft_chunks[ci_forward].size();
-          if ((num_f_chunks == 0) || (cur_chunk>=num_f_chunks)) continue;
-          meep::dft_chunk* fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
+          if ((num_f_chunks == 0) || (cur_chunk >= num_f_chunks)) continue;
+          meep::dft_chunk *fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
           meep::component forward_c = fwd_chunk->c;
-          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is,fwd_chunk->ie,forward_c);
-          
+          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
+
           // loop over each point of interest
-          LOOP_OVER_IVECS(gv_adj,adj_chunk->is_old,adj_chunk->ie_old,idx_adj){
-            double cyl_scale;   
+          LOOP_OVER_IVECS(gv_adj, adj_chunk->is_old, adj_chunk->ie_old, idx_adj) {
+            double cyl_scale;
             IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
-            std::complex<meep::realnum> adj = adj_chunk->dft[nf*idx_adj+f_i];
+            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
             material_type md;
             geps->get_material_pt(md, p);
             /* if we have conductivities (e.g. for damping)
             then we need to make sure we correctly account
             for that here */
-            if (!md->trivial) adj *= cond_cmp(adjoint_c,p,frequencies[f_i], geps);
-            
+            if (!md->trivial) adj *= cond_cmp(adjoint_c, p, frequencies[f_i], geps);
+
             /**************************************/
             /*            Main Routine            */
             /**************************************/
-            
+
             /********* compute -λᵀAᵤx *************/
 
             /* trivial case, no interpolation/restriction needed        */
             if (forward_c == adjoint_c) {
-              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf*idx_adj+f_i];
-              cyl_scale = (gv.dim == meep::Dcyl) ? 2*p.r() : 1; // the pi is already factored in near2far.cpp
-              material_grids_addgradient_point(
-                v_local+ng*f_i, vec_to_vector3(p), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd, adj, frequencies[f_i], gv, du);
-            /* more complicated case requires interpolation/restriction */
-            } else if ((md->do_averaging) ||                         /* account for subpixel smoothing     */
-                     (!is_material_grid(md)) ||                      /* account for edge effects of mg     */
-                     (has_offdiag(&(md->medium_1))) ||             /* account for offdiagonal components */
+              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
+              cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r()
+                                                 : 1; // the pi is already factored in near2far.cpp
+              material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
+                                               scalegrad * cyl_scale, geps, adjoint_c, forward_c,
+                                               fwd, adj, frequencies[f_i], gv, du);
+              /* more complicated case requires interpolation/restriction */
+            }
+            else if ((md->do_averaging) ||             /* account for subpixel smoothing     */
+                     (!is_material_grid(md)) ||        /* account for edge effects of mg     */
+                     (has_offdiag(&(md->medium_1))) || /* account for offdiagonal components */
                      (has_offdiag(&(md->medium_2)))) {
               /* we need to restrict the adjoint fields to
               the two nodes of interest (which requires a factor
@@ -2969,35 +2940,40 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
               std::complex<meep::realnum> fwd_avg, fwd1, fwd2;
               ptrdiff_t fwd1_idx, fwd2_idx;
 
-              //identify the first corner of the forward fields
+              // identify the first corner of the forward fields
               meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
-              //identify the other three corners
-              meep::ivec unit_a  = unit_ivec(gv.dim,component_direction(adjoint_c));
-              meep::ivec unit_f  = unit_ivec(gv.dim,component_direction(forward_c));
-              meep::ivec fwd_pa  = (fwd_p + unit_a*2);
-              meep::ivec fwd_pf  = (fwd_p - unit_f*2);
-              meep::ivec fwd_paf = (fwd_p + unit_a*2 - unit_f*2);
+              // identify the other three corners
+              meep::ivec unit_a = unit_ivec(gv.dim, component_direction(adjoint_c));
+              meep::ivec unit_f = unit_ivec(gv.dim, component_direction(forward_c));
+              meep::ivec fwd_pa = (fwd_p + unit_a * 2);
+              meep::ivec fwd_pf = (fwd_p - unit_f * 2);
+              meep::ivec fwd_paf = (fwd_p + unit_a * 2 - unit_f * 2);
 
               // store in vector for convenience
               std::vector<meep::ivec> fwd_pl = {fwd_p, fwd_pa};
               std::vector<meep::ivec> fwd_pr = {fwd_pf, fwd_paf};
 
-              //identify the two eps points
+              // identify the two eps points
               std::vector<meep::ivec> ieps = {(fwd_p + fwd_pf) / 2, (fwd_pa + fwd_paf) / 2};
 
-              //operate on the each eps node
-              #pragma unroll
-              for (int node=0;node<2;node++) { // two nodes
-                fwd1_idx = gv_fwd.index(forward_c,fwd_pl[node]);
-                fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx<0)) ? 0 : fwd_chunk->dft[nf*fwd1_idx+f_i];
-                fwd2_idx = gv_fwd.index(forward_c,fwd_pr[node]);
-                fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx<0)) ? 0 : fwd_chunk->dft[nf*fwd2_idx+f_i];                 
-                fwd_avg = std::complex<meep::realnum>(0.5,0) * (fwd1 + fwd2);
+// operate on the each eps node
+#pragma unroll
+              for (int node = 0; node < 2; node++) { // two nodes
+                fwd1_idx = gv_fwd.index(forward_c, fwd_pl[node]);
+                fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx < 0))
+                           ? 0
+                           : fwd_chunk->dft[nf * fwd1_idx + f_i];
+                fwd2_idx = gv_fwd.index(forward_c, fwd_pr[node]);
+                fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx < 0))
+                           ? 0
+                           : fwd_chunk->dft[nf * fwd2_idx + f_i];
+                fwd_avg = std::complex<meep::realnum>(0.5, 0) * (fwd1 + fwd2);
                 meep::vec eps1 = gv[ieps[node]];
                 cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-                material_grids_addgradient_point(
-                v_local+ng*f_i, vec_to_vector3(eps1), scalegrad*cyl_scale, geps,
-                adjoint_c, forward_c, fwd_avg, std::complex<meep::realnum>(0.5,0)*adj, frequencies[f_i], gv, du);
+                material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(eps1),
+                                                 scalegrad * cyl_scale, geps, adjoint_c, forward_c,
+                                                 fwd_avg, std::complex<meep::realnum>(0.5, 0) * adj,
+                                                 frequencies[f_i], gv, du);
               }
             }
             /********* compute λᵀbᵤ ***************/
@@ -3012,17 +2988,17 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
   /* ------------------------------------------------------------ */
   // Broadcast results
   /* ------------------------------------------------------------ */
-  meep::sum_to_all(v_local, v, ng*nf);
+  meep::sum_to_all(v_local, v, ng * nf);
 
   /* ------------------------------------------------------------ */
   // cleanup
   /* ------------------------------------------------------------ */
   // clear the array used for local sum to all
   delete[] v_local;
-  
+
   // clear all the dft data structures
-  for (int i=0;i<3;i++){
-    for (int ii=0;ii<adjoint_dft_chunks[i].size();ii++){
+  for (int i = 0; i < 3; i++) {
+    for (int ii = 0; ii < adjoint_dft_chunks[i].size(); ii++) {
       delete adjoint_dft_chunks[i][ii];
       delete forward_dft_chunks[i][ii];
     }
@@ -3030,31 +3006,21 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf, std::vector<mee
 
 } // material_grids_addgradient
 
-
 static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {
   min_val = data[0];
   max_val = data[0];
   for (int i = 1; i < n; ++i) {
-    if (data[i] < min_val)
-      min_val = data[i];
-    if (data[i] > max_val)
-      max_val = data[i];
+    if (data[i] < min_val) min_val = data[i];
+    if (data[i] > max_val) max_val = data[i];
   }
   return;
 }
 
-void get_epsilon_grid(geometric_object_list gobj_list,
-                      material_type_list mlist,
-                      material_type _default_material,
-                      bool _ensure_periodicity,
-                      meep::grid_volume gv,
-                      vector3 cell_size,
-                      vector3 cell_center,
-                      int nx, const double *x,
-                      int ny, const double *y,
-                      int nz, const double *z,
-                      std::complex<double> *grid_vals,
-                      double frequency) {
+void get_epsilon_grid(geometric_object_list gobj_list, material_type_list mlist,
+                      material_type _default_material, bool _ensure_periodicity,
+                      meep::grid_volume gv, vector3 cell_size, vector3 cell_center, int nx,
+                      const double *x, int ny, const double *y, int nz, const double *z,
+                      std::complex<double> *grid_vals, double frequency) {
   double min_val[3], max_val[3];
   for (int n = 0; n < 3; ++n) {
     int ndir = (n == 0) ? nx : ((n == 1) ? ny : nz);
@@ -3062,10 +3028,9 @@ void get_epsilon_grid(geometric_object_list gobj_list,
     const double *adir = (n == 0) ? x : ((n == 1) ? y : z);
     find_array_min_max(ndir, adir, min_val[n], max_val[n]);
   }
-  const meep::volume vol(meep::vec(min_val[0],min_val[1],min_val[2]),
-                         meep::vec(max_val[0],max_val[1],max_val[2]));
-  init_libctl(_default_material, _ensure_periodicity, &gv,
-              cell_size, cell_center, &gobj_list);
+  const meep::volume vol(meep::vec(min_val[0], min_val[1], min_val[2]),
+                         meep::vec(max_val[0], max_val[1], max_val[2]));
+  init_libctl(_default_material, _ensure_periodicity, &gv, cell_size, cell_center, &gobj_list);
   dim = gv.dim;
   geom_epsilon geps(gobj_list, mlist, vol);
   for (int i = 0; i < nx; ++i)
@@ -3074,11 +3039,12 @@ void get_epsilon_grid(geometric_object_list gobj_list,
         /* obtain the trace of the ε tensor (dispersive or non) for each
            grid point in row-major order (the order used by NumPy) */
         if (frequency == 0)
-          grid_vals[k + nz*(j + ny*i)] = geps.chi1p1(meep::E_stuff, meep::vec(x[i],y[j],z[k]));
+          grid_vals[k + nz * (j + ny * i)] =
+              geps.chi1p1(meep::E_stuff, meep::vec(x[i], y[j], z[k]));
         else {
           std::complex<double> tensor[9];
-          get_chi1_tensor_disp(tensor, meep::vec(x[i],y[j],z[k]), frequency, &geps);
-          grid_vals[k + nz*(j + ny*i)] = (tensor[0] + tensor[4] + tensor[8]) / 3.0;
+          get_chi1_tensor_disp(tensor, meep::vec(x[i], y[j], z[k]), frequency, &geps);
+          grid_vals[k + nz * (j + ny * i)] = (tensor[0] + tensor[4] + tensor[8]) / 3.0;
         }
       }
 }

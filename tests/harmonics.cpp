@@ -45,12 +45,12 @@ void harmonics(double freq, double chi2, double chi3, double J, double &A2, doub
   f.add_point_source(Ex, src, vec(-0.5 * sz + dpml), J);
 
   vec fpt(0.5 * sz - dpml - 0.5);
-  dft_flux d1 = f.add_dft_flux(Z, volume(fpt), freq, freq, 1, true, true,
-                               1 /* decimation_factor */);
-  dft_flux d2 = f.add_dft_flux(Z, volume(fpt), 2 * freq, 2 * freq, 1, true, true,
-                               1 /* decimation_factor */);
-  dft_flux d3 = f.add_dft_flux(Z, volume(fpt), 3 * freq, 3 * freq, 1, true, true,
-                               1 /* decimation_factor */);
+  dft_flux d1 =
+      f.add_dft_flux(Z, volume(fpt), freq, freq, 1, true, true, 1 /* decimation_factor */);
+  dft_flux d2 =
+      f.add_dft_flux(Z, volume(fpt), 2 * freq, 2 * freq, 1, true, true, 1 /* decimation_factor */);
+  dft_flux d3 =
+      f.add_dft_flux(Z, volume(fpt), 3 * freq, 3 * freq, 1, true, true, 1 /* decimation_factor */);
 
   double emax = 0;
 
@@ -106,7 +106,8 @@ int main(int argc, char **argv) {
   if (different(a2, 9.80330e-07, thresh, "2nd harmonic mismatches known val")) return 1;
   if (sizeof(realnum) == sizeof(float)) {
     if (different(a3, 9.99349e-07, thresh, "3rd harmonic mismatches known val")) return 1;
-  } else {
+  }
+  else {
     if (different(a3, 9.97747e-07, thresh, "3rd harmonic mismatches known val")) return 1;
   }
 
@@ -130,7 +131,8 @@ int main(int argc, char **argv) {
   harmonics(freq, 0.0, 1e-4, 1.0, a2_2, a3_2);
   if (sizeof(realnum) == sizeof(float)) {
     if (different(a3, a3_2, 0.0017, "chi2 has too big effect on 3rd harmonic")) return 1;
-  } else {
+  }
+  else {
     if (different(a3, a3_2, 0.001, "chi2 has too big effect on 3rd harmonic")) return 1;
   }
 

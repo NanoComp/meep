@@ -69,9 +69,9 @@ An alternative to having Meep automatically partition the cell at runtime into c
 
 As a demonstration, an example of a 2d cell partition along with its binary-tree representation is shown below. The 10×5 cell in $xy$ coordinates with origin at the cell center is partitioned into five chunks numbered one through five.
 
-<center>
-![](images/chunk_division_binary_tree.png)
-</center>
+
+![](images/chunk_division_binary_tree.png#center)
+
 
 This binary tree can be described as a list of lists where each list entry is `[ (split_dir,split_pos), left, right ]` for which `split_dir` and `split_pos` define the splitting direction and position, and `left` and `right` are the left and right branches which can be either another list defining a new node or a process ID. Based on these specifications, the cell partition from above can be set up as follows:
 
@@ -142,33 +142,33 @@ The following are benchmarking results of the total runtime vs. number of proces
 
 As shown in the first figure below, the runtime reaches a minimum at 77 processors. The second figure shows the scaling of the ratio of the mean time spent on communication (MPI/synchronization) to the computation (time stepping and DFTs). (Timing metrics were obtained using [`Simulation.mean_time_spent_on`](Python_User_Interface.md#simulation-time).) This ratio is a measure of the parallelization efficiency. The crossover point when the parallelization efficiency becomes larger than one — the regime in which the simulation is constrained by the network bandwidth rather than the CPU clock speed — corresponds well to the minimum runtime of the first figure.
 
-<center>
-![](images/parallel_benchmark_runtime_vs_nprocs.png)
-</center>
 
-<center>
-![](images/parallel_benchmark_commcomp_vs_nprocs.png)
-</center>
+![](images/parallel_benchmark_runtime_vs_nprocs.png#center)
+
+
+
+![](images/parallel_benchmark_commcomp_vs_nprocs.png#center)
+
 
 These results are not continuous because as the number of processors changes slightly (e.g., from 42 to 49), the chunk divisions can change by a lot (i.e., it can switch from splitting some chunk along the $x$ axis to along the $y$ axis) which significantly affects the runtime performance. Also, in general, benchmarking studies involving MPI jobs are challenging because there are [a number of factors which can affect the results](https://www.open-mpi.org/faq/?category=tuning#running-perf-numbers).
 
 For a given cluster, we can also analyze the time spent by each processor on time-stepping, MPI/synchronization, and DFT. This is shown in the next figure for the case of a cluster with 35 processors (5 nodes). Because the simulation is not properly load balanced due to the equal-sized chunks, there is a large variation in the timings for different processors particularly for the DFT where there are several idle processors (i.e., chunks which do not contain any DFT pixels).
 
-<center>
-![](images/parallel_benchmark_barplot.png)
-</center>
+
+![](images/parallel_benchmark_barplot.png#center)
+
 
 Based on these results, we plot the average of the *inverse* of the timings (proportional to the number of cycles per second; a "rate" quantity which can demonstrate linear scaling) for the time-stepping and DFT over the full range of cluster sizes. The time-stepping results demonstrate (approximately) linear scaling.  The size of the error bars increases with the number of cluster nodes mainly due to pronounced variations in the network bandwidth; the N1 instances do *not* support colocation via a [compact placement policy](https://cloud.google.com/solutions/best-practices-for-using-mpi-on-compute-engine). The DFT results (which excludes those processors without any DFT pixels) seem to be oscillating around a constant. This is not surprising because the processor(s) which takes the longest time to update its DFT pixels sets an upper bound on how fast the DFT calculation for all processors can proceed. It is the presence of this unique upper bound for each cluster which is revealed by the scaling plot.
 
 See also [FAQ/Should I expect linear speedup from the parallel Meep](FAQ.md#should-i-expect-linear-speedup-from-the-parallel-meep)?
 
-<center>
-![](images/parallel_benchmark_timestep.png)
-</center>
 
-<center>
-![](images/parallel_benchmark_DFT.png)
-</center>
+![](images/parallel_benchmark_timestep.png#center)
+
+
+
+![](images/parallel_benchmark_DFT.png#center)
+
 
 
 Dynamic Chunk Balancing
@@ -176,9 +176,9 @@ Dynamic Chunk Balancing
 
 Since Meep's computation time is ultimately bottlenecked by the slowest-running process, it is desirable to load-balance the chunk layout such that each compute node is given an equal workload. By default, Meep uses a heuristics-based scheme to estimate the cost of a computation region based on the composition of voxel types (anisotropic, PML, etc.) However, this method of estimating the simulation time for a chunk in advance is not always accurate, a problem which is especially true for simulations run on shared-resource clusters. Meep's `chunk_balancer` module allows for a more empirical, data-driven approach for dynamically load-balancing parallel simulations. This approach uses the simulation time per node to adaptively modify the chunk layout and it implicitly corrects for heterogeneity over the simulation region and variability in background loads and job priority on shared compute resources. This approach can be especially useful for cases such as adjoint optimization, where slight variations on the same simulation are run many times over many iterations.
 
-<center>
-![](images/adaptive_chunk_layout.gif)
-</center>
+
+![](images/adaptive_chunk_layout.gif#center)
+
 
 ### Chunk balancer interface
 
@@ -297,12 +297,11 @@ def adjust_split_pos(node):
 
 The following benchmarking results show load-balancing improvements from a parallel run on a shared compute cluster in a datacenter. The per-core working times (blue and orange) start of initially poorly balanced using the default `split_by_cost` scheme, but the load balancing improves over successive iterations.
 
-<center>
-![](images/chunk_balancer_timing_stats.gif)
-</center>
+
+![](images/chunk_balancer_timing_stats.gif#center)
+
 
 Using the normalized standard deviation in simulation times per iteration as a proxy for load-balancing efficacy, we can see that the load balance improves over a large number of runs with varying numbers of processes:
 
-<center>
-![](images/chunk_balancer_variance.jpg)
-</center>
+
+![](images/chunk_balancer_variance.jpg#center)

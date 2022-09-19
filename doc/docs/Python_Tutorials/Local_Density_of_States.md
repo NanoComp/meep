@@ -4,7 +4,7 @@
 
 In this example, we will demonstrate the local [density of states](https://en.wikipedia.org/wiki/Density_of_states) (LDOS) feature by investigating the Purcell enhancement phenomena in two different metallic cavities. The LDOS, in general, has many important uses for understanding classical dipole sources, but also in many physical phenomena that can be understood semiclassically in terms of dipole currents &mdash; for example, the [spontaneous emission](https://en.wikipedia.org/wiki/Spontaneous_emission) rate of atoms (key to fluorescence and lasing phenomena) is proportional to the LDOS.
 
-The LDOS is equivalent to the power radiated by a unit dipole, $P=\frac{1}{2}\operatorname{Re}[\mathbf{E}^*\cdot\mathbf{J}]$, which, alternatively, is really just a measure of how much the harmonic modes of a system overlap with the source point. Also, the LDOS is proportional to the [radiation resistance](https://en.wikipedia.org/wiki/Radiation_resistance) of a dipole antenna. It is a useful quantity in electromagnetism due to the fact that the *same* current radiates a *different* amount of power depending on the surrounding geometry. Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, see Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the result:
+The LDOS is equivalent to the power radiated by a unit dipole, $P=\frac{1}{2}\operatorname{Re}[\mathbf{E}^*\cdot\mathbf{J}]$, which, alternatively, is really just a measure of how much the harmonic modes of a system overlap with the source point. Also, the LDOS is proportional to the [radiation resistance](https://en.wikipedia.org/wiki/Radiation_resistance) of a dipole antenna. It is a useful quantity in electromagnetism due to the fact that the *same* current radiates a *different* amount of power depending on the surrounding environment. Analytically, the per-polarization LDOS is exactly proportional to the power radiated by an $\ell$-oriented point-dipole current, $p(t)$, at a given position in space. For a more mathematical treatment of the theory behind the LDOS, see Section 4.4 ("Currents and Fields: The Local Density of States") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707), but for now we simply give the result:
 
 $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}_0)\frac{\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,\omega)\hat{p}(\omega)^*]}{|\hat{p}(\omega)|^2}$$
 
@@ -23,17 +23,17 @@ Two types of simulations are necessary for computing the Purcell enhancement fac
 
 In 3D, each simulation uses three [mirror symmetries](../Exploiting_Symmetry.md#rotations-and-reflections) to reduce the size of the computation by a factor of eight. The dipole is polarized in the $x$ direction. The cavity is infinitely extended in the $xy$ plane and the cell is therefore terminated using PMLs in $x$ and $y$. Because Meep uses a default boundary condition of a perfect-electric conductor, there is no need to explicitly define the boundaries in the $z$ direction. The fields are timestepped until they have decayed away sufficiently due to absorption by the PMLs.
 
-In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordiantes is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example which involves a single point dipole rather than a planewave is one simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
+In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordinates is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example which involves a single point dipole rather than a planewave is one simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
 
-One important parameter when setting up this calculation is the grid resolution. 
+One important parameter when setting up this calculation is the grid resolution.
 
 A key feature of the LDOS in this geometry is that it experiences discontinuities, called  [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity), any time the cavity thickness/λ passes through the cutoff for a waveguide mode, which occurs for cavity-thickness/λ values of 0.5, 1.5, 2.5, etc.   (Mathematically, Van Hove singularities depend strongly on the dimensionality — it is a discontinuity in this case because the waves are propagating along two dimensions, i.e. each cutoff is a minimum in the 2d dispersion relation $\omega(k_x,k_y)$.)  This discontinuity also means that the LDOS *exactly at* the cutoff thickness/λ is ill-defined and convergence with discretization can be problematic at this point.  (In consequence, the LDOS *exactly* at the Van Hove discontinuity can behave erratically with resolution, and should be viewed with caution.)
 
 As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
 
-<center>
-![](../images/planar_cavity_purcell_enhancement.png)
-</center>
+
+![](../images/planar_cavity_purcell_enhancement.png#center)
+
 
 The simulation script is [examples/planar_cavity_ldos.py](https://github.com/NanoComp/meep/blob/master/python/examples/planar_cavity_ldos.py).
 
@@ -313,6 +313,257 @@ plt.ylabel('2Q/(πωW) or LDOS')
 plt.show()
 ```
 
-<center>
-![](../images/Metalcavity_ldos.png)
-</center>
+![](../images/Metalcavity_ldos.png#center)
+
+
+Extraction Efficiency of a Light-Emitting Diode (LED)
+-----------------------------------------------------
+
+Another application of the LDOS feature involves computing the extraction efficiency of a dipole emitter. The extraction efficiency is used to determine the external [quantum efficiency](https://en.wikipedia.org/wiki/Quantum_efficiency) (EQE) of light-emitting diodes (LEDs). The spontaneous-emission rate, computed in the previous examples, is proportional to the internal quantum efficiency (IQE). The EQE is the product of the IQE and the extraction efficiency.
+
+The extraction efficiency is defined as the ratio of the power extracted from the device to the total power generated by the dipole emitter. Computing the extracted power is straightforward: use a set of DFT monitors to capture all the outgoing flux. By Poynting's theorem, as long as all the outgoing flux is measured, the size and orientation of the DFT monitors is arbitrary. To compute the total power emitted by the dipole, one approach would be to enclose the point dipole with a six-sided box (in 3D) of DFT field monitors. The challenge, however, with this approach is that whenever the dipole is adjacent to an object (e.g., a surface or scatterer) then the DFT box must be made small enough to enclose *only* the dipole embedded within the homogeneous source medium. Because of this requirement, for cases in which the dipole is just a few nanometers from a nearby object (particularly if it is a lossy metal involving surface plasmon polaritons), the grid resolution may need to be significantly increased to obtain accurate results. Unfortunately, this can make 3D computations quite expensive.
+
+A more efficient approach to computing the total emitted power from the dipole is to use the LDOS. In particular, the terms in the numerator from the LDOS expression above are exactly equivalent to the emitted power: $$-\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,\omega)\hat{p}(\omega)^*].$$ The Fourier-transformed electric field $\hat{E}_{\ell}(\vec{x}_0,\omega)$ and current source $\hat{p}(\omega)$ can be obtained using the `ldos_Fdata` and `ldos_Jdata` members of the `Simulation` class object, respectively. The LDOS approach has the advantage that it involves just a single point monitor (colocated with the dipole source) and thus does not require the expense of collecting DFT fields for the flux through an enclosing box (and in some circumstances resolving the Poynting flux may also require higher resolution).
+
+To demonstrate this feature of the LDOS, we will compute the extraction efficiency of an LED-like structure consisting of a point dipole embedded within a dielectric layer ($n$=2.4 and thickness 0.7 $\lambda/n$) surrounded by vacuum and positioned above an infinite ground plane of a lossless metal. We will compute the extraction efficiency (at a wavelength $\lambda$ = 1.0 μm for a dipole with polarization parallel to the ground plane) as a function of the height of the dipole source above the ground plane using two different coordinate systems — 3D Cartesian and cylindrical — and demonstrate that the results are equivalent (apart from discretization error). The simulation setup is shown in the figures below for 3D Cartesian (cross section in $xz$) and cylindrical coordinates. (Note that this single-dipole calculation differs from the somewhat related flux calculation in [Tutorials/Custom Source/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) which involved modeling a *collection* of dipoles.)
+
+![](../images/dipole_extraction_eff_3D.png#center)
+
+![](../images/dipole_extraction_eff_cyl.png#center)
+
+Simulation using cylindrical (2D) coordinates is significantly faster and more memory efficient than 3D. However, care must be taken to ensure that the pulsed source in cylindrical coordinates is (1) narrow bandwidth *and* (2) turns on/off smoothly. These two properties are necessary to avoid abruptly turning the source on and off which can generate high-frequency spectral components at the Nyquist frequency of the grid. These components have zero group velocity and we have observed that they decay particularly slowly near the origin in cylindrical coordinates. The net result is that these residual fields will fail to decay away and thus preclude the convergence of the DFT monitors (and hence the LDOS itself). Because of the inverse relationship between frequency and time domain, a narrowband and long-cutoff source involves a longer time duration. In this example, the `cutoff` property of the `GaussianSource` is doubled to 10 from its default value of 5. The spectral bandwidth (`fwidth`) is 5% of the center frequency of 1.0.
+
+Finally, the total emitted power obtained using the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V$ for a source at the origin turns out to be $\pi/(resolution)^3$ and in 3D it is $1/(resolution)^3$.
+
+As shown in the figure below, the results from the two coordinate systems have good agreement.
+
+The simulation script is [examples/extraction_eff_ldos.py](https://github.com/NanoComp/meep/blob/master/python/examples/extraction_eff_ldos.py).
+
+```py
+import numpy as np
+import meep as mp
+import matplotlib
+matplotlib.use('agg')
+import matplotlib.pyplot as plt
+
+
+resolution = 80  # pixels/μm
+dpml = 0.5       # thickness of PML
+dair = 1.0       # thickness of air padding
+L = 6.0          # length of non-PML region
+n = 2.4          # refractive index of surrounding medium
+wvl = 1.0        # wavelength (in vacuum)
+
+fcen = 1 / wvl   # center frequency of source/monitor
+
+# source properties (cylindrical)
+df = 0.05 * fcen
+cutoff = 10.0
+src = mp.GaussianSource(fcen, fwidth=df, cutoff=cutoff)
+
+# termination criteria
+tol = 1e-8
+
+
+def extraction_eff_cyl(dmat: float, h: float) -> float:
+    """Computes the extraction efficiency of a point dipole embedded
+       within a dielectric layer above a lossless ground plane in
+       cylindrical coordinates.
+
+       Args:
+         dmat: thickness of dielectric layer.
+         h: height of dipole above ground plane as fraction of dmat.
+    """
+    sr = L + dpml
+    sz = dmat + dair + dpml
+    cell_size = mp.Vector3(sr, 0, sz)
+
+    boundary_layers = [
+        mp.PML(dpml, direction=mp.R),
+        mp.PML(dpml, direction=mp.Z, side=mp.High),
+    ]
+
+    src_cmpt = mp.Er
+    src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+    sources = [mp.Source(src=src, component=src_cmpt, center=src_pt)]
+
+    geometry = [
+        mp.Block(
+            material=mp.Medium(index=n),
+            center=mp.Vector3(0, 0, -0.5 * sz + 0.5 * dmat),
+            size=mp.Vector3(mp.inf, mp.inf, dmat),
+        )
+    ]
+
+    sim = mp.Simulation(
+        resolution=resolution,
+        cell_size=cell_size,
+        dimensions=mp.CYLINDRICAL,
+        m=-1,
+        boundary_layers=boundary_layers,
+        sources=sources,
+        geometry=geometry,
+    )
+
+    flux_air = sim.add_flux(
+        fcen,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * L, 0, 0.5 * sz - dpml),
+            size=mp.Vector3(L, 0, 0),
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
+            size=mp.Vector3(0, 0, dair),
+        ),
+    )
+
+    sim.run(
+        mp.dft_ldos(fcen, 0, 1),
+        until_after_sources=mp.stop_when_fields_decayed(
+            20, src_cmpt, src_pt, tol
+        ),
+    )
+
+    out_flux = mp.get_fluxes(flux_air)[0]
+    dV = np.pi / (resolution**3)
+    total_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
+    ext_eff = out_flux / total_flux
+    print(f"extraction efficiency (cyl):, "
+          f"{dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
+
+    return ext_eff
+
+
+def extraction_eff_3D(dmat: float, h: float) -> float:
+    """Computes the extraction efficiency of a point dipole embedded
+       within a dielectric layer above a lossless ground plane in
+       3D Cartesian coordinates.
+
+       Args:
+         dmat: thickness of dielectric layer.
+         h: height of dipole above ground plane as fraction of dmat.
+    """
+    sxy = L + 2 * dpml
+    sz = dmat + dair + dpml
+    cell_size = mp.Vector3(sxy, sxy, sz)
+
+    symmetries = [
+        mp.Mirror(direction=mp.X, phase=-1),
+        mp.Mirror(direction=mp.Y)
+    ]
+
+    boundary_layers = [
+        mp.PML(dpml, direction=mp.X),
+        mp.PML(dpml, direction=mp.Y),
+        mp.PML(dpml, direction=mp.Z, side=mp.High),
+    ]
+
+    src_cmpt = mp.Ex
+    src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
+            component=src_cmpt,
+            center=src_pt,
+        )
+    ]
+
+    geometry = [
+        mp.Block(
+            material=mp.Medium(index=n),
+            center=mp.Vector3(0, 0, -0.5 * sz + 0.5 * dmat),
+            size=mp.Vector3(mp.inf, mp.inf, dmat),
+        )
+    ]
+
+    sim = mp.Simulation(
+        resolution=resolution,
+        cell_size=cell_size,
+        boundary_layers=boundary_layers,
+        sources=sources,
+        geometry=geometry,
+        symmetries=symmetries,
+    )
+
+    flux_air = sim.add_flux(
+        fcen,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0, 0, 0.5 * sz - dpml),
+            size=mp.Vector3(L, L, 0),
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(
+                0.5 * L, 0, 0.5 * sz - dpml - 0.5 * dair
+            ),
+            size=mp.Vector3(0, L, dair),
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(
+                -0.5 * L, 0, 0.5 * sz - dpml - 0.5 * dair
+            ),
+            size=mp.Vector3(0, L, dair),
+            weight=-1.0,
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(
+                0, 0.5 * L, 0.5 * sz - dpml - 0.5 * dair
+            ),
+            size=mp.Vector3(L, 0, dair),
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(
+                0, -0.5 * L, 0.5 * sz - dpml - 0.5 * dair
+            ),
+            size=mp.Vector3(L, 0, dair),
+            weight=-1.0,
+        ),
+    )
+
+    sim.run(
+        mp.dft_ldos(fcen, 0, 1),
+        until_after_sources=mp.stop_when_fields_decayed(
+            20, src_cmpt, src_pt, tol
+        ),
+    )
+
+    out_flux = mp.get_fluxes(flux_air)[0]
+    dV = 1 / (resolution**3)
+    total_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
+    ext_eff = out_flux / total_flux
+    print(f"extraction efficiency (3D):, "
+          f"{dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
+
+    return ext_eff
+
+
+if __name__ == "__main__":
+    layer_thickness = 0.7 * wvl / n
+    dipole_height = np.linspace(0.1,0.9,21)
+
+    exteff_cyl = np.zeros(len(dipole_height))
+    exteff_3D = np.zeros(len(dipole_height))
+    for j in range(len(dipole_height)):
+        exteff_cyl[j] = extraction_eff_cyl(layer_thickness, dipole_height[j])
+        exteff_3D[j] = extraction_eff_3D(layer_thickness, dipole_height[j])
+
+    plt.plot(dipole_height,exteff_cyl,'bo-',label='cylindrical')
+    plt.plot(dipole_height,exteff_3D,'ro-',label='3D Cartesian')
+    plt.xlabel(f"height of dipole above ground plane "
+               f"(fraction of layer thickness)")
+    plt.ylabel("extraction efficiency")
+    plt.legend()
+
+    if mp.am_master():
+        plt.savefig(
+            'extraction_eff_vs_dipole_height.png',
+            dpi=150,
+            bbox_inches='tight'
+        )
+```
+
+
+![](../images/extraction_eff_vs_dipole_height.png#center)

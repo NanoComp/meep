@@ -27,7 +27,7 @@
 
 (run-until 23 (at-beginning output-epsilon)
 	      (at-every 0.25 print-stuff)
-	      (at-end print-stuff) 
+	      (at-end print-stuff)
               (at-end output-efield-z))
 
 (print "stopped at meep time = " (meep-round-time) )

@@ -1,9 +1,11 @@
 import math
 import unittest
 import warnings
-import numpy as np
-import meep as mp
+
 import meep.geom as gm
+import numpy as np
+
+import meep as mp
 
 
 def zeros():
@@ -15,7 +17,6 @@ def ones():
 
 
 class TestGeom(unittest.TestCase):
-
     def test_geometric_object_duplicates_x(self):
         rad = 1
         s = mp.Sphere(rad)
@@ -26,7 +27,7 @@ class TestGeom(unittest.TestCase):
             mp.Sphere(rad, center=mp.Vector3(x=4)),
             mp.Sphere(rad, center=mp.Vector3(x=3)),
             mp.Sphere(rad, center=mp.Vector3(x=2)),
-            mp.Sphere(rad, center=mp.Vector3(x=1))
+            mp.Sphere(rad, center=mp.Vector3(x=1)),
         ]
 
         for r, e in zip(res, expected):
@@ -71,9 +72,11 @@ class TestGeom(unittest.TestCase):
             self.assertEqual(r.center, e.center)
 
     def test_geometric_objects_lattice_duplicates(self):
-        geometry_lattice = mp.Lattice(size=mp.Vector3(1, 7),
-                                      basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                                      basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        geometry_lattice = mp.Lattice(
+            size=mp.Vector3(1, 7),
+            basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+            basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+        )
         eps = 12
         r = 0.2
 
@@ -97,15 +100,16 @@ class TestGeom(unittest.TestCase):
             self.assertEqual(exp.radius, res.radius)
 
     def test_cartesian_to_lattice(self):
-        lattice = mp.Lattice(size=mp.Vector3(1, 7),
-                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        lattice = mp.Lattice(
+            size=mp.Vector3(1, 7),
+            basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+            basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+        )
         res = mp.cartesian_to_lattice(lattice.basis * mp.Vector3(1), lattice)
         self.assertEqual(res, mp.Vector3(1))
 
 
 class TestSphere(unittest.TestCase):
-
     def test_kwargs_passed_to_parent(self):
         s = gm.Sphere(1.0)
         self.assertEqual(s.material.epsilon_diag, ones())
@@ -124,9 +128,9 @@ class TestSphere(unittest.TestCase):
 
     def test_invalid_kwarg_raises_exception(self):
         with self.assertRaises(TypeError):
-            gm.Sphere(invalid='This is not allowed')
+            gm.Sphere(invalid="This is not allowed")
         with self.assertRaises(TypeError):
-            gm.Sphere(radius=1.0, oops='Nope')
+            gm.Sphere(radius=1.0, oops="Nope")
 
     def test_non_neg_radius_constructor(self):
         gm.Sphere(radius=0.0)
@@ -186,7 +190,6 @@ class TestSphere(unittest.TestCase):
 
 
 class TestCylinder(unittest.TestCase):
-
     def test_non_neg_height_constructor(self):
         gm.Cylinder(radius=1.0, height=0.0)
         gm.Cylinder(radius=1.0, height=1.0)
@@ -220,9 +223,9 @@ class TestCylinder(unittest.TestCase):
 
 
 class TestWedge(unittest.TestCase):
-
     def test_default_properties(self):
         import math
+
         w = gm.Wedge(center=zeros(), radius=2.0, height=4.0, axis=gm.Vector3(0, 0, 1))
         self.assertEqual(w.wedge_angle, 8 * math.atan(1))
 
@@ -232,37 +235,37 @@ class TestWedge(unittest.TestCase):
 
 
 class TestCone(unittest.TestCase):
-
     def test_contains_point(self):
         c = gm.Cone(center=zeros(), radius=2.0, height=3.0, axis=gm.Vector3(0, 0, 1))
         self.assertIn(gm.Vector3(0, 0, 1), c)
 
 
 class TestBlock(unittest.TestCase):
-
     def test_contains_point(self):
         b = gm.Block(size=ones(), center=zeros())
         self.assertIn(zeros(), b)
 
 
 class TestEllipsoid(unittest.TestCase):
-
     def test_contains_point(self):
         e = gm.Ellipsoid(size=ones(), center=zeros())
         self.assertIn(zeros(), e)
 
 
 class TestPrism(unittest.TestCase):
-
     def test_contains_point(self):
-        vertices = [gm.Vector3(-1, 1), gm.Vector3(1, 1), gm.Vector3(1, -1), gm.Vector3(-1, -1)]
+        vertices = [
+            gm.Vector3(-1, 1),
+            gm.Vector3(1, 1),
+            gm.Vector3(1, -1),
+            gm.Vector3(-1, -1),
+        ]
         p = gm.Prism(vertices, height=1)
         self.assertIn(zeros(), p)
         self.assertNotIn(gm.Vector3(2, 2), p)
 
 
 class TestMedium(unittest.TestCase):
-
     def test_D_conductivity(self):
         m = gm.Medium(D_conductivity=2)
         self.assertEqual(m.D_conductivity_diag.x, 2)
@@ -326,50 +329,82 @@ class TestMedium(unittest.TestCase):
 
         for s in invalid_sources:
             # Check for invalid extra_materials
-            sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, extra_materials=[mat])
+            sim = mp.Simulation(
+                cell_size=cell_size,
+                resolution=resolution,
+                sources=s,
+                extra_materials=[mat],
+            )
             check_warnings(sim)
 
             # Check for invalid geometry materials
-            sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, geometry=geom)
+            sim = mp.Simulation(
+                cell_size=cell_size, resolution=resolution, sources=s, geometry=geom
+            )
             check_warnings(sim)
 
         valid_sources = [
             [mp.Source(mp.GaussianSource(15, fwidth=1), mp.Ez, mp.Vector3())],
-            [mp.Source(mp.ContinuousSource(15, width=5), mp.Ez, mp.Vector3())]
+            [mp.Source(mp.ContinuousSource(15, width=5), mp.Ez, mp.Vector3())],
         ]
 
         for s in valid_sources:
-            sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=s, extra_materials=[mat])
+            sim = mp.Simulation(
+                cell_size=cell_size,
+                resolution=resolution,
+                sources=s,
+                extra_materials=[mat],
+            )
             check_warnings(sim, False)
 
         # Check DFT frequencies
 
         # Invalid extra_materials
-        sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=valid_sources[0],
-                            extra_materials=[mat])
-        fregion = mp.FluxRegion(center=mp.Vector3(0, 1), size=mp.Vector3(2, 2), direction=mp.X)
+        sim = mp.Simulation(
+            cell_size=cell_size,
+            resolution=resolution,
+            sources=valid_sources[0],
+            extra_materials=[mat],
+        )
+        fregion = mp.FluxRegion(
+            center=mp.Vector3(0, 1), size=mp.Vector3(2, 2), direction=mp.X
+        )
         sim.add_flux(18, 6, 2, fregion, decimation_factor=1)
         check_warnings(sim)
 
         # Invalid geometry material
-        sim = mp.Simulation(cell_size=cell_size, resolution=resolution, sources=valid_sources[0], geometry=geom)
+        sim = mp.Simulation(
+            cell_size=cell_size,
+            resolution=resolution,
+            sources=valid_sources[0],
+            geometry=geom,
+        )
         sim.add_flux(18, 6, 2, fregion, decimation_factor=1)
         check_warnings(sim)
 
     def test_transform(self):
 
-        e_sus = [mp.LorentzianSusceptibility(sigma_diag=mp.Vector3(1, 2, 3),
-                                             sigma_offdiag=mp.Vector3(12, 13, 14)),
-                 mp.DrudeSusceptibility(sigma_diag=mp.Vector3(1, 2, 3),
-                                        sigma_offdiag=mp.Vector3(12, 13, 14))]
+        e_sus = [
+            mp.LorentzianSusceptibility(
+                sigma_diag=mp.Vector3(1, 2, 3), sigma_offdiag=mp.Vector3(12, 13, 14)
+            ),
+            mp.DrudeSusceptibility(
+                sigma_diag=mp.Vector3(1, 2, 3), sigma_offdiag=mp.Vector3(12, 13, 14)
+            ),
+        ]
 
-        mat = mp.Medium(epsilon_diag=mp.Vector3(1, 2, 3), epsilon_offdiag=mp.Vector3(12, 13, 14),
-                        E_susceptibilities=e_sus)
+        mat = mp.Medium(
+            epsilon_diag=mp.Vector3(1, 2, 3),
+            epsilon_offdiag=mp.Vector3(12, 13, 14),
+            E_susceptibilities=e_sus,
+        )
 
         rot_angle = math.radians(23.9)
-        rot_matrix = mp.Matrix(mp.Vector3(math.cos(rot_angle), math.sin(rot_angle), 0),
-                               mp.Vector3(-math.sin(rot_angle), math.cos(rot_angle), 0),
-                               mp.Vector3(0, 0, 1))
+        rot_matrix = mp.Matrix(
+            mp.Vector3(math.cos(rot_angle), math.sin(rot_angle), 0),
+            mp.Vector3(-math.sin(rot_angle), math.cos(rot_angle), 0),
+            mp.Vector3(0, 0, 1),
+        )
         mat.transform(rot_matrix)
 
         expected_diag = mp.Vector3(-7.72552, 10.72552, 3)
@@ -380,14 +415,21 @@ class TestMedium(unittest.TestCase):
         self.assertEqual(mat.mu_diag, mp.Vector3(1, 1, 1))
         self.assertEqual(mat.mu_offdiag, mp.Vector3())
         self.assertEqual(len(mat.E_susceptibilities), 2)
-        self.assertTrue(mat.E_susceptibilities[0].sigma_diag.close(expected_diag, tol=4))
-        self.assertTrue(mat.E_susceptibilities[0].sigma_offdiag.close(expected_offdiag, tol=4))
-        self.assertTrue(mat.E_susceptibilities[1].sigma_diag.close(expected_diag, tol=4))
-        self.assertTrue(mat.E_susceptibilities[1].sigma_offdiag.close(expected_offdiag, tol=4))
+        self.assertTrue(
+            mat.E_susceptibilities[0].sigma_diag.close(expected_diag, tol=4)
+        )
+        self.assertTrue(
+            mat.E_susceptibilities[0].sigma_offdiag.close(expected_offdiag, tol=4)
+        )
+        self.assertTrue(
+            mat.E_susceptibilities[1].sigma_diag.close(expected_diag, tol=4)
+        )
+        self.assertTrue(
+            mat.E_susceptibilities[1].sigma_offdiag.close(expected_offdiag, tol=4)
+        )
 
 
 class TestVector3(unittest.TestCase):
-
     def test_use_as_numpy_array(self):
         v = gm.Vector3(10, 10, 10)
         res = np.add(v, np.array([10, 10, 10]))
@@ -439,14 +481,18 @@ class TestVector3(unittest.TestCase):
         v = mp.Vector3(2, 2, 2)
         lattice = mp.Lattice(size=mp.Vector3(1, 1))
         res = v.rotate_lattice(axis, 3, lattice)
-        self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
+        self.assertTrue(
+            res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563))
+        )
 
     def test_rotate_reciprocal(self):
         axis = mp.Vector3(1)
         v = mp.Vector3(2, 2, 2)
         lattice = mp.Lattice(size=mp.Vector3(1, 1))
         res = v.rotate_reciprocal(axis, 3, lattice)
-        self.assertTrue(res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563)))
+        self.assertTrue(
+            res.close(mp.Vector3(2.0, -2.262225009320625, -1.6977449770811563))
+        )
 
     def test_complex_norm(self):
         # issue #722
@@ -455,15 +501,18 @@ class TestVector3(unittest.TestCase):
 
 
 class TestLattice(unittest.TestCase):
-
     def test_basis(self):
-        lattice = mp.Lattice(size=mp.Vector3(1, 7),
-                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        lattice = mp.Lattice(
+            size=mp.Vector3(1, 7),
+            basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+            basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+        )
         b = lattice.basis
-        exp = mp.Matrix(mp.Vector3(0.8660254037844388, 0.5000000000000001),
-                        mp.Vector3(0.8660254037844388, -0.5000000000000001),
-                        mp.Vector3(z=1.0))
+        exp = mp.Matrix(
+            mp.Vector3(0.8660254037844388, 0.5000000000000001),
+            mp.Vector3(0.8660254037844388, -0.5000000000000001),
+            mp.Vector3(z=1.0),
+        )
 
         for e, r in zip([exp.c1, exp.c2, exp.c3], [b.c1, b.c2, b.c3]):
             self.assertTrue(e.close(r))
@@ -493,16 +542,14 @@ class TestMatrix(unittest.TestCase):
         self.assertEqual(self.identity.row(2), self.identity.c3)
 
     def test_mm_mult(self):
-        m1 = mp.Matrix(mp.Vector3(1, 2, 3),
-                       mp.Vector3(4, 5, 6),
-                       mp.Vector3(7, 8, 9))
-        m2 = mp.Matrix(mp.Vector3(9, 8, 7),
-                       mp.Vector3(6, 5, 4),
-                       mp.Vector3(3, 2, 1))
+        m1 = mp.Matrix(mp.Vector3(1, 2, 3), mp.Vector3(4, 5, 6), mp.Vector3(7, 8, 9))
+        m2 = mp.Matrix(mp.Vector3(9, 8, 7), mp.Vector3(6, 5, 4), mp.Vector3(3, 2, 1))
         res = m1 * m2
-        exp = mp.Matrix(mp.Vector3(90.0, 114.0, 138.0),
-                        mp.Vector3(54.0, 69.0, 84.0),
-                        mp.Vector3(18.0, 24.0, 30.0))
+        exp = mp.Matrix(
+            mp.Vector3(90.0, 114.0, 138.0),
+            mp.Vector3(54.0, 69.0, 84.0),
+            mp.Vector3(18.0, 24.0, 30.0),
+        )
 
         self.matrix_eq(exp, res)
 
@@ -520,91 +567,105 @@ class TestMatrix(unittest.TestCase):
         self.assertEqual(result.row(2), zeros())
 
     def test_mv_mult(self):
-        lattice = mp.Lattice(size=mp.Vector3(1, 7),
-                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        lattice = mp.Lattice(
+            size=mp.Vector3(1, 7),
+            basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+            basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+        )
         res = lattice.basis * mp.Vector3(1)
         exp = mp.Vector3(0.8660254037844388, 0.5000000000000001)
         self.assertTrue(res.close(exp))
 
     def test_scale(self):
-        m = mp.Matrix(mp.Vector3(90.0, 114.0, 138.0),
-                      mp.Vector3(54.0, 69.0, 84.0),
-                      mp.Vector3(18.0, 24.0, 30.0))
+        m = mp.Matrix(
+            mp.Vector3(90.0, 114.0, 138.0),
+            mp.Vector3(54.0, 69.0, 84.0),
+            mp.Vector3(18.0, 24.0, 30.0),
+        )
         res = m.scale(0.5)
-        exp = mp.Matrix(mp.Vector3(45.0, 57.0, 69.0),
-                        mp.Vector3(27.0, 34.5, 42.0),
-                        mp.Vector3(9.0, 12.0, 15.0))
+        exp = mp.Matrix(
+            mp.Vector3(45.0, 57.0, 69.0),
+            mp.Vector3(27.0, 34.5, 42.0),
+            mp.Vector3(9.0, 12.0, 15.0),
+        )
         self.matrix_eq(exp, res)
 
         self.matrix_eq(exp, m * 0.5)
         self.matrix_eq(exp, 0.5 * m)
 
     def test_determinant(self):
-        m = mp.Matrix(mp.Vector3(2),
-                      mp.Vector3(y=2),
-                      mp.Vector3(z=2))
+        m = mp.Matrix(mp.Vector3(2), mp.Vector3(y=2), mp.Vector3(z=2))
 
-        m1 = mp.Matrix(mp.Vector3(1, 2, 3),
-                       mp.Vector3(4, 5, 6),
-                       mp.Vector3(7, 8, 9))
+        m1 = mp.Matrix(mp.Vector3(1, 2, 3), mp.Vector3(4, 5, 6), mp.Vector3(7, 8, 9))
 
         self.assertEqual(8, m.determinant())
         self.assertEqual(0, m1.determinant())
 
     def test_transpose(self):
-        m = mp.Matrix(mp.Vector3(1, 2, 3),
-                      mp.Vector3(4, 5, 6),
-                      mp.Vector3(7, 8, 9))
-        exp = mp.Matrix(mp.Vector3(1, 4, 7),
-                        mp.Vector3(2, 5, 8),
-                        mp.Vector3(3, 6, 9))
+        m = mp.Matrix(mp.Vector3(1, 2, 3), mp.Vector3(4, 5, 6), mp.Vector3(7, 8, 9))
+        exp = mp.Matrix(mp.Vector3(1, 4, 7), mp.Vector3(2, 5, 8), mp.Vector3(3, 6, 9))
 
         self.matrix_eq(exp, m.transpose())
 
     def test_inverse(self):
         self.matrix_eq(self.identity, self.identity.inverse())
 
-        lattice = mp.Lattice(size=mp.Vector3(1, 7),
-                             basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
-                             basis2=mp.Vector3(math.sqrt(3) / 2, -0.5))
+        lattice = mp.Lattice(
+            size=mp.Vector3(1, 7),
+            basis1=mp.Vector3(math.sqrt(3) / 2, 0.5),
+            basis2=mp.Vector3(math.sqrt(3) / 2, -0.5),
+        )
 
         res = lattice.basis.inverse()
-        exp = mp.Matrix(mp.Vector3(0.5773502691896256, 0.5773502691896256, -0.0),
-                        mp.Vector3(0.9999999999999998, -0.9999999999999998, -0.0),
-                        mp.Vector3(-0.0, -0.0, 1.0))
+        exp = mp.Matrix(
+            mp.Vector3(0.5773502691896256, 0.5773502691896256, -0.0),
+            mp.Vector3(0.9999999999999998, -0.9999999999999998, -0.0),
+            mp.Vector3(-0.0, -0.0, 1.0),
+        )
 
         self.matrix_close(exp, res)
 
     def test_get_rotation_matrix(self):
         result = mp.get_rotation_matrix(ones(), 5)
-        self.assertTrue(result.c1.close(mp.Vector3(0.5224414569754843, -0.3148559165969717, 0.7924144596214877)))
-        self.assertTrue(result.c2.close(mp.Vector3(0.7924144596214877, 0.5224414569754843, -0.3148559165969717)))
-        self.assertTrue(result.c3.close(mp.Vector3(-0.3148559165969717, 0.7924144596214877, 0.5224414569754843)))
+        self.assertTrue(
+            result.c1.close(
+                mp.Vector3(0.5224414569754843, -0.3148559165969717, 0.7924144596214877)
+            )
+        )
+        self.assertTrue(
+            result.c2.close(
+                mp.Vector3(0.7924144596214877, 0.5224414569754843, -0.3148559165969717)
+            )
+        )
+        self.assertTrue(
+            result.c3.close(
+                mp.Vector3(-0.3148559165969717, 0.7924144596214877, 0.5224414569754843)
+            )
+        )
 
     def test_conj(self):
-        m = mp.Matrix(mp.Vector3(x=1+1j), mp.Vector3(y=1+1j), mp.Vector3(z=1+1j))
+        m = mp.Matrix(mp.Vector3(x=1 + 1j), mp.Vector3(y=1 + 1j), mp.Vector3(z=1 + 1j))
         result = m.conj()
-        self.assertEqual(result.c1, mp.Vector3(x=1-1j))
-        self.assertEqual(result.c2, mp.Vector3(y=1-1j))
-        self.assertEqual(result.c3, mp.Vector3(z=1-1j))
+        self.assertEqual(result.c1, mp.Vector3(x=1 - 1j))
+        self.assertEqual(result.c2, mp.Vector3(y=1 - 1j))
+        self.assertEqual(result.c3, mp.Vector3(z=1 - 1j))
 
     def test_adjoint(self):
-        m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
+        m = mp.Matrix(mp.Vector3(1 + 1j), mp.Vector3(1 + 1j), mp.Vector3(1 + 1j))
         getH_result = m.getH()
         H_result = m.H
-        self.assertEqual(getH_result.c1, mp.Vector3(1-1j, 1-1j, 1-1j))
+        self.assertEqual(getH_result.c1, mp.Vector3(1 - 1j, 1 - 1j, 1 - 1j))
         self.assertEqual(getH_result.c2, mp.Vector3())
         self.assertEqual(getH_result.c3, mp.Vector3())
         np.testing.assert_allclose(getH_result, H_result)
 
     def test_to_numpy_array(self):
-        m = mp.Matrix(mp.Vector3(1+1j), mp.Vector3(1+1j), mp.Vector3(1+1j))
+        m = mp.Matrix(mp.Vector3(1 + 1j), mp.Vector3(1 + 1j), mp.Vector3(1 + 1j))
         adjoint = m.H
         m_arr = np.array(m)
         np_adjoint = m_arr.conj().transpose()
         np.testing.assert_allclose(adjoint, np_adjoint)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

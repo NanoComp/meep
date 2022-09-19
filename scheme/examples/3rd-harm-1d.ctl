@@ -39,13 +39,13 @@
 	    (make flux-region (center 0 0 (- (* 0.5 sz) dpml 0.5)))))
 
 ; also compute a ''single'' flux point at fcen and 3*fcen
-(define trans1 (add-flux fcen 0 1 (make flux-region 
+(define trans1 (add-flux fcen 0 1 (make flux-region
 				    (center 0 0 (- (* 0.5 sz) dpml 0.5)))))
-(define trans3 (add-flux (* 3 fcen) 0 1 (make flux-region 
+(define trans3 (add-flux (* 3 fcen) 0 1 (make flux-region
 					(center 0 0 (- (* 0.5 sz) dpml 0.5)))))
 
 (run-sources+
- (stop-when-fields-decayed 50 Ex 
+ (stop-when-fields-decayed 50 Ex
 			   (vector3 0 0 (- (* 0.5 sz) dpml 0.5))
 			   1e-6))
 

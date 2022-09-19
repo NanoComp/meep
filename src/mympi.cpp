@@ -161,25 +161,24 @@ int verbosity = 1; // defined in meep.h
 
    code based on github.com/JuliaLang/julia/blob/master/src/processor_x86.cpp#L1087-L1104,
    which is free software under the GPL-compatible "MIT license" */
-static void _set_zero_subnormals(bool iszero)
-{
+static void _set_zero_subnormals(bool iszero) {
 #if HAVE_IMMINTRIN_H
-    unsigned int flags = 0x00008040; // assume a non-ancient processor with SSE2, supporting both FTZ and DAZ flags
-    unsigned int state = _mm_getcsr();
-    if (iszero)
-      state |= flags;
-    else
-      state &= ~flags;
-    _mm_setcsr(state);
+  unsigned int flags =
+      0x00008040; // assume a non-ancient processor with SSE2, supporting both FTZ and DAZ flags
+  unsigned int state = _mm_getcsr();
+  if (iszero)
+    state |= flags;
+  else
+    state &= ~flags;
+  _mm_setcsr(state);
 #else
-  (void) iszero; // unused
+  (void)iszero; // unused
 #endif
 }
-void set_zero_subnormals(bool iszero)
-{
+void set_zero_subnormals(bool iszero) {
   int n = omp_get_num_threads();
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static,1)
+#pragma omp parallel for schedule(static, 1)
 #endif
   for (int i = 0; i < n; ++i)
     _set_zero_subnormals(iszero); // This has to be done in every thread for OpenMP.
@@ -188,8 +187,7 @@ void set_zero_subnormals(bool iszero)
 void setup() {
   set_zero_subnormals(true);
 #ifdef _OPENMP
-  if (getenv("OMP_NUM_THREADS") == NULL)
-    omp_set_num_threads(1);
+  if (getenv("OMP_NUM_THREADS") == NULL) omp_set_num_threads(1);
 #endif
 }
 
@@ -199,7 +197,7 @@ initialize::initialize(int &argc, char **&argv) {
   int provided;
   MPI_Init_thread(&argc, &argv, MPI_THREAD_FUNNELED, &provided);
   if (provided < MPI_THREAD_FUNNELED && omp_get_num_threads() > 1)
-      abort("MPI does not support multi-threaded execution");
+    abort("MPI does not support multi-threaded execution");
 #else
   MPI_Init(&argc, &argv);
 #endif
@@ -257,7 +255,7 @@ double wall_time(void) {
   fprintf(stderr, "meep: %s", error_msg.c_str());
   if (fmt[strlen(fmt) - 1] != '\n') fputc('\n', stderr); // force newline
   MPI_Abort(MPI_COMM_WORLD, 1);
-  std::abort();  // Unreachable but MPI_Abort does not have the noreturn attribute.
+  std::abort(); // Unreachable but MPI_Abort does not have the noreturn attribute.
 #else
   throw runtime_error("meep: " + error_msg);
 #endif
@@ -686,8 +684,8 @@ meep_printf_callback_func set_meep_printf_stderr_callback(meep_printf_callback_f
   return old_func;
 }
 
-static void _do_master_printf(FILE* output, meep_printf_callback_func callback,
-                              const char *fmt, va_list ap) {
+static void _do_master_printf(FILE *output, meep_printf_callback_func callback, const char *fmt,
+                              va_list ap) {
   if (am_really_master()) {
     if (callback) {
       char *s;

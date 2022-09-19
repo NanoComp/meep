@@ -1,3 +1,4 @@
+*.DS_Store
 *.tar.gz
 *.exe
 *.dll
@@ -15,6 +16,11 @@
 _build
 .vscode
 .idea
+python/examples/.ipynb_checkpoints/
+h5utils/
+hdf5/
+extra/
+configure~
 
 # autotools stuff
 Makefile
