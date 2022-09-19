@@ -170,7 +170,7 @@ ubuntudeps()
             libpython=libpython3-dev
             ;;
         esac
-        
+
     if $with_mpi; then
         libhdf5=libhdf5-openmpi-dev
         hdf5_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
@@ -180,7 +180,7 @@ ubuntudeps()
         hdf5_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/serial"
         hdf5_CFLAGS="-I/usr/include/hdf5/serial"
     fi
-    
+
     sudo apt-get update
 
     sudo apt-get -y install     \
