@@ -125,7 +125,6 @@ getlibctl()
             (cd libctl; git pull; cd ./..)
         fi
     else
-
         if $with_guile; then
             gitclone https://github.com/NanoComp/libctl.git
         else
@@ -155,8 +154,8 @@ ubuntudeps()
 {
     distrib=$(lsb_release -r -s)
     case "$distrib" in
-        22.04|21.10)
-            libguile=guile-2.2-dev
+        20.04 | 18.04)
+            libguile=guile-2.0-dev
             libpng=libpng-dev
             libpython=libpython3-dev
             ;;
@@ -165,13 +164,23 @@ ubuntudeps()
             libpython=libpython3.5-dev
             libguile=guile-2.0-dev
             ;;
-        *) # 20.04 | 18.04
-            libguile=guile-2.0-dev
+        *) # 22.04|21.10
+            libguile=guile-2.2-dev
             libpng=libpng-dev
             libpython=libpython3-dev
             ;;
         esac
-
+        
+    if $with_mpi; then
+        libhdf5=libhdf5-openmpi-dev
+        hdf5_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
+        hdf5_CFLAGS="-I/usr/include/hdf5/openmpi"
+    else
+        libhdf5=libhdf5-dev
+        hdf5_LDFLAGS="-L/usr/lib/x86_64-linux-gnu/hdf5/serial"
+        hdf5_CFLAGS="-I/usr/include/hdf5/serial"
+    fi
+    
     sudo apt-get update
 
     sudo apt-get -y install     \
@@ -188,7 +197,7 @@ ubuntudeps()
         git                     \
         $libguile               \
         libfftw3-dev            \
-        libhdf5-openmpi-dev     \
+        $libhdf5                \
         hdf5-tools              \
         $libpython              \
         python3-numpy           \
@@ -203,8 +212,8 @@ ubuntudeps()
     sudo -H pip3 install matplotlib>3.0.0
 
     RPATH_FLAGS="-Wl,-rpath,${DESTDIR}/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-    LDFLAGS="-L${DESTDIR}/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi -L/usr/lib/x86_64-linux-gnu/ ${RPATH_FLAGS}"
-    CFLAGS="-I${DESTDIR}/include -I/usr/include/hdf5/openmpi -I/usr/lib/x86_64-linux-gnu/openmpi/include"
+    LDFLAGS="-L${DESTDIR}/lib  -L/usr/lib/x86_64-linux-gnu/ ${hdf5_LDFLAGS} ${RPATH_FLAGS}"
+    CFLAGS="-I${DESTDIR}/include  -I/usr/lib/x86_64-linux-gnu/openmpi/include  ${hdf5_CFLAGS}"
 }
 
 centosdeps()
