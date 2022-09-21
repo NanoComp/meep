@@ -1536,7 +1536,7 @@ def __init__(self,
 
 Construct a `DiffractedPlanewave`.
 
-+ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
++ **`g` [ list of 3 `integer`s ]** — The diffraction order $(m_x,m_y,m_z)$ corresponding to the wavevector $(k_x+2\pi m_x/\Lambda_x,k_y+2\pi m_y/\Lambda_y,k_z+2\pi m_z/\Lambda_z)$. $(k_x,k_y,k_z)$ is the `k_point` (wavevector specifying the Bloch-periodic boundaries) of the `Simulation` class object. The diffraction order $m_{x,y,z}$ should be non-zero only in the $d$-1 periodic directions of a $d$ dimensional cell of size $(\Lambda_x,\Lambda_y,\Lambda_z)$ (e.g., a plane in 3d) in which the mode monitor or source extends the entire length of the cell.
 
 + **`axis` [ `Vector3` ]** — The plane of incidence for each planewave (used to define the $\mathcal{S}$ and $\mathcal{P}$ polarizations below) is defined to be the plane that contains the `axis` vector and the planewave's wavevector. If `None`, `axis` defaults to the first direction that lies in the plane of the monitor or source (e.g., $y$ direction for a $yz$ plane in 3d, either $x$ or $y$ in 2d).
 
@@ -6241,7 +6241,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f3a89740ca0>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f0880782ca0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7201,12 +7201,14 @@ Call self as a function.
 
 ```python
 def __init__(self,
-             sim,
              fields,
+             sim=None,
              f=None,
              realtime=False,
              normalize=False,
              plot_modifiers=None,
+             update_epsilon: bool = False,
+             nb: bool = False,
              **customization_args):
 ```
 
@@ -7223,8 +7225,7 @@ Construct an `Animate2D` object.
   initialization.
 
 + **`realtime=False`** — Whether or not to update a figure window in realtime as
-  the simulation progresses. Disabled by default. Not compatible with
-  IPython/Jupyter notebooks.
+  the simulation progresses. Disabled by default.
 
 + **`normalize=False`** — Records fields at each time step in memory in a NumPy
   array and then normalizes the result by dividing by the maximum field value at a
@@ -7243,6 +7244,10 @@ Construct an `Animate2D` object.
   plot_modifiers = [mod1]
 ```
 
++ **`update_epsilon=False`** — Redraw epsilon on each call. (Useful for topology optimization)
+
++ **`nb=False`** — For the animation work in a Jupyter notebook, set to True and use the cell magic:
+    `%matplotlib ipympl`
 + **`**customization_args`** — Customization keyword arguments passed to
   `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
 
