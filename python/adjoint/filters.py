@@ -6,6 +6,10 @@ from autograd import numpy as npa
 from scipy import signal, special
 
 import meep as mp
+from scipy import special
+from scipy import signal
+import skfmm
+from scipy import interpolate
 
 
 def _proper_pad(x, n):
@@ -874,3 +878,20 @@ def gray_indicator(x):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
     return npa.mean(4 * x.flatten() * (1 - x.flatten())) * 100
+
+
+def make_sdf(data):
+    """
+    Assume the input, data, is the desired output shape
+    (i.e. 1d, 2d, or 3d) and that it's values are between
+    0 and 1.
+    """
+    # create signed distance function
+    sd = skfmm.distance(data - 0.5, dx=1)
+
+    # interpolate zero-levelset onto 0.5-levelset
+    x = [np.min(sd.flatten()), 0, np.max(sd.flatten())]
+    y = [0, 0.5, 1]
+    f = interpolate.interp1d(x, y, kind="linear")
+
+    return f(sd)

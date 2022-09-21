@@ -1,4 +1,13 @@
+"""
+Checks that a material grid works with symmetries, and that the
+new subpixel smoothing feature is accurate.
+
+TODO:
+    Create a 3D test that works well with the new smoothing
+"""
+
 import meep as mp
+from meep import mpb
 
 try:
     import meep.adjoint as mpa
@@ -8,7 +17,12 @@ except:
 import unittest
 
 import numpy as np
-from scipy.ndimage import gaussian_filter
+import unittest
+
+rad = 0.301943
+k_point = mp.Vector3(0.3892, 0.1597, 0)
+Si = mp.Medium(index=3.5)
+cell_size = mp.Vector3(1, 1, 0)
 
 
 def compute_transmittance(matgrid_symmetry=False):
@@ -29,14 +43,17 @@ def compute_transmittance(matgrid_symmetry=False):
     rng = np.random.RandomState(2069588)
 
     w = rng.rand(Nx, Ny)
-    weights = w if matgrid_symmetry else 0.5 * (w + np.fliplr(w))
+    # for subpixel smoothing, the underlying design grid must be smoothly varying
+    w = mpa.tanh_projection(rng.rand(Nx, Ny), 1e5, 0.5)
+    w = mpa.conic_filter(w, 0.25, matgrid_size.x, matgrid_size.y, matgrid_resolution)
+    weights = 0.5 * (w + np.fliplr(w)) if not matgrid_symmetry else w
 
     matgrid = mp.MaterialGrid(
         mp.Vector3(Nx, Ny),
         mp.air,
         mp.Medium(index=3.5),
         weights=weights,
-        do_averaging=False,
+        beta=np.inf,
         grid_type="U_MEAN",
     )
 
@@ -95,16 +112,19 @@ def compute_transmittance(matgrid_symmetry=False):
     ][0]
 
     tran = np.power(np.abs(mode_coeff), 2)
-    print(f'tran:, {"sym" if matgrid_symmetry else "nosym"}, {tran}')
+    print("tran:, {}, {}".format("sym" if matgrid_symmetry else "nosym", tran))
 
     return tran
 
 
-def compute_resonant_mode_2d(res, default_mat=False):
-    cell_size = mp.Vector3(1, 1, 0)
-
-    rad = 0.301943
-
+def compute_resonant_mode_2d(
+    res,
+    radius=rad,
+    default_mat=False,
+    cylinder=False,
+    cylinder_matgrid=True,
+    do_averaging=True,
+):
     fcen = 0.3
     df = 0.2 * fcen
     sources = [
@@ -114,8 +134,6 @@ def compute_resonant_mode_2d(res, default_mat=False):
             center=mp.Vector3(-0.1057, 0.2094, 0),
         )
     ]
-
-    k_point = mp.Vector3(0.3892, 0.1597, 0)
 
     matgrid_size = mp.Vector3(1, 1, 0)
     matgrid_resolution = 1200
@@ -129,38 +147,46 @@ def compute_resonant_mode_2d(res, default_mat=False):
     x = np.linspace(-0.5 * matgrid_size.x, 0.5 * matgrid_size.x, Nx)
     y = np.linspace(-0.5 * matgrid_size.y, 0.5 * matgrid_size.y, Ny)
     xv, yv = np.meshgrid(x, y)
-    weights = np.sqrt(np.square(xv) + np.square(yv)) < rad
-    filtered_weights = gaussian_filter(weights, sigma=3.0, output=np.double)
+    weights = mpa.make_sdf(np.sqrt(np.square(xv) + np.square(yv)) < radius)
+    if cylinder:
+        weights = 0.0 * weights + 1.0
 
     matgrid = mp.MaterialGrid(
-        mp.Vector3(Nx, Ny),
-        mp.air,
-        mp.Medium(index=3.5),
-        weights=filtered_weights,
-        do_averaging=True,
-        beta=1000,
-        eta=0.5,
+        mp.Vector3(Nx, Ny), mp.air, Si, weights=weights, beta=np.inf, eta=0.5
     )
 
-    geometry = [
-        mp.Block(
-            center=mp.Vector3(),
-            size=mp.Vector3(matgrid_size.x, matgrid_size.y, 0),
-            material=matgrid,
-        )
-    ]
+    # Use a cylinder object, not a block object
+    if cylinder:
+        # within the cylinder, use a (uniform) material grid
+        if cylinder_matgrid:
+            geometry = [
+                mp.Cylinder(center=mp.Vector3(), radius=radius, material=matgrid)
+            ]
+        # within the cylinder, just use a normal medium
+        else:
+            geometry = [mp.Cylinder(center=mp.Vector3(), radius=radius, material=Si)]
+    # use a block object
+    else:
+        geometry = [
+            mp.Block(
+                center=mp.Vector3(),
+                size=mp.Vector3(matgrid_size.x, matgrid_size.y, 0),
+                material=matgrid,
+            )
+        ]
 
     sim = mp.Simulation(
         resolution=res,
+        eps_averaging=do_averaging,
         cell_size=cell_size,
         default_material=matgrid if default_mat else mp.Medium(),
-        geometry=[] if default_mat else geometry,
+        geometry=geometry if not default_mat else [],
         sources=sources,
         k_point=k_point,
     )
 
     h = mp.Harminv(mp.Hz, mp.Vector3(0.3718, -0.2076), fcen, df)
-    sim.run(mp.after_sources(h), until_after_sources=200)
+    sim.run(mp.after_sources(h), until_after_sources=300)
 
     try:
         for m in h.modes:
@@ -172,94 +198,81 @@ def compute_resonant_mode_2d(res, default_mat=False):
     return freq
 
 
-def compute_resonant_mode_3d(use_matgrid=True):
-    resolution = 25
+def compute_resonant_mode_mpb(resolution=512):
+    geometry = [mp.Cylinder(rad, material=Si)]
+    geometry_lattice = mp.Lattice(cell_size)
 
-    wvl = 1.27
-    fcen = 1 / wvl
-    df = 0.02 * fcen
-
-    nSi = 3.45
-    Si = mp.Medium(index=nSi)
-    nSiO2 = 1.45
-    SiO2 = mp.Medium(index=nSiO2)
-
-    s = 1.0
-    cell_size = mp.Vector3(s, s, s)
-
-    rad = 0.34  # radius of sphere
-
-    if use_matgrid:
-        matgrid_resolution = 2 * resolution
-        N = int(s * matgrid_resolution)
-        coord = np.linspace(-0.5 * s, 0.5 * s, N)
-        xv, yv, zv = np.meshgrid(coord, coord, coord)
-
-        weights = np.sqrt(np.square(xv) + np.square(yv) + np.square(zv)) < rad
-        filtered_weights = gaussian_filter(
-            weights, sigma=4 / resolution, output=np.double
-        )
-
-        matgrid = mp.MaterialGrid(
-            mp.Vector3(N, N, N),
-            SiO2,
-            Si,
-            weights=filtered_weights,
-            do_averaging=True,
-            beta=1000,
-            eta=0.5,
-        )
-
-        geometry = [mp.Block(center=mp.Vector3(), size=cell_size, material=matgrid)]
-    else:
-        geometry = [mp.Sphere(center=mp.Vector3(), radius=rad, material=Si)]
-
-    sources = [
-        mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=df),
-            size=mp.Vector3(),
-            center=mp.Vector3(0.13, 0.25, 0.06),
-            component=mp.Ez,
-        )
-    ]
-
-    k_point = mp.Vector3(0.23, -0.17, 0.35)
-
-    sim = mp.Simulation(
-        resolution=resolution,
-        cell_size=cell_size,
-        sources=sources,
-        default_material=SiO2,
-        k_point=k_point,
+    ms = mpb.ModeSolver(
+        num_bands=1,
+        k_points=[mp.cartesian_to_reciprocal(k_point, geometry_lattice)],
         geometry=geometry,
+        geometry_lattice=geometry_lattice,
+        resolution=resolution,
     )
 
-    h = mp.Harminv(mp.Ez, mp.Vector3(-0.2684, 0.1185, 0.0187), fcen, df)
-
-    sim.run(mp.after_sources(h), until_after_sources=200)
-
-    try:
-        for m in h.modes:
-            print(f"harminv:, {resolution}, {m.freq}, {m.Q}")
-        freq = h.modes[0].freq
-    except:
-        raise RuntimeError("No resonant modes found.")
-
-    return freq
+    ms.run_te()
+    return ms.freqs[0]
 
 
 class TestMaterialGrid(unittest.TestCase):
     def test_subpixel_smoothing(self):
-        # "exact" frequency computed using MaterialGrid at resolution = 300
-        freq_ref = 0.29826813873225283
+        res = 25
 
-        res = [25, 50]
+        def subpixel_test_matrix(radius, do_averaging):
+            freq_cylinder = compute_resonant_mode_2d(
+                res,
+                radius,
+                default_mat=False,
+                cylinder=True,
+                cylinder_matgrid=False,
+                do_averaging=do_averaging,
+            )
+            freq_matgrid = compute_resonant_mode_2d(
+                res,
+                radius,
+                default_mat=False,
+                cylinder=False,
+                do_averaging=do_averaging,
+            )
+            freq_matgrid_cylinder = compute_resonant_mode_2d(
+                res,
+                radius,
+                default_mat=False,
+                cylinder=True,
+                cylinder_matgrid=True,
+                do_averaging=do_averaging,
+            )
+            return [freq_cylinder, freq_matgrid, freq_matgrid_cylinder]
+
+        # when smoothing is off, all three tests should be identical to machine precision
+        no_smoothing = subpixel_test_matrix(rad, False)
+        self.assertEqual(no_smoothing[0], no_smoothing[1])
+        self.assertEqual(no_smoothing[1], no_smoothing[2])
+
+        # when we slightly perturb the radius, the results should be the same as before.
+        no_smoothing_perturbed = subpixel_test_matrix(rad + 0.01 / res, False)
+        self.assertEqual(no_smoothing, no_smoothing_perturbed)
+
+        # when smoothing is on, the simple material results should be different from the matgrid results
+        smoothing = subpixel_test_matrix(rad, True)
+        self.assertNotEqual(smoothing[0], smoothing[1])
+        self.assertAlmostEqual(smoothing[1], smoothing[2], 3)
+
+        # when we slighty perturb the radius, the results should all be different from before.
+        smoothing_perturbed = subpixel_test_matrix(rad + 0.01 / res, True)
+        self.assertNotEqual(smoothing, smoothing_perturbed)
+
+        # "exact" frequency computed using MPB
+        freq_ref = compute_resonant_mode_mpb()
+        print(freq_ref)
+        res = [50, 100]
         freq_matgrid = []
         for r in res:
-            freq_matgrid.append(compute_resonant_mode_2d(r))
+            freq_matgrid.append(compute_resonant_mode_2d(r, cylinder=False))
             # verify that the frequency of the resonant mode is
             # approximately equal to the reference value
             self.assertAlmostEqual(freq_ref, freq_matgrid[-1], 2)
+        print("results:    ", freq_ref, freq_matgrid)
 
         # verify that the relative error is decreasing with increasing resolution
         # and is better than linear convergence because of subpixel smoothing
@@ -268,13 +281,9 @@ class TestMaterialGrid(unittest.TestCase):
             abs(freq_matgrid[0] - freq_ref),
         )
 
-        freq_matgrid_default_mat = compute_resonant_mode_2d(res[0], True)
+        # ensure that a material grid as a default material works
+        freq_matgrid_default_mat = compute_resonant_mode_2d(res[0], rad, True)
         self.assertAlmostEqual(freq_matgrid[0], freq_matgrid_default_mat)
-
-    def test_matgrid_3d(self):
-        freq_matgrid = compute_resonant_mode_3d(True)
-        freq_geomobj = compute_resonant_mode_3d(False)
-        self.assertAlmostEqual(freq_matgrid, freq_geomobj, places=2)
 
     def test_symmetry(self):
         tran_nosym = compute_transmittance(False)

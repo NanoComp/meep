@@ -793,4 +793,13 @@ bool operator==(const comms_key &lhs, const comms_key &rhs) {
   return (lhs.ft == rhs.ft) && (lhs.phase == rhs.phase) && (lhs.pair == rhs.pair);
 }
 
+void fields::change_m_number(double new_m) {
+  m = new_m;
+  for (int i = 0; i < num_chunks; i++) {
+    chunks[i]->change_m_number(new_m);
+  }
+}
+
+void fields_chunk::change_m_number(double new_m) { m = new_m; }
+
 } // namespace meep
