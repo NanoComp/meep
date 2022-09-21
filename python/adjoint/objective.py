@@ -369,13 +369,13 @@ class Near2FarFields(ObjectiveQuantity):
     def __init__(
         self,
         sim: mp.Simulation,
-        Near2FarRegions: mp.Near2FarRegion,
+        Near2FarRegions: List[mp.Near2FarRegion],
         far_pts: List[mp.Vector3],
         decimation_factor: Optional[int] = 0,
     ):
         """ """
         super().__init__(sim)
-        self.Near2FarRegions = mp.Near2FarRegion
+        self.Near2FarRegions = Near2FarRegions
         self.far_pts = far_pts  # list of far pts
         self._nfar_pts = len(far_pts)
         self.decimation_factor = decimation_factor
