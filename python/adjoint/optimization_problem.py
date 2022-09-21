@@ -6,7 +6,7 @@ from autograd import grad, jacobian
 
 import meep as mp
 
-from . import LDOS, DesignRegion, utils
+from . import LDOS, DesignRegion, utils, ObjectiveQuantity
 
 
 class OptimizationProblem:
@@ -38,6 +38,7 @@ class OptimizationProblem:
         minimum_run_time: Optional[float] = 0,
         maximum_run_time: Optional[float] = None,
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
+        step_funcs: list = None,
     ):
         """
         + **`simulation` [ `Simulation` ]** — The corresponding Meep
