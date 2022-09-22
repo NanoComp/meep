@@ -4279,9 +4279,8 @@ class Simulation:
                         py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical)
                     )
 
-    def change_m(self, m: float)->None:
-        """Changes the simulation's `m` number (the angular ϕ dependence).
-        """
+    def change_m(self, m: float) -> None:
+        """Changes the simulation's `m` number (the angular ϕ dependence)."""
         self.m = m
 
         if self.fields:

@@ -795,13 +795,11 @@ bool operator==(const comms_key &lhs, const comms_key &rhs) {
 
 void fields::change_m(double new_m) {
   m = new_m;
-  if ((new_m != 0) && (is_real)){
+  if ((new_m != 0) && (is_real)) {
     meep::abort("The simulation must be reinitialized if switching to complex fields!\n");
   }
 
-  if ((new_m == 0) && (!is_real)){
-    use_real_fields();
-  }
+  if ((new_m == 0) && (!is_real)) { use_real_fields(); }
 
   for (int i = 0; i < num_chunks; i++) {
     chunks[i]->change_m(new_m);

@@ -48,7 +48,7 @@ deps = 1e-5
 dp = deps * rng.rand(Nr * Nz)
 
 
-def forward_simulation(design_params,m,far_x):
+def forward_simulation(design_params, m, far_x):
     matgrid = mp.MaterialGrid(
         mp.Vector3(Nr, 0, Nz), SiO2, Si, weights=design_params.reshape(Nr, 1, Nz)
     )
@@ -89,7 +89,7 @@ def forward_simulation(design_params,m,far_x):
     return abs(Er[0]) ** 2
 
 
-def adjoint_solver(design_params,m,far_x):
+def adjoint_solver(design_params, m, far_x):
 
     design_variables = mp.MaterialGrid(mp.Vector3(Nr, 0, Nz), SiO2, Si)
     design_region = mpa.DesignRegion(
@@ -148,19 +148,21 @@ def adjoint_solver(design_params,m,far_x):
 
 
 class TestAdjointSolver(ApproxComparisonTestCase):
-    @parameterized.parameterized.expand([
-            (0,[mp.Vector3(5, 0, 20)]),
-            (0,[mp.Vector3(4, 0, 28)]),
-            (-1,[mp.Vector3(5, 0, 20)]),
-            (1.2,[mp.Vector3(5, 0, 20)])
-    ])
-    def test_adjoint_solver_cyl_n2f_fields(self,m,far_x):
+    @parameterized.parameterized.expand(
+        [
+            (0, [mp.Vector3(5, 0, 20)]),
+            (0, [mp.Vector3(4, 0, 28)]),
+            (-1, [mp.Vector3(5, 0, 20)]),
+            (1.2, [mp.Vector3(5, 0, 20)]),
+        ]
+    )
+    def test_adjoint_solver_cyl_n2f_fields(self, m, far_x):
         print("*** TESTING CYLINDRICAL Near2Far ADJOINT FEATURES ***")
-        print("Current test: m={}, far_x={}".format(m,far_x))
-        adjsol_obj, adjsol_grad = adjoint_solver(p,m,far_x)
+        print(f"Current test: m={m}, far_x={far_x}")
+        adjsol_obj, adjsol_grad = adjoint_solver(p, m, far_x)
 
         ## compute unperturbed S12
-        S12_unperturbed = forward_simulation(p,m,far_x)
+        S12_unperturbed = forward_simulation(p, m, far_x)
 
         ## compare objective results
         print(
@@ -170,7 +172,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         self.assertClose(adjsol_obj, S12_unperturbed, epsilon=1e-3)
 
         ## compute perturbed S12
-        S12_perturbed = forward_simulation(p + dp,m,far_x)
+        S12_perturbed = forward_simulation(p + dp, m, far_x)
 
         ## compare gradients
         if adjsol_grad.ndim < 2:
