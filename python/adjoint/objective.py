@@ -1,7 +1,7 @@
 """Handling of objective functions and objective quantities."""
 import abc
 from collections import namedtuple
-from typing import Callable, List, Union, Optional
+from typing import Callable, List, Optional
 
 import numpy as np
 from meep.simulation import py_v3_to_vec
