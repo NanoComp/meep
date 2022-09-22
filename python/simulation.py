@@ -4345,6 +4345,21 @@ class Simulation:
                         py_v3_to_vec(self.dimensions, self.k_point, self.is_cylindrical)
                     )
 
+    def change_m(self, m: float) -> None:
+        """Changes the simulation's `m` number (the angular ϕ dependence)."""
+        self.m = m
+
+        if self.fields:
+            needs_complex_fields = not (not self.m or self.m == 0)
+
+            if needs_complex_fields and self.fields.is_real:
+                self.fields = None
+                self._is_initialized = False
+                self.init_sim()
+            else:
+                if self.m is not None:
+                    self.fields.change_m(m)
+
     def change_sources(self, new_sources):
         """
         Change the list of sources in `Simulation.sources` to `new_sources`, and changes

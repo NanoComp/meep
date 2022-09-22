@@ -2651,16 +2651,18 @@ get_material_gradient(const meep::vec &r,              // current point
   material_type md;
   geps->get_material_pt(md, r);
 
+  // get the tensor column index corresponding to the forward component
   int dir_idx = 0;
-  if (forward_c == meep::Dx || forward_c == meep::Dr)
-    dir_idx = 0;
-  else if (forward_c == meep::Dy || forward_c == meep::Dp)
-    dir_idx = 1;
-  else if (forward_c == meep::Dz)
-    dir_idx = 2;
-  else
-    meep::abort("Invalid adjoint field component");
+  switch (meep::component_direction(forward_c)) {
+    case meep::X:
+    case meep::R: dir_idx = 0; break;
+    case meep::Y:
+    case meep::P: dir_idx = 1; break;
+    case meep::Z: dir_idx = 2; break;
+    case meep::NO_DIRECTION: meep::abort("Invalid forward component!\n");
+  }
 
+  // materials are non-dispersive
   if (md->trivial) {
     const double sd = 1.0; // FIXME: make user-changable?
     meep::volume v(r);
@@ -2668,18 +2670,16 @@ get_material_gradient(const meep::vec &r,              // current point
       v.set_direction_min(d, r.in_direction(d) - 0.5 * gv.inva * sd);
       v.set_direction_max(d, r.in_direction(d) + 0.5 * gv.inva * sd);
     }
-    double row_1[3], row_2[3], dA_du[3];
+    double row_1[3], row_2[3];
     double orig = u[idx];
     u[idx] -= du;
     geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
     u[idx] += 2 * du;
     geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
     u[idx] = orig;
-
-    for (int i = 0; i < 3; i++)
-      dA_du[i] = (row_1[i] - row_2[i]) / (2 * du);
-    return dA_du[dir_idx] * fields_f;
+    return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du);
   }
+  // materials have some dispersion
   else {
     double orig = u[idx];
     std::complex<double> row_1[3], row_2[3], dA_du[3];
@@ -2689,9 +2689,8 @@ get_material_gradient(const meep::vec &r,              // current point
     eff_chi1inv_row_disp(adjoint_c, row_2, r, freq, geps);
     u[idx] = orig;
 
-    for (int i = 0; i < 3; i++)
-      dA_du[i] = (row_1[i] - row_2[i]) / (2 * du);
-    return dA_du[dir_idx] * fields_f * cond_cmp(forward_c, r, freq, geps);
+    return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du) *
+           cond_cmp(forward_c, r, freq, geps);
   }
 }
 
@@ -2720,8 +2719,8 @@ void add_interpolate_weights(double rx, double ry, double rz, double *data, int 
 /* define a macro to give us data(x,y,z) on the grid,
 in row-major order (the order used by HDF5): */
 #define IDX(x, y, z) (((x)*ny + (y)) * nz + (z)) * stride
-#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * stride])
-#define U(x, y, z) (udata[(((x)*ny + (y)) * nz + (z)) * stride])
+#define D(x, y, z) (data[IDX(x, y, z)])
+#define U(x, y, z) (udata[IDX(x, y, z)])
 
   u = (((U(x1, y1, z1) * (1.0 - dx) + U(x2, y1, z1) * dx) * (1.0 - dy) +
         (U(x1, y2, z1) * (1.0 - dx) + U(x2, y2, z1) * dx) * dy) *

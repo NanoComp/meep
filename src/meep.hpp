@@ -1546,6 +1546,7 @@ public:
   void remove_sources();
   void remove_susceptibilities(bool shared_chunks);
   void zero_fields();
+  void change_m(double new_m);
 
   // update_eh.cpp
   bool needs_W_prev(component c) const;
@@ -1751,6 +1752,7 @@ public:
   void remove_fluxes();
   void reset();
   void log(const char *prefix = "");
+  void change_m(double new_m);
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);

@@ -243,7 +243,7 @@ class OptimizationProblem:
 
         # flip the m number
         if utils._check_if_cylindrical(self.sim):
-            self.sim.m = -self.sim.m
+            self.sim.change_m(-self.sim.m)
 
         # flip the k point
         if self.sim.k_point:
@@ -279,11 +279,11 @@ class OptimizationProblem:
 
         # reset the m number
         if utils._check_if_cylindrical(self.sim):
-            self.sim.m = -self.sim.m
+            self.sim.change_m(-self.sim.m)
 
         # reset the k point
         if self.sim.k_point:
-            self.sim.k_point *= -1
+            self.sim.change_k_point(-1 * self.sim.k_point)
 
         # update optimizer's state
         self.current_state = "ADJ"
