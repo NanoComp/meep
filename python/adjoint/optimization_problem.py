@@ -1,11 +1,12 @@
 from collections import namedtuple
+from typing import Callable, List, Union, Optional, Tuple
 
 import numpy as np
 from autograd import grad, jacobian
 
 import meep as mp
 
-from . import LDOS, DesignRegion, utils
+from . import LDOS, DesignRegion, utils, ObjectiveQuantity
 
 
 class OptimizationProblem:
@@ -24,21 +25,28 @@ class OptimizationProblem:
 
     def __init__(
         self,
-        simulation,
-        objective_functions,
-        objective_arguments,
-        design_regions,
-        frequencies=None,
-        fcen=None,
-        df=None,
-        nf=None,
-        decay_by=1e-11,
-        decimation_factor=0,
-        minimum_run_time=0,
-        maximum_run_time=None,
-        finite_difference_step=utils.FD_DEFAULT,
+        simulation: mp.Simulation,
+        objective_functions: List[Callable],
+        objective_arguments: List[ObjectiveQuantity],
+        design_regions: List[DesignRegion],
+        frequencies: Optional[Union[float, List[float]]] = None,
+        fcen: Optional[float] = None,
+        df: Optional[float] = None,
+        nf: Optional[int] = None,
+        decay_by: Optional[float] = 1e-11,
+        decimation_factor: Optional[int] = 0,
+        minimum_run_time: Optional[float] = 0,
+        maximum_run_time: Optional[float] = None,
+        finite_difference_step: Optional[float] = utils.FD_DEFAULT,
         step_funcs: list = None,
     ):
+        """
+        + **`simulation` [ `Simulation` ]** — The corresponding Meep
+        `Simulation` object that describes the problem (e.g. sources,
+        geometry)
+
+        + **`objective_functions` [ `list of ` ]** —
+        """
         self.step_funcs = step_funcs if step_funcs is not None else []
         self.sim = simulation
 
@@ -108,7 +116,13 @@ class OptimizationProblem:
 
         self.gradient = []
 
-    def __call__(self, rho_vector=None, need_value=True, need_gradient=True, beta=None):
+    def __call__(
+        self,
+        rho_vector: List[List[float]] = None,
+        need_value: bool = True,
+        need_gradient: bool = True,
+        beta: float = None,
+    ) -> Tuple[List[float], List[float]]:
         """Evaluate value and/or gradient of objective function."""
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
@@ -140,7 +154,7 @@ class OptimizationProblem:
 
         return self.f0, self.gradient
 
-    def get_fdf_funcs(self):
+    def get_fdf_funcs(self) -> Tuple[Callable, Callable]:
         """construct callable functions for objective function value and gradient
 
         Returns
@@ -306,11 +320,11 @@ class OptimizationProblem:
 
     def calculate_fd_gradient(
         self,
-        num_gradients=1,
-        db=1e-4,
-        design_variables_idx=0,
-        filter=None,
-    ):
+        num_gradients: int = 1,
+        db: float = 1e-4,
+        design_variables_idx: int = 0,
+        filter: Callable = None,
+    ) -> List[float]:
         """
         Estimate central difference gradients.
 
@@ -448,7 +462,7 @@ class OptimizationProblem:
 
         return fd_gradient, fd_gradient_idx
 
-    def update_design(self, rho_vector, beta=None):
+    def update_design(self, rho_vector: List[float], beta: float = None) -> None:
         """Update the design permittivity function.
 
         rho_vector ....... a list of numpy arrays that maps to each design region
@@ -465,11 +479,11 @@ class OptimizationProblem:
         self.sim.reset_meep()
         self.current_state = "INIT"
 
-    def get_objective_arguments(self):
+    def get_objective_arguments(self) -> List[float]:
         """Return list of evaluated objective arguments."""
         return [m.get_evaluation() for m in self.objective_arguments]
 
-    def plot2D(self, init_opt=False, **kwargs):
+    def plot2D(self, init_opt=False, **kwargs) -> None:
         """Produce a graphical visualization of the geometry and/or fields,
         as appropriately autodetermined based on the current state of
         progress.
