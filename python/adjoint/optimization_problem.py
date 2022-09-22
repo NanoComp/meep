@@ -28,7 +28,7 @@ class OptimizationProblem:
         simulation: mp.Simulation,
         objective_functions: List[Callable],
         objective_arguments: List[ObjectiveQuantity],
-        design_regions: [DesignRegion],
+        design_regions: List[DesignRegion],
         frequencies: Optional[Union[float, List[float]]] = None,
         fcen: Optional[float] = None,
         df: Optional[float] = None,
@@ -42,7 +42,7 @@ class OptimizationProblem:
     ):
         """
         + **`simulation` [ `Simulation` ]** — The corresponding Meep
-        `Simulation` object that describeds the problem (e.g. sources,
+        `Simulation` object that describes the problem (e.g. sources,
         geometry)
 
         + **`objective_functions` [ `list of ` ]** —
