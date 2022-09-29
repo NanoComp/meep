@@ -2999,7 +2999,6 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
   for (int i = 0; i < 3; i++) {
     for (int ii = 0; ii < adjoint_dft_chunks[i].size(); ii++) {
       delete adjoint_dft_chunks[i][ii];
-      // delete forward_dft_chunks[i][ii];
     }
   }
 

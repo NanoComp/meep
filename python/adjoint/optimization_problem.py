@@ -306,9 +306,9 @@ class OptimizationProblem:
 
         for dri in range(self.num_design_regions):
             mp._delete_forward_dft_chunk(
-                self.forward_design_region_monitors[dri][0],
-                self.forward_design_region_monitors[dri][1],
-                self.forward_design_region_monitors[dri][2],
+                self.forward_design_region_monitors[dri][0].swigobj,
+                self.forward_design_region_monitors[dri][1].swigobj,
+                self.forward_design_region_monitors[dri][2].swigobj,
             )
 
         # Cleanup list of lists
