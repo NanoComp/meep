@@ -304,6 +304,13 @@ class OptimizationProblem:
             for ar in range(len(self.objective_functions))
         ]
 
+        for dri in range(self.num_design_regions):
+            mp._delete_forward_dft_chunk(
+                self.forward_design_region_monitors[dri][0],
+                self.forward_design_region_monitors[dri][1],
+                self.forward_design_region_monitors[dri][2],
+            )
+
         # Cleanup list of lists
         if len(self.gradient) == 1:
             self.gradient = self.gradient[0]  # only one objective function

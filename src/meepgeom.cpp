@@ -2999,11 +2999,23 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
   for (int i = 0; i < 3; i++) {
     for (int ii = 0; ii < adjoint_dft_chunks[i].size(); ii++) {
       delete adjoint_dft_chunks[i][ii];
-      delete forward_dft_chunks[i][ii];
+      // delete forward_dft_chunks[i][ii];
     }
   }
 
 } // material_grids_addgradient
+
+void delete_forward_dft_chunk(std::vector<meep::dft_fields *> fields_f) {
+  for (int i = 0; i < 3; i++) {
+    meep::dft_chunk *current_forward_chunk = fields_f[i]->chunks;
+    meep::dft_chunk *next_forward_chunk;
+    while (current_forward_chunk) {
+      next_forward_chunk = current_forward_chunk->next_in_dft;
+      delete current_forward_chunk;
+      current_forward_chunk = next_forward_chunk;
+    }
+  }
+}
 
 static void find_array_min_max(int n, const double *data, double &min_val, double &max_val) {
   min_val = data[0];
