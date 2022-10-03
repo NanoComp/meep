@@ -572,8 +572,10 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       if (verbosity > 0)
         master_printf("MPB solved for frequency_%d(%g,%g,%g) "
                       "= %g after %d iters\n",
-                      band_num, G[0][0] * k[0], G[1][1] * k[1], G[2][2] * k[2],
-                      sqrt(eigvals[band_num - 1]), num_iters);
+                      band_num, G[0][0] * k[0] + G[1][0] * k[1] + G[2][0] * k[2],
+                      G[0][1] * k[0] + G[1][1] * k[1] + G[2][1] * k[2],
+                      G[0][2] * k[0] + G[1][2] * k[1] + G[2][2] * k[2], sqrt(eigvals[band_num - 1]),
+                      num_iters);
 
       // copy desired single eigenvector into scratch arrays
       evectmatrix_resize(&W[0], 1, 0);
