@@ -61,7 +61,7 @@ def substrate_geometry(is_textured: bool):
     return geometry
 
 
-def forward(n: int, rt: int, is_textured: bool = False) -> [List, np.ndarray]:
+def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
     """Computes the Poynting flux in the upward normal direction (+y) in air
     given a point dipole source positioned somewhere along a line in the
     middle of a high-index substrate.
@@ -112,7 +112,7 @@ def forward(n: int, rt: int, is_textured: bool = False) -> [List, np.ndarray]:
     return freqs, flux
 
 
-def backward(rt: int, is_textured: bool = False) -> [List, np.ndarray]:
+def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
     """Computes the overlap integral from a collection of point DFT monitors
        in the high-index substrate given a planewave source in air at normal
        incidence propagating in the -y direction.
@@ -194,5 +194,7 @@ if __name__ == "__main__":
 
     if mp.am_master():
         plt.savefig(
-            "forward_vs_backward_flux_spectrum.png", bbox_inches="tight", dpi=150
+            "forward_vs_backward_flux_spectrum.png",
+            bbox_inches="tight",
+            dpi=150,
         )

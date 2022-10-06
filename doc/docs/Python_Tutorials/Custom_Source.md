@@ -17,7 +17,7 @@ This tutorial example involves computing the radiated [Poynting flux](../Introdu
 ![](../images/LED_layout.png#center)
 
 
-### Exploiting Linear Time Invariance of the Materials/Geometry
+### Exploiting Linear Time Invariance of the Materials and Geometry
 
 One can take two different approaches to computing the radiated flux based on the type of emitter: (1) random or (2) deterministic. In Method 1 (brute-force Monte Carlo), each emitter is a white-noise dipole: every timestep for every dipole is an independent random number. A single run involves all $N$ dipoles which are modeled using a `CustomSource`. The stochastic results for the radiated flux are averaged over multiple trials/iterations via [Monte Carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method). Method 2 exploits the property of [linear time-invariance](https://en.wikipedia.org/wiki/Linear_time-invariant_system) of the materials/geometry and involves a sequence of $N$ separate runs each with a single deterministic dipole (i.e., pulse time profile, `GaussianSource`) at different positions in the emitting layer. Because dipoles at different positions are uncorrelated, the radiated flux from the ensemble is simply the average of all the individual iterations. (The interference terms between different dipoles integrate to zero when averaging over all possible phases.) The two approaches converge towards identical results, but Method 1 is more computationally expensive than Method 2 due to the much larger number of trials/iterations ($\gg  N$) required to attain low noise variance.   (Even more sophisticated deterministic methods exist to reduce the number of separate simulations, especially at high resolutions; for example, replacing the point-dipole sources with a [rapidly converging set of smooth basis functions](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.81.012119) as demonstrated below, or fancier methods that exploit [trace-estimation methods](https://arxiv.org/abs/2111.13046) and/or transform volumetric sources to [surface sources](http://doi.org/10.1103/PhysRevB.88.054305).)
 
@@ -382,15 +382,13 @@ The previous examples involved emission in the *normal* direction. To investigat
 
 ### Exploiting Reciprocity
 
-Finally, for cases which involve computing the emission from a collection of $N$ random dipoles in a *single* direction, one can exploit [reciprocity](https://en.wikipedia.org/wiki/Reciprocity_(electromagnetism)) to obtain the same result using a single simulation rather than Monte Carlo sampling involving a large number of runs simply by swapping the sources and monitors. This approach is analogous to computing [thermal radiation](https://en.wikipedia.org/wiki/Thermal_radiation) from a blackbody via [Kirchhoff's law for thermal radiation](https://en.wikipedia.org/wiki/Kirchhoff%27s_law_of_thermal_radiation) which states that emissivity and absorptivity are equivalent under thermal equilibrium. However, the approach demonstrated in this tutorial, which was originally applied to computing the extraction efficiency of LEDs in [Optics Express, Vol. 18, pp. 24522-35 (2010)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-18-24-24522), does not require lossy materials.
+Finally, for cases which involve computing the emission from a collection of $N$ random dipoles in a *single* direction, one can exploit [reciprocity](https://en.wikipedia.org/wiki/Reciprocity_(electromagnetism)) to obtain the same result using a single simulation rather than Monte Carlo sampling of a large number of runs simply by swapping the sources and monitors and running the simulation backwards. This approach is analogous to computing [thermal radiation](https://en.wikipedia.org/wiki/Thermal_radiation) from a blackbody via [Kirchhoff's law for thermal radiation](https://en.wikipedia.org/wiki/Kirchhoff%27s_law_of_thermal_radiation) which states that emissivity and absorptivity are equivalent under thermal equilibrium. However, the approach demonstrated in this tutorial, which was originally developed for computing the extraction efficiency of LEDs in [Optics Express, Vol. 18, pp. 24522-35 (2010)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-18-24-24522), does not require lossy materials.
 
-In this example, we will demonstrate that the broadband emission spectrum in the normal direction ($+y$) in air from a collection of $N=10$ point dipoles in the high-index grating structure computed using 10 [single-dipole simulations](#exploiting-linear-time-invariance-of-the-materialsgeometry) ("forward" runs) can be computed using a single reciprocal calculation ("backward" run) involving a planewave at normal incidence ($-y$) in air and $N=10$ point DFT monitors in the grating structure.
+The reciprocal calculation involves two parts: (1) for the simulation, send an input mode in the opposite direction of the output mode of the forward calculation and monitor the DFT fields at the same location as the sources in the forward calculation, and (2) in post processing, evaluate an inner product of the DFT fields using a correlation operator of the random currents. Since the currents are uncorrelated in space and consist only of electric currents (because, in practice, they are generated by LED quantum wells), the correlation operator is a diagonal matrix. Also, since these are 2d simulations with $E_z$ polarization and involve an isotropic dielectric medium, the inner product of the fields is therefore just a sum of $|E_z|^2$ from the DFT monitors (equation 10 of the reference). In 3d, we would need to perform two separate calculations for the $\mathcal{S}$ and $\mathcal{P}$ polarizations. (For the more general case of reciprocity and anisotropic materials, see Section 2.3 of [arXiv:2111.13046](https://arxiv.org/abs/2111.13046).)
 
-The simulation script is in [examples/stochastic_emitter_forward_backward.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter_forward_backward.py).
+In this example, we will demonstrate that the broadband emission spectrum in the normal direction ($+y$) in air from a collection of $N=10$ point dipoles in the LED-like structure (same as above) computed using 10 [single-dipole simulations](#exploiting-linear-time-invariance-of-the-materialsgeometry) ("forward" runs) can be computed using a single reciprocal calculation involving a planewave at normal incidence ($-y$) in air and $N=10$ point DFT monitors inside the LED-like structure ("backward" run).
 
-
-![](../images/stochastic_emitter_forward_vs_backward_flux_spectrum.png#center)
-
+The simulation script is in [examples/stochastic_emitter_reciprocity.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter_reciprocity.py).
 
 ```py
 from typing import List
@@ -452,7 +450,7 @@ def substrate_geometry(is_textured: bool):
     return geometry
 
 
-def forward(n: int, rt: int, is_textured: bool = False) -> [List, np.ndarray]:
+def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
     """Computes the Poynting flux in the upward normal direction (+y) in air
     given a point dipole source positioned somewhere along a line in the
     middle of a high-index substrate.
@@ -508,7 +506,7 @@ def forward(n: int, rt: int, is_textured: bool = False) -> [List, np.ndarray]:
     return freqs, flux
 
 
-def backward(rt: int, is_textured: bool = False) -> [List, np.ndarray]:
+def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
     """Computes the overlap integral from a collection of point DFT monitors
        in the high-index substrate given a planewave source in air at normal
        incidence propagating in the -y direction.
@@ -600,3 +598,9 @@ if __name__ == '__main__':
             dpi=150
         )
 ```
+
+There are four items to note in this script. (1) Since the exact equivalence between the forward and reciprocal calculations only applies to the continuum model, demonstrating agreement using a discretized model typically requires going to fine grid resolutions. In this example, we found that a resolution of 200 pixels/μm produced results which were sufficiently converged. (2) Measuring the flux in the normal direction in the forward calculation requires [mode decomposition](../Python_User_Interface.md#mode-decomposition) rather than a Poynting flux monitor. (3) To compare the result of the forward and reciprocal calculations, the flux spectrum from the grating structure must be normalized using the flux spectrum from a flat structure. (4) Measuring the emission in the normal direction requires specifying a `k_point` of zero. (For emission at angle $\theta$ from the $+y$ axis, the `k_point` would be $\omega(\sin(\theta),\cos(\theta))$ where $\omega$ is the source/monitor frequency.)
+
+The results demonstrate good agreeement between the forward and backward calculations. However, the forward calculation took ~20 hours while the backward calculation took ~6 hours.
+
+![](../images/stochastic_emitter_forward_vs_backward_flux_spectrum.png#center)
