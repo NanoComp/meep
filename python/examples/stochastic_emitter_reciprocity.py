@@ -68,7 +68,7 @@ def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
 
     Args:
       n: n'th position along a line of equally spaced dipoles.
-      rt: runtime of simulation after the source has turned in units
+      rt: runtime of simulation after the source has turned off in units
           of nfreq/df.
       is_textured: whether the substrate is textured or not.
     """
@@ -118,7 +118,7 @@ def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
        incidence propagating in the -y direction.
 
     Args:
-      rt: runtime of simulation after the source has turned in units
+      rt: runtime of simulation after the source has turned off in units
           of nfreq/df.
       is_textured: whether the substrate is textured or not.
     """

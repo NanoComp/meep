@@ -457,7 +457,7 @@ def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
 
     Args:
       n: n'th position along a line of equally spaced dipoles.
-      rt: runtime of simulation after the source has turned in units
+      rt: runtime of simulation after the source has turned off in units
           of nfreq/df.
       is_textured: whether the substrate is textured or not.
     """
@@ -512,7 +512,7 @@ def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
        incidence propagating in the -y direction.
 
     Args:
-      rt: runtime of simulation after the source has turned in units
+      rt: runtime of simulation after the source has turned off in units
           of nfreq/df.
       is_textured: whether the substrate is textured or not.
     """
@@ -599,8 +599,8 @@ if __name__ == '__main__':
         )
 ```
 
-There are four items to note in this script. (1) Since the exact equivalence between the forward and reciprocal calculations only applies to the continuum model, demonstrating agreement using a discretized model typically requires going to fine grid resolutions. In this example, we found that a resolution of 200 pixels/μm produced results which were sufficiently converged. (2) Measuring the flux in the normal direction in the forward calculation requires [mode decomposition](../Python_User_Interface.md#mode-decomposition) rather than a Poynting flux monitor. (3) To compare the result of the forward and reciprocal calculations, the flux spectrum from the grating structure must be normalized using the flux spectrum from a flat structure. (4) Measuring the emission in the normal direction requires specifying a `k_point` of zero. (For emission at angle $\theta$ from the $+y$ axis, the `k_point` would be $\omega(\sin(\theta),\cos(\theta))$ where $\omega$ is the source/monitor frequency.)
+There are four items to note in this script. (1) Since the exact equivalence between the forward and reciprocal calculations only applies to the continuum model, demonstrating agreement using a discretized model typically requires going to fine grid resolutions. In this example, we found that a resolution of 200 pixels/μm produced results which are sufficiently converged. (2) Measuring the flux in the normal direction in the forward calculation requires [mode decomposition](../Python_User_Interface.md#mode-decomposition) rather than a Poynting flux monitor. (3) To compare the results of the forward and reciprocal calculations, similar to the previous examples, the flux spectrum of the grating structure must be normalized using the flux spectrum of a flat structure. (4) Measuring the emission in the normal direction requires specifying a `k_point` of zero. (For emission at angle $\theta$ from the $+y$ axis, the `k_point` would be $\omega(\sin(\theta),\cos(\theta))$ where $\omega$ is the source/monitor frequency.)
 
-The results demonstrate good agreeement between the forward and backward calculations. However, the forward calculation took ~20 hours while the backward calculation took ~6 hours.
+The results demonstrate good agreeement between the forward and backward calculations. However, there is a significant difference in computational efficiency: the forward calculation took ~20 hours while the backward calculation took ~6 hours.
 
 ![](../images/stochastic_emitter_forward_vs_backward_flux_spectrum.png#center)
