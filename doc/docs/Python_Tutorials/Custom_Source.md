@@ -11,11 +11,13 @@ Stochastic Dipole Emission in Light Emitting Diodes
 
 In addition to the two source time profiles of a [continuous wave](../Python_User_Interface.md#continuoussource) (CW) and finite-bandwidth [pulse](../Python_User_Interface.md#gaussiansource), Meep supports a [custom source](../Python_User_Interface.md#customsource) for defining an arbitrary time profile. This feature can be used to model **spatially incoherent** random (i.e., [white noise](https://en.wikipedia.org/wiki/White_noise)) dipole emission in a [light-emitting diode](https://en.wikipedia.org/wiki/Light-emitting_diode) (LED), spontaneously recombining excitonic emission in an [organic light-emitting diode](https://en.wikipedia.org/wiki/OLED) (OLED), as well as near-field heat transfer.   Such incoherent emission processes are very different from *coherent* emission by a single collection of sources with a fixed phase relation, and more complicated modeling techniques are required.
 
-This tutorial example involves computing the radiated [flux](../Introduction.md#transmittancereflectance-spectra) from $N=10$ dipole emitters of a 2d LED-like periodic structure with a thin (1d) light-emitting layer. A schematic of the unit cell geometry and simulation layout is shown below. A silver (Ag) back reflector is used to direct nearly all the flux upwards into the $+y$ direction. PML is used to terminate the air region at the top of the cell. (Note: PML is not necessary at the bottom of the cell due to the Ag layer which is effectively a lossless mirror with [skin depth](https://en.wikipedia.org/wiki/Skin_effect) of a few nanometers at a wavelength of 1 μm.) The emitting layer is placed within a lossless dielectric substrate with wavelength-independent refractive index of 3.45.
+This tutorial example involves computing the radiated [Poynting flux](../Introduction.md#transmittancereflectance-spectra) from $N=10$ dipole emitters of a 2d LED-like periodic structure with a thin (1d) light-emitting layer. A schematic of the unit cell geometry and simulation layout is shown below. A silver (Ag) back reflector is used to direct nearly all the flux upwards into the $+y$ direction. PML is used to terminate the air region at the top of the cell. (Note: PML is not necessary at the bottom of the cell due to the Ag layer which is effectively a lossless mirror with [skin depth](https://en.wikipedia.org/wiki/Skin_effect) of a few nanometers at a wavelength of 1 μm.) The emitting layer is placed within a lossless dielectric substrate with wavelength-independent refractive index of 3.45.
 
 
 ![](../images/LED_layout.png#center)
 
+
+### Exploiting Linear Time Invariance of the Materials and Geometry
 
 One can take two different approaches to computing the radiated flux based on the type of emitter: (1) random or (2) deterministic. In Method 1 (brute-force Monte Carlo), each emitter is a white-noise dipole: every timestep for every dipole is an independent random number. A single run involves all $N$ dipoles which are modeled using a `CustomSource`. The stochastic results for the radiated flux are averaged over multiple trials/iterations via [Monte Carlo sampling](https://en.wikipedia.org/wiki/Monte_Carlo_method). Method 2 exploits the property of [linear time-invariance](https://en.wikipedia.org/wiki/Linear_time-invariant_system) of the materials/geometry and involves a sequence of $N$ separate runs each with a single deterministic dipole (i.e., pulse time profile, `GaussianSource`) at different positions in the emitting layer. Because dipoles at different positions are uncorrelated, the radiated flux from the ensemble is simply the average of all the individual iterations. (The interference terms between different dipoles integrate to zero when averaging over all possible phases.) The two approaches converge towards identical results, but Method 1 is more computationally expensive than Method 2 due to the much larger number of trials/iterations ($\gg  N$) required to attain low noise variance.   (Even more sophisticated deterministic methods exist to reduce the number of separate simulations, especially at high resolutions; for example, replacing the point-dipole sources with a [rapidly converging set of smooth basis functions](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.81.012119) as demonstrated below, or fancier methods that exploit [trace-estimation methods](https://arxiv.org/abs/2111.13046) and/or transform volumetric sources to [surface sources](http://doi.org/10.1103/PhysRevB.88.054305).)
 
@@ -183,6 +185,8 @@ The next figure shows a comparison of the normalized radiated flux for Method 1 
 
 
 One situation in which you may need to perform brute-force Monte Carlo simulations is that of nonlinear or time-varying media, because the equivalence between random and deterministic simulations above relied on linearity and time-invariance.   However, in such media one also cannot directly employ white-noise sources, but you must instead input the noise with the correct spectrum for your desired emission process.   For example, to [model thermal emission in a nonlinear medium](http://doi.org/10.1103/PhysRevB.91.115406) one must have a noise spectrum consistent with the [fluctuation-dissipation theorem](https://en.wikipedia.org/wiki/Fluctuation-dissipation_theorem), which can be achieved using the `NoisyLorentzianSusceptibility` feature in Meep.
+
+### An Efficient Approach for Large Number of Dipole Emitters
 
 For cases involving a large number $N$ of spatially incoherent dipole emitters, a more computationally efficient approach than $N$ single-dipole simulations (Method 2) is $M$ separate simulations involving a *line* source with a different set of basis functions (Method 3). $M$ is typically independent of the resolution and $\ll N$. (For Method 2, the number of point dipoles $N$ comprising the same line source increases with resolution.) The mathematical details of Method 3 are described in [Physical Review A, vol. 80, 012119, (2010)](https://journals.aps.org/pra/abstract/10.1103/PhysRevA.81.012119). The source amplitude function of the $m$th run in the ensemble is defined by a cosine Fourier series:
 
@@ -375,3 +379,228 @@ $$f_{m,n}(x,y) = \sqrt{\frac{c_m c_n}{L_x L_y}} \cos \left(\frac{m\pi x}{L_x}\ri
 where $c_m = c_n = 1$ if $m=n=0$ and $c_m = c_n = 2$ otherwise, $L_x$ and $L_y$ are the lengths of the planar source in the $x$ and $y$ directions. This requires two nested loops to sum over $m$ and $n$ separately. For example, if $M=N=10$, there are a total of 100 simulations. A 3d emission volume would require the product of 3 cosine series leading to e.g. 1000 simulations if there are 10 different sources in each dimension.
 
 The previous examples involved emission in the *normal* direction. To investigate emission in *all* directions for a periodic surface requires integrating over $k_x$ and $k_y$ (the Bloch wavevectors of the unit cell; specified using `k_point`). Each ($k_x,k_y$) corresponds to a different emission direction. However, if you have designed your periodic emitter to emit mostly vertically (via a resonance at $k_x=k_y=0$), then the emission drops off rapidly at other $k$ points. Thus, you can probably estimate the angular width of the resonance by sampling only a few $k$ points near (0,0).
+
+### Exploiting Reciprocity
+
+Finally, for cases which involve computing the emission from a collection of $N$ random dipoles in a *single* direction, one can exploit [reciprocity](https://en.wikipedia.org/wiki/Reciprocity_(electromagnetism)) to obtain the same result using a single simulation rather than Monte Carlo sampling of a large number of runs simply by swapping the sources and monitors and running the simulation backwards. This approach is analogous to computing [thermal radiation](https://en.wikipedia.org/wiki/Thermal_radiation) from a blackbody via [Kirchhoff's law for thermal radiation](https://en.wikipedia.org/wiki/Kirchhoff%27s_law_of_thermal_radiation) which states that emissivity and absorptivity are equivalent under thermal equilibrium. However, the approach demonstrated in this tutorial, which was originally developed for computing the extraction efficiency of LEDs in [Optics Express, Vol. 18, pp. 24522-35 (2010)](https://opg.optica.org/oe/fulltext.cfm?uri=oe-18-24-24522), does not require lossy materials.
+
+The reciprocal calculation involves two parts: (1) for the simulation, send an input mode in the opposite direction of the output mode of the forward calculation and monitor the DFT fields at the same location as the sources in the forward calculation, and (2) in post processing, evaluate an inner product of the DFT fields using a correlation operator of the random currents. Since the currents are uncorrelated in space and consist only of electric currents (because, in practice, they are generated by LED quantum wells), the correlation operator is a diagonal matrix. Also, since these are 2d simulations with $E_z$ polarization and involve an isotropic dielectric medium, the inner product of the fields is therefore just a sum of $|E_z|^2$ from the DFT monitors (equation 10 of the reference). In 3d, we would need to perform two separate calculations for the $\mathcal{S}$ and $\mathcal{P}$ polarizations. (For more general cases, including multiple output channels, spatially correlated emitters, anisotropy, and other complications, see Section 2.3 of [arXiv:2111.13046](https://arxiv.org/abs/2111.13046).)
+
+In this example, we will demonstrate that the broadband emission spectrum in the normal direction ($+y$) in air from a collection of $N=10$ point dipoles in the LED-like structure (same as above) computed using 10 [single-dipole simulations](#exploiting-linear-time-invariance-of-the-materialsgeometry) ("forward" runs) can be computed using a single reciprocal calculation involving a planewave at normal incidence ($-y$) in air and $N=10$ point DFT monitors inside the LED-like structure ("backward" run).
+
+The simulation script is in [examples/stochastic_emitter_reciprocity.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter_reciprocity.py).
+
+```py
+from typing import List
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+import meep as mp
+from meep.materials import Ag
+
+
+resolution = 50 # pixels/μm
+
+nfreq = 100  # number of frequencies
+ndipole = 10 # number of point dipoles/DFT monitors
+
+fcen = 1.0   # center frequency of Gaussian source/monitors
+df = 0.2     # frequency bandwidth of source/monitors
+
+dpml = 1.0   # PML thickness
+dair = 2.0   # air padding thickness
+hrod = 0.7   # grating height
+wrod = 0.5   # graing width
+dsub = 5.0   # substrate thickness
+dAg = 0.5    # Ag back reflected thickness
+
+sx = 1.1
+sy = dpml+dair+hrod+dsub+dAg
+
+cell_size = mp.Vector3(sx,sy)
+
+pml_layers = [
+    mp.PML(
+        direction=mp.Y,
+        thickness=dpml,
+        side=mp.High
+    )
+]
+
+
+def substrate_geometry(is_textured: bool):
+    """Returns the geometry of the LED-like structure.
+
+    Args:
+      is_textured: whether the substrate is textured or not.
+    """
+    geometry = [mp.Block(material=mp.Medium(index=3.45),
+                         center=mp.Vector3(0,0.5*sy-dpml-dair-hrod-0.5*dsub),
+                         size=mp.Vector3(mp.inf,dsub,mp.inf)),
+                mp.Block(material=Ag,
+                         center=mp.Vector3(0,-0.5*sy+0.5*dAg),
+                         size=mp.Vector3(mp.inf,dAg,mp.inf))]
+
+    if is_textured:
+        geometry.append(mp.Block(material=mp.Medium(index=3.45),
+                                 center=mp.Vector3(0,0.5*sy-dpml-dair-0.5*hrod),
+                                 size=mp.Vector3(wrod,hrod,mp.inf)))
+
+    return geometry
+
+
+def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
+    """Computes the Poynting flux in the upward normal direction (+y) in air
+    given a point dipole source positioned somewhere along a line in the
+    middle of a high-index substrate.
+
+    Args:
+      n: n'th position along a line of equally spaced dipoles.
+      rt: runtime of simulation after the source has turned off in units
+          of nfreq/df.
+      is_textured: whether the substrate is textured or not.
+    """
+    sources = [
+        mp.Source(
+            mp.GaussianSource(fcen,fwidth=df),
+            component=mp.Ez,
+            center=mp.Vector3(
+                sx*(-0.5+n/ndipole),
+                -0.5*sy+dAg+0.5*dsub,
+            )
+        )
+    ]
+
+    geometry = substrate_geometry(is_textured)
+
+    sim = mp.Simulation(cell_size=cell_size,
+                        resolution=resolution,
+                        k_point=mp.Vector3(),
+                        boundary_layers=pml_layers,
+                        geometry=geometry,
+                        sources=sources)
+
+    flux_mon = sim.add_flux(
+        fcen,
+        df,
+        nfreq,
+        mp.FluxRegion(
+            center=mp.Vector3(0,0.5*sy-dpml),
+            size=mp.Vector3(sx)
+        ),
+    )
+
+    run_time = rt * nfreq/df
+    sim.run(until_after_sources=run_time)
+
+    res = sim.get_eigenmode_coefficients(
+        flux_mon,
+        [1],
+        eig_parity=mp.ODD_Z
+    )
+
+    flux = np.abs(res.alpha[0,:,0])**2
+    freqs = mp.get_flux_freqs(flux_mon)
+
+    return freqs, flux
+
+
+def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
+    """Computes the overlap integral from a collection of point DFT monitors
+       in the high-index substrate given a planewave source in air at normal
+       incidence propagating in the -y direction.
+
+    Args:
+      rt: runtime of simulation after the source has turned off in units
+          of nfreq/df.
+      is_textured: whether the substrate is textured or not.
+    """
+    sources = [
+        mp.Source(
+            mp.GaussianSource(fcen, fwidth=df),
+            component=mp.Ez,
+            center=mp.Vector3(
+                0, 0.5 * sy - dpml
+            ),
+            size=mp.Vector3(
+                sx, 0
+            ),
+        )
+    ]
+
+    geometry = substrate_geometry(is_textured)
+
+    sim = mp.Simulation(
+        cell_size=cell_size,
+        resolution=resolution,
+        k_point=mp.Vector3(),
+        boundary_layers=pml_layers,
+        geometry=geometry,
+        sources=sources,
+    )
+
+    dft_mons = []
+    for nd in range(ndipole):
+        dft_mons.append(
+            sim.add_dft_fields(
+                [mp.Ez],
+                fcen,
+                df,
+                nfreq,
+                center=mp.Vector3(
+                    sx*(-0.5 + nd/ndipole),
+                    -0.5*sy+dAg+0.5*dsub
+                ),
+                size=mp.Vector3(),
+            )
+        )
+
+    run_time = rt * nfreq / df
+    sim.run(until_after_sources=run_time)
+
+    freqs = mp.get_flux_freqs(dft_mons[0])
+
+    abs_flux = np.zeros(nfreq)
+    dft_ez = np.zeros(ndipole,dtype=np.complex128)
+    for nf in range(nfreq):
+        for nd in range(ndipole):
+            dft_ez[nd] = sim.get_dft_array(dft_mons[nd], mp.Ez, nf)
+        abs_flux[nf] = np.sum(np.abs(dft_ez)**2)
+
+    return freqs, abs_flux
+
+
+if __name__ == '__main__':
+    fwd_flat_flux = np.zeros((nfreq,ndipole))
+    fwd_text_flux = np.zeros((nfreq,ndipole))
+    for d in range(ndipole):
+        fwd_freqs, fwd_flat_flux[:,d] = forward(d, 2, False)
+        _, fwd_text_flux[:,d] = forward(d, 4, True)
+
+    fwd_norm_flux = np.mean(fwd_text_flux,axis=1) / np.mean(fwd_flat_flux,axis=1)
+
+    bwd_freqs, bwd_flat_flux = backward(2, False)
+    _, bwd_text_flux = backward(4, True)
+    bwd_norm_flux = bwd_text_flux / bwd_flat_flux
+
+    plt.figure()
+    plt.semilogy(fwd_freqs, fwd_norm_flux, 'b-', label='forward')
+    plt.semilogy(bwd_freqs, bwd_norm_flux, 'r-', label='backward')
+    plt.xlabel("frequency")
+    plt.ylabel("normalized flux")
+    plt.legend()
+
+    if mp.am_master():
+        plt.savefig(
+            "forward_vs_backward_flux_spectrum.png",
+            bbox_inches='tight',
+            dpi=150
+        )
+```
+
+There are four items to note in this script. (1) Since the exact equivalence between the forward and reciprocal calculations only applies to the continuum model, demonstrating agreement using a discretized model typically requires going to fine grid resolutions.  (In principle, there is an exact discrete version of reciprocity, but that would require more precise attention to how the sources and monitors are discretized.) In this example, we found that a resolution of 200 pixels/μm produced which match between forward and reciprocal calculations (a high resolution is required to accurately resolve sharp resonant effects). (2) Measuring the flux in the normal direction in the forward calculation requires [mode decomposition](../Python_User_Interface.md#mode-decomposition) rather than a Poynting flux monitor. (3) To compare the results of the forward and reciprocal calculations, similar to the previous examples, the flux spectrum of the grating structure must be normalized using the flux spectrum of a flat structure. (4) Measuring the emission in the normal direction requires specifying a `k_point` of zero. (For emission at angle $\theta$ from the $+y$ axis, the `k_point` would be $\omega(\sin(\theta),\cos(\theta))$ where $\omega$ is the source/monitor frequency.)
+
+The results demonstrate good agreeement between the forward and backward calculations. However, there is a significant difference in computational efficiency: the forward calculation took ~20 hours while the backward calculation took ~6 hours.
+
+![](../images/stochastic_emitter_forward_vs_backward_flux_spectrum.png#center)
