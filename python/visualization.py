@@ -14,7 +14,7 @@ from meep.simulation import Simulation, Volume
 ## Typing imports
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from typing import Callable, Union, Any, Iterable
+from typing import Callable, Union, Any, Literal, Tuple
 
 # ------------------------------------------------------- #
 # Visualization
@@ -878,7 +878,7 @@ def plot2D(
         )
     # If using %matplotlib ipympl magic, we need to force the figure to be displayed immediately
     if mp.am_master() and nb:
-        display_immediately(ax.figure)
+        display_figure_immediately(ax.figure)
         sleep(0.05)
     return ax
 
@@ -1007,6 +1007,40 @@ def visualize_chunks(sim: Simulation):
         plt.show()
 
 
+def display_figure_immediately(fig: Figure) -> None:
+    """
+    Trigger the specified figure to display immediately, rather than waiting on the cell execution to end.
+    Due to limitations in ipympl: https://github.com/matplotlib/ipympl/issues/290, which might be fixed at some
+    point in the future.
+    """
+    from IPython.display import display
+
+    canvas = fig.canvas
+    display(canvas)
+    canvas._handle_message(canvas, {"type": "send_image_mode"}, [])
+    canvas._handle_message(canvas, {"type": "refresh"}, [])
+    canvas._handle_message(canvas, {"type": "initialized"}, [])
+    canvas._handle_message(canvas, {"type": "draw"}, [])
+
+
+# ------------------------------------------------------- #
+# JS_Animation
+# ------------------------------------------------------- #
+# A helper class used to make jshtml animations embed
+# seamlessly within Jupyter notebooks.
+
+
+class JS_Animation:
+    def __init__(self, jshtml):
+        self.jshtml = jshtml
+
+    def _repr_html_(self):
+        return self.jshtml
+
+    def get_jshtml(self):
+        return self.jshtml
+
+
 # ------------------------------------------------------- #
 # Animate2D
 # ------------------------------------------------------- #
@@ -1027,22 +1061,6 @@ def visualize_chunks(sim: Simulation):
 # customization_args .. [dict] other customization args
 #                       to pass to plot2D()
 #
-def display_immediately(fig: Figure):
-    """
-    Trigger the specified figure to display immediately, rather than waiting on the cell execution to end.
-    Due to limitations in ipympl: https://github.com/matplotlib/ipympl/issues/290, which might be fixed at some
-    point in the future.
-    """
-    from IPython.display import display
-
-    canvas = fig.canvas
-    display(canvas)
-    canvas._handle_message(canvas, {"type": "send_image_mode"}, [])
-    canvas._handle_message(canvas, {"type": "refresh"}, [])
-    canvas._handle_message(canvas, {"type": "initialized"}, [])
-    canvas._handle_message(canvas, {"type": "draw"}, [])
-
-
 class Animate2D:
     """
     A class used to record the fields during timestepping (i.e., a [`run`](#run-functions)
@@ -1166,7 +1184,7 @@ class Animate2D:
         self.__code__ = namedtuple("gna_hack", ["co_argcount"])
         self.__code__.co_argcount = 2
 
-    def __call__(self, sim, todo):
+    def __call__(self, sim: Simulation, todo: Literal["step", "finish"]) -> None:
         from matplotlib import pyplot as plt
 
         if todo == "step":
@@ -1244,13 +1262,13 @@ class Animate2D:
             return
 
     @property
-    def frame_size(self):
+    def frame_size(self) -> Tuple[int, int]:
         # A tuple ``(width, height)`` in pixels of a movie frame.
         # modified from matplotlib library
         w, h = self.f.get_size_inches()
         return int(w * self.f.dpi), int(h * self.f.dpi)
 
-    def grab_frame(self):
+    def grab_frame(self) -> None:
         # Saves the figures frame to memory.
         # modified from matplotlib library
         from io import BytesIO
@@ -1260,7 +1278,7 @@ class Animate2D:
         # imgdata64 = base64.encodebytes(bin_data.getvalue()).decode('ascii')
         self._saved_frames.append(bin_data.getvalue())
 
-    def _embedded_frames(self, frame_list, frame_format):
+    def _embedded_frames(self, frame_list: list, frame_format: str) -> str:
         # converts frame data stored in memory to html5 friendly format
         # frame_list should be a list of base64-encoded png files
         # modified from matplotlib
@@ -1276,7 +1294,7 @@ class Animate2D:
             for i, frame_data in enumerate(frame_list)
         )
 
-    def to_jshtml(self, fps):
+    def to_jshtml(self, fps: int) -> JS_Animation:
         """
         Outputs an interactable JSHTML animation object that is embeddable in Jupyter
         notebooks. The object is packaged with controls to manipulate the video's
@@ -1326,7 +1344,7 @@ class Animate2D:
             )
             return JS_Animation(html_string)
 
-    def to_gif(self, fps, filename):
+    def to_gif(self, fps: int, filename: str) -> None:
         """
         Generates and outputs a GIF file of the animation with the filename, `filename`,
         and the frame rate, `fps`. Note that GIFs are significantly larger than mp4 videos
@@ -1374,7 +1392,7 @@ class Animate2D:
             proc.wait()
         return
 
-    def to_mp4(self, fps, filename):
+    def to_mp4(self, fps: int, filename: str) -> None:
         """
         Generates and outputs an mp4 video file of the animation with the filename,
         `filename`, and the frame rate, `fps`. Default encoding is h264 with yuv420p
@@ -1423,28 +1441,10 @@ class Animate2D:
             proc.wait()
         return
 
-    def reset(self):
+    def reset(self) -> None:
         self.cumulative_fields = []
         self.ax = None
         self.f = None
 
-    def set_figure(self, f):
+    def set_figure(self, f: Figure) -> None:
         self.f = f
-
-
-# ------------------------------------------------------- #
-# JS_Animation
-# ------------------------------------------------------- #
-# A helper class used to make jshtml animations embed
-# seamlessly within Jupyter notebooks.
-
-
-class JS_Animation:
-    def __init__(self, jshtml):
-        self.jshtml = jshtml
-
-    def _repr_html_(self):
-        return self.jshtml
-
-    def get_jshtml(self):
-        return self.jshtml
