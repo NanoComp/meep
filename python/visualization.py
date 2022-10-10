@@ -1195,8 +1195,8 @@ class Animate2D:
                     if mp.am_master():
                         eps_idx = -1 if not self.fields else -2
                         self.ax.images[eps_idx].set_data(eps)
-
-                if self.fields:
+                # Need to check if None because mp.Ex == 0
+                if self.fields is not None:
                     # Update fields
                     filtered_plot_fields = filter_dict(
                         self.customization_args, plot_fields
