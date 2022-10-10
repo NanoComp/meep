@@ -1046,14 +1046,12 @@ def display_immediately(fig: Figure):
 class Animate2D:
     """
     A class used to record the fields during timestepping (i.e., a [`run`](#run-functions)
-    function). The object is initialized prior to timestepping by specifying the
-    simulation object and the field component. The object can then be passed to any
-    [step-function modifier](#step-function-modifiers). For example, one can record the
-    $E_z$ fields at every one time unit using:
+    function). The object is initialized prior to timestepping by specifying the field component.
+    The object can then be passed to any [step-function modifier](#step-function-modifiers).
+    For example, one can record the $E_z$ fields at every one time unit using:
 
     ```py
-    animate = mp.Animate2D(sim,
-                           fields=mp.Ez,
+    animate = mp.Animate2D(fields=mp.Ez,
                            realtime=True,
                            field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
                            boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
@@ -1077,12 +1075,12 @@ class Animate2D:
 
     def __init__(
         self,
-        fields,
-        sim=None,
-        f=None,
-        realtime=False,
-        normalize=False,
-        plot_modifiers=None,
+        sim: Simulation = None,
+        fields=None,
+        f: Figure = None,
+        realtime: bool = False,
+        normalize: bool = False,
+        plot_modifiers: list = None,
         update_epsilon: bool = False,
         nb: bool = False,
         **customization_args
@@ -1090,9 +1088,9 @@ class Animate2D:
         """
         Construct an `Animate2D` object.
 
-        + **`sim`** — Simulation object.
+        + **`sim=None`** — Optional Simulation object (this has no effect but is included for backwards compatibility).
 
-        + **`fields`** — Field component to record at each time instant.
+        + **`fields=None`** — Optional Field component to record at each time instant.
 
         + **`f=None`** — Optional `matplotlib` figure object that the routine will update
           on each call. If not supplied, then a new one will be created upon
