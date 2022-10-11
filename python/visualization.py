@@ -1106,7 +1106,7 @@ class Animate2D:
         """
         Construct an `Animate2D` object.
 
-        + **`sim=None`** — Optional Simulation object (this has no effect but is included for backwards compatibility).
+        + **`sim=None`** — Optional Simulation object (this has no effect, and is included for backwards compatibility).
 
         + **`fields=None`** — Optional Field component to record at each time instant.
 
@@ -1141,6 +1141,11 @@ class Animate2D:
         + **`**customization_args`** — Customization keyword arguments passed to
           `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)
         """
+        if sim is not None:
+            warnings.warn(
+                "Warning: The 'sim' argument in Animate2D is deprecated and has no effect. It will be removed "
+                "in a future release."
+            )
 
         self.fields = fields
         self.update_epsilon = update_epsilon
