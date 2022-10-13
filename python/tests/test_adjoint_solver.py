@@ -136,20 +136,49 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             frequencies = [self.fcen]
 
         if mon_type.name == "EIGENMODE":
-            obj_list = [
-                mpa.EigenmodeCoefficient(
-                    sim,
-                    mp.Volume(
-                        center=mp.Vector3(0.5 * self.sxy - self.dpml),
-                        size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+            if len(frequencies) == 1:
+                obj_list = [
+                    mpa.EigenmodeCoefficient(
+                        sim,
+                        mp.Volume(
+                            center=mp.Vector3(-0.5 * self.sxy + self.dpml),
+                            size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+                        ),
+                        1,
+                        forward=False,
+                        eig_parity=self.eig_parity,
                     ),
-                    1,
-                    eig_parity=self.eig_parity,
-                )
-            ]
+                    mpa.EigenmodeCoefficient(
+                        sim,
+                        mp.Volume(
+                            center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                            size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+                        ),
+                        2,
+                        eig_parity=self.eig_parity,
+                    ),
+                ]
 
-            def J(mode_mon):
-                return npa.power(npa.abs(mode_mon), 2)
+                def J(refl_mon, tran_mon):
+                    return -npa.power(npa.abs(refl_mon), 2) + npa.power(
+                        npa.abs(tran_mon), 2
+                    )
+
+            else:
+                obj_list = [
+                    mpa.EigenmodeCoefficient(
+                        sim,
+                        mp.Volume(
+                            center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                            size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+                        ),
+                        1,
+                        eig_parity=self.eig_parity,
+                    )
+                ]
+
+                def J(tran_mon):
+                    return npa.power(npa.abs(tran_mon), 2)
 
         elif mon_type.name == "DFT":
             obj_list = [
