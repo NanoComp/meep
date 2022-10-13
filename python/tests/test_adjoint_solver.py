@@ -140,16 +140,28 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 mpa.EigenmodeCoefficient(
                     sim,
                     mp.Volume(
-                        center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                        center=mp.Vector3(-0.5 * self.sxy + self.dpml),
                         size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                     ),
                     1,
+                    forward=False,
                     eig_parity=self.eig_parity,
-                )
+                ),
+                mpa.EigenmodeCoefficient(
+                    sim,
+                    mp.Volume(
+                        center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                        size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+                    ),
+                    2,
+                    eig_parity=self.eig_parity,
+                ),
             ]
 
-            def J(mode_mon):
-                return npa.power(npa.abs(mode_mon), 2)
+            def J(refl_mon, tran_mon):
+                return -npa.power(npa.abs(refl_mon), 2) + npa.power(
+                    npa.abs(tran_mon), 2
+                )
 
         elif mon_type.name == "DFT":
             obj_list = [
@@ -386,7 +398,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.04 if mp.is_single_precision() else 0.01
+            tol = 0.04 if mp.is_single_precision() else 0.013
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_ldos(self):
