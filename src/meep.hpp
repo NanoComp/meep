@@ -1438,6 +1438,8 @@ public:
 
   void remove();
 
+  void delete_dft_chunks(meep::dft_chunk *dft_chunks);
+
   std::vector<double> freq;
   dft_chunk *chunks;
   volume where;
