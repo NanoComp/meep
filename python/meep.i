@@ -877,7 +877,6 @@ void _get_gradient(PyObject *grad, double scalegrad,
 }
 %}
 
-
 //--------------------------------------------------
 // end typemaps needed for material grid
 //--------------------------------------------------
