@@ -878,9 +878,8 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %}
 
 %inline %{
-void _delete_forward_dft_chunk(meep::dft_fields *fields_f_0, meep::dft_fields *fields_f_1, meep::dft_fields *fields_f_2){
-    std::vector<meep::dft_fields *> forward_fields = {fields_f_0,fields_f_1,fields_f_2};
-    meep_geom::delete_forward_dft_chunk(forward_fields);
+void _delete_dft_chunk(meep::dft_fields *field_chunks){
+    dft_fields::delete_dft_chunks(field_chunks);
 }
 %}
 
