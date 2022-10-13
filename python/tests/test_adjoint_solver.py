@@ -398,7 +398,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.04 if mp.is_single_precision() else 0.013
+            tol = 0.06 if mp.is_single_precision() else 0.015
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_ldos(self):
