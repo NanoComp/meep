@@ -306,9 +306,7 @@ class OptimizationProblem:
 
         for dri in range(self.num_design_regions):
             for i in range(3):
-                mp._delete_dft_chunk(
-                    self.forward_design_region_monitors[dri][i].swigobj
-                )
+                self.forward_design_region_monitors[dri][i].remove()
 
         # Cleanup list of lists
         if len(self.gradient) == 1:

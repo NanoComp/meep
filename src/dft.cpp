@@ -881,14 +881,6 @@ void dft_fields::remove() {
   }
 }
 
-void dft_fields::delete_dft_chunks(meep::dft_chunk *dft_chunks) {
-  while (dft_chunks) {
-    dft_chunk *nxt = dft_chunks->next_in_chunk;
-    delete dft_chunks;
-    dft_chunks = nxt;
-  }
-}
-
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
                                   const double *freq, size_t Nfreq, bool use_centered_grid,
                                   int decimation_factor, bool persist) {

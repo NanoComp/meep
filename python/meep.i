@@ -877,11 +877,6 @@ void _get_gradient(PyObject *grad, double scalegrad,
 }
 %}
 
-%inline %{
-void _delete_dft_chunk(meep::dft_fields *field_chunks){
-    dft_fields::delete_dft_chunks(field_chunks);
-}
-%}
 
 //--------------------------------------------------
 // end typemaps needed for material grid
