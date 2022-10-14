@@ -304,6 +304,12 @@ class OptimizationProblem:
             for ar in range(len(self.objective_functions))
         ]
 
+        for dri in range(self.num_design_regions):
+            for i in range(3):
+                # note that dft_fields::remove calls delete on its chunks, and the
+                # destructor ~dft_chunk automatically removes it from the fields object
+                self.forward_design_region_monitors[dri][i].remove()
+
         # Cleanup list of lists
         if len(self.gradient) == 1:
             self.gradient = self.gradient[0]  # only one objective function
