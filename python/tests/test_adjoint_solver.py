@@ -138,8 +138,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         if mon_type.name == "EIGENMODE":
             if len(frequencies) == 1:
                 if mat2 is None:
-                    # compute the incident fields of the source
-                    # in just the straight waveguide
+                    # compute the incident fields of the mode source
+                    # in just the straight waveguide for normalization
+                    # of the reflectance (S11) measurement
                     ref_sim = mp.Simulation(
                         resolution=self.resolution,
                         cell_size=self.cell_size,

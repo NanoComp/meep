@@ -408,7 +408,7 @@ class Near2FarFields(ObjectiveQuantity):
             *self.Near2FarRegions,
             decimation_factor=self.decimation_factor,
         )
-        if norm_near_fields is not None:
+        if self.norm_near_fields is not None:
             self.sim.load_minus_near2far_data(
                 self._monitor,
                 self.norm_near_fields,
