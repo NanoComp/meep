@@ -158,10 +158,10 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         kpoint_func_overlap_idx: the index of the mode coefficient to return when
           specifying `kpoint_func`. When specified, this overrides the effect of
           `forward` and should have a value of either 0 or 1.
-        norm_dft_fields: the DFT fields obtained using `get_flux_data` from a
-          previous normalization run. This is subtracted from the DFT fields
+        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from
+          a previous normalization run. This is subtracted from the DFT fields
           of this mode monitor in order to improve the accuracy of the
-          reflectance calculation (i.e., the $S_{11}$ scattering parameter).
+          reflectance measurement (i.e., the $S_{11}$ scattering parameter).
           Default is None.
     """
 
@@ -174,7 +174,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         kpoint_func: Optional[Callable] = None,
         kpoint_func_overlap_idx: Optional[int] = 0,
         decimation_factor: Optional[int] = 0,
-        norm_dft_fields: Optional[FluxData] = None,
+        subtracted_dft_fields: Optional[FluxData] = None,
         **kwargs
     ):
         """
@@ -195,7 +195,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self._monitor = None
         self._cscale = None
         self.decimation_factor = decimation_factor
-        self.norm_dft_fields = norm_dft_fields
+        self.subtracted_dft_fields = subtracted_dft_fields
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -205,10 +205,10 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             yee_grid=True,
             decimation_factor=self.decimation_factor,
         )
-        if self.norm_dft_fields is not None:
+        if self.subtracted_dft_fields is not None:
             self.sim.load_minus_flux_data(
                 self._monitor,
-                self.norm_dft_fields,
+                self.subtracted_dft_fields,
             )
         return self._monitor
 
@@ -291,7 +291,7 @@ class FourierFields(ObjectiveQuantity):
         component: List[int],
         yee_grid: Optional[bool] = False,
         decimation_factor: Optional[int] = 0,
-        norm_dft_fields: Optional[FluxData] = None,
+        subtracted_dft_fields: Optional[FluxData] = None,
     ):
         """ """
         super().__init__(sim)
@@ -299,7 +299,7 @@ class FourierFields(ObjectiveQuantity):
         self.component = component
         self.yee_grid = yee_grid
         self.decimation_factor = decimation_factor
-        self.norm_dft_fields = norm_dft_fields
+        self.subtracted_dft_fields = subtracted_dft_fields
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -310,10 +310,10 @@ class FourierFields(ObjectiveQuantity):
             yee_grid=self.yee_grid,
             decimation_factor=self.decimation_factor,
         )
-        if self.norm_dft_fields is not None:
+        if self.subtracted_dft_fields is not None:
             self.sim.load_minus_flux_data(
                 self._monitor,
-                self.norm_dft_fields,
+                self.subtracted_dft_fields,
             )
         return self._monitor
 

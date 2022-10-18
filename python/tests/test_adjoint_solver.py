@@ -138,9 +138,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         if mon_type.name == "EIGENMODE":
             if len(frequencies) == 1:
                 if mat2 is None:
-                    # compute the incident fields of the mode source
-                    # in just the straight waveguide for normalization
-                    # of the reflectance (S11) measurement
+                    # Compute the incident fields of the mode source
+                    # in the straight waveguide for use as normalization
+                    # of the reflectance (S11) measurement.
                     ref_sim = mp.Simulation(
                         resolution=self.resolution,
                         cell_size=self.cell_size,
@@ -157,9 +157,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         yee_grid=True,
                     )
                     ref_sim.run(until_after_sources=20)
-                    norm_dft_fields = ref_sim.get_flux_data(dft_mon)
+                    subtracted_dft_fields = ref_sim.get_flux_data(dft_mon)
                 else:
-                    norm_dft_fields = None
+                    subtracted_dft_fields = None
 
                 obj_list = [
                     mpa.EigenmodeCoefficient(
@@ -171,7 +171,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         1,
                         forward=False,
                         eig_parity=self.eig_parity,
-                        norm_dft_fields=norm_dft_fields,
+                        subtracted_dft_fields=subtracted_dft_fields,
                     ),
                     mpa.EigenmodeCoefficient(
                         sim,
