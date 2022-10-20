@@ -388,47 +388,38 @@ The reciprocal calculation involves two parts: (1) for the simulation (with the 
 
 ![](../images/LED_layout_reciprocity.png#center)
 
-In this example, we will demonstrate that the broadband emission spectrum in the normal direction ($+y$) in air from a collection of $N=10$ point dipoles in the LED-like structure (same as the original example in this series) computed using 10 [single-dipole simulations](#exploiting-linear-time-invariance-of-the-materials-and-geometry) ("forward" runs) can be computed using a *single* reciprocal calculation involving a planewave at normal incidence ($-y$) in air and $N=10$ point DFT monitors inside the LED-like structure ("backward" run).
+In this example, we will demonstrate that the broadband emission spectrum in the normal direction ($+y$) in air from a collection of $N=10$ point dipoles in the LED-like structure (same as the original example in this series) computed using 10 [single-dipole simulations](#exploiting-linear-time-invariance-of-the-materials-and-geometry) ("forward" runs) can be computed using a *single* reciprocal calculation involving a planewave at normal incidence ($-y$) in air and a DFT line monitor inside the LED-like structure ("backward" run). As was discussed in the previous [tutorial](#an-efficient-approach-for-large-numbers-of-dipole-emitters), for periodic structures the flux spectrum converges quickly with the number of dipoles $N$. This is why in the backward calculation we can use a DFT line monitor rather than $N$ point monitors.
 
 The simulation script is in [examples/stochastic_emitter_reciprocity.py](https://github.com/NanoComp/meep/blob/master/python/examples/stochastic_emitter_reciprocity.py).
 
 ```py
 from typing import List
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 import meep as mp
 from meep.materials import Ag
 
-
-resolution = 50 # pixels/μm
+resolution = 200  # pixels/μm
 
 nfreq = 100  # number of frequencies
-ndipole = 10 # number of point dipoles/DFT monitors
+ndipole = 10 # number of point dipoles in forward simulation
 
-fcen = 1.0   # center frequency of Gaussian source/monitors
-df = 0.2     # frequency bandwidth of source/monitors
+fcen = 1.0  # center frequency of Gaussian source/monitors
+df = 0.2    # frequency bandwidth of source/monitors
 
-dpml = 1.0   # PML thickness
-dair = 2.0   # air padding thickness
-hrod = 0.7   # grating height
-wrod = 0.5   # graing width
-dsub = 5.0   # substrate thickness
-dAg = 0.5    # Ag back reflected thickness
+dpml = 1.0  # PML thickness
+dair = 2.0  # air padding thickness
+hrod = 0.7  # grating height
+wrod = 0.5  # graing width
+dsub = 5.0  # substrate thickness
+dAg = 0.5   # Ag back reflecter thickness
 
 sx = 1.1
-sy = dpml+dair+hrod+dsub+dAg
+sy = dpml + dair + hrod + dsub + dAg
 
-cell_size = mp.Vector3(sx,sy)
+cell_size = mp.Vector3(sx, sy)
 
-pml_layers = [
-    mp.PML(
-        direction=mp.Y,
-        thickness=dpml,
-        side=mp.High
-    )
-]
+pml_layers = [mp.PML(direction=mp.Y, thickness=dpml, side=mp.High)]
 
 
 def substrate_geometry(is_textured: bool):
@@ -437,96 +428,52 @@ def substrate_geometry(is_textured: bool):
     Args:
       is_textured: whether the substrate is textured or not.
     """
-    geometry = [mp.Block(material=mp.Medium(index=3.45),
-                         center=mp.Vector3(0,0.5*sy-dpml-dair-hrod-0.5*dsub),
-                         size=mp.Vector3(mp.inf,dsub,mp.inf)),
-                mp.Block(material=Ag,
-                         center=mp.Vector3(0,-0.5*sy+0.5*dAg),
-                         size=mp.Vector3(mp.inf,dAg,mp.inf))]
+    geometry = [
+        mp.Block(
+            material=mp.Medium(index=3.45),
+            center=mp.Vector3(0, 0.5 * sy - dpml - dair - hrod - 0.5 * dsub),
+            size=mp.Vector3(mp.inf, dsub, mp.inf),
+        ),
+        mp.Block(
+            material=Ag,
+            center=mp.Vector3(0, -0.5 * sy + 0.5 * dAg),
+            size=mp.Vector3(mp.inf, dAg, mp.inf),
+        ),
+    ]
 
     if is_textured:
-        geometry.append(mp.Block(material=mp.Medium(index=3.45),
-                                 center=mp.Vector3(0,0.5*sy-dpml-dair-0.5*hrod),
-                                 size=mp.Vector3(wrod,hrod,mp.inf)))
+        geometry.append(
+            mp.Block(
+                material=mp.Medium(index=3.45),
+                center=mp.Vector3(0, 0.5 * sy - dpml - dair - 0.5 * hrod),
+                size=mp.Vector3(wrod, hrod, mp.inf),
+            )
+        )
 
     return geometry
 
 
 def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
-    """Computes the Poynting flux in the upward normal direction (+y) in air
-    given a point dipole source positioned somewhere along a line in the
-    middle of a high-index substrate.
+    """Computes the Poynting flux in the +y direction in air
+    given a point dipole source positioned somewhere along a
+    line in the middle of the high-index substrate.
 
     Args:
       n: n'th position along a line of equally spaced dipoles.
-      rt: runtime of simulation after the source has turned off in units
-          of nfreq/df.
+      rt: runtime of simulation after the source has turned off
+          in units of nfreq/df.
       is_textured: whether the substrate is textured or not.
-    """
-    sources = [
-        mp.Source(
-            mp.GaussianSource(fcen,fwidth=df),
-            component=mp.Ez,
-            center=mp.Vector3(
-                sx*(-0.5+n/ndipole),
-                -0.5*sy+dAg+0.5*dsub,
-            )
-        )
-    ]
 
-    geometry = substrate_geometry(is_textured)
-
-    sim = mp.Simulation(cell_size=cell_size,
-                        resolution=resolution,
-                        k_point=mp.Vector3(),
-                        boundary_layers=pml_layers,
-                        geometry=geometry,
-                        sources=sources)
-
-    flux_mon = sim.add_flux(
-        fcen,
-        df,
-        nfreq,
-        mp.FluxRegion(
-            center=mp.Vector3(0,0.5*sy-dpml),
-            size=mp.Vector3(sx)
-        ),
-    )
-
-    run_time = rt * nfreq/df
-    sim.run(until_after_sources=run_time)
-
-    res = sim.get_eigenmode_coefficients(
-        flux_mon,
-        [1],
-        eig_parity=mp.ODD_Z
-    )
-
-    flux = np.abs(res.alpha[0,:,0])**2
-    freqs = mp.get_flux_freqs(flux_mon)
-
-    return freqs, flux
-
-
-def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
-    """Computes the overlap integral from a collection of point DFT monitors
-       in the high-index substrate given a planewave source in air at normal
-       incidence propagating in the -y direction.
-
-    Args:
-      rt: runtime of simulation after the source has turned off in units
-          of nfreq/df.
-      is_textured: whether the substrate is textured or not.
+    Returns:
+      The frequency and Poynting flux spectra.
     """
     sources = [
         mp.Source(
             mp.GaussianSource(fcen, fwidth=df),
             component=mp.Ez,
             center=mp.Vector3(
-                0, 0.5 * sy - dpml
-            ),
-            size=mp.Vector3(
-                sx, 0
+                sx * (-0.5 + n / ndipole),
+                -0.5 * sy + dAg + 0.5 * dsub,
             ),
         )
     ]
@@ -542,53 +489,101 @@ def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
         sources=sources,
     )
 
-    dft_mons = []
-    for nd in range(ndipole):
-        dft_mons.append(
-            sim.add_dft_fields(
-                [mp.Ez],
-                fcen,
-                df,
-                nfreq,
-                center=mp.Vector3(
-                    sx*(-0.5 + nd/ndipole),
-                    -0.5*sy+dAg+0.5*dsub
-                ),
-                size=mp.Vector3(),
-            )
-        )
+    flux_mon = sim.add_flux(
+        fcen,
+        df,
+        nfreq,
+        mp.FluxRegion(
+            center=mp.Vector3(0, 0.5 * sy - dpml), size=mp.Vector3(sx)),
+    )
 
     run_time = rt * nfreq / df
     sim.run(until_after_sources=run_time)
 
-    freqs = mp.get_flux_freqs(dft_mons[0])
+    res = sim.get_eigenmode_coefficients(flux_mon, [1], eig_parity=mp.ODD_Z)
+
+    flux = np.abs(res.alpha[0, :, 0]) ** 2
+    freqs = mp.get_flux_freqs(flux_mon)
+
+    return freqs, flux
+
+
+def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
+    """Computes the Poynting flux spectrum of the dipole emission using
+       an overlap integral of the DFT fields from a line monitor in the
+       high-index substrate given a planewave source in air propagating
+       in the -y direction.
+
+    Args:
+      rt: runtime of simulation after the source has turned off
+          in units of nfreq/df.
+      is_textured: whether the substrate is textured or not.
+
+    Returns:
+      The frequency and Poynting flux spectra.
+    """
+    sources = [
+        mp.Source(
+            mp.GaussianSource(fcen, fwidth=df),
+            component=mp.Ez,
+            center=mp.Vector3(0, 0.5 * sy - dpml),
+            size=mp.Vector3(sx, 0),
+        )
+    ]
+
+    geometry = substrate_geometry(is_textured)
+
+    sim = mp.Simulation(
+        cell_size=cell_size,
+        resolution=resolution,
+        k_point=mp.Vector3(),
+        boundary_layers=pml_layers,
+        geometry=geometry,
+        sources=sources,
+    )
+
+    dft_mon = sim.add_dft_fields(
+        [mp.Ez],
+        fcen,
+        df,
+        nfreq,
+        center=mp.Vector3(
+            0,
+            -0.5*sy+dAg+0.5*dsub
+        ),
+        size=mp.Vector3(sx),
+    )
+
+    run_time = rt * nfreq / df
+    sim.run(until_after_sources=run_time)
+
+    freqs = mp.get_flux_freqs(dft_mon)
 
     abs_flux = np.zeros(nfreq)
-    dft_ez = np.zeros(ndipole,dtype=np.complex128)
     for nf in range(nfreq):
-        for nd in range(ndipole):
-            dft_ez[nd] = sim.get_dft_array(dft_mons[nd], mp.Ez, nf)
+        dft_ez = sim.get_dft_array(dft_mon, mp.Ez, nf)
         abs_flux[nf] = np.sum(np.abs(dft_ez)**2)
 
     return freqs, abs_flux
 
 
-if __name__ == '__main__':
-    fwd_flat_flux = np.zeros((nfreq,ndipole))
-    fwd_text_flux = np.zeros((nfreq,ndipole))
+if __name__ == "__main__":
+    fwd_flat_flux = np.zeros((nfreq, ndipole))
+    fwd_text_flux = np.zeros((nfreq, ndipole))
     for d in range(ndipole):
-        fwd_freqs, fwd_flat_flux[:,d] = forward(d, 2, False)
-        _, fwd_text_flux[:,d] = forward(d, 4, True)
+        fwd_freqs, fwd_flat_flux[:, d] = forward(d, 2, False)
+        _, fwd_text_flux[:, d] = forward(d, 4, True)
 
-    fwd_norm_flux = np.mean(fwd_text_flux,axis=1) / np.mean(fwd_flat_flux,axis=1)
+    fwd_norm_flux = (np.mean(fwd_text_flux, axis=1) /
+                     np.mean(fwd_flat_flux, axis=1))
 
     bwd_freqs, bwd_flat_flux = backward(2, False)
     _, bwd_text_flux = backward(4, True)
     bwd_norm_flux = bwd_text_flux / bwd_flat_flux
 
     plt.figure()
-    plt.semilogy(fwd_freqs, fwd_norm_flux, 'b-', label='forward')
-    plt.semilogy(bwd_freqs, bwd_norm_flux, 'r-', label='backward')
+    plt.semilogy(fwd_freqs, fwd_norm_flux, "b-", label="forward")
+    plt.semilogy(bwd_freqs, bwd_norm_flux, "r-", label="backward")
     plt.xlabel("frequency")
     plt.ylabel("normalized flux")
     plt.legend()
@@ -596,12 +591,12 @@ if __name__ == '__main__':
     if mp.am_master():
         plt.savefig(
             "forward_vs_backward_flux_spectrum.png",
-            bbox_inches='tight',
-            dpi=150
+            bbox_inches="tight",
+            dpi=150,
         )
 ```
 
-There are four items to note in this script. (1) Since the exact equivalence between the forward and reciprocal calculations only applies to the continuum model, demonstrating agreement using a discretized model typically requires going to fine grid resolutions.  (In principle, there is an exact discrete version of reciprocity, but that would require more precise attention to how the sources and monitors are discretized.) In this example, we found that a resolution of 200 pixels/μm produced sufficient agreement in the flux spectrum between the forward and reciprocal calculations (a high resolution is required to accurately resolve sharp resonant effects). (2) Measuring the flux in the normal direction in the forward calculation requires [mode decomposition](../Python_User_Interface.md#mode-decomposition) rather than a Poynting flux monitor. (3) To compare the results of the forward and reciprocal calculations, similar to the previous examples, the flux spectrum of the grating structure must be normalized using the flux spectrum of a flat structure. (4) A planewave propagating in air in the $+y$ direction would have a wavevector $\vec{k} = \omega(0,1,0)$ with $|\vec{k}|=\omega$. However, the 2d unit cell is periodic only in the $x$ direction. There are PMLs in the $y$ direction which means $k_y$ is actually irrelevant. We could have defined the correct non-zero `k_point` of the `Simulation` object but that would have unnecessarily involved complex fields which doubles the memory consumption and the number of floating-point operations during the time stepping. As such, we used a `k_point` of zero. This should not affect the results since the boundary conditions in the $y$ direction are irrelevant assuming the PML is sufficiently thick to absorb all incoming waves. (For emission at angle $\theta$ from the $+y$ axis, the `k_point` would be $\omega(\sin(\theta),\cos(\theta))$ where $\omega$ is the source/monitor frequency.)
+There are four items to note in this script. (1) Since the exact equivalence between the forward and reciprocal calculations only applies to the continuum model, demonstrating agreement using a discretized model typically requires going to fine grid resolutions.  (In principle, there is an exact discrete version of reciprocity, but that would require more precise attention to how the sources and monitors are discretized.) In this example, we found that a resolution of 200 pixels/μm produced sufficient agreement in the flux spectrum between the forward and reciprocal calculations (a high resolution is required to accurately resolve sharp resonant effects). (2) Measuring the flux in the normal direction in the forward calculation requires [mode decomposition](../Python_User_Interface.md#mode-decomposition) rather than a Poynting flux monitor. (3) To compare the results of the forward and reciprocal calculations, similar to the previous examples, the flux spectrum of the grating structure must be normalized using the flux spectrum of a flat structure. (4) A planewave propagating in air in the $+y$ direction would have a wavevector $\vec{k} = \omega(0,1,0)$ with $|\vec{k}|=\omega$. However, the 2d unit cell is periodic only in the $x$ direction. There are PMLs in the $y$ direction which means $k_y$ is actually irrelevant. We could have defined the correct non-zero `k_point` of the `Simulation` object but that would have unnecessarily involved complex fields which doubles the memory consumption and the number of floating-point operations during the time stepping. As such, we used a `k_point` of zero. This should not affect the results since the boundary conditions in the $y$ direction are irrelevant assuming the PML is sufficiently thick to absorb all incoming waves. (For emission in a homogeneous medium with index $n$ at angle $\theta$ from the $+y$ axis, the `k_point` would be $n\omega(\sin(\theta),\cos(\theta))$ where $\omega$ is the source/monitor frequency. Note that this is valid for a single frequency.)
 
 A plot of the results from the forward and backward simulations is shown below. There is good agreeement across the entire frequency bandwidth. However, there is a significant difference in computational efficiency: the forward calculation had a runtime which was more than three times that of the backward calculation.
 
