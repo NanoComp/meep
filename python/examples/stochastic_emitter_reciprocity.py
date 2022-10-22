@@ -1,16 +1,17 @@
-from typing import List
+"""A demonstration of computing the flux emitted in a single direction from a
+   collection of dipole emitters in an LED-like structure using reciprocity.
+"""
 
+from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
-
 import meep as mp
 from meep.materials import Ag
 
-
-resolution = 50  # pixels/μm
+resolution = 200  # pixels/μm
 
 nfreq = 100  # number of frequencies
-ndipole = 10  # number of point dipoles/DFT monitors
+ndipole = 10  # number of point dipoles in forward simulation
 
 fcen = 1.0  # center frequency of Gaussian source/monitors
 df = 0.2  # frequency bandwidth of source/monitors
@@ -20,7 +21,7 @@ dair = 2.0  # air padding thickness
 hrod = 0.7  # grating height
 wrod = 0.5  # graing width
 dsub = 5.0  # substrate thickness
-dAg = 0.5  # Ag back reflected thickness
+dAg = 0.5  # Ag back reflecter thickness
 
 sx = 1.1
 sy = dpml + dair + hrod + dsub + dAg
@@ -62,15 +63,18 @@ def substrate_geometry(is_textured: bool):
 
 
 def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
-    """Computes the Poynting flux in the upward normal direction (+y) in air
-    given a point dipole source positioned somewhere along a line in the
-    middle of a high-index substrate.
+    """Computes the Poynting flux in the +y direction in air
+    given a point dipole source positioned somewhere along a
+    line in the middle of the high-index substrate.
 
     Args:
       n: n'th position along a line of equally spaced dipoles.
-      rt: runtime of simulation after the source has turned off in units
-          of nfreq/df.
+      rt: runtime of simulation after the source has turned off
+          in units of nfreq/df.
       is_textured: whether the substrate is textured or not.
+
+    Returns:
+      The frequency and Poynting flux spectra.
     """
     sources = [
         mp.Source(
@@ -113,14 +117,18 @@ def forward(n: int, rt: int, is_textured: bool) -> [List, np.ndarray]:
 
 
 def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
-    """Computes the overlap integral from a collection of point DFT monitors
-       in the high-index substrate given a planewave source in air at normal
-       incidence propagating in the -y direction.
+    """Computes the Poynting flux spectrum of the dipole emission using
+       an overlap integral of the DFT fields from a line monitor in the
+       high-index substrate given a planewave source in air propagating
+       in the -y direction.
 
     Args:
-      rt: runtime of simulation after the source has turned off in units
-          of nfreq/df.
+      rt: runtime of simulation after the source has turned off
+          in units of nfreq/df.
       is_textured: whether the substrate is textured or not.
+
+    Returns:
+      The frequency and Poynting flux spectra.
     """
     sources = [
         mp.Source(
@@ -142,31 +150,23 @@ def backward(rt: int, is_textured: bool) -> [List, np.ndarray]:
         sources=sources,
     )
 
-    dft_mons = []
-    for nd in range(ndipole):
-        dft_mons.append(
-            sim.add_dft_fields(
-                [mp.Ez],
-                fcen,
-                df,
-                nfreq,
-                center=mp.Vector3(
-                    sx * (-0.5 + nd / ndipole), -0.5 * sy + dAg + 0.5 * dsub
-                ),
-                size=mp.Vector3(),
-            )
-        )
+    dft_mon = sim.add_dft_fields(
+        [mp.Ez],
+        fcen,
+        df,
+        nfreq,
+        center=mp.Vector3(0, -0.5 * sy + dAg + 0.5 * dsub),
+        size=mp.Vector3(sx),
+    )
 
     run_time = rt * nfreq / df
     sim.run(until_after_sources=run_time)
 
-    freqs = mp.get_flux_freqs(dft_mons[0])
+    freqs = mp.get_flux_freqs(dft_mon)
 
     abs_flux = np.zeros(nfreq)
-    dft_ez = np.zeros(ndipole, dtype=np.complex128)
     for nf in range(nfreq):
-        for nd in range(ndipole):
-            dft_ez[nd] = sim.get_dft_array(dft_mons[nd], mp.Ez, nf)
+        dft_ez = sim.get_dft_array(dft_mon, mp.Ez, nf)
         abs_flux[nf] = np.sum(np.abs(dft_ez) ** 2)
 
     return freqs, abs_flux
