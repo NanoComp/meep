@@ -340,11 +340,11 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   else
     eig_gv = vol3d(eig_vol.in_direction(X), eig_vol.in_direction(Y), eig_vol.in_direction(Z), a);
   vec kpoint(_kpoint);
-  LOOP_OVER_DIRECTIONS(v.dim, dd) {
-    if (dd != d && eig_gv.num_direction(dd) == user_volume.num_direction(dd))
-      if (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)
-        kpoint.set_direction(dd, real(k[dd]));
-  }
+  if (d != NO_DIRECTION) LOOP_OVER_DIRECTIONS(v.dim, dd) {
+      if (dd != d && eig_gv.num_direction(dd) == user_volume.num_direction(dd))
+        if (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)
+          kpoint.set_direction(dd, real(k[dd]));
+    }
 
   bool empty_dim[3] = {false, false, false};
 
