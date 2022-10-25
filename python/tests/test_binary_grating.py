@@ -25,9 +25,7 @@ class TestEigCoeffs(unittest.TestCase):
 
         cls.cell_size = mp.Vector3(cls.sx, cls.sy, 0)
 
-        # replace anisotropic PML with isotropic Absorber to
-        # attenuate parallel-directed fields of oblique source
-        cls.abs_layers = [mp.Absorber(thickness=cls.dpml, direction=mp.X)]
+        cls.boundary_layers = [mp.PML(thickness=cls.dpml, direction=mp.X)]
 
         wvl = 0.5  # center wavelength
         cls.fcen = 1 / wvl  # center frequency
@@ -40,31 +38,42 @@ class TestEigCoeffs(unittest.TestCase):
             mp.Block(
                 material=cls.glass,
                 size=mp.Vector3(cls.dpml + cls.dsub, mp.inf, mp.inf),
-                center=mp.Vector3(-0.5 * cls.sx + 0.5 * (cls.dpml + cls.dsub), 0, 0),
+                center=mp.Vector3(
+                    -0.5 * cls.sx + 0.5 * (cls.dpml + cls.dsub),
+                    0,
+                    0,
+                ),
             ),
             mp.Block(
                 material=cls.glass,
                 size=mp.Vector3(cls.gh, cls.gdc * cls.gp, mp.inf),
                 center=mp.Vector3(
-                    -0.5 * cls.sx + cls.dpml + cls.dsub + 0.5 * cls.gh, 0, 0
+                    -0.5 * cls.sx + cls.dpml + cls.dsub + 0.5 * cls.gh,
+                    0,
+                    0,
                 ),
             ),
         ]
 
-    @parameterized.parameterized.expand([(0,), (10.7,)])
+    @parameterized.parameterized.expand([(0.0,), (10.7,)])
     def test_binary_grating_oblique(self, theta):
-        # rotation angle of incident planewave
-        # counterclockwise (CCW) about Z axis, 0 degrees along +X axis
-        theta_in = math.radians(theta)
-
-        # k (in source medium) with correct length (plane of incidence: XY)
-        k = mp.Vector3(self.fcen * self.ng).rotate(mp.Vector3(0, 0, 1), theta_in)
-
-        symmetries = []
-        eig_parity = mp.ODD_Z
-        if theta_in == 0:
+        """Verifies that the sum of the reflectance and transmittance of all
+        the diffracted orders of a binary grating is equivalent to one.
+        """
+        if theta == 0:
             symmetries = [mp.Mirror(mp.Y)]
-            eig_parity += mp.EVEN_Y
+            eig_parity = mp.ODD_Z + mp.EVEN_Y
+            k = mp.Vector3()
+        else:
+            symmetries = []
+            eig_parity = mp.ODD_Z
+            # Wavevector of incident planewave in source medium.
+            # Plane of incidence is XY. Rotation angle is counterclockwise
+            # about Z axis with 0° along +X axis.
+            k = mp.Vector3(self.fcen * self.ng).rotate(
+                mp.Vector3(0, 0, 1),
+                math.radians(theta),
+            )
 
         def pw_amp(k, x0):
             def _pw_amp(x):
@@ -72,11 +81,12 @@ class TestEigCoeffs(unittest.TestCase):
 
             return _pw_amp
 
+        src_cmpt = mp.Ez  # S polarization
         src_pt = mp.Vector3(-0.5 * self.sx + self.dpml, 0, 0)
         sources = [
             mp.Source(
                 mp.GaussianSource(self.fcen, fwidth=self.df),
-                component=mp.Ez,  # S polarization
+                component=src_cmpt,
                 center=src_pt,
                 size=mp.Vector3(0, self.sy, 0),
                 amp_func=pw_amp(k, src_pt),
@@ -86,22 +96,27 @@ class TestEigCoeffs(unittest.TestCase):
         sim = mp.Simulation(
             resolution=self.resolution,
             cell_size=self.cell_size,
-            boundary_layers=self.abs_layers,
+            boundary_layers=self.boundary_layers,
             k_point=k,
             default_material=self.glass,
             sources=sources,
             symmetries=symmetries,
         )
 
-        refl_pt = mp.Vector3(-0.5 * self.sx + self.dpml + 0.5 * self.dsub, 0, 0)
-        refl_flux = sim.add_flux(
+        refl_pt = mp.Vector3(
+            -0.5 * self.sx + self.dpml + 0.5 * self.dsub,
+            0,
+            0,
+        )
+        refl_flux = sim.add_mode_monitor(
             self.fcen,
             0,
             1,
             mp.FluxRegion(center=refl_pt, size=mp.Vector3(0, self.sy, 0)),
         )
 
-        sim.run(until_after_sources=mp.stop_when_dft_decayed())
+        stop_cond = mp.stop_when_fields_decayed(50.0, src_cmpt, refl_pt, 1e-8)
+        sim.run(until_after_sources=stop_cond)
 
         input_flux = mp.get_fluxes(refl_flux)
         input_flux_data = sim.get_flux_data(refl_flux)
@@ -111,14 +126,14 @@ class TestEigCoeffs(unittest.TestCase):
         sim = mp.Simulation(
             resolution=self.resolution,
             cell_size=self.cell_size,
-            boundary_layers=self.abs_layers,
+            boundary_layers=self.boundary_layers,
             geometry=self.geometry,
             k_point=k,
             sources=sources,
             symmetries=symmetries,
         )
 
-        refl_flux = sim.add_flux(
+        refl_flux = sim.add_mode_monitor(
             self.fcen,
             0,
             1,
@@ -127,58 +142,81 @@ class TestEigCoeffs(unittest.TestCase):
 
         sim.load_minus_flux_data(refl_flux, input_flux_data)
 
-        tran_pt = mp.Vector3(0.5 * self.sx - self.dpml - 0.5 * self.dpad, 0, 0)
-        tran_flux = sim.add_flux(
+        tran_pt = mp.Vector3(
+            0.5 * self.sx - self.dpml - 0.5 * self.dpad,
+            0,
+            0,
+        )
+        tran_flux = sim.add_mode_monitor(
             self.fcen,
             0,
             1,
             mp.FluxRegion(center=tran_pt, size=mp.Vector3(0, self.sy, 0)),
         )
 
-        sim.run(until_after_sources=mp.stop_when_dft_decayed())
+        sim.run(until_after_sources=stop_cond)
 
         # number of reflected orders
-        nm_r = np.floor((self.fcen * self.ng - k.y) * self.gp) - np.ceil(
-            (-self.fcen * self.ng - k.y) * self.gp
-        )
-        if theta_in == 0:
-            nm_r = nm_r / 2  # since eig_parity removes degeneracy in y-direction
-        nm_r = int(nm_r)
+        m_plus = int(np.floor((self.fcen * self.ng - k.y) * self.gp))
+        m_minus = int(np.ceil((-self.fcen * self.ng - k.y) * self.gp))
 
-        res = sim.get_eigenmode_coefficients(
-            refl_flux, range(1, nm_r + 1), eig_parity=eig_parity
-        )
-        r_coeffs = res.alpha
+        if theta == 0:
+            orders = range(m_plus + 1)
+        else:
+            orders = range(m_minus, m_plus + 1)
 
         Rsum = 0
-        for nm in range(nm_r):
-            Rsum += abs(r_coeffs[nm, 0, 1]) ** 2 / input_flux[0]
+        for nm in orders:
+            ky = k.y + nm / self.cell_size.y
+            kx2 = (self.fcen * self.ng) ** 2 - ky**2
+            if kx2 > 0:
+                kdiff = mp.Vector3(np.sqrt(kx2), ky, 0)
+                print(f"kdiff = ({kdiff.x:.6f}, {kdiff.y:.6f}, {kdiff.z:.6f})")
+                res = sim.get_eigenmode_coefficients(
+                    refl_flux,
+                    [1],
+                    kpoint_func=lambda *not_used: kdiff,
+                    eig_parity=eig_parity,
+                    direction=mp.NO_DIRECTION,
+                )
+                R = abs(res.alpha[0, 0, 1]) ** 2 / input_flux[0]
+                print(f"refl-order:, {nm:+d}, {R:.6f}")
+                Rsum += 2 * R if (theta == 0 and nm != 0) else R
 
         # number of transmitted orders
-        nm_t = np.floor((self.fcen - k.y) * self.gp) - np.ceil(
-            (-self.fcen - k.y) * self.gp
-        )
-        if theta_in == 0:
-            nm_t = nm_t / 2  # since eig_parity removes degeneracy in y-direction
-        nm_t = int(nm_t)
+        m_plus = int(np.floor((self.fcen - k.y) * self.gp))
+        m_minus = int(np.ceil((-self.fcen - k.y) * self.gp))
 
-        res = sim.get_eigenmode_coefficients(
-            tran_flux, range(1, nm_t + 1), eig_parity=eig_parity
-        )
-        t_coeffs = res.alpha
+        if theta == 0:
+            orders = range(m_plus + 1)
+        else:
+            orders = range(m_minus, m_plus + 1)
 
         Tsum = 0
-        for nm in range(nm_t):
-            Tsum += abs(t_coeffs[nm, 0, 0]) ** 2 / input_flux[0]
+        for nm in orders:
+            ky = k.y + nm / self.cell_size.y
+            kx2 = self.fcen**2 - ky**2
+            if kx2 > 0:
+                kdiff = mp.Vector3(np.sqrt(kx2), ky, 0)
+                res = sim.get_eigenmode_coefficients(
+                    tran_flux,
+                    [1],
+                    kpoint_func=lambda *not_used: kdiff,
+                    eig_parity=eig_parity,
+                    direction=mp.NO_DIRECTION,
+                )
+                T = abs(res.alpha[0, 0, 0]) ** 2 / input_flux[0]
+                print(f"tran-order:, {nm:+d}, {T:.6f}")
+                Tsum += 2 * T if (theta == 0 and nm != 0) else T
 
         r_flux = mp.get_fluxes(refl_flux)
         t_flux = mp.get_fluxes(tran_flux)
         Rflux = -r_flux[0] / input_flux[0]
         Tflux = t_flux[0] / input_flux[0]
 
-        print(f"refl:, {Rsum}, {Rflux}")
-        print(f"tran:, {Tsum}, {Tflux}")
-        print(f"sum:,  {Rsum + Tsum}, {Rflux + Tflux}")
+        print(f"refl:, {Rsum:.6f}, {Rflux:.6f}")
+        print(f"tran:, {Tsum:.6f}, {Tflux:.6f}")
+        print(f"sum:,  {Rsum + Tsum:.6f}, {Rflux + Tflux:.6f}")
 
         self.assertAlmostEqual(Rsum, Rflux, places=2)
         self.assertAlmostEqual(Tsum, Tflux, places=2)
@@ -217,7 +255,7 @@ class TestEigCoeffs(unittest.TestCase):
         sim = mp.Simulation(
             resolution=self.resolution,
             cell_size=self.cell_size,
-            boundary_layers=self.abs_layers,
+            boundary_layers=self.boundary_layers,
             k_point=k,
             default_material=self.glass,
             sources=sources,
@@ -243,7 +281,7 @@ class TestEigCoeffs(unittest.TestCase):
         sim = mp.Simulation(
             resolution=self.resolution,
             cell_size=self.cell_size,
-            boundary_layers=self.abs_layers,
+            boundary_layers=self.boundary_layers,
             geometry=self.geometry,
             k_point=k,
             sources=sources,
