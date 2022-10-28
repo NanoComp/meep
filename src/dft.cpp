@@ -252,7 +252,7 @@ void fields_chunk::update_dfts(double timeE, double timeH, int current_step) {
   if (doing_solve_cw) return;
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_chunk) {
     if ((current_step % cur->get_decimation_factor()) == 0) {
-      cur->update_dft(is_magnetic(cur->c) ? timeH : timeE);
+      cur->update_dft(is_H_or_B(cur->c) ? timeH : timeE);
     }
   }
 }

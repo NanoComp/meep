@@ -286,7 +286,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
   if (idx_vol > npts)
     meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
-  field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
+  field_type ft = is_H_or_B(c) ? B_stuff : D_stuff;
   fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array)));
 }
 
@@ -302,7 +302,7 @@ void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n,
   std::vector<ptrdiff_t> index_arr(cur_data.idx_arr);
   std::vector<std::complex<double> > amplitudes(amp_arr, amp_arr + n);
   component c = cur_data.near_fd_comp;
-  field_type ft = is_magnetic(c) ? B_stuff : D_stuff;
+  field_type ft = is_H_or_B(c) ? B_stuff : D_stuff;
   if (0 > cur_data.fc_idx or cur_data.fc_idx >= num_chunks)
     meep::abort("fields chunk index out of range");
   fields_chunk *fc = chunks[cur_data.fc_idx];
