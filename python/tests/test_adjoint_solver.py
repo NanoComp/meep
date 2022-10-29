@@ -91,8 +91,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         cls.k_point = mp.Vector3(0.23, -0.38)
 
-        cls.refl_pt = mp.Vector3(-0.5 * cls.sxy + cls.dpml + 0.5)
-        cls.tran_pt = mp.Vector3(0.5 * cls.sxy - cls.dpml)
+        # location of DFT monitors for reflected and transmitted fields
+        cls.refl_pt = mp.Vector3(-0.5 * cls.sxy + cls.dpml + 0.5, 0)
+        cls.tran_pt = mp.Vector3(0.5 * cls.sxy - cls.dpml, 0)
 
     def adjoint_solver(
         self,
@@ -449,7 +450,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 1,
                 forward=False,
                 subtracted_dft_fields=subtracted_dft_fields,
-                eig_parity=mp.ODD_Z,
+                eig_parity=self.eig_parity,
             ),
             mpa.EigenmodeCoefficient(
                 sim,
@@ -770,7 +771,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             nfrq = len(frequencies)
-            tol = 0.04 if mp.is_single_precision() else 0.01
+            tol = 0.05 if mp.is_single_precision() else 0.01
             for m in [0, 1]:
                 frq_slice = slice(0, nfrq, 1) if m == 0 else slice(nfrq, 2 * nfrq, 1)
                 adj_dd = (self.dp[None, :] @ unperturbed_grad[:, frq_slice]).flatten()
