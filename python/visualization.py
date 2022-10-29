@@ -14,7 +14,7 @@ from meep.simulation import Simulation, Volume
 ## Typing imports
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from typing import Callable, Union, Any, Tuple, List
+from typing import Callable, Union, Any, Tuple, List, Optional
 
 # ------------------------------------------------------- #
 # Visualization
@@ -117,7 +117,7 @@ def place_label(
     y: float,
     centerx: float,
     centery: float,
-    label_parameters: dict = None,
+    label_parameters: Optional[dict] = None,
 ) -> Axes:
 
     if label_parameters is None:
@@ -292,9 +292,9 @@ def plot_volume(
     sim: Simulation,
     ax: Axes,
     volume: Volume,
-    output_plane: Volume = None,
-    plotting_parameters: dict = None,
-    label: str = None,
+    output_plane: Optional[Volume] = None,
+    plotting_parameters: Optional[dict] = None,
+    label: Optional[str] = None,
 ) -> Axes:
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
@@ -477,10 +477,10 @@ def _add_colorbar(
 
 def plot_eps(
     sim: Simulation,
-    ax: Axes = None,
-    output_plane: Volume = None,
-    eps_parameters: dict = None,
-    frequency: float = None,
+    ax: Optional[Axes] = None,
+    output_plane: Optional[Volume] = None,
+    eps_parameters: Optional[dict] = None,
+    frequency: Optional[float] = None,
 ) -> Union[Axes, Any]:
     # consolidate plotting parameters
     if eps_parameters is None:
@@ -596,8 +596,8 @@ def plot_eps(
 def plot_boundaries(
     sim: Simulation,
     ax: Axes,
-    output_plane: Volume = None,
-    boundary_parameters: dict = None,
+    output_plane: Optional[Volume] = None,
+    boundary_parameters: Optional[dict] = None,
 ) -> Axes:
     # consolidate plotting parameters
     if boundary_parameters is None:
@@ -712,9 +712,9 @@ def plot_boundaries(
 def plot_sources(
     sim: Simulation,
     ax: Axes,
-    output_plane: Volume = None,
+    output_plane: Optional[Volume] = None,
     labels: bool = False,
-    source_parameters: dict = None,
+    source_parameters: Optional[dict] = None,
 ) -> Axes:
     # consolidate plotting parameters
     if source_parameters is None:
@@ -740,9 +740,9 @@ def plot_sources(
 def plot_monitors(
     sim: Simulation,
     ax: Axes,
-    output_plane: Volume = None,
+    output_plane: Optional[Volume] = None,
     labels: bool = False,
-    monitor_parameters: dict = None,
+    monitor_parameters: Optional[dict] = None,
 ) -> Axes:
     # consolidate plotting parameters
     if monitor_parameters is None:
@@ -768,10 +768,10 @@ def plot_monitors(
 
 def plot_fields(
     sim: Simulation,
-    ax: Axes = None,
-    fields=None,
-    output_plane: Volume = None,
-    field_parameters: dict = None,
+    ax: Optional[Axes] = None,
+    fields: Optional = None,
+    output_plane: Optional[Volume] = None,
+    field_parameters: Optional[dict] = None,
 ) -> Union[Axes, Any]:
     components = {
         mp.Ex,
@@ -871,16 +871,16 @@ def plot_fields(
 
 def plot2D(
     sim: Simulation,
-    ax: Axes = None,
-    output_plane: Volume = None,
-    fields=None,
-    labels: bool = False,
-    eps_parameters: dict = None,
-    boundary_parameters: dict = None,
-    source_parameters: dict = None,
-    monitor_parameters: dict = None,
-    field_parameters: dict = None,
-    frequency: float = None,
+    ax: Optional[Axes] = None,
+    output_plane: Optional[Volume] = None,
+    fields: Optional = None,
+    labels: Optional[bool] = False,
+    eps_parameters: Optional[dict] = None,
+    boundary_parameters: Optional[dict] = None,
+    source_parameters: Optional[dict] = None,
+    monitor_parameters: Optional[dict] = None,
+    field_parameters: Optional[dict] = None,
+    frequency: Optional[float] = None,
     plot_eps_flag: bool = True,
     plot_sources_flag: bool = True,
     plot_monitors_flag: bool = True,
@@ -1162,12 +1162,12 @@ class Animate2D:
 
     def __init__(
         self,
-        sim: Simulation = None,
-        fields=None,
-        f: Figure = None,
+        sim: Optional[Simulation] = None,
+        fields: Optional = None,
+        f: Optional[Figure] = None,
         realtime: bool = False,
         normalize: bool = False,
-        plot_modifiers: list = None,
+        plot_modifiers: Optional[list] = None,
         update_epsilon: bool = False,
         nb: bool = False,
         **customization_args
