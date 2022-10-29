@@ -112,7 +112,7 @@ jobs:
       id: pip-cache
       run: |
         python -m pip install --upgrade pip wheel
-        echo "::set-output name=dir::$(pip cache dir)"
+        echo "name=dir::$(pip cache dir)" >> $GITHUB_OUTPUT
 
     - name: pip cache
       uses: actions/cache@v3
