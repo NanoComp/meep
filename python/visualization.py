@@ -48,7 +48,6 @@ default_field_parameters = {
     "alpha": 0.8,
     "post_process": np.real,
     "colorbar": False,
-    "colorbar_label": None,
 }
 
 default_eps_parameters = {
@@ -63,11 +62,12 @@ default_eps_parameters = {
 }
 
 default_colorbar_parameters = {
+    "label": None,
     "orientation": "vertical",
+    "extend": None,
     "position": "right",
     "size": "5%",
     "pad": "2%",
-    "clip_values": False,
 }
 
 default_boundary_parameters = {
@@ -463,7 +463,7 @@ def _add_colorbar(
     cmap: str,
     vmin: float,
     vmax: float,
-    label: str,
+    default_label: Optional[str] = None,
     colorbar_parameters: Optional[dict] = None,
 ) -> None:
     """Add a colorbar to the parent Figure of 'ax' by creating an additional Axes."""
@@ -475,20 +475,23 @@ def _add_colorbar(
     else:
         colorbar_parameters = dict(default_colorbar_parameters, **colorbar_parameters)
 
+    # Use default label (specified by plot_eps or plot_fields) if no user-specified label
+    if colorbar_parameters["label"] is None:
+        colorbar_parameters["label"] = default_label
+
     # Create a map between field/eps values and colors in the colormap.
     # Note: cm.get_cmap() is deprecated for matplotlib>=3.6, use mpl.colormaps[cmap] instead if necessary.
     sm = mpl.cm.ScalarMappable(
-        norm=mpl.colors.Normalize(vmin, vmax, colorbar_parameters.pop("clip_values")),
+        norm=mpl.colors.Normalize(vmin, vmax),
         cmap=mpl.cm.get_cmap(cmap),
     )
-    orientation = colorbar_parameters.pop("orientation")
-    print("setting colorbar values: ", colorbar_parameters)
-    plt.colorbar(
-        mappable=sm,
-        cax=make_axes_locatable(ax).append_axes(**colorbar_parameters),
-        orientation=orientation,
-        label=label,
+    # Pop specific values out of colorbar params so user can add any kwargs to plt.colorbar
+    cax = make_axes_locatable(ax).append_axes(
+        pad=colorbar_parameters.pop("pad"),
+        size=colorbar_parameters.pop("size"),
+        position=colorbar_parameters.pop("position"),
     )
+    plt.colorbar(mappable=sm, cax=cax, **colorbar_parameters)
 
 
 def plot_eps(
@@ -602,7 +605,7 @@ def plot_eps(
                 cmap=eps_parameters["cmap"],
                 vmin=np.amin(eps_data),
                 vmax=np.amax(eps_data),
-                label=r"$\epsilon_r$",
+                default_label=r"$\epsilon_r$",
                 colorbar_parameters=colorbar_parameters,
             )
 
@@ -883,7 +886,7 @@ def plot_fields(
                 cmap=field_parameters["cmap"],
                 vmin=np.amin(field_data),
                 vmax=np.amax(field_data),
-                label=field_parameters["colorbar_label"] or "Field Value",
+                default_label="field value",
                 colorbar_parameters=colorbar_parameters,
             )
     return ax
@@ -919,6 +922,14 @@ def plot2D(
     # validate the output plane to ensure proper 2D coordinates
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
     output_plane = Volume(center=sim_center, size=sim_size)
+
+    if eps_parameters is not None and field_parameters is not None:
+        if field_parameters.get("colorbar", False) and eps_parameters.get(
+            "colorbar", False
+        ):
+            raise ValueError(
+                "'colorbar' parameter can only be specified for epsilon or fields, but not both."
+            )
 
     # Plot geometry
     if plot_eps_flag:

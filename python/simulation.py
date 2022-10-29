@@ -4665,6 +4665,7 @@ class Simulation:
         source_parameters=None,
         monitor_parameters=None,
         field_parameters=None,
+        colorbar_parameters: Optional[dict] = None,
         frequency=None,
         plot_eps_flag=True,
         plot_sources_flag=True,
@@ -4723,6 +4724,7 @@ class Simulation:
               plot. Defaults to the `frequency` parameter of the [Source](#source) object.
             - `resolution=None`: the resolution of the $\\varepsilon$ grid. Defaults to the
               `resolution` of the `Simulation` object.
+            - `colorbar=False`: whether to add a colorbar to the plot's parent Figure based on epsilon values.
         * `boundary_parameters`: a `dict` of optional plotting parameters that override
           the default parameters for the boundary layers.
             - `alpha=1.0`: transparency of boundary layers
@@ -4759,6 +4761,19 @@ class Simulation:
             - `alpha=0.6`: transparency of fields
             - `post_process=np.real`: post processing function to apply to fields (must be
               a function object)
+            - `colorbar=False`: whether to add a colorbar to the plot's parent Figure based on field values.
+        * `colorbar_parameters`:  a `dict` of optional plotting parameters that override the default parameters for
+          the colorbar.
+            - `label=None`: an optional label for the colorbar, defaults to '$\\epsilon_r$' for epsilon and
+            'field values' for fields.
+            - `orientation='vertical'`: the orientation of the colorbar gradient
+            - `extend=None`: make pointed end(s) for out-of-range values. Allowed values are:
+            ['neither', 'both', 'min', 'max']
+            - `format=None`: formatter for tick labels. Can be an fstring (i.e. "{x:.2e}") or a
+            [matplotlib.ticker.ScalarFormatter](https://matplotlib.org/stable/api/ticker_api.html#matplotlib.ticker.ScalarFormatter).
+            - `position='right'`: position of the colorbar with respect to the Axes
+            - `size='5%'`: size of the colorbar in the dimension perpendicular to its `orientation`
+            - `pad='2%'`: fraction of original axes between colorbar and image axes
         """
         import meep.visualization as vis
 
@@ -4773,6 +4788,7 @@ class Simulation:
             source_parameters=source_parameters,
             monitor_parameters=monitor_parameters,
             field_parameters=field_parameters,
+            colorbar_parameters=colorbar_parameters,
             frequency=frequency,
             plot_eps_flag=plot_eps_flag,
             plot_sources_flag=plot_sources_flag,
