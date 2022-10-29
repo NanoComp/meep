@@ -813,60 +813,60 @@ def plot_fields(
         field_parameters = dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
-    if fields in components:
-        # Get domain measurements
-        sim_center, sim_size = get_2D_dimensions(sim, output_plane)
-
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
-            sim_center, sim_size, sim.is_cylindrical
-        )
-
-        if sim_size.x == 0:
-            # Plot y on x axis, z on y axis (YZ plane)
-            extent = [ymin, ymax, zmin, zmax]
-            xlabel = "Y"
-            ylabel = "Z"
-        elif sim_size.y == 0:
-            # Plot x on x axis, z on y axis (XZ plane)
-            extent = [xmin, xmax, zmin, zmax]
-            if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-                xlabel = "R"
-            else:
-                xlabel = "X"
-            ylabel = "Z"
-        elif sim_size.z == 0:
-            # Plot x on x axis, y on y axis (XY plane)
-            extent = [xmin, xmax, ymin, ymax]
-            xlabel = "X"
-            ylabel = "Y"
-        field_data = sim.get_array(center=sim_center, size=sim_size, component=fields)
-    else:
+    if fields not in components:
         raise ValueError("Please specify a valid field component (mp.Ex, mp.Ey, ...")
 
+    # Get domain measurements
+    sim_center, sim_size = get_2D_dimensions(sim, output_plane)
+
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+        sim_center, sim_size, sim.is_cylindrical
+    )
+
+    if sim_size.x == 0:
+        # Plot y on x axis, z on y axis (YZ plane)
+        extent = [ymin, ymax, zmin, zmax]
+        xlabel = "Y"
+        ylabel = "Z"
+    elif sim_size.y == 0:
+        # Plot x on x axis, z on y axis (XZ plane)
+        extent = [xmin, xmax, zmin, zmax]
+        if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+            xlabel = "R"
+        else:
+            xlabel = "X"
+        ylabel = "Z"
+    elif sim_size.z == 0:
+        # Plot x on x axis, y on y axis (XY plane)
+        extent = [xmin, xmax, ymin, ymax]
+        xlabel = "X"
+        ylabel = "Y"
+    field_data = sim.get_array(center=sim_center, size=sim_size, component=fields)
+
     field_data = field_parameters["post_process"](field_data)
+
     if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
         field_data = np.flipud(field_data)
     else:
         field_data = np.rot90(field_data)
 
     # Either plot the field, or return the array
-    if ax:
-        if mp.am_master():
-            ax.imshow(
-                field_data, extent=extent, **filter_dict(field_parameters, ax.imshow)
+    if not ax:
+        return field_data
+
+    if mp.am_master():
+        ax.imshow(field_data, extent=extent, **filter_dict(field_parameters, ax.imshow))
+
+        if field_parameters["colorbar"]:
+
+            _add_colorbar(
+                ax=ax,
+                cmap=field_parameters["cmap"],
+                vmin=np.amin(field_data),
+                vmax=np.amax(field_data),
+                label=field_parameters["colorbar_label"] or "Field Value",
             )
-
-            if field_parameters["colorbar"]:
-
-                _add_colorbar(
-                    ax=ax,
-                    cmap=field_parameters.get("cmap", default_field_parameters["cmap"]),
-                    vmin=np.amin(field_data),
-                    vmax=np.amax(field_data),
-                    label=field_parameters["colorbar_label"] or "Field Value",
-                )
-        return ax
-    return field_data
+    return ax
 
 
 def plot2D(
