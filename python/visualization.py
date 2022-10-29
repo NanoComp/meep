@@ -562,35 +562,35 @@ def plot_eps(
     )
 
     if mp.am_master():
-        if ax:
-            if eps_parameters["contour"]:
-                ax.contour(
-                    eps_data,
-                    0,
-                    levels=np.unique(eps_data),
-                    colors="black",
-                    origin="upper",
-                    extent=extent,
-                    linewidths=eps_parameters["contour_linewidth"],
-                )
-            else:
-                ax.imshow(
-                    eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow)
-                )
+        # If Axes was not provided, just return the eps_data, otherwise plot
+        if not ax:
+            return eps_data
 
-            if eps_parameters["colorbar"]:
-                _add_colorbar(
-                    ax=ax,
-                    cmap=eps_parameters["cmap"],
-                    vmin=np.amin(eps_data),
-                    vmax=np.amax(eps_data),
-                    label=r"$\epsilon_r$",
-                )
+        if eps_parameters["contour"]:
+            ax.contour(
+                eps_data,
+                0,
+                levels=np.unique(eps_data),
+                colors="black",
+                origin="upper",
+                extent=extent,
+                linewidths=eps_parameters["contour_linewidth"],
+            )
+        else:
+            ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
 
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
-            return ax
-        return eps_data
+        if eps_parameters["colorbar"]:
+            _add_colorbar(
+                ax=ax,
+                cmap=eps_parameters["cmap"],
+                vmin=np.amin(eps_data),
+                vmax=np.amax(eps_data),
+                label=r"$\epsilon_r$",
+            )
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        return ax
 
 
 def plot_boundaries(
