@@ -91,6 +91,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         cls.k_point = mp.Vector3(0.23, -0.38)
 
+        cls.refl_pt = mp.Vector3(-0.5 * cls.sxy + cls.dpml + 0.5)
+        cls.tran_pt = mp.Vector3(0.5 * cls.sxy - cls.dpml)
+
     def adjoint_solver(
         self,
         design_params,
@@ -151,7 +154,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     dft_mon = ref_sim.add_mode_monitor(
                         frequencies,
                         mp.ModeRegion(
-                            center=mp.Vector3(-0.5 * self.sxy + self.dpml + 0.5),
+                            center=self.refl_pt,
                             size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                         ),
                         yee_grid=True,
@@ -165,7 +168,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     mpa.EigenmodeCoefficient(
                         sim,
                         mp.Volume(
-                            center=mp.Vector3(-0.5 * self.sxy + self.dpml),
+                            center=self.refl_pt,
                             size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                         ),
                         1,
@@ -176,7 +179,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     mpa.EigenmodeCoefficient(
                         sim,
                         mp.Volume(
-                            center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                            center=self.tran_pt,
                             size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                         ),
                         2,
@@ -392,7 +395,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         dft_mon = ref_sim.add_mode_monitor(
             frequencies,
             mp.ModeRegion(
-                center=mp.Vector3(-0.5 * self.sxy + self.dpml + 0.5),
+                center=self.refl_pt,
                 size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
             ),
             yee_grid=True,
@@ -440,7 +443,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             mpa.EigenmodeCoefficient(
                 sim,
                 mp.Volume(
-                    center=mp.Vector3(-0.5 * self.sxy + self.dpml),
+                    center=self.refl_pt,
                     size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                 ),
                 1,
@@ -451,7 +454,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             mpa.EigenmodeCoefficient(
                 sim,
                 mp.Volume(
-                    center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                    center=self.tran_pt,
                     size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                 ),
                 2,
@@ -460,9 +463,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         ]
 
         def J1(refl_mon, tran_mon):
+            """Reflectance into first-order mode of Port 1."""
             return npa.power(npa.abs(refl_mon), 2) / input_flux
 
         def J2(refl_mon, tran_mon):
+            """1-transmittance into second-order mode of Port 2."""
             return 1 - (npa.power(npa.abs(tran_mon), 2) / input_flux)
 
         opt = mpa.OptimizationProblem(
@@ -479,7 +484,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             dJ_du_transmission = dJ_du[1]
             f0_reflection = f0[0]
             f0_transmission = f0[1]
-            f0_combined = np.concatenate((f0_reflection, f0_transmission))
+            f0_merged = np.concatenate((f0_reflection, f0_transmission))
             nf = len(frequencies)
             grad = np.zeros((self.Nx * self.Ny, 2 * nf))
             if dJ_du_reflection.ndim < 2:
@@ -488,13 +493,13 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             if dJ_du_transmission.ndim < 2:
                 dJ_du_transmission = np.expand_dims(dJ_du_transmission, axis=1)
             grad[:, nf:] = dJ_du_transmission
-            return f0_combined, grad
+            return f0_merged, grad
         else:
             f0 = opt([design_params], need_gradient=False)
             f0_reflection = f0[0][0]
             f0_transmission = f0[0][1]
-            f0_combined = np.concatenate((f0_reflection, f0_transmission))
-            return f0_combined
+            f0_merged = np.concatenate((f0_reflection, f0_transmission))
+            return f0_merged
 
     def mapping(self, x, filter_radius, eta, beta):
         filtered_field = mpa.conic_filter(
@@ -764,10 +769,10 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 need_gradient=False,
             )
 
-            nf = len(frequencies)
+            nfrq = len(frequencies)
             tol = 0.04 if mp.is_single_precision() else 0.01
             for m in [0, 1]:
-                frq_slice = slice(0, nf, 1) if m == 0 else slice(nf, 2 * nf, 1)
+                frq_slice = slice(0, nfrq, 1) if m == 0 else slice(nfrq, 2 * nfrq, 1)
                 adj_dd = (self.dp[None, :] @ unperturbed_grad[:, frq_slice]).flatten()
                 fnd_dd = perturbed_val[frq_slice] - unperturbed_val[frq_slice]
                 print(
