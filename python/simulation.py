@@ -41,6 +41,8 @@ try:
 except ImportError:
     do_progress = False
 
+from matplotlib.axes import Axes
+
 verbosity = Verbosity(mp.cvar, "meep", 1)
 
 mp.setup()
@@ -4656,23 +4658,24 @@ class Simulation:
 
     def plot2D(
         self,
-        ax=None,
-        output_plane=None,
-        fields=None,
-        labels=False,
-        eps_parameters=None,
-        boundary_parameters=None,
-        source_parameters=None,
-        monitor_parameters=None,
-        field_parameters=None,
+        ax: Optional[Axes] = None,
+        output_plane: Optional[Volume] = None,
+        fields: Optional = None,
+        labels: Optional[bool] = False,
+        eps_parameters: Optional[dict] = None,
+        boundary_parameters: Optional[dict] = None,
+        source_parameters: Optional[dict] = None,
+        monitor_parameters: Optional[dict] = None,
+        field_parameters: Optional[dict] = None,
         colorbar_parameters: Optional[dict] = None,
-        frequency=None,
-        plot_eps_flag=True,
-        plot_sources_flag=True,
-        plot_monitors_flag=True,
-        plot_boundaries_flag=True,
+        frequency: Optional[float] = None,
+        plot_eps_flag: bool = True,
+        plot_sources_flag: bool = True,
+        plot_monitors_flag: bool = True,
+        plot_boundaries_flag: bool = True,
+        nb: bool = False,
         **kwargs,
-    ):
+    ) -> None:
         """
         Plots a 2D cross section of the simulation domain using `matplotlib`. The plot
         includes the geometry, boundary layers, sources, and monitors. Fields can also be
@@ -4774,6 +4777,8 @@ class Simulation:
             - `position='right'`: position of the colorbar with respect to the Axes
             - `size='5%'`: size of the colorbar in the dimension perpendicular to its `orientation`
             - `pad='2%'`: fraction of original axes between colorbar and image axes
+        * `nb`: set this to True if plotting in a Jupyter notebook to use ipympl for plotting. Note: this requires
+        ipympl to be installed.
         """
         import meep.visualization as vis
 
@@ -4794,6 +4799,7 @@ class Simulation:
             plot_sources_flag=plot_sources_flag,
             plot_monitors_flag=plot_monitors_flag,
             plot_boundaries_flag=plot_boundaries_flag,
+            nb=nb,
             **kwargs,
         )
 
