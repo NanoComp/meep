@@ -151,7 +151,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     dft_mon = ref_sim.add_mode_monitor(
                         frequencies,
                         mp.ModeRegion(
-                            center=mp.Vector3(-0.5 * self.sxy + self.dpml),
+                            center=mp.Vector3(-0.5 * self.sxy + self.dpml + 0.5),
                             size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
                         ),
                         yee_grid=True,
@@ -372,6 +372,125 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         else:
             f = opt([design_params], need_gradient=False)
             return f[0]
+
+    def adjoint_solver_two_objfunc(
+        self,
+        design_params,
+        frequencies=None,
+        need_gradient=True,
+    ):
+        # Compute the incident fields of the mode source
+        # in the straight waveguide for use as normalization
+        # of the reflectance (S11) measurement.
+        ref_sim = mp.Simulation(
+            resolution=self.resolution,
+            cell_size=self.cell_size,
+            boundary_layers=self.pml_xy,
+            sources=self.mode_source,
+            geometry=self.waveguide_geometry,
+        )
+        dft_mon = ref_sim.add_mode_monitor(
+            frequencies,
+            mp.ModeRegion(
+                center=mp.Vector3(-0.5 * self.sxy + self.dpml + 0.5),
+                size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+            ),
+            yee_grid=True,
+        )
+        ref_sim.run(until_after_sources=20)
+        subtracted_dft_fields = ref_sim.get_flux_data(dft_mon)
+        input_flux = np.array(mp.get_fluxes(dft_mon))
+
+        matgrid = mp.MaterialGrid(
+            mp.Vector3(self.Nx, self.Ny),
+            mp.air,
+            self.silicon,
+            weights=np.ones((self.Nx, self.Ny)),
+        )
+
+        matgrid_region = mpa.DesignRegion(
+            matgrid,
+            volume=mp.Volume(
+                center=mp.Vector3(),
+                size=mp.Vector3(
+                    self.design_region_size.x, self.design_region_size.y, 0
+                ),
+            ),
+        )
+
+        matgrid_geometry = [
+            mp.Block(
+                center=matgrid_region.center,
+                size=matgrid_region.size,
+                material=matgrid,
+            )
+        ]
+
+        geometry = self.waveguide_geometry + matgrid_geometry
+
+        sim = mp.Simulation(
+            resolution=self.resolution,
+            cell_size=self.cell_size,
+            boundary_layers=self.pml_xy,
+            sources=self.mode_source,
+            geometry=geometry,
+        )
+
+        obj_list = [
+            mpa.EigenmodeCoefficient(
+                sim,
+                mp.Volume(
+                    center=mp.Vector3(-0.5 * self.sxy + self.dpml),
+                    size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+                ),
+                1,
+                forward=False,
+                subtracted_dft_fields=subtracted_dft_fields,
+                eig_parity=mp.ODD_Z,
+            ),
+            mpa.EigenmodeCoefficient(
+                sim,
+                mp.Volume(
+                    center=mp.Vector3(0.5 * self.sxy - self.dpml),
+                    size=mp.Vector3(0, self.sxy - 2 * self.dpml, 0),
+                ),
+                2,
+                eig_parity=mp.ODD_Z,
+            ),
+        ]
+
+        def J1(refl_mon, tran_mon):
+            return npa.power(npa.abs(refl_mon), 2) / input_flux
+
+        def J2(refl_mon, tran_mon):
+            return 1 - (npa.power(npa.abs(tran_mon), 2) / input_flux)
+
+        opt = mpa.OptimizationProblem(
+            simulation=sim,
+            objective_functions=[J1, J2],
+            objective_arguments=obj_list,
+            design_regions=[matgrid_region],
+            frequencies=frequencies,
+        )
+
+        if need_gradient:
+            f0, dJ_du = opt([design_params])
+            dJ_du_reflection = dJ_du[0]
+            dJ_du_transmission = dJ_du[1]
+            f0_reflection = f0[0]
+            f0_transmission = f0[1]
+            nf = len(frequencies)
+            f0_combined = np.concatenate((f0_reflection, f0_transmission))
+            grad = np.zeros((2 * nf, self.Nx * self.Ny))
+            grad[:nf, :] = dJ_du_reflection.T
+            grad[nf:, :] = dJ_du_transmission.T
+            return f0_combined, grad
+        else:
+            f0 = opt([design_params], need_gradient=False)
+            f0_reflection = f0[0][0]
+            f0_transmission = f0[0][1]
+            f0_combined = np.concatenate((f0_reflection, f0_transmission))
+            return f0_combined
 
     def mapping(self, x, filter_radius, eta, beta):
         filtered_field = mpa.conic_filter(
@@ -623,6 +742,36 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             tol = 0.1 if mp.is_single_precision() else 0.04
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+
+    def test_two_objfunc(self):
+        print("*** TESTING TWO OBJECTIVE FUNCTIONS***")
+
+        # test the single frequency and multi frequency case
+        for frequencies in [[self.fcen], [1 / 1.58, self.fcen, 1 / 1.53]]:
+            # compute objective value and its gradient for unperturbed design
+            unperturbed_val, unperturbed_grad = self.adjoint_solver_two_objfunc(
+                self.p, frequencies
+            )
+
+            # compute objective for perturbed design
+            perturbed_val = self.adjoint_solver_two_objfunc(
+                self.p + self.dp,
+                frequencies,
+                need_gradient=False,
+            )
+
+            nf = len(frequencies)
+            tol = 0.04 if mp.is_single_precision() else 0.01
+            for m in [0, 1]:
+                frq_slice = slice(0, nf, 1) if m == 0 else slice(nf, 2 * nf, 1)
+                adj_dd = (self.dp[None, :] @ unperturbed_grad[frq_slice, :].T).flatten()
+                fnd_dd = perturbed_val[frq_slice] - unperturbed_val[frq_slice]
+                print(
+                    f"directional derivative:, "
+                    f"{adj_dd} (adjoint solver), "
+                    f"{fnd_dd} (finite difference)"
+                )
+                self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
 
 if __name__ == "__main__":
