@@ -62,6 +62,14 @@ default_eps_parameters = {
     "colorbar": False,
 }
 
+default_colorbar_parameters = {
+    "orientation": "vertical",
+    "position": "right",
+    "size": "5%",
+    "pad": "2%",
+    "clip_values": False,
+}
+
 default_boundary_parameters = {
     "color": "g",
     "edgecolor": "g",
@@ -456,21 +464,29 @@ def _add_colorbar(
     vmin: float,
     vmax: float,
     label: str,
-    clip_values: bool = False,
+    colorbar_parameters: Optional[dict] = None,
 ) -> None:
     """Add a colorbar to the parent Figure of 'ax' by creating an additional Axes."""
     import matplotlib as mpl
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+    if colorbar_parameters is None:
+        colorbar_parameters = default_colorbar_parameters
+    else:
+        colorbar_parameters = dict(default_colorbar_parameters, **colorbar_parameters)
+
     # Create a map between field/eps values and colors in the colormap.
     # Note: cm.get_cmap() is deprecated for matplotlib>=3.6, use mpl.colormaps[cmap] instead if necessary.
     sm = mpl.cm.ScalarMappable(
-        norm=mpl.colors.Normalize(vmin, vmax, clip_values), cmap=mpl.cm.get_cmap(cmap)
+        norm=mpl.colors.Normalize(vmin, vmax, colorbar_parameters.pop("clip_values")),
+        cmap=mpl.cm.get_cmap(cmap),
     )
+    orientation = colorbar_parameters.pop("orientation")
+    print("setting colorbar values: ", colorbar_parameters)
     plt.colorbar(
         mappable=sm,
-        cax=make_axes_locatable(ax).append_axes(position="right", size="5%", pad=0.05),
-        orientation="vertical",
+        cax=make_axes_locatable(ax).append_axes(**colorbar_parameters),
+        orientation=orientation,
         label=label,
     )
 
@@ -480,6 +496,7 @@ def plot_eps(
     ax: Optional[Axes] = None,
     output_plane: Optional[Volume] = None,
     eps_parameters: Optional[dict] = None,
+    colorbar_parameters: Optional[dict] = None,
     frequency: Optional[float] = None,
 ) -> Union[Axes, Any]:
     # consolidate plotting parameters
@@ -586,6 +603,7 @@ def plot_eps(
                 vmin=np.amin(eps_data),
                 vmax=np.amax(eps_data),
                 label=r"$\epsilon_r$",
+                colorbar_parameters=colorbar_parameters,
             )
 
         ax.set_xlabel(xlabel)
@@ -772,6 +790,7 @@ def plot_fields(
     fields: Optional = None,
     output_plane: Optional[Volume] = None,
     field_parameters: Optional[dict] = None,
+    colorbar_parameters: Optional[dict] = None,
 ) -> Union[Axes, Any]:
     components = {
         mp.Ex,
@@ -865,6 +884,7 @@ def plot_fields(
                 vmin=np.amin(field_data),
                 vmax=np.amax(field_data),
                 label=field_parameters["colorbar_label"] or "Field Value",
+                colorbar_parameters=colorbar_parameters,
             )
     return ax
 
@@ -880,6 +900,7 @@ def plot2D(
     source_parameters: Optional[dict] = None,
     monitor_parameters: Optional[dict] = None,
     field_parameters: Optional[dict] = None,
+    colorbar_parameters: Optional[dict] = None,
     frequency: Optional[float] = None,
     plot_eps_flag: bool = True,
     plot_sources_flag: bool = True,
@@ -906,6 +927,7 @@ def plot2D(
             ax,
             output_plane=output_plane,
             eps_parameters=eps_parameters,
+            colorbar_parameters=colorbar_parameters,
             frequency=frequency,
         )
 
@@ -946,6 +968,7 @@ def plot2D(
             fields,
             output_plane=output_plane,
             field_parameters=field_parameters,
+            colorbar_parameters=colorbar_parameters,
         )
     # If using %matplotlib ipympl magic, we need to force the figure to be displayed immediately
     if mp.am_master() and nb:
