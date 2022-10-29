@@ -479,11 +479,15 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             dJ_du_transmission = dJ_du[1]
             f0_reflection = f0[0]
             f0_transmission = f0[1]
-            nf = len(frequencies)
             f0_combined = np.concatenate((f0_reflection, f0_transmission))
-            grad = np.zeros((2 * nf, self.Nx * self.Ny))
-            grad[:nf, :] = dJ_du_reflection.T
-            grad[nf:, :] = dJ_du_transmission.T
+            nf = len(frequencies)
+            grad = np.zeros((self.Nx * self.Ny, 2 * nf))
+            if dJ_du_reflection.ndim < 2:
+                dJ_du_reflection = np.expand_dims(dJ_du_reflection, axis=1)
+            grad[:, :nf] = dJ_du_reflection
+            if dJ_du_transmission.ndim < 2:
+                dJ_du_transmission = np.expand_dims(dJ_du_transmission, axis=1)
+            grad[:, nf:] = dJ_du_transmission
             return f0_combined, grad
         else:
             f0 = opt([design_params], need_gradient=False)
@@ -753,7 +757,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 self.p, frequencies
             )
 
-            # compute objective for perturbed design
+            # compute objective value for perturbed design
             perturbed_val = self.adjoint_solver_two_objfunc(
                 self.p + self.dp,
                 frequencies,
@@ -764,7 +768,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             tol = 0.04 if mp.is_single_precision() else 0.01
             for m in [0, 1]:
                 frq_slice = slice(0, nf, 1) if m == 0 else slice(nf, 2 * nf, 1)
-                adj_dd = (self.dp[None, :] @ unperturbed_grad[frq_slice, :].T).flatten()
+                adj_dd = (self.dp[None, :] @ unperturbed_grad[:, frq_slice]).flatten()
                 fnd_dd = perturbed_val[frq_slice] - unperturbed_val[frq_slice]
                 print(
                     f"directional derivative:, "
