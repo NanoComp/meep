@@ -14,7 +14,7 @@ from meep.simulation import Simulation, Volume
 ## Typing imports
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from typing import Callable, Union, Any, Tuple, List
+from typing import Callable, Union, Any, Tuple, List, Optional
 
 # ------------------------------------------------------- #
 # Visualization
@@ -47,6 +47,7 @@ default_field_parameters = {
     "cmap": "RdBu",
     "alpha": 0.8,
     "post_process": np.real,
+    "colorbar": False,
 }
 
 default_eps_parameters = {
@@ -57,6 +58,16 @@ default_eps_parameters = {
     "contour_linewidth": 1,
     "frequency": None,
     "resolution": None,
+    "colorbar": False,
+}
+
+default_colorbar_parameters = {
+    "label": None,
+    "orientation": "vertical",
+    "extend": None,
+    "position": "right",
+    "size": "5%",
+    "pad": "2%",
 }
 
 default_boundary_parameters = {
@@ -114,7 +125,7 @@ def place_label(
     y: float,
     centerx: float,
     centery: float,
-    label_parameters: dict = None,
+    label_parameters: Optional[dict] = None,
 ) -> Axes:
 
     if label_parameters is None:
@@ -289,9 +300,9 @@ def plot_volume(
     sim: Simulation,
     ax: Axes,
     volume: Volume,
-    output_plane: Volume = None,
-    plotting_parameters: dict = None,
-    label: str = None,
+    output_plane: Optional[Volume] = None,
+    plotting_parameters: Optional[dict] = None,
+    label: Optional[str] = None,
 ) -> Axes:
     import matplotlib.patches as patches
     from matplotlib import pyplot as plt
@@ -447,12 +458,49 @@ def plot_volume(
     return ax
 
 
+def _add_colorbar(
+    ax: Axes,
+    cmap: str,
+    vmin: float,
+    vmax: float,
+    default_label: Optional[str] = None,
+    colorbar_parameters: Optional[dict] = None,
+) -> None:
+    """Add a colorbar to the parent Figure of 'ax' by creating an additional Axes."""
+    import matplotlib as mpl
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    if colorbar_parameters is None:
+        colorbar_parameters = default_colorbar_parameters
+    else:
+        colorbar_parameters = dict(default_colorbar_parameters, **colorbar_parameters)
+
+    # Use default label (specified by plot_eps or plot_fields) if no user-specified label
+    if colorbar_parameters["label"] is None:
+        colorbar_parameters["label"] = default_label
+
+    # Create a map between field/eps values and colors in the colormap.
+    # Note: cm.get_cmap() is deprecated for matplotlib>=3.6, use mpl.colormaps[cmap] instead if necessary.
+    sm = mpl.cm.ScalarMappable(
+        norm=mpl.colors.Normalize(vmin, vmax),
+        cmap=mpl.cm.get_cmap(cmap),
+    )
+    # Pop specific values out of colorbar params so user can add any kwargs to plt.colorbar
+    cax = make_axes_locatable(ax).append_axes(
+        pad=colorbar_parameters.pop("pad"),
+        size=colorbar_parameters.pop("size"),
+        position=colorbar_parameters.pop("position"),
+    )
+    plt.colorbar(mappable=sm, cax=cax, **colorbar_parameters)
+
+
 def plot_eps(
     sim: Simulation,
-    ax: Axes = None,
-    output_plane: Volume = None,
-    eps_parameters: dict = None,
-    frequency: float = None,
+    ax: Optional[Axes] = None,
+    output_plane: Optional[Volume] = None,
+    eps_parameters: Optional[dict] = None,
+    colorbar_parameters: Optional[dict] = None,
+    frequency: Optional[float] = None,
 ) -> Union[Axes, Any]:
     # consolidate plotting parameters
     if eps_parameters is None:
@@ -534,32 +582,43 @@ def plot_eps(
     )
 
     if mp.am_master():
-        if ax:
-            if eps_parameters["contour"]:
-                ax.contour(
-                    eps_data,
-                    0,
-                    levels=np.unique(eps_data),
-                    colors="black",
-                    origin="upper",
-                    extent=extent,
-                    linewidths=eps_parameters["contour_linewidth"],
-                )
-            else:
-                ax.imshow(
-                    eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow)
-                )
-            ax.set_xlabel(xlabel)
-            ax.set_ylabel(ylabel)
-            return ax
-        return eps_data
+        # If Axes was not provided, just return the eps_data, otherwise plot
+        if not ax:
+            return eps_data
+
+        if eps_parameters["contour"]:
+            ax.contour(
+                eps_data,
+                0,
+                levels=np.unique(eps_data),
+                colors="black",
+                origin="upper",
+                extent=extent,
+                linewidths=eps_parameters["contour_linewidth"],
+            )
+        else:
+            ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
+
+        if eps_parameters["colorbar"]:
+            _add_colorbar(
+                ax=ax,
+                cmap=eps_parameters["cmap"],
+                vmin=np.amin(eps_data),
+                vmax=np.amax(eps_data),
+                default_label=r"$\epsilon_r$",
+                colorbar_parameters=colorbar_parameters,
+            )
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        return ax
 
 
 def plot_boundaries(
     sim: Simulation,
     ax: Axes,
-    output_plane: Volume = None,
-    boundary_parameters: dict = None,
+    output_plane: Optional[Volume] = None,
+    boundary_parameters: Optional[dict] = None,
 ) -> Axes:
     # consolidate plotting parameters
     if boundary_parameters is None:
@@ -674,9 +733,9 @@ def plot_boundaries(
 def plot_sources(
     sim: Simulation,
     ax: Axes,
-    output_plane: Volume = None,
+    output_plane: Optional[Volume] = None,
     labels: bool = False,
-    source_parameters: dict = None,
+    source_parameters: Optional[dict] = None,
 ) -> Axes:
     # consolidate plotting parameters
     if source_parameters is None:
@@ -702,9 +761,9 @@ def plot_sources(
 def plot_monitors(
     sim: Simulation,
     ax: Axes,
-    output_plane: Volume = None,
+    output_plane: Optional[Volume] = None,
     labels: bool = False,
-    monitor_parameters: dict = None,
+    monitor_parameters: Optional[dict] = None,
 ) -> Axes:
     # consolidate plotting parameters
     if monitor_parameters is None:
@@ -730,11 +789,40 @@ def plot_monitors(
 
 def plot_fields(
     sim: Simulation,
-    ax: Axes = None,
-    fields=None,
-    output_plane: Volume = None,
-    field_parameters: dict = None,
+    ax: Optional[Axes] = None,
+    fields: Optional = None,
+    output_plane: Optional[Volume] = None,
+    field_parameters: Optional[dict] = None,
+    colorbar_parameters: Optional[dict] = None,
 ) -> Union[Axes, Any]:
+    components = {
+        mp.Ex,
+        mp.Ey,
+        mp.Ez,
+        mp.Er,
+        mp.Ep,
+        mp.Dx,
+        mp.Dy,
+        mp.Dz,
+        mp.Dr,
+        mp.Dp,
+        mp.Hx,
+        mp.Hy,
+        mp.Hz,
+        mp.Hr,
+        mp.Hp,
+        mp.Bx,
+        mp.By,
+        mp.Bz,
+        mp.Br,
+        mp.Bp,
+        mp.Sx,
+        mp.Sy,
+        mp.Sz,
+        mp.Sr,
+        mp.Sp,
+    }
+
     if not sim._is_initialized:
         sim.init_sim()
 
@@ -747,74 +835,76 @@ def plot_fields(
         field_parameters = dict(default_field_parameters, **field_parameters)
 
     # user specifies a field component
-    if fields in [
-        mp.Ex,
-        mp.Ey,
-        mp.Ez,
-        mp.Er,
-        mp.Ep,
-        mp.Dx,
-        mp.Dy,
-        mp.Dz,
-        mp.Hx,
-        mp.Hy,
-        mp.Hz,
-    ]:
-        # Get domain measurements
-        sim_center, sim_size = get_2D_dimensions(sim, output_plane)
-
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
-            sim_center, sim_size, sim.is_cylindrical
-        )
-
-        if sim_size.x == 0:
-            # Plot y on x axis, z on y axis (YZ plane)
-            extent = [ymin, ymax, zmin, zmax]
-            xlabel = "Y"
-            ylabel = "Z"
-        elif sim_size.y == 0:
-            # Plot x on x axis, z on y axis (XZ plane)
-            extent = [xmin, xmax, zmin, zmax]
-            if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-                xlabel = "R"
-            else:
-                xlabel = "X"
-            ylabel = "Z"
-        elif sim_size.z == 0:
-            # Plot x on x axis, y on y axis (XY plane)
-            extent = [xmin, xmax, ymin, ymax]
-            xlabel = "X"
-            ylabel = "Y"
-        fields = sim.get_array(center=sim_center, size=sim_size, component=fields)
-    else:
+    if fields not in components:
         raise ValueError("Please specify a valid field component (mp.Ex, mp.Ey, ...")
 
-    fields = field_parameters["post_process"](fields)
+    # Get domain measurements
+    sim_center, sim_size = get_2D_dimensions(sim, output_plane)
+
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+        sim_center, sim_size, sim.is_cylindrical
+    )
+
+    if sim_size.x == 0:
+        # Plot y on x axis, z on y axis (YZ plane)
+        extent = [ymin, ymax, zmin, zmax]
+        xlabel = "Y"
+        ylabel = "Z"
+    elif sim_size.y == 0:
+        # Plot x on x axis, z on y axis (XZ plane)
+        extent = [xmin, xmax, zmin, zmax]
+        if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
+            xlabel = "R"
+        else:
+            xlabel = "X"
+        ylabel = "Z"
+    elif sim_size.z == 0:
+        # Plot x on x axis, y on y axis (XY plane)
+        extent = [xmin, xmax, ymin, ymax]
+        xlabel = "X"
+        ylabel = "Y"
+    field_data = sim.get_array(center=sim_center, size=sim_size, component=fields)
+
+    field_data = field_parameters["post_process"](field_data)
+
     if (sim.dimensions == mp.CYLINDRICAL) or sim.is_cylindrical:
-        fields = np.flipud(fields)
+        field_data = np.flipud(field_data)
     else:
-        fields = np.rot90(fields)
+        field_data = np.rot90(field_data)
 
     # Either plot the field, or return the array
-    if ax:
-        if mp.am_master():
-            ax.imshow(fields, extent=extent, **filter_dict(field_parameters, ax.imshow))
-        return ax
-    return fields
+    if not ax:
+        return field_data
+
+    if mp.am_master():
+        ax.imshow(field_data, extent=extent, **filter_dict(field_parameters, ax.imshow))
+
+        if field_parameters["colorbar"]:
+
+            _add_colorbar(
+                ax=ax,
+                cmap=field_parameters["cmap"],
+                vmin=np.amin(field_data),
+                vmax=np.amax(field_data),
+                default_label="field value",
+                colorbar_parameters=colorbar_parameters,
+            )
+    return ax
 
 
 def plot2D(
     sim: Simulation,
-    ax: Axes = None,
-    output_plane: Volume = None,
-    fields=None,
-    labels: bool = False,
-    eps_parameters: dict = None,
-    boundary_parameters: dict = None,
-    source_parameters: dict = None,
-    monitor_parameters: dict = None,
-    field_parameters: dict = None,
-    frequency: float = None,
+    ax: Optional[Axes] = None,
+    output_plane: Optional[Volume] = None,
+    fields: Optional = None,
+    labels: Optional[bool] = False,
+    eps_parameters: Optional[dict] = None,
+    boundary_parameters: Optional[dict] = None,
+    source_parameters: Optional[dict] = None,
+    monitor_parameters: Optional[dict] = None,
+    field_parameters: Optional[dict] = None,
+    colorbar_parameters: Optional[dict] = None,
+    frequency: Optional[float] = None,
     plot_eps_flag: bool = True,
     plot_sources_flag: bool = True,
     plot_monitors_flag: bool = True,
@@ -833,6 +923,14 @@ def plot2D(
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
     output_plane = Volume(center=sim_center, size=sim_size)
 
+    if eps_parameters is not None and field_parameters is not None:
+        if field_parameters.get("colorbar", False) and eps_parameters.get(
+            "colorbar", False
+        ):
+            raise ValueError(
+                "'colorbar' parameter can only be specified for epsilon or fields, but not both."
+            )
+
     # Plot geometry
     if plot_eps_flag:
         ax = plot_eps(
@@ -840,6 +938,7 @@ def plot2D(
             ax,
             output_plane=output_plane,
             eps_parameters=eps_parameters,
+            colorbar_parameters=colorbar_parameters,
             frequency=frequency,
         )
 
@@ -880,6 +979,7 @@ def plot2D(
             fields,
             output_plane=output_plane,
             field_parameters=field_parameters,
+            colorbar_parameters=colorbar_parameters,
         )
     # If using %matplotlib ipympl magic, we need to force the figure to be displayed immediately
     if mp.am_master() and nb:
@@ -1096,12 +1196,12 @@ class Animate2D:
 
     def __init__(
         self,
-        sim: Simulation = None,
-        fields=None,
-        f: Figure = None,
+        sim: Optional[Simulation] = None,
+        fields: Optional = None,
+        f: Optional[Figure] = None,
         realtime: bool = False,
         normalize: bool = False,
-        plot_modifiers: list = None,
+        plot_modifiers: Optional[list] = None,
         update_epsilon: bool = False,
         nb: bool = False,
         **customization_args
