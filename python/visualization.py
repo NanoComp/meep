@@ -993,6 +993,7 @@ def plot3D(sim):
     from vispy.scene.visuals import Box, Mesh
     from vispy.scene import SceneCanvas, transforms
     from skimage.measure import marching_cubes
+    from vispy.visuals.filters import ShadingFilter
 
     # Set canvas
     canvas = SceneCanvas(keys="interactive", bgcolor="white")
@@ -1050,6 +1051,8 @@ def plot3D(sim):
 
         mesh.transform = transforms.MatrixTransform()
         mesh.transform.translate(np.asarray(sim.geometry_center))
+        shading_filter = ShadingFilter(shininess=100)
+        mesh.attach(shading_filter)
         view.add(mesh)
 
     # Build source
@@ -1108,6 +1111,18 @@ def plot3D(sim):
     ]:
         box = _build_3d_pml(sim_size[0], thickness, sim_size[2], box_center_front)
         view.add(box)
+
+    def attach_headlight(view):
+        light_dir = (0, 1, 0, 0)
+        shading_filter.light_dir = light_dir[:3]
+        initial_light_dir = view.camera.transform.imap(light_dir)
+
+        @view.scene.transform.changed.connect
+        def on_transform_change(event):
+            transform = view.camera.transform
+            shading_filter.light_dir = transform.map(initial_light_dir)[:3]
+
+    attach_headlight(view)
 
     # Plot
     canvas.show(run=True)
