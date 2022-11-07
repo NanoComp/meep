@@ -1192,13 +1192,7 @@ sim = mp.Simulation(resolution=50,
                     cell_size=cell_size,
                     geometry=geometry)
 
-sim.init_sim()
-
-eps_data = sim.get_epsilon()
-
-from mayavi import mlab
-s = mlab.contour3d(eps_data, colormap="YlGnBu")
-mlab.show()
+sim.plot3D()
 ```
 
 ![](../images/prism_epsilon.png#center)
