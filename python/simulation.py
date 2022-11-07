@@ -4810,7 +4810,7 @@ class Simulation:
 
     def plot3D(self):
         """
-        Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D.
+        Uses vispy to render a 3D scene of the simulation object. The simulation object must be 3D.
         Can also be embedded in Jupyter notebooks.
         """
         import meep.visualization as vis
