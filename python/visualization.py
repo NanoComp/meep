@@ -992,7 +992,11 @@ def plot2D(
 def plot3D(sim):
     from vispy.scene.visuals import Box, Mesh
     from vispy.scene import SceneCanvas, transforms
-    from skimage.measure import marching_cubes
+
+    try:
+        from skimage.measure import marching_cubes
+    except:
+        from skimage.measure import marching_cubes_lewiner as marching_cubes
     from vispy.visuals.filters import ShadingFilter
 
     # Set canvas
