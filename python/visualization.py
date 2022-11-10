@@ -989,7 +989,7 @@ def plot2D(
     return ax
 
 
-def plot3D(sim):
+def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
     from vispy.scene.visuals import Box, Mesh
     from vispy.scene import SceneCanvas, transforms
 
@@ -1003,7 +1003,7 @@ def plot3D(sim):
     canvas = SceneCanvas(keys="interactive", bgcolor="white")
 
     view = canvas.central_widget.add_view()
-    view.camera = "arcball"
+    view.camera = "turntable"
 
     # Get domain measurements
     sim_center, sim_size = sim.geometry_center, sim.cell_size
@@ -1032,6 +1032,8 @@ def plot3D(sim):
 
     mesh_midpoint = (sim_size[0] / 2, sim_size[1] / 2, sim_size[2] / 2)
 
+    light_dir = (0, 0, -1, 0)
+
     # Build geometry
     for i, eps in enumerate(unique):
         eps_ = np.array(eps_data.flatten() == eps).astype(int).reshape(eps_data.shape)
@@ -1049,13 +1051,14 @@ def plot3D(sim):
                 1 - ((i + 1) / len(unique)),
                 1 - ((i + 1) / len(unique)),
                 1 - ((i + 1) / len(unique)),
-                1,
+                0.8,
             ),
         )
 
         mesh.transform = transforms.MatrixTransform()
         mesh.transform.translate(np.asarray(sim.geometry_center))
         shading_filter = ShadingFilter(shininess=100)
+        shading_filter.light_dir = light_dir[:3]
         mesh.attach(shading_filter)
         view.add(mesh)
 
@@ -1116,35 +1119,45 @@ def plot3D(sim):
         box = _build_3d_pml(sim_size[0], thickness, sim_size[2], box_center_front)
         view.add(box)
 
-    def attach_headlight(view):
-        light_dir = (0, 1, 0, 0)
-        shading_filter.light_dir = light_dir[:3]
-        initial_light_dir = view.camera.transform.imap(light_dir)
+    # Camera options
+    view.camera.center = mesh_midpoint
+    view.camera.scale_factor = getattr(
+        kwargs, "scale_factor", 2 * np.linalg.norm(sim_size)
+    )
+    view.camera.elevation = getattr(kwargs, "elevation", 10)
+    view.camera.azimuth = getattr(kwargs, "azimuth", 45)
+    view.camera.roll = getattr(kwargs, "roll", 45)
+    view.camera.transform.imap(light_dir)
 
-        @view.scene.transform.changed.connect
-        def on_transform_change(event):
-            transform = view.camera.transform
-            shading_filter.light_dir = transform.map(initial_light_dir)[:3]
+    # Plot or save
+    if save_to_image:
+        image = canvas.render()
+        import imageio
 
-    attach_headlight(view)
+        imageio.imwrite(image_name, image)
 
-    # Plot
+        return
+
     canvas.show(run=True)
 
 
 def _build_3d_pml(x: float, y: float, thickness: float, translate: tuple):
     from vispy.scene.visuals import Box
     from vispy.scene import transforms
+    from vispy.visuals.filters import WireframeFilter
 
     box = Box(
         x,
         y,
         thickness,
         color=(0, 1, 0, 0.2),  # green but transparent
+        # color=None,
     )
     box.transform = transforms.MatrixTransform()
     box.transform.rotate(90, (1, 0, 0))
     box.transform.translate(translate)
+    wireframe_filter = WireframeFilter(width=2)
+    box.mesh.attach(wireframe_filter)
 
     return box
 

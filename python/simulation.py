@@ -4808,14 +4808,26 @@ class Simulation:
 
         return vis.plot_fields(self, **kwargs)
 
-    def plot3D(self):
+    def plot3D(
+        self, save_to_image: bool = False, image_name: str = "sim.png", **kwargs
+    ):
         """
         Uses vispy to render a 3D scene of the simulation object. The simulation object must be 3D.
         Can also be embedded in Jupyter notebooks.
+
+        Args:
+            save_to_image: if True, saves the image to a file
+            image_name: the name of the image file to save to
+
+        kwargs: Camera settings.
+            scale_factor: float,camera zoom factor
+            azimuth: float, azimuthal angle in degrees
+            elevation: float, elevation angle in degrees
+            distance: float, camera distance from center of scene
         """
         import meep.visualization as vis
 
-        return vis.plot3D(self)
+        return vis.plot3D(self, save_to_image, image_name, **kwargs)
 
     def visualize_chunks(self):
         """
@@ -6296,3 +6308,28 @@ class BinaryPartition:
 
     def numchunks(self):
         return self._numchunks(self)
+
+
+if __name__ == "__main__":
+    import math
+
+    cell_size = mp.Vector3(2, 2, 2)
+
+    # A hexagon is defined as a prism with six vertices centered on the origin
+    vertices = [
+        mp.Vector3(-1, 0),
+        mp.Vector3(-0.5, math.sqrt(3) / 2),
+        mp.Vector3(0.5, math.sqrt(3) / 2),
+        mp.Vector3(1, 0),
+        mp.Vector3(0.5, -math.sqrt(3) / 2),
+        mp.Vector3(-0.5, -math.sqrt(3) / 2),
+    ]
+
+    geometry = [
+        mp.Prism(vertices, height=1.0, material=mp.Medium(index=3.5)),
+        mp.Cone(radius=1.0, radius2=0.1, height=2.0, material=mp.air),
+    ]
+
+    sim = Simulation(resolution=50, cell_size=cell_size, geometry=geometry)
+
+    sim.plot3D()
