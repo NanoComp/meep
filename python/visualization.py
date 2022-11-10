@@ -1126,7 +1126,7 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
     )
     view.camera.elevation = getattr(kwargs, "elevation", 10)
     view.camera.azimuth = getattr(kwargs, "azimuth", 45)
-    view.camera.roll = getattr(kwargs, "roll", 45)
+    view.camera.distance = getattr(kwargs, "distance", 45)
     view.camera.transform.imap(light_dir)
 
     # Plot or save
