@@ -143,7 +143,7 @@ mymaterial = mp.Medium(epsilon=eps_inf, E_susceptibilities=E_susceptibilities)
 mymaterial_eps = [mymaterial.epsilon(f)[0][0] for f in freqs_reduced]
 
 plt.subplot(1, 2, 1)
-plt.plot(wl_reduced, np.real(eps_reduced), "bo-", label="actual")
+plt.plot(wl_reduced, np.real(eps_reduced) + eps_inf, "bo-", label="actual")
 plt.plot(wl_reduced, np.real(mymaterial_eps), "ro-", label="fit")
 plt.xlabel("wavelength (nm)")
 plt.ylabel(r"real($\epsilon$)")
