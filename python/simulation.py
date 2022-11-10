@@ -4819,11 +4819,10 @@ class Simulation:
             save_to_image: if True, saves the image to a file
             image_name: the name of the image file to save to
 
-        kwargs: Camera settings. Zoom setting, and camera angle settings (in cylindrical coordinates).
+        kwargs: Camera settings.
             scale_factor: float, camera zoom factor
             azimuth: float, azimuthal angle in degrees
             elevation: float, elevation angle in degrees
-            distance: float, camera distance from center of scene
         """
         import meep.visualization as vis
 
