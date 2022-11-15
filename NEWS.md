@@ -1,5 +1,21 @@
 # Meep Release Notes
 
+## Meep 1.25.0
+
+11/17/2022
+
+* Support for connectivity constraints in adjoint solver ([#2207]).
+
+* Support for animation in topology optimization ([#2186]).
+
+* Support for `load_minus_flux` in adjoint solver ([#2271]).
+
+* Support colorbars in `plot2D` ([#2289]).
+
+* Support for `plot3D` ([#2305]).
+
+* Various improvements and bug fixes ([#2176], [#2179], [#2190], [#2194], [#2202], [#2203], [#2251], [#2253], [#2264], [#2290]), and additional unit tests and documentation.
+
 ## Meep 1.24.0
 
 7/21/2022
