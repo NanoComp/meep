@@ -4811,14 +4811,25 @@ class Simulation:
 
         return vis.plot_fields(self, **kwargs)
 
-    def plot3D(self):
+    def plot3D(
+        self, save_to_image: bool = False, image_name: str = "sim.png", **kwargs
+    ):
         """
-        Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D.
+        Uses vispy to render a 3D scene of the simulation object. The simulation object must be 3D.
         Can also be embedded in Jupyter notebooks.
+
+        Args:
+            save_to_image: if True, saves the image to a file
+            image_name: the name of the image file to save to
+
+        kwargs: Camera settings.
+            scale_factor: float, camera zoom factor
+            azimuth: float, azimuthal angle in degrees
+            elevation: float, elevation angle in degrees
         """
         import meep.visualization as vis
 
-        return vis.plot3D(self)
+        return vis.plot3D(self, save_to_image, image_name, **kwargs)
 
     def visualize_chunks(self):
         """
