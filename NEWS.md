@@ -14,7 +14,7 @@
 
 * Support for `plot3D` ([#2305]).
 
-* Various improvements and bug fixes ([#2176], [#2179], [#2190], [#2194], [#2202], [#2203], [#2251], [#2253], [#2264], [#2290]), and additional unit tests and documentation.
+* Various improvements and bug fixes ([#2176], [#2179], [#2190], [#2194], [#2202], [#2203], [#2208], [#2251], [#2253], [#2264], [#2290]), and additional unit tests and documentation.
 
 ## Meep 1.24.0
 

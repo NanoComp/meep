@@ -2745,20 +2745,22 @@ This module provides basic visualization functionality for the simulation domain
 
 ```python
 def plot2D(self,
-           ax=None,
-           output_plane=None,
-           fields=None,
-           labels=False,
-           eps_parameters=None,
-           boundary_parameters=None,
-           source_parameters=None,
-           monitor_parameters=None,
-           field_parameters=None,
-           frequency=None,
-           plot_eps_flag=True,
-           plot_sources_flag=True,
-           plot_monitors_flag=True,
-           plot_boundaries_flag=True,
+           ax: Optional[matplotlib.axes._axes.Axes] = None,
+           output_plane: Optional[meep.simulation.Volume] = None,
+           fields: Optional = None,
+           labels: Optional[bool] = False,
+           eps_parameters: Optional[dict] = None,
+           boundary_parameters: Optional[dict] = None,
+           source_parameters: Optional[dict] = None,
+           monitor_parameters: Optional[dict] = None,
+           field_parameters: Optional[dict] = None,
+           colorbar_parameters: Optional[dict] = None,
+           frequency: Optional[float] = None,
+           plot_eps_flag: bool = True,
+           plot_sources_flag: bool = True,
+           plot_monitors_flag: bool = True,
+           plot_boundaries_flag: bool = True,
+           nb: bool = False,
            **kwargs):
 ```
 
@@ -2814,6 +2816,7 @@ to be called on all processes, but only generates a plot on the master process.
       plot. Defaults to the `frequency` parameter of the [Source](#source) object.
     - `resolution=None`: the resolution of the $\varepsilon$ grid. Defaults to the
       `resolution` of the `Simulation` object.
+    - `colorbar=False`: whether to add a colorbar to the plot's parent Figure based on epsilon values.
 * `boundary_parameters`: a `dict` of optional plotting parameters that override
   the default parameters for the boundary layers.
     - `alpha=1.0`: transparency of boundary layers
@@ -2850,6 +2853,21 @@ to be called on all processes, but only generates a plot on the master process.
     - `alpha=0.6`: transparency of fields
     - `post_process=np.real`: post processing function to apply to fields (must be
       a function object)
+    - `colorbar=False`: whether to add a colorbar to the plot's parent Figure based on field values.
+* `colorbar_parameters`:  a `dict` of optional plotting parameters that override the default parameters for
+  the colorbar.
+    - `label=None`: an optional label for the colorbar, defaults to '$\epsilon_r$' for epsilon and
+    'field values' for fields.
+    - `orientation='vertical'`: the orientation of the colorbar gradient
+    - `extend=None`: make pointed end(s) for out-of-range values. Allowed values are:
+    ['neither', 'both', 'min', 'max']
+    - `format=None`: formatter for tick labels. Can be an fstring (i.e. "{x:.2e}") or a
+    [matplotlib.ticker.ScalarFormatter](https://matplotlib.org/stable/api/ticker_api.html#matplotlib.ticker.ScalarFormatter).
+    - `position='right'`: position of the colorbar with respect to the Axes
+    - `size='5%'`: size of the colorbar in the dimension perpendicular to its `orientation`
+    - `pad='2%'`: fraction of original axes between colorbar and image axes
+* `nb`: set this to True if plotting in a Jupyter notebook to use ipympl for plotting. Note: this requires
+ipympl to be installed.
 
 </div>
 
@@ -6241,7 +6259,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f0880782ca0>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f41474eeb00>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7147,14 +7165,12 @@ class Animate2D(object):
 <div class="class_docstring" markdown="1">
 
 A class used to record the fields during timestepping (i.e., a [`run`](#run-functions)
-function). The object is initialized prior to timestepping by specifying the
-simulation object and the field component. The object can then be passed to any
-[step-function modifier](#step-function-modifiers). For example, one can record the
-$E_z$ fields at every one time unit using:
+function). The object is initialized prior to timestepping by specifying the field component.
+The object can then be passed to any [step-function modifier](#step-function-modifiers).
+For example, one can record the $E_z$ fields at every one time unit using:
 
 ```py
-animate = mp.Animate2D(sim,
-                       fields=mp.Ez,
+animate = mp.Animate2D(fields=mp.Ez,
                        realtime=True,
                        field_parameters={'alpha':0.8, 'cmap':'RdBu', 'interpolation':'none'},
                        boundary_parameters={'hatch':'o', 'linewidth':1.5, 'facecolor':'y', 'edgecolor':'b', 'alpha':0.3})
@@ -7183,7 +7199,9 @@ track different volume locations (using `mp.in_volume`) or field components.
 <div class="class_members" markdown="1">
 
 ```python
-def __call__(self, sim, todo):
+def __call__(self,
+             sim: meep.simulation.Simulation,
+             todo: str):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7201,12 +7219,12 @@ Call self as a function.
 
 ```python
 def __init__(self,
-             fields,
-             sim=None,
-             f=None,
-             realtime=False,
-             normalize=False,
-             plot_modifiers=None,
+             sim: Optional[meep.simulation.Simulation] = None,
+             fields: Optional = None,
+             f: Optional[matplotlib.figure.Figure] = None,
+             realtime: bool = False,
+             normalize: bool = False,
+             plot_modifiers: Optional[list] = None,
              update_epsilon: bool = False,
              nb: bool = False,
              **customization_args):
@@ -7216,9 +7234,9 @@ def __init__(self,
 
 Construct an `Animate2D` object.
 
-+ **`sim`** — Simulation object.
++ **`sim=None`** — Optional Simulation object (this has no effect, and is included for backwards compatibility).
 
-+ **`fields`** — Field component to record at each time instant.
++ **`fields=None`** — Optional Field component to record at each time instant.
 
 + **`f=None`** — Optional `matplotlib` figure object that the routine will update
   on each call. If not supplied, then a new one will be created upon
@@ -7261,7 +7279,7 @@ Construct an `Animate2D` object.
 <div class="class_members" markdown="1">
 
 ```python
-def to_gif(self, fps, filename):
+def to_gif(self, fps: int, filename: str) -> None:
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7282,7 +7300,8 @@ format only supports 256 colors from a _predefined_ color palette. Requires
 <div class="class_members" markdown="1">
 
 ```python
-def to_jshtml(self, fps):
+def to_jshtml(self,
+              fps: int):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7301,7 +7320,7 @@ playback. User must specify a frame rate `fps` in frames per second.
 <div class="class_members" markdown="1">
 
 ```python
-def to_mp4(self, fps, filename):
+def to_mp4(self, fps: int, filename: str) -> None:
 ```
 
 <div class="method_docstring" markdown="1">
