@@ -62,7 +62,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         # source center frequency and bandwidth
         cls.fcen = 1 / 1.55
-        cls.df = 0.2 * cls.fcen
+        cls.df = 0.05 * cls.fcen
 
         # monitor frequencies
         # two cases: (1) single and (2) multi frequency
@@ -551,7 +551,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.07 if mp.is_single_precision() else 0.006
+            tol = 0.02 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_eigenmode(self):
@@ -580,7 +580,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.04 if mp.is_single_precision() else 0.01
+            tol = 0.008 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_ldos(self):
@@ -606,7 +606,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.07 if mp.is_single_precision() else 0.006
+            tol = 0.002 if mp.is_single_precision() else 0.001
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_gradient_backpropagation(self):
@@ -656,7 +656,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.025 if mp.is_single_precision() else 0.01
+            tol = 0.005 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_complex_fields(self):
@@ -682,7 +682,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.06 if mp.is_single_precision() else 0.01
+            tol = 0.02 if mp.is_single_precision() else 0.001
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_damping(self):
@@ -708,7 +708,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.061 if mp.is_single_precision() else 0.04
+            tol = 0.04 if mp.is_single_precision() else 0.01
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_offdiagonal(self):
@@ -759,7 +759,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.1 if mp.is_single_precision() else 0.04
+            tol = 0.05 if mp.is_single_precision() else 0.005
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_two_objfunc(self):
@@ -779,7 +779,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             nfrq = len(frequencies)
-            tol = 0.05 if mp.is_single_precision() else 0.01
+            tol = 0.05 if mp.is_single_precision() else 0.001
             for m in [0, 1]:
                 frq_slice = slice(0, nfrq, 1) if m == 0 else slice(nfrq, 2 * nfrq, 1)
                 adj_dd = (self.dp[None, :] @ unperturbed_grad[:, frq_slice]).flatten()
@@ -808,7 +808,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             frqs,
         )
 
-        tol = 0.05 if mp.is_single_precision() else 0.05
+        tol = 0.005 if mp.is_single_precision() else 0.004
         for n in range(nfrq):
             frq = frqs[n]
             singlefreq_val, singlefreq_grad = self.adjoint_solver_two_objfunc(
@@ -855,6 +855,10 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             nfw,
         )
 
+        # minimum error for directional derivative of adjoint
+        # gradient relative to finite-difference approximation
+        tol = 0.04
+
         for n in range(nfw):
             fwidth = fw[n] * self.fcen
             self.mode_source = [
@@ -872,13 +876,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             for m in [0, 1]:
+                self.assertAlmostEqual(unperturbed_objf[m], objf[m], places=6)
                 adj_dd = (self.dp[None, :] @ grad[:, m]).flatten()
-                self.assertAlmostEqual(unperturbed_objf[m], objf[m], places=4)
-                self.assertAlmostEqual(fnd_dd[m], adj_dd[0], places=4)
-                print(
-                    f"PASSED:, fwidth={fwidth:.5f}, m={m}, fd={fnd_dd[m]}, "
-                    f"adj={adj_dd[0]}"
-                )
+                rel_err = abs((fnd_dd[m] - adj_dd[0]) / fnd_dd[m])
+                self.assertLessEqual(rel_err, tol)
+                print(f"PASSED:, fwidth={fwidth:.5f}, m={m}, err={rel_err}")
 
 
 if __name__ == "__main__":
