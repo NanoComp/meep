@@ -529,6 +529,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         return projected_field.flatten()
 
     def test_DFT_fields(self):
+        """Verifies that the gradient for an objective function based on the
+        DFT fields agrees with the finite-difference approximation."""
         print("*** TESTING DFT OBJECTIVE ***")
 
         for frequencies in self.mon_frqs:
@@ -551,10 +553,13 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
             )
 
-            tol = 0.02 if mp.is_single_precision() else 0.002
+            tol = 0.03 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_eigenmode(self):
+        """Verifies that the gradient for an objective function based on
+        eigenmode decomposition agrees with the finite-difference
+        approximation."""
         print("*** TESTING EIGENMODE OBJECTIVE ***")
 
         for frequencies in self.mon_frqs:
@@ -584,6 +589,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_ldos(self):
+        """Verifies that the gradient for an objective function based on the
+        local density of states (LDoS) agrees with the finite-difference
+        approximation."""
         print("*** TESTING LDOS OBJECTIVE ***")
 
         for frequencies in self.mon_frqs:
@@ -610,6 +618,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_gradient_backpropagation(self):
+        """Verifies that the adjoint gradient can be back propagated through
+        a differentiable mapping function applied to the design region
+        and agrees with the finite-difference approximation."""
         print("*** TESTING GRADIENT BACKPROPAGATION ***")
 
         # filter/thresholding parameters
@@ -660,6 +671,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_complex_fields(self):
+        """Verifies that the adjoint gradient for an objective function based
+        on the DFT fields obtained from complex time-dependent fields agrees
+        with the finite-difference approximation."""
         print("*** TESTING COMPLEX FIELDS ***")
 
         for frequencies in self.mon_frqs:
@@ -686,6 +700,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_damping(self):
+        """Verifies that the adjoint gradient for a design region with a non-zero
+        conductivity agrees with the finite-difference approximation."""
         print("*** TESTING CONDUCTIVITY ***")
 
         for frequencies in [self.mon_frqs[1]]:
@@ -712,6 +728,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_offdiagonal(self):
+        """Verifies that the adjoint gradient for a design region involving an
+        anisotropic material with non-zero off-diagonal entries of the
+        permittivity tensor agrees with the finite-difference approxmiation."""
         print("*** TESTING ANISOTROPIC ε ***")
         filt = lambda x: mpa.conic_filter(
             x.reshape((self.Nx, self.Ny)),
@@ -763,6 +782,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
     def test_two_objfunc(self):
+        """Verifies that the adjoint gradients from two objective functions
+        each agree with the finite-difference approximation."""
         print("*** TESTING TWO OBJECTIVE FUNCTIONS ***")
 
         for frequencies in self.mon_frqs:
@@ -779,7 +800,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             nfrq = len(frequencies)
-            tol = 0.05 if mp.is_single_precision() else 0.001
+            tol = 0.15 if mp.is_single_precision() else 0.001
             for m in [0, 1]:
                 frq_slice = slice(0, nfrq, 1) if m == 0 else slice(nfrq, 2 * nfrq, 1)
                 adj_dd = (self.dp[None, :] @ unperturbed_grad[:, frq_slice]).flatten()
@@ -793,8 +814,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
     def test_multifreq_monitor(self):
         """Verifies that the individual adjoint gradients from a multifrequency
-        mode-coefficient monitor are equivalent to a single-frequency monitor.
-        """
+        eigenmode-coefficient monitor are equivalent to a single-frequency
+        monitor."""
         print("*** TESTING MULTIFREQUENCY MONITOR ***")
 
         nfrq = 5
@@ -824,10 +845,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 print(f"PASSED: frequency={frq:.5f}, m={m}.")
 
     def test_mode_source_bandwidth(self):
-        """Verifies that the accuracy of the adjoint gradient of a
-        mode-coefficient monitor at a single frequency is independent
-        of the bandwidth of the source.
-        """
+        """Verifies that the accuracy of the adjoint gradient of an
+        eigenmode-coefficient monitor at a single frequency is independent
+        of the bandwidth of the pulsed mode source."""
         print("*** TESTING MODE SOURCE BANDWIDTH ***")
 
         # compute objective value for unperturbed design
