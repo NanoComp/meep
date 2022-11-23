@@ -390,6 +390,7 @@ class Near2FarFields(ObjectiveQuantity):
         sim: mp.Simulation,
         Near2FarRegions: List[mp.Near2FarRegion],
         far_pts: List[mp.Vector3],
+        nperiods: Optional[int] = 1,
         decimation_factor: Optional[int] = 0,
         norm_near_fields: Optional[NearToFarData] = None,
     ):
