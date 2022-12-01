@@ -390,6 +390,7 @@ class Near2FarFields(ObjectiveQuantity):
         sim: mp.Simulation,
         Near2FarRegions: List[mp.Near2FarRegion],
         far_pts: List[mp.Vector3],
+        nperiods: Optional[int] = 1,
         decimation_factor: Optional[int] = 0,
         norm_near_fields: Optional[NearToFarData] = None,
     ):
@@ -400,12 +401,14 @@ class Near2FarFields(ObjectiveQuantity):
         self._nfar_pts = len(far_pts)
         self.decimation_factor = decimation_factor
         self.norm_near_fields = norm_near_fields
+        self.nperiods = nperiods
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
         self._monitor = self.sim.add_near2far(
             self._frequencies,
             *self.Near2FarRegions,
+            nperiods=self.nperiods,
             decimation_factor=self.decimation_factor,
         )
         if self.norm_near_fields is not None:
