@@ -122,7 +122,7 @@ class OptimizationProblem:
         need_value: bool = True,
         need_gradient: bool = True,
         beta: float = None,
-    ) -> Tuple[List[float], List[float]]:
+    ) -> Tuple[List[np.ndarray], List[List[np.ndarray]]]:
         """Evaluate value and/or gradient of objective function."""
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)

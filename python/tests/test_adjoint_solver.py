@@ -7,7 +7,7 @@ except:
 
 import unittest
 from enum import Enum
-from typing import List, Union
+from typing import List, Union, Tuple
 import numpy as np
 from autograd import numpy as npa
 from autograd import tensor_jacobian_product
@@ -35,6 +35,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         cls.pml_x = [mp.PML(thickness=cls.dpml, direction=mp.X)]
 
         cls.eig_parity = mp.EVEN_Y + mp.ODD_Z
+        cls.src_cmpt = mp.Ez
 
         cls.design_region_size = mp.Vector3(1.5, 1.5)
         cls.design_region_resolution = int(2 * cls.resolution)
@@ -89,7 +90,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 src=mp.GaussianSource(cls.fcen, fwidth=cls.df),
                 center=mp.Vector3(-0.5 * cls.sxy + cls.dpml, 0),
                 size=mp.Vector3(),
-                component=mp.Ez,
+                component=cls.src_cmpt,
             )
         ]
 
@@ -98,7 +99,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 src=mp.GaussianSource(cls.fcen, fwidth=cls.df),
                 center=mp.Vector3(-0.85, 0),
                 size=mp.Vector3(0, cls.sxy - 2 * cls.dpml),
-                component=mp.Ez,
+                component=cls.src_cmpt,
             )
         ]
 
@@ -110,12 +111,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
     def adjoint_solver(
         self,
-        design_params,
-        mon_type: MonitorObject,
-        frequencies: Union[float, List] = None,
+        design_params: List[float] = None,
+        mon_type: MonitorObject = None,
+        frequencies: List[float] = None,
         mat2: mp.Medium = None,
         need_gradient: bool = True,
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         matgrid = mp.MaterialGrid(
             mp.Vector3(self.Nx, self.Ny),
             mp.air,
@@ -155,8 +156,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         if mon_type.name == "EIGENMODE":
             if len(frequencies) == 1:
                 if mat2 is None:
-                    # Compute the incident fields of the mode source
-                    # in the straight waveguide for use as normalization
+                    # the incident fields of the mode source in the
+                    # straight waveguide are used as normalization
                     # of the reflectance (S11) measurement.
                     ref_sim = mp.Simulation(
                         resolution=self.resolution,
@@ -227,7 +228,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 mpa.FourierFields(
                     sim,
                     mp.Volume(center=mp.Vector3(1.25), size=mp.Vector3(0.25, 1, 0)),
-                    mp.Ez,
+                    self.src_cmpt,
                 )
             ]
 
@@ -249,16 +250,13 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             frequencies=frequencies,
         )
 
-        if need_gradient:
-            f, dJ_du = opt([design_params])
-            return f, dJ_du
-        else:
-            f = opt([design_params], need_gradient=False)
-            return f[0]
+        f, dJ_du = opt([design_params], need_gradient=need_gradient)
+
+        return f, dJ_du
 
     def adjoint_solver_complex_fields(
         self, design_params, frequencies=None, need_gradient=True
-    ):
+    ) -> Tuple[np.ndarray, np.ndarray]:
         matgrid = mp.MaterialGrid(
             mp.Vector3(self.Nx, self.Ny),
             mp.air,
@@ -312,16 +310,17 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             frequencies=frequencies,
         )
 
-        if need_gradient:
-            f, dJ_du = opt([design_params])
-            return f, dJ_du
-        else:
-            f = opt([design_params], need_gradient=False)
-            return f[0]
+        f, dJ_du = opt([design_params], need_gradient=need_gradient)
+
+        return f, dJ_du
 
     def adjoint_solver_damping(
-        self, design_params, frequencies=None, mat2=None, need_gradient=True
-    ):
+        self,
+        design_params: List[float] = None,
+        frequencies: List[float] = None,
+        mat2: mp.Medium = None,
+        need_gradient: bool = True,
+    ) -> Tuple[np.ndarray, np.ndarray]:
         matgrid = mp.MaterialGrid(
             mp.Vector3(self.Nx, self.Ny),
             mp.air,
@@ -383,21 +382,18 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             minimum_run_time=150,
         )
 
-        if need_gradient:
-            f, dJ_du = opt([design_params])
-            return f, dJ_du
-        else:
-            f = opt([design_params], need_gradient=False)
-            return f[0]
+        f, dJ_du = opt([design_params], need_gradient=need_gradient)
+
+        return f, dJ_du
 
     def adjoint_solver_two_objfunc(
         self,
-        design_params,
-        frequencies=None,
-        need_gradient=True,
-    ):
-        # Compute the incident fields of the mode source
-        # in the straight waveguide for use as normalization
+        design_params: List[float],
+        frequencies: List[float] = None,
+        need_gradient: bool = True,
+    ) -> Tuple[List[np.ndarray], np.ndarray]:
+        # the incident fields of the mode source in the
+        # straight waveguide are used as normalization
         # of the reflectance (S11) measurement.
         ref_sim = mp.Simulation(
             resolution=self.resolution,
@@ -492,30 +488,32 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             frequencies=frequencies,
         )
 
+        f0, dJ_du = opt([design_params], need_gradient=need_gradient)
+        f0_reflection = f0[0]
+        f0_transmission = f0[1]
+        f0_merged = np.concatenate((f0_reflection, f0_transmission))
+
         if need_gradient:
-            f0, dJ_du = opt([design_params])
             dJ_du_reflection = dJ_du[0]
             dJ_du_transmission = dJ_du[1]
-            f0_reflection = f0[0]
-            f0_transmission = f0[1]
-            f0_merged = np.concatenate((f0_reflection, f0_transmission))
             nf = len(frequencies)
             grad = np.zeros((self.Nx * self.Ny, 2 * nf))
             if dJ_du_reflection.ndim < 2:
                 dJ_du_reflection = np.expand_dims(dJ_du_reflection, axis=1)
-            grad[:, :nf] = dJ_du_reflection
-            if dJ_du_transmission.ndim < 2:
                 dJ_du_transmission = np.expand_dims(dJ_du_transmission, axis=1)
+            grad[:, :nf] = dJ_du_reflection
             grad[:, nf:] = dJ_du_transmission
             return f0_merged, grad
         else:
-            f0 = opt([design_params], need_gradient=False)
-            f0_reflection = f0[0][0]
-            f0_transmission = f0[0][1]
-            f0_merged = np.concatenate((f0_reflection, f0_transmission))
-            return f0_merged
+            return f0_merged, np.array([])
 
-    def mapping(self, x, filter_radius, eta, beta):
+    def mapping(
+        self,
+        x: List[float] = None,
+        filter_radius: float = None,
+        eta: float = None,
+        beta: float = None,
+    ):
         filtered_field = mpa.conic_filter(
             x,
             filter_radius,
@@ -529,8 +527,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         return projected_field.flatten()
 
     def test_DFT_fields(self):
-        """Verifies that the gradient for an objective function based on the
-        DFT fields agrees with the finite-difference approximation."""
+        """Verifies that the adjoint gradient for an objective function based
+        on the DFT fields agrees with the finite-difference approximation."""
         print("*** TESTING DFT OBJECTIVE ***")
 
         for frequencies in self.mon_frqs:
@@ -540,7 +538,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             # compute objective value for perturbed design
-            perturbed_val = self.adjoint_solver(
+            perturbed_val, _ = self.adjoint_solver(
                 self.p + self.dp, MonitorObject.DFT, frequencies, need_gradient=False
             )
 
@@ -549,16 +547,16 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
-
             tol = 0.03 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+            print(
+                f"PASSED: frequencies={frequencies}, "
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+            )
 
     def test_eigenmode(self):
-        """Verifies that the gradient for an objective function based on
-        eigenmode decomposition agrees with the finite-difference
+        """Verifies that the adjoint gradient for an objective function based
+        on eigenmode decomposition agrees with the finite-difference
         approximation."""
         print("*** TESTING EIGENMODE OBJECTIVE ***")
 
@@ -569,7 +567,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             # compute objective for perturbed design
-            perturbed_val = self.adjoint_solver(
+            perturbed_val, _ = self.adjoint_solver(
                 self.p + self.dp,
                 MonitorObject.EIGENMODE,
                 frequencies,
@@ -581,16 +579,25 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
+
+            # since the eigenmode source uses the mode profile
+            # of the center frequency, the results for the
+            # non-center frequencies of a multifrequency simulation
+            # are expected to be *less* accurate than the center frequency
+            if len(frequencies) == 1 and frequencies[0] == self.fcen:
+                tol = 0.002 if mp.is_single_precision() else 5e-5
+            else:
+                tol = 0.008 if mp.is_single_precision() else 0.002
+
+            self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
+                f"PASSED: frequencies={frequencies}, "
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
             )
 
-            tol = 0.008 if mp.is_single_precision() else 0.002
-            self.assertClose(adj_dd, fnd_dd, epsilon=tol)
-
     def test_ldos(self):
-        """Verifies that the gradient for an objective function based on the
-        local density of states (LDoS) agrees with the finite-difference
+        """Verifies that the adjoint gradient for an objective function based
+        on the local density of states (LDoS) agrees with the finite-difference
         approximation."""
         print("*** TESTING LDOS OBJECTIVE ***")
 
@@ -601,7 +608,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             # compute objective for perturbed design
-            perturbed_val = self.adjoint_solver(
+            perturbed_val, _ = self.adjoint_solver(
                 self.p + self.dp, MonitorObject.LDOS, frequencies, need_gradient=False
             )
 
@@ -610,12 +617,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
-
             tol = 0.002 if mp.is_single_precision() else 0.001
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+            print(
+                f"PASSED: frequencies={frequencies}, "
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+            )
 
     def test_gradient_backpropagation(self):
         """Verifies that the adjoint gradient can be back propagated through
@@ -629,6 +636,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         beta = 4.0698
 
         for frequencies in self.mon_frqs:
+            nfrq = len(frequencies)
+
             mapped_p = self.mapping(self.p, filter_radius, eta, beta)
 
             # compute objective value and its gradient for unperturbed design
@@ -637,9 +646,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             # backpropagate the gradient using vector-Jacobian product
-            if len(frequencies) > 1:
+            if nfrq > 1:
                 unperturbed_grad_backprop = np.zeros(unperturbed_grad.shape)
-                for i in range(len(frequencies)):
+                for i in range(nfrq):
                     unperturbed_grad_backprop[:, i] = tensor_jacobian_product(
                         self.mapping, 0
                     )(self.p, filter_radius, eta, beta, unperturbed_grad[:, i])
@@ -649,7 +658,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 )
 
             # compute objective for perturbed design
-            perturbed_val = self.adjoint_solver(
+            perturbed_val, _ = self.adjoint_solver(
                 self.mapping(self.p + self.dp, filter_radius, eta, beta),
                 MonitorObject.EIGENMODE,
                 frequencies,
@@ -663,12 +672,21 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 )
             adj_dd = (self.dp[None, :] @ unperturbed_grad_backprop).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
 
-            tol = 0.005 if mp.is_single_precision() else 0.002
+            # since the eigenmode source uses the mode profile
+            # of the center frequency, the results for the
+            # non-center frequencies of a multifrequency simulation
+            # are expected to be less accurate than the center frequency
+            if nfrq == 1 and frequencies[0] == self.fcen:
+                tol = 2e-4 if mp.is_single_precision() else 5e-6
+            else:
+                tol = 0.005 if mp.is_single_precision() else 0.002
+
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+            print(
+                f"PASSED: frequencies={frequencies}, "
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+            )
 
     def test_complex_fields(self):
         """Verifies that the adjoint gradient for an objective function based
@@ -683,7 +701,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             # compute objective value perturbed design
-            perturbed_val = self.adjoint_solver_complex_fields(
+            perturbed_val, _ = self.adjoint_solver_complex_fields(
                 self.p + self.dp, frequencies, need_gradient=False
             )
 
@@ -692,12 +710,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
-
             tol = 0.02 if mp.is_single_precision() else 0.001
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+            print(
+                f"PASSED: frequencies={frequencies}"
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+            )
 
     def test_damping(self):
         """Verifies that the adjoint gradient for a design region with a non-zero
@@ -711,7 +729,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
 
             # compute objective value perturbed design
-            perturbed_val = self.adjoint_solver_damping(
+            perturbed_val, _ = self.adjoint_solver_damping(
                 self.p + self.dp, frequencies, need_gradient=False
             )
 
@@ -720,12 +738,13 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
-
             tol = 0.04 if mp.is_single_precision() else 0.01
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+
+            print(
+                f"PASSED: frequencies={frequencies}"
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+            )
 
     def test_offdiagonal(self):
         """Verifies that the adjoint gradient for a design region involving an
@@ -741,15 +760,17 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         ).flatten()
 
         for frequencies in self.mon_frqs:
+            nfrq = len(frequencies)
+
             # compute objective value and its gradient for unperturbed design
             unperturbed_val, unperturbed_grad = self.adjoint_solver(
                 filt(self.p), MonitorObject.EIGENMODE, frequencies, self.sapphire
             )
 
             # backpropagate the gradient using vector-Jacobian product
-            if len(frequencies) > 1:
+            if nfrq > 1:
                 unperturbed_grad_backprop = np.zeros(unperturbed_grad.shape)
-                for i in range(len(frequencies)):
+                for i in range(nfrq):
                     unperturbed_grad_backprop[:, i] = tensor_jacobian_product(filt, 0)(
                         self.p, unperturbed_grad[:, i]
                     )
@@ -759,7 +780,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 )
 
             # compute objective value perturbed design
-            perturbed_val = self.adjoint_solver(
+            perturbed_val, _ = self.adjoint_solver(
                 filt(self.p + self.dp),
                 MonitorObject.EIGENMODE,
                 frequencies,
@@ -774,12 +795,21 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 )
             adj_dd = (self.dp[None, :] @ unperturbed_grad_backprop).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            print(
-                f"directional derivative:, {adj_dd} (adjoint solver), {fnd_dd} (finite difference)"
-            )
 
-            tol = 0.05 if mp.is_single_precision() else 0.005
+            # since the eigenmode source uses the mode profile
+            # of the center frequency, the results for the
+            # non-center frequencies of a multifrequency simulation
+            # are expected to be *less* accurate than the center frequency
+            if nfrq == 1 and frequencies[0] == self.fcen:
+                tol = 0.04 if mp.is_single_precision() else 0.002
+            else:
+                tol = 0.05 if mp.is_single_precision() else 0.005
+
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+            print(
+                f"PASSED: frequencies={frequencies}, "
+                f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+            )
 
     def test_two_objfunc(self):
         """Verifies that the adjoint gradients from two objective functions
@@ -787,30 +817,38 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         print("*** TESTING TWO OBJECTIVE FUNCTIONS ***")
 
         for frequencies in self.mon_frqs:
+            nfrq = len(frequencies)
+
             # compute objective value and its gradient for unperturbed design
             unperturbed_val, unperturbed_grad = self.adjoint_solver_two_objfunc(
                 self.p, frequencies
             )
 
             # compute objective value for perturbed design
-            perturbed_val = self.adjoint_solver_two_objfunc(
+            perturbed_val, _ = self.adjoint_solver_two_objfunc(
                 self.p + self.dp,
                 frequencies,
                 need_gradient=False,
             )
 
-            nfrq = len(frequencies)
-            tol = 0.15 if mp.is_single_precision() else 0.001
+            # since the eigenmode source uses the mode profile
+            # of the center frequency, the results for the
+            # non-center frequencies of a multifrequency simulation
+            # are expected to be *less* accurate than the center frequency
+            if nfrq == 1 and frequencies[0] == self.fcen:
+                tol = 0.05 if mp.is_single_precision() else 0.0001
+            else:
+                tol = 0.15 if mp.is_single_precision() else 0.001
+
             for m in [0, 1]:
                 frq_slice = slice(0, nfrq, 1) if m == 0 else slice(nfrq, 2 * nfrq, 1)
                 adj_dd = (self.dp[None, :] @ unperturbed_grad[:, frq_slice]).flatten()
                 fnd_dd = perturbed_val[frq_slice] - unperturbed_val[frq_slice]
-                print(
-                    f"directional derivative:, "
-                    f"{adj_dd} (adjoint solver), "
-                    f"{fnd_dd} (finite difference)"
-                )
                 self.assertClose(adj_dd, fnd_dd, epsilon=tol)
+                print(
+                    f"PASSED: frequencies={frequencies}, m={m}, "
+                    f"adjoint gradient={adj_dd}, finite difference={fnd_dd}"
+                )
 
     def test_multifreq_monitor(self):
         """Verifies that the individual adjoint gradients from a multifrequency
@@ -838,7 +876,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             )
             for m in [0, 1]:
                 s = n + m * nfrq
-                self.assertAlmostEqual(singlefreq_val[m], multifrq_val[s], places=4)
+                self.assertAlmostEqual(singlefreq_val[m], multifrq_val[s], places=6)
                 self.assertClose(
                     singlefreq_grad[:, m], multifrq_grad[:, s], epsilon=tol
                 )
@@ -850,15 +888,15 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         of the bandwidth of the pulsed mode source."""
         print("*** TESTING MODE SOURCE BANDWIDTH ***")
 
-        # compute objective value for unperturbed design
-        unperturbed_objf = self.adjoint_solver_two_objfunc(
+        # objective function value for unperturbed design
+        unperturbed_objf, _ = self.adjoint_solver_two_objfunc(
             self.p,
             [self.fcen],
             need_gradient=False,
         )
 
-        # compute objective value for perturbed design
-        perturbed_objf = self.adjoint_solver_two_objfunc(
+        # objective function value for perturbed design
+        perturbed_objf, _ = self.adjoint_solver_two_objfunc(
             self.p + self.dp,
             [self.fcen],
             need_gradient=False,
@@ -876,8 +914,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         )
 
         # minimum error for directional derivative of adjoint
-        # gradient relative to finite-difference approximation
-        tol = 0.04
+        # gradient relative to finite-difference approximation.
+        # note: this can be reduced to 0.0001 if `decay_by=1e-12`
+        # is used in the `OptimizationProblem` constructor inside
+        # `adjoint_solver_two_objfunc`.
+        tol = 0.05
 
         for n in range(nfw):
             fwidth = fw[n] * self.fcen
@@ -900,7 +941,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 adj_dd = (self.dp[None, :] @ grad[:, m]).flatten()
                 rel_err = abs((fnd_dd[m] - adj_dd[0]) / fnd_dd[m])
                 self.assertLessEqual(rel_err, tol)
-                print(f"PASSED:, fwidth={fwidth:.5f}, m={m}, err={rel_err}")
+                print(f"PASSED: fwidth={fwidth:.5f}, m={m}, err={rel_err:.10f}")
 
 
 if __name__ == "__main__":
