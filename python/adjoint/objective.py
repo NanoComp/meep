@@ -270,7 +270,6 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
 
-        
         if isinstance(self.mode,int):
             _mode = [self.mode]
         elif isinstance(self.mode,mp.DiffractedPlanewave):
