@@ -270,12 +270,14 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
 
-        if isinstance(self.mode,int):
+        if isinstance(self.mode, int):
             _mode = [self.mode]
-        elif isinstance(self.mode,mp.DiffractedPlanewave):
+        elif isinstance(self.mode, mp.DiffractedPlanewave):
             _mode = self.mode
         else:
-            raise TypeError("mode in EigenmodeCoefficient must be an integer or a DiffractedPlanewave object")
+            raise TypeError(
+                "mode in EigenmodeCoefficient must be an integer or a DiffractedPlanewave object"
+            )
 
         ob = self.sim.get_eigenmode_coefficients(
             self._monitor,
