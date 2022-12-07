@@ -150,7 +150,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
     """A frequency-dependent eigenmode coefficient.
     Attributes:
         volume: the volume over which the eigenmode coefficient is calculated.
-        mode: the eigenmode number.
+        mode: the eigenmode number or the DiffractedPlanewave object.
         forward: whether the forward or backward mode coefficient is returned as
           the result of the evaluation.
         kpoint_func: an optional k-point function to use when evaluating the eigenmode
@@ -269,13 +269,23 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             )
             kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
+
+        
+        if isinstance(self.mode,int):
+            _mode = [self.mode]
+        elif isinstance(self.mode,mp.DiffractedPlanewave):
+            _mode = self.mode
+        else:
+            raise TypeError("mode in EigenmodeCoefficient must be an integer or a DiffractedPlanewave object")
+
         ob = self.sim.get_eigenmode_coefficients(
             self._monitor,
-            [self.mode],
+            _mode,
             direction=mp.NO_DIRECTION,
             kpoint_func=kpoint_func,
             **self.eigenmode_kwargs,
         )
+
         overlaps = ob.alpha.squeeze(axis=0)
         assert overlaps.ndim == 2
         self._eval = overlaps[:, overlap_idx]
