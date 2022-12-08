@@ -776,6 +776,7 @@ class GaussianBeam2DSource(GaussianBeamSource):
     """
 
     def get_fields(self, sim):
+        """Calls green2d under various conditions (incoming vs outgoing) providing the correct Hankel functions and returns the fields at the slice provided by the source."""
         from scipy.special import hankel1, hankel2, jv
 
         # Beam parameters
@@ -880,6 +881,7 @@ class GaussianBeam2DSource(GaussianBeamSource):
         return fields2D
 
     def incoming_mask(self, x0, y0, kx, ky, X):
+        """Given a beam with a waist at (x0, y0) and a direction of propagation (kx, ky) returns the boolean masks along the meshgrid X for incoming waves, outgoing waves, and waist points."""
 
         # Create the plane where the beam is incident
         kx, ky = np.round(kx, 8), np.round(ky, 8)
@@ -896,6 +898,7 @@ class GaussianBeam2DSource(GaussianBeamSource):
         return incoming_points, outgoing_points, waist_points
 
     def green2d(self, X, freq, eps, mu, X0, kdir, hankel):
+        """Produces the 2D Green's function for an arbitrary complex point source at X0 along the meshgrid X."""
 
         # Function for vectorizing
         Xshape = X.shape
@@ -964,6 +967,7 @@ class GaussianBeam2DSource(GaussianBeamSource):
         return EH
 
     def get_equiv_sources(self, sim, field):
+        """Given the fields along a slice, returns the equivalent sources as meep source objects for the beam."""
         # Get fields
         Ex, Ey, Ez, Hx, Hy, Hz = field
 
@@ -1003,7 +1007,7 @@ class GaussianBeam2DSource(GaussianBeamSource):
         return sources
 
     def add_source(self, sim):
-        # self.center = self.center - 0.1 * self._beam_kdir
+        """Calls the add_source method for each equivalent source."""
         fields = self.get_fields(sim)
         sources = self.get_equiv_sources(sim, fields)
         for source in sources:
