@@ -761,6 +761,255 @@ class GaussianBeamSource(Source):
         add_vol_src()
 
 
+class GaussianBeam2DSource(GaussianBeamSource):
+    """
+    Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
+
+    The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
+
+
+            self._beam_x0 = beam_x0
+            self._beam_kdir = beam_kdir
+            self._beam_w0 = beam_w0
+            self._beam_E0 = beam_E0
+
+    """
+
+    def get_fields(self, sim):
+        from scipy.special import hankel1, hankel2, jv
+
+        # Beam parametersd
+        freq = self.src.swigobj.frequency().real
+        eps = sim.fields.get_eps(
+            mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+        ).real
+        mu = sim.fields.get_mu(
+            mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+        ).real
+        k = 2 * np.pi * freq * np.sqrt(eps * mu)
+
+        # Get this coordinate system
+        center = mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+        size = mp.py_v3_to_vec(sim.dimensions, self.size, sim.is_cylindrical)
+        beam_x0 = mp.py_v3_to_vec(sim.dimensions, self.beam_x0, sim.is_cylindrical)
+        beam_kdir = mp.py_v3_to_vec(sim.dimensions, self.beam_kdir, sim.is_cylindrical)
+        beam_E0 = self.beam_E0
+
+        # Check for errors
+        if size.x() and size.y():
+            raise Exception(
+                "GaussianBeam2DSource should be a line source, not a plane. Either set size.x or size.y to zero."
+            )
+
+        # Complex point source
+        x0 = center.x() + beam_x0.x()
+        y0 = center.y() + beam_x0.y()
+        z0 = k * self.beam_w0**2 / 2
+        kdir = beam_kdir.x() + 1j * beam_kdir.y()
+        kdir = kdir / np.abs(kdir)
+        jx0 = 1j * z0 * np.real(kdir)
+        jy0 = 1j * z0 * np.imag(kdir)
+        X0 = np.array([x0 + jx0, y0 + jy0]).astype(complex)
+
+        # Create grid
+        x = (
+            np.linspace(
+                center.x() - size.x() / 2,
+                center.x() + size.x() / 2,
+                int(2 * sim.resolution * size.x()),
+            )
+            if size.x() > 0
+            else np.array([center.x()])
+        )
+        y = (
+            np.linspace(
+                center.y() - size.y() / 2,
+                center.y() + size.y() / 2,
+                int(2 * sim.resolution * size.y()),
+            )
+            if size.y() > 0
+            else np.array([center.y()])
+        )
+        xx, yy = np.meshgrid(x, y)
+        X = np.transpose(np.array([xx, yy])[:, :, :], axes=(0, 2, 1))
+
+        # Find which points are incoming vs outgoing
+        incoming_arg, outgoing_arg, waist_points = self.incoming_mask(
+            x0, y0, beam_kdir.x(), beam_kdir.y(), X
+        )
+        waist_xy = np.array([np.real(X0[0]), np.real(X0[1])])[:, np.newaxis, np.newaxis]
+
+        # Get field for outgoing points (hankel2)
+        o_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel2)[
+            :, :, :, np.newaxis
+        ]
+
+        # Get field for incoming points (hankel1))
+        i_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel1)[
+            :, :, :, np.newaxis
+        ]
+
+        # Get field amplitude for the waist (hankel2)
+        w_field_norm = self.green2d(waist_xy, freq, eps, mu, X0, kdir, jv)[
+            :, :, :, np.newaxis
+        ]
+        w_field_norm = np.sqrt(np.sum(np.abs(w_field_norm[:3]) ** 2, axis=0).item(0))
+
+        # Get field for the waist (hankel2)
+        w_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, jv)[:, :, :, np.newaxis]
+
+        # Combine fields
+        fields2D = np.zeros_like(o_fields2D)
+        fields2D[:, incoming_arg] += i_fields2D[:, incoming_arg]
+        fields2D[:, outgoing_arg] += o_fields2D[:, outgoing_arg]
+        fields2D[:, waist_points] += w_fields2D[:, waist_points]
+        fields2D[:3] = fields2D[:3] / w_field_norm
+        fields2D[3:] = fields2D[3:] / (w_field_norm * np.sqrt(mu / eps))
+
+        # Multiply by E0 and H0
+        fields2D[0] = fields2D[0] * beam_E0.x
+        fields2D[1] = fields2D[1] * beam_E0.y
+        fields2D[2] = fields2D[2] * beam_E0.z
+
+        fields2D[3] = fields2D[3] * (beam_E0.z)
+        fields2D[4] = fields2D[4] * (beam_E0.z)
+        fields2D[5] = fields2D[5] * np.sqrt(
+            np.abs(beam_E0.x) ** 2 + np.abs(beam_E0.y) ** 2
+        )
+
+        return fields2D
+
+    def incoming_mask(self, x0, y0, kx, ky, X):
+
+        # Create the plane where the beam is incident
+        kx, ky = np.round(kx, 8), np.round(ky, 8)
+        plane = lambda x, y: ky * (y - y0) + kx * (x - x0)
+
+        # Find the sign of our points of interest
+        point_sign = np.sign(plane(X[0], X[1]))[:, :, np.newaxis]
+
+        # Incoming and outgoing points
+        incoming_points = point_sign == 1
+        outgoing_points = point_sign == -1
+        waist_points = point_sign == 0
+
+        return incoming_points, outgoing_points, waist_points
+
+    def green2d(self, X, freq, eps, mu, X0, kdir, hankel):
+
+        # Function for vectorizing
+        Xshape = X.shape
+
+        def fix_shape(v):
+            return np.repeat(
+                np.repeat(v[:, np.newaxis, np.newaxis], Xshape[1], axis=1),
+                Xshape[2],
+                axis=2,
+            )
+
+        # Position variables
+        EH = np.zeros([6] + list(Xshape)[1:], dtype=complex)
+        rhat = X - fix_shape(X0)
+        r = np.sqrt(np.sum(rhat * rhat, axis=0))
+        rhat = rhat / r[np.newaxis, :, :]
+
+        # Frequency variables
+        omega = 2 * np.pi * freq
+        k = omega * np.sqrt(eps * mu)
+        ik = 1j * k
+        kr = k * r
+        Z = np.sqrt(mu / eps)
+        H0_kr = hankel(0, kr)
+        H1_kr = hankel(1, kr)
+        ikH1 = 0.25 * ik * H1_kr
+
+        # E and H source hankel and vector components
+        H2_kr = hankel(2, kr)
+        p = np.zeros(3, dtype=complex)
+        p[0] = np.imag(kdir)
+        p[1] = -np.real(kdir)
+        p[2] = 0
+        pdotrhat = p[0] * rhat[0] + p[1] * rhat[1]
+        rhatcrossp = rhat[0] * p[1] - rhat[1] * p[0]
+
+        # First fill Electric Source fields
+        eHx = -rhat[1] * ikH1 * 0
+        eHy = rhat[0] * ikH1 * 0
+        eHz = -rhatcrossp * ikH1
+        eEx = -(rhat[0] * (pdotrhat / r * 0.25 * Z)) * H1_kr + (
+            rhat[1] * (rhatcrossp * omega * mu * 0.125)
+        ) * (H0_kr - H2_kr)
+        eEy = -(rhat[1] * (pdotrhat / r * 0.25 * Z)) * H1_kr - (
+            rhat[0] * (rhatcrossp * omega * mu * 0.125)
+        ) * (H0_kr - H2_kr)
+        eEz = (-0.25 * omega * mu) * H0_kr * 0
+
+        # H sources
+        hEx = rhat[1] * ikH1 * 0
+        hEy = -rhat[0] * ikH1 * 0
+        hEz = rhatcrossp * ikH1
+        hHx = -(rhat[0] * (pdotrhat / r * 0.25 / Z)) * H1_kr + (
+            rhat[1] * (rhatcrossp * omega * eps * 0.125)
+        ) * (H0_kr - H2_kr)
+        hHy = -(rhat[1] * (pdotrhat / r * 0.25 / Z)) * H1_kr - (
+            rhat[0] * (rhatcrossp * omega * eps * 0.125)
+        ) * (H0_kr - H2_kr)
+        hHz = (-0.25 * omega * eps) * H0_kr * 0
+
+        # Fill arrays
+        EH[:] = np.array([eEx, eEy, eEz, eHx, eHy, eHz]) + np.array(
+            [hEx, hEy, hEz, hHx, hHy, hHz]
+        )  # Ex cross Hz = kdir
+
+        return EH
+
+    def get_equiv_sources(self, sim, field):
+        # Get fields
+        Ex, Ey, Ez, Hx, Hy, Hz = field
+
+        # Get normal vector nHat
+        size = mp.py_v3_to_vec(sim.dimensions, self.size, sim.is_cylindrical)
+        if size.x():
+            nHat = mp.Vector3(0, 1) * np.sign(self._beam_kdir.y)
+        elif size.y():
+            nHat = mp.Vector3(1, 0) * np.sign(self._beam_kdir.x)
+
+        # Electric current K = nHat x H
+        Kx = nHat[1] * Hz - nHat[2] * Hy
+        Ky = nHat[2] * Hx - nHat[0] * Hz
+        Kz = nHat[0] * Hy - nHat[1] * Hx
+
+        # Mangnetic current N = - nHat x E
+        Nx = nHat[2] * Ey - nHat[1] * Ez
+        Ny = nHat[0] * Ez - nHat[2] * Ex
+        Nz = nHat[1] * Ex - nHat[0] * Ey
+
+        # Source components
+        components = {mp.Ex: Kx, mp.Ey: Ky, mp.Ez: Kz, mp.Hx: Nx, mp.Hy: Ny, mp.Hz: Nz}
+
+        # Make sources
+        sources = [
+            mp.Source(
+                self.src,
+                field_comp,
+                center=self.center,
+                size=self.size,
+                amp_data=source_comp,
+            )
+            for field_comp, source_comp in components.items()
+            if np.sum(np.abs(source_comp))
+        ]
+
+        return sources
+
+    def add_source(self, sim):
+        # self.center = self.center - 0.1 * self._beam_kdir
+        fields = self.get_fields(sim)
+        sources = self.get_equiv_sources(sim, fields)
+        for source in sources:
+            source.add_source(sim)
+
+
 class IndexedSource(Source):
     """
     created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
