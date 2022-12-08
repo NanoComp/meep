@@ -849,13 +849,13 @@ class GaussianBeam2DSource(GaussianBeamSource):
             :, :, :, np.newaxis
         ]
 
-        # Get field amplitude for the waist (hankel2)
+        # Get field amplitude for the waist (bessel1)
         w_field_norm = self.green2d(waist_xy, freq, eps, mu, X0, kdir, jv)[
             :, :, :, np.newaxis
         ]
         w_field_norm = np.sqrt(np.sum(np.abs(w_field_norm[:3]) ** 2, axis=0).item(0))
 
-        # Get field for the waist (hankel2)
+        # Get field for the waist (bessel1)
         w_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, jv)[:, :, :, np.newaxis]
 
         # Combine fields
