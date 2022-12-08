@@ -1,4 +1,7 @@
 import warnings
+import functools
+
+import numpy as np
 
 from meep.geom import Vector3, check_nonnegative
 
@@ -125,6 +128,34 @@ class Source:
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
+
+    def add_source(self, sim):
+        where = mp.Volume(
+            self.center,
+            self.size,
+            dims=sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+        add_vol_src_args = [self.component, self.src.swigobj, where]
+        add_vol_src = functools.partial(sim.fields.add_volume_source, *add_vol_src_args)
+
+        if self.amp_func_file:
+            fname_dset = self.amp_func_file.rsplit(":", 1)
+            if len(fname_dset) != 2:
+                err_msg = "Expected a string of the form 'h5filename:dataset'. Got '{}'"
+                raise ValueError(err_msg.format(self.amp_func_file))
+
+            fname, dset = fname_dset
+            if not fname.endswith(".h5"):
+                fname += ".h5"
+
+            add_vol_src(fname, dset, self.amplitude * 1.0)
+        elif self.amp_func:
+            add_vol_src(self.amp_func, self.amplitude * 1.0)
+        elif self.amp_data is not None:
+            add_vol_src(self.amp_data, self.amplitude * 1.0)
+        else:
+            add_vol_src(self.amplitude * 1.0)
 
 
 class SourceTime:
@@ -590,12 +621,64 @@ class EigenModeSource(Source):
             amp *= self.src.fourier_transform(freq)
         return abs(amp) ** 2
 
+    def add_source(self, sim):
+        where = mp.Volume(
+            self.center,
+            self.size,
+            dims=sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+        if self.direction < 0:
+            direction = sim.fields.normal_direction(where)
+        else:
+            direction = self.direction
+
+        eig_vol = mp.Volume(
+            self.eig_lattice_center,
+            self.eig_lattice_size,
+            sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+
+        if isinstance(self.eig_band, mp.DiffractedPlanewave):
+            eig_band = 1
+            diffractedplanewave = mp.simulation.bands_to_diffractedplanewave(
+                where, self.eig_band
+            )
+        elif isinstance(self.eig_band, int):
+            eig_band = self.eig_band
+
+        add_eig_src_args = [
+            self.component,
+            self.src.swigobj,
+            direction,
+            where,
+            eig_vol,
+            eig_band,
+            mp.py_v3_to_vec(
+                sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
+            ),
+            self.eig_match_freq,
+            self.eig_parity,
+            self.eig_resolution,
+            self.eig_tolerance,
+            self.amplitude,
+        ]
+        add_eig_src = functools.partial(
+            sim.fields.add_eigenmode_source, *add_eig_src_args
+        )
+
+        if isinstance(self.eig_band, mp.DiffractedPlanewave):
+            add_eig_src(self.amp_func, diffractedplanewave)
+        else:
+            add_eig_src(self.amp_func)
+
 
 class GaussianBeamSource(Source):
     """
     This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\\mathbf{E}(r,z)=E_0\\hat{x}\\frac{w_0}{w(z)}\\exp\\left(\\frac{-r^2}{w(z)^2}\\right)\\exp\\left(-i\\left(kz + k\\frac{r^2}{2R(z)}\\right)\\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\\pi n/\\lambda$ is the wavenumber (for a free-space wavelength $\\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
 
-    (In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.)
+    (In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.) To use the true solution for a 2d Gaussian Beam, use the `GaussianBeam2DSource` class instead.
 
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
     """
@@ -646,6 +729,37 @@ class GaussianBeamSource(Source):
     def beam_E0(self):
         return self._beam_E0
 
+    def add_source(self, sim):
+        where = mp.Volume(
+            self.center,
+            self.size,
+            dims=sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+        gaussianbeam_args = [
+            mp.py_v3_to_vec(
+                sim.dimensions, self.beam_x0, is_cylindrical=sim.is_cylindrical
+            ),
+            mp.py_v3_to_vec(
+                sim.dimensions, self.beam_kdir, is_cylindrical=sim.is_cylindrical
+            ),
+            self.beam_w0,
+            self.src.swigobj.frequency().real,
+            sim.fields.get_eps(
+                mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+            ).real,
+            sim.fields.get_mu(
+                mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+            ).real,
+            np.array(
+                [self.beam_E0.x, self.beam_E0.y, self.beam_E0.z], dtype=np.complex128
+            ),
+        ]
+        gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
+        add_vol_src_args = [self.src.swigobj, where, gaussianbeam]
+        add_vol_src = functools.partial(sim.fields.add_volume_source, *add_vol_src_args)
+        add_vol_src()
+
 
 class IndexedSource(Source):
     """
@@ -658,3 +772,14 @@ class IndexedSource(Source):
         self.srcdata = srcdata
         self.amp_arr = amp_arr
         self.needs_boundary_fix = needs_boundary_fix
+
+    def add_source(self, sim):
+        sim.fields.register_src_time(self.src.swigobj)
+        sim.fields.add_srcdata(
+            self.srcdata,
+            self.src.swigobj,
+            self.num_pts,
+            self.amp_arr,
+            self.needs_boundary_fix,
+        )
+        return

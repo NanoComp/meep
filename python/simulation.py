@@ -2759,128 +2759,13 @@ class Simulation:
             eps, self.eps_averaging, self.subpixel_tol, self.subpixel_maxeval
         )
 
-    def add_source(self, src):
-        if self.fields is None:
-            self.init_sim()
-
-        if isinstance(src, IndexedSource):
-            self.fields.register_src_time(src.src.swigobj)
-            self.fields.add_srcdata(
-                src.srcdata,
-                src.src.swigobj,
-                src.num_pts,
-                src.amp_arr,
-                src.needs_boundary_fix,
-            )
-            return
-
-        where = Volume(
-            src.center,
-            src.size,
-            dims=self.dimensions,
-            is_cylindrical=self.is_cylindrical,
-        ).swigobj
-
-        if isinstance(src, EigenModeSource):
-            if src.direction < 0:
-                direction = self.fields.normal_direction(where)
-            else:
-                direction = src.direction
-
-            eig_vol = Volume(
-                src.eig_lattice_center,
-                src.eig_lattice_size,
-                self.dimensions,
-                is_cylindrical=self.is_cylindrical,
-            ).swigobj
-
-            if isinstance(src.eig_band, DiffractedPlanewave):
-                eig_band = 1
-                diffractedplanewave = bands_to_diffractedplanewave(where, src.eig_band)
-            elif isinstance(src.eig_band, int):
-                eig_band = src.eig_band
-
-            add_eig_src_args = [
-                src.component,
-                src.src.swigobj,
-                direction,
-                where,
-                eig_vol,
-                eig_band,
-                py_v3_to_vec(
-                    self.dimensions, src.eig_kpoint, is_cylindrical=self.is_cylindrical
-                ),
-                src.eig_match_freq,
-                src.eig_parity,
-                src.eig_resolution,
-                src.eig_tolerance,
-                src.amplitude,
-            ]
-            add_eig_src = functools.partial(
-                self.fields.add_eigenmode_source, *add_eig_src_args
-            )
-
-            if isinstance(src.eig_band, DiffractedPlanewave):
-                add_eig_src(src.amp_func, diffractedplanewave)
-            else:
-                add_eig_src(src.amp_func)
-        elif isinstance(src, GaussianBeamSource):
-            gaussianbeam_args = [
-                py_v3_to_vec(
-                    self.dimensions, src.beam_x0, is_cylindrical=self.is_cylindrical
-                ),
-                py_v3_to_vec(
-                    self.dimensions, src.beam_kdir, is_cylindrical=self.is_cylindrical
-                ),
-                src.beam_w0,
-                src.src.swigobj.frequency().real,
-                self.fields.get_eps(
-                    py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)
-                ).real,
-                self.fields.get_mu(
-                    py_v3_to_vec(self.dimensions, src.center, self.is_cylindrical)
-                ).real,
-                np.array(
-                    [src.beam_E0.x, src.beam_E0.y, src.beam_E0.z], dtype=np.complex128
-                ),
-            ]
-            gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
-            add_vol_src_args = [src.src.swigobj, where, gaussianbeam]
-            add_vol_src = functools.partial(
-                self.fields.add_volume_source, *add_vol_src_args
-            )
-            add_vol_src()
-        else:
-            add_vol_src_args = [src.component, src.src.swigobj, where]
-            add_vol_src = functools.partial(
-                self.fields.add_volume_source, *add_vol_src_args
-            )
-
-            if src.amp_func_file:
-                fname_dset = src.amp_func_file.rsplit(":", 1)
-                if len(fname_dset) != 2:
-                    err_msg = (
-                        "Expected a string of the form 'h5filename:dataset'. Got '{}'"
-                    )
-                    raise ValueError(err_msg.format(src.amp_func_file))
-
-                fname, dset = fname_dset
-                if not fname.endswith(".h5"):
-                    fname += ".h5"
-
-                add_vol_src(fname, dset, src.amplitude * 1.0)
-            elif src.amp_func:
-                add_vol_src(src.amp_func, src.amplitude * 1.0)
-            elif src.amp_data is not None:
-                add_vol_src(src.amp_data, src.amplitude * 1.0)
-            else:
-                add_vol_src(src.amplitude * 1.0)
-
     def add_sources(self):
-        if self.fields is None:
-            self.init_sim()  # in case only some processes have IndexedSources
         for s in self.sources:
-            self.add_source(s)
+            if self.fields is None:
+                self.init_sim()  # in case only some processes have IndexedSources
+            s.add_source(
+                self
+            )  # each source type can optionally override its own add_source method, else will default to mp.Source method
         self.fields.require_source_components()  # needed by IndexedSource objects
 
     def _evaluate_dft_objects(self):
