@@ -778,7 +778,7 @@ class GaussianBeam2DSource(GaussianBeamSource):
     def get_fields(self, sim):
         from scipy.special import hankel1, hankel2, jv
 
-        # Beam parametersd
+        # Beam parameters
         freq = self.src.swigobj.frequency().real
         eps = sim.fields.get_eps(
             mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
