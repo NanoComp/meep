@@ -828,6 +828,15 @@ class TestSimulation(unittest.TestCase):
             self.assertAlmostEqual(pt1, expected)
             self.assertAlmostEqual(pt2, expected)
 
+    def test_time(self):
+        sim = self.init_simple_simulation()
+
+        end_t = 5.3
+        sim.run(until=end_t)
+
+        self.assertAlmostEqual(sim.meep_time(), end_t)
+        self.assertEqual(sim.timesteps(), 212)
+
 
 if __name__ == "__main__":
     unittest.main()
