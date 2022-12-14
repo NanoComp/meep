@@ -761,6 +761,41 @@ class GaussianBeam3DSource(Source):
         add_vol_src()
 
 
+def get_equiv_sources(field, normal_vec, time_src, center, size):
+    """Given the fields along a slice, returns the equivalent sources as meep source objects for the beam."""
+    # Get fields
+    Ex, Ey, Ez, Hx, Hy, Hz = field
+    nHat = normal_vec
+
+    # Electric current K = nHat x H
+    Kx = nHat[1] * Hz - nHat[2] * Hy
+    Ky = nHat[2] * Hx - nHat[0] * Hz
+    Kz = nHat[0] * Hy - nHat[1] * Hx
+
+    # Mangnetic current N = - nHat x E
+    Nx = nHat[2] * Ey - nHat[1] * Ez
+    Ny = nHat[0] * Ez - nHat[2] * Ex
+    Nz = nHat[1] * Ex - nHat[0] * Ey
+
+    # Source components
+    components = {mp.Ex: Kx, mp.Ey: Ky, mp.Ez: Kz, mp.Hx: Nx, mp.Hy: Ny, mp.Hz: Nz}
+
+    # Make sources
+    sources = [
+        mp.Source(
+            time_src,
+            field_comp,
+            center=center,
+            size=size,
+            amp_data=source_comp,
+        )
+        for field_comp, source_comp in components.items()
+        if np.sum(np.abs(source_comp))
+    ]
+
+    return sources
+
+
 class GaussianBeam2DSource(GaussianBeam3DSource):
     """
     Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
@@ -966,10 +1001,9 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 
         return EH
 
-    def get_equiv_sources(self, sim, field):
-        """Given the fields along a slice, returns the equivalent sources as meep source objects for the beam."""
-        # Get fields
-        Ex, Ey, Ez, Hx, Hy, Hz = field
+    def add_source(self, sim):
+        """Calls the add_source method for each equivalent source."""
+        fields = self.get_fields(sim)
 
         # Get normal vector nHat
         size = mp.py_v3_to_vec(sim.dimensions, self.size, sim.is_cylindrical)
@@ -977,39 +1011,8 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
             nHat = mp.Vector3(0, 1) * np.sign(self._beam_kdir.y)
         elif size.y():
             nHat = mp.Vector3(1, 0) * np.sign(self._beam_kdir.x)
+        sources = get_equiv_sources(fields, nHat, self.src, self.center, self.size)
 
-        # Electric current K = nHat x H
-        Kx = nHat[1] * Hz - nHat[2] * Hy
-        Ky = nHat[2] * Hx - nHat[0] * Hz
-        Kz = nHat[0] * Hy - nHat[1] * Hx
-
-        # Mangnetic current N = - nHat x E
-        Nx = nHat[2] * Ey - nHat[1] * Ez
-        Ny = nHat[0] * Ez - nHat[2] * Ex
-        Nz = nHat[1] * Ex - nHat[0] * Ey
-
-        # Source components
-        components = {mp.Ex: Kx, mp.Ey: Ky, mp.Ez: Kz, mp.Hx: Nx, mp.Hy: Ny, mp.Hz: Nz}
-
-        # Make sources
-        sources = [
-            mp.Source(
-                self.src,
-                field_comp,
-                center=self.center,
-                size=self.size,
-                amp_data=source_comp,
-            )
-            for field_comp, source_comp in components.items()
-            if np.sum(np.abs(source_comp))
-        ]
-
-        return sources
-
-    def add_source(self, sim):
-        """Calls the add_source method for each equivalent source."""
-        fields = self.get_fields(sim)
-        sources = self.get_equiv_sources(sim, fields)
         for source in sources:
             source.add_source(sim)
 
