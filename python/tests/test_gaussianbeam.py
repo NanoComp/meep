@@ -7,7 +7,7 @@ import meep as mp
 
 
 class TestGaussianBeamSource(unittest.TestCase):
-    def gaussian_beam(self, rot_angle):
+    def gaussian_beam(self, rot_angle, beamfunc=mp.GaussianBeamSource):
 
         s = 14
         resolution = 25
@@ -27,7 +27,7 @@ class TestGaussianBeamSource(unittest.TestCase):
         src_x = 0
         src_y = -0.5 * s + dpml + 1.0
         sources = [
-            mp.GaussianBeamSource(
+            beamfunc(
                 src=mp.GaussianSource(fcen, fwidth=0.2 * fcen),
                 center=mp.Vector3(src_x, src_y),
                 size=mp.Vector3(s),
@@ -76,10 +76,11 @@ class TestGaussianBeamSource(unittest.TestCase):
             f"ratio of the Gaussian beam energy at the focus over the maximum beam energy for the entire cell: {frac}"
         )
 
-        self.assertGreater(frac, 0.99)
+        self.assertGreater(frac, 0.98)
 
     def test_gaussian_beam(self):
-        self.gaussian_beam(-40)
+        self.gaussian_beam(-40, mp.GaussianBeam2DSource)
+        self.gaussian_beam(-40, mp.GaussianBeam3DSource)
 
 
 if __name__ == "__main__":
