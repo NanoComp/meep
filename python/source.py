@@ -674,7 +674,7 @@ class EigenModeSource(Source):
             add_eig_src(self.amp_func)
 
 
-class GaussianBeamSource(Source):
+class GaussianBeam3DSource(Source):
     """
     This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\\mathbf{E}(r,z)=E_0\\hat{x}\\frac{w_0}{w(z)}\\exp\\left(\\frac{-r^2}{w(z)^2}\\right)\\exp\\left(-i\\left(kz + k\\frac{r^2}{2R(z)}\\right)\\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\\pi n/\\lambda$ is the wavenumber (for a free-space wavelength $\\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
 
@@ -761,7 +761,7 @@ class GaussianBeamSource(Source):
         add_vol_src()
 
 
-class GaussianBeam2DSource(GaussianBeamSource):
+class GaussianBeam2DSource(GaussianBeam3DSource):
     """
     Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
 
@@ -1012,6 +1012,19 @@ class GaussianBeam2DSource(GaussianBeamSource):
         sources = self.get_equiv_sources(sim, fields)
         for source in sources:
             source.add_source(sim)
+
+
+class GaussianBeamSource(GaussianBeam3DSource):
+    """
+    Wrapper for GaussianBeam3DSource to warn the user when running 2D simulations that this behavior is depricated and they should be using GaussianBeam2DSource.
+    """
+
+    def add_source(self, sim):
+        if sim.dimensions == 2:
+            warnings.warn(
+                "GaussianBeamSource is depricated for 2D simulations. For more accurate results, use GaussianBeam2DSource instead. In the future, this will be the default behavior."
+            )
+        super().add_source(sim)
 
 
 class IndexedSource(Source):
