@@ -1019,13 +1019,14 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 
 class GaussianBeamSource(GaussianBeam3DSource):
     """
-    Wrapper for GaussianBeam3DSource to warn the user when running 2D simulations that this behavior is depricated and they should be using GaussianBeam2DSource.
+    Wrapper for GaussianBeam3DSource to warn the user when running 2D simulations that this behavior is deprecated and they should be using GaussianBeam2DSource.
     """
 
     def add_source(self, sim):
         if sim.dimensions == 2:
             warnings.warn(
-                "GaussianBeamSource is depricated for 2D simulations. For more accurate results, use GaussianBeam2DSource instead. In the future, this will be the default behavior."
+                "GaussianBeamSource is deprecated for 2D simulations. For more accurate results, use GaussianBeam2DSource instead. In the future, this will be the default behavior.",
+                DeprecationWarning,
             )
         super().add_source(sim)
 
