@@ -1,4 +1,7 @@
 import warnings
+import functools
+
+import numpy as np
 
 from meep.geom import Vector3, check_nonnegative
 
@@ -125,6 +128,34 @@ class Source:
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
+
+    def add_source(self, sim):
+        where = mp.Volume(
+            self.center,
+            self.size,
+            dims=sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+        add_vol_src_args = [self.component, self.src.swigobj, where]
+        add_vol_src = functools.partial(sim.fields.add_volume_source, *add_vol_src_args)
+
+        if self.amp_func_file:
+            fname_dset = self.amp_func_file.rsplit(":", 1)
+            if len(fname_dset) != 2:
+                err_msg = "Expected a string of the form 'h5filename:dataset'. Got '{}'"
+                raise ValueError(err_msg.format(self.amp_func_file))
+
+            fname, dset = fname_dset
+            if not fname.endswith(".h5"):
+                fname += ".h5"
+
+            add_vol_src(fname, dset, self.amplitude * 1.0)
+        elif self.amp_func:
+            add_vol_src(self.amp_func, self.amplitude * 1.0)
+        elif self.amp_data is not None:
+            add_vol_src(self.amp_data, self.amplitude * 1.0)
+        else:
+            add_vol_src(self.amplitude * 1.0)
 
 
 class SourceTime:
@@ -590,12 +621,64 @@ class EigenModeSource(Source):
             amp *= self.src.fourier_transform(freq)
         return abs(amp) ** 2
 
+    def add_source(self, sim):
+        where = mp.Volume(
+            self.center,
+            self.size,
+            dims=sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+        if self.direction < 0:
+            direction = sim.fields.normal_direction(where)
+        else:
+            direction = self.direction
 
-class GaussianBeamSource(Source):
+        eig_vol = mp.Volume(
+            self.eig_lattice_center,
+            self.eig_lattice_size,
+            sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+
+        if isinstance(self.eig_band, mp.DiffractedPlanewave):
+            eig_band = 1
+            diffractedplanewave = mp.simulation.bands_to_diffractedplanewave(
+                where, self.eig_band
+            )
+        elif isinstance(self.eig_band, int):
+            eig_band = self.eig_band
+
+        add_eig_src_args = [
+            self.component,
+            self.src.swigobj,
+            direction,
+            where,
+            eig_vol,
+            eig_band,
+            mp.py_v3_to_vec(
+                sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
+            ),
+            self.eig_match_freq,
+            self.eig_parity,
+            self.eig_resolution,
+            self.eig_tolerance,
+            self.amplitude,
+        ]
+        add_eig_src = functools.partial(
+            sim.fields.add_eigenmode_source, *add_eig_src_args
+        )
+
+        if isinstance(self.eig_band, mp.DiffractedPlanewave):
+            add_eig_src(self.amp_func, diffractedplanewave)
+        else:
+            add_eig_src(self.amp_func)
+
+
+class GaussianBeam3DSource(Source):
     """
     This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\\mathbf{E}(r,z)=E_0\\hat{x}\\frac{w_0}{w(z)}\\exp\\left(\\frac{-r^2}{w(z)^2}\\right)\\exp\\left(-i\\left(kz + k\\frac{r^2}{2R(z)}\\right)\\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\\pi n/\\lambda$ is the wavenumber (for a free-space wavelength $\\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
 
-    (In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.)
+    (In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.) To use the true solution for a 2d Gaussian Beam, use the `GaussianBeam2DSource` class instead.
 
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
     """
@@ -646,6 +729,307 @@ class GaussianBeamSource(Source):
     def beam_E0(self):
         return self._beam_E0
 
+    def add_source(self, sim):
+        where = mp.Volume(
+            self.center,
+            self.size,
+            dims=sim.dimensions,
+            is_cylindrical=sim.is_cylindrical,
+        ).swigobj
+        gaussianbeam_args = [
+            mp.py_v3_to_vec(
+                sim.dimensions, self.beam_x0, is_cylindrical=sim.is_cylindrical
+            ),
+            mp.py_v3_to_vec(
+                sim.dimensions, self.beam_kdir, is_cylindrical=sim.is_cylindrical
+            ),
+            self.beam_w0,
+            self.src.swigobj.frequency().real,
+            sim.fields.get_eps(
+                mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+            ).real,
+            sim.fields.get_mu(
+                mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+            ).real,
+            np.array(
+                [self.beam_E0.x, self.beam_E0.y, self.beam_E0.z], dtype=np.complex128
+            ),
+        ]
+        gaussianbeam = mp.gaussianbeam(*gaussianbeam_args)
+        add_vol_src_args = [self.src.swigobj, where, gaussianbeam]
+        add_vol_src = functools.partial(sim.fields.add_volume_source, *add_vol_src_args)
+        add_vol_src()
+
+
+def get_equiv_sources(field, normal_vec, time_src, center, size):
+    """Given the fields along a slice, returns the equivalent sources as meep source objects for the beam."""
+    # Get fields
+    Ex, Ey, Ez, Hx, Hy, Hz = field
+    nHat = normal_vec
+
+    # Electric current K = nHat x H
+    Kx = nHat[1] * Hz - nHat[2] * Hy
+    Ky = nHat[2] * Hx - nHat[0] * Hz
+    Kz = nHat[0] * Hy - nHat[1] * Hx
+
+    # Mangnetic current N = - nHat x E
+    Nx = nHat[2] * Ey - nHat[1] * Ez
+    Ny = nHat[0] * Ez - nHat[2] * Ex
+    Nz = nHat[1] * Ex - nHat[0] * Ey
+
+    # Source components
+    components = {mp.Ex: Kx, mp.Ey: Ky, mp.Ez: Kz, mp.Hx: Nx, mp.Hy: Ny, mp.Hz: Nz}
+
+    # Make sources
+    sources = [
+        mp.Source(
+            time_src,
+            field_comp,
+            center=center,
+            size=size,
+            amp_data=source_comp,
+        )
+        for field_comp, source_comp in components.items()
+        if np.sum(np.abs(source_comp))
+    ]
+
+    return sources
+
+
+class GaussianBeam2DSource(GaussianBeam3DSource):
+    """
+    Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
+
+    The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
+
+
+            self._beam_x0 = beam_x0
+            self._beam_kdir = beam_kdir
+            self._beam_w0 = beam_w0
+            self._beam_E0 = beam_E0
+
+    """
+
+    def get_fields(self, sim):
+        """Calls green2d under various conditions (incoming vs outgoing) providing the correct Hankel functions and returns the fields at the slice provided by the source."""
+        from scipy.special import hankel1, hankel2, jv
+
+        # Beam parameters
+        freq = self.src.swigobj.frequency().real
+        eps = sim.fields.get_eps(
+            mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+        ).real
+        mu = sim.fields.get_mu(
+            mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+        ).real
+        k = 2 * np.pi * freq * np.sqrt(eps * mu)
+
+        # Get this coordinate system
+        center = mp.py_v3_to_vec(sim.dimensions, self.center, sim.is_cylindrical)
+        size = mp.py_v3_to_vec(sim.dimensions, self.size, sim.is_cylindrical)
+        beam_x0 = mp.py_v3_to_vec(sim.dimensions, self.beam_x0, sim.is_cylindrical)
+        beam_kdir = mp.py_v3_to_vec(sim.dimensions, self.beam_kdir, sim.is_cylindrical)
+        beam_E0 = self.beam_E0
+
+        # Check for errors
+        if size.x() and size.y():
+            raise Exception(
+                "GaussianBeam2DSource should be a line source, not a plane. Either set size.x or size.y to zero."
+            )
+
+        # Complex point source
+        x0 = center.x() + beam_x0.x()
+        y0 = center.y() + beam_x0.y()
+        z0 = k * self.beam_w0**2 / 2
+        kdir = beam_kdir.x() + 1j * beam_kdir.y()
+        kdir = kdir / np.abs(kdir)
+        jx0 = 1j * z0 * np.real(kdir)
+        jy0 = 1j * z0 * np.imag(kdir)
+        X0 = np.array([x0 + jx0, y0 + jy0]).astype(complex)
+
+        # Create grid
+        x = (
+            np.linspace(
+                center.x() - size.x() / 2,
+                center.x() + size.x() / 2,
+                int(2 * sim.resolution * size.x()),
+            )
+            if size.x() > 0
+            else np.array([center.x()])
+        )
+        y = (
+            np.linspace(
+                center.y() - size.y() / 2,
+                center.y() + size.y() / 2,
+                int(2 * sim.resolution * size.y()),
+            )
+            if size.y() > 0
+            else np.array([center.y()])
+        )
+        xx, yy = np.meshgrid(x, y)
+        X = np.transpose(np.array([xx, yy])[:, :, :], axes=(0, 2, 1))
+
+        # Find which points are incoming vs outgoing
+        incoming_arg, outgoing_arg, waist_points = self.incoming_mask(
+            x0, y0, beam_kdir.x(), beam_kdir.y(), X
+        )
+        waist_xy = np.array([np.real(X0[0]), np.real(X0[1])])[:, np.newaxis, np.newaxis]
+
+        # Get field for outgoing points (hankel2)
+        o_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel2)[
+            :, :, :, np.newaxis
+        ]
+
+        # Get field for incoming points (hankel1))
+        i_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel1)[
+            :, :, :, np.newaxis
+        ]
+
+        # Get field amplitude for the waist (bessel1)
+        w_field_norm = self.green2d(waist_xy, freq, eps, mu, X0, kdir, jv)[
+            :, :, :, np.newaxis
+        ]
+        w_field_norm = np.sqrt(np.sum(np.abs(w_field_norm[:3]) ** 2, axis=0).item(0))
+
+        # Get field for the waist (bessel1)
+        w_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, jv)[:, :, :, np.newaxis]
+
+        # Combine fields
+        fields2D = np.zeros_like(o_fields2D)
+        fields2D[:, incoming_arg] += i_fields2D[:, incoming_arg]
+        fields2D[:, outgoing_arg] += o_fields2D[:, outgoing_arg]
+        fields2D[:, waist_points] += w_fields2D[:, waist_points]
+        fields2D[:3] = fields2D[:3] / w_field_norm
+        fields2D[3:] = fields2D[3:] / (w_field_norm * np.sqrt(mu / eps))
+
+        # Multiply by E0 and H0
+        fields2D[0] = fields2D[0] * beam_E0.x
+        fields2D[1] = fields2D[1] * beam_E0.y
+        fields2D[2] = fields2D[2] * beam_E0.z
+
+        fields2D[3] = fields2D[3] * (beam_E0.z)
+        fields2D[4] = fields2D[4] * (beam_E0.z)
+        fields2D[5] = fields2D[5] * np.sqrt(
+            np.abs(beam_E0.x) ** 2 + np.abs(beam_E0.y) ** 2
+        )
+
+        return fields2D
+
+    def incoming_mask(self, x0, y0, kx, ky, X):
+        """Given a beam with a waist at (x0, y0) and a direction of propagation (kx, ky) returns the boolean masks along the meshgrid X for incoming waves, outgoing waves, and waist points."""
+
+        # Create the plane where the beam is incident
+        kx, ky = np.round(kx, 8), np.round(ky, 8)
+        plane = lambda x, y: ky * (y - y0) + kx * (x - x0)
+
+        # Find the sign of our points of interest
+        point_sign = np.sign(plane(X[0], X[1]))[:, :, np.newaxis]
+
+        # Incoming and outgoing points
+        incoming_points = point_sign == 1
+        outgoing_points = point_sign == -1
+        waist_points = point_sign == 0
+
+        return incoming_points, outgoing_points, waist_points
+
+    def green2d(self, X, freq, eps, mu, X0, kdir, hankel):
+        """Produces the 2D Green's function for an arbitrary complex point source at X0 along the meshgrid X."""
+
+        # Function for vectorizing
+        Xshape = X.shape
+
+        def fix_shape(v):
+            return np.repeat(
+                np.repeat(v[:, np.newaxis, np.newaxis], Xshape[1], axis=1),
+                Xshape[2],
+                axis=2,
+            )
+
+        # Position variables
+        EH = np.zeros([6] + list(Xshape)[1:], dtype=complex)
+        rhat = X - fix_shape(X0)
+        r = np.sqrt(np.sum(rhat * rhat, axis=0))
+        rhat = rhat / r[np.newaxis, :, :]
+
+        # Frequency variables
+        omega = 2 * np.pi * freq
+        k = omega * np.sqrt(eps * mu)
+        ik = 1j * k
+        kr = k * r
+        Z = np.sqrt(mu / eps)
+        H0_kr = hankel(0, kr)
+        H1_kr = hankel(1, kr)
+        ikH1 = 0.25 * ik * H1_kr
+
+        # E and H source hankel and vector components
+        H2_kr = hankel(2, kr)
+        p = np.zeros(3, dtype=complex)
+        p[0] = np.imag(kdir)
+        p[1] = -np.real(kdir)
+        p[2] = 0
+        pdotrhat = p[0] * rhat[0] + p[1] * rhat[1]
+        rhatcrossp = rhat[0] * p[1] - rhat[1] * p[0]
+
+        # First fill Electric Source fields
+        eHx = -rhat[1] * ikH1 * 0
+        eHy = rhat[0] * ikH1 * 0
+        eHz = -rhatcrossp * ikH1
+        eEx = -(rhat[0] * (pdotrhat / r * 0.25 * Z)) * H1_kr + (
+            rhat[1] * (rhatcrossp * omega * mu * 0.125)
+        ) * (H0_kr - H2_kr)
+        eEy = -(rhat[1] * (pdotrhat / r * 0.25 * Z)) * H1_kr - (
+            rhat[0] * (rhatcrossp * omega * mu * 0.125)
+        ) * (H0_kr - H2_kr)
+        eEz = (-0.25 * omega * mu) * H0_kr * 0
+
+        # H sources
+        hEx = rhat[1] * ikH1 * 0
+        hEy = -rhat[0] * ikH1 * 0
+        hEz = rhatcrossp * ikH1
+        hHx = -(rhat[0] * (pdotrhat / r * 0.25 / Z)) * H1_kr + (
+            rhat[1] * (rhatcrossp * omega * eps * 0.125)
+        ) * (H0_kr - H2_kr)
+        hHy = -(rhat[1] * (pdotrhat / r * 0.25 / Z)) * H1_kr - (
+            rhat[0] * (rhatcrossp * omega * eps * 0.125)
+        ) * (H0_kr - H2_kr)
+        hHz = (-0.25 * omega * eps) * H0_kr * 0
+
+        # Fill arrays
+        EH[:] = np.array([eEx, eEy, eEz, eHx, eHy, eHz]) + np.array(
+            [hEx, hEy, hEz, hHx, hHy, hHz]
+        )  # Ex cross Hz = kdir
+
+        return EH
+
+    def add_source(self, sim):
+        """Calls the add_source method for each equivalent source."""
+        fields = self.get_fields(sim)
+
+        # Get normal vector nHat
+        size = mp.py_v3_to_vec(sim.dimensions, self.size, sim.is_cylindrical)
+        if size.x():
+            nHat = mp.Vector3(0, 1) * np.sign(self._beam_kdir.y)
+        elif size.y():
+            nHat = mp.Vector3(1, 0) * np.sign(self._beam_kdir.x)
+        sources = get_equiv_sources(fields, nHat, self.src, self.center, self.size)
+
+        for source in sources:
+            source.add_source(sim)
+
+
+class GaussianBeamSource(GaussianBeam3DSource):
+    """
+    Wrapper for GaussianBeam3DSource to warn the user when running 2D simulations that this behavior is deprecated and they should be using GaussianBeam2DSource.
+    """
+
+    def add_source(self, sim):
+        if sim.dimensions == 2:
+            warnings.warn(
+                "GaussianBeamSource is deprecated for 2D simulations. For more accurate results, use GaussianBeam2DSource instead. In the future, this will be the default behavior.",
+                DeprecationWarning,
+            )
+        super().add_source(sim)
+
 
 class IndexedSource(Source):
     """
@@ -658,3 +1042,14 @@ class IndexedSource(Source):
         self.srcdata = srcdata
         self.amp_arr = amp_arr
         self.needs_boundary_fix = needs_boundary_fix
+
+    def add_source(self, sim):
+        sim.fields.register_src_time(self.src.swigobj)
+        sim.fields.add_srcdata(
+            self.srcdata,
+            self.src.swigobj,
+            self.num_pts,
+            self.amp_arr,
+            self.needs_boundary_fix,
+        )
+        return
