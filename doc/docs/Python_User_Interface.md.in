@@ -388,12 +388,13 @@ sim2.run(...)
 
 #### Load and Dump Fields
 
-These functions can be used to dump (and later load) the time-domain fields, auxiliary
-fields for PMLs, polarization fields (for dispersive materials), and the DFT fields
-at a certain timestamp. The timestamp at which the dump happens is also saved so that
-the simulation can continue from where it was saved. The one pre-requisite of this
-feature is that it needs the `Simulation` object to have been setup *exactly* the
-same as the one it was dumped from.
+These functions can be used to dump (and later load) the time-domain
+fields and the DFT fields at a certain timestamp. Polarization fields
+for dispersive materials are *not* supported. The timestamp at which
+the dump happens is also saved so that the simulation can continue
+from where it was saved. The one prerequisite of this feature is that
+it needs the `Simulation` object to have been setup *exactly* the same
+as the one it was dumped from.
 
 @@ Simulation.dump_fields @@
 @@ Simulation.load_fields @@
