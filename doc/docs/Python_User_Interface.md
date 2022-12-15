@@ -2518,12 +2518,13 @@ sim2.run(...)
 
 #### Load and Dump Fields
 
-These functions can be used to dump (and later load) the time-domain fields, auxiliary
-fields for PMLs, polarization fields (for dispersive materials), and the DFT fields
-at a certain timestamp. The timestamp at which the dump happens is also saved so that
-the simulation can continue from where it was saved. The one pre-requisite of this
-feature is that it needs the `Simulation` object to have been setup *exactly* the
-same as the one it was dumped from.
+These functions can be used to dump (and later load) the time-domain
+fields and the DFT fields at a certain timestamp. Polarization fields
+for dispersive materials are *not* supported. The timestamp at which
+the dump happens is also saved so that the simulation can continue
+from where it was saved. The one prerequisite of this feature is that
+it needs the `Simulation` object to have been setup *exactly* the same
+as the one it was dumped from.
 
 
 <a id="Simulation.dump_fields"></a>
@@ -2879,13 +2880,25 @@ ipympl to be installed.
 <div class="class_members" markdown="1">
 
 ```python
-def plot3D(self):
+def plot3D(self,
+           save_to_image: bool = False,
+           image_name: str = 'sim.png',
+           **kwargs):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Uses Mayavi to render a 3D simulation domain. The simulation object must be 3D.
+Uses vispy to render a 3D scene of the simulation object. The simulation object must be 3D.
 Can also be embedded in Jupyter notebooks.
+
+Args:
+    save_to_image: if True, saves the image to a file
+    image_name: the name of the image file to save to
+
+kwargs: Camera settings.
+    scale_factor: float, camera zoom factor
+    azimuth: float, azimuthal angle in degrees
+    elevation: float, elevation angle in degrees
 
 </div>
 
@@ -6259,7 +6272,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f41474eeb00>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f79ed336a70>):
 ```
 
 <div class="method_docstring" markdown="1">
