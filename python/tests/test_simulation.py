@@ -831,11 +831,13 @@ class TestSimulation(unittest.TestCase):
     def test_time(self):
         sim = self.init_simple_simulation()
 
-        end_t = 5.3
+        num_timesteps = 212
+        sim.init_sim()
+        end_t = sim.fields.dt * num_timesteps
         sim.run(until=end_t)
 
         self.assertAlmostEqual(sim.meep_time(), end_t)
-        self.assertEqual(sim.timesteps(), 212)
+        self.assertEqual(sim.timestep(), num_timesteps)
 
 
 if __name__ == "__main__":

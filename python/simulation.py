@@ -2429,7 +2429,7 @@ class Simulation:
             self.init_sim()
         return self.fields.time()
 
-    def timesteps(self) -> int:
+    def timestep(self) -> int:
         """Return the number of elapsed timesteps."""
 
         if self.fields is None:
