@@ -85,6 +85,7 @@ or set the output folder, with these methods of the `Simulation` class:
 The `Simulation` class provides the following time-related methods:
 
 @@ Simulation.meep_time @@
+@@ Simulation.timestep @@
 @@ Simulation.print_times @@
 @@ Simulation.time_spent_on @@
 @@ Simulation.mean_time_spent_on @@
