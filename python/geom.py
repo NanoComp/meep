@@ -610,6 +610,7 @@ class MaterialGrid:
         ![](images/material_grid.png#center)
 
         Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
+        An array of boolean values `False` and `True` will be converted to 0 and 1, respectively.
         The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
         Two material types are supported: (1) frequency-independent isotropic $\\varepsilon$ (`epsilon_diag`
         and `epsilon_offdiag` are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and `sigma_offdiag`
@@ -671,7 +672,7 @@ class MaterialGrid:
                 )
             )
         else:
-            self.weights = self.check_weights(weights).flatten().astype(np.float64)
+            self.weights = self.check_weights(weights.flatten().astype(np.float64))
 
         grid_type_dict = {"U_MIN": 0, "U_PROD": 1, "U_MEAN": 2, "U_DEFAULT": 3}
         if grid_type not in grid_type_dict:
