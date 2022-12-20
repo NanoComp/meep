@@ -710,7 +710,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            tol = 0.02 if mp.is_single_precision() else 0.001
+            tol = 0.025 if mp.is_single_precision() else 0.001
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
                 f"PASSED: frequencies={frequencies}"
