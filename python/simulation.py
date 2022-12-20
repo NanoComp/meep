@@ -6042,7 +6042,7 @@ def get_group_masters():
 
     # Check if current worker is a group master
     is_group_master = True if mp.my_rank() == 0 else False
-    group_master_idx = np.zeros((num_workers,), dtype=np.bool)
+    group_master_idx = np.zeros((num_workers,), dtype=np.bool_)
 
     # Formulate send and receive packets
     smsg = [np.array([is_group_master]), ([1] * num_workers, [0] * num_workers)]
