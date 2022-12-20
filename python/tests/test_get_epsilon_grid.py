@@ -26,7 +26,6 @@ class TestGetEpsilonGrid(unittest.TestCase):
         weights = np.logical_and(
             np.sqrt(np.square(xv) + np.square(yv)) > rad,
             np.sqrt(np.square(xv) + np.square(yv)) < rad + w,
-            dtype=np.double,
         )
 
         matgrid = mp.MaterialGrid(
