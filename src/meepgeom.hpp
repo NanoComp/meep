@@ -292,8 +292,8 @@ geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
 void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
                                 std::vector<meep::dft_fields *> fields_f, double *frequencies,
-                                double scalegrad, meep::grid_volume &gv, meep::volume &where,
-                                geom_epsilon *geps, double du = 1e-6);
+                                double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
+                                double du = 1e-6);
 
 /***************************************************************/
 /* routines in GDSIIgeom.cc ************************************/
