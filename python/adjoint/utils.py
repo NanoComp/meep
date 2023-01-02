@@ -70,7 +70,6 @@ class DesignRegion:
             fields_f[1].swigobj,
             fields_f[2].swigobj,
             sim.gv,
-            vol.swigobj,
             onp.array(frequencies),
             sim.geps,
             finite_difference_step,
