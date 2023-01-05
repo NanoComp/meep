@@ -65,10 +65,10 @@ function is not everywhere differentiable. This property would seem to
 preclude the use of gradient-based optimization algorithms for this
 problem which involves 12 independent functions ($R$ and $1-T$ for
 each of six wavelengths). Fortunately, there is a workaround: the
-problem can be reformulated as a differentiable problem by introducing
-a dummy variable $t$ (the
-[epigraph](https://en.wikipedia.org/wiki/Epigraph_(mathematics))) and
-adding each independent function as a new nonlinear constraint. See
+problem can be reformulated as a differentiable problem using
+a so-called "epigraph" formulation: introducing
+a new "dummy" optimization variable $t$ and
+adding each independent function $f_k(x)$ as a new nonlinear constraint $t \ge f_k(x)$. See
 the [NLopt
 documentation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems)
 for an overview of this approach. The minimax/epigraph approach is
