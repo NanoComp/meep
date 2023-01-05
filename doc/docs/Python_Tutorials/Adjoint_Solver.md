@@ -66,7 +66,7 @@ preclude the use of gradient-based optimization algorithms for this
 problem which involves 12 independent functions ($R$ and $1-T$ for
 each of six wavelengths). Fortunately, there is a workaround: the
 problem can be reformulated as a differentiable problem by introducing
-a dummy varaiable $t$ (the
+a dummy variable $t$ (the
 [epigraph](https://en.wikipedia.org/wiki/Epigraph_(mathematics))) and
 adding each independent function as a new nonlinear constraint. See
 the [NLopt
