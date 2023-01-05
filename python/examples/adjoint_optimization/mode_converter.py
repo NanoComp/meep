@@ -1,59 +1,20 @@
----
-# Adjoint Solver
----
+"""Topology optimization of the waveguide mode converter using
+   Meep's adjoint solver from A.M. Hammond et al., Optics Express,
+   Vol. 30, pp. 4467-4491 (2022). doi.org/10.1364/OE.442074
 
-Meep contains an adjoint-solver module for efficiently computing the
-gradient of an arbitrary function of the mode coefficients
-($\mathcal{S}$-parameters), DFT fields, local density of states
-(LDOS), and far fields (Fraunhofer condition) with respect to
-$\varepsilon$ on a discrete spatial grid (a
-[`MaterialGrid`](../Python_User_Interface.md#materialgrid) class
-object) at multiple frequencies over a broad bandwidth. Regardless of
-the number of degrees of freedom for the grid points, just **two**
-distinct timestepping runs are required. The first run is the
-"forward" calculation to compute the objective function and the DFT
-fields of the design region. The second run is the "adjoint"
-calculation to compute the gradient of the objective function with
-respect to the design variables. The adjoint run involves a special
-type of current source distribution used to compute the DFT fields of
-the design region. The gradient is computed in post processing using
-the DFT fields from the forward and adjoint runs. The gradient
-calculation is fully automated. The theoretical and computational
-details of the adjoint-solver module are described in this manuscript:
+The worst-case optimization is based on minimizing the maximum
+of {R,1-T} where R (reflectance) is $|S_{11}|^2$ for mode 1
+and T (transmittance) is $|S_{21}|^2$ for mode 2 across six
+different wavelengths. The optimization uses the method of moving
+asymptotes (MMA) algorithm from NLopt. The minimum linewidth
+constraint is based on A.M. Hammond et al., Optics Express,
+Vol. 29, pp. 23916-23938, (2021). doi.org/10.1364/OE.431188
+"""
 
-- A. M. Hammond, A. Oskooi, M. Chen, Z. Lin, S. G. Johnson, and
-  S. E. Ralph, “[High-performance hybrid time/frequency-domain
-  topology optimization for large-scale photonics inverse
-  design](https://doi.org/10.1364/OE.442074),” *Optics Express*,
-  vol. 30, no. 3, pp. 4467–4491 (2022).
-
-Much of the functionality of the adjoints solver is implemented in
-Python using
-[autograd](https://github.com/HIPS/autograd). [JAX](https://github.com/google/jax)
-is also supported as an alternative to autograd.
-
-The adjoint solver supports inverse design and [topology
-optimization](https://en.wikipedia.org/wiki/Topology_optimization) by
-providing the functionality to wrap an optimization library around the
-gradient computation. This is demonstrated in several tutorial
-demonstrations below.
-
-[TOC]
-
-Broadband Waveguide Mode Converter with Minimum Lengthscale Constraints
------------------------------------------------------------------------
-
-This example involves designing a broadband waveguide mode converter
-based on [M.F. Schubert et al., ACS Photonics, Vol. 9, pp. 2327-36,
-(2022)](https://doi.org/10.1021/acsphotonics.2c00313).
-
-The script is
-[python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py).
-
-```py
 import numpy as np
 import matplotlib
-matplotlib.use('agg')
+
+matplotlib.use("agg")
 import matplotlib.pyplot as plt
 from autograd import numpy as npa, tensor_jacobian_product, grad
 import nlopt
@@ -62,28 +23,26 @@ import meep.adjoint as mpa
 
 resolution = 50  # pixels/μm
 
-w = 0.4          # waveguide width
-l = 3.0          # waveguide length (on each side of design region)
-dpad = 0.6       # padding length above/below design region
-dpml = 1.0       # PML thickness
-dx = 1.6         # length of design region
-dy = 1.6         # width of design region
+w = 0.4  # waveguide width
+l = 3.0  # waveguide length (on each side of design region)
+dpad = 0.6  # padding length above/below design region
+dpml = 1.0  # PML thickness
+dx = 1.6  # length of design region
+dy = 1.6  # width of design region
 
-sx = dpml+l+dx+l+dpml
-sy = dpml+dpad+dy+dpad+dpml
-cell_size = mp.Vector3(sx,sy,0)
+sx = dpml + l + dx + l + dpml
+sy = dpml + dpad + dy + dpad + dpml
+cell_size = mp.Vector3(sx, sy, 0)
 
 pml_layers = [mp.PML(thickness=dpml)]
 
 # wavelengths for minimax optimization
 wvls = (1.265, 1.270, 1.275, 1.285, 1.290, 1.295)
-frqs = [1/wvl for wvl in wvls]
+frqs = [1 / wvl for wvl in wvls]
 
 minimum_length = 0.05  # minimum length scale (μm)
-eta_i = (
-    0.5 # blueprint design field thresholding point (between 0 and 1)
-)
-eta_e = 0.75       # erosion design field thresholding point (between 0 and 1)
+eta_i = 0.5  # blueprint design field thresholding point (between 0 and 1)
+eta_e = 0.75  # erosion design field thresholding point (between 0 and 1)
 eta_d = 1 - eta_e  # dilation design field thresholding point (between 0 and 1)
 filter_radius = mpa.get_conic_radius_from_eta_e(minimum_length, eta_e)
 print(f"filter_radius:, {filter_radius:.6f}")
@@ -91,23 +50,23 @@ print(f"filter_radius:, {filter_radius:.6f}")
 # pulsed source center frequency and bandwidth
 wvl_min = 1.26
 wvl_max = 1.30
-frq_min = 1/wvl_max
-frq_max = 1/wvl_min
-fcen = 0.5*(frq_min+frq_max)
-df = frq_max-frq_min
+frq_min = 1 / wvl_max
+frq_max = 1 / wvl_min
+fcen = 0.5 * (frq_min + frq_max)
+df = frq_max - frq_min
 
 eig_parity = mp.ODD_Z
-src_pt = mp.Vector3(-0.5*sx+dpml,0,0)
+src_pt = mp.Vector3(-0.5 * sx + dpml, 0, 0)
 
 nSiO2 = 1.5
 SiO2 = mp.Medium(index=nSiO2)
 nSi = 3.5
 Si = mp.Medium(index=nSi)
 
-design_region_size = mp.Vector3(dx,dy,0)
-design_region_resolution = int(2*resolution)
-Nx = int(design_region_size.x*design_region_resolution)
-Ny = int(design_region_size.y*design_region_resolution)
+design_region_size = mp.Vector3(dx, dy, 0)
+design_region_resolution = int(2 * resolution)
+Nx = int(design_region_size.x * design_region_resolution)
+Ny = int(design_region_size.y * design_region_resolution)
 
 # impose a bit "mask" of thickness equal to the filter radius
 # around the edges of the design region in order to prevent
@@ -130,29 +89,28 @@ X_g, Y_g = np.meshgrid(
     indexing="ij",
 )
 
-left_wg_mask = (
-    (X_g <= -design_region_size.x / 2 + filter_radius) &
-    (np.abs(Y_g) <= w / 2)
+left_wg_mask = (X_g <= -design_region_size.x / 2 + filter_radius) & (
+    np.abs(Y_g) <= w / 2
 )
-right_wg_mask = (
-    (X_g >= design_region_size.x / 2 - filter_radius) &
-    (np.abs(Y_g) <= w / 2)
+right_wg_mask = (X_g >= design_region_size.x / 2 - filter_radius) & (
+    np.abs(Y_g) <= w / 2
 )
 Si_mask = left_wg_mask | right_wg_mask
 
 border_mask = (
-    (X_g <= -design_region_size.x / 2 + filter_radius) |
-    (X_g >= design_region_size.x / 2 - filter_radius) |
-    (Y_g <= -design_region_size.y / 2 + filter_radius) |
-    (Y_g >= design_region_size.y / 2 - filter_radius)
+    (X_g <= -design_region_size.x / 2 + filter_radius)
+    | (X_g >= design_region_size.x / 2 - filter_radius)
+    | (Y_g <= -design_region_size.y / 2 + filter_radius)
+    | (Y_g >= design_region_size.y / 2 - filter_radius)
 )
 SiO2_mask = border_mask.copy()
 SiO2_mask[Si_mask] = False
 
-refl_pt = mp.Vector3(-0.5*sx+dpml+0.5*l)
-tran_pt = mp.Vector3(0.5*sx-dpml-0.5*l)
+refl_pt = mp.Vector3(-0.5 * sx + dpml + 0.5 * l)
+tran_pt = mp.Vector3(0.5 * sx - dpml - 0.5 * l)
 
 stop_cond = mp.stop_when_fields_decayed(50, mp.Ez, refl_pt, 1e-8)
+
 
 def mapping(x, eta, beta):
     """A differentiable mapping function which applies, in order,
@@ -172,7 +130,7 @@ def mapping(x, eta, beta):
             SiO2_mask.flatten(),
             0,
             x,
-        )
+        ),
     )
 
     filtered_field = mpa.conic_filter(
@@ -201,7 +159,7 @@ def f(x, grad):
       grad: the gradient as a 1d array of size 1+Nx*Ny modified in place.
     """
     t = x[0]  # epigraph variable
-    v = x[1:] # design weights
+    v = x[1:]  # design weights
     if grad.size > 0:
         grad[0] = 1
         grad[1:] = 0
@@ -211,17 +169,17 @@ def f(x, grad):
 def c(result, x, gradient, eta, beta):
     """Constraint function for the epigraph formulation.
 
-       Args:
-         result: the result of the function evaluation modified in place.
-         x: 1d array of size 1+Nx*Ny containing epigraph variable (first
-            element) and design weights (remaining Nx*Ny elements).
-         gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
-                   2*num. wavelengths) modified in place.
-         eta: erosion/dilation parameter for projection.
-         beta: bias parameter for projection.
+    Args:
+      result: the result of the function evaluation modified in place.
+      x: 1d array of size 1+Nx*Ny containing epigraph variable (first
+         element) and design weights (remaining Nx*Ny elements).
+      gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
+                2*num. wavelengths) modified in place.
+      eta: erosion/dilation parameter for projection.
+      beta: bias parameter for projection.
     """
     t = x[0]  # epigraph variable
-    v = x[1:] # design weights
+    v = x[1:]  # design weights
 
     f0, dJ_du = opt([mapping(v, eta, beta)])
 
@@ -237,7 +195,7 @@ def c(result, x, gradient, eta, beta):
     my_grad[:, nfrq:] = dJ_du_transmission
 
     # backpropagate the gradients through mapping function
-    for k in range(2*nfrq):
+    for k in range(2 * nfrq):
         my_grad[:, k] = tensor_jacobian_product(mapping, 0)(
             v,
             eta,
@@ -254,8 +212,10 @@ def c(result, x, gradient, eta, beta):
     objfunc_history.append(np.real(f0_merged))
     epivar_history.append(t)
 
-    print(f"iteration:, {cur_iter[0]:3d}, eta: {eta}, beta: {beta:2d}, "
-          f"t: {t:.5f}, obj. func.: {f0_merged}")
+    print(
+        f"iteration:, {cur_iter[0]:3d}, eta: {eta}, beta: {beta:2d}, "
+        f"t: {t:.5f}, obj. func.: {f0_merged}"
+    )
 
     cur_iter[0] = cur_iter[0] + 1
 
@@ -263,43 +223,43 @@ def c(result, x, gradient, eta, beta):
 def glc(result, x, gradient, beta):
     """Constraint function for the minimum linewidth.
 
-       Args:
-         result: the result of the function evaluation modified in place.
-         x: 1d array of size 1+Nx*Ny containing epigraph variable (first
-            element) and design weights (remaining elements).
-         gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
-                   num. wavelengths) modified in place.
-         beta: bias parameter for projection.
+    Args:
+      result: the result of the function evaluation modified in place.
+      x: 1d array of size 1+Nx*Ny containing epigraph variable (first
+         element) and design weights (remaining elements).
+      gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
+                num. wavelengths) modified in place.
+      beta: bias parameter for projection.
     """
     t = x[0]  # dummy parameter
-    v = x[1:] # design parameters
-    a1 = 1e-3 # hyper parameter (primary)
-    b1 = 0    # hyper parameter (secondary)
-    gradient[:,0] = -a1
+    v = x[1:]  # design parameters
+    a1 = 1e-3  # hyper parameter (primary)
+    b1 = 0  # hyper parameter (secondary)
+    gradient[:, 0] = -a1
 
     filter_f = lambda a: mpa.conic_filter(
-        a.reshape(Nx,Ny),
+        a.reshape(Nx, Ny),
         filter_radius,
         design_region_size.x,
         design_region_size.y,
         design_region_resolution,
     )
-    threshold_f = lambda a: mpa.tanh_projection(a,beta,eta_i)
+    threshold_f = lambda a: mpa.tanh_projection(a, beta, eta_i)
 
     # hyper parameter (constant factor and exponent)
-    c0 = 1e7*(filter_radius*1/resolution)**4
+    c0 = 1e7 * (filter_radius * 1 / resolution) ** 4
 
-    M1 = lambda a: mpa.constraint_solid(a,c0,eta_e,filter_f,threshold_f,1)
-    M2 = lambda a: mpa.constraint_void(a,c0,eta_d,filter_f,threshold_f,1)
+    M1 = lambda a: mpa.constraint_solid(a, c0, eta_e, filter_f, threshold_f, 1)
+    M2 = lambda a: mpa.constraint_void(a, c0, eta_d, filter_f, threshold_f, 1)
 
     g1 = grad(M1)(v)
     g2 = grad(M2)(v)
 
-    result[0] = M1(v) - a1*t - b1
-    result[1] = M2(v) - a1*t - b1
+    result[0] = M1(v) - a1 * t - b1
+    result[1] = M2(v) - a1 * t - b1
 
-    gradient[0,1:] = g1.flatten()
-    gradient[1,1:] = g2.flatten()
+    gradient[0, 1:] = g1.flatten()
+    gradient[1, 1:] = g2.flatten()
 
     t1 = (M1(v) - b1) / a1
     t2 = (M2(v) - b1) / a1
@@ -320,8 +280,8 @@ def straight_waveguide():
     """
     sources = [
         mp.EigenModeSource(
-            src=mp.GaussianSource(fcen,fwidth=df),
-            size=mp.Vector3(0,sy,0),
+            src=mp.GaussianSource(fcen, fwidth=df),
+            size=mp.Vector3(0, sy, 0),
             center=src_pt,
             eig_band=1,
             eig_parity=eig_parity,
@@ -330,7 +290,7 @@ def straight_waveguide():
 
     geometry = [
         mp.Block(
-            size=mp.Vector3(mp.inf,w,mp.inf),
+            size=mp.Vector3(mp.inf, w, mp.inf),
             center=mp.Vector3(),
             material=Si,
         )
@@ -348,8 +308,7 @@ def straight_waveguide():
 
     refl_mon = sim.add_mode_monitor(
         frqs,
-        mp.ModeRegion(center=refl_pt,
-                      size=mp.Vector3(0,sy,0)),
+        mp.ModeRegion(center=refl_pt, size=mp.Vector3(0, sy, 0)),
         yee_grid=True,
     )
 
@@ -362,14 +321,13 @@ def straight_waveguide():
     )
 
     coeffs = res.alpha
-    input_flux = np.abs(coeffs[0,:,0])**2
+    input_flux = np.abs(coeffs[0, :, 0]) ** 2
     input_flux_data = sim.get_flux_data(refl_mon)
 
     return input_flux, input_flux_data
 
 
-def mode_converter_optimization(input_flux, input_flux_data, use_damping,
-                                use_epsavg):
+def mode_converter_optimization(input_flux, input_flux_data, use_damping, use_epsavg):
     """Sets up the adjoint optimization of the waveguide mode converter.
 
     Args:
@@ -382,24 +340,20 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping,
       A `meep.adjoint.OptimizationProblem` class object.
     """
     matgrid = mp.MaterialGrid(
-        mp.Vector3(Nx,Ny,0),
+        mp.Vector3(Nx, Ny, 0),
         SiO2,
         Si,
-        weights=np.ones((Nx,Ny)),
+        weights=np.ones((Nx, Ny)),
         do_averaging=True if use_epsavg else False,
-        damping=0.02*2*np.pi*fcen if use_damping else 0,
+        damping=0.02 * 2 * np.pi * fcen if use_damping else 0,
     )
 
     matgrid_region = mpa.DesignRegion(
         matgrid,
         volume=mp.Volume(
             center=mp.Vector3(),
-            size=mp.Vector3(
-                design_region_size.x,
-                design_region_size.y,
-                mp.inf
-            ),
-        )
+            size=mp.Vector3(design_region_size.x, design_region_size.y, mp.inf),
+        ),
     )
 
     matgrid_geometry = [
@@ -411,22 +365,19 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping,
     ]
 
     geometry = [
-        mp.Block(
-            size=mp.Vector3(mp.inf,w,mp.inf),
-            center=mp.Vector3(),
-            material=Si
-        )
+        mp.Block(size=mp.Vector3(mp.inf, w, mp.inf), center=mp.Vector3(), material=Si)
     ]
 
     geometry += matgrid_geometry
 
     sources = [
         mp.EigenModeSource(
-            src=mp.GaussianSource(fcen,fwidth=df),
-            size=mp.Vector3(0,sy,0),
+            src=mp.GaussianSource(fcen, fwidth=df),
+            size=mp.Vector3(0, sy, 0),
             center=src_pt,
             eig_band=1,
-            eig_parity=eig_parity),
+            eig_parity=eig_parity,
+        ),
     ]
 
     sim = mp.Simulation(
@@ -444,7 +395,7 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping,
             sim,
             mp.Volume(
                 center=refl_pt,
-                size=mp.Vector3(0,sy,0),
+                size=mp.Vector3(0, sy, 0),
             ),
             1,
             forward=False,
@@ -455,17 +406,17 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping,
             sim,
             mp.Volume(
                 center=tran_pt,
-                size=mp.Vector3(0,sy,0),
+                size=mp.Vector3(0, sy, 0),
             ),
             2,
             eig_parity=eig_parity,
-        )
+        ),
     ]
 
-    def J1(refl_mon,tran_mon):
+    def J1(refl_mon, tran_mon):
         return npa.power(npa.abs(refl_mon), 2) / input_flux
 
-    def J2(refl_mon,tran_mon):
+    def J2(refl_mon, tran_mon):
         return 1 - npa.power(npa.abs(tran_mon), 2) / input_flux
 
     opt = mpa.OptimizationProblem(
@@ -479,7 +430,7 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping,
     return opt
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     input_flux, input_flux_data = straight_waveguide()
 
     algorithm = nlopt.LD_MMA
@@ -489,17 +440,17 @@ if __name__ == '__main__':
 
     # initial design parameters
     x = np.ones((n,)) * 0.5
-    x[Si_mask.flatten()] = 1.    # set the edges of waveguides to silicon
-    x[SiO2_mask.flatten()] = 0.  # set the other edges to SiO2
+    x[Si_mask.flatten()] = 1.0  # set the edges of waveguides to silicon
+    x[SiO2_mask.flatten()] = 0.0  # set the other edges to SiO2
 
     # lower and upper bounds for design weights
     lb = np.zeros((n,))
-    lb[Si_mask.flatten()] = 1.
+    lb[Si_mask.flatten()] = 1.0
     ub = np.ones((n,))
-    ub[SiO2_mask.flatten()] = 0.
+    ub[SiO2_mask.flatten()] = 0.0
 
     # insert epigraph variable initial value and bounds in the design array
-    x = np.insert(x, 0, 1.2)   # ignored
+    x = np.insert(x, 0, 1.2)  # ignored
     lb = np.insert(lb, 0, -np.inf)
     ub = np.insert(ub, 0, +np.inf)
 
@@ -510,8 +461,8 @@ if __name__ == '__main__':
     beta_thresh = 64
     betas = [8, 16, 32, 64, 128, 256]
     max_evals = [80, 80, 100, 120, 120, 100]
-    tol_epi = np.array([1e-4] * 2 * len(frqs)) # R, 1-T
-    tol_lw = np.array([1e-8] * 2) # line width, line spacing
+    tol_epi = np.array([1e-4] * 2 * len(frqs))  # R, 1-T
+    tol_lw = np.array([1e-8] * 2)  # line width, line spacing
 
     for beta, max_eval in zip(betas, max_evals):
         solver = nlopt.opt(algorithm, n + 1)
@@ -519,7 +470,7 @@ if __name__ == '__main__':
         solver.set_upper_bounds(ub)
         solver.set_min_objective(f)
         solver.set_maxeval(max_eval)
-        solver.set_param("dual_ftol_rel",1e-7)
+        solver.set_param("dual_ftol_rel", 1e-7)
         solver.add_inequality_mconstraint(
             lambda rr, xx, gg: c(rr, xx, gg, eta_i, beta),
             tol_epi,
@@ -529,8 +480,8 @@ if __name__ == '__main__':
         opt = mode_converter_optimization(
             input_flux,
             input_flux_data,
-            True, # use_damping
-            False if beta <= beta_thresh else True, # use_epsavg
+            True,  # use_damping
+            False if beta <= beta_thresh else True,  # use_epsavg
         )
 
         # apply the minimum linewidth constraint
@@ -538,7 +489,7 @@ if __name__ == '__main__':
         # binary design from the previous epoch.
         if beta == betas[-1]:
             res = np.zeros(2)
-            grd = np.zeros((2,n+1))
+            grd = np.zeros((2, n + 1))
             t = glc(res, x, grd, beta)
             solver.add_inequality_mconstraint(
                 lambda rr, xx, gg: glc(rr, xx, gg, beta),
@@ -554,7 +505,7 @@ if __name__ == '__main__':
             [mapping(x[1:], eta_i, beta)],
             need_gradient=False,
         )
-        t0 = np.concatenate((t0[0][0],t0[0][1]))
+        t0 = np.concatenate((t0[0][0], t0[0][1]))
         x[0] = np.amax(t0)
         if beta == betas[-1]:
             x[0] = 1.05 * max(x[0], t)
@@ -568,39 +519,39 @@ if __name__ == '__main__':
             x[1:],
             eta_i,
             beta,
-        ).reshape(Nx,Ny)
+        ).reshape(Nx, Ny)
 
         # save the unmapped weights and a bitmap image
         # of the design weights at the end of each epoch.
         fig, ax = plt.subplots()
         ax.imshow(
             optimal_design_weights,
-            cmap='binary',
-            interpolation='none',
+            cmap="binary",
+            interpolation="none",
         )
         ax.set_axis_off()
         if mp.am_master():
             fig.savefig(
-                f'optimal_design_beta{beta}.png',
+                f"optimal_design_beta{beta}.png",
                 dpi=150,
-                bbox_inches='tight',
+                bbox_inches="tight",
             )
             # save the final design (unmapped) as a 2d array in CSV format
             np.savetxt(
-                f'design_weights_beta{beta}.csv',
-                x[1:].reshape(Nx,Ny),
-                fmt='%4.2f',
-                delimiter=','
+                f"design_weights_beta{beta}.csv",
+                x[1:].reshape(Nx, Ny),
+                fmt="%4.2f",
+                delimiter=",",
             )
 
     # save all the important optimization parameters and output
     # as separate arrays in a single file for post processing.
-    with open("optimal_design.npz","wb") as fl:
+    with open("optimal_design.npz", "wb") as fl:
         np.savez(
             fl,
             Nx=Nx,
             Ny=Ny,
-            design_region_size=(dx,dy),
+            design_region_size=(dx, dy),
             design_region_resolution=design_region_resolution,
             betas=betas,
             max_eval=max_eval,
@@ -611,27 +562,3 @@ if __name__ == '__main__':
             minimum_length=minimum_length,
             optimal_design_weights=optimal_design_weights,
         )
-```
-
-Compact Notebook Tutorials Demonstrating Main Features
-------------------------------------------------------
-
-As an alterantive to the first example which combined multiple
-features into a single demonstration, there are six notebook tutorials
-that demonstrate various standalone features of the adjoint
-solver.
-
-- [Introduction](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/01-Introduction.ipynb)
-
-- [Waveguide Bend Optimization](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/02-Waveguide_Bend.ipynb)
-
-- [Filtering and Thresholding Design Parameters and Broadband Objective Functions](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/03-Filtered_Waveguide_Bend.ipynb)
-
-- [Design of a Symmetric Broadband Splitter](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/04-Splitter.ipynb)
-
-- [Metalens Optimization with Near2Far](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/05-Near2Far.ipynb)
-
-- [Near2Far Optimization with Epigraph Formulation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb)
-
-- [Connectivity Constraint](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/07-Connectivity-Constraint.ipynb)
-
