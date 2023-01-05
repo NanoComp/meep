@@ -5,8 +5,8 @@
 Meep contains an adjoint-solver module for efficiently computing the
 gradient of an arbitrary function of the mode coefficients
 ($\mathcal{S}$-parameters), DFT fields, local density of states
-(LDOS), and far fields (Fraunhofer condition) with respect to
-$\varepsilon$ on a discrete spatial grid (a
+(LDOS), and "far" fields with respect to $\varepsilon$ on a discrete
+spatial grid (a
 [`MaterialGrid`](../Python_User_Interface.md#materialgrid) class
 object) at multiple frequencies over a broad bandwidth. Regardless of
 the number of degrees of freedom for the grid points, just **two**
@@ -19,7 +19,8 @@ type of current source distribution used to compute the DFT fields of
 the design region. The gradient is computed in post processing using
 the DFT fields from the forward and adjoint runs. The gradient
 calculation is fully automated. The theoretical and computational
-details of the adjoint-solver module are described in this manuscript:
+details of the adjoint-solver module are described in this
+publication:
 
 - A. M. Hammond, A. Oskooi, M. Chen, Z. Lin, S. G. Johnson, and
   S. E. Ralph, “[High-performance hybrid time/frequency-domain
@@ -70,7 +71,9 @@ a dummy varaiable $t$ (the
 adding each independent function as a new nonlinear constraint. See
 the [NLopt
 documentation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems)
-for an overview of this approach.
+for an overview of this approach. The minimax/epigraph approach is
+also covered in the [near-to-far field
+tutorial](https://nbviewer.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb).
 
 In this example, we use a minimum feature size of 150 nm for the line
 width *and* line spacing. The implementation of these constraints is
@@ -81,7 +84,10 @@ There are five important items to note in the set up of the
 optimization problem:
 
 - The lengthscale constraint is activated only in the final epoch. The
-  initial design of the final epoch must be binary.
+  initial design of the final epoch should be binary. This is because
+  the lengthscale constraint forces binarization which could induce
+  large changes in an initial greyscale design and irrevocably spoil
+  the performance of the final design.
 
 - The initial value of the epigraph variable of the final epoch (in
   which the linewidth constraint is imposed) should take into account
@@ -98,9 +104,12 @@ optimization problem:
   unconstrained designs at the start of the final epoch.
 
 - Damping of the design weights is used for the early epochs in which
-  the design is mostly greyscale and subpixel averaging of the design
-  weights is used in the later epochs in which the design is mostly
-  binarized.
+  the design is mostly greyscale to induce binarization. Subpixel
+  averaging of the design weights is used in the later epochs in which
+  the $\beta$ parameter of the thresholding function is large and thus
+  the design is mostly binarized. Note that the accuracy of the
+  adjoint gradients will break down for a binary design without
+  subpixel smoothing.
 
 A schematic of the final design and the simulation layout is shown
 below. The minimum lengthscale of the final design, measured using a
@@ -127,7 +136,9 @@ occurs in the CCSA algorithm by increasing a penalty term.
 ![](../images/mode_converter_objfunc_hist.png#center)
 
 The script is
-[python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py).
+[python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py). The
+runtime of this script using three Intel Xeon 2.0 GHz processors is
+approximately 14 hours.
 
 ```py
 import numpy as np
