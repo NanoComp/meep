@@ -28,7 +28,7 @@ publication:
   design](https://doi.org/10.1364/OE.442074),” *Optics Express*,
   vol. 30, no. 3, pp. 4467–4491 (2022).
 
-Much of the functionality of the adjoints solver is implemented in
+Much of the functionality of the adjoint solver is implemented in
 Python using [autograd](https://github.com/HIPS/autograd) as well as
 [JAX](https://github.com/google/jax).
 
@@ -706,7 +706,7 @@ if __name__ == '__main__':
 Compact Notebook Tutorials Demonstrating Main Features
 ------------------------------------------------------
 
-As an alterantive to the first example which combined multiple
+As an alternative to the first example which combined multiple
 features into a single demonstration, there are six notebook tutorials
 that demonstrate various standalone features of the adjoint
 solver.
@@ -724,4 +724,3 @@ solver.
 - [Near2Far Optimization with Epigraph Formulation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb)
 
 - [Connectivity Constraint](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/07-Connectivity-Constraint.ipynb)
-
