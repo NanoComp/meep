@@ -83,8 +83,8 @@ based on [A.M. Hammond et al., Optics Express, Vol. 29, pp. 23916-38
 There are five important items to note in the set up of the
 optimization problem:
 
-- The lengthscale constraint is activated only in the final epoch. The
-  initial design of the final epoch should be binary. This is because
+- The lengthscale constraint is activated only in the final epoch. It is
+   often helpful to mostly binarize the design before this final epoch. This is because
   the lengthscale constraint forces binarization which could induce
   large changes in an initial greyscale design and irrevocably spoil
   the performance of the final design.
