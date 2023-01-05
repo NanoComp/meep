@@ -28,24 +28,103 @@ details of the adjoint-solver module are described in this manuscript:
   vol. 30, no. 3, pp. 4467–4491 (2022).
 
 Much of the functionality of the adjoints solver is implemented in
-Python using
-[autograd](https://github.com/HIPS/autograd). [JAX](https://github.com/google/jax)
-is also supported as an alternative to autograd.
+Python using [autograd](https://github.com/HIPS/autograd) as well as
+[JAX](https://github.com/google/jax).
 
 The adjoint solver supports inverse design and [topology
 optimization](https://en.wikipedia.org/wiki/Topology_optimization) by
 providing the functionality to wrap an optimization library around the
-gradient computation. This is demonstrated in several tutorial
-demonstrations below.
+gradient computation. This is demonstrated in several tutorials below.
 
 [TOC]
 
-Broadband Waveguide Mode Converter with Minimum Lengthscale Constraints
------------------------------------------------------------------------
+Broadband Waveguide Mode Converter with Minimum Feature Size
+------------------------------------------------------------
 
-This example involves designing a broadband waveguide mode converter
-based on [M.F. Schubert et al., ACS Photonics, Vol. 9, pp. 2327-36,
+This example demonstrates some of the advanced functionality of the
+adjoint solver including worst-case (minimax) optimization, multiple
+objective functions, and constraints on the minimum line width and
+line spacing. The design problem involves a broadband waveguide mode
+converter with minimum feature size in 2D. This is based on
+[M.F. Schubert et al., ACS Photonics, Vol. 9, pp. 2327-36,
 (2022)](https://doi.org/10.1021/acsphotonics.2c00313).
+
+The mode converter must satisfy two separate design objectives: (1)
+minimize the reflectance $R$ into the fundamental mode of the input
+port ($\mathcal{S}_{11}$) and (2) maximize the transmittance $T$ into
+the second-order mode of the output port ($\mathcal{S}_{21}$). There
+are different ways to define this multi-objective and multi-wavelength
+optimization. The approach taken here is *worst-case* optimization
+whereby we minimize the maximum (the worst case) of $R$ and $1-T$
+across all six wavelengths (in the O-band for
+telecommunications). This is known as *minimax* optimization.
+
+The challenge with minimax optimization is that the $\max$ objective
+function is not everywhere differentiable. This property would seem to
+preclude the use of gradient-based optimization algorithms for this
+problem which involves 12 independent functions ($R$ and $1-T$ for
+each of six wavelengths). Fortunately, there is a workaround: the
+problem can be reformulated as a differentiable problem by introducing
+a dummy varaiable $t$ (the
+[epigraph](https://en.wikipedia.org/wiki/Epigraph_(mathematics))) and
+adding each independent function as a new nonlinear constraint. See
+the [NLopt
+documentation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems)
+for an overview of this approach.
+
+In this example, we use a minimum feature size of 150 nm for the line
+width *and* line spacing. The implementation of these constraints is
+based on [A.M. Hammond et al., Optics Express, Vol. 29, pp. 23916-38
+(2021)](https://doi.org/10.1364/OE.431188).
+
+There are five important items to note in the set up of the
+optimization problem:
+
+- The lengthscale constraint is activated only in the final epoch. The
+  initial design of the final epoch must be binary.
+
+- The initial value of the epigraph variable of the final epoch (in
+  which the linewidth constraint is imposed) should take into account
+  the value of the constraint itself to ensure a feasible starting
+  point.
+
+- The edge of the design region is padded by a filter radius (rather
+  than e.g., a single pixel) to produce measured lengthscales of the
+  final design that are consistent with the imposed constraint.
+
+- The hyperparameters of the lengthscale constraint function (`glc` in
+  the script below), need to be chosen carefully to produce final
+  designs which do not significantly degrade the performance of the
+  unconstrained designs at the start of the final epoch.
+
+- Damping of the design weights is used for the early epochs in which
+  the design is mostly greyscale and subpixel averaging of the design
+  weights is used in the later epochs in which the design is mostly
+  binarized.
+
+A schematic of the final design and the simulation layout is shown
+below. The minimum lengthscale of the final design, measured using a
+[ruler](https://github.com/NanoComp/photonics-opt-testbed/tree/main/ruler),
+is 163 nm. This value is consistent with the imposed lengthscale since
+it is approximately within one design pixel (10 nm).
+
+![](../images/mode_converter_sim_layout.png#center)
+
+A plot of the reflectance and transmittance spectrum in linear and log
+(dB) scales of the final design is shown below. The worst-case
+reflectance is -17.7 dB at a wavelength of 1.295 μm. The worst-case
+transmittance is -2.1 dB at a wavelength of 1.265 μm.
+
+![](../images/mode_converter_refl_tran_spectra.png#center)
+
+Finally, a plot of the objective function history is shown. The
+"spikes" present in the plot are a normal feature of
+nonlinear-optimization algorithms. The algorithm may take too large a
+step which turns out to make the objective function worse. This means
+the algorithm then has to "backtrack" and take a smaller step. This
+occurs in the CCSA algorithm by increasing a penalty term.
+
+![](../images/mode_converter_objfunc_hist.png#center)
 
 The script is
 [python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py).
@@ -79,7 +158,7 @@ pml_layers = [mp.PML(thickness=dpml)]
 wvls = (1.265, 1.270, 1.275, 1.285, 1.290, 1.295)
 frqs = [1/wvl for wvl in wvls]
 
-minimum_length = 0.05  # minimum length scale (μm)
+minimum_length = 0.15  # minimum length scale (μm)
 eta_i = (
     0.5 # blueprint design field thresholding point (between 0 and 1)
 )

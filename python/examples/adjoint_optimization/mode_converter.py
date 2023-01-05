@@ -40,7 +40,7 @@ pml_layers = [mp.PML(thickness=dpml)]
 wvls = (1.265, 1.270, 1.275, 1.285, 1.290, 1.295)
 frqs = [1 / wvl for wvl in wvls]
 
-minimum_length = 0.05  # minimum length scale (μm)
+minimum_length = 0.15  # minimum length scale (μm)
 eta_i = 0.5  # blueprint design field thresholding point (between 0 and 1)
 eta_e = 0.75  # erosion design field thresholding point (between 0 and 1)
 eta_d = 1 - eta_e  # dilation design field thresholding point (between 0 and 1)
