@@ -8,7 +8,7 @@ Meep contains an adjoint-solver module for efficiently computing the gradient of
 
 This interface to this functionality is implemented entirely in Python using [autograd](https://github.com/HIPS/autograd) and [JAX](https://github.com/google/jax). The adjoint solver supports inverse design and [topology optimization](https://en.wikipedia.org/wiki/Topology_optimization) by providing the functionality to wrap an optimization library around the gradient computation.
 
-There are six Jupyter notebooks that demonstrate the main features of the adjoint solver.
+There are seven Jupyter notebooks that demonstrate the main features of the adjoint solver.
 
 - [Introduction](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/01-Introduction.ipynb)
 
@@ -21,5 +21,7 @@ There are six Jupyter notebooks that demonstrate the main features of the adjoin
 - [Metalens Optimization with Near2Far](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/05-Near2Far.ipynb)
 
 - [Near2Far Optimization with Epigraph Formulation](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb)
+
+- [Connectivity Constraint](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/07-Connectivity-Constraint.ipynb)
 
 More documentation will be available soon.
