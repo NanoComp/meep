@@ -876,42 +876,33 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
         waist_xy = np.array([np.real(X0[0]), np.real(X0[1])])[:, np.newaxis, np.newaxis]
 
         # Get field for outgoing points (hankel2)
-        o_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel2)[
+        o_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel2, beam_E0)[
             :, :, :, np.newaxis
         ]
 
         # Get field for incoming points (hankel1))
-        i_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel1)[
+        i_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel1, beam_E0)[
             :, :, :, np.newaxis
         ]
 
         # Get field amplitude for the waist (bessel1)
-        w_field_norm = self.green2d(waist_xy, freq, eps, mu, X0, kdir, jv)[
+        w_field_norm = self.green2d(waist_xy, freq, eps, mu, X0, kdir, jv, beam_E0)[
             :, :, :, np.newaxis
         ]
-        w_field_norm = np.sqrt(np.sum(np.abs(w_field_norm[:3]) ** 2, axis=0).item(0))
+        E_field_norm = np.sqrt(np.sum(np.abs(w_field_norm[:3]) ** 2, axis=0).item(0))
 
         # Get field for the waist (bessel1)
-        w_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, jv)[:, :, :, np.newaxis]
+        w_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, jv, beam_E0)[
+            :, :, :, np.newaxis
+        ]
 
         # Combine fields
         fields2D = np.zeros_like(o_fields2D)
         fields2D[:, incoming_arg] += i_fields2D[:, incoming_arg]
         fields2D[:, outgoing_arg] += o_fields2D[:, outgoing_arg]
         fields2D[:, waist_points] += w_fields2D[:, waist_points]
-        fields2D[:3] = fields2D[:3] / w_field_norm
-        fields2D[3:] = fields2D[3:] / (w_field_norm * np.sqrt(mu / eps))
-
-        # Multiply by E0 and H0
-        fields2D[0] = fields2D[0] * beam_E0.x
-        fields2D[1] = fields2D[1] * beam_E0.y
-        fields2D[2] = fields2D[2] * beam_E0.z
-
-        fields2D[3] = fields2D[3] * (beam_E0.z)
-        fields2D[4] = fields2D[4] * (beam_E0.z)
-        fields2D[5] = fields2D[5] * np.sqrt(
-            np.abs(beam_E0.x) ** 2 + np.abs(beam_E0.y) ** 2
-        )
+        fields2D[:3] = fields2D[:3] / E_field_norm
+        fields2D[3:] = fields2D[3:] / E_field_norm
 
         return fields2D
 
@@ -932,7 +923,7 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 
         return incoming_points, outgoing_points, waist_points
 
-    def green2d(self, X, freq, eps, mu, X0, kdir, hankel):
+    def green2d(self, X, freq, eps, mu, X0, kdir, hankel, beam_E0):
         """Produces the 2D Green's function for an arbitrary complex point source at X0 along the meshgrid X."""
 
         # Function for vectorizing
@@ -964,15 +955,15 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
         # E and H source hankel and vector components
         H2_kr = hankel(2, kr)
         p = np.zeros(3, dtype=complex)
-        p[0] = np.imag(kdir)
-        p[1] = -np.real(kdir)
-        p[2] = 0
+        p[0] = beam_E0.x
+        p[1] = beam_E0.y
+        p[2] = beam_E0.z
         pdotrhat = p[0] * rhat[0] + p[1] * rhat[1]
         rhatcrossp = rhat[0] * p[1] - rhat[1] * p[0]
 
         # First fill Electric Source fields
-        eHx = -rhat[1] * ikH1 * 0
-        eHy = rhat[0] * ikH1 * 0
+        eHx = -rhat[1] * ikH1 * p[2]
+        eHy = rhat[0] * ikH1 * p[2]
         eHz = -rhatcrossp * ikH1
         eEx = -(rhat[0] * (pdotrhat / r * 0.25 * Z)) * H1_kr + (
             rhat[1] * (rhatcrossp * omega * mu * 0.125)
@@ -980,11 +971,22 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
         eEy = -(rhat[1] * (pdotrhat / r * 0.25 * Z)) * H1_kr - (
             rhat[0] * (rhatcrossp * omega * mu * 0.125)
         ) * (H0_kr - H2_kr)
-        eEz = (-0.25 * omega * mu) * H0_kr * 0
+        eEz = (-0.25 * omega * mu) * H0_kr * p[2]
+
+        # Create new p vector for magnetic source
+        p = -np.array(
+            [
+                -p[2] * np.imag(kdir),
+                p[2] * np.real(kdir),
+                p[0] * np.imag(kdir) - p[1] * np.real(kdir),
+            ]
+        )
+        pdotrhat = p[0] * rhat[0] + p[1] * rhat[1]
+        rhatcrossp = rhat[0] * p[1] - rhat[1] * p[0]
 
         # H sources
-        hEx = rhat[1] * ikH1 * 0
-        hEy = -rhat[0] * ikH1 * 0
+        hEx = rhat[1] * ikH1 * p[2]
+        hEy = -rhat[0] * ikH1 * p[2]
         hEz = rhatcrossp * ikH1
         hHx = -(rhat[0] * (pdotrhat / r * 0.25 / Z)) * H1_kr + (
             rhat[1] * (rhatcrossp * omega * eps * 0.125)
@@ -992,7 +994,7 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
         hHy = -(rhat[1] * (pdotrhat / r * 0.25 / Z)) * H1_kr - (
             rhat[0] * (rhatcrossp * omega * eps * 0.125)
         ) * (H0_kr - H2_kr)
-        hHz = (-0.25 * omega * eps) * H0_kr * 0
+        hHz = (-0.25 * omega * eps) * H0_kr * p[2]
 
         # Fill arrays
         EH[:] = np.array([eEx, eEy, eEz, eHx, eHy, eHz]) + np.array(
