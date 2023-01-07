@@ -1,25 +1,10 @@
 """
 General filter functions to be used in other projection and morphological transform routines.
 """
+import meep as mp
 import numpy as np
 from autograd import numpy as npa
 from scipy import signal, special
-
-import meep as mp
-
-
-def _proper_pad(x, n):
-    """
-    Parameters
-    ----------
-    x : array_like (2D)
-        Input array. Must be 2D.
-    n : int
-        Total size to be padded to.
-    """
-    N = x.size
-    k = n - (2 * N - 1)
-    return np.concatenate((x, np.zeros((k,)), np.flipud(x[1:])))
 
 
 def _centered(arr, newshape):
@@ -35,6 +20,32 @@ def _centered(arr, newshape):
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
     return arr[tuple(myslice)]
 
+def _proper_pad(arr, pad_to):
+    '''
+    Parameters
+    ----------
+    arr : 2d input array.
+    pad_to : 1d array composed of two integers indicating the total size to be padded to.
+    '''
+
+    pad_size = pad_to-2*np.array(arr.shape)+1
+
+    top = np.zeros((pad_size[0],arr.shape[1]))
+    bottom = np.zeros((pad_size[0],arr.shape[1]-1))
+    middle = np.zeros((pad_to[0],pad_size[1]))
+
+    top_left = arr[:,:]
+    top_right = npa.flipud(arr[1:,:])
+    bottom_left = npa.fliplr(arr[:,1:])
+    bottom_right = npa.flipud(npa.fliplr(arr[1:,1:])) # equivalent to flip, but flip is incompatible with autograd
+
+    return npa.concatenate(
+        (
+            npa.concatenate((top_left, top, top_right)), middle,
+            npa.concatenate((bottom_left, bottom, bottom_right)),
+        ),
+        axis=1,
+    )
 
 def _edge_pad(arr, pad):
 
@@ -80,6 +91,8 @@ def simple_2d_filter(x, h):
         The output of the 2d convolution.
     """
     (kx, ky) = x.shape
+    h = _proper_pad(x,3*np.array([kx, ky]))
+    print("h shape = ",h.shape, ", h = ",h)
     x = _edge_pad(x, ((kx, kx), (ky, ky)))
     return _centered(
         npa.real(npa.fft.ifft2(npa.fft.fft2(x) * npa.fft.fft2(h))), (kx, ky)
@@ -112,18 +125,15 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(round(Lx * resolution))
+    Ny = int(round(Ly * resolution))
     x = x.reshape(Nx, Ny)  # Ensure the input is 2D
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    cylindrical = lambda a: np.where(a <= radius, 1, 0)
-    hx = cylindrical(xv)
-    hy = cylindrical(yv)
-
-    h = np.outer(_proper_pad(hx, 3 * Nx), _proper_pad(hy, 3 * Ny))
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
+    h = X**2+Y**2 < radius**2
 
     # Normalize kernel
     h = h / np.sum(h.flatten())  # Normalize the filter
@@ -158,18 +168,15 @@ def conic_filter(x, radius, Lx, Ly, resolution):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(round(Lx * resolution))
+    Ny = int(round(Ly * resolution))
     x = x.reshape(Nx, Ny)  # Ensure the input is 2D
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    conic = lambda a: np.where(np.abs(a**2) <= radius**2, (1 - a / radius), 0)
-    hx = conic(xv)
-    hy = conic(yv)
-
-    h = np.outer(_proper_pad(hx, 3 * Nx), _proper_pad(hy, 3 * Ny))
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
+    h = X**2+Y**2 < radius**2
 
     # Normalize kernel
     h = h / np.sum(h.flatten())  # Normalize the filter
@@ -204,18 +211,15 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution):
     [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     """
-    Nx = int(Lx * resolution)
-    Ny = int(Ly * resolution)
+    Nx = int(round(Lx * resolution))
+    Ny = int(round(Ly * resolution))
     x = x.reshape(Nx, Ny)  # Ensure the input is 2D
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    gaussian = lambda a: np.exp(-(a**2) / sigma**2)
-    hx = gaussian(xv)
-    hy = gaussian(yv)
-
-    h = np.outer(_proper_pad(hx, 3 * Nx), _proper_pad(hy, 3 * Ny))
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
+    h = X**2+Y**2 < radius**2
 
     # Normalize kernel
     h = h / np.sum(h.flatten())  # Normalize the filter
