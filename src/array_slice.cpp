@@ -281,13 +281,11 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   LOOP_OVER_DIRECTIONS(permute.dim, d) { permute.set_direction(d, abs(permute.in_direction(d))); }
 
   // compute the size of the chunk to output, and its strides etc.
-  size_t slice_size = 1;
   for (int i = 0; i < data->rank; ++i) {
     direction d = data->ds[i];
     int isd = isS.in_direction(d), ied = ieS.in_direction(d);
     start[i] = (std::min(isd, ied) - data->min_corner.in_direction(d)) / 2;
     count[i] = abs(ied - isd) / 2 + 1;
-    slice_size *= count[i];
     if (ied < isd) offset[permute.in_direction(d)] = count[i] - 1;
   }
 
