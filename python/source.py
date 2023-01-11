@@ -812,7 +812,8 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 
     def get_fields(self, sim):
         """Calls green2d under various conditions (incoming vs outgoing) providing the correct Hankel functions and returns the fields at the slice provided by the source."""
-        from scipy.special import hankel1, hankel2, jv
+        from scipy.special import hankel1e, hankel2e, jve
+        from sys import float_info
 
         # Beam parameters
         freq = self.src.swigobj.frequency().real
@@ -875,34 +876,74 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
         )
         waist_xy = np.array([np.real(X0[0]), np.real(X0[1])])[:, np.newaxis, np.newaxis]
 
+        # Find large imaginary argument hankel shift
+        r, _ = self.get_r_rhat(X, X0)
+        kr = (k * r).flatten()
+        max_imag = np.abs(kr.imag[np.argmax(np.abs(kr.imag))])
+        max_float = int(np.log(float_info.max) / 2)
+        shift = 0 if np.abs(max_imag) < max_float else max_imag - max_float
+
+        # Fix hankel functions for large imaginary arguments and remove nans and infs when non-indexed
+        scaled_hankel1 = lambda o, kr: hankel1e(o, kr) * np.exp(1j * kr - shift)
+        scaled_hankel2 = lambda o, kr: hankel2e(o, kr) * np.exp(-1j * kr - shift)
+        scaled_jv = lambda o, kr: jve(o, kr) * np.exp(np.abs(kr.imag) - shift)
+
         # Get field for outgoing points (hankel2)
-        o_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel2, beam_E0)[
-            :, :, :, np.newaxis
-        ]
+        o_fields2D = self.green2d(
+            X[:, outgoing_arg][..., np.newaxis],
+            freq,
+            eps,
+            mu,
+            X0,
+            kdir,
+            scaled_hankel2,
+            beam_E0,
+        )[:, :, :, np.newaxis]
 
         # Get field for incoming points (hankel1))
-        i_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, hankel1, beam_E0)[
-            :, :, :, np.newaxis
-        ]
+        i_fields2D = self.green2d(
+            X[:, incoming_arg][..., np.newaxis],
+            freq,
+            eps,
+            mu,
+            X0,
+            kdir,
+            scaled_hankel1,
+            beam_E0,
+        )[:, :, :, np.newaxis]
 
-        # Get field amplitude for the waist (bessel1)
-        w_field_norm = self.green2d(waist_xy, freq, eps, mu, X0, kdir, jv, beam_E0)[
-            :, :, :, np.newaxis
-        ]
-        E_field_norm = np.sqrt(np.sum(np.abs(w_field_norm[:3]) ** 2, axis=0).item(0))
+        # Get field for waist points (jv)
+        w_fields2D = self.green2d(
+            X[:, waist_points][..., np.newaxis],
+            freq,
+            eps,
+            mu,
+            X0,
+            kdir,
+            scaled_jv,
+            beam_E0,
+        )[:, :, :, np.newaxis]
+        w_fields2D_norm = self.green2d(
+            waist_xy, freq, eps, mu, X0, kdir, scaled_jv, beam_E0
+        )[:, :, :, np.newaxis]
 
-        # Get field for the waist (bessel1)
-        w_fields2D = self.green2d(X, freq, eps, mu, X0, kdir, jv, beam_E0)[
-            :, :, :, np.newaxis
-        ]
+        # Test for overflow and get normalizations properly
+        E_fields_norm = np.sqrt(
+            np.sum(np.abs(w_fields2D_norm[:3]) ** 2, axis=0).item(0)
+        )
+
+        # Normalize fields
+        i_fields2D = i_fields2D / E_fields_norm  # hankel1
+        o_fields2D = o_fields2D / E_fields_norm  # hankel2
+        w_fields2D = w_fields2D / E_fields_norm  # jv
 
         # Combine fields
-        fields2D = np.zeros_like(o_fields2D)
-        fields2D[:, incoming_arg] += i_fields2D[:, incoming_arg]
-        fields2D[:, outgoing_arg] += o_fields2D[:, outgoing_arg]
-        fields2D[:, waist_points] += w_fields2D[:, waist_points]
-        fields2D[:3] = fields2D[:3] / E_field_norm
-        fields2D[3:] = fields2D[3:] / E_field_norm
+        fields2D = np.zeros(
+            (6, incoming_arg.shape[0], incoming_arg.shape[1], 1), dtype=np.complex128
+        )
+        fields2D[:, incoming_arg] += i_fields2D[..., 0]
+        fields2D[:, outgoing_arg] += o_fields2D[..., 0]
+        fields2D[:, waist_points] += w_fields2D[..., 0]
 
         return fields2D
 
@@ -914,7 +955,7 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
         plane = lambda x, y: ky * (y - y0) + kx * (x - x0)
 
         # Find the sign of our points of interest
-        point_sign = np.sign(plane(X[0], X[1]))[:, :, np.newaxis]
+        point_sign = np.sign(plane(X[0], X[1]))[:, :]
 
         # Incoming and outgoing points
         incoming_points = point_sign == 1
@@ -923,23 +964,22 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 
         return incoming_points, outgoing_points, waist_points
 
+    def get_r_rhat(self, X, X0):
+        """Returns r and rhat before normalizing rhat to be used in green2d and get_fields for overflow prediction"""
+        rhat = X - np.repeat(
+            np.repeat(X0[:, np.newaxis, np.newaxis], X.shape[1], axis=1),
+            X.shape[2],
+            axis=2,
+        )
+        r = np.sqrt(np.sum(rhat * rhat, axis=0))
+        return r, rhat
+
     def green2d(self, X, freq, eps, mu, X0, kdir, hankel, beam_E0):
         """Produces the 2D Green's function for an arbitrary complex point source at X0 along the meshgrid X."""
 
-        # Function for vectorizing
-        Xshape = X.shape
-
-        def fix_shape(v):
-            return np.repeat(
-                np.repeat(v[:, np.newaxis, np.newaxis], Xshape[1], axis=1),
-                Xshape[2],
-                axis=2,
-            )
-
         # Position variables
-        EH = np.zeros([6] + list(Xshape)[1:], dtype=complex)
-        rhat = X - fix_shape(X0)
-        r = np.sqrt(np.sum(rhat * rhat, axis=0))
+        EH = np.zeros([6] + list(X.shape)[1:], dtype=complex)
+        r, rhat = self.get_r_rhat(X, X0)
         rhat = rhat / r[np.newaxis, :, :]
 
         # Frequency variables
