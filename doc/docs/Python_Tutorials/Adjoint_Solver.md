@@ -163,10 +163,10 @@ the two sets of values except for the design with the largest minimum
 feature size (225 nm vs. 275 nm). For cases in which the measured
 feature size is significantly *larger* than the constraint used in the
 optimization, this could be an indication that the final design can be
-improved by a better choice of the hyperparameters in the constraint
-function. Generally, one should expect the constraint and measured
-values to agree within a length of about one to two design-region
-pixels (10 nm, in this example).
+improved by a better choice of the hyperparameters in the feature-size
+constraint function. Generally, one should expect the constraint and
+measured values to agree within a length of about one to two
+design-region pixels (10 nm, in this example).
 
 | constraint (nm) | measured (nm) |
 |:---------------:|:-------------:|
@@ -177,10 +177,10 @@ pixels (10 nm, in this example).
 |       225       |      275      |
 
 Finally, a plot of the worst-case reflectance and transmittance versus
-imposed constraint on the minimum feature size is shown below for the
-five designs. The general trend of decreasing performance (i.e.,
-increasing reflectance and decreasing transmittance) with increasing
-minimum feature size is evident.
+the measured minimum feature size is shown below for the five
+designs. The general trend of decreasing performance (i.e., increasing
+reflectance and decreasing transmittance) with increasing minimum
+feature size is evident.
 
 ![](../images/mode_converter_worst_case_refl_tran.png#center)
 
