@@ -4,10 +4,9 @@
 
 Meep contains an adjoint-solver module for efficiently computing the
 gradient of an arbitrary function of the mode coefficients
-($\mathcal{S}$-parameters), DFT fields, local density of states
-(LDOS), and "far" fields with respect to $\varepsilon$ on a discrete
-spatial grid (a
-[`MaterialGrid`](../Python_User_Interface.md#materialgrid) class
+($S$-parameters), DFT fields, local density of states (LDOS), and
+"far" fields with respect to $\varepsilon$ on a discrete spatial grid
+(a [`MaterialGrid`](../Python_User_Interface.md#materialgrid) class
 object) at multiple frequencies over a broad bandwidth. Regardless of
 the number of degrees of freedom for the grid points, just **two**
 distinct timestepping runs are required. The first run is the
@@ -35,7 +34,10 @@ Python using [autograd](https://github.com/HIPS/autograd) as well as
 The adjoint solver supports inverse design and [topology
 optimization](https://en.wikipedia.org/wiki/Topology_optimization) by
 providing the functionality to wrap an optimization library around the
-gradient computation. This is demonstrated in several tutorials below.
+gradient computation. The adjoint solver also supports enforcing
+minimum feature sizes on the optimal design in 1D (line width and
+spacing) and 2D (circular holes and islands). This is demonstrated in
+several tutorials below.
 
 [TOC]
 
@@ -43,67 +45,74 @@ Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 
 This example demonstrates some of the advanced functionality of the
-adjoint solver including worst-case (minimax) optimization, multiple
-objective functions, and constraints on the minimum line width and
-line spacing. The design problem involves a broadband waveguide mode
-converter with minimum feature size in 2D. This is based on
-[M.F. Schubert et al., ACS Photonics, Vol. 9, pp. 2327-36,
+adjoint solver including worst-case (minimax) optimization across
+multiple wavelengths, multiple objective functions, and design
+constraints on the minimum line width and line spacing. The design
+problem involves a broadband waveguide mode converter in 2D with
+minimum feature size. This is based on [M.F. Schubert et al., ACS
+Photonics, Vol. 9, pp. 2327-36,
 (2022)](https://doi.org/10.1021/acsphotonics.2c00313).
 
 The mode converter must satisfy two separate design objectives: (1)
 minimize the reflectance $R$ into the fundamental mode of the input
-port ($\mathcal{S}_{11}$) and (2) maximize the transmittance $T$ into
-the second-order mode of the output port ($\mathcal{S}_{21}$). There
-are different ways to define this multi-objective and multi-wavelength
+port ($S_{11}$) and (2) maximize the transmittance $T$ into the
+second-order mode of the output port ($S_{21}$). There are different
+ways to define this multi-objective and multi-wavelength
 optimization. The approach taken here is *worst-case* optimization
 whereby we minimize the maximum (the worst case) of $R$ and $1-T$
 across all six wavelengths (in the O-band for
-telecommunications). This is known as *minimax* optimization.
+telecommunications). This is known as *minimax* optimization. The mode
+has $E_z$ polarization given a 2D cell in the $xy$ plane.
 
 The challenge with minimax optimization is that the $\max$ objective
 function is not everywhere differentiable. This property would seem to
 preclude the use of gradient-based optimization algorithms for this
-problem which involves 12 independent functions ($R$ and $1-T$ for
+problem which involves twelve independent functions ($R$ and $1-T$ for
 each of six wavelengths). Fortunately, there is a workaround: the
-problem can be reformulated as a differentiable problem using
-a so-called "epigraph" formulation: introducing
-a new "dummy" optimization variable $t$ and
-adding each independent function $f_k(x)$ as a new nonlinear constraint $t \ge f_k(x)$. See
-the [NLopt
+problem can be reformulated as a differentiable problem using a
+so-called "epigraph" formulation: introducing a new "dummy"
+optimization variable $t$ and adding each independent function
+$f_k(x)$ as a new nonlinear constraint $t \ge f_k(x)$. See the [NLopt
 documentation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems)
 for an overview of this approach. The minimax/epigraph approach is
 also covered in the [near-to-far field
 tutorial](https://nbviewer.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb).
 
 In this example, we use a minimum feature size of 150 nm for the line
-width *and* line spacing. The implementation of these constraints is
-based on [A.M. Hammond et al., Optics Express, Vol. 29, pp. 23916-38
+width *and* line spacing. The implementation of these constraints in
+the adjoint-solver module is based on [A.M. Hammond et al., Optics
+Express, Vol. 29, pp. 23916-38
 (2021)](https://doi.org/10.1364/OE.431188).
 
 There are five important items to note in the set up of the
 optimization problem:
 
-- The lengthscale constraint is activated only in the final epoch. It is
-   often helpful to mostly binarize the design before this final epoch. This is because
-  the lengthscale constraint forces binarization which could induce
-  large changes in an initial greyscale design and irrevocably spoil
-  the performance of the final design.
+1. The lengthscale constraint is activated only in the final epoch. It
+   is often helpful to mostly binarize the design before this final
+   epoch. This is because the lengthscale constraint forces
+   binarization which could induce large changes in an initial
+   greyscale design and irrevocably spoil the performance of the final
+   design.
 
-- The initial value of the epigraph variable of the final epoch (in
+2. The initial value of the epigraph variable of the final epoch (in
   which the linewidth constraint is imposed) should take into account
   the value of the constraint itself to ensure a feasible starting
-  point.
+  point for the [method of moving asymptotes (MMA) optimization
+  algorithm](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#mma-method-of-moving-asymptotes-and-ccsa),
+  which is based on the conservative convex separable approximation
+  (CCSA) algorithm.
 
-- The edge of the design region is padded by a filter radius (rather
+3. The edge of the design region is padded by a filter radius (rather
   than e.g., a single pixel) to produce measured lengthscales of the
   final design that are consistent with the imposed constraint.
 
-- The hyperparameters of the lengthscale constraint function (`glc` in
-  the script below), need to be chosen carefully to produce final
-  designs which do not significantly degrade the performance of the
-  unconstrained designs at the start of the final epoch.
+4. The hyperparameters of the lengthscale constraint function (`a1`,
+  `b1`, and `c0` in the `glc` function of the script below), need to
+  be chosen carefully to produce final designs which do not
+  significantly degrade the performance of the unconstrained designs
+  at the start of the final epoch.
 
-- Damping of the design weights is used for the early epochs in which
+5. Damping of the design weights is used for the early epochs in which
   the design is mostly greyscale to induce binarization. Subpixel
   averaging of the design weights is used in the later epochs in which
   the $\beta$ parameter of the thresholding function is large and thus
@@ -126,14 +135,54 @@ transmittance is -2.1 dB at a wavelength of 1.265 μm.
 
 ![](../images/mode_converter_refl_tran_spectra.png#center)
 
-Finally, a plot of the objective function history is shown. The
+A plot of the objective-function history (worst case or maximum value
+across the six wavelengths) for this design is also shown. The
 "spikes" present in the plot are a normal feature of
 nonlinear-optimization algorithms. The algorithm may take too large a
 step which turns out to make the objective function worse. This means
 the algorithm then has to "backtrack" and take a smaller step. This
-occurs in the CCSA algorithm by increasing a penalty term.
+occurs in the CCSA algorithm by increasing a penalty term. Also, even
+though the worst-case objective function is constant during most of
+the first epoch which may indicate the optimizer is making no
+progress, in fact the optimizer is working to improve the objective
+function at the other (non worst-case) wavelengths.
 
 ![](../images/mode_converter_objfunc_hist.png#center)
+
+Finally, here are additional designs generated using minimum feature
+sizes of 50 nm, 70 nm, 90 nm, and 225 nm. The designs with smaller
+feature sizes are clearly distinguishable from the designs with the
+larger feature sizes.
+
+![](../images/mode_converter_designs.png#center)
+
+The table below shows a comparison of the imposed constraint of the
+optimizer versus the measured feature sizes for the five designs
+presented in this tutorial. There is fairly consistent agreement in
+the two sets of values except for the design with the largest minimum
+feature size (225 nm vs. 275 nm). For cases in which the measured
+feature size is significantly *larger* than the constraint used in the
+optimization, this could be an indication that the final design can be
+improved by a better choice of the hyperparameters in the constraint
+function. Generally, one should expect the constraint and measured
+values to agree within a length of about one to two design-region
+pixels (10 nm, in this example).
+
+| constraint (nm) | measured (nm) |
+|:---------------:|:-------------:|
+|        50       |       63      |
+|        70       |       81      |
+|        90       |      113      |
+|       150       |      163      |
+|       225       |      275      |
+
+Finally, a plot of the worst-case reflectance and transmittance versus
+imposed constraint on the minimum feature size is shown below for the
+five designs. The general trend of decreasing performance (i.e.,
+increasing reflectance and decreasing transmittance) with increasing
+minimum feature size is evident.
+
+![](../images/mode_converter_worst_case_refl_tran.png#center)
 
 The script is
 [python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py). The
@@ -703,13 +752,12 @@ if __name__ == '__main__':
         )
 ```
 
-Compact Notebook Tutorials Demonstrating Main Features
-------------------------------------------------------
+Compact Notebook Tutorials of Basic Features
+--------------------------------------------
 
 As an alternative to the first example which combined multiple
 features into a single demonstration, there are six notebook tutorials
-that demonstrate various standalone features of the adjoint
-solver.
+that demonstrate various basic features of the adjoint solver.
 
 - [Introduction](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/01-Introduction.ipynb)
 
