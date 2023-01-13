@@ -95,9 +95,10 @@ optimization problem:
    design.
 
 2. The initial value of the epigraph variable of the final epoch (in
-  which the linewidth constraint is imposed) should take into account
-  the value of the constraint itself to ensure a feasible starting
-  point for the [method of moving asymptotes (MMA) optimization
+  which the line width and spacing constraint is imposed) should take
+  into account the value of the constraint itself to ensure a feasible
+  starting point for the [method of moving asymptotes (MMA)
+  optimization
   algorithm](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#mma-method-of-moving-asymptotes-and-ccsa),
   which is based on the conservative convex separable approximation
   (CCSA) algorithm.
@@ -149,24 +150,26 @@ function at the other (non worst-case) wavelengths.
 
 ![](../images/mode_converter_objfunc_hist.png#center)
 
-Finally, here are additional designs generated using minimum feature
-sizes of 50 nm, 70 nm, 90 nm, and 225 nm. The designs with smaller
-feature sizes are clearly distinguishable from the designs with the
-larger feature sizes.
+Finally, here are additional designs generated using constraints on
+the minimum feature size of 50 nm, 70 nm, 90 nm, and 225 nm. The
+designs with smaller feature sizes are clearly distinguishable from
+the designs with the larger ones.
 
 ![](../images/mode_converter_designs.png#center)
 
 The table below shows a comparison of the imposed constraint of the
 optimizer versus the measured feature sizes for the five designs
-presented in this tutorial. There is fairly consistent agreement in
-the two sets of values except for the design with the largest minimum
-feature size (225 nm vs. 275 nm). For cases in which the measured
-feature size is significantly *larger* than the constraint used in the
-optimization, this could be an indication that the final design can be
-improved by a better choice of the hyperparameters in the feature-size
-constraint function. Generally, one should expect the constraint and
-measured values to agree within a length of about one to two
-design-region pixels (10 nm, in this example).
+presented in this tutorial. The measured minimum line width and
+spacing are equivalent for all designs. There is fairly consistent
+agreement in the constraint and measured values except for the design
+with the largest minimum feature size (225 nm vs. 275 nm). For cases
+in which the measured feature size is significantly *larger* than the
+constraint used in the optimization, this could be an indication that
+the final design can be improved by a better choice of the
+hyperparameters in the feature-size constraint function. Generally,
+one should expect the constraint and measured values to agree within a
+length of about one to two design-region pixels (10 nm, in this
+example).
 
 | constraint (nm) | measured (nm) |
 |:---------------:|:-------------:|
@@ -177,10 +180,10 @@ design-region pixels (10 nm, in this example).
 |       225       |      275      |
 
 Finally, a plot of the worst-case reflectance and transmittance versus
-the measured minimum feature size is shown below for the five
-designs. The general trend of decreasing performance (i.e., increasing
-reflectance and decreasing transmittance) with increasing minimum
-feature size is evident.
+the imposed constraint on the minimum feature size is shown below for
+the five designs. The general trend of decreasing performance (i.e.,
+increasing reflectance and decreasing transmittance) with increasing
+minimum feature size is evident.
 
 ![](../images/mode_converter_worst_case_refl_tran.png#center)
 
