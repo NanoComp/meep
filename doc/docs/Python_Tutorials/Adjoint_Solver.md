@@ -36,8 +36,8 @@ optimization](https://en.wikipedia.org/wiki/Topology_optimization) by
 providing the functionality to wrap an optimization library around the
 gradient computation. The adjoint solver also supports enforcing
 minimum feature sizes on the optimal design in 1D (line width and
-spacing) and 2D (circular holes and islands). This is demonstrated in
-several tutorials below.
+spacing) and 2D (arbitrary-shaped holes and islands). This is
+demonstrated in several tutorials below.
 
 [TOC]
 
@@ -60,9 +60,10 @@ second-order mode of the output port ($S_{21}$). There are different
 ways to define this multi-objective and multi-wavelength
 optimization. The approach taken here is *worst-case* optimization
 whereby we minimize the maximum (the worst case) of $R$ and $1-T$
-across all six wavelengths (in the O-band for
-telecommunications). This is known as *minimax* optimization. The mode
-has $E_z$ polarization given a 2D cell in the $xy$ plane.
+across six wavelengths in the $O$-band for telecommunications. This is
+known as *minimax* optimization. The fundamental mode launched from
+the input port has $E_z$ polarization given a 2D cell in the $xy$
+plane.
 
 The challenge with minimax optimization is that the $\max$ objective
 function is not everywhere differentiable. This property would seem to
@@ -88,20 +89,20 @@ There are five important items to note in the set up of the
 optimization problem:
 
 1. The lengthscale constraint is activated only in the final epoch. It
-   is often helpful to mostly binarize the design before this final
+   is often helpful to binarize the design before this final
    epoch. This is because the lengthscale constraint forces
    binarization which could induce large changes in an initial
-   greyscale design and irrevocably spoil the performance of the final
-   design.
+   greyscale design and thus irrevocably spoil the performance of the
+   final design.
 
 2. The initial value of the epigraph variable of the final epoch (in
-  which the line width and spacing constraint is imposed) should take
-  into account the value of the constraint itself to ensure a feasible
-  starting point for the [method of moving asymptotes (MMA)
+  which the minimum feature size constraint is imposed) should take
+  into account the value of the constraint itself. This ensures a
+  feasible starting point for the [method of moving asymptotes (MMA)
   optimization
   algorithm](https://nlopt.readthedocs.io/en/latest/NLopt_Algorithms/#mma-method-of-moving-asymptotes-and-ccsa),
-  which is based on the conservative convex separable approximation
-  (CCSA) algorithm.
+  (which is based on the conservative convex separable approximation
+  (CCSA) algorithm).
 
 3. The edge of the design region is padded by a filter radius (rather
   than e.g., a single pixel) to produce measured lengthscales of the
@@ -124,7 +125,7 @@ optimization problem:
 A schematic of the final design and the simulation layout is shown
 below. The minimum lengthscale of the final design, measured using a
 [ruler](https://github.com/NanoComp/photonics-opt-testbed/tree/main/ruler),
-is 163 nm. This value is consistent with the imposed lengthscale since
+is 165 nm. This value is consistent with the imposed lengthscale since
 it is approximately within one design pixel (10 nm).
 
 ![](../images/mode_converter_sim_layout.png#center)
@@ -152,13 +153,13 @@ function at the other (non worst-case) wavelengths.
 
 Finally, here are additional designs generated using constraints on
 the minimum feature size of 50 nm, 70 nm, 90 nm, and 225 nm. The
-designs with smaller feature sizes are clearly distinguishable from
-the designs with the larger ones.
+designs with smaller minimum feature sizes are clearly distinguishable
+from the designs with the larger ones.
 
 ![](../images/mode_converter_designs.png#center)
 
 The table below shows a comparison of the imposed constraint on the
-minimum feature size of the optimizer versus the *measured* minimum
+minimum feature size of the optimizer versus the measured minimum
 linewidth and linespacing for the five designs presented in this
 tutorial. There is fairly consistent agreement in the constraint and
 measured values except for the design with the largest minimum feature
@@ -757,7 +758,7 @@ if __name__ == '__main__':
 Compact Notebook Tutorials of Basic Features
 --------------------------------------------
 
-As an alternative to the first example which combined multiple
+As an alternative to the first tutorial which combined multiple
 features into a single demonstration, there are six notebook tutorials
 that demonstrate various basic features of the adjoint solver.
 
