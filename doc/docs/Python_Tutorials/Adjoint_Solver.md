@@ -78,9 +78,9 @@ for an overview of this approach. The minimax/epigraph approach is
 also covered in the [near-to-far field
 tutorial](https://nbviewer.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb).
 
-In this example, we use a minimum feature size of 150 nm for the line
-width *and* line spacing. The implementation of these constraints in
-the adjoint-solver module is based on [A.M. Hammond et al., Optics
+In this example, we use a minimum feature size of 150 nm for the
+linewidth *and* linespacing. The implementation of these constraints
+in the adjoint-solver module is based on [A.M. Hammond et al., Optics
 Express, Vol. 29, pp. 23916-38
 (2021)](https://doi.org/10.1364/OE.431188).
 
@@ -157,27 +157,26 @@ the designs with the larger ones.
 
 ![](../images/mode_converter_designs.png#center)
 
-The table below shows a comparison of the imposed constraint of the
-optimizer versus the measured feature sizes for the five designs
-presented in this tutorial. The measured minimum line width and
-spacing are equivalent for all designs. There is fairly consistent
-agreement in the constraint and measured values except for the design
-with the largest minimum feature size (225 nm vs. 275 nm). For cases
-in which the measured feature size is significantly *larger* than the
-constraint used in the optimization, this could be an indication that
-the final design can be improved by a better choice of the
-hyperparameters in the feature-size constraint function. Generally,
-one should expect the constraint and measured values to agree within a
-length of about one to two design-region pixels (10 nm, in this
-example).
+The table below shows a comparison of the imposed constraint on the
+minimum feature size of the optimizer versus the *measured* minimum
+linewidth and linespacing for the five designs presented in this
+tutorial. There is fairly consistent agreement in the constraint and
+measured values except for the design with the largest minimum feature
+size (225 nm vs. 277 nm). For cases in which the measured minimum
+feature size is significantly *larger* than the constraint used in the
+optimization, this could be an indication that the final design can be
+improved by a better choice of the hyperparameters in the feature-size
+constraint function. Generally, one should expect the constraint and
+measured values to agree within a length of about one to two
+design-region pixels (10 nm, in this example).
 
-| constraint (nm) | measured (nm) |
-|:---------------:|:-------------:|
-|        50       |       63      |
-|        70       |       81      |
-|        90       |      113      |
-|       150       |      163      |
-|       225       |      275      |
+| constraint (nm) | measured linewidth (nm) | measured linespacing (nm) |
+|:---------------:|:-----------------------:|:-------------------------:|
+|        50       |            85           |             60            |
+|        70       |           103           |             85            |
+|        90       |           109           |            134            |
+|       150       |           221           |            165            |
+|       225       |           277           |            681            |
 
 Finally, a plot of the worst-case reflectance and transmittance versus
 the imposed constraint on the minimum feature size is shown below for
