@@ -671,7 +671,7 @@ class EigenModeSource(Source):
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
             add_eig_src(self.amp_func, diffractedplanewave)
         else:
-            add_eig_src(self.amp_func)
+            add_eig_src()
 
 
 class GaussianBeam3DSource(Source):
