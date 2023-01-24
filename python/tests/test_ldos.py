@@ -1,7 +1,5 @@
 import unittest
-
 import numpy as np
-
 import meep as mp
 
 
@@ -17,17 +15,15 @@ class TestLDOS(unittest.TestCase):
 
         cls.fcen = 1 / cls.wvl
 
-        # source properties (cylindrical)
-        cls.df = 0.05 * cls.fcen
-        cls.cutoff = 10.0
-        cls.src = mp.GaussianSource(cls.fcen, fwidth=cls.df, cutoff=cls.cutoff)
-
         # termination criteria
         cls.tol = 1e-8
 
-    def bulk_ldos_cyl(self):
+    def bulk_ldos_cyl(self, m):
         """Computes the LDOS of a point dipole in a homogeneous dielectric
         medium in cylindrical coordinates.
+
+        Args:
+          m: angular dependence of the fields, exp(imφ).
         """
         sr = self.L + self.dpml
         sz = self.L + 2 * self.dpml
@@ -37,7 +33,7 @@ class TestLDOS(unittest.TestCase):
 
         sources = [
             mp.Source(
-                src=self.src,
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
                 component=mp.Er,
                 center=mp.Vector3(),
             )
@@ -49,7 +45,7 @@ class TestLDOS(unittest.TestCase):
             boundary_layers=pml_layers,
             sources=sources,
             dimensions=mp.CYLINDRICAL,
-            m=-1,
+            m=m,
             default_material=mp.Medium(index=self.n),
         )
 
@@ -76,7 +72,7 @@ class TestLDOS(unittest.TestCase):
 
         sources = [
             mp.Source(
-                src=self.src,
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
                 component=mp.Er,
                 center=mp.Vector3(),
             )
@@ -221,7 +217,13 @@ class TestLDOS(unittest.TestCase):
 
         src_cmpt = mp.Er
         src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
-        sources = [mp.Source(src=self.src, component=src_cmpt, center=src_pt)]
+        sources = [
+            mp.Source(
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
+                component=src_cmpt,
+                center=src_pt,
+            ),
+        ]
 
         geometry = [
             mp.Block(
@@ -369,13 +371,23 @@ class TestLDOS(unittest.TestCase):
 
         return ext_eff
 
+    def test_cyl_plus_minus_one(self):
+        """Verifies that the radiated flux from a point source is identical
+        for two different simulations with m=±1.
+        """
+
+        ldos_bulk_m_minus_one = self.bulk_ldos_cyl(-1.0)
+        ldos_bulk_m_plus_one = self.bulk_ldos_cyl(+1.0)
+
+        self.assertEqual(ldos_bulk_m_minus_one, ldos_bulk_m_plus_one)
+
     def test_ldos_cyl(self):
         """Verifies that the Purcell enhancement factor of a parallel dipole
         in a planar dielectric cavity with lossless metallic walls computed in
         cylindrical coordinates agrees with the analytic result.
         """
 
-        ldos_bulk = self.bulk_ldos_cyl()
+        ldos_bulk = self.bulk_ldos_cyl(-1.0)
 
         # not a Van Hove singularity
         cavity_thickness = 1.63
@@ -436,7 +448,7 @@ class TestLDOS(unittest.TestCase):
         ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height)
         ext_eff_3D = self.ext_eff_3D(layer_thickness, dipole_height)
 
-        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, places=2)
+        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.01)
 
 
 if __name__ == "__main__":

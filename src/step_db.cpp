@@ -329,7 +329,7 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
         int sd = ft == D_stuff ? +1 : -1;
-        realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp);
+        realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
 
         for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
           realnum df;
