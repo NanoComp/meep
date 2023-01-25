@@ -18,12 +18,9 @@ class TestLDOS(unittest.TestCase):
         # termination criteria
         cls.tol = 1e-8
 
-    def bulk_ldos_cyl(self, m):
+    def bulk_ldos_cyl(self):
         """Computes the LDOS of a point dipole in a homogeneous dielectric
         medium in cylindrical coordinates.
-
-        Args:
-          m: angular dependence of the fields, exp(imφ).
         """
         sr = self.L + self.dpml
         sz = self.L + 2 * self.dpml
@@ -45,7 +42,7 @@ class TestLDOS(unittest.TestCase):
             boundary_layers=pml_layers,
             sources=sources,
             dimensions=mp.CYLINDRICAL,
-            m=m,
+            m=-1,
             default_material=mp.Medium(index=self.n),
         )
 
@@ -197,7 +194,7 @@ class TestLDOS(unittest.TestCase):
             4 * np.power(np.fix(c + 0.5), 3) - np.fix(c + 0.5)
         ) / (16 * np.power(c, 3))
 
-    def ext_eff_cyl(self, dmat, h):
+    def ext_eff_cyl(self, dmat, h, m):
         """Computes the extraction efficiency of a point dipole embedded
         within a dielectric layer above a lossless ground plane in
         cylindrical coordinates.
@@ -205,6 +202,7 @@ class TestLDOS(unittest.TestCase):
         Args:
           dmat: thickness of dielectric layer.
           h: height of dipole above ground plane as fraction of dmat.
+          m: angular dependence of the fields, exp(imφ).
         """
         sr = self.L + self.dpml
         sz = dmat + self.dair + self.dpml
@@ -237,7 +235,7 @@ class TestLDOS(unittest.TestCase):
             resolution=self.resolution,
             cell_size=cell_size,
             dimensions=mp.CYLINDRICAL,
-            m=-1,
+            m=m,
             boundary_layers=boundary_layers,
             sources=sources,
             geometry=geometry,
@@ -371,23 +369,13 @@ class TestLDOS(unittest.TestCase):
 
         return ext_eff
 
-    def test_cyl_plus_minus_one(self):
-        """Verifies that the radiated flux from a point source is identical
-        for two different simulations with m=±1.
-        """
-
-        ldos_bulk_m_minus_one = self.bulk_ldos_cyl(-1.0)
-        ldos_bulk_m_plus_one = self.bulk_ldos_cyl(+1.0)
-
-        self.assertEqual(ldos_bulk_m_minus_one, ldos_bulk_m_plus_one)
-
     def test_ldos_cyl(self):
         """Verifies that the Purcell enhancement factor of a parallel dipole
         in a planar dielectric cavity with lossless metallic walls computed in
         cylindrical coordinates agrees with the analytic result.
         """
 
-        ldos_bulk = self.bulk_ldos_cyl(-1.0)
+        ldos_bulk = self.bulk_ldos_cyl()
 
         # not a Van Hove singularity
         cavity_thickness = 1.63
@@ -440,15 +428,22 @@ class TestLDOS(unittest.TestCase):
     def test_ldos_ext_eff(self):
         """Verifies that the extraction efficiency of a point dipole in a
         dielectric layer above a lossless ground plane computed in cylindrical
-        and 3D Cartesian coordinates agree.
+        coordinates (for m=±1, separately) and 3D Cartesian agree.
         """
         layer_thickness = 0.5 * self.wvl / self.n
         dipole_height = 0.5
 
-        ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height)
+        ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height, -1.0)
         ext_eff_3D = self.ext_eff_3D(layer_thickness, dipole_height)
 
         self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.01)
+
+        ext_eff_cyl_m_plus = self.ext_eff_cyl(
+            layer_thickness,
+            dipole_height,
+            +1.0,
+        )
+        self.assertEqual(ext_eff_cyl, ext_eff_cyl_m_plus)
 
 
 if __name__ == "__main__":
