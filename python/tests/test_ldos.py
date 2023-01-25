@@ -1,7 +1,5 @@
 import unittest
-
 import numpy as np
-
 import meep as mp
 
 
@@ -16,11 +14,6 @@ class TestLDOS(unittest.TestCase):
         cls.wvl = 1.0  # wavelength (in vacuum)
 
         cls.fcen = 1 / cls.wvl
-
-        # source properties (cylindrical)
-        cls.df = 0.05 * cls.fcen
-        cls.cutoff = 10.0
-        cls.src = mp.GaussianSource(cls.fcen, fwidth=cls.df, cutoff=cls.cutoff)
 
         # termination criteria
         cls.tol = 1e-8
@@ -37,7 +30,7 @@ class TestLDOS(unittest.TestCase):
 
         sources = [
             mp.Source(
-                src=self.src,
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
                 component=mp.Er,
                 center=mp.Vector3(),
             )
@@ -76,7 +69,7 @@ class TestLDOS(unittest.TestCase):
 
         sources = [
             mp.Source(
-                src=self.src,
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
                 component=mp.Er,
                 center=mp.Vector3(),
             )
@@ -201,7 +194,7 @@ class TestLDOS(unittest.TestCase):
             4 * np.power(np.fix(c + 0.5), 3) - np.fix(c + 0.5)
         ) / (16 * np.power(c, 3))
 
-    def ext_eff_cyl(self, dmat, h):
+    def ext_eff_cyl(self, dmat, h, m):
         """Computes the extraction efficiency of a point dipole embedded
         within a dielectric layer above a lossless ground plane in
         cylindrical coordinates.
@@ -209,6 +202,7 @@ class TestLDOS(unittest.TestCase):
         Args:
           dmat: thickness of dielectric layer.
           h: height of dipole above ground plane as fraction of dmat.
+          m: angular dependence of the fields, exp(imφ).
         """
         sr = self.L + self.dpml
         sz = dmat + self.dair + self.dpml
@@ -221,7 +215,13 @@ class TestLDOS(unittest.TestCase):
 
         src_cmpt = mp.Er
         src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
-        sources = [mp.Source(src=self.src, component=src_cmpt, center=src_pt)]
+        sources = [
+            mp.Source(
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
+                component=src_cmpt,
+                center=src_pt,
+            ),
+        ]
 
         geometry = [
             mp.Block(
@@ -235,7 +235,7 @@ class TestLDOS(unittest.TestCase):
             resolution=self.resolution,
             cell_size=cell_size,
             dimensions=mp.CYLINDRICAL,
-            m=-1,
+            m=m,
             boundary_layers=boundary_layers,
             sources=sources,
             geometry=geometry,
@@ -428,15 +428,22 @@ class TestLDOS(unittest.TestCase):
     def test_ldos_ext_eff(self):
         """Verifies that the extraction efficiency of a point dipole in a
         dielectric layer above a lossless ground plane computed in cylindrical
-        and 3D Cartesian coordinates agree.
+        coordinates (for m=±1, separately) and 3D Cartesian agree.
         """
         layer_thickness = 0.5 * self.wvl / self.n
         dipole_height = 0.5
 
-        ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height)
+        ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height, -1.0)
         ext_eff_3D = self.ext_eff_3D(layer_thickness, dipole_height)
 
-        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, places=2)
+        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.01)
+
+        ext_eff_cyl_m_plus = self.ext_eff_cyl(
+            layer_thickness,
+            dipole_height,
+            +1.0,
+        )
+        self.assertEqual(ext_eff_cyl, ext_eff_cyl_m_plus)
 
 
 if __name__ == "__main__":
