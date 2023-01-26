@@ -344,6 +344,11 @@ bool fields_chunk::step_db(field_type ft) {
           if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
           if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
         }
+        else {
+          ZERO_Z(f[Br][cmp]);
+          if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
+          if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
+        }
       }
       else if (m != 0) {                  // m != {0,+1,-1}
         if (zero_fields_near_cylorigin) { /* default behavior */
