@@ -339,6 +339,7 @@ bool fields_chunk::step_db(field_type ft) {
           the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
           if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
         }
+        // hack: manually set boundary conditions at r=0
         if (ft == D_stuff) {
           ZERO_Z(f[Dz][cmp]);
           if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);

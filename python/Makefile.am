@@ -83,6 +83,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_multilevel_atom.py        \
     $(TEST_DIR)/test_n2f_periodic.py           \
     $(TEST_DIR)/test_oblique_source.py         \
+    $(TEST_DIR)/test_pml_cyl.py                \
     $(TEST_DIR)/test_physical.py               \
     $(TEST_DIR)/test_prism.py                  \
     $(TEST_DIR)/test_pw_source.py              \
