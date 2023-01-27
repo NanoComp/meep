@@ -4708,7 +4708,9 @@ involving the parameters `beta` ($\beta$: bias or "smoothness" of the turn on) a
 ($\eta$: offset for erosion/dilation). The level set provides a general approach for defining
 a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
 grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
-for level-set functions.
+for level-set functions. Note that when `do_averaging=True`, projection must be set through `beta` 
+in `MaterialGrid`s instead of as a user-defined preprocessing step of `weights`; on the other hand, 
+you should have the additional projection (or directly plot $\varepsilon$) to visualize the actual structure.
 
 A nonzero `damping` term creates an artificial conductivity $\sigma = u(1-u)*$`damping`, which acts as
 dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
