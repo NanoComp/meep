@@ -480,6 +480,23 @@ rounded to single precision.
 </div>
 
 
+<a id="Simulation.timestep"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def timestep(self):
+```
+
+<div class="method_docstring" markdown="1">
+
+Return the number of elapsed timesteps.
+
+</div>
+
+</div>
+
+
 <a id="Simulation.print_times"></a>
 
 <div class="class_members" markdown="1">
@@ -4688,6 +4705,7 @@ The grid points are defined at the corners of the voxels.
 ![](images/material_grid.png#center)
 
 Elements of the `weights` array must be in the range [0,1] where 0 is `medium1` and 1 is `medium2`.
+An array of boolean values `False` and `True` will be converted to 0 and 1, respectively.
 The `weights` array is used to define a linear interpolation from `medium1` to `medium2`.
 Two material types are supported: (1) frequency-independent isotropic $\varepsilon$ (`epsilon_diag`
 and `epsilon_offdiag` are interpolated) and (2) `LorentzianSusceptibility` (`sigma` and `sigma_offdiag`
@@ -4699,7 +4717,8 @@ For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabl
 `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
 piecewise-constant material that is *either* `medium1` or `medium2` almost everywhere, you can
 optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
-positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a
+positive non-zero value. `beta` is `0` by default (no projection). When the projection feature is
+enabled, the weights $u(x)$ can be thought of as a
 [level-set function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at
 $u(x)=\eta$ with a smoothing factor $\beta$ where $\beta=+\infty$ gives an unsmoothed,
 discontinuous interface. The projection operator is $(\tanh(\beta\times\eta)
@@ -4708,9 +4727,11 @@ involving the parameters `beta` ($\beta$: bias or "smoothness" of the turn on) a
 ($\eta$: offset for erosion/dilation). The level set provides a general approach for defining
 a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
 grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
-for level-set functions. Note that when `do_averaging=True`, projection must be set through `beta`
-in `MaterialGrid`s instead of as a user-defined preprocessing step of `weights`; on the other hand,
-you should have the additional projection (or directly plot $\varepsilon$) to visualize the actual structure.
+for level-set functions. Note that when subpixel smoothing is enabled via `do_averaging=True`,
+projecting the `weights` is done internally using the (non-zero) `beta` parameter. In this case,
+do *not* manually project the `weights` yourself outside of `MaterialGrid`. However, visualizing
+the `weights` used to define the structure does require manually projecting the `weights` yourself.
+(Alternatively, you can output the actual structure using `plot2D` or `output_epsilon`.)
 
 A nonzero `damping` term creates an artificial conductivity $\sigma = u(1-u)*$`damping`, which acts as
 dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
@@ -6274,7 +6295,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f79ed336a70>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f8038a8f6d0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6687,26 +6708,26 @@ Returns the total power of the fields from the eigenmode source at frequency `fr
 
 
 ---
-<a id="GaussianBeamSource"></a>
+<a id="GaussianBeam3DSource"></a>
 
-### GaussianBeamSource
+### GaussianBeam3DSource
 
 ```python
-class GaussianBeamSource(Source):
+class GaussianBeam3DSource(Source):
 ```
 
 <div class="class_docstring" markdown="1">
 
 This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\mathbf{E}(r,z)=E_0\hat{x}\frac{w_0}{w(z)}\exp\left(\frac{-r^2}{w(z)^2}\right)\exp\left(-i\left(kz + k\frac{r^2}{2R(z)}\right)\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\pi n/\lambda$ is the wavenumber (for a free-space wavelength $\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
 
-(In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.)
+(In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.) To use the true solution for a 2d Gaussian Beam, use the `GaussianBeam2DSource` class instead.
 
 The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
 
 </div>
 
 
-<a id="GaussianBeamSource.__init__"></a>
+<a id="GaussianBeam3DSource.__init__"></a>
 
 <div class="class_members" markdown="1">
 
@@ -6734,6 +6755,123 @@ Construct a `GaussianBeamSource`.
 + **`beam_w0` [`number`]** — The beam waist radius.
 
 + **`beam_E0` [`Vector3`]** — The polarization vector of the beam. Elements can be complex valued (i.e., for circular polarization). The polarization vector must be *parallel* to the source region in order to generate a transverse mode.
+
+</div>
+
+</div>
+
+
+---
+<a id="GaussianBeam2DSource"></a>
+
+### GaussianBeam2DSource
+
+```python
+class GaussianBeam2DSource(GaussianBeam3DSource):
+```
+
+<div class="class_docstring" markdown="1">
+
+Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
+
+The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
+
+
+        self._beam_x0 = beam_x0
+        self._beam_kdir = beam_kdir
+        self._beam_w0 = beam_w0
+        self._beam_E0 = beam_E0
+
+</div>
+
+
+<a id="GaussianBeam2DSource.add_source"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def add_source(self, sim):
+```
+
+<div class="method_docstring" markdown="1">
+
+Calls the add_source method for each equivalent source.
+
+</div>
+
+</div>
+
+
+<a id="GaussianBeam2DSource.get_fields"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_fields(self, sim):
+```
+
+<div class="method_docstring" markdown="1">
+
+Calls green2d under various conditions (incoming vs outgoing) providing the correct Hankel functions and returns the fields at the slice provided by the source.
+
+</div>
+
+</div>
+
+
+<a id="GaussianBeam2DSource.get_r_rhat"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_r_rhat(self, X, X0):
+```
+
+<div class="method_docstring" markdown="1">
+
+Returns r and rhat before normalizing rhat to be used in green2d and get_fields for overflow prediction
+
+</div>
+
+</div>
+
+
+<a id="GaussianBeam2DSource.green2d"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def green2d(self,
+            X,
+            freq,
+            eps,
+            mu,
+            X0,
+            kdir,
+            hankel,
+            beam_E0):
+```
+
+<div class="method_docstring" markdown="1">
+
+Produces the 2D Green's function for an arbitrary complex point source at X0 along the meshgrid X.
+
+</div>
+
+</div>
+
+
+<a id="GaussianBeam2DSource.incoming_mask"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def incoming_mask(self, x0, y0, kx, ky, X):
+```
+
+<div class="method_docstring" markdown="1">
+
+Given a beam with a waist at (x0, y0) and a direction of propagation (kx, ky) returns the boolean masks along the meshgrid X for incoming waves, outgoing waves, and waist points.
 
 </div>
 
