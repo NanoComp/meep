@@ -4717,7 +4717,7 @@ For improving accuracy, [subpixel smoothing](Subpixel_Smoothing.md) can be enabl
 `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
 piecewise-constant material that is *either* `medium1` or `medium2` almost everywhere, you can
 optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
-positive non-zero value. `beta` is `0` by default (no projection). When the projection feature is
+positive value. The default is no projection (`beta=0`). When the projection feature is
 enabled, the weights $u(x)$ can be thought of as a
 [level-set function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at
 $u(x)=\eta$ with a smoothing factor $\beta$ where $\beta=+\infty$ gives an unsmoothed,
@@ -4728,10 +4728,10 @@ involving the parameters `beta` ($\beta$: bias or "smoothness" of the turn on) a
 a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
 grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
 for level-set functions. Note that when subpixel smoothing is enabled via `do_averaging=True`,
-projecting the `weights` is done internally using the (non-zero) `beta` parameter. In this case,
-there is no need to manually project the `weights` outside of `MaterialGrid`. However, visualizing
+projecting the `weights` is done internally using the `beta` parameter. It is therefore not
+necessary to manually project the `weights` outside of `MaterialGrid`. However, visualizing
 the `weights` used to define the structure does require manually projecting the `weights` yourself.
-(Alternatively, you can output the actual structure using [`plot2D`](#data-visualization)) or
+(Alternatively, you can output the actual structure using [`plot2D`](#data-visualization) or
 [`output_epsilon`](#output-functions_1).)
 
 A nonzero `damping` term creates an artificial conductivity $\sigma = u(1-u)*$`damping`, which acts as
@@ -6296,7 +6296,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7ff2b388b6d0>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f517cb736d0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6719,11 +6719,11 @@ class GaussianBeam3DSource(Source):
 
 <div class="class_docstring" markdown="1">
 
-This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\mathbf{E}(r,z)=E_0\hat{x}\frac{w_0}{w(z)}\exp\left(\frac{-r^2}{w(z)^2}\right)\exp\left(-i\left(kz + k\frac{r^2}{2R(z)}\right)\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\pi n/\lambda$ is the wavenumber (for a free-space wavelength $\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
+This is a subclass of `Source` and has **all of the properties** of `Source` above. However, the `component` parameter of the `Source` object is ignored. The [Gaussian beam](https://en.wikipedia.org/wiki/Gaussian_beam) is a transverse electromagnetic mode for which the source region must be a *line* (in 2d) or *plane* (in 3d). For a beam polarized in the $x$ direction with propagation along $+z$, the electric field is defined by $\mathbf{E}(r,z)=E_0\hat{x}\frac{w_0}{w(z)}\exp\left(\frac{-r^2}{w(z)^2}\right)\exp\left(-i\left(kz + k\frac{r^2}{2R(z)}\right)\right)$ where $r$ is the radial distance from the center axis of the beam, $z$ is the axial distance from the beam's focus (or "waist"), $k=2\pi n/\lambda$ is the wavenumber (for a free-space wavelength $\lambda$ and refractive index $n$ of the homogeneous, lossless medium in which the beam propagates), $E_0$ is the electric-field amplitude at the origin, $w(z)$ is the radius at which the field amplitude decays by $1/e$ of its axial values, $w_0$ is the beam waist radius, and $R(z)$ is the radius of curvature of the beam's wavefront at $z$. The only independent parameters that need to be specified are $w_0$, $E_0$, $k$, and the location of the beam focus (i.e., the origin: $r=z=0$).
 
-(In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.) To use the true solution for a 2d Gaussian Beam, use the `GaussianBeam2DSource` class instead.
+In 3d, we use a ["complex point-source" method](https://doi.org/10.1364/JOSAA.16.001381) to define a source that generates an exact Gaussian-beam solution.  In 2d, we currently use the simple approximation of taking a cross-section of the 3d beam.  In both cases, the beam is most accurate near the source's center frequency.) To use the true solution for a 2d Gaussian beam, use the `GaussianBeam2DSource` class instead.
 
-The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
+The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.
 
 </div>
 
@@ -6773,7 +6773,8 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 
 <div class="class_docstring" markdown="1">
 
-Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
+Identical to `GaussianBeam3DSource` except that the beam is defined in 2d.
+This is useful for 2d simulations where the 3d beam is not exact.
 
 </div>
 
