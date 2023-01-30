@@ -4729,9 +4729,10 @@ a *discontinuous* function from otherwise continuously varying (via the bilinear
 grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
 for level-set functions. Note that when subpixel smoothing is enabled via `do_averaging=True`,
 projecting the `weights` is done internally using the (non-zero) `beta` parameter. In this case,
-do *not* manually project the `weights` yourself outside of `MaterialGrid`. However, visualizing
+there is no need to manually project the `weights` outside of `MaterialGrid`. However, visualizing
 the `weights` used to define the structure does require manually projecting the `weights` yourself.
-(Alternatively, you can output the actual structure using `plot2D` or `output_epsilon`.)
+(Alternatively, you can output the actual structure using [`plot2D`](#data-visualization)) or
+[`output_epsilon`](#output-functions_1).)
 
 A nonzero `damping` term creates an artificial conductivity $\sigma = u(1-u)*$`damping`, which acts as
 dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
@@ -6295,7 +6296,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f8038a8f6d0>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7ff2b388b6d0>):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6773,107 +6774,6 @@ class GaussianBeam2DSource(GaussianBeam3DSource):
 <div class="class_docstring" markdown="1">
 
 Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
-
-The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
-
-
-        self._beam_x0 = beam_x0
-        self._beam_kdir = beam_kdir
-        self._beam_w0 = beam_w0
-        self._beam_E0 = beam_E0
-
-</div>
-
-
-<a id="GaussianBeam2DSource.add_source"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def add_source(self, sim):
-```
-
-<div class="method_docstring" markdown="1">
-
-Calls the add_source method for each equivalent source.
-
-</div>
-
-</div>
-
-
-<a id="GaussianBeam2DSource.get_fields"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def get_fields(self, sim):
-```
-
-<div class="method_docstring" markdown="1">
-
-Calls green2d under various conditions (incoming vs outgoing) providing the correct Hankel functions and returns the fields at the slice provided by the source.
-
-</div>
-
-</div>
-
-
-<a id="GaussianBeam2DSource.get_r_rhat"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def get_r_rhat(self, X, X0):
-```
-
-<div class="method_docstring" markdown="1">
-
-Returns r and rhat before normalizing rhat to be used in green2d and get_fields for overflow prediction
-
-</div>
-
-</div>
-
-
-<a id="GaussianBeam2DSource.green2d"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def green2d(self,
-            X,
-            freq,
-            eps,
-            mu,
-            X0,
-            kdir,
-            hankel,
-            beam_E0):
-```
-
-<div class="method_docstring" markdown="1">
-
-Produces the 2D Green's function for an arbitrary complex point source at X0 along the meshgrid X.
-
-</div>
-
-</div>
-
-
-<a id="GaussianBeam2DSource.incoming_mask"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def incoming_mask(self, x0, y0, kx, ky, X):
-```
-
-<div class="method_docstring" markdown="1">
-
-Given a beam with a waist at (x0, y0) and a direction of propagation (kx, ky) returns the boolean masks along the meshgrid X for incoming waves, outgoing waves, and waist points.
-
-</div>
 
 </div>
 

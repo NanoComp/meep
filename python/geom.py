@@ -634,9 +634,10 @@ class MaterialGrid:
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
         for level-set functions. Note that when subpixel smoothing is enabled via `do_averaging=True`,
         projecting the `weights` is done internally using the (non-zero) `beta` parameter. In this case,
-        do *not* manually project the `weights` yourself outside of `MaterialGrid`. However, visualizing
+        it is not necessary to manually project the `weights` outside of `MaterialGrid`. However, visualizing
         the `weights` used to define the structure does require manually projecting the `weights` yourself.
-        (Alternatively, you can output the actual structure using `plot2D` or `output_epsilon`.)
+        (Alternatively, you can output the actual structure using [`plot2D`](#data-visualization)) or
+        [`output_epsilon`](#output-functions_1).)
 
         A nonzero `damping` term creates an artificial conductivity $\\sigma = u(1-u)*$`damping`, which acts as
         dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of

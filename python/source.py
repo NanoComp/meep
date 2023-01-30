@@ -799,15 +799,6 @@ def get_equiv_sources(field, normal_vec, time_src, center, size):
 class GaussianBeam2DSource(GaussianBeam3DSource):
     """
     Identical to `GaussianBeamSource`, except that the beam is defined in 2d. This is useful for 2d simulations, where the 3d beam is not exact.
-
-    The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.)
-
-
-            self._beam_x0 = beam_x0
-            self._beam_kdir = beam_kdir
-            self._beam_w0 = beam_w0
-            self._beam_E0 = beam_E0
-
     """
 
     def get_fields(self, sim):
