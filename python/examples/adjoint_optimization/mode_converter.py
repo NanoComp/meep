@@ -20,6 +20,7 @@ from autograd import numpy as npa, tensor_jacobian_product, grad
 import nlopt
 import meep as mp
 import meep.adjoint as mpa
+from typing import NamedTuple
 
 resolution = 50  # pixels/μm
 
@@ -70,7 +71,7 @@ Ny = int(design_region_size.y * design_region_resolution)
 
 # impose a bit "mask" of thickness equal to the filter radius
 # around the edges of the design region in order to prevent
-# violations of the minimum linewidth constraint.
+# violations of the minimum feature size constraint.
 
 x_g = np.linspace(
     -design_region_size.x / 2,
@@ -112,16 +113,20 @@ tran_pt = mp.Vector3(0.5 * sx - dpml - 0.5 * l)
 stop_cond = mp.stop_when_fields_decayed(50, mp.Ez, refl_pt, 1e-8)
 
 
-def mapping(x, eta, beta):
+def mapping(x: np.ndarray, eta: float, beta: float) -> np.ndarray:
     """A differentiable mapping function which applies, in order,
        the following sequence of transformations to the design weights:
        (1) a bit mask for the boundary pixels, (2) convolution with a
-       conic filter, and (3) projection via a hyperbolic tangent.
+       conic filter, and (3) projection via a hyperbolic tangent (if
+       necessary).
 
     Args:
       x: design weights as a 1d array of size Nx*Ny.
       eta: erosion/dilation parameter for the projection.
-      beta: bias parameter for the projection.
+      beta: bias parameter for the projection. A value of 0 is no projection.
+
+    Returns:
+      The mapped design weights as a 1d array.
     """
     x = npa.where(
         Si_mask.flatten(),
@@ -141,22 +146,29 @@ def mapping(x, eta, beta):
         design_region_resolution,
     )
 
-    projected_field = mpa.tanh_projection(
-        filtered_field,
-        beta,
-        eta,
-    )
+    if beta == 0:
+        return filtered_field.flatten()
 
-    return projected_field.flatten()
+    else:
+        projected_field = mpa.tanh_projection(
+            filtered_field,
+            beta,
+            eta,
+        )
+
+        return projected_field.flatten()
 
 
-def f(x, grad):
+def f(x: np.ndarray, grad: np.ndarray) -> float:
     """Objective function for the epigraph formulation.
 
     Args:
       x: 1d array of size 1+Nx*Ny containing epigraph variable (first element)
          and design weights (remaining Nx*Ny elements).
       grad: the gradient as a 1d array of size 1+Nx*Ny modified in place.
+
+    Returns:
+      The epigraph variable (a scalar).
     """
     t = x[0]  # epigraph variable
     v = x[1:]  # design weights
@@ -166,7 +178,14 @@ def f(x, grad):
     return t
 
 
-def c(result, x, gradient, eta, beta):
+def c(
+    result: np.ndarray,
+    x: np.ndarray,
+    gradient: np.ndarray,
+    eta: float,
+    beta: float,
+    use_epsavg: float,
+):
     """Constraint function for the epigraph formulation.
 
     Args:
@@ -177,15 +196,17 @@ def c(result, x, gradient, eta, beta):
                 2*num. wavelengths) modified in place.
       eta: erosion/dilation parameter for projection.
       beta: bias parameter for projection.
+      use_epsavg: whether to use subpixel smoothing.
     """
     t = x[0]  # epigraph variable
     v = x[1:]  # design weights
 
-    f0, dJ_du = opt([mapping(v, eta, beta)])
+    f0, dJ_du = opt([mapping(v, eta, 0 if use_epsavg else beta)])
 
     f0_reflection = f0[0]
     f0_transmission = f0[1]
     f0_merged = np.concatenate((f0_reflection, f0_transmission))
+    f0_merged_str = "[" + ",".join(str(ff) for ff in f0_merged) + "]"
 
     dJ_du_reflection = dJ_du[0]
     dJ_du_transmission = dJ_du[1]
@@ -214,13 +235,13 @@ def c(result, x, gradient, eta, beta):
 
     print(
         f"iteration:, {cur_iter[0]:3d}, eta: {eta}, beta: {beta:2d}, "
-        f"t: {t:.5f}, obj. func.: {f0_merged}"
+        f"t: {t:.5f}, obj. func.: {f0_merged_str}"
     )
 
     cur_iter[0] = cur_iter[0] + 1
 
 
-def glc(result, x, gradient, beta):
+def glc(result: np.ndarray, x: np.ndarray, gradient: np.ndarray, beta: float) -> float:
     """Constraint function for the minimum linewidth.
 
     Args:
@@ -230,6 +251,9 @@ def glc(result, x, gradient, beta):
       gradient: the Jacobian matrix with dimensions (1+Nx*Ny,
                 num. wavelengths) modified in place.
       beta: bias parameter for projection.
+
+    Returns:
+      The value of the constraint function (a scalar).
     """
     t = x[0]  # dummy parameter
     v = x[1:]  # design parameters
@@ -269,14 +293,14 @@ def glc(result, x, gradient, beta):
     return max(t1, t2)
 
 
-def straight_waveguide():
+def straight_waveguide() -> (np.ndarray, NamedTuple):
     """Computes the DFT fields from the mode source in a straight waveguide
        for use as normalization of the reflectance measurement during the
        optimization.
 
     Returns:
-      1d array of DFT fields and DFT fields object returned by
-      `meep.get_flux_data`.
+      A 2-tuple consisting of a 1d array of DFT fields and DFT fields object
+      returned by `meep.get_flux_data`.
     """
     sources = [
         mp.EigenModeSource(
@@ -327,7 +351,13 @@ def straight_waveguide():
     return input_flux, input_flux_data
 
 
-def mode_converter_optimization(input_flux, input_flux_data, use_damping, use_epsavg):
+def mode_converter_optimization(
+    input_flux: np.ndarray,
+    input_flux_data: NamedTuple,
+    use_damping: bool,
+    use_epsavg: bool,
+    beta: float,
+) -> mpa.OptimizationProblem:
     """Sets up the adjoint optimization of the waveguide mode converter.
 
     Args:
@@ -344,6 +374,7 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping, use_ep
         SiO2,
         Si,
         weights=np.ones((Nx, Ny)),
+        beta=beta if use_epsavg else 0,
         do_averaging=True if use_epsavg else False,
         damping=0.02 * 2 * np.pi * fcen if use_damping else 0,
     )
@@ -365,7 +396,11 @@ def mode_converter_optimization(input_flux, input_flux_data, use_damping, use_ep
     ]
 
     geometry = [
-        mp.Block(size=mp.Vector3(mp.inf, w, mp.inf), center=mp.Vector3(), material=Si)
+        mp.Block(
+            center=mp.Vector3(),
+            size=mp.Vector3(mp.inf, w, mp.inf),
+            material=Si,
+        )
     ]
 
     geometry += matgrid_geometry
@@ -449,8 +484,10 @@ if __name__ == "__main__":
     ub = np.ones((n,))
     ub[SiO2_mask.flatten()] = 0.0
 
-    # insert epigraph variable initial value and bounds in the design array
-    x = np.insert(x, 0, 1.2)  # ignored
+    # insert epigraph variable initial value (arbitrary) and bounds into the
+    # design array. the actual value is determined by the objective and
+    # constraint functions below.
+    x = np.insert(x, 0, 1.2)
     lb = np.insert(lb, 0, -np.inf)
     ub = np.insert(ub, 0, +np.inf)
 
@@ -458,7 +495,7 @@ if __name__ == "__main__":
     epivar_history = []
     cur_iter = [0]
 
-    beta_thresh = 64
+    beta_thresh = 64  # threshold beta above which to use subpixel smoothing
     betas = [8, 16, 32, 64, 128, 256]
     max_evals = [80, 80, 100, 120, 120, 100]
     tol_epi = np.array([1e-4] * 2 * len(frqs))  # R, 1-T
@@ -472,7 +509,14 @@ if __name__ == "__main__":
         solver.set_maxeval(max_eval)
         solver.set_param("dual_ftol_rel", 1e-7)
         solver.add_inequality_mconstraint(
-            lambda rr, xx, gg: c(rr, xx, gg, eta_i, beta),
+            lambda rr, xx, gg: c(
+                rr,
+                xx,
+                gg,
+                eta_i,
+                beta,
+                False if beta < beta_thresh else True,
+            ),
             tol_epi,
         )
         solver.set_param("verbosity", 1)
@@ -481,7 +525,8 @@ if __name__ == "__main__":
             input_flux,
             input_flux_data,
             True,  # use_damping
-            False if beta <= beta_thresh else True,  # use_epsavg
+            False if beta < beta_thresh else True,  # use_epsavg
+            beta,
         )
 
         # apply the minimum linewidth constraint
@@ -492,7 +537,12 @@ if __name__ == "__main__":
             grd = np.zeros((2, n + 1))
             t = glc(res, x, grd, beta)
             solver.add_inequality_mconstraint(
-                lambda rr, xx, gg: glc(rr, xx, gg, beta),
+                lambda rr, xx, gg: glc(
+                    rr,
+                    xx,
+                    gg,
+                    beta,
+                ),
                 tol_lw,
             )
 
@@ -502,16 +552,20 @@ if __name__ == "__main__":
         # function over the six wavelengths and the lengthscale
         # constraint (final epoch only).
         t0 = opt(
-            [mapping(x[1:], eta_i, beta)],
+            [
+                mapping(
+                    x[1:],
+                    eta_i,
+                    beta if beta < beta_thresh else 0,
+                ),
+            ],
             need_gradient=False,
         )
         t0 = np.concatenate((t0[0][0], t0[0][1]))
+        t0_str = "[" + ",".join(str(tt) for tt in t0) + "]"
         x[0] = np.amax(t0)
-        if beta == betas[-1]:
-            x[0] = 1.05 * max(x[0], t)
-        else:
-            x[0] = 1.05 * x[0]
-        print(f"data:, {beta}, {t0}, {x[0]}")
+        x[0] = 1.05 * (max(x[0], t) if beta == betas[-1] else x[0])
+        print(f"data:, {beta}, {t0_str}, {x[0]}")
 
         x[:] = solver.optimize(x)
 
@@ -536,9 +590,9 @@ if __name__ == "__main__":
                 dpi=150,
                 bbox_inches="tight",
             )
-            # save the final design (unmapped) as a 2d array in CSV format
+            # save the final (unmapped) design as a 2d array in CSV format
             np.savetxt(
-                f"design_weights_beta{beta}.csv",
+                f"unmapped_design_weights_beta{beta}.csv",
                 x[1:].reshape(Nx, Ny),
                 fmt="%4.2f",
                 delimiter=",",
