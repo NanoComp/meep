@@ -184,7 +184,7 @@ def c(
     gradient: np.ndarray,
     eta: float,
     beta: float,
-    use_epsavg: float,
+    use_epsavg: bool,
 ):
     """Constraint function for the epigraph formulation.
 
