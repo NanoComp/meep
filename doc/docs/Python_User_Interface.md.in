@@ -837,7 +837,9 @@ The following classes are available directly via the `meep` package.
 
 @@ EigenModeSource[methods-with-docstrings] @@
 
-@@ GaussianBeamSource[methods-with-docstrings] @@
+@@ GaussianBeam3DSource[methods-with-docstrings] @@
+
+@@ GaussianBeam2DSource @@
 
 @@ ContinuousSource[methods-with-docstrings] @@
 

@@ -622,7 +622,8 @@ class MaterialGrid:
         `do_averaging=True`. If you want to use a material grid to define a (nearly) discontinuous,
         piecewise-constant material that is *either* `medium1` or `medium2` almost everywhere, you can
         optionally enable a (smoothed) *projection* feature by setting the parameter `beta` to a
-        positive value. When the projection feature is enabled, the weights $u(x)$ can be thought of as a
+        positive value. The default is no projection (`beta=0`). When the projection feature is
+        enabled, the weights $u(x)$ can be thought of as a
         [level-set function](https://en.wikipedia.org/wiki/Level-set_method) defining an interface at
         $u(x)=\\eta$ with a smoothing factor $\\beta$ where $\\beta=+\\infty$ gives an unsmoothed,
         discontinuous interface. The projection operator is $(\\tanh(\\beta\\times\\eta)
@@ -631,7 +632,12 @@ class MaterialGrid:
         ($\\eta$: offset for erosion/dilation). The level set provides a general approach for defining
         a *discontinuous* function from otherwise continuously varying (via the bilinear interpolation)
         grid values. Subpixel smoothing is fast and accurate because it exploits an analytic formulation
-        for level-set functions.
+        for level-set functions. Note that when subpixel smoothing is enabled via `do_averaging=True`,
+        projecting the `weights` is done internally using the `beta` parameter. It is therefore not
+        necessary to manually project the `weights` outside of `MaterialGrid`. However, visualizing
+        the `weights` used to define the structure does require manually projecting the `weights` yourself.
+        (Alternatively, you can output the actual structure using [`plot2D`](#data-visualization) or
+        [`output_epsilon`](#output-functions_1).)
 
         A nonzero `damping` term creates an artificial conductivity $\\sigma = u(1-u)*$`damping`, which acts as
         dissipation loss that penalizes intermediate pixel values of non-binarized structures. The value of
