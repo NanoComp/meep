@@ -85,15 +85,18 @@ in the adjoint-solver module is based on [A.M. Hammond et al., Optics
 Express, Vol. 29, pp. 23916-38
 (2021)](https://doi.org/10.1364/OE.431188).
 
-There are six important items to note in the set up of this
+There are six important items to highlight in the set up of this
 optimization problem:
 
 1. The lengthscale constraint is activated only in the final epoch. It
-   is often helpful to binarize the design before this final
+   is often helpful to binarize the design using a large $\beta$ value
+   for the projection operator (hyperbolic tangent) before this final
    epoch. This is because the lengthscale constraint forces
    binarization which could induce large changes in an initial
    grayscale design and thus irrevocably spoil the performance of the
-   final design.
+   final design. Note that regardless of the value of $\beta$,
+   projecting the design weights $u$ will produce grayscale values
+   between 0 and 1 whenever $u \approx \eta \pm \frac{1}{\beta}$.
 
 2. The initial value of the epigraph variable of the final epoch (in
   which the minimum feature size constraint is imposed) should take
@@ -108,7 +111,7 @@ optimization problem:
   than e.g., a single pixel) to produce measured minimum feature sizes
   of the final design that are consistent with the imposed constraint.
 
-4. The hyperparameters of the minimum feature size constraint function
+4. The hyperparameters of the feature-size constraint function
   (`a1`, `b1`, and `c0` in the `glc` function of the script below), need to
   be chosen carefully to produce final designs which do not
   significantly degrade the performance of the unconstrained designs
@@ -116,7 +119,7 @@ optimization problem:
 
 5. Damping of the design weights is used for the early epochs in which
   the $\beta$ parameter of the projection function is small (< ~50) and
-  the design is mostly grayscale to induce binarization.
+  the design is mostly grayscale in order to induce binarization.
 
 6. The subpixel-smoothing feature of the [`MaterialGrid`](../Python_User_Interface.md#materialgrid)
   is necessary whenever the $\beta$ parameter of the projection function
@@ -130,9 +133,9 @@ optimization problem:
   projection.
 
 A schematic of the final design and the simulation layout is shown
-below. The minimum lengthscale of the final design, measured using a
+below. The minimum feature size of the final design, measured using a
 [ruler](https://github.com/NanoComp/photonics-opt-testbed/tree/main/ruler),
-is 165 nm. This value is consistent with the imposed lengthscale since
+is 165 nm. This value is consistent with the imposed constraint since
 it is approximately within one design pixel (10 nm).
 
 ![](../images/mode_converter_sim_layout.png#center)
