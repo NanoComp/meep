@@ -124,8 +124,9 @@ optimization problem:
 6. The subpixel-smoothing feature of the [`MaterialGrid`](../Python_User_Interface.md#materialgrid)
   is necessary whenever the $\beta$ parameter of the projection function
   is large (> ~50) and thus the design is binary (or nearly so). Without
-  subpixel smoothing, the computation of the adjoint gradients would
-  break down which in turn would spoil the optimization. When subpixel
+  subpixel smoothing, then the gradients are nearly zero
+ except for $u \approx \eta \pm 1/\beta$ where the derivatives
+ and second derivatives blow up, causing optimization algorithms to break down. When subpixel
   smoothing is enabled (`do_averaging=True`), the weights are projected
   *internally* using the `beta` parameter. For this reason, any
   preprocessing (i.e., mapping) of the weights outside of the `MaterialGrid`
