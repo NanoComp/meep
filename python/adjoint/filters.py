@@ -92,8 +92,9 @@ def simple_2d_filter(x, h):
     """
     (kx, ky) = x.shape
     h = _proper_pad(x,3*np.array([kx, ky]))
-    print("h shape = ",h.shape, ", h = ",h)
+    h = h / npa.sum(h)  # Normalize the kernel
     x = _edge_pad(x, ((kx, kx), (ky, ky)))
+
     return _centered(
         npa.real(npa.fft.ifft2(npa.fft.fft2(x) * npa.fft.fft2(h))), (kx, ky)
     )
@@ -133,13 +134,10 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
-    h = X**2+Y**2 < radius**2
-
-    # Normalize kernel
-    h = h / np.sum(h.flatten())  # Normalize the filter
+    kernel = np.where(X**2 + Y**2 < radius**2, 1, 0)
 
     # Filter the response
-    return simple_2d_filter(x, h)
+    return simple_2d_filter(x, kernel)
 
 
 def conic_filter(x, radius, Lx, Ly, resolution):
@@ -176,13 +174,11 @@ def conic_filter(x, radius, Lx, Ly, resolution):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
-    h = X**2+Y**2 < radius**2
-
-    # Normalize kernel
-    h = h / np.sum(h.flatten())  # Normalize the filter
+    kernel = np.where(X**2 + Y**2 < radius**2,
+                      (1 - np.sqrt(abs(xv**2 + yv**2)) / radius), 0)
 
     # Filter the response
-    return simple_2d_filter(x, h)
+    return simple_2d_filter(x, kernel)
 
 
 def gaussian_filter(x, sigma, Lx, Ly, resolution):
@@ -219,13 +215,10 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
-    h = X**2+Y**2 < radius**2
-
-    # Normalize kernel
-    h = h / np.sum(h.flatten())  # Normalize the filter
+    kernel = np.exp(-(X**2 + Y**2) / sigma**2)
 
     # Filter the response
-    return simple_2d_filter(x, h)
+    return simple_2d_filter(x, kernel)
 
 
 """
