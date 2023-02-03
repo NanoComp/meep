@@ -20,32 +20,37 @@ def _centered(arr, newshape):
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
     return arr[tuple(myslice)]
 
+
 def _proper_pad(arr, pad_to):
-    '''
+    """
     Parameters
     ----------
     arr : 2d input array.
     pad_to : 1d array composed of two integers indicating the total size to be padded to.
-    '''
+    """
 
-    pad_size = pad_to-2*np.array(arr.shape)+1
+    pad_size = pad_to - 2 * np.array(arr.shape) + 1
 
-    top = np.zeros((pad_size[0],arr.shape[1]))
-    bottom = np.zeros((pad_size[0],arr.shape[1]-1))
-    middle = np.zeros((pad_to[0],pad_size[1]))
+    top = np.zeros((pad_size[0], arr.shape[1]))
+    bottom = np.zeros((pad_size[0], arr.shape[1] - 1))
+    middle = np.zeros((pad_to[0], pad_size[1]))
 
-    top_left = arr[:,:]
-    top_right = npa.flipud(arr[1:,:])
-    bottom_left = npa.fliplr(arr[:,1:])
-    bottom_right = npa.flipud(npa.fliplr(arr[1:,1:])) # equivalent to flip, but flip is incompatible with autograd
+    top_left = arr[:, :]
+    top_right = npa.flipud(arr[1:, :])
+    bottom_left = npa.fliplr(arr[:, 1:])
+    bottom_right = npa.flipud(
+        npa.fliplr(arr[1:, 1:])
+    ) # equivalent to flip, but flip is incompatible with autograd
 
     return npa.concatenate(
         (
-            npa.concatenate((top_left, top, top_right)), middle,
+            npa.concatenate((top_left, top, top_right)),
+            middle,
             npa.concatenate((bottom_left, bottom, bottom_right)),
         ),
         axis=1,
     )
+
 
 def _edge_pad(arr, pad):
 
@@ -91,7 +96,7 @@ def simple_2d_filter(x, h):
         The output of the 2d convolution.
     """
     (kx, ky) = x.shape
-    h = _proper_pad(x,3*np.array([kx, ky]))
+    h = _proper_pad(h, 3 * np.array([kx, ky]))
     h = h / npa.sum(h)  # Normalize the kernel
     x = _edge_pad(x, ((kx, kx), (ky, ky)))
 
@@ -134,10 +139,10 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
-    kernel = np.where(X**2 + Y**2 < radius**2, 1, 0)
+    h = np.where(X**2 + Y**2 < radius**2, 1, 0)
 
     # Filter the response
-    return simple_2d_filter(x, kernel)
+    return simple_2d_filter(x, h)
 
 
 def conic_filter(x, radius, Lx, Ly, resolution):
@@ -174,11 +179,12 @@ def conic_filter(x, radius, Lx, Ly, resolution):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
-    kernel = np.where(X**2 + Y**2 < radius**2,
-                      (1 - np.sqrt(abs(xv**2 + yv**2)) / radius), 0)
+    h = np.where(
+        X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
+    )
 
     # Filter the response
-    return simple_2d_filter(x, kernel)
+    return simple_2d_filter(x, h)
 
 
 def gaussian_filter(x, sigma, Lx, Ly, resolution):
@@ -215,10 +221,10 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
-    kernel = np.exp(-(X**2 + Y**2) / sigma**2)
+    h = np.exp(-(X**2 + Y**2) / sigma**2)
 
     # Filter the response
-    return simple_2d_filter(x, kernel)
+    return simple_2d_filter(x, h)
 
 
 """
