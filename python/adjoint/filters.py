@@ -40,7 +40,7 @@ def _proper_pad(arr, pad_to):
     bottom_left = npa.fliplr(arr[:, 1:])
     bottom_right = npa.flipud(
         npa.fliplr(arr[1:, 1:])
-    ) # equivalent to flip, but flip is incompatible with autograd
+    )  # equivalent to flip, but flip is incompatible with autograd
 
     return npa.concatenate(
         (
@@ -138,7 +138,7 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(X**2 + Y**2 < radius**2, 1, 0)
 
     # Filter the response
@@ -178,7 +178,7 @@ def conic_filter(x, radius, Lx, Ly, resolution):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(
         X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
     )
@@ -220,7 +220,7 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    X, Y = np.meshgrid(xv, yv, sparse=True, indexing='ij')
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.exp(-(X**2 + Y**2) / sigma**2)
 
     # Filter the response
