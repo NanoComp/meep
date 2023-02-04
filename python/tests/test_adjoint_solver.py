@@ -39,8 +39,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         cls.design_region_size = mp.Vector3(1.5, 1.5)
         cls.design_region_resolution = int(2 * cls.resolution)
-        cls.Nx = int(cls.design_region_size.x * cls.design_region_resolution)
-        cls.Ny = int(cls.design_region_size.y * cls.design_region_resolution)
+        cls.Nx = int(round(cls.design_region_size.x * cls.design_region_resolution))
+        cls.Ny = int(round(cls.design_region_size.y * cls.design_region_resolution))
 
         # ensure reproducible results
         rng = np.random.RandomState(9861548)
