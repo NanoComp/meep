@@ -454,6 +454,17 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
     }
   }
 
+  // check for invalid sources at r=0 in cylindrical coordinates
+  if (gv.dim == Dcyl && where.in_direction_min(R) == 0.0) {
+    if (fabs(m) == 1.0 && (c == Ez || c == Dz))
+      meep::abort("Not possible to place a %s source at r=0 in "
+                  "cylindrical coordinates for |m| = 1.0.",
+                  component_name(c));
+    else if (fabs(m) > 1.0)
+      meep::abort("Not possible to place a source at r=0 in "
+                  "cylindrical coordinates for |m| > 1.0.");
+  }
+
   src_vol_chunkloop_data data;
   data.A = A ? A : one;
   data.amp = amp;
