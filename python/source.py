@@ -663,9 +663,8 @@ class EigenModeSource(Source):
             self.eig_resolution,
             self.eig_tolerance,
             self.amplitude,
+            self.amp_func
         ]
-        
-        if self.amp_func: add_eig_src_args.append(self.amp_func)
 
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
             add_eig_src_args.append(diffractedplanewave)
