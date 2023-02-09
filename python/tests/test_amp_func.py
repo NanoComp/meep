@@ -1,3 +1,13 @@
+"""
+test_amp_func.py
+
+Check that the amp_func property of a custom mp.Source
+object is not overwritten during adjoint optimization,
+causing a memory leak (and further segfault) on subsequent
+optimization iterations.
+
+"""
+
 import unittest
 import meep as mp
 import meep.adjoint as mpa
