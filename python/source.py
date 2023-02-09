@@ -664,14 +664,13 @@ class EigenModeSource(Source):
             self.eig_tolerance,
             self.amplitude,
         ]
-        add_eig_src = functools.partial(
-            sim.fields.add_eigenmode_source, *add_eig_src_args
-        )
+        
+        if self.amp_func: add_eig_src_args.append(self.amp_func)
 
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
-            add_eig_src(self.amp_func, diffractedplanewave)
-        else:
-            add_eig_src(self.amp_func)
+            add_eig_src_args.append(diffractedplanewave)
+
+        sim.fields.add_eigenmode_source(*add_eig_src_args)
 
 
 class GaussianBeam3DSource(Source):

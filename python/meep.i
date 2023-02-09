@@ -739,7 +739,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) std::complex<double> (*)(const meep::vec &) {
     Py_XDECREF(py_amp_func);
-    py_amp_func = NULL
+    py_amp_func = NULL;
 }
 
 // Typemap suite for vector3
