@@ -714,6 +714,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) double (*)(const meep::vec &) {
   Py_XDECREF(py_callback);
+  py_callback = NULL;
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) double (*)(const meep::vec &) {
@@ -738,6 +739,7 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 
 %typemap(freearg) std::complex<double> (*)(const meep::vec &) {
     Py_XDECREF(py_amp_func);
+    py_amp_func = NULL;
 }
 
 // Typemap suite for vector3
@@ -1050,6 +1052,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 
 %typemap(freearg) std::complex<double> (*)(const meep::vec &) {
     Py_XDECREF(py_amp_func);
+    py_amp_func = NULL;
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) PyObject *min_max_loc {
