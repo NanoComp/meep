@@ -1,3 +1,4 @@
+from typing import Union, Tuple
 import functools
 import math
 import numbers
@@ -6,9 +7,7 @@ import warnings
 from collections import namedtuple
 from copy import deepcopy
 from numbers import Number
-
 import numpy as np
-
 import meep as mp
 
 FreqRange = namedtuple("FreqRange", ["min", "max"])
@@ -587,15 +586,15 @@ class MaterialGrid:
 
     def __init__(
         self,
-        grid_size,
-        medium1,
-        medium2,
-        weights=None,
-        grid_type="U_DEFAULT",
-        do_averaging=True,
-        beta=0,
-        eta=0.5,
-        damping=0,
+        grid_size: Union[Vector3, Tuple[float, ...]],
+        medium1: Medium,
+        medium2: Medium,
+        weights: np.ndarray = None,
+        grid_type: str = "U_DEFAULT",
+        do_averaging: bool = True,
+        beta: float = 0,
+        eta: float = 0.5,
+        damping: float = 0,
     ):
         """
         Creates a `MaterialGrid` object.
@@ -691,7 +690,7 @@ class MaterialGrid:
 
         self.swigobj = None
 
-    def update_weights(self, x):
+    def update_weights(self, x: np.ndarray):
         """
         Reset the `weights` to `x`.
         """
