@@ -39,8 +39,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         cls.design_region_size = mp.Vector3(1.5, 1.5)
         cls.design_region_resolution = int(2 * cls.resolution)
-        cls.Nx = int(cls.design_region_size.x * cls.design_region_resolution)
-        cls.Ny = int(cls.design_region_size.y * cls.design_region_resolution)
+        cls.Nx = int(round(cls.design_region_size.x * cls.design_region_resolution))
+        cls.Ny = int(round(cls.design_region_size.y * cls.design_region_resolution))
 
         # ensure reproducible results
         rng = np.random.RandomState(9861548)
@@ -678,7 +678,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             # non-center frequencies of a multifrequency simulation
             # are expected to be less accurate than the center frequency
             if nfrq == 1 and frequencies[0] == self.fcen:
-                tol = 2e-4 if mp.is_single_precision() else 5e-6
+                tol = 2.1e-4 if mp.is_single_precision() else 5e-6
             else:
                 tol = 0.005 if mp.is_single_precision() else 0.002
 

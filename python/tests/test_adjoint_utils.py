@@ -41,7 +41,7 @@ class TestAdjointUtils(ApproxComparisonTestCase):
     def test_filter_offset(self, test_name, Lx, Ly, resolution, radius, filter_func):
         """ensure that the filters are indeed zero-phase"""
         print("Testing ", test_name)
-        Nx, Ny = int(resolution * Lx), int(resolution * Ly)
+        Nx, Ny = int(round(resolution * Lx)), int(round(resolution * Ly))
         x = np.random.rand(Nx, Ny)
         x = x + np.fliplr(x)
         x = x + np.flipud(x)
