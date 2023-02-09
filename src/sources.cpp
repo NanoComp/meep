@@ -273,7 +273,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1) * amp * data->A(rel_loc);
 
     // check for invalid sources at r=0 in cylindrical coordinates
-    if (fc->gv.dim == Dcyl && loc.r() == 0 && abs(amps_array[idx_vol]) > 0) {
+    if (fc->gv.dim == Dcyl && loc.r() == 0 && amps_array[idx_vol] != 0.0) {
       if (fc->m == 0 && (component_direction(c) == R || component_direction(c) == P))
         meep::abort("Not possible to place a %s source at r=0 in "
                     "cylindrical coordinates for m = 0.",
