@@ -278,13 +278,13 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
         meep::abort("Not possible to place a %s source at r=0 in "
                     "cylindrical coordinates for m = 0.",
                     component_name(c));
-      else if (fabs(fc->m) == 1.0 && (c == Ez || c == Dz))
+      else if (fabs(fc->m) == 1.0 && component_direction(c) == Z)
         meep::abort("Not possible to place a %s source at r=0 in "
                     "cylindrical coordinates for |m| = 1.0.",
                     component_name(c));
-      else if (fabs(fc->m) > 1.0)
+      else
         meep::abort("Not possible to place a source at r=0 in "
-                    "cylindrical coordinates for |m| > 1.0.");
+                    "cylindrical coordinates for m = %g.", fc->m);
     }
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
