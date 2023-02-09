@@ -26,7 +26,7 @@ def _proper_pad(arr, pad_to):
 
     Parameters
     ----------
-    arr : 2d input array.
+    arr : 2d input array representing the nonnegative-coordinate ≈1/4 of a filter kernel.
     pad_to : 1d array composed of two integers indicating the total size to be padded to.
     """
 
