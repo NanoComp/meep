@@ -272,6 +272,21 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     vec rel_loc = loc - data->center;
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1) * amp * data->A(rel_loc);
 
+    // check for invalid sources at r=0 in cylindrical coordinates
+    if (fc->gv.dim == Dcyl && loc.r() == 0 && abs(amps_array[idx_vol]) > 0) {
+      if (fc->m == 0 && (component_direction(c) == R || component_direction(c) == P))
+        meep::abort("Not possible to place a %s source at r=0 in "
+                    "cylindrical coordinates for m = 0.",
+                    component_name(c));
+      else if (fabs(fc->m) == 1.0 && (c == Ez || c == Dz))
+        meep::abort("Not possible to place a %s source at r=0 in "
+                    "cylindrical coordinates for |m| = 1.0.",
+                    component_name(c));
+      else if (fabs(fc->m) > 1.0)
+        meep::abort("Not possible to place a source at r=0 in "
+                    "cylindrical coordinates for |m| > 1.0.");
+    }
+
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
        right because it doesn't handle non-diagonal chi1inv!
        similarly, for "B" sources, multiply by mu. */
@@ -452,17 +467,6 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
       where.set_direction_min(d, where.in_direction_min(d) - dw * 0.5);
       where.set_direction_max(d, where.in_direction_min(d) + w);
     }
-  }
-
-  // check for invalid sources at r=0 in cylindrical coordinates
-  if (gv.dim == Dcyl && where.in_direction_min(R) == 0.0) {
-    if (fabs(m) == 1.0 && (c == Ez || c == Dz))
-      meep::abort("Not possible to place a %s source at r=0 in "
-                  "cylindrical coordinates for |m| = 1.0.",
-                  component_name(c));
-    else if (fabs(m) > 1.0)
-      meep::abort("Not possible to place a source at r=0 in "
-                  "cylindrical coordinates for |m| > 1.0.");
   }
 
   src_vol_chunkloop_data data;
