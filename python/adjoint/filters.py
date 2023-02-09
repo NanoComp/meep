@@ -22,7 +22,8 @@ def _centered(arr, newshape):
 
 
 def _proper_pad(arr, pad_to):
-    """
+    """Return a zero-padded/expanded version of filter arr (≈1/4 of kernel) to size pad_to, for convolution.
+
     Parameters
     ----------
     arr : 2d input array.
