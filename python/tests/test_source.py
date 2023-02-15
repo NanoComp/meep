@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 from meep.geom import Cylinder, Vector3
-from meep.source import ContinuousSource, EigenModeSource, GaussianSource
+from meep.source import ContinuousSource, EigenModeSource, GaussianSource, Source
 
 import meep as mp
 
@@ -12,6 +12,36 @@ data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
 
 
 class TestEigenModeSource(unittest.TestCase):
+    def test_amp_func_change_sources(self):
+        src = ContinuousSource(5.0)
+        center = Vector3()
+        size = Vector3(0, 1, 0)
+
+        ampfunc = lambda X: 1.0
+        amp_source = [
+            Source(src, component=mp.Ez, center=center, size=size, amp_func=ampfunc)
+        ]
+        sim = mp.Simulation(
+            cell_size=Vector3(1, 1, 0), resolution=5, sources=amp_source
+        )
+        sim.run(until=1)
+
+        sim.restart_fields()
+        sim.clear_dft_monitors()
+        default_lattice = [
+            EigenModeSource(src, size=size, center=center),
+            EigenModeSource(src, size=size, center=center),
+        ]
+        sim.change_sources(default_lattice)
+        sim.run(until=1)
+
+        sim.reset_meep()
+        sim.change_sources(amp_source)
+        sim.run(until=1)
+
+        self.assertTrue(sim.sources[0].amp_func is ampfunc)
+        self.assertTrue(sim.sources[0].amp_func is not None)
+
     def test_eig_lattice_defaults(self):
         src = ContinuousSource(5.0)
         center = Vector3()
