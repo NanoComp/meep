@@ -85,31 +85,33 @@ class TestPMLCylindrical(unittest.TestCase):
 
         sim.run(until_after_sources=50.94)
 
-        prev_flux_plusz = mp.get_fluxes(flux_plus_z)[0]
-        prev_flux_plusr = mp.get_fluxes(flux_plus_r)[0]
-        prev_flux_minusz = mp.get_fluxes(flux_minus_z)[0]
+        prev_flux = [
+            mp.get_fluxes(flux_plus_z)[0],
+            mp.get_fluxes(flux_plus_r)[0],
+            mp.get_fluxes(flux_minus_z)[0],
+        ]
 
         for t in [142.15, 214.64, 365.32]:
             sim.run(until_after_sources=t)
 
-            flux_plusz = mp.get_fluxes(flux_plus_z)[0]
-            flux_plusr = mp.get_fluxes(flux_plus_r)[0]
-            flux_minusz = mp.get_fluxes(flux_minus_z)[0]
-            flux_tot = flux_plusz + flux_plusr + flux_minusz
+            cur_flux = [
+                mp.get_fluxes(flux_plus_z)[0],
+                mp.get_fluxes(flux_plus_r)[0],
+                mp.get_fluxes(flux_minus_z)[0],
+            ]
+            cur_flux_str = ", ".join(f"{c:.6f}" for c in cur_flux)
+            flux_tot = sum(cur_flux)
 
-            print(
-                f"flux:, {sim.meep_time()}, {flux_plusz:.6f}, "
-                f"{flux_plusr:.6f}, {flux_minusz:.6f}, {flux_tot:.6f}"
-            )
+            print(f"flux:, {sim.meep_time()}, {cur_flux_str}, {flux_tot:.6f}")
 
             places = 6 if mp.is_single_precision() else 9
-            self.assertAlmostEqual(flux_plusz, prev_flux_plusz, places=places)
-            self.assertAlmostEqual(flux_plusr, prev_flux_plusr, places=places)
-            self.assertAlmostEqual(flux_minusz, prev_flux_minusz, places=places)
-
-            prev_flux_plusz = flux_plusz
-            prev_flux_plusr = flux_plusr
-            prev_flux_minusz = flux_minusz
+            for i in range(len(cur_flux)):
+                self.assertAlmostEqual(
+                    prev_flux[i],
+                    cur_flux[i],
+                    places=places,
+                )
+                prev_flux[i] = cur_flux[i]
 
 
 if __name__ == "__main__":
