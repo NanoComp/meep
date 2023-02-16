@@ -11,26 +11,16 @@ def constraint_connectivity(
     ny,
     nz,
     cond_v=1,
-    cond_s=1e6,
+    cond_s=1e4,
     src_v=0,
     src_s=1,
     solver=spsolve,
-    thresh=None,
-    p=4,
+    thresh=50,
+    p=3,
     need_grad=True,
 ):
     rho = np.reshape(rho, (nz, ny, nx))
     n = nx * ny * nz
-
-    if ny == 1:
-        path = nx * nz / 2
-        phi = 0.5 * path * path / cond_s  # estimate of warmest connected structure
-    else:
-        path = nx * ny * nz / 4
-        phi = 0.5 * path * path / cond_s
-    if not thresh:
-        thresh = phi
-
     # gradient matrices
     gx = diags([-1, 1], [0, 1], shape=(nx - 1, nx), format="csr")
     gy = diags([-1, 1], [0, 1], shape=(ny - 1, ny), format="csr")
