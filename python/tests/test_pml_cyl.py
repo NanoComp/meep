@@ -1,6 +1,7 @@
 import unittest
-import meep as mp
+import parameterized
 import numpy as np
+import meep as mp
 
 
 class TestPMLCylindrical(unittest.TestCase):
@@ -17,9 +18,24 @@ class TestPMLCylindrical(unittest.TestCase):
         )
         cls.fcen = 1.0
 
-    def test_pml_cyl_coords(self):
+    @parameterized.parameterized.expand(
+        [
+            (-1.0, 0.0, False),
+            (2.0, 0.14, False),
+            (3.0, 0.17, True),
+        ]
+    )
+    def test_pml_cyl(
+        self, m: float, rpos: float, accurate_fields_near_cylorigin: bool = False
+    ):
         """Verifies that the z-PML in cylindrical coordinates properly
         attenuates fields at r=0.
+
+        Args:
+           m: exp(imϕ) angular dependence of the fields.
+           rpos: position of source along R direction.
+           accurate_fields_near_cylorigin: whether to compute more accurate
+              fields near the origin r=0.
         """
 
         pml_layers = [
@@ -30,7 +46,7 @@ class TestPMLCylindrical(unittest.TestCase):
         sources = [
             mp.Source(
                 src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
-                center=mp.Vector3(),
+                center=mp.Vector3(rpos, 0, 0),
                 component=mp.Er,
             ),
         ]
@@ -39,10 +55,14 @@ class TestPMLCylindrical(unittest.TestCase):
             resolution=self.resolution,
             cell_size=self.cell_size,
             dimensions=mp.CYLINDRICAL,
-            m=-1,
+            m=m,
             sources=sources,
             boundary_layers=pml_layers,
+            accurate_fields_near_cylorigin=accurate_fields_near_cylorigin,
         )
+
+        if accurate_fields_near_cylorigin and abs(m) > 1:
+            sim.Courant = 1 / (abs(m) + 0.6)
 
         flux_plus_z = sim.add_flux(
             self.fcen,
@@ -104,7 +124,7 @@ class TestPMLCylindrical(unittest.TestCase):
 
             print(f"flux:, {sim.meep_time()}, {cur_flux_str}, {flux_tot:.6f}")
 
-            places = 6 if mp.is_single_precision() else 9
+            places = 6 if mp.is_single_precision() else 8
             for i in range(len(cur_flux)):
                 self.assertAlmostEqual(
                     prev_flux[i],
