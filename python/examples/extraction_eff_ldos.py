@@ -19,12 +19,7 @@ wvl = 1.0  # wavelength (in vacuum)
 
 fcen = 1 / wvl  # center frequency of source/monitor
 
-# source properties (cylindrical)
-df = 0.05 * fcen
-cutoff = 10.0
-src = mp.GaussianSource(fcen, fwidth=df, cutoff=cutoff)
-
-# termination criteria
+# runtime termination criteria
 tol = 1e-8
 
 
@@ -48,7 +43,13 @@ def extraction_eff_cyl(dmat: float, h: float) -> float:
 
     src_cmpt = mp.Er
     src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
-    sources = [mp.Source(src=src, component=src_cmpt, center=src_pt)]
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
+            component=src_cmpt,
+            center=src_pt,
+        )
+    ]
 
     geometry = [
         mp.Block(
