@@ -325,15 +325,15 @@ The extraction efficiency is defined as the ratio of the power extracted from th
 
 A more efficient approach to computing the total emitted power from the dipole is to use the LDOS. In particular, the terms in the numerator from the LDOS expression above are exactly equivalent to the emitted power: $$-\operatorname{Re}[\hat{E}_{\ell}(\vec{x}_0,\omega)\hat{p}(\omega)^*].$$ The Fourier-transformed electric field $\hat{E}_{\ell}(\vec{x}_0,\omega)$ and current source $\hat{p}(\omega)$ can be obtained using the `ldos_Fdata` and `ldos_Jdata` members of the `Simulation` class object, respectively. The LDOS approach has the advantage that it involves just a single point monitor (colocated with the dipole source) and thus does not require the expense of collecting DFT fields for the flux through an enclosing box (and in some circumstances resolving the Poynting flux may also require higher resolution).
 
-To demonstrate this feature of the LDOS, we will compute the extraction efficiency of an LED-like structure consisting of a point dipole embedded within a dielectric layer ($n$=2.4 and thickness 0.7 $\lambda/n$) surrounded by vacuum and positioned above an infinite ground plane of a lossless metal. We will compute the extraction efficiency (at a wavelength $\lambda$ = 1.0 μm for a dipole with polarization parallel to the ground plane) as a function of the height of the dipole source above the ground plane using two different coordinate systems — 3D Cartesian and cylindrical — and demonstrate that the results are equivalent (apart from discretization error). The simulation setup is shown in the figures below for 3D Cartesian (cross section in $xz$) and cylindrical coordinates. (Note that this single-dipole calculation differs from the somewhat related flux calculation in [Tutorials/Custom Source/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) which involved modeling a *collection* of dipoles.)
+To demonstrate this feature of the LDOS, we will compute the extraction efficiency of an LED-like structure consisting of a point dipole embedded within a dielectric layer ($n$=2.4 and thickness 0.7 $\lambda/n$) surrounded by vacuum and positioned above an infinite ground plane of a lossless metal. We will compute the extraction efficiency (at a wavelength $\lambda$ = 1.0 μm for a dipole with polarization parallel to the ground plane) as a function of the height of the dipole source above the ground plane using two different coordinate systems — 3D Cartesian and cylindrical — and demonstrate that the results are equivalent (apart from discretization error). The key difference is that simulation using cylindrical (2D) coordinates is significantly faster and more memory efficient than 3D.
+
+The simulation setup is shown in the figures below for 3D Cartesian (cross section in $xz$) and cylindrical coordinates. (Note that this single-dipole calculation differs from the somewhat related flux calculation in [Tutorials/Custom Source/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) which involved modeling a *collection* of dipoles.)
 
 ![](../images/dipole_extraction_eff_3D.png#center)
 
 ![](../images/dipole_extraction_eff_cyl.png#center)
 
-Simulation using cylindrical (2D) coordinates is significantly faster and more memory efficient than 3D. However, care must be taken to ensure that the pulsed source in cylindrical coordinates is (1) narrow bandwidth *and* (2) turns on/off smoothly. These two properties are necessary to avoid abruptly turning the source on and off which can generate high-frequency spectral components at the Nyquist frequency of the grid. These components have zero group velocity and we have observed that they decay particularly slowly near the origin in cylindrical coordinates. The net result is that these residual fields will fail to decay away and thus preclude the convergence of the DFT monitors (and hence the LDOS itself). Because of the inverse relationship between frequency and time domain, a narrowband and long-cutoff source involves a longer time duration. In this example, the `cutoff` property of the `GaussianSource` is doubled to 10 from its default value of 5. The spectral bandwidth (`fwidth`) is 5% of the center frequency of 1.0.
-
-Finally, the total emitted power obtained using the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V$ for a source at the origin turns out to be $\pi/(resolution)^3$ and in 3D it is $1/(resolution)^3$.
+The total emitted power obtained using the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V$ for a source at the origin turns out to be $\pi/(resolution)^3$ and in 3D it is $1/(resolution)^3$.
 
 As shown in the figure below, the results from the two coordinate systems have good agreement.
 
@@ -356,12 +356,7 @@ wvl = 1.0        # wavelength (in vacuum)
 
 fcen = 1 / wvl   # center frequency of source/monitor
 
-# source properties (cylindrical)
-df = 0.05 * fcen
-cutoff = 10.0
-src = mp.GaussianSource(fcen, fwidth=df, cutoff=cutoff)
-
-# termination criteria
+# runtime termination criteria
 tol = 1e-8
 
 
@@ -385,7 +380,13 @@ def extraction_eff_cyl(dmat: float, h: float) -> float:
 
     src_cmpt = mp.Er
     src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
-    sources = [mp.Source(src=src, component=src_cmpt, center=src_pt)]
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
+            component=src_cmpt,
+            center=src_pt,
+        )
+    ]
 
     geometry = [
         mp.Block(
