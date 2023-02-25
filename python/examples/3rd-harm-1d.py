@@ -15,28 +15,27 @@ import meep as mp
 
 
 def third_harmonic_generation(
-    logk: float, amp: float = 1.0, nfreq: int = 10, flux_spectrum: bool = True
+    k: float, amp: float = 1.0, nfreq: int = 10, flux_spectrum: bool = True
 ) -> Union[Tuple[List[float], List[float]], Tuple[float, float]]:
 
     """Computes the transmission spectrum of a plane wave propagating
        through a Kerr medium.
 
     Args:
-      logk: base 10 exponent of the Kerr susceptibility.
+      k: strength of Kerr susceptibility.
       amp: amplitude of the incident planewave.
-      nfreq: number of frequencies in broad bandwidth spectrum.
+      nfreq: number of frequencies in flux spectrum.
       flux_spectrum: compute the flux spectrum over broad bandwidth (True) or
                      just the two harmonic frequencies ω and 3ω (False).
 
     Returns:
-      The frequencies and transmitted flux over the broad bandwidth spectrum or
-      the transmitted flux at the harmonic frequencies.
+      The frequencies and transmitted flux over the flux spectrum or
+      the transmitted flux at the harmonic frequencies ω and 3ω.
     """
 
     sz = 100  # size of cell in z direction
     fcen = 1 / 3.0  # center frequency of source
     df = fcen / 20.0  # frequency width of source
-    k = 10**logk  # Kerr susceptibility
     dpml = 1.0  # PML thickness
 
     # We'll use an explicitly 1d simulation.  Setting dimensions=1 will actually
@@ -105,14 +104,13 @@ def third_harmonic_generation(
 
 
 if __name__ == "__main__":
-    # Part 1: plot broad bandwidth spectrum of transmitted power for a
-    #         several values of logk.
+    # Part 1: plot transmitted power spectrum for several values of χ(3).
     nfreq = 400
     logk = range(-3, 1)
     tflux = np.zeros((nfreq, len(logk)))
     for i, lk in enumerate(logk):
         freqs, tflux[:, i] = third_harmonic_generation(
-            lk, nfreq=nfreq, flux_spectrum=True
+            10**lk, nfreq=nfreq, flux_spectrum=True
         )
 
     fig, ax = plt.subplots()
@@ -125,17 +123,18 @@ if __name__ == "__main__":
     ax.set_xlim(0.2, 1.2)
     ax.set_ylim(1e-15, 1e2)
     ax.legend()
+    ax.grid(True)
     fig.savefig(
-        "transmitted_power_vs_frequency_vary_logk.png", dpi=150, bbox_inches="tight"
+        "transmitted_power_vs_frequency_vary_chi3.png", dpi=150, bbox_inches="tight"
     )
 
-    # Part 2: plot transmittance vs. χ(3) for harmonic frequencies ω and 3ω.
+    # Part 2: plot transmittance vs. χ(3) for frequencies ω and 3ω.
     logk = np.arange(-6.0, 0.2, 0.2)
     first_order = np.zeros(len(logk))
     third_order = np.zeros(len(logk))
     for i, lk in enumerate(logk):
         first_order[i], third_order[i] = third_harmonic_generation(
-            lk, flux_spectrum=False
+            10**lk, flux_spectrum=False
         )
 
     input_flux = first_order[0]
@@ -146,4 +145,5 @@ if __name__ == "__main__":
     ax.set_xlabel(r"$\chi^{(3)}$")
     ax.set_ylabel("transmission / incident power")
     ax.legend()
+    ax.grid(True, "both")
     fig.savefig("transmittance_vs_chi3.png", dpi=150, bbox_inches="tight")

@@ -106,15 +106,15 @@ else:
     return mp.get_fluxes(trans1)[0], mp.get_fluxes(trans3)[0]
 ```
 
-In a linear calculation, we normalize the transmission against some reference spectrum, but in this case there is no obvious normalization so we will just plot the raw data for several values of `k` (i.e. of χ$^{(3)}$):
+In the first part of this tutorial, we plot the transmitted power spectrum for various values of $\chi^{(3)}$. In a linear calculation, we normalize the transmission against some reference spectrum, but in this case there is no obvious normalization so we will just plot the raw data for several values of `k` (i.e. of $\chi^{(3)}$):
 
 ![](../images/3rd-harm-1d-flux.png#center)
 
 For small values of $\chi^{(3)}$, we see a peak from our source at $\omega=\frac{1}{3}$ and another peak precisely at the third-harmonic frequency $3\omega=1$. As the $\chi^{(3)}$ gets larger, frequency-mixing *within* the peaks causes them to broaden, and finally for $\chi^{(3)}=1$ we start to see a noisy, broad-spectrum transmission due to the phenomenon of **modulation instability**. Notice also that at around $10^{-13}$ the data looks weird; this is probably due to our finite simulation time, imperfect absorbing boundaries, etcetera. We haven't attempted to analyze it in detail for this case.
 
-It is also interesting to have a more detailed look at the dependence of the power at $\omega$ and $3\omega$ as a function of $\chi^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two flux regions to Meep and request exactly the desired frequency components. That is, we'll add `tran1` and `tran3` monitor before `sim.run` as shown above.
+In the second part of the tutorial, we investigate the dependence of the power at $\omega$ and $3\omega$ as a function of $\chi^{(3)}$ and the current amplitude. We could, of course, interpolate the flux spectrum above to get the desired frequencies, but it is easier just to add two flux regions to Meep and request exactly the desired frequency components. That is, we'll add `tran1` and `tran3` monitor before `sim.run` as implemented in the function `third_harmonic_generation` shown above.
 
-We could print these with more `display_fluxes` lines, but it is nice to print these on a single line along with $\chi^{(3)}$ and the amplitude, so that we can eventually put them all into one table in our plotting program. To do this, we'll use the lower-level function `get_fluxes(trans1)`, which returns a list of the flux values, and take the first element of the list since there is only one:
+We could print these with more `display_fluxes` lines, but it is nice to print these on a single line along with $\chi^{(3)}$ and the amplitude, so that we can eventually put them all into one table in post processing. To do this, we'll use the lower-level function `get_fluxes(trans1)`, which returns a list of the flux values, and take the first element of the list since there is only one:
 
 ```py
 print("harmonics:, {}, {}, {}, {}".format(k, amp, mp.get_fluxes(trans1)[0], mp.get_fluxes(trans3)[0]))
@@ -126,8 +126,7 @@ Finally, we specify the two different parts of the computation and generate the 
 
 ```py
 if __name__ == "__main__":
-    # Part 1: plot broad bandwidth spectrum of transmitted power for a
-    #         several values of logk.
+    # Part 1: plot transmitted power spectrum for several values of χ(3).
     nfreq = 400
     logk = range(-3,1)
     tflux = np.zeros((nfreq,len(logk)))
@@ -148,7 +147,7 @@ if __name__ == "__main__":
     fig.savefig('transmitted_power_vs_frequency_vary_logk.png',dpi=150,
                 bbox_inches='tight')
 
-    # Part 2: plot transmittance vs. χ(3) for harmonic frequencies ω and 3ω.
+    # Part 2: plot transmittance vs. χ(3) for frequencies ω and 3ω.
     logk = np.arange(-6.0,0.2,0.2)
     first_order = np.zeros(len(logk))
     third_order = np.zeros(len(logk))
@@ -167,7 +166,7 @@ if __name__ == "__main__":
     fig.savefig('transmittance_vs_chi3.png',dpi=150,bbox_inches='tight')
 ```
 
-In Part 2, we divide the transmitted power by the transmission at $\omega$ for the smallest $\chi^{(3)}$ of $10^{-6}$ which is 225.25726603587043. We then plot the fractional transmission at $\omega$ and $3\omega$ as a function of $\chi^{(3)}$ on a log-log scale:
+We divide the transmitted power at all values of $\chi^{(3)}$ by the transmitted power at $\omega$ for the smallest $\chi^{(3)}$ of $10^{-6}$ which is 225.25726603587043. We then plot the fractional transmission at $\omega$ and $3\omega$ as a function of $\chi^{(3)}$ on a log-log scale:
 
 ![](../images/3rd-harm-1d-vs-chi.png#center)
 
