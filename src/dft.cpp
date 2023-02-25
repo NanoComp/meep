@@ -204,7 +204,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
     double freq_max = 0;
     for (size_t i = 0; i < Nfreq; ++i)
       freq_max = std::max(freq_max, std::abs(freq[i]));
-    if ((freq_max > 0) && (src_freq_max > 0))
+    if ((freq_max > 0) && (src_freq_max > 0) && !has_nonlinearities())
       decimation_factor = std::max(1, int(std::floor(1 / (dt * (freq_max + src_freq_max)))));
     else
       decimation_factor = 1;
