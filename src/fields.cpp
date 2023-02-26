@@ -663,11 +663,11 @@ void fields_chunk::use_real_fields() {
     }
 }
 
-bool fields::has_nonlinearities() const {
+bool fields::has_nonlinearities(bool parallel) const {
   bool nonlinear = false;
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) nonlinear = nonlinear || chunks[i]->s->has_nonlinearities();
-  return or_to_all(nonlinear);
+  return parallel ? or_to_all(nonlinear) : nonlinear;
 }
 
 int fields::phase_in_material(const structure *snew, double time) {

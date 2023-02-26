@@ -204,10 +204,15 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
     double freq_max = 0;
     for (size_t i = 0; i < Nfreq; ++i)
       freq_max = std::max(freq_max, std::abs(freq[i]));
-    if ((freq_max > 0) && (src_freq_max > 0) && !has_nonlinearities())
+    if ((freq_max > 0) && (src_freq_max > 0) && !has_nonlinearities(false))
       decimation_factor = std::max(1, int(std::floor(1 / (dt * (freq_max + src_freq_max)))));
     else
       decimation_factor = 1;
+
+    // with add_srcdata sources, it's possible that not all
+    // sources are present on all chunks, leading us to over-estimate
+    // the allowed decimation_factor -- take minimimum to be sure:
+    decimation_factor = min_to_all(decimation_factor);
   }
   data.decimation_factor = decimation_factor;
 

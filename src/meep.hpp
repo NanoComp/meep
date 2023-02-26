@@ -1759,7 +1759,7 @@ public:
   void reset();
   void log(const char *prefix = "");
   void change_m(double new_m);
-  bool has_nonlinearities() const;
+  bool has_nonlinearities(bool parallel = true) const;
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);
