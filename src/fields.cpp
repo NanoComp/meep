@@ -663,6 +663,13 @@ void fields_chunk::use_real_fields() {
     }
 }
 
+bool fields::has_nonlinearities(bool parallel) const {
+  bool nonlinear = false;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) nonlinear = nonlinear || chunks[i]->s->has_nonlinearities();
+  return parallel ? or_to_all(nonlinear) : nonlinear;
+}
+
 int fields::phase_in_material(const structure *snew, double time) {
   if (snew->num_chunks != num_chunks)
     meep::abort("Can only phase in similar sets of chunks: %d vs %d\n", snew->num_chunks,

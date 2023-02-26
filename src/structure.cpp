@@ -545,6 +545,16 @@ bool structure_chunk::has_chi1inv(component c, direction d) const {
   return is_mine() && chi1inv[c][d] && !trivial_chi1inv[c][d];
 }
 
+bool structure_chunk::has_nonlinearities() const {
+  bool nonlinear = false;
+  if (!is_mine()) return false;
+  FOR_COMPONENTS(c) { nonlinear = nonlinear || chi2[c] || chi3[c]; }
+  FOR_FIELD_TYPES(ft) {
+    if (chiP[ft]) nonlinear = nonlinear || chiP[ft]->has_nonlinearities();
+  }
+  return nonlinear;
+}
+
 void structure::mix_with(const structure *oth, double f) {
   if (num_chunks != oth->num_chunks)
     meep::abort("You can't phase materials with different chunk topologies...\n");
