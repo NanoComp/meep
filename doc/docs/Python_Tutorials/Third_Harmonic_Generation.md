@@ -2,7 +2,7 @@
 # Third Harmonic Generation
 ---
 
-In this example, we consider wave propagation through a simple 1d nonlinear medium with a non-zero [Kerr susceptibility χ$^{(3)}$](https://en.wikipedia.org/wiki/Kerr_effect). See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency $\omega$, and because of the nonlinearity we also get a signal at a frequency $3\omega$. See also [3rd-harm-1d.py](https://github.com/NanoComp/meep/blob/master/python/examples/3rd-harm-1d.py).
+In this example, we consider wave propagation through a simple 1d nonlinear medium with a non-zero [Kerr susceptibility $\chi^{(3)}$](https://en.wikipedia.org/wiki/Kerr_effect). See also [Materials](../Materials.md#nonlinearity) and [Units and Nonlinearity](../Units_and_Nonlinearity.md). We send in a narrow-band pulse at a frequency $\omega$, and because of the nonlinearity we also get a signal at a frequency $3\omega$. See also [3rd-harm-1d.py](https://github.com/NanoComp/meep/blob/master/python/examples/3rd-harm-1d.py).
 
 Since this is a 1d calculation, we could implement it via a 2d cell of `Vector3(S,0,0)`, specifying periodic boundary conditions in the $y$ direction. However, this is slightly inefficient since the $y$ periodic boundaries are implemented internally via extra "ghost pixels" in the $y$ direction. Instead, Meep has special support for 1d simulations in the $z$ direction. To use this, we must explicitly set `dimensions` to `1`, and in that case we can *only* use $E_x$ (and $D_x$) and $H_y$ field components. This involves no loss of generality because of the symmetry of the problem.
 
@@ -77,18 +77,19 @@ mon_pt = mp.Vector3(0, 0, 0.5 * sz - dpml - 0.5)
 if flux_spectrum:
     trans = sim.add_flux(
         0.5 * (fmin + fmax), fmax - fmin, nfreq, mp.FluxRegion(mon_pt),
-        decimation_factor=1
     )
 else:
     trans1 = sim.add_flux(
-        fcen, 0, 1, mp.FluxRegion(mon_pt), decimation_factor=1
+        fcen, 0, 1, mp.FluxRegion(mon_pt)
     )
     trans3 = sim.add_flux(
-        3 * fcen, 0, 1, mp.FluxRegion(mon_pt), decimation_factor=1
+        3 * fcen, 0, 1, mp.FluxRegion(mon_pt)
     )
 ```
 
-Note that we must turn off DFT decimation by passing an additional argument of `decimation_factor=1` to the `add_flux` monitor definitions because decimation is on by default. Finally, we'll run the sources, plus additional time for the field to decay at the flux plane, and output the flux spectrum:
+Note that DFT decimation is off by default whenever nonlinearities are present.
+
+Finally, we'll run the sources, plus additional time for the field to decay at the flux plane, and output the flux spectrum:
 
 ```py
 sim.run(until_after_sources=mp.stop_when_fields_decayed(
@@ -170,7 +171,7 @@ We divide the transmitted power at all values of $\chi^{(3)}$ by the transmitted
 
 ![](../images/3rd-harm-1d-vs-chi.png#center)
 
-As can be shown from coupled-mode theory or, equivalently, follows from [Fermi's golden rule](https://en.wikipedia.org/wiki/Fermi's_golden_rule), the third-harmonic power must go as the *square* of $\chi^{(3)}$ as long as the nonlinearity is weak (i.e. in the first Born approximation limit, where the ω source is not depleted significantly). This is precisely what we see on the above graph, where the slope of the black line indicates an exact quadratic dependence, for comparison. Once the nonlinearity gets strong enough, however, this approximation is no longer valid and the dependence is complicated.
+As can be shown from coupled-mode theory or, equivalently, follows from [Fermi's golden rule](https://en.wikipedia.org/wiki/Fermi's_golden_rule), the third-harmonic power must go as the *square* of $\chi^{(3)}$ as long as the nonlinearity is weak (i.e. in the first Born approximation limit, where the ω source is not depleted significantly). This is precisely what we see on the above graph, where the slope of the black line indicates an exact quadratic dependence, for comparison. Once the nonlinearity becomes strong enough, however, this approximation is no longer valid and the dependence is complicated.
 
 Finally, we note that increasing the current amplitude by a factor of $F$ or the Kerr susceptibility $\chi^{(3)}$ by a factor $F^3$ should generate the *same* third-harmonic power in the *weak* nonlinearity approximation. And indeed, we see:
 

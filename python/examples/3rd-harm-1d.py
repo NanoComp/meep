@@ -81,13 +81,10 @@ def third_harmonic_generation(
             fmax - fmin,
             nfreq,
             mp.FluxRegion(mon_pt),
-            decimation_factor=1,
         )
     else:
-        trans1 = sim.add_flux(fcen, 0, 1, mp.FluxRegion(mon_pt), decimation_factor=1)
-        trans3 = sim.add_flux(
-            3 * fcen, 0, 1, mp.FluxRegion(mon_pt), decimation_factor=1
-        )
+        trans1 = sim.add_flux(fcen, 0, 1, mp.FluxRegion(mon_pt))
+        trans3 = sim.add_flux(3 * fcen, 0, 1, mp.FluxRegion(mon_pt))
 
     sim.run(until_after_sources=mp.stop_when_fields_decayed(50, mp.Ex, mon_pt, 1e-6))
 
