@@ -4,7 +4,7 @@ import meep as mp
 import numpy as onp
 from autograd import tensor_jacobian_product
 
-from . import ObjectiveQuantity, OptimizationProblem
+from . import ObjectiveQuantity
 
 # Meep field components used to compute adjoint sensitivities
 _ADJOINT_FIELD_COMPONENTS = [mp.Dx, mp.Dy, mp.Dz]
@@ -250,7 +250,7 @@ def create_adjoint_sources(
 
 
 def get_epigraph_nlopt(
-    mpa_opt: OptimizationProblem,
+    mpa_opt,
     mapping: Callable,
     callback: Callable | None = None,
 ) -> tuple[Callable, Callable]:
