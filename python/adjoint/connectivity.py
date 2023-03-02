@@ -19,6 +19,38 @@ def constraint_connectivity(
     p=3,
     need_grad=True,
 ):
+    """Computes its connectivity constraint value and the gradients with
+    respect to each pixel value.
+
+    Given a structure, assembles the finite difference matrices of the heat equation
+    and solves for an auxiliary temperature field. Computes the p-norm of the field
+    and compares it with the threshold to determine whether the structure is connected
+    or not. Reference: "Li, Q., Chen, W., Liu, S. et al. Structural topology optimization considering
+    connectivity constraint. Struct Multidisc Optim 54, 971–984 (2016).
+    https://doi.org/10.1007/s00158-016-1459-5"
+
+    Args:
+        rho: the structure as (filtered and projected) design variables
+        nx: size of the design variable in the x direction
+        ny: size of the design variable in the y direction; should set to 1 for 2D structures
+        nz: size of the design variable in the z direction; the supporting layer is outside the
+          last slice of pixels in the z direction
+        cond_v: heat conductivity for the void pixels
+        cond_s: heat conductivity for solid pixels
+        src_v: heat source value at void pixels
+        src_s: heat source value at solid pixels
+        solver: sparse solver option for solving the linear system. Either spsolve or cg
+        thresh: threshold value against which the p-norm of the temperature field is compared
+        p: which p-norm of the temperature field to compute
+        need_grad: True if gradients are needed; False if only want the forward constraint value
+
+    Returns:
+        If need_grad = True, returns T, heat, grad; if need_grad = False, only returns heat
+        T is the computed auxiliary temperature field, heat is the constraint value (negative
+        for connected and positive for disconnected structures), grad is the gradient of the
+        constraint with respect to the design variables, i.e. d(heat)/d(rho).
+    """
+
     rho = np.reshape(rho, (nz, ny, nx))
     n = nx * ny * nz
     # gradient matrices
@@ -67,9 +99,9 @@ def constraint_connectivity(
         T, info = (solver(eq, src)).reshape(1, -1)
 
     heat_func = lambda x: npa.sum(x**p) ** (1 / p) / thresh
-    heat = heat_func(T)
+    heat = heat_func(T) - 1
     if not need_grad:
-        return heat - 1
+        return heat
 
     dgdx = grad(heat_func)(T)
     if solver == spsolve:
@@ -200,7 +232,7 @@ def constraint_connectivity(
     )
 
     gradient = aT * (src_s - src_v) - (cond_s - cond_v) * (aT @ dAdp_x)
-    return T, heat - 1, gradient
+    return T, heat, gradient
 
 
 def cc_fd(
