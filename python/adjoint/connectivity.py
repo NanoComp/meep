@@ -3,6 +3,7 @@ from scipy.sparse.linalg import cg, spsolve
 from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix
 from autograd import numpy as npa
 from autograd import grad
+from typing import List
 
 solvers = [spsolve, cg]
 
