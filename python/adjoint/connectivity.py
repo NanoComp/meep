@@ -9,16 +9,16 @@ solvers = [spsolve, cg]
 
 def constraint_connectivity(
     rho: List[float] = None,
-    nx: float = None,
-    ny: float = None,
-    nz: float = None,
+    nx: int = None,
+    ny: int = None,
+    nz: int = None,
     cond_v: float = 1.0,
     cond_s: float = 1e4,
     src_v: float = 0.0,
     src_s: float = 1.0,
     solver_option: int = 0,
-    thresh: float = 50,
-    p: float = 3,
+    thresh: float = 50.0,
+    p: float = 3.0,
     need_grad: bool = True,
 ):
     """Computes its connectivity constraint value and the gradients with
