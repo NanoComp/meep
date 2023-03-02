@@ -38,13 +38,16 @@ def constraint_connectivity(
         ny: size of the design variable in the y direction; should set to 1 for 2D structures
         nz: size of the design variable in the z direction; the supporting layer is outside the
           last slice of pixels in the z direction
-        cond_v: heat conductivity for the void pixels
-        cond_s: heat conductivity for solid pixels
-        src_v: heat source value at void pixels
-        src_s: heat source value at solid pixels
+        cond_v: heat conductivity for the void pixels; should NOT be changed
+        cond_s: heat conductivity for solid pixels; IMPORTANT hyperparameter: changes the overall magnitude of
+          heat constraint; good values generally between 1e3 to 1e5
+        src_v: heat source value at void pixels; should NOT be changed
+        src_s: heat source value at solid pixels; should NOT be changed
         solver_option: sparse solver option for solving the linear system. 0 for spsolve and 1 for cg
-        thresh: threshold value against which the p-norm of the temperature field is compared
-        p: which p-norm of the temperature field to compute
+        thresh: threshold value against which the p-norm of the temperature field is compared. VERY IMPORTANT
+          hyperparameter. Good values depend on cond_s and p values. Should be tuned given the problem setup and
+          after choosing cond_s and p values.
+        p: which p-norm of the temperature field to compute; good values generally between 3 to 5
         need_grad: True if gradients are needed; False if only want the forward constraint value
 
     Returns:
@@ -103,9 +106,10 @@ def constraint_connectivity(
         T, info = (solver(eq, src)).reshape(1, -1)
 
     heat_func = lambda x: npa.sum(x**p) ** (1 / p) / thresh
-    heat = heat_func(T) - 1
+    # Instead of constraining heat - threshold <= 0, we are constraining heat/threshold - 1 <= 0
+    heat_constraint = heat_func(T) - 1
     if not need_grad:
-        return heat
+        return heat_constraint
 
     dgdx = grad(heat_func)(T)
     if solver == spsolve:
@@ -236,7 +240,7 @@ def constraint_connectivity(
     )
 
     gradient = aT * (src_s - src_v) - (cond_s - cond_v) * (aT @ dAdp_x)
-    return T, heat, gradient
+    return T, heat_constraint, gradient
 
 
 # Finite difference gradient for debugging.
