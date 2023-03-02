@@ -253,7 +253,7 @@ def get_epigraph_nlopt(
     mpa_opt,
     mapping: Callable,
     callback: Optional[Callable] = None,
-) -> tuple[Callable, Callable]:
+) -> Tuple[Callable, Callable]:
     """Helper function to create the NLopt objective and vector constraints for an
     epigraph formulation of a meep adjoint optimization problem.
 
