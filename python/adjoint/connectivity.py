@@ -8,7 +8,7 @@ solvers = [spsolve, cg]
 
 
 def constraint_connectivity(
-    rho: list[float] = None,
+    rho: List[float] = None,
     nx: float = None,
     ny: float = None,
     nz: float = None,
