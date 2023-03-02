@@ -3,34 +3,62 @@ from scipy.sparse.linalg import cg, spsolve
 from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix
 from autograd import numpy as npa
 from autograd import grad
+from typing import List
+
+solvers = [spsolve, cg]
 
 
 def constraint_connectivity(
-    rho,
-    nx,
-    ny,
-    nz,
-    cond_v=1,
-    cond_s=1e6,
-    src_v=0,
-    src_s=1,
-    solver=spsolve,
-    thresh=None,
-    p=4,
-    need_grad=True,
+    rho: List[float] = None,
+    nx: int = None,
+    ny: int = None,
+    nz: int = None,
+    cond_v: float = 1.0,
+    cond_s: float = 1e4,
+    src_v: float = 0.0,
+    src_s: float = 1.0,
+    solver_option: int = 0,
+    thresh: float = 50.0,
+    p: float = 3.0,
+    need_grad: bool = True,
 ):
+    """Computes its connectivity constraint value and the gradients with
+    respect to each pixel value.
+
+    Given a structure, assembles the finite difference matrices of the heat equation
+    and solves for an auxiliary temperature field. Computes the p-norm of the field
+    and compares it with the threshold to determine whether the structure is connected
+    or not. Reference: "Li, Q., Chen, W., Liu, S. et al. Structural topology optimization considering
+    connectivity constraint. Struct Multidisc Optim 54, 971–984 (2016).
+    https://doi.org/10.1007/s00158-016-1459-5"
+
+    Args:
+        rho: the structure as (filtered and projected) design variables
+        nx: size of the design variable in the x direction
+        ny: size of the design variable in the y direction; should set to 1 for 2D structures
+        nz: size of the design variable in the z direction; the supporting layer is outside the
+          last slice of pixels in the z direction
+        cond_v: heat conductivity for the void pixels; should NOT be changed
+        cond_s: heat conductivity for solid pixels; IMPORTANT hyperparameter: changes the overall magnitude of
+          heat constraint; good values generally between 1e3 to 1e5
+        src_v: heat source value at void pixels; should NOT be changed
+        src_s: heat source value at solid pixels; should NOT be changed
+        solver_option: sparse solver option for solving the linear system. 0 for spsolve and 1 for cg
+        thresh: threshold value against which the p-norm of the temperature field is compared. VERY IMPORTANT
+          hyperparameter. Good values depend on cond_s and p values. Should be tuned given the problem setup and
+          after choosing cond_s and p values.
+        p: which p-norm of the temperature field to compute; good values generally between 3 to 5
+        need_grad: True if gradients are needed; False if only want the forward constraint value
+
+    Returns:
+        If need_grad = True, returns T, heat, grad; if need_grad = False, only returns heat
+        T is the computed auxiliary temperature field, heat is the constraint value (negative
+        for connected and positive for disconnected structures), grad is the gradient of the
+        constraint with respect to the design variables, i.e. d(heat)/d(rho).
+    """
+
     rho = np.reshape(rho, (nz, ny, nx))
     n = nx * ny * nz
-
-    if ny == 1:
-        path = nx * nz / 2
-        phi = 0.5 * path * path / cond_s  # estimate of warmest connected structure
-    else:
-        path = nx * ny * nz / 4
-        phi = 0.5 * path * path / cond_s
-    if not thresh:
-        thresh = phi
-
     # gradient matrices
     gx = diags([-1, 1], [0, 1], shape=(nx - 1, nx), format="csr")
     gy = diags([-1, 1], [0, 1], shape=(ny - 1, ny), format="csr")
@@ -71,15 +99,17 @@ def constraint_connectivity(
 
     src = src_v + (src_s - src_v) * rho.flatten()
     eq = dx @ condx @ gx + dy @ condy @ gy + dz @ condz @ gz
+    solver = solvers[solver_option]
     if solver == spsolve:
         T = solver(eq, src)
     else:
         T, info = (solver(eq, src)).reshape(1, -1)
 
     heat_func = lambda x: npa.sum(x**p) ** (1 / p) / thresh
-    heat = heat_func(T)
+    # Instead of constraining heat - threshold <= 0, we are constraining heat/threshold - 1 <= 0
+    heat_constraint = heat_func(T) - 1
     if not need_grad:
-        return heat - 1
+        return heat_constraint
 
     dgdx = grad(heat_func)(T)
     if solver == spsolve:
@@ -210,9 +240,10 @@ def constraint_connectivity(
     )
 
     gradient = aT * (src_s - src_v) - (cond_s - cond_v) * (aT @ dAdp_x)
-    return T, heat - 1, gradient
+    return T, heat_constraint, gradient
 
 
+# Finite difference gradient for debugging.
 def cc_fd(
     rho,
     nx,
@@ -222,7 +253,7 @@ def cc_fd(
     cond_s=1e6,
     src_v=0,
     src_s=1,
-    solver=spsolve,
+    solver_option=0,
     thresh=None,
     p=4,
     num_grad=6,
@@ -242,7 +273,7 @@ def cc_fd(
             cond_s,
             src_v,
             src_s,
-            solver,
+            solver_option,
             thresh,
             p,
             need_grad=False,
@@ -257,7 +288,7 @@ def cc_fd(
             cond_s,
             src_v,
             src_s,
-            solver,
+            solver_option,
             thresh,
             p,
             need_grad=False,
