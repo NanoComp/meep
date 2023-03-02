@@ -1,4 +1,4 @@
-from typing import Callable, Iterable, List, Tuple
+from typing import Callable, Iterable, List, Optional, Tuple
 
 import meep as mp
 import numpy as onp
@@ -252,7 +252,7 @@ def create_adjoint_sources(
 def get_epigraph_nlopt(
     mpa_opt,
     mapping: Callable,
-    callback: Callable | None = None,
+    callback: Optional[Callable] = None,
 ) -> tuple[Callable, Callable]:
     """Helper function to create the NLopt objective and vector constraints for an
     epigraph formulation of a meep adjoint optimization problem.
