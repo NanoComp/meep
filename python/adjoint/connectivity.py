@@ -4,20 +4,22 @@ from scipy.sparse import kron, diags, csr_matrix, eye, csc_matrix
 from autograd import numpy as npa
 from autograd import grad
 
+solvers = [spsolve, cg]
+
 
 def constraint_connectivity(
-    rho,
-    nx,
-    ny,
-    nz,
-    cond_v=1,
-    cond_s=1e4,
-    src_v=0,
-    src_s=1,
-    solver=spsolve,
-    thresh=50,
-    p=3,
-    need_grad=True,
+    rho: list[float] = None,
+    nx: float = None,
+    ny: float = None,
+    nz: float = None,
+    cond_v: float = 1.0,
+    cond_s: float = 1e4,
+    src_v: float = 0.0,
+    src_s: float = 1.0,
+    solver_option: int = 0,
+    thresh: float = 50,
+    p: float = 3,
+    need_grad: bool = True,
 ):
     """Computes its connectivity constraint value and the gradients with
     respect to each pixel value.
@@ -39,7 +41,7 @@ def constraint_connectivity(
         cond_s: heat conductivity for solid pixels
         src_v: heat source value at void pixels
         src_s: heat source value at solid pixels
-        solver: sparse solver option for solving the linear system. Either spsolve or cg
+        solver_option: sparse solver option for solving the linear system. 0 for spsolve and 1 for cg
         thresh: threshold value against which the p-norm of the temperature field is compared
         p: which p-norm of the temperature field to compute
         need_grad: True if gradients are needed; False if only want the forward constraint value
@@ -93,6 +95,7 @@ def constraint_connectivity(
 
     src = src_v + (src_s - src_v) * rho.flatten()
     eq = dx @ condx @ gx + dy @ condy @ gy + dz @ condz @ gz
+    solver = solvers[solver_option]
     if solver == spsolve:
         T = solver(eq, src)
     else:
@@ -235,6 +238,7 @@ def constraint_connectivity(
     return T, heat, gradient
 
 
+# Finite difference gradient for debugging.
 def cc_fd(
     rho,
     nx,
@@ -244,7 +248,7 @@ def cc_fd(
     cond_s=1e6,
     src_v=0,
     src_s=1,
-    solver=spsolve,
+    solver_option=0,
     thresh=None,
     p=4,
     num_grad=6,
@@ -264,7 +268,7 @@ def cc_fd(
             cond_s,
             src_v,
             src_s,
-            solver,
+            solver_option,
             thresh,
             p,
             need_grad=False,
@@ -279,7 +283,7 @@ def cc_fd(
             cond_s,
             src_v,
             src_s,
-            solver,
+            solver_option,
             thresh,
             p,
             need_grad=False,
