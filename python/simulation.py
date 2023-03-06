@@ -5203,6 +5203,11 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
 
     return _stop
 
+def compute_pade():
+    pass
+
+def stop_when_pade_converged():
+    pass
 
 def combine_step_funcs(*step_funcs):
     """
