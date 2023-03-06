@@ -1870,8 +1870,9 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
             comm = MPI.COMM_WORLD
             if am_master():
                 Procs=comm.Get_size()
-                (Major,Minor)=MPI.Get_version();
-                print('Using MPI version {}.{}, {} processes'.format(Major, Minor, Procs));
+                (Major,Minor)=MPI.Get_version()
+                if verbosity.meep > 0:
+                    print('Using MPI version {}.{}, {} processes'.format(Major, Minor, Procs))
 
             if not am_master():
                 import os
