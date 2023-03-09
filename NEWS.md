@@ -14,6 +14,8 @@
 
 * Bug fix in amplitude function of eigenmode source ([#2394]).
 
+* The `doc/` directory (the manual) is no longer included in the release tarball to save space, since most people will view this online.  (It is still in the git repository.)
+
 * Various improvements and minor bug fixes ([#2321], [#2349], [#2371], [#2380], [#2390], [#2413]), and additional unit tests and documentation ([#2314], [#2360], [#2364], [#2365], [#2387], [#2395], [#2402]).
 
 ## Meep 1.25.0

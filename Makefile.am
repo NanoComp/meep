@@ -17,7 +17,7 @@ endif
   SUBDIRS += python
 endif
 
-EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in doc version.sh
+EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
