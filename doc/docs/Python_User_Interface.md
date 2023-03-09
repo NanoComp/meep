@@ -4680,15 +4680,15 @@ argument of the [`Simulation`](#Simulation) constructor (similar to a [material 
 
 ```python
 def __init__(self,
-             grid_size,
-             medium1,
-             medium2,
-             weights=None,
-             grid_type='U_DEFAULT',
-             do_averaging=True,
-             beta=0,
-             eta=0.5,
-             damping=0):
+             grid_size: Union[meep.geom.Vector3, Tuple[float, ...]],
+             medium1: meep.geom.Medium,
+             medium2: meep.geom.Medium,
+             weights: numpy.ndarray = None,
+             grid_type: str = 'U_DEFAULT',
+             do_averaging: bool = True,
+             beta: float = 0,
+             eta: float = 0.5,
+             damping: float = 0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4756,7 +4756,7 @@ allow you to combine any material grids that overlap in space with no intervenin
 <div class="class_members" markdown="1">
 
 ```python
-def update_weights(self, x):
+def update_weights(self, x: numpy.ndarray):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6296,7 +6296,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7f517cb736d0>):
+             pml_profile: Callable[[float], float] = <function <lambda> at 0x7fc8c5bb7760>):
 ```
 
 <div class="method_docstring" markdown="1">
