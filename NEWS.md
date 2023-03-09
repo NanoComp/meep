@@ -1,5 +1,21 @@
 # Meep Release Notes
 
+## Meep 1.26.0
+
+3/9/2023
+
+* Improved Gaussian beam source in 2D ([#2333]).
+
+* Support for returning the number of timesteps elapsed in simulation ([#2337]).
+
+* Bug fix for fields update in cylindrical coordinates ([#2382]).
+
+* Bug fix for PMLs in cylindrical coordinates ([#2383]).
+
+* Bug fix in amplitude function of eigenmode source ([#2394]).
+
+* Various improvements and minor bug fixes ([#2321], [#2349], [#2371], [#2380], [#2390], [#2413]), and additional unit tests and documentation ([#2314], [#2360], [#2364], [#2365], [#2387], [#2395], [#2402]).
+
 ## Meep 1.25.0
 
 11/17/2022
