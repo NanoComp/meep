@@ -857,6 +857,142 @@ class EigenmodeData:
     def amplitude(self, point, component):
         swig_point = mp.vec(point.x, point.y, point.z)
         return mp.eigenmode_amplitude(self.swigobj, swig_point, component)
+    
+class Pade:
+    """
+    Pade is implemented as a class with a [`__call__`](#Pade.__call__) method from scipy,
+    which allows it to be used as a step function that collects field data from a given
+    point and runs [Pade](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html) 
+    on that data to extract the frequency response
+
+    See [`__init__`](#Pade.__init__) for details about constructing a `Pade`.
+
+    In particular, Pade takes the time series $f(t)$ corresponding to the given field
+    component as a function of time and decomposes it (within the specified bandwidth) as:
+
+    $$f(t) = \\sum_n a_n e^{-i\\omega_n t}$$
+
+    The results are stored in the list `Pade.dtft`, which is a list of tuples holding
+    the frequency, amplitude, and error of each frequency component. Given one of these tuples (e.g.,
+    `first_mode = harminv_instance.modes[0]`), you can extract its various components:
+
+    + **`freq`** — The real part of frequency ω (in the usual Meep 2πc units).
+
+    + **`decay`** — The imaginary part of the frequency ω.
+
+    + **`Q`** — The dimensionless lifetime, or quality factor defined as
+      $-\\mathrm{Re}\\,\\omega / 2 \\mathrm{Im}\\,\\omega$.
+
+    + **`amp`** — The complex amplitude $a$.
+
+    + **`err`** — A crude measure of the error in the frequency (both real and imaginary).
+      If the error is much larger than the imaginary part, for example, then you can't
+      trust the $Q$ to be accurate. Note: this error is only the uncertainty in the signal
+      processing, and tells you nothing about the errors from finite resolution, finite
+      cell size, and so on.
+
+    For example, `[m.freq for m in pade_instance.modes]` gives a list of the real parts
+    of the frequencies. Be sure to save a reference to the `Pade` instance if you wish
+    to use the results after the simulation:
+
+    ```py
+    sim = mp.Simulation(...)
+    h = mp.Pade(...)
+    sim.run(mp.after_sources(h))
+    # do something with h.modes
+    ```
+    """
+
+    def __init__(
+        self,
+        c: int = None,
+        pt: Vector3Type = None,
+        downsampling_rate: int = 1,
+        start_time: Optional[int] =0,
+        stop_time: Optional[int] = -1,
+        max_numerator_order: Optional[float] = None,
+        max_denom_order: Optional[float] = None
+    ):
+        """
+        Construct a Pade object.
+
+        A `Pade` is a step function that collects data from the field component `c`
+        (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end
+        of the run, it uses Harminv to look for modes in the given frequency range (center
+        `fcen` and width `df`), printing the results to standard output (prefixed by
+        `harminv:`) as comma-delimited text, and also storing them to the variable
+        `Harminv.modes`. The optional argument `mxbands` is the maximum number of modes to
+        search for. Defaults to 100.
+        
+        m_frac is the order of the top polynomial with respect to thte bottom polynomial
+        """
+        self.c = c
+        self.pt = pt
+        self.downsampling_rate = downsampling_rate
+        self.max_numerator_order = max_numerator_order
+        self.max_denom_order = max_denom_order
+        self.start_time = start_time
+        self.stop_time = stop_time
+        self.data = []
+        self.data_dt = 0
+        self.modes = []
+        self.spectral_density = 1.1
+        self.Q_thresh = 50.0
+        self.rel_err_thresh = mp.inf
+        self.err_thresh = 0.01
+        self.rel_amp_thresh = -1.0
+        self.amp_thresh = -1.0
+        self.step_func = self._pade()
+
+    def __call__(self, sim, todo):
+        """
+        Allows a Pade instance to be used as a step function.
+        """
+        self.step_func(sim, todo)
+
+    def _collect_pade(self):
+        def _collect1(c, pt):
+            self.t0 = 0
+
+            def _collect2(sim):
+                self.data_dt = sim.meep_time() - self.t0
+                self.t0 = sim.meep_time()
+                self.data.append(sim.get_field_point(c, pt))
+
+            return _collect2
+
+        return _collect1
+
+
+    def _analyze_pade(self, sim):
+        # pade_cols = ["frequency", "imag. freq.", "Q", "|amp|", "amplitude", "error"]
+        # display_run_data(sim, "pade", pade_cols)
+
+        dt = sim.fields.dt
+        
+        samples = self.data[self.start_time:self.stop_time:self.downsampling_rate]
+        m = int(len(self.data)/2) if not self.max_numerator_order else self.max_numerator_order
+        
+        n = int(len(self.data)-m-1) if not self.max_denom_order else self.max_denom_order
+        
+        p,q = pade(samples, m, n)
+        
+        #TODO: make compatible with any monitor type (e.g. poynting flux, energy spectra)
+        #TODO: add decimation factor (comes with monitor type)
+        #TODO: print rho, number of zero singular values in SVD
+
+        pn = p.coef
+        qn = q.coef
+
+        P = lambda w: np.sum([pi * np.exp(1j * w * self.downsampling_rate*dt * n) for n,pi in enumerate(np.flip(pn))])
+        Q = lambda w: np.sum([qi * np.exp(1j * w * self.downsampling_rate*dt * n) for n,qi in enumerate(np.flip(qn))])
+
+            
+        return lambda freq: P(2*np.pi*freq)/Q(2*np.pi*freq)
+
+
+    def _pade(self):
+        return _combine_step_funcs(at_end(self._analyze_pade), self._collect_pade(self.c, self.pt))
 
 
 class Harminv:
