@@ -670,16 +670,21 @@ class TestModeDecomposition(unittest.TestCase):
 
     @parameterized.parameterized.expand(
         [
-            (Polarization.S, 54.3),
-            (Polarization.P, 48.5),
+            (Polarization.S, 54.3, 0.0),
+            (Polarization.P, 48.5, 1.2),
         ]
     )
-    def test_phase(self, pol: Polarization, theta: float):
+    def test_phase(self, pol: Polarization, theta: float, L: float):
         """Unit test for phase of mode coefficients.
 
         Verifies that the phase of a total internal reflected (TIR) mode of
         a flat interface of two lossless materials given an incident planewave
         at oblique incidence matches the Fresnel equations.
+
+        Args:
+            pol: polarization of the incident planewave (S or P).
+            theta: angle of the incident planewave (degrees).
+            L: position of the mode monitor relative to the flat interface.
         """
         resolution = 50.0
 
@@ -718,7 +723,7 @@ class TestModeDecomposition(unittest.TestCase):
             src_cmpt = mp.Hz
             eig_parity = mp.EVEN_Z
         else:
-            raise ValueError(f"pol must be S or P, only.")
+            raise ValueError("pol must be S or P, only.")
 
         sources = [
             mp.Source(
@@ -739,13 +744,13 @@ class TestModeDecomposition(unittest.TestCase):
             sources=sources,
         )
 
-        # DFT monitor for incident/reflected fields (at the interface)
+        # DFT monitor for incident fields
         mode_mon = sim.add_mode_monitor(
             fcen,
             0,
             1,
             mp.FluxRegion(
-                center=mp.Vector3(),
+                center=mp.Vector3(-L, 0, 0),
                 size=mp.Vector3(0, cell_size.y, 0),
             ),
         )
@@ -754,7 +759,7 @@ class TestModeDecomposition(unittest.TestCase):
             until_after_sources=mp.stop_when_fields_decayed(
                 50,
                 src_cmpt,
-                mp.Vector3(),
+                mp.Vector3(-L, 0, 0),
                 1e-6,
             ),
         )
@@ -794,13 +799,13 @@ class TestModeDecomposition(unittest.TestCase):
             geometry=geometry,
         )
 
-        # DFT monitor for incident/reflected fields (at the interface)
+        # DFT monitor for reflected fields
         mode_mon = sim.add_mode_monitor(
             fcen,
             0,
             1,
             mp.FluxRegion(
-                center=mp.Vector3(),
+                center=mp.Vector3(-L, 0, 0),
                 size=mp.Vector3(0, cell_size.y, 0),
             ),
         )
@@ -811,7 +816,7 @@ class TestModeDecomposition(unittest.TestCase):
             until_after_sources=mp.stop_when_fields_decayed(
                 50,
                 mp.Ez,
-                mp.Vector3(),
+                mp.Vector3(-L, 0, 0),
                 1e-6,
             ),
         )
@@ -829,6 +834,9 @@ class TestModeDecomposition(unittest.TestCase):
 
         # reflection coefficient
         refl_coeff = refl_mode_coeff / input_mode_coeff
+
+        # apply phase correction factor
+        refl_coeff /= cmath.exp(1j * k.x * 2 * math.pi * 2 * L)
 
         # reflection coefficient (Fresnel equations)
         if pol.name == "S":
