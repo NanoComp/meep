@@ -670,7 +670,7 @@ class TestModeDecomposition(unittest.TestCase):
 
     @parameterized.parameterized.expand(
         [
-            (Polarization.S, 54.3, 0.0),
+            (Polarization.S, 54.3, 0.4),
             (Polarization.P, 48.5, 1.2),
         ]
     )
