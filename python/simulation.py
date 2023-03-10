@@ -89,7 +89,7 @@ def fix_dft_args(args, i):
 
 
 def get_num_args(func):
-    return 2 if isinstance(func, Harminv) else func.__code__.co_argcount
+    return 2 if isinstance(func, Harminv) or isinstance(func, Pade) else func.__code__.co_argcount
 
 
 def vec(*args):
@@ -908,11 +908,11 @@ class Pade:
         self,
         c: int = None,
         pt: Vector3Type = None,
-        downsampling_rate: int = 1,
-        start_time: Optional[int] =0,
+        sample_rate: int = 1,
+        start_time: Optional[int] = 0,
         stop_time: Optional[int] = -1,
-        max_numerator_order: Optional[float] = None,
-        max_denom_order: Optional[float] = None
+        m: Optional[float] = None,
+        n: Optional[float] = None
     ):
         """
         Construct a Pade object.
@@ -929,20 +929,14 @@ class Pade:
         """
         self.c = c
         self.pt = pt
-        self.downsampling_rate = downsampling_rate
-        self.max_numerator_order = max_numerator_order
-        self.max_denom_order = max_denom_order
+        self.sample_rate = sample_rate
+        self.m = m
+        self.n = n
         self.start_time = start_time
         self.stop_time = stop_time
         self.data = []
         self.data_dt = 0
-        self.modes = []
-        self.spectral_density = 1.1
-        self.Q_thresh = 50.0
-        self.rel_err_thresh = mp.inf
-        self.err_thresh = 0.01
-        self.rel_amp_thresh = -1.0
-        self.amp_thresh = -1.0
+        self.pade_approx: Callable = None
         self.step_func = self._pade()
 
     def __call__(self, sim, todo):
@@ -971,10 +965,12 @@ class Pade:
 
         dt = sim.fields.dt
         
-        samples = self.data[self.start_time:self.stop_time:self.downsampling_rate]
-        m = int(len(self.data)/2) if not self.max_numerator_order else self.max_numerator_order
-        
-        n = int(len(self.data)-m-1) if not self.max_denom_order else self.max_denom_order
+        print(len(self.data))
+        samples = self.data[self.start_time:self.stop_time:self.sample_rate]
+        print(len(samples))
+
+        m = int(len(samples)/2) if not self.m else self.m
+        n = int(len(samples)-m-2) if not self.n else self.n
         
         p,q = pade(samples, m, n)
         
@@ -985,15 +981,19 @@ class Pade:
         pn = p.coef
         qn = q.coef
 
-        P = lambda w: np.sum([pi * np.exp(1j * w * self.downsampling_rate*dt * n) for n,pi in enumerate(np.flip(pn))])
-        Q = lambda w: np.sum([qi * np.exp(1j * w * self.downsampling_rate*dt * n) for n,qi in enumerate(np.flip(qn))])
+        P = lambda w: np.sum([pi * np.exp(1j * w * self.sample_rate*dt * n) for n,pi in enumerate(np.flip(pn))])
+        Q = lambda w: np.sum([qi * np.exp(1j * w * self.sample_rate*dt * n) for n,qi in enumerate(np.flip(qn))])
 
-            
         return lambda freq: P(2*np.pi*freq)/Q(2*np.pi*freq)
 
 
     def _pade(self):
-        return _combine_step_funcs(at_end(self._analyze_pade), self._collect_pade(self.c, self.pt))
+        def _p(sim):
+            self.pade_approx = self._analyze_pade(sim)
+
+        f1 = self._collect_pade()
+
+        return _combine_step_funcs(at_end(_p), f1(self.c, self.pt))
 
 
 class Harminv:
