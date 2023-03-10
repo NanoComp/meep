@@ -9,6 +9,7 @@ import sys
 import warnings
 from collections import OrderedDict, namedtuple
 from typing import Callable, List, Optional, Tuple, Union
+from scipy.interpolate import pade
 
 try:
     from collections.abc import Sequence, Iterable
