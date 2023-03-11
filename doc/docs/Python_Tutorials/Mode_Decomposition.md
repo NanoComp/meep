@@ -146,9 +146,9 @@ In the reflected-flux calculation, we apply our usual trick of first performing 
 Phase of a Total Internal Reflected Mode
 ----------------------------------------
 
-For certain applications, such as [physically based ray tracing](https://pbr-book.org/), the phase of the reflection/transmission coefficient of an interface (flat or textured) is an important parameter used for modeling coherent effects (i.e., constructive or destructive interference in the far field involving a collection of intersecting rays). This tutorial demonstrates how to use mode decomposition to compute the phase of the reflection coefficient of a [total internal reflected](https://en.wikipedia.org/wiki/Total_internal_reflection) (TIR) mode. The results are verified using the [Fresnel equations](https://en.wikipedia.org/wiki/Total_internal_reflection#Phase_shifts).
+For certain applications, such as [physically based ray tracing](https://pbr-book.org/), the phase of the reflection/transmission coefficient of a surface interface (flat or textured) is an important parameter used for modeling coherent effects (i.e., constructive or destructive interference from a collection of intersecting rays scattered off the surface). This tutorial demonstrates how to use mode decomposition to compute the phase of the reflection coefficient of a [total internal reflected](https://en.wikipedia.org/wiki/Total_internal_reflection) (TIR) mode. The simulated results are verified using the [Fresnel equations](https://en.wikipedia.org/wiki/Total_internal_reflection#Phase_shifts).
 
-The example involves a 2d simulation of a flat interface of two lossless media with $n_1=1.5$ and $n_2=1.0$. The [critical angle](https://en.wikipedia.org/wiki/Total_internal_reflection#Critical_angle) for this interface is 41.8°. The source is an incident planewave with linear polarization ($S$ or $P$). The 2d cell is periodic in $y$ with PML in the $x$ direction. The choice of the cell size is arbitrary. A schematic of the simulation layout is shown in the figure below.
+The example involves a 2d simulation of a flat interface of two lossless media with $n_1=1.5$ and $n_2=1.0$. The [critical angle](https://en.wikipedia.org/wiki/Total_internal_reflection#Critical_angle) for this interface is $\theta_c = 41.8^\circ$. The source is an incident planewave with linear polarization ($S$ or $P$). The 2d cell is periodic in $y$ with PML in the $x$ direction. The cell size does not affect the results and is therefore arbitrary. A schematic of the simulation layout is shown below.
 
 The key item to consider for these types of calculations is the location of the mode monitor relative to the source and the interface. The mode monitor is a line extending the entire length of the cell in the $y$ direction. In order to compare the result with the Fresnel equations, the phase of the reflection coefficient must be computed *exactly* at the interface. However, it is problematic to measure the reflection coefficient exactly at the interface because the amplitude of the left-going wave drops discontinuously to zero across the interface. For this reason, the mode monitor must be positioned *away* from the interface (somewhere within the $n_1$ medium) and the measured phase must be corrected in post processing to account for this offset.
 
@@ -156,20 +156,20 @@ The key item to consider for these types of calculations is the location of the 
 
 The calculation of the reflection coefficient requires two separate runs: (1) a normalization run involving just the source medium ($n_1$) to obtain the incident fields, and (2) the main run including the interface whereby the incident fields from (1) are first subtracted from the monitor to obtain only the reflected fields. The mode coefficient in (2) divided by (1) is, by definition, the reflection coefficient.
 
-The phase of the reflection coefficient needs to be corrected for the offset of the mode monitor relative to the source and interface &mdash; the parameters $L_{sm}$ and $L_{mi}$, respectively, labeled in the schematic above &mdash; using the formula: $\exp(i * k_x * 2\pi * (L_{sm} + L_{mi}))$, where $k_x$ is the $x$ component of the planewave's wavevector (`k` in the script). The $2\pi$ factor is necessary because `k` does *not* include this factor (per convention in Meep).
+The phase of the reflection coefficient needs to be corrected for the offset of the mode monitor relative to the source and interface &mdash; labeled in the schematic above as $L_{sm}$ and $L_{mi}$, respectively &mdash; using the formula $\exp(i 2\pi k_x (L_{sm} + L_{mi}))$, where $k_x$ is the $x$ component of the planewave's wavevector (`k` in the script). The $2\pi$ factor is necessary because `k` does *not* include this factor (per convention in Meep).
 
-With this setup, we measure the phase of the reflectance coefficient for two different source configurations (polarization and angle) and compare the result with the Fresnel equations. There is good agreement in the simulated and analytic results. (As additional validation, we note that the magnitude of the reflectance coefficient of a TIR mode must be one.)
+With this setup, we measure the phase of the reflection coefficient for two different source configurations (polarization and angle) and compare the result with the Fresnel equations. The location of the mode monitor is also varied in the two test configurations as part of the validation. Results are shown in two separate tables below. There is good agreement between the simulation and theory. (As additional validation, we note that the magnitude of the reflection coefficient of a TIR mode must be one which is indeed the case.)
 
-| $S$ pol., $\theta$ = 54.3° | reflectance coefficient | phase (radians) |
-|:--------------------------:|:-----------------------:|:---------------:|
-|            Meep            |     0.23415-0.96597j    |     -1.33299    |
-|           Fresnel          |     0.22587-0.97416j    |     -1.34296    |
+| $S$ pol., $\theta$ = 54.3° | reflection coefficient | phase (radians) |
+|:--------------------------:|:----------------------:|:---------------:|
+|            Meep            |    0.23415-0.96597j    |     -1.33299    |
+|           Fresnel          |    0.22587-0.97416j    |     -1.34296    |
 
 
-| $P$ pol., $\theta$ = 48.5° | reflectance coefficient | phase (radians) |
-|:--------------------------:|:-----------------------:|:---------------:|
-|            Meep            |     0.11923+0.98495j    |      1.45033    |
-|           Fresnel          |     0.14645+0.98922j    |      1.42382    |
+| $P$ pol., $\theta$ = 48.5° | reflection coefficient | phase (radians) |
+|:--------------------------:|:----------------------:|:---------------:|
+|            Meep            |    0.11923+0.98495j    |      1.45033    |
+|           Fresnel          |    0.14645+0.98922j    |      1.42382    |
 
 The simulation script is in [examples/mode_coeff_phase.py](https://github.com/NanoComp/meep/blob/master/python/examples/mode_coeff_phase.py).
 
