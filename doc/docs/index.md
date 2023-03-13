@@ -17,7 +17,7 @@
 -   [Perfectly matched layer](Perfectly_Matched_Layer/) (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
 -   Exploitation of [symmetries](Exploiting_Symmetry) to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   [Subpixel smoothing](Subpixel_Smoothing.md) for improving accuracy and shape optimization.
--   [Custom current sources](Python_Tutorials/Custom_Source.md) with arbitrary time and spatial profile as well as a [mode launcher](Python_Tutorials/Eigenmode_Source.md) for waveguides and planewaves, and [Gaussian beams](Python_User_Interface.md#gaussianbeamsource).
+-   [Custom current sources](Python_Tutorials/Custom_Source.md) with arbitrary time and spatial profile as well as a [mode launcher](Python_Tutorials/Eigenmode_Source.md) for waveguides and planewaves, and [Gaussian beams](Python_User_Interface.md#gaussianbeam3dsource).
 -   [Frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source as well as a [frequency-domain eigensolver](Python_User_Interface.md#frequency-domain-eigensolver) for finding resonant modes.
 -   ε/μ and field import/export in the [HDF5](https://en.wikipedia.org/wiki/HDF5) data format.
 -   [GDSII](Python_User_Interface.md#gdsii-support) file import for planar geometries.
