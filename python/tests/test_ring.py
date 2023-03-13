@@ -6,6 +6,7 @@ import meep as mp
 import numpy as np
 from scipy.signal import find_peaks
 
+
 class TestRing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -82,12 +83,16 @@ class TestRing(unittest.TestCase):
             until_after_sources=300,
         )
 
-        freqs = np.linspace(self.h.fcen - self.h.df/2, self.h.fcen + self.h.df/2, 1000)
+        freqs = np.linspace(
+            self.h.fcen - self.h.df / 2, self.h.fcen + self.h.df / 2, 1000
+        )
 
         freq_domain = [self.p.freq_response(freq) for freq in freqs]
 
-        idx = find_peaks(np.abs(freq_domain)**2 / max(np.abs(freq_domain)**2), prominence=1e-4)[0]
-        
+        idx = find_peaks(
+            np.abs(freq_domain) ** 2 / max(np.abs(freq_domain) ** 2), prominence=1e-4
+        )[0]
+
         self.assertAlmostEqual(freqs[idx[0]], self.h.modes[0].freq, places=3)
 
 

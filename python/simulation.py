@@ -89,7 +89,11 @@ def fix_dft_args(args, i):
 
 
 def get_num_args(func):
-    return 2 if isinstance(func, Harminv) or isinstance(func, Pade) else func.__code__.co_argcount
+    return (
+        2
+        if isinstance(func, Harminv) or isinstance(func, Pade)
+        else func.__code__.co_argcount
+    )
 
 
 def vec(*args):
@@ -864,7 +868,7 @@ class Pade:
     """
     Pade is implemented as a class with a [`__call__`](#Pade.__call__) method,
     which allows it to be used as a step function that collects field data from a given
-    point and runs [Pade](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html) 
+    point and runs [Pade](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
     on that data to extract an analytic rational function which models the frequency response.
 
     See [`__init__`](#Pade.__init__) for details about constructing a `Pade`.
@@ -879,7 +883,7 @@ class Pade:
     to the analytic form of this function as:
 
     $$R(\\omega) = \\frac{P(\\omega)}{Q(\\omega)}$$
-    
+
     Where $$P$$ and $$Q$$ are polynomials of degree $$m$$ and $$n$$, and $$m + n + 1$$ is the
     degree of agreement of the Pade Approximant to the analytic function $$f(\\omega)$$. This
     function $$R$$ is stored in the callable method `pade_instance.freq_response`.
@@ -912,23 +916,23 @@ class Pade:
         A `Pade` is a step function that collects data from the field component `c`
         (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end
         of the run, it uses the scipy pade algorithm to approximate the analytic
-        frequency response at the specified point. 
-        
+        frequency response at the specified point.
+
         + **`c` [`Component`]** — Specifies the field component to use for extrapolation.
          No default.
         + **`pt` [`Vector3`]** — Specifies the location to accumulate fields. No default.
         + **`m` [`Optional[float]`]** — Specifies the order of the numerator $$P$$. Defaults
          to half the length of the sampled field data.
         + **`n` [`Optional[float]`]** — Specifies the order of the denominator $$Q$$. Defaults
-         to length of sample data - m - 2. 
-        + **`m_frac` [`float`]** — Alternative method for specifying `m` as a fraction of 
-         field samples to use as order for numerator. Default 0.5. 
-        + **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for 
+         to length of sample data - m - 2.
+        + **`m_frac` [`float`]** — Alternative method for specifying `m` as a fraction of
+         field samples to use as order for numerator. Default 0.5.
+        + **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for
          denominator. No default.
         + **`sample_rate` [`int`]** — Specifies the rate at which to sample the field data. Default 1.
-        + **`start_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which 
+        + **`start_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
          to start sampling the field data. Default 0 (beginning of simulation).
-        + **`stop_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which 
+        + **`stop_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
          to stop sampling the field data. Default None (end of simulation).
         """
         self.c = c
@@ -966,16 +970,24 @@ class Pade:
 
     def _analyze_pade(self, sim):
         dt = sim.fields.dt
-        
-        samples = self.data[self.start_time:self.stop_time:self.sample_rate]
+
+        samples = self.data[self.start_time : self.stop_time : self.sample_rate]
 
         if not self.m:
-            self.m = int(len(samples)/2) if not self.m_frac else int(len(samples)*self.m_frac)
+            self.m = (
+                int(len(samples) / 2)
+                if not self.m_frac
+                else int(len(samples) * self.m_frac)
+            )
         if not self.n:
-            self.n = int(len(samples)-self.m-2) if not self.n_frac else int(len(samples)*self.n_frac)
-        
-        p,q = pade(samples, self.m, self.n)
-        
+            self.n = (
+                int(len(samples) - self.m - 2)
+                if not self.n_frac
+                else int(len(samples) * self.n_frac)
+            )
+
+        p, q = pade(samples, self.m, self.n)
+
         # TODO: make compatible with any monitor type (e.g. poynting flux, energy spectra)
         # TODO: add decimation factor (comes with monitor type)
         # TODO: include option to use Trefethen SVD-based algorithm
@@ -983,10 +995,14 @@ class Pade:
         pn = p.coef
         qn = q.coef
 
-        P = lambda w: np.sum([pi * np.exp(1j * w * self.sample_rate*dt * i) for i,pi in enumerate(pn)])
-        Q = lambda w: np.sum([qi * np.exp(1j * w * self.sample_rate*dt * i) for i,qi in enumerate(qn)])
+        P = lambda w: np.sum(
+            [pi * np.exp(1j * w * self.sample_rate * dt * i) for i, pi in enumerate(pn)]
+        )
+        Q = lambda w: np.sum(
+            [qi * np.exp(1j * w * self.sample_rate * dt * i) for i, qi in enumerate(qn)]
+        )
 
-        return lambda freq: P(2*np.pi*freq)/Q(2*np.pi*freq)
+        return lambda freq: P(2 * np.pi * freq) / Q(2 * np.pi * freq)
 
     def _pade(self):
         def _p(sim):
