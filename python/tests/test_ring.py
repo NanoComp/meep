@@ -77,7 +77,6 @@ class TestRing(unittest.TestCase):
         self.init()
 
         self.sim.run(
-            mp.at_beginning(mp.output_epsilon),
             self.p,
             mp.after_sources(self.h),
             until_after_sources=300,
