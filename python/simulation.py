@@ -866,26 +866,27 @@ class EigenmodeData:
 
 class Pade:
     """
-    Pade is implemented as a class with a [`__call__`](#Pade.__call__) method,
+    Padé approximant based spectral extrapolation is implemented as a class with a [`__call__`](#Pade.__call__) method,
     which allows it to be used as a step function that collects field data from a given
-    point and runs [Pade](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
-    on that data to extract an analytic rational function which models the frequency response.
+    point and runs [Padé](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
+    on that data to extract an analytic rational function which approximates the frequency response.
+    For more information about the Padé approximant, see: https://en.wikipedia.org/wiki/Padé_approximant.
 
     See [`__init__`](#Pade.__init__) for details about constructing a `Pade`.
 
-    In particular, Pade stores the discrete time series $\\hat{f}[n]$ corresponding to the given field
+    In particular, `Padé` stores the discrete time series $\\hat{f}[n]$ corresponding to the given field
     component as a function of time and expresses it as:
 
     $$\\hat{f}(\\omega) = \\sum_n \\hat{f}[n] e^{i\\omega n \\Delta t}$$
 
     The above is a "Taylor-like" polynomial in $$n$$ with a Fourier basis and
-    coefficients which are the sampled field data. We then compute the Pade approximant
-    to the analytic form of this function as:
+    coefficients which are the sampled field data. We then compute the Padé approximant
+    to be the analytic form of this function as:
 
     $$R(\\omega) = \\frac{P(\\omega)}{Q(\\omega)}$$
 
     Where $$P$$ and $$Q$$ are polynomials of degree $$m$$ and $$n$$, and $$m + n + 1$$ is the
-    degree of agreement of the Pade Approximant to the analytic function $$f(\\omega)$$. This
+    degree of agreement of the Padé approximant to the analytic function $$f(\\omega)$$. This
     function $$R$$ is stored in the callable method `pade_instance.freq_response`.
     Be sure to save a reference to the `Pade` instance if you wish
     to use the results after the simulation:
