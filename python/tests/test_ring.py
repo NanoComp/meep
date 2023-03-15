@@ -46,7 +46,7 @@ class TestRing(unittest.TestCase):
 
         self.sim.use_output_directory(self.temp_dir)
         self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
-        self.p = mp.Pade(mp.Ez, mp.Vector3(r + 0.1), sample_rate=4)
+        self.p = mp.Pade(mp.Ez, mp.Vector3(r + 0.1), sampling_interval=4)
 
     def test_harminv(self):
         self.init()
