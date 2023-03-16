@@ -874,20 +874,20 @@ class Pade:
 
     See [`__init__`](#Pade.__init__) for details about constructing a `Pade`.
 
-    In particular, `Padé` stores the discrete time series $\\hat{f}[n]$ corresponding to the given field
+    In particular, `Pade` stores the discrete time series $\\hat{f}[n]$ corresponding to the given field
     component as a function of time and expresses it as:
 
     $$\\hat{f}(\\omega) = \\sum_n \\hat{f}[n] e^{i\\omega n \\Delta t}$$
 
-    The above is a "Taylor-like" polynomial in $$n$$ with a Fourier basis and
+    The above is a "Taylor-like" polynomial in $n$ with a Fourier basis and
     coefficients which are the sampled field data. We then compute the Padé approximant
     to be the analytic form of this function as:
 
     $$R(\\omega) = \\frac{P(\\omega)}{Q(\\omega)}$$
 
-    Where $$P$$ and $$Q$$ are polynomials of degree $$m$$ and $$n$$, and $$m + n + 1$$ is the
-    degree of agreement of the Padé approximant to the analytic function $$f(\\omega)$$. This
-    function $$R$$ is stored in the callable method `pade_instance.freq_response`.
+    Where $P$ and $Q$ are polynomials of degree $m$ and $n$, and $m + n + 1$ is the
+    degree of agreement of the Padé approximant to the analytic function $f(\\omega)$. This
+    function $R$ is stored in the callable method `pade_instance.freq_response`.
     Be sure to save a reference to the `Pade` instance if you wish
     to use the results after the simulation:
 
@@ -906,18 +906,18 @@ class Pade:
         m: Optional[Union[int, float]] = None,
         n: Optional[Union[int, float]] = None,
         sampling_interval: int = 1,
-        start_time: Optional[int] = 0,
+        start_time: int = 0,
         stop_time: Optional[int] = None,
     ):
         """
         Construct a Padé object.
 
         A `Pade` is a step function that collects data from the field component `c`
-        (e.g. $E_x$, etc.) at the given point `pt` (a `Vector3`). Then, at the end
+        (e.g. `meep.Ex`, etc.) at the given point `pt` (a `Vector3`). Then, at the end
         of the run, it uses the scipy Padé algorithm to approximate the analytic
         frequency response at the specified point.
 
-        + **`c` [`Component`]** — Specifies the field component to use for extrapolation.
+        + **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
          No default.
         + **`pt` [`Vector3`]** — Specifies the location to accumulate fields. No default.
         + **`m` [`Optional[Union[int,float]]`]** — Specifies the order of the numerator $$P$$. Behavior
@@ -928,10 +928,10 @@ class Pade:
          similar behavior to `n`. Defaults to length of sampled data - `m` - 1.
         + **`sampling_interval` [`int`]** — Specifies the interval at which to sample the field data.
          Defaults to 1.
-        + **`start_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
+        + **`start_time` [`int`]** — Specifies the time (in increments of dt) at which
          to start sampling the field data. Default 0 (beginning of simulation).
         + **`stop_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
-         to stop sampling the field data. Default None (end of simulation).
+         to stop sampling the field data. Default is `None` (end of simulation).
         """
         self.c = c
         self.pt = pt
