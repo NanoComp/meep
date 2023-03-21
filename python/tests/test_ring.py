@@ -46,7 +46,7 @@ class TestRing(unittest.TestCase):
 
         self.sim.use_output_directory(self.temp_dir)
         self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
-        self.p = mp.Pade(mp.Ez, mp.Vector3(r + 0.1), sampling_interval=4)
+        self.p = mp.PadeDFT(mp.Ez, mp.Vector3(r + 0.1), sampling_interval=4)
 
     def test_harminv(self):
         self.init()
@@ -86,7 +86,7 @@ class TestRing(unittest.TestCase):
             self.h.fcen - self.h.df / 2, self.h.fcen + self.h.df / 2, 1000
         )
 
-        freq_domain = [self.p.freq_response(freq) for freq in freqs]
+        freq_domain = [self.p.dft(freq) for freq in freqs]
 
         idx = find_peaks(
             np.abs(freq_domain) ** 2 / max(np.abs(freq_domain) ** 2), prominence=1e-4
