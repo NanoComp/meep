@@ -922,9 +922,9 @@ class PadeDFT:
         + **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
          No default.
         + **`pt` [`Vector3`]** — Specifies the location to accumulate fields. No default.
-        + **`m` [`Optional[float]`]** — Directly pecifies the order of the numerator $P$. If not specified,
+        + **`m` [`Optional[int]`]** — Directly pecifies the order of the numerator $P$. If not specified,
          defaults to the length of aggregated field data times `m_frac`.
-        + **`n` [`Optional[float]`]** — Specifies the order of the denominator $Q$. Defaults
+        + **`n` [`Optional[int]`]** — Specifies the order of the denominator $Q$. Defaults
          to length of field data - m - 1.
         + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
          field samples to use as order for numerator. Default is 0.5.
