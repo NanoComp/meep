@@ -91,7 +91,7 @@ def fix_dft_args(args, i):
 def get_num_args(func):
     return (
         2
-        if isinstance(func, Harminv) or isinstance(func, Pade)
+        if isinstance(func, Harminv) or isinstance(func, PadeDFT)
         else func.__code__.co_argcount
     )
 
@@ -864,17 +864,17 @@ class EigenmodeData:
         return mp.eigenmode_amplitude(self.swigobj, swig_point, component)
 
 
-class Pade:
+class PadeDFT:
     """
-    Padé approximant based spectral extrapolation is implemented as a class with a [`__call__`](#Pade.__call__) method,
+    Padé approximant based spectral extrapolation is implemented as a class with a [`__call__`](#PadeDFT.__call__) method,
     which allows it to be used as a step function that collects field data from a given
     point and runs [Padé](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
     on that data to extract an analytic rational function which approximates the frequency response.
     For more information about the Padé approximant, see: https://en.wikipedia.org/wiki/Padé_approximant.
 
-    See [`__init__`](#Pade.__init__) for details about constructing a `Pade`.
+    See [`__init__`](#PadeDFT.__init__) for details about constructing a `PadeDFT`.
 
-    In particular, `Pade` stores the discrete time series $\\hat{f}[n]$ corresponding to the given field
+    In particular, `PadeDFT` stores the discrete time series $\\hat{f}[n]$ corresponding to the given field
     component as a function of time and expresses it as:
 
     $$\\hat{f}(\\omega) = \\sum_n \\hat{f}[n] e^{i\\omega n \\Delta t}$$
@@ -893,9 +893,9 @@ class Pade:
 
     ```py
     sim = mp.Simulation(...)
-    p = mp.Pade(...)
+    p = mp.PadeDFT(...)
     sim.run(p, until=time)
-    # do something with p.freq_response
+    # do something with p.dft
     ```
     """
 
@@ -903,16 +903,18 @@ class Pade:
         self,
         c: int = None,
         pt: Vector3Type = None,
-        m: Optional[Union[int, float]] = None,
-        n: Optional[Union[int, float]] = None,
+        m: Optional[int] = None,
+        n: Optional[int] = None,
+        m_frac: float = 0.5,
+        n_frac: Optional[float] = None,
         sampling_interval: int = 1,
         start_time: int = 0,
         stop_time: Optional[int] = None,
     ):
         """
-        Construct a Padé object.
+        Construct a Padé DFT object.
 
-        A `Pade` is a step function that collects data from the field component `c`
+        A `PadeDFT` is a step function that collects data from the field component `c`
         (e.g. `meep.Ex`, etc.) at the given point `pt` (a `Vector3`). Then, at the end
         of the run, it uses the scipy Padé algorithm to approximate the analytic
         frequency response at the specified point.
@@ -920,12 +922,14 @@ class Pade:
         + **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
          No default.
         + **`pt` [`Vector3`]** — Specifies the location to accumulate fields. No default.
-        + **`m` [`Optional[Union[int,float]]`]** — Specifies the order of the numerator $$P$$. Behavior
-         is inferred from the supplied data type. If int is provided, directly specifies the order
-         of $$P$$. If float is specified, the order is given the given fractional length of the sample data.
-         Defaults to half the length of the sampled field data.
-        + **`n` [`Optional[Union[int, float]]`]** — Specifies the order of the denominator $$Q$$ with
-         similar behavior to `n`. Defaults to length of sampled data - `m` - 1.
+        + **`m` [`Optional[float]`]** — Directly pecifies the order of the numerator $P$. If not specified,
+         defaults to the length of aggregated field data times `m_frac`.
+        + **`n` [`Optional[float]`]** — Specifies the order of the denominator $Q$. Defaults
+         to length of field data - m - 1. 
+        + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of 
+         field samples to use as order for numerator. Default is 0.5. 
+        + **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for 
+         denominator. No default.
         + **`sampling_interval` [`int`]** — Specifies the interval at which to sample the field data.
          Defaults to 1.
         + **`start_time` [`int`]** — Specifies the time (in increments of dt) at which
@@ -937,12 +941,16 @@ class Pade:
         self.pt = pt
         self.m = m
         self.n = n
+        self.m_frac = m_frac
+        self.n_frac = n_frac
         self.sampling_interval = sampling_interval
         self.start_time = start_time
         self.stop_time = stop_time
         self.data = []
         self.data_dt = 0
-        self.freq_response: Callable = None
+        self.dft: Callable = None
+        self.p: np.poly1d = None
+        self.q: np.poly1d = None
         self.step_func = self._pade()
 
     def __call__(self, sim, todo):
@@ -969,57 +977,29 @@ class Pade:
         # end to avoid transients
         samples = self.data[self.start_time : self.stop_time : self.sampling_interval]
 
-        # Infer the desired behavior for m and n from the types of the supplied arguments
+        # Infer the desired behavior for m and n from the supplied arguments
         if not self.m:
-            self.m = int(len(samples) / 2)
-        elif type(self.m) is float and (0 <= self.m <= 1):
-            self.m = int(len(samples) * self.m)
-        elif type(self.m) is int and self.m >= 1:
-            pass
-        else:
-            raise TypeError(
-                "Order of numerator m must be positive integer or float between 0 and 1."
-            )
-
+            self.m = int(len(samples)*self.m_frac)
         if not self.n:
-            self.n = int(len(samples) - self.m - 1)
-        elif type(self.n) is float and (0 <= self.n <= 1):
-            self.n = int(len(samples) * self.n)
-        elif type(self.n) is int and self.n >= 1:
-            pass
-        else:
-            raise TypeError(
-                "Order of denominator n must be positive integer or float between 0 and 1."
-            )
+            self.n = int(len(samples)-self.m-1) if not self.n_frac else int(len(samples)*self.n_frac)
 
-        print(self.m, self.n)
-
-        # Compute the Padé approximant
-        p, q = pade(samples, self.m, self.n)
+        # Compute the Padé approximant, store the poly1d instances
+        self.p, self.q = pade(samples, self.m, self.n)
 
         # TODO: make compatible with any monitor type (e.g. poynting flux, energy spectra)
         # TODO: add decimation factor (comes with monitor type)
         # TODO: include option to use Trefethen SVD-based algorithm
 
-        # Construct the numerator and denominator polynomials
-        P = lambda w: np.sum(
-            [
-                pi * np.exp(1j * w * self.sampling_interval * sim.fields.dt * i)
-                for i, pi in enumerate(p.coef)
-            ]
-        )
-        Q = lambda w: np.sum(
-            [
-                qi * np.exp(1j * w * self.sampling_interval * sim.fields.dt * i)
-                for i, qi in enumerate(q.coef)
-            ]
-        )
+        # Construct the numerator and denominator polynomials in terms of omega
+        P = lambda w: self.p(np.exp(1j * w * self.sampling_interval * sim.fields.dt))
+        Q = lambda w: self.q(np.exp(1j * w * self.sampling_interval * sim.fields.dt))
 
+        # Return the rational function in terms of frequency
         return lambda freq: P(2 * np.pi * freq) / Q(2 * np.pi * freq)
 
     def _pade(self):
         def _p(sim):
-            self.freq_response = self._analyze_pade(sim)
+            self.dft = self._analyze_pade(sim)
 
         f1 = self._collect_pade()
 
