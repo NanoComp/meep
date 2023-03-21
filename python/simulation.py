@@ -925,10 +925,10 @@ class PadeDFT:
         + **`m` [`Optional[float]`]** — Directly pecifies the order of the numerator $P$. If not specified,
          defaults to the length of aggregated field data times `m_frac`.
         + **`n` [`Optional[float]`]** — Specifies the order of the denominator $Q$. Defaults
-         to length of field data - m - 1. 
-        + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of 
-         field samples to use as order for numerator. Default is 0.5. 
-        + **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for 
+         to length of field data - m - 1.
+        + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
+         field samples to use as order for numerator. Default is 0.5.
+        + **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for
          denominator. No default.
         + **`sampling_interval` [`int`]** — Specifies the interval at which to sample the field data.
          Defaults to 1.
@@ -979,9 +979,13 @@ class PadeDFT:
 
         # Infer the desired behavior for m and n from the supplied arguments
         if not self.m:
-            self.m = int(len(samples)*self.m_frac)
+            self.m = int(len(samples) * self.m_frac)
         if not self.n:
-            self.n = int(len(samples)-self.m-1) if not self.n_frac else int(len(samples)*self.n_frac)
+            self.n = (
+                int(len(samples) - self.m - 1)
+                if not self.n_frac
+                else int(len(samples) * self.n_frac)
+            )
 
         # Compute the Padé approximant, store the poly1d instances
         self.p, self.q = pade(samples, self.m, self.n)
