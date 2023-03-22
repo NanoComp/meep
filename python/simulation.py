@@ -883,11 +883,11 @@ class PadeDFT:
     coefficients which are the sampled field data. We then compute the Padé approximant
     to be the analytic form of this function as:
 
-    $$R(\\omega) = \\frac{P(\\omega)}{Q(\\omega)}$$
+    $$R(f) = R(2 \\pi \\omega) = \\frac{P(f)}{Q(f)}$$
 
     Where $P$ and $Q$ are polynomials of degree $m$ and $n$, and $m + n + 1$ is the
-    degree of agreement of the Padé approximant to the analytic function $f(\\omega)$. This
-    function $R$ is stored in the callable method `pade_instance.freq_response`.
+    degree of agreement of the Padé approximant to the analytic function $f(2 \\pi \\omega)$. This
+    function $R$ is stored in the callable method `pade_instance.dft`.
     Be sure to save a reference to the `Pade` instance if you wish
     to use the results after the simulation:
 
@@ -902,7 +902,9 @@ class PadeDFT:
     def __init__(
         self,
         c: int = None,
-        pt: Vector3Type = None,
+        vol: Volume = None,
+        center: Vector3Type = None,
+        size: Vector3Type = None,
         m: Optional[int] = None,
         n: Optional[int] = None,
         m_frac: float = 0.5,
@@ -921,7 +923,10 @@ class PadeDFT:
 
         + **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
          No default.
-        + **`pt` [`Vector3`]** — Specifies the location to accumulate fields. No default.
+        + **`vol` [`Volume`]** — Specifies the volume over which to accumulate fields
+         (may be 0d, 1d, 2d, or 3d). No default.
+        + **`center` [`Vector3` class]** — Alternative method for specifying volume, using a center point
+        + **`size` [`Vector3` class]** — Alternative method for specifying volume, using a size vector
         + **`m` [`Optional[int]`]** — Directly pecifies the order of the numerator $P$. If not specified,
          defaults to the length of aggregated field data times `m_frac`.
         + **`n` [`Optional[int]`]** — Specifies the order of the denominator $Q$. Defaults
@@ -938,7 +943,9 @@ class PadeDFT:
          to stop sampling the field data. Default is `None` (end of simulation).
         """
         self.c = c
-        self.pt = pt
+        self.vol = vol
+        self.center = center
+        self.size = size
         self.m = m
         self.n = n
         self.m_frac = m_frac
@@ -949,8 +956,6 @@ class PadeDFT:
         self.data = []
         self.data_dt = 0
         self.dft: Callable = None
-        self.p: np.poly1d = None
-        self.q: np.poly1d = None
         self.step_func = self._pade()
 
     def __call__(self, sim, todo):
@@ -960,22 +965,32 @@ class PadeDFT:
         self.step_func(sim, todo)
 
     def _collect_pade(self):
-        def _collect1(c, pt):
+        def _collect1(c, vol, center, size):
             self.t0 = 0
 
             def _collect2(sim):
                 self.data_dt = sim.meep_time() - self.t0
                 self.t0 = sim.meep_time()
-                self.data.append(sim.get_field_point(c, pt))
+                self.data.append(sim.get_array(c, vol, center, size))
 
             return _collect2
 
         return _collect1
 
     def _analyze_pade(self, sim):
+        # Ensure that the field data has dimension (# time steps x (volume dims))
+        self.data = np.atleast_2d(self.data)
+
+        # If the supplied volume is actually a point, np.atleast_2d will have
+        # shape (1, T), we want (T, 1)
+        if np.shape(self.data)[0] == 1:
+            self.data = self.data.T
+
         # Sample the collected field data and possibly truncate the beginning or
         # end to avoid transients
-        samples = self.data[self.start_time : self.stop_time : self.sampling_interval]
+        samples = np.array(
+            self.data[self.start_time : self.stop_time : self.sampling_interval]
+        )
 
         # Infer the desired behavior for m and n from the supplied arguments
         if not self.m:
@@ -987,19 +1002,34 @@ class PadeDFT:
                 else int(len(samples) * self.n_frac)
             )
 
-        # Compute the Padé approximant, store the poly1d instances
-        self.p, self.q = pade(samples, self.m, self.n)
+        # Helper method to be able to use np.apply_along_axis()
+        def _unpack_pade(arr, m, n):
+            P, Q = pade(arr, m, n)
+            return {"P": P, "Q": Q}
 
-        # TODO: make compatible with any monitor type (e.g. poynting flux, energy spectra)
-        # TODO: add decimation factor (comes with monitor type)
-        # TODO: include option to use Trefethen SVD-based algorithm
+        # Apply pade at each point in space, store a dictionary containing the rational function
+        # numerator and denominator at each spatial point
+        samples = np.apply_along_axis(_unpack_pade, 0, samples, self.m, self.n)
 
-        # Construct the numerator and denominator polynomials in terms of omega
-        P = lambda w: self.p(np.exp(1j * w * self.sampling_interval * sim.fields.dt))
-        Q = lambda w: self.q(np.exp(1j * w * self.sampling_interval * sim.fields.dt))
+        # Computes the rational function R(f) from the numerator and denominator
+        # and stores the result at each point in space
+        def _R_f(d, freq):
+            return np.divide(
+                d["P"](
+                    np.exp(
+                        1j * 2 * np.pi * freq * self.sampling_interval * sim.fields.dt
+                    )
+                ),
+                d["Q"](
+                    np.exp(
+                        1j * 2 * np.pi * freq * self.sampling_interval * sim.fields.dt
+                    )
+                ),
+            )
 
-        # Return the rational function in terms of frequency
-        return lambda freq: P(2 * np.pi * freq) / Q(2 * np.pi * freq)
+        # Final output is a function of frequency that returns an array with the same size
+        # as the provided volume, with the evaluation of the dft at each point in the volume
+        return lambda freq: np.squeeze(np.vectorize(_R_f)(samples, freq))
 
     def _pade(self):
         def _p(sim):
@@ -1007,7 +1037,9 @@ class PadeDFT:
 
         f1 = self._collect_pade()
 
-        return _combine_step_funcs(at_end(_p), f1(self.c, self.pt))
+        return _combine_step_funcs(
+            at_end(_p), f1(self.c, self.vol, self.center, self.size)
+        )
 
 
 class Harminv:
