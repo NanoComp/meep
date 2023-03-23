@@ -585,3 +585,26 @@ Note that the volume specified in `get_farfields` via `center` and `size` is in 
 Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. The focus becomes sharper with increasing $N$ due to the enhanced constructive interference of the diffracted beam. As the number of zones $N$ increases, the size of the focal spot (full width at half maximum) at $z = 200$ μm decreases as $1/\sqrt{N}$ (see eq. 17 of the [reference](http://zoneplate.lbl.gov/theory)). This means that doubling the resolution (halving the spot width) requires quadrupling the number of zones.
 
 ![](../images/zone_plate_farfield.png#center)
+
+Non-axisymmetric Dipole Sources
+-------------------------------
+
+In [Tutorial/Local Density of States/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led), the extraction efficiency of the LED was computed using an axisymmetric point-dipole source at $r = 0$. This involved a single simulation with $m = \pm 1$. Simulating a point-dipole source at $r > 0$ is more challenging because it is nonaxisymmetric: any point source at $r > 0$ is equivalent to a ring source in cylindrical coordinates. In order to simulate a point-dipole source at $r > 0$, it is necessary to represent the $\delta(r)$ (Dirac delta function) current source as a Fourier-series expansion of the field angular dependence $\exp(im\phi)$. This computational approach involves two parts: (1) performing a series of simulations for $m = 0, 1, 2, ..., M$ where $M$ is the cutoff (described below), and (2) because of power orthogonality, summing the results from each $m$-simulation in post processing where the $m \neq 0$ terms are multiplied by two to account for the $-m$ solutions.
+
+There are two useful features of this method:
+
+1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. For $m > M$, the field oscillations tend to be too rapid and the current source therefore does not radiate any power. As an example, a point dipole-source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would typically require 16 simulations.
+
+2. Each $m$-simulation is independent of the others. Each $m$-simulation can therefore be executed simultaneously using an embarassingly parallel approach.
+
+As a demonstration, we will repeat the calculation of the extraction efficiency of the LED using a point-dipole source at $r > 0$. The radiated flux of the point-dipole source (the numerator in the expression for the extraction efficiency) is computed using the Fourier--series-based method described above. A schematic of the simulation layout is shown below.
+
+![](../images/cyl_nonaxisymmetric_source_layout.png#center)
+
+![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
+
+To convert the radiated flux at $r=0$ in cylindrical coordinates to 3d, the result must be multiplied by $2 / (\pi \Delta r)^2$ where $\Delta r$ is the grid size ($1/resolution$).
+
+The relationship between the radiated flux from a point dipole at $r = 0$ ($P(0)$) and $r > 0$ ($P(r)$) is $(\pi / (\Delta r)^2) P(0) = P(r) / (\pi r)^2$.
+
+The simulation script is in [examples/noaxisym_point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/nonaxisym_point_dipole_cyl.py).
