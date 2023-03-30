@@ -1,50 +1,32 @@
 """
-Verifies that the radiated flux from a point dipole in a dielectric layer
+Demonstrates that the radiated flux from a point dipole in a dielectric layer
 above a lossless ground plane computed in cylindrical coordinates
-is the same for a dipole placed at either r=0 or r≠0.
+is the same for a dipole placed anywhere along the radial direction.
 """
 
-import argparse
-import matplotlib
-
-matplotlib.use("agg")
-import matplotlib.pyplot as plt
 import meep as mp
 import numpy as np
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-res", type=float, default=25.0, help="resolution (default: 25 pixels/um)"
-)
-parser.add_argument(
-    "-L", type=float, default=5.0, help="length of non-PML region (default: 5.0 um)"
-)
-parser.add_argument(
-    "-dpml", type=float, default=1.0, help="PML thickness in r and z (default: 1.0 um)"
-)
-args = parser.parse_args()
-
-resolution = args.res
-L = args.L
-dpml = args.dpml
-
-dair = 1.0  # thickness of air padding
-n = 2.4  # refractive index of surrounding medium
+resolution = 50  # pixels/μm
+n = 2.4  # refractive index of dielectric layer
 wvl = 1.0  # wavelength (in vacuum)
 fcen = 1 / wvl  # center frequency of source/monitor
 
 
-def radiated_flux(dmat: float, h: float, rpos: float, m: int) -> float:
+def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
     """Computes the radiated flux of a point dipole embedded
        within a dielectric layer above a lossless ground plane in
        cylindrical coordinates.
 
     Args:
-      dmat: thickness of dielectric layer.
-      h: height of dipole above ground plane as fraction of dmat.
-      rpos: position of source in r direction.
-      m: angular φ dependence of the fields exp(imφ).
+       dmat: thickness of dielectric layer.
+       h: height of dipole above ground plane as fraction of dmat.
+       rpos: position of source in radial direction.
+       m: angular φ dependence of the fields exp(imφ).
     """
+    L = 20  # length of non-PML region in radial direction
+    dair = 1.0  # thickness of air padding
+    dpml = 1.0  # PML thickness
     sr = L + dpml
     sz = dmat + dair + dpml
     cell_size = mp.Vector3(sr, 0, sz)
@@ -114,44 +96,65 @@ def radiated_flux(dmat: float, h: float, rpos: float, m: int) -> float:
     flux_z = mp.get_fluxes(flux_air_z)[0]
     flux_r = mp.get_fluxes(flux_air_r)[0]
     flux_tot = flux_r + flux_z
-    print(f"flux:, {flux_r:.10f}, {flux_z:.10f}, {flux_tot:.10f}")
+    print(f"flux:, {flux_r:.6f}, {flux_z:.6f}, {flux_tot:.6f}")
 
     return flux_tot
 
 
-if __name__ == "__main__":
+def radiated_flux_3d(rpos: float) -> float:
+    """Computes the radiated flux in 3d using a point dipole source in
+    cylindrical coordinates.
+
+    Args:
+       rpos: position of source in radial direction.
+
+    Returns:
+       The radiated flux in 3d Cartesian coordinates.
+    """
     layer_thickness = 0.7 * wvl / n
     dipole_height = 0.5
 
-    # r = 0
-    rpos = 0
-    m = +1
-    ref_out_flux = radiated_flux(
-        layer_thickness,
-        dipole_height,
-        rpos,
-        m,
-    )
-    print(f"flux0-m:, {m}, {ref_out_flux}")
+    if rpos == 0:
+        # r = 0 source requires a single simulation with m = ±1
+        m = 1
+        out_flux = radiated_flux_cyl(
+            layer_thickness,
+            dipole_height,
+            rpos,
+            m,
+        )
+        print(f"flux-m:, {rpos}, {m}, {out_flux:.6f}")
 
-    # r ≠ 0
-    rpos = 1.0
-    # empirical
-    cutoff_M = lambda rp: int(16 * rp + 8)
-    # analytic
-    # cutoff_M = int(2 * rp * 2 * np.pi * fcen * n) + 2
-    ms = range(cutoff_M(rp) + 1)
-    out_flux = []
-    for m in ms:
-        out_flux.append(
-            radiated_flux(
+        return out_flux * 2 * (resolution / np.pi) ** 2
+
+    else:
+        # r > 0 source requires Fourier-series expansion of φ
+        flux_thresh = 1e-4  # threshold value for flux for truncating expansion
+        cutoff_M = int(2 * rpos * 2 * np.pi * fcen * n)
+        ms = range(cutoff_M + 1)
+        flux_tot = 0
+        for m in ms:
+            out_flux = radiated_flux_cyl(
                 layer_thickness,
                 dipole_height,
-                rp,
+                rpos,
                 m,
             )
-        )
-        print(f"flux1-m:, {rp}, {m}, {out_flux[-1]}")
+            print(f"flux-m:, {rpos}, {m}, {out_flux:.6f}")
+            flux_tot += out_flux if m == 0 else 2 * out_flux
+            if out_flux < flux_thresh:
+                break
 
-    flux_sum = out_flux[0] + 2 * sum(out_flux[1:])
-    print(f"flux1:, {rp}, {flux_sum:.8f}")
+        print(f"flux1:, {rpos}, {flux_tot:.6f}")
+
+        return (flux_tot / rpos**2) * (2 / np.pi**5)
+
+
+if __name__ == "__main__":
+    P_3d = 40.9739956441  # reference result from an identical 3d simulation
+
+    rs = [0, 4.5, 8.1]
+    for r in rs:
+        Pcyl = radiated_flux_3d(r)
+        err = abs(Pcyl - P_3d) / P_3d
+        print(f"flux:, {r}, {Pcyl:.6f}, {err:.6f}")
