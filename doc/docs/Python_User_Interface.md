@@ -4070,6 +4070,13 @@ The following step function collects field data from a given point and runs [Har
 * [Harminv class](#Harminv)
 
 
+#### PadeDFT Step Function
+
+The following step function collects field data from a given point or volume and performs spectral extrapolation by computing the [Pade approximant](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html) of the DFT at every specified spatial point.
+
+* [PadeDFT class](#PadeDFT)
+
+
 ### Step-Function Modifiers
 
 Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
@@ -7488,6 +7495,127 @@ of the run, it uses Harminv to look for modes in the given frequency range (cent
 `harminv:`) as comma-delimited text, and also storing them to the variable
 `Harminv.modes`. The optional argument `mxbands` is the maximum number of modes to
 search for. Defaults to 100.
+
+</div>
+
+</div>
+
+
+---
+<a id="PadeDFT"></a>
+
+### PadeDFT
+
+```python
+class PadeDFT(object):
+```
+
+<div class="class_docstring" markdown="1">
+
+Padé approximant based spectral extrapolation is implemented as a class with a [`__call__`](#PadeDFT.__call__) method,
+which allows it to be used as a step function that collects field data from a given
+point and runs [Padé](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
+on that data to extract an analytic rational function which approximates the frequency response.
+For more information about the Padé approximant, see the [wiki](https://en.wikipedia.org/wiki/Padé_approximant).
+
+See [`__init__`](#PadeDFT.__init__) for details about constructing a `PadeDFT`.
+
+In particular, `PadeDFT` stores the discrete time series $\hat{f}[n]$ corresponding to the given field
+component as a function of time and expresses it as:
+
+$$\hat{f}(\omega) = \sum_n \hat{f}[n] e^{i\omega n \Delta t}$$
+
+The above is a "Taylor-like" polynomial in $n$ with a Fourier basis and
+coefficients which are the sampled field data. We then compute the Padé approximant
+to be the analytic form of this function as:
+
+$$R(f) = R(2 \pi \omega) = \frac{P(f)}{Q(f)}$$
+
+Where $P$ and $Q$ are polynomials of degree $m$ and $n$, and $m + n + 1$ is the
+degree of agreement of the Padé approximant to the analytic function $f(2 \pi \omega)$. This
+function $R$ is stored in the callable method `pade_instance.dft`. Note that the computed polynomials
+$P$ and $Q$ for each spatial point are stored as well in the instance variable `pade_instance.polys`,
+as a spatial array of dicts: `[{"P": P(t), "Q": Q(t)}]` with no spectral extrapolation performed.
+Be sure to save a reference to the `Pade` instance if you wish
+to use the results after the simulation:
+
+```py
+sim = mp.Simulation(...)
+p = mp.PadeDFT(...)
+sim.run(p, until=time)
+# do something with p.dft
+```
+
+</div>
+
+
+<a id="PadeDFT.__call__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __call__(self, sim, todo):
+```
+
+<div class="method_docstring" markdown="1">
+
+Allows a PadeDFT instance to be used as a step function.
+
+</div>
+
+</div>
+
+
+<a id="PadeDFT.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(
+    self,
+    c: int = None,
+    vol: Volume = None,
+    center: Vector3Type = None,
+    size: Vector3Type = None,
+    m: Optional[int] = None,
+    n: Optional[int] = None,
+    m_frac: float = 0.5,
+    n_frac: Optional[float] = None,
+    sampling_interval: int = 1,
+    start_time: int = 0,
+    stop_time: Optional[int] = None,
+):
+```
+
+<div class="method_docstring" markdown="1">
+
+Construct a Padé DFT object.
+
+A `PadeDFT` is a step function that collects data from the field component `c`
+(e.g. `meep.Ex`, etc.) at the given point `pt` (a `Vector3`). Then, at the end
+of the run, it uses the scipy Padé algorithm to approximate the analytic
+frequency response at the specified point.
+
++ **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
+  No default.
++ **`vol` [`Volume`]** — Specifies the volume over which to accumulate fields
+  (may be 0d, 1d, 2d, or 3d). No default.
++ **`center` [`Vector3` class]** — Alternative method for specifying volume, using a center point
++ **`size` [`Vector3` class]** — Alternative method for specifying volume, using a size vector
++ **`m` [`Optional[int]`]** — Directly pecifies the order of the numerator $P$. If not specified,
+  defaults to the length of aggregated field data times `m_frac`.
++ **`n` [`Optional[int]`]** — Specifies the order of the denominator $Q$. Defaults
+  to length of field data - m - 1.
++ **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
+  field samples to use as order for numerator. Default is 0.5.
++ **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for
+  denominator. No default.
++ **`sampling_interval` [`int`]** — Specifies the interval at which to sample the field data.
+  Defaults to 1.
++ **`start_time` [`int`]** — Specifies the time (in increments of dt) at which
+  to start sampling the field data. Default 0 (beginning of simulation).
++ **`stop_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
+  to stop sampling the field data. Default is `None` (end of simulation).
 
 </div>
 

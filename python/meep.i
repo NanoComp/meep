@@ -1723,6 +1723,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         FluxRegion,
         ForceRegion,
         Harminv,
+        PadeDFT,
         Identity,
         Mirror,
         ModeRegion,

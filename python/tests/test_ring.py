@@ -3,6 +3,8 @@
 import unittest
 
 import meep as mp
+import numpy as np
+from scipy.signal import find_peaks
 
 
 class TestRing(unittest.TestCase):
@@ -44,6 +46,9 @@ class TestRing(unittest.TestCase):
 
         self.sim.use_output_directory(self.temp_dir)
         self.h = mp.Harminv(mp.Ez, mp.Vector3(r + 0.1), fcen, df)
+        self.p = mp.PadeDFT(
+            c=mp.Ez, center=mp.Vector3(r + 0.1), size=mp.Vector3(), sampling_interval=4
+        )
 
     def test_harminv(self):
         self.init()
@@ -69,6 +74,27 @@ class TestRing(unittest.TestCase):
         places = 5 if mp.is_single_precision() else 7
         self.assertAlmostEqual(ep, 11.559999999999999, places=places)
         self.assertAlmostEqual(fp, -0.08185972142450348, places=places)
+
+    def test_pade(self):
+        self.init()
+
+        self.sim.run(
+            self.p,
+            mp.after_sources(self.h),
+            until_after_sources=300,
+        )
+
+        freqs = np.linspace(
+            self.h.fcen - self.h.df / 2, self.h.fcen + self.h.df / 2, 1000
+        )
+
+        freq_domain = [self.p.dft(freq) for freq in freqs]
+
+        idx = find_peaks(
+            np.abs(freq_domain) ** 2 / max(np.abs(freq_domain) ** 2), prominence=1e-4
+        )[0]
+
+        self.assertAlmostEqual(freqs[idx[0]], self.h.modes[0].freq, places=3)
 
 
 if __name__ == "__main__":
