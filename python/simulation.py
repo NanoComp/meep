@@ -964,18 +964,15 @@ class PadeDFT:
         """
         self.step_func(sim, todo)
 
-    def _collect_pade(self):
-        def _collect1(c, vol, center, size):
-            self.t0 = 0
+    def _collect_pade(self, c, vol, center, size):
+        self.t0 = 0
 
-            def _collect2(sim):
-                self.data_dt = sim.meep_time() - self.t0
-                self.t0 = sim.meep_time()
-                self.data.append(sim.get_array(c, vol, center, size))
+        def _collect(sim):
+            self.data_dt = sim.meep_time() - self.t0
+            self.t0 = sim.meep_time()
+            self.data.append(sim.get_array(c, vol, center, size))
 
-            return _collect2
-
-        return _collect1
+        return _collect
 
     def _analyze_pade(self, sim):
         # Ensure that the field data has dimension (# time steps x (volume dims))
@@ -1035,11 +1032,9 @@ class PadeDFT:
         def _p(sim):
             self.dft = self._analyze_pade(sim)
 
-        f1 = self._collect_pade()
+        f1 = self._collect_pade(self.c, self.vol, self.center, self.size)
 
-        return _combine_step_funcs(
-            at_end(_p), f1(self.c, self.vol, self.center, self.size)
-        )
+        return _combine_step_funcs(at_end(_p), f1)
 
 
 class Harminv:
