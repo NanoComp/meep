@@ -4070,6 +4070,13 @@ The following step function collects field data from a given point and runs [Har
 * [Harminv class](#Harminv)
 
 
+#### PadeDFT Step Function
+
+The following step function collects field data from a given point or volume and performs spectral extrapolation by computing the [Pade approximant](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html) of the DFT at every specified spatial point.
+
+* [PadeDFT class](#PadeDFT)
+
+
 ### Step-Function Modifiers
 
 Rather than writing a brand-new step function every time something a bit different is required, the following "modifier" functions take a bunch of step functions and produce *new* step functions with modified behavior. See also [Tutorial/Basics](Python_Tutorials/Basics.md) for examples.
