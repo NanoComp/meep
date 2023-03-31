@@ -985,12 +985,16 @@ class PadeDFT:
 
         # Sample the collected field data and possibly truncate the beginning or
         # end to avoid transients
+        # TODO(Arjun-Khurana): Create a custom run function that collects field
+        # only at required points in time
         samples = np.array(
             self.data[self.start_time : self.stop_time : self.sampling_interval]
         )
 
         # Infer the desired behavior for m and n from the supplied arguments
         if not self.m:
+            if not self.m_frac:
+                raise ValueError("Either m or m_frac must be provided.")
             self.m = int(len(samples) * self.m_frac)
         if not self.n:
             self.n = (
@@ -1006,7 +1010,7 @@ class PadeDFT:
 
         # Apply pade at each point in space, store a dictionary containing the rational function
         # numerator and denominator at each spatial point
-        samples = np.apply_along_axis(_unpack_pade, 0, samples, self.m, self.n)
+        self.polys = np.apply_along_axis(_unpack_pade, 0, samples, self.m, self.n)
 
         # Computes the rational function R(f) from the numerator and denominator
         # and stores the result at each point in space
@@ -1026,7 +1030,7 @@ class PadeDFT:
 
         # Final output is a function of frequency that returns an array with the same size
         # as the provided volume, with the evaluation of the dft at each point in the volume
-        return lambda freq: np.squeeze(np.vectorize(_R_f)(samples, freq))
+        return lambda freq: np.squeeze(np.vectorize(_R_f)(self.polys, freq))
 
     def _pade(self):
         def _p(sim):
