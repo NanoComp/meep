@@ -887,7 +887,9 @@ class PadeDFT:
 
     Where $P$ and $Q$ are polynomials of degree $m$ and $n$, and $m + n + 1$ is the
     degree of agreement of the Padé approximant to the analytic function $f(2 \\pi \\omega)$. This
-    function $R$ is stored in the callable method `pade_instance.dft`.
+    function $R$ is stored in the callable method `pade_instance.dft`. Note that the computed polynomials
+    $P$ and $Q$ for each spatial point are stored as well in the instance variable `pade_instance.polys`,
+    as a spatial array of dicts: `[{"P": P(t), "Q": Q(t)}]` with no spectral extrapolation performed.
     Be sure to save a reference to the `Pade` instance if you wish
     to use the results after the simulation:
 
