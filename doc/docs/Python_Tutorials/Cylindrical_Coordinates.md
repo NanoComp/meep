@@ -586,36 +586,37 @@ Shown below is the far-field energy-density profile around the focal length for 
 
 ![](../images/zone_plate_farfield.png#center)
 
-Non-axisymmetric Dipole Sources
+Nonaxisymmetric Dipole Sources
 -------------------------------
 
-In [Tutorial/Local Density of States/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led), the extraction efficiency of the LED was computed using an axisymmetric point-dipole source at $r = 0$. This involved a single simulation with $m = \pm 1$. Simulating a point-dipole source at $r > 0$ is more challenging because it is nonaxisymmetric: any point source at $r > 0$ is equivalent to a ring source in cylindrical coordinates. In order to simulate a point-dipole source at $r > 0$, it is necessary to represent the $\delta(r)$ (Dirac delta function) current source as a Fourier-series expansion of the field angular dependence $\exp(im\phi)$. This computational approach involves two parts: (1) performing a series of simulations for $m = 0, 1, 2, ..., M$ where $M$ is the cutoff (described below), and (2) because of power orthogonality, summing the results from each $m$-simulation in post processing where the $m \neq 0$ terms are multiplied by two to account for the $-m$ solutions.
-
-There are two useful features of this method:
-
-1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. For $m > M$, the field oscillations tend to be too rapid and the current source therefore does not radiate any power. As an example, a point dipole-source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would typically require 16 simulations.
-
-2. Each $m$-simulation is independent of the others. The simulations can therefore be executed simultaneously using an embarassingly parallel approach.
-
-As a demonstration, we will repeat the calculation of the extraction efficiency of the LED using a point-dipole source at $r > 0$. The radiated flux of the point-dipole source (the numerator in the expression for the extraction efficiency) is computed using the Fourier--series-based method described above. A schematic of the simulation layout is shown below.
+In [Tutorial/Local Density of States/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led), the extraction efficiency of an LED was computed using an axisymmetric point-dipole source at $r = 0$. This involved a single simulation with $m = \pm 1$. Simulating a point-dipole source at $r > 0$ (as shown in the schematic below) is more challenging because it is nonaxisymmetric: any point source at $r > 0$ is equivalent to a ring source in cylindrical coordinates. In order to simulate a point-dipole source at $r > 0$, it is necessary to represent the $\delta(r)$ (Dirac delta function) current source as a Fourier-series expansion of $\phi$ (the field angular dependence $\exp(im\phi)$). This computational approach involves two parts: (1) performing a series of simulations for $m = 0, 1, 2, ..., M$ for some cutoff $M$ of the Fourier series (described below), and (2) because of power orthogonality, summing the results from each $m$-simulation in post processing where the $m \neq 0$ terms are multiplied by two to account for the $-m$ solutions.
 
 ![](../images/cyl_nonaxisymmetric_source_layout.png#center)
 
+Two features of this method may provide a significant speedup compared to an identical 3d simulation:
+
+1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. For $m > M$, the field oscillations tend to be too rapid and the current source therefore cannot radiate any power into the far field. As an example, a point-dipole source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would require roughly $M=16$ simulations. (In practice, however, we usually truncate the Fourier-series expansion earlier: whenever the radiated flux at some $m$ has dropped to some small fraction of its maximum value in the summation.) The plot below shows the radiated flux vs. $m$ for three different source positions. Generally, the farther the point source is from $r = 0$, the more simulations are required for the Fourier-series summation to converge.
+
+2. Each $m$-simulation in the Fourier-series expansion is independent of the others. The simulations can therefore be executed simultaneously using an embarassingly parallel approach.
+
 ![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
 
-To convert the radiated flux at $r=0$ in cylindrical coordinates to 3d, the result must be multiplied by $2 / (\pi \Delta r)^2$ where $\Delta r$ is the grid size ($1/resolution$).
+The Poynting flux computed in cylindrical coordinates can be converted to 3d Cartesian coordinates with the use of various scaling factors:
 
-The relationship between the radiated flux from a point dipole at $r = 0$ ($P(0)$) and $r > 0$ ($P(r)$) is $(\pi / (\Delta r)^2) P(0) = P(r) / (\pi r)^2$.
+- To convert the radiated flux from a point dipole at $r=0$ in cylindrical coordinates to 3d, the result must be multiplied by $2 / (\pi \Delta r)^2$ where $\Delta r$ is the grid size ($1/resolution$).
 
-Combining these two sets of results, to convert the radiated flux at $r > 0$ in cylindrical coordinates to 3d, the result must be multiplied by $2 / (\pi^5 * r^2)$.
+- The relationship between the radiated flux $P(r)$ from a point dipole at $r = 0$ and $r > 0$ is $(\pi / (\Delta r)^2) P(0) = P(r) / (\pi r)^2$.
 
-As a demonstration, we compute the radiated flux from the dipole at three different locations in the LED ($r = 0$ and $r > 0$). The results from the simulation in cylindrical coordinates are compared to the "correct" result from an identical 3d simulation. The results are shown in the table below. At this resolution, the relative error is at most ~5%. The error decreases with increasing resolution.
+- Combining these two sets of results, to convert the radiated flux at $r > 0$ in cylindrical coordinates to 3d, the result must be multiplied by $2 / (\pi^5 * r^2)$.
+
+As a demonstration, we compute the radiated flux from a point dipole at three different locations with $r > 0$ within the LED. These results are compared to the radiated flux from a point dipole at $r = 0$. The results are shown in the table below. At this resolution, the relative error is at most ~4%. The error decreases with increasing resolution.
 
 | `rpos` |  **flux** | **error** |
 |:------:|:---------:|:---------:|
-|    0   | 38.155237 |   0.069   |
-|   4.5  | 40.018691 |   0.023   |
-|   8.1  | 40.262199 |   0.017   |
+|    0   | 48.390787 |    N/A    |
+|   3.3  | 49.038307 |   0.013   |
+|   7.5  | 49.868279 |   0.031   |
+|  12.1  | 50.124093 |   0.036   |
 
 The simulation script is in [examples/noaxisym_point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/nonaxisym_point_dipole_cyl.py).
 
@@ -623,10 +624,12 @@ The simulation script is in [examples/noaxisym_point_dipole_cyl.py](https://gith
 import meep as mp
 import numpy as np
 
-resolution = 50 # pixels/μm
-n = 2.4 # refractive index of dielectric layer
-wvl = 1.0 # wavelength (in vacuum)
-fcen = 1 / wvl # center frequency of source/monitor
+
+resolution = 30  # pixels/μm
+n = 2.4  # refractive index of dielectric layer
+wvl = 1.0  # wavelength (in vacuum)
+fcen = 1 / wvl  # center frequency of source/monitor
+
 
 def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
     """Computes the radiated flux of a point dipole embedded
@@ -635,13 +638,16 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
 
     Args:
        dmat: thickness of dielectric layer.
-       h: height of dipole above ground plane as fraction of dmat.
+       h: height of dipole above ground plane as a fraction of dmat.
        rpos: position of source in radial direction.
        m: angular φ dependence of the fields exp(imφ).
+
+    Returns:
+       The radiated flux in cylindrical coordinates.
     """
-    L = 20 # length of non-PML region in radial direction
-    dair = 1.0 # thickness of air padding
-    dpml = 1.0 # PML thickness
+    L = 20  # length of non-PML region in radial direction
+    dair = 1.0  # thickness of air padding
+    dpml = 1.0  # PML thickness
     sr = L + dpml
     sz = dmat + dair + dpml
     cell_size = mp.Vector3(sr, 0, sz)
@@ -711,20 +717,19 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
     flux_z = mp.get_fluxes(flux_air_z)[0]
     flux_r = mp.get_fluxes(flux_air_r)[0]
     flux_tot = flux_r + flux_z
-    print(f"flux:, {flux_r:.6f}, {flux_z:.6f}, {flux_tot:.6f}")
 
     return flux_tot
 
 
 def radiated_flux_3d(rpos: float) -> float:
-    """Computes the radiated flux in 3d using a point dipole source in
-       cylindrical coordinates.
+    """Computes the radiated flux in 3d Cartesian coordinates using a
+       point-dipole source in cylindrical coordinates.
 
-       Args:
-          rpos: position of source in radial direction.
+    Args:
+       rpos: position of source in radial direction.
 
-       Returns:
-          The radiated flux in 3d Cartesian coordinates.
+    Returns:
+       The radiated flux in 3d Cartesian coordinates.
     """
     layer_thickness = 0.7 * wvl / n
     dipole_height = 0.5
@@ -732,45 +737,50 @@ def radiated_flux_3d(rpos: float) -> float:
     if rpos == 0:
         # r = 0 source requires a single simulation with m = ±1
         m = 1
-        out_flux = radiated_flux_cyl(
+        flux_cyl = radiated_flux_cyl(
             layer_thickness,
             dipole_height,
             rpos,
             m,
         )
-        print(f"flux-m:, {rpos}, {m}, {out_flux:.6f}")
 
-        return out_flux * 2 * (resolution / np.pi)**2
+        flux_3d = flux_cyl * 2 * (resolution / np.pi) ** 2
 
     else:
         # r > 0 source requires Fourier-series expansion of φ
-        flux_thresh = 1e-4 # threshold value for flux for truncating expansion
+        flux_tol = 1e-6  # relative tolerance for flux for truncating expansion
         cutoff_M = int(2 * rpos * 2 * np.pi * fcen * n)
         ms = range(cutoff_M + 1)
-        flux_tot = 0
+        flux_cyl_tot = 0
+        flux_cyl_max = 0
         for m in ms:
-            out_flux = radiated_flux_cyl(
+            flux_cyl = radiated_flux_cyl(
                 layer_thickness,
                 dipole_height,
                 rpos,
                 m,
             )
-            print(f"flux-m:, {rpos}, {m}, {out_flux:.6f}")
-            flux_tot += out_flux if m == 0 else 2*out_flux
-            if out_flux < flux_thresh:
+            print(f"flux-m:, {rpos}, {m}, {flux_cyl:.6f}")
+            flux_cyl_tot += flux_cyl if m == 0 else 2 * flux_cyl
+            if flux_cyl > flux_cyl_max:
+                flux_cyl_max = flux_cyl
+            if m > 0 and (flux_cyl / flux_cyl_max) < flux_tol:
                 break
 
-        print(f"flux1:, {rpos}, {flux_tot:.6f}")
+        flux_3d = (flux_cyl_tot / rpos**2) * (2 / np.pi**5)
 
-        return (flux_tot / rpos**2) * (2 / np.pi**5)
+    print(f"flux-3d:, {rpos:.2f}, {flux_3d:.6f}")
+
+    return flux_3d
 
 
 if __name__ == "__main__":
-    P_3d = 40.9739956441 # reference result from an identical simulation
+    # reference result for dipole at r = 0
+    Pcyl_ref = radiated_flux_3d(0)
 
-    rs = [0, 4.5, 8.1]
+    rs = [3.3, 7.5, 12.1]
     for r in rs:
         Pcyl = radiated_flux_3d(r)
-        err = abs(Pcyl - P_3d) / P_3d
-        print(f"flux:, {r}, {Pcyl:.6f}, {err:.6f}")
+        err = abs(Pcyl - Pcyl_ref) / Pcyl_ref
+        print(f"err:, {r}, {Pcyl:.6f}, {err:.6f}")
 ```

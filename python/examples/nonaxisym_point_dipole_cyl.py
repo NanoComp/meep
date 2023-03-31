@@ -1,13 +1,18 @@
-"""
-Demonstrates that the radiated flux from a point dipole in a dielectric layer
-above a lossless ground plane computed in cylindrical coordinates
-is the same for a dipole placed anywhere along the radial direction.
+"""Tutorial example for non-axisymmetric point sources in cylindrical coords.
+
+This example demonstrates that the radiated flux from a point dipole in
+a dielectric layer above a lossless ground plane computed in cylindrical
+coordinates is the same for a dipole placed anywhere along the radial
+direction.
+
+Reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#nonaxisymmetric-dipole-sources
 """
 
 import meep as mp
 import numpy as np
 
-resolution = 50  # pixels/μm
+
+resolution = 30  # pixels/μm
 n = 2.4  # refractive index of dielectric layer
 wvl = 1.0  # wavelength (in vacuum)
 fcen = 1 / wvl  # center frequency of source/monitor
@@ -20,9 +25,12 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
 
     Args:
        dmat: thickness of dielectric layer.
-       h: height of dipole above ground plane as fraction of dmat.
+       h: height of dipole above ground plane as a fraction of dmat.
        rpos: position of source in radial direction.
        m: angular φ dependence of the fields exp(imφ).
+
+    Returns:
+       The radiated flux in cylindrical coordinates.
     """
     L = 20  # length of non-PML region in radial direction
     dair = 1.0  # thickness of air padding
@@ -96,14 +104,13 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
     flux_z = mp.get_fluxes(flux_air_z)[0]
     flux_r = mp.get_fluxes(flux_air_r)[0]
     flux_tot = flux_r + flux_z
-    print(f"flux:, {flux_r:.6f}, {flux_z:.6f}, {flux_tot:.6f}")
 
     return flux_tot
 
 
 def radiated_flux_3d(rpos: float) -> float:
-    """Computes the radiated flux in 3d using a point dipole source in
-    cylindrical coordinates.
+    """Computes the radiated flux in 3d Cartesian coordinates using a
+       point-dipole source in cylindrical coordinates.
 
     Args:
        rpos: position of source in radial direction.
@@ -117,44 +124,49 @@ def radiated_flux_3d(rpos: float) -> float:
     if rpos == 0:
         # r = 0 source requires a single simulation with m = ±1
         m = 1
-        out_flux = radiated_flux_cyl(
+        flux_cyl = radiated_flux_cyl(
             layer_thickness,
             dipole_height,
             rpos,
             m,
         )
-        print(f"flux-m:, {rpos}, {m}, {out_flux:.6f}")
 
-        return out_flux * 2 * (resolution / np.pi) ** 2
+        flux_3d = flux_cyl * 2 * (resolution / np.pi) ** 2
 
     else:
         # r > 0 source requires Fourier-series expansion of φ
-        flux_thresh = 1e-4  # threshold value for flux for truncating expansion
+        flux_tol = 1e-6  # relative tolerance for flux for truncating expansion
         cutoff_M = int(2 * rpos * 2 * np.pi * fcen * n)
         ms = range(cutoff_M + 1)
-        flux_tot = 0
+        flux_cyl_tot = 0
+        flux_cyl_max = 0
         for m in ms:
-            out_flux = radiated_flux_cyl(
+            flux_cyl = radiated_flux_cyl(
                 layer_thickness,
                 dipole_height,
                 rpos,
                 m,
             )
-            print(f"flux-m:, {rpos}, {m}, {out_flux:.6f}")
-            flux_tot += out_flux if m == 0 else 2 * out_flux
-            if out_flux < flux_thresh:
+            print(f"flux-m:, {rpos}, {m}, {flux_cyl:.6f}")
+            flux_cyl_tot += flux_cyl if m == 0 else 2 * flux_cyl
+            if flux_cyl > flux_cyl_max:
+                flux_cyl_max = flux_cyl
+            if m > 0 and (flux_cyl / flux_cyl_max) < flux_tol:
                 break
 
-        print(f"flux1:, {rpos}, {flux_tot:.6f}")
+        flux_3d = (flux_cyl_tot / rpos**2) * (2 / np.pi**5)
 
-        return (flux_tot / rpos**2) * (2 / np.pi**5)
+    print(f"flux-3d:, {rpos:.2f}, {flux_3d:.6f}")
+
+    return flux_3d
 
 
 if __name__ == "__main__":
-    P_3d = 40.9739956441  # reference result from an identical 3d simulation
+    # reference result for dipole at r = 0
+    Pcyl_ref = radiated_flux_3d(0)
 
-    rs = [0, 4.5, 8.1]
+    rs = [3.3, 7.5, 12.1]
     for r in rs:
         Pcyl = radiated_flux_3d(r)
-        err = abs(Pcyl - P_3d) / P_3d
-        print(f"flux:, {r}, {Pcyl:.6f}, {err:.6f}")
+        err = abs(Pcyl - Pcyl_ref) / Pcyl_ref
+        print(f"err:, {r}, {Pcyl:.6f}, {err:.6f}")
