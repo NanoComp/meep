@@ -1,27 +1,28 @@
-"""Tutorial example for non-axisymmetric point sources in cylindrical coords.
+"""Tutorial example for point dipole sources in cylindrical coordinates.
 
-This example demonstrates that the radiated flux from a point dipole in
-a dielectric layer above a lossless ground plane computed in cylindrical
-coordinates is the same for a dipole placed anywhere along the radial
-direction.
+This example demonstrates that the total and radiated flux from a point dipole
+in a dielectric layer above a lossless ground plane (an LED) computed in
+cylindrical coordinates as part of the calculation of the extraction efficiency
+is independent of the dipole's location in the radial direction.
 
 Reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#nonaxisymmetric-dipole-sources
 """
+
+from typing import Tuple
 
 import meep as mp
 import numpy as np
 
 
-resolution = 30  # pixels/μm
+resolution = 80  # pixels/μm
 n = 2.4  # refractive index of dielectric layer
 wvl = 1.0  # wavelength (in vacuum)
 fcen = 1 / wvl  # center frequency of source/monitor
 
 
-def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
-    """Computes the radiated flux of a point dipole embedded
-       within a dielectric layer above a lossless ground plane in
-       cylindrical coordinates.
+def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
+    """Computes the radiated and total flux of a point source embedded
+       within a dielectric layer above a lossless ground plane.
 
     Args:
        dmat: thickness of dielectric layer.
@@ -30,7 +31,7 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
        m: angular φ dependence of the fields exp(imφ).
 
     Returns:
-       The radiated flux in cylindrical coordinates.
+       The radiated and total flux as a 2-Tuple.
     """
     L = 20  # length of non-PML region in radial direction
     dair = 1.0  # thickness of air padding
@@ -44,12 +45,11 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
         mp.PML(dpml, direction=mp.Z, side=mp.High),
     ]
 
-    src_cmpt = mp.Er
     src_pt = mp.Vector3(rpos, 0, -0.5 * sz + h * dmat)
     sources = [
         mp.Source(
             src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
-            component=src_cmpt,
+            component=mp.Er,
             center=src_pt,
         ),
     ]
@@ -72,7 +72,7 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
         geometry=geometry,
     )
 
-    flux_air_z = sim.add_flux(
+    flux_air_mon = sim.add_flux(
         fcen,
         0,
         1,
@@ -80,12 +80,6 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
             center=mp.Vector3(0.5 * L, 0, 0.5 * sz - dpml),
             size=mp.Vector3(L, 0, 0),
         ),
-    )
-
-    flux_air_r = sim.add_flux(
-        fcen,
-        0,
-        1,
         mp.FluxRegion(
             center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
             size=mp.Vector3(0, 0, dair),
@@ -93,80 +87,68 @@ def radiated_flux_cyl(dmat: float, h: float, rpos: float, m: int) -> float:
     )
 
     sim.run(
+        mp.dft_ldos(fcen, 0, 1),
         until_after_sources=mp.stop_when_fields_decayed(
             50.0,
-            src_cmpt,
+            mp.Er,
             src_pt,
             1e-8,
         ),
     )
 
-    flux_z = mp.get_fluxes(flux_air_z)[0]
-    flux_r = mp.get_fluxes(flux_air_r)[0]
-    flux_tot = flux_r + flux_z
-
-    return flux_tot
-
-
-def radiated_flux_3d(rpos: float) -> float:
-    """Computes the radiated flux in 3d Cartesian coordinates using a
-       point-dipole source in cylindrical coordinates.
-
-    Args:
-       rpos: position of source in radial direction.
-
-    Returns:
-       The radiated flux in 3d Cartesian coordinates.
-    """
-    layer_thickness = 0.7 * wvl / n
-    dipole_height = 0.5
+    flux_air = mp.get_fluxes(flux_air_mon)[0]
 
     if rpos == 0:
-        # r = 0 source requires a single simulation with m = ±1
-        m = 1
-        flux_cyl = radiated_flux_cyl(
-            layer_thickness,
-            dipole_height,
-            rpos,
-            m,
-        )
-
-        flux_3d = flux_cyl * 2 * (resolution / np.pi) ** 2
-
+        dV = np.pi / (resolution**3)
     else:
-        # r > 0 source requires Fourier-series expansion of φ
-        flux_tol = 1e-6  # relative tolerance for flux for truncating expansion
-        cutoff_M = int(2 * rpos * 2 * np.pi * fcen * n)
-        ms = range(cutoff_M + 1)
-        flux_cyl_tot = 0
-        flux_cyl_max = 0
-        for m in ms:
-            flux_cyl = radiated_flux_cyl(
-                layer_thickness,
-                dipole_height,
-                rpos,
-                m,
-            )
-            print(f"flux-m:, {rpos}, {m}, {flux_cyl:.6f}")
-            flux_cyl_tot += flux_cyl if m == 0 else 2 * flux_cyl
-            if flux_cyl > flux_cyl_max:
-                flux_cyl_max = flux_cyl
-            if m > 0 and (flux_cyl / flux_cyl_max) < flux_tol:
-                break
+        dV = 2 * np.pi * rpos / (resolution**2)
 
-        flux_3d = (flux_cyl_tot / rpos**2) * (2 / np.pi**5)
+    # total flux from point source via LDOS
+    flux_src = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
 
-    print(f"flux-3d:, {rpos:.2f}, {flux_3d:.6f}")
+    print(f"flux-cyl:, {rpos:.2f}, {m:3d}, {flux_src:.6f}, {flux_air:.6f}")
 
-    return flux_3d
+    return flux_air, flux_src
 
 
 if __name__ == "__main__":
-    # reference result for dipole at r = 0
-    Pcyl_ref = radiated_flux_3d(0)
+    layer_thickness = 0.7 * wvl / n
+    dipole_height = 0.5
 
-    rs = [3.3, 7.5, 12.1]
-    for r in rs:
-        Pcyl = radiated_flux_3d(r)
-        err = abs(Pcyl - Pcyl_ref) / Pcyl_ref
-        print(f"err:, {r}, {Pcyl:.6f}, {err:.6f}")
+    # r = 0 source requires a single simulation with m = ±1
+    rpos = 0
+    m = 1
+    flux_air, flux_src = led_flux(
+        layer_thickness,
+        dipole_height,
+        rpos,
+        m,
+    )
+    ext_eff = flux_air / flux_src
+    print(f"exteff:, {rpos}, {ext_eff:.6f}")
+
+    # r > 0 source requires Fourier-series expansion of φ
+    flux_thresh = 1e-5  # threshold value for flux for truncating expansion
+    rpos = [3.5, 6.7, 9.5]
+    for rp in rpos:
+        cutoff_M = int(2 * rp * 2 * np.pi * fcen * n)
+        ms = range(cutoff_M + 1)
+        flux_src_tot = 0
+        flux_cyl_tot = 0
+        flux_cyl_max = 0
+        for m in ms:
+            flux_cyl, flux_src = led_flux(
+                layer_thickness,
+                dipole_height,
+                rp,
+                m,
+            )
+            flux_cyl_tot += flux_cyl if m == 0 else 2 * flux_cyl
+            flux_src_tot += flux_src if m == 0 else 2 * flux_src
+            if flux_cyl > flux_cyl_max:
+                flux_cyl_max = flux_cyl
+            if m > 0 and (flux_cyl / flux_cyl_max) < flux_thresh:
+                break
+
+        ext_eff = flux_cyl_tot / flux_src_tot
+        print(f"exteff:, {rp}, {ext_eff:.6f}")
