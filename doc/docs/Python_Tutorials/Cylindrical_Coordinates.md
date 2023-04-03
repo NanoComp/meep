@@ -603,7 +603,7 @@ A note regarding the source polarization at $r > 0$. The $\hat{x}$ polarization 
 
 Two features of this method may provide a significant speedup compared to an identical 3d simulation:
 
-1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. For $m > M$, the field oscillations tend to be too rapid and the current source therefore cannot radiate any power into the far field. As an example, a point-dipole source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would require roughly $M=16$ simulations. (In practice, however, we usually truncate the Fourier-series expansion earlier: whenever the radiated flux at some $m$ has dropped to some small fraction of its maximum value in the summation.) The plot below shows the radiated flux vs. $m$ for three different source positions. Generally, the farther the point source is from $r = 0$, the more simulations are required for the Fourier-series summation to converge.
+1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M$ can be derived analytically as $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. This relationship comes from expressing the maximum phase of the fields of a *guided* mode in terms of the wavevector of a planewave in free space: $M = kr$ where $k = n\omega_0/c$ is the light line in a medium with index $n$ and $\omega_0$ is the angular frequency in vacuum ($c = 1$ in Meep units). For $m > M$, the field oscillations tend to be too rapid and the current source radiates power into non-guided (i.e., free space) modes. As an example, a point-dipole source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would require roughly $M=16$ simulations. (In practice, however, we usually truncate the Fourier-series expansion earlier: whenever the radiated flux at some $m$ has dropped to some small fraction of its maximum value in the summation.) The plot below shows the radiated flux vs. $m$ for three different source positions. Generally, the farther the point source is from $r = 0$, the more simulations are required for the Fourier-series summation to converge.
 
 2. Each $m$-simulation in the Fourier-series expansion is independent of the others. The simulations can therefore be executed simultaneously using an [embarassingly parallel](https://meep.readthedocs.io/en/latest/Parallel_Meep/#different-forms-of-parallelization) approach.
 
@@ -613,10 +613,10 @@ As a demonstration, we compute the [extraction efficiency of an LED](https://mee
 
 | `rpos` | **extraction efficiency** | **relative error** |  `M` (number of `m`-simulations) |
 |:------:|:-------------------------:|:------------------:|:--------------------------------:|
-|    0   |          0.310405         |        0.042       |                 1                |
-|   3.5  |          0.299407         |        0.041       |                56                |
-|   6.7  |          0.300334         |        0.036       |                101               |
-|   9.5  |          0.302234         |        0.028       |                141               |
+|    0   |          0.319556         |        0.042       |                 1                |
+|   3.5  |          0.319939         |        0.041       |                56                |
+|   6.7  |          0.321860         |        0.036       |                101               |
+|   9.5  |          0.324270         |        0.028       |                141               |
 
 The simulation script is in [examples/point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/point_dipole_cyl.py).
 

@@ -1,11 +1,11 @@
-"""Tutorial example for point dipole sources in cylindrical coordinates.
+"""Tutorial example for point-dipole sources in cylindrical coordinates.
 
 This example demonstrates that the total and radiated flux from a point dipole
-in a dielectric layer above a lossless ground plane (an LED) computed in
-cylindrical coordinates as part of the calculation of the extraction efficiency
-is independent of the dipole's location in the radial direction.
+in a dielectric layer (a quantum well)) above a lossless ground plane (an LED)
+computed in cylindrical coordinates as part of the calculation of the extraction
+efficiency is independent of the dipole's position in the radial direction.
 
-Reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#nonaxisymmetric-dipole-sources
+reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#nonaxisymmetric-dipole-sources
 """
 
 from typing import Tuple
@@ -128,27 +128,27 @@ if __name__ == "__main__":
     print(f"exteff:, {rpos}, {ext_eff:.6f}")
 
     # r > 0 source requires Fourier-series expansion of φ
-    flux_thresh = 1e-5  # threshold value for flux for truncating expansion
+    flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
     rpos = [3.5, 6.7, 9.5]
     for rp in rpos:
-        cutoff_M = int(2 * rp * 2 * np.pi * fcen * n)
+        cutoff_M = int(rp * 2 * np.pi * fcen * n)  # analytic upper bound on m
         ms = range(cutoff_M + 1)
         flux_src_tot = 0
-        flux_cyl_tot = 0
-        flux_cyl_max = 0
+        flux_air_tot = 0
+        flux_air_max = 0
         for m in ms:
-            flux_cyl, flux_src = led_flux(
+            flux_air, flux_src = led_flux(
                 layer_thickness,
                 dipole_height,
                 rp,
                 m,
             )
-            flux_cyl_tot += flux_cyl if m == 0 else 2 * flux_cyl
+            flux_air_tot += flux_air if m == 0 else 2 * flux_air
             flux_src_tot += flux_src if m == 0 else 2 * flux_src
-            if flux_cyl > flux_cyl_max:
-                flux_cyl_max = flux_cyl
-            if m > 0 and (flux_cyl / flux_cyl_max) < flux_thresh:
+            if flux_air > flux_air_max:
+                flux_air_max = flux_air
+            if m > 0 and (flux_air / flux_air_max) < flux_tol:
                 break
 
-        ext_eff = flux_cyl_tot / flux_src_tot
+        ext_eff = flux_air_tot / flux_src_tot
         print(f"exteff:, {rp}, {ext_eff:.6f}")
