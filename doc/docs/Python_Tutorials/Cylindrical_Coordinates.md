@@ -603,20 +603,20 @@ A note regarding the source polarization at $r > 0$. The $\hat{x}$ polarization 
 
 Two features of this method may provide a significant speedup compared to an identical 3d simulation:
 
-1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M$ can be derived analytically as $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. This relationship comes from expressing the maximum phase of the fields of a *guided* mode in terms of the wavevector of a planewave in free space: $M = kr$ where $k = n\omega_0/c$ is the light line in a medium with index $n$ and $\omega_0$ is the angular frequency in vacuum ($c = 1$ in Meep units). For $m > M$, the field oscillations tend to be too rapid and the current source radiates power into non-guided (i.e., free space) modes. As an example, a point-dipole source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would require roughly $M=16$ simulations. (In practice, however, we usually truncate the Fourier-series expansion earlier: whenever the radiated flux at some $m$ has dropped to some small fraction of its maximum value in the summation.) The plot below shows the radiated flux vs. $m$ for three different source positions. Generally, the farther the point source is from $r = 0$, the more simulations are required for the Fourier-series summation to converge.
+1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M$ can be derived analytically as $M \approx r \omega$ where $\omega$ is the angular frequency of the source within the source medium. This relationship comes from expressing the maximum phase of the fields of a *guided* mode in terms of the wavevector of a planewave in free space: $M = kr$ where $k = n\omega_0/c$ is the light line in a medium with index $n$ and $\omega_0$ is the angular frequency in vacuum ($c = 1$ in Meep units). For $m > M$, the field oscillations tend to be too rapid and the current source radiates power into non-guided (i.e., free space) modes. As an example, a point-dipole source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would require roughly $M = 16$ simulations. (In practice, however, we can usually truncate the Fourier-series expansion earlier without significantly degrading accuracy whenever the radiated flux at some $m$ has dropped to some small fraction of its maximum value in the summation.) The plot below shows the radiated flux vs. $m$ for three different source positions used in this tutorial example. Generally, the farther the point source is from $r = 0$, the more simulations are required for the Fourier-series summation to converge.
 
 2. Each $m$-simulation in the Fourier-series expansion is independent of the others. The simulations can therefore be executed simultaneously using an [embarassingly parallel](https://meep.readthedocs.io/en/latest/Parallel_Meep/#different-forms-of-parallelization) approach.
 
 ![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
 
-As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. These results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718. Results for the simulations in cylindrical coordinates are shown in the table below. At this resolution, the relative error is at most ~4%. The error decreases with increasing resolution.
+As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. In this test, the extraction efficiency should be independent of the dipole location. The results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718. Results are shown in the table below. At this resolution, the relative error is at most ~4% even when $M + 1$ is relatively large (141). The error decreases with increasing resolution.
 
-| `rpos` | **extraction efficiency** | **relative error** |  `M` (number of `m`-simulations) |
-|:------:|:-------------------------:|:------------------:|:--------------------------------:|
-|    0   |          0.319556         |        0.042       |                 1                |
-|   3.5  |          0.319939         |        0.041       |                56                |
-|   6.7  |          0.321860         |        0.036       |                101               |
-|   9.5  |          0.324270         |        0.028       |                141               |
+| `rpos` | **extraction efficiency** | **relative error** |  $M + 1$ |
+|:------:|:-------------------------:|:------------------:|:--------:|
+|    0   |          0.319556         |        0.042       |     1    |
+|   3.5  |          0.319939         |        0.041       |    56    |
+|   6.7  |          0.321860         |        0.036       |    101   |
+|   9.5  |          0.324270         |        0.028       |    141   |
 
 The simulation script is in [examples/point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/point_dipole_cyl.py).
 
@@ -633,8 +633,7 @@ wvl = 1.0  # wavelength (in vacuum)
 fcen = 1 / wvl  # center frequency of source/monitor
 
 
-def led_flux(dmat: float, h: float, rpos: float,
-             m: int) -> Tuple[float, float]:
+def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
     """Computes the radiated and total flux of a point source embedded
        within a dielectric layer above a lossless ground plane.
 
@@ -742,28 +741,30 @@ if __name__ == "__main__":
     print(f"exteff:, {rpos}, {ext_eff:.6f}")
 
     # r > 0 source requires Fourier-series expansion of φ
-    flux_thresh = 1e-5  # threshold value for flux for truncating expansion
+    flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
     rpos = [3.5, 6.7, 9.5]
     for rp in rpos:
-        cutoff_M = int(2 * rp * 2 * np.pi * fcen * n)
-        ms = range(cutoff_M+1)
+        # analytic upper bound on m based on coupling to free-space modes
+        # in light cone of source medium
+        cutoff_M = int(rp * 2 * np.pi * fcen * n)
+        ms = range(cutoff_M + 1)
         flux_src_tot = 0
-        flux_cyl_tot = 0
-        flux_cyl_max = 0
+        flux_air_tot = 0
+        flux_air_max = 0
         for m in ms:
-            flux_cyl, flux_src = led_flux(
+            flux_air, flux_src = led_flux(
                 layer_thickness,
                 dipole_height,
                 rp,
                 m,
             )
-            flux_cyl_tot += flux_cyl if m == 0 else 2 * flux_cyl
+            flux_air_tot += flux_air if m == 0 else 2 * flux_air
             flux_src_tot += flux_src if m == 0 else 2 * flux_src
-            if flux_cyl > flux_cyl_max:
-                flux_cyl_max = flux_cyl
-            if m > 0 and (flux_cyl / flux_cyl_max) < flux_thresh:
+            if flux_air > flux_air_max:
+                flux_air_max = flux_air
+            if m > 0 and (flux_air / flux_air_max) < flux_tol:
                 break
 
-        ext_eff = flux_cyl_tot / flux_src_tot
+        ext_eff = flux_air_tot / flux_src_tot
         print(f"exteff:, {rp}, {ext_eff:.6f}")
 ```

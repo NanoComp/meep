@@ -1,7 +1,7 @@
 """Tutorial example for point-dipole sources in cylindrical coordinates.
 
 This example demonstrates that the total and radiated flux from a point dipole
-in a dielectric layer (a quantum well)) above a lossless ground plane (an LED)
+in a dielectric layer (a quantum well) above a lossless ground plane (an LED)
 computed in cylindrical coordinates as part of the calculation of the extraction
 efficiency is independent of the dipole's position in the radial direction.
 
@@ -131,7 +131,9 @@ if __name__ == "__main__":
     flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
     rpos = [3.5, 6.7, 9.5]
     for rp in rpos:
-        cutoff_M = int(rp * 2 * np.pi * fcen * n)  # analytic upper bound on m
+        # analytic upper bound on m based on coupling to free-space modes
+        # in light cone of source medium
+        cutoff_M = int(rp * 2 * np.pi * fcen * n)
         ms = range(cutoff_M + 1)
         flux_src_tot = 0
         flux_air_tot = 0
