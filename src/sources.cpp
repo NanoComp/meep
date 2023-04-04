@@ -275,19 +275,22 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     // check for invalid sources at r=0 in cylindrical coordinates
     if (fc->gv.dim == Dcyl && loc.r() == 0 && amps_array[idx_vol] != 0.0) {
       if (fc->m == 0) {
-	if (component_direction(c) == R || component_direction(c) == P)
-	  meep::abort("Not possible to place a %s source at r=0 in "
-		      "cylindrical coordinates for m = 0.",
-		      component_name(c));
-      } else if (fabs(fc->m) == 1.0) {
-	if (component_direction(c) == Z)
-	  meep::abort("Not possible to place a %s source at r=0 in "
-		      "cylindrical coordinates for |m| = 1.0.",
-		      component_name(c));
-      } else
+        if (component_direction(c) == R || component_direction(c) == P)
+          meep::abort("Not possible to place a %s source at r=0 in "
+                      "cylindrical coordinates for m = 0.",
+                      component_name(c));
+      }
+      else if (fabs(fc->m) == 1.0) {
+        if (component_direction(c) == Z)
+          meep::abort("Not possible to place a %s source at r=0 in "
+                      "cylindrical coordinates for |m| = 1.0.",
+                      component_name(c));
+      }
+      else {
         meep::abort("Not possible to place a source at r=0 in "
                     "cylindrical coordinates for m = %g.",
                     fc->m);
+      }
     }
 
     /* for "D" sources, multiply by epsilon.  FIXME: this is not quite
