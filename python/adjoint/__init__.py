@@ -18,6 +18,8 @@ from .filters import *
 
 from .connectivity import *
 
+from .reverse_design import *
+
 try:
     from .wrapper import MeepJaxWrapper
 except ModuleNotFoundError as _:
