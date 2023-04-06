@@ -240,6 +240,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/filters.py               \
                   $(srcdir)/adjoint/filter_source.py         \
                   $(srcdir)/adjoint/connectivity.py         \
+									$(srcdir)/adjoint/reverse_design.py        \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py
 
