@@ -16,12 +16,11 @@ def reverse_design(target, processing, maxiter=50):
     x = target
     lb, ub = np.zeros((n,)), np.ones((n,))
     ftol = 1e-5
-    for iters in range(num_betas):
-        solver = nlopt.opt(algorithm, n)
-        solver.set_lower_bounds(lb)
-        solver.set_upper_bounds(ub)
-        solver.set_min_objective(f)
-        solver.set_maxeval(maxiter)
-        solver.set_ftol_rel(ftol)
-        x[:] = solver.optimize(x)
+    solver = nlopt.opt(algorithm, n)
+    solver.set_lower_bounds(lb)
+    solver.set_upper_bounds(ub)
+    solver.set_min_objective(f)
+    solver.set_maxeval(maxiter)
+    solver.set_ftol_rel(ftol)
+    x[:] = solver.optimize(x)
     return x
