@@ -585,3 +585,186 @@ Note that the volume specified in `get_farfields` via `center` and `size` is in 
 Shown below is the far-field energy-density profile around the focal length for both the *r* and *z* coordinate directions for three lens designs with $N$ of 25, 50, and 100. The focus becomes sharper with increasing $N$ due to the enhanced constructive interference of the diffracted beam. As the number of zones $N$ increases, the size of the focal spot (full width at half maximum) at $z = 200$ μm decreases as $1/\sqrt{N}$ (see eq. 17 of the [reference](http://zoneplate.lbl.gov/theory)). This means that doubling the resolution (halving the spot width) requires quadrupling the number of zones.
 
 ![](../images/zone_plate_farfield.png#center)
+
+Nonaxisymmetric Dipole Sources
+-------------------------------
+
+In [Tutorial/Local Density of States/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led), the extraction efficiency of an LED was computed using an axisymmetric point-dipole source at $r = 0$. This involved a single simulation with $m = \pm 1$. Simulating a point-dipole source at $r > 0$ (as shown in the schematic below) is more challenging because it is nonaxisymmetric whereas any point source at $r > 0$ is equivalent to an axisymmetric ring source.
+
+![](../images/cyl_nonaxisymmetric_source_layout.png#center)
+
+A point-dipole source at $r_0 > 0$ can be represented as a Dirac delta function in space: $\delta(r - r_0)\delta(\phi)\delta(z) / r_0$. (The $r_0$ factor in the denominator is [necessary to ensure correct normalization](https://math.stackexchange.com/questions/398777/dirac-delta-in-polar-coordinates).) In order to set up such a source using only axisymmetric simulations, it is necessary to expand the $\delta(\phi)$ term as a Fourier series of $\phi$: $\delta(\phi) = \frac{1}{2\pi} \sum_m e^{im\phi}$. (The Fourier transform of a Dirac delta function is a [constant](https://en.wikipedia.org/wiki/Dirac_delta_function#Fourier_transform). Each spectral component has equal weighting in its Fourier-series expansion.)
+
+Simulating a point-dipole source involves two parts: (1) perform a series of simulations for $m = 0, 1, 2, ..., M$ for some cutoff $M$ of the Fourier-series expansion (the solutions for $\pm m$ are simply complex conjugates), and (2) because of power orthogonality, sum the results from each $m$-simulation in post processing, where the $m > 0$ terms are multiplied by two to account for the $-m$ solutions. This procedure is described in more detail below.
+
+Physically, the *total* field $E(x,y,z)$ is a sum of $E_m(r,z)e^{im\phi}$ terms, one for the solution at each $m$ (similarly for $H$). Computing the total Poynting flux, however, involves integrating $\Re [E \times H^*]$ over a surface that includes an integral over $\phi$ in the range $[0,2\pi]$. The key point is that the cross terms $E_mH^*_ne^{i(m-n)\phi}$ integrate to zero due to Fourier orthogonality. **The total Poynting flux is therefore simply a sum over the Poynting fluxes calculated separately for each $m$.**
+
+A note regarding the source polarization at $r > 0$. The $\hat{x}$ polarization in 3d (the "in-plane" polarization) corresponds to the $\hat{r}$ polarization in cylindrical coordinates. An $\hat{r}$-polarized point-dipole source involves $\hat{r}$-polarized point sources in the $m$-simulations. Even though $\hat{r}$ is $\phi$-dependent, $\hat{r}$ is only evaluated at $\phi = 0$ because of $\delta(\phi)$. $\hat{r}$ is therefore equivalent to $\hat{x}$. This property does not hold for an $\hat{x}$-polarized point source at $r = 0$ (where $\delta(\phi)$ is replaced by $1/2\pi$): in that case, we write $\hat{x} = \hat{r}\cos(\phi) - \hat{\phi}\sin(\phi)$, and the $\sin$ and $\cos$ terms yield simulations for $m = \pm 1$. See also [Tutorial/Scattering Cross Section of a Finite Dielectric Cylinder](#scattering-cross-section-of-a-finite-dielectric-cylinder).
+
+Two features of this method may provide a significant speedup compared to an identical 3d simulation:
+
+1. Convergence of the Fourier series may require only a small number ($M + 1$) of simulations. For a given source position $r$, $M$ can be estimated analytically as $M \approx k r$ where $k = n\omega/c$ is the wavenumber of the source within the source medium. This comes from the fact that a source $\sim e^{im\phi}$ at $r$ oscillates in the angular direction with a spatial frequency $m/r$, but $m/r > k$ waves are evanescent, so for $m \gtrsim kr$ the radiated power tends to drop exponentially. As an example, a point-dipole source with wavelength of $1.0 \mu m$ at a radial position of $r = 1.0 \mu m$ within a medium of $n = 2.4$ would require roughly $M = 16$ simulations. (In practice, however, we can usually truncate the Fourier-series expansion earlier without significantly degrading accuracy whenever the radiated flux at some $m$ has dropped to some small fraction of its maximum value in the summation.) The plot below shows the radiated flux vs. $m$ for three different source positions used in this tutorial example. Generally, the farther the point source is from $r = 0$, the more simulations are required for the Fourier-series summation to converge.
+
+2. Each $m$-simulation in the Fourier-series expansion is independent of the others. The simulations can therefore be executed simultaneously using an [embarassingly parallel](https://meep.readthedocs.io/en/latest/Parallel_Meep/#different-forms-of-parallelization) approach.
+
+![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
+
+As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. In this test, the extraction efficiency should be independent of the dipole location. The results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718. Results are shown in the table below. At this resolution, the relative error is at most ~4% even when $M + 1$ is relatively large (141). The error decreases with increasing resolution.
+
+| `rpos` | **extraction efficiency** | **relative error** |  $M + 1$ |
+|:------:|:-------------------------:|:------------------:|:--------:|
+|    0   |          0.319556         |        0.042       |     1    |
+|   3.5  |          0.319939         |        0.041       |    56    |
+|   6.7  |          0.321860         |        0.036       |    101   |
+|   9.5  |          0.324270         |        0.028       |    141   |
+
+The simulation script is in [examples/point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/point_dipole_cyl.py).
+
+```py
+from typing import Tuple
+
+import meep as mp
+import numpy as np
+
+
+resolution = 80  # pixels/μm
+n = 2.4  # refractive index of dielectric layer
+wvl = 1.0  # wavelength (in vacuum)
+fcen = 1 / wvl  # center frequency of source/monitor
+
+
+def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
+    """Computes the radiated and total flux of a point source embedded
+       within a dielectric layer above a lossless ground plane.
+
+    Args:
+       dmat: thickness of dielectric layer.
+       h: height of dipole above ground plane as a fraction of dmat.
+       rpos: position of source in radial direction.
+       m: angular φ dependence of the fields exp(imφ).
+
+    Returns:
+       The radiated and total flux as a 2-Tuple.
+    """
+    L = 20  # length of non-PML region in radial direction
+    dair = 1.0  # thickness of air padding
+    dpml = 1.0  # PML thickness
+    sr = L + dpml
+    sz = dmat + dair + dpml
+    cell_size = mp.Vector3(sr, 0, sz)
+
+    boundary_layers = [
+        mp.PML(dpml, direction=mp.R),
+        mp.PML(dpml, direction=mp.Z, side=mp.High),
+    ]
+
+    src_pt = mp.Vector3(rpos, 0, -0.5 * sz + h * dmat)
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
+            component=mp.Er,
+            center=src_pt,
+        ),
+    ]
+
+    geometry = [
+        mp.Block(
+            material=mp.Medium(index=n),
+            center=mp.Vector3(0, 0, -0.5 * sz + 0.5 * dmat),
+            size=mp.Vector3(mp.inf, mp.inf, dmat),
+        )
+    ]
+
+    sim = mp.Simulation(
+        resolution=resolution,
+        cell_size=cell_size,
+        dimensions=mp.CYLINDRICAL,
+        m=m,
+        boundary_layers=boundary_layers,
+        sources=sources,
+        geometry=geometry,
+    )
+
+    flux_air_mon = sim.add_flux(
+        fcen,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * L, 0, 0.5 * sz - dpml),
+            size=mp.Vector3(L, 0, 0),
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
+            size=mp.Vector3(0, 0, dair),
+        ),
+    )
+
+    sim.run(
+        mp.dft_ldos(fcen, 0, 1),
+        until_after_sources=mp.stop_when_fields_decayed(
+            50.0,
+            mp.Er,
+            src_pt,
+            1e-8,
+        ),
+    )
+
+    flux_air = mp.get_fluxes(flux_air_mon)[0]
+
+    if rpos == 0:
+        dV = np.pi / (resolution**3)
+    else:
+        dV = 2 * np.pi * rpos / (resolution**2)
+
+    # total flux from point source via LDOS
+    flux_src = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
+
+    print(f"flux-cyl:, {rpos:.2f}, {m:3d}, {flux_src:.6f}, {flux_air:.6f}")
+
+    return flux_air, flux_src
+
+
+if __name__ == "__main__":
+    layer_thickness = 0.7 * wvl / n
+    dipole_height = 0.5
+
+    # r = 0 source requires a single simulation with m = ±1
+    rpos = 0
+    m = 1
+    flux_air, flux_src = led_flux(
+        layer_thickness,
+        dipole_height,
+        rpos,
+        m,
+    )
+    ext_eff = flux_air / flux_src
+    print(f"exteff:, {rpos}, {ext_eff:.6f}")
+
+    # r > 0 source requires Fourier-series expansion of φ
+    flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
+    rpos = [3.5, 6.7, 9.5]
+    for rp in rpos:
+        # analytic upper bound on m based on coupling to free-space modes
+        # in light cone of source medium
+        cutoff_M = int(rp * 2 * np.pi * fcen * n)
+        ms = range(cutoff_M + 1)
+        flux_src_tot = 0
+        flux_air_tot = 0
+        flux_air_max = 0
+        for m in ms:
+            flux_air, flux_src = led_flux(
+                layer_thickness,
+                dipole_height,
+                rp,
+                m,
+            )
+            flux_air_tot += flux_air if m == 0 else 2 * flux_air
+            flux_src_tot += flux_src if m == 0 else 2 * flux_src
+            if flux_air > flux_air_max:
+                flux_air_max = flux_air
+            if m > 0 and (flux_air / flux_air_max) < flux_tol:
+                break
+
+        ext_eff = flux_air_tot / flux_src_tot
+        print(f"exteff:, {rp}, {ext_eff:.6f}")
+```
