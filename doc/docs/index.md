@@ -8,7 +8,7 @@
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
 -   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
--   Simulation in **1d, 2d, 3d**, and **cylindrical** coordinates.
+-   Simulation in **1d, 2d, 3d**, and [cylindrical](Exploiting_Symmetry.md#cylindrical-symmetry) coordinates.
 -   Distributed memory [parallelism](Parallel_Meep) on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
 -   **Precompiled binary packages** of official releases via [Conda](Installation.md#conda-packages).
