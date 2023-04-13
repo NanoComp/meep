@@ -2,6 +2,7 @@ from autograd import numpy as npa
 from autograd import grad
 from typing import Callable, List
 
+
 def reverse_design(target: List[float], processing: Callable, maxiter: int = 50):
     """Given a processing function, uses optimization to compute x that minimizes
     the frobenius norm ||target-processing(x)||_F
@@ -34,8 +35,9 @@ def reverse_design(target: List[float], processing: Callable, maxiter: int = 50)
     def f(x, gradient):
         gradient[:] = grad(design_diff, 0)(x)
         return design_diff(x)
-        
+
     import nlopt
+
     algorithm = nlopt.LD_CCSAQ
     n = len(target)
     x = target
