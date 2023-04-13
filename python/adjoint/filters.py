@@ -67,17 +67,28 @@ def _edge_pad(arr, pad):
     bottom_left = npa.tile(arr[0, -1], (pad[0][0], pad[1][1]))  # bottom left
     bottom_right = npa.tile(arr[-1, -1], (pad[0][1], pad[1][1]))  # bottom right
 
-    return npa.concatenate(
-        (
-            npa.concatenate((top_left, top, top_right)),
-            npa.concatenate((left, arr, right)),
-            npa.concatenate((bottom_left, bottom, bottom_right)),
-        ),
-        axis=1,
-    )
+    if pad[0][0] > 0 and pad[0][1] > 0 and pad[1][0] > 0 and pad[1][1] > 0:
+        return npa.concatenate(
+            (
+                npa.concatenate((top_left, top, top_right)),
+                npa.concatenate((left, arr, right)),
+                npa.concatenate((bottom_left, bottom, bottom_right)),
+            ),
+            axis=1,
+        )
+    elif pad[0][0] == 0 and pad[0][1] == 0 and pad[1][0] > 0 and pad[1][1] > 0:
+        return npa.concatenate((top, arr, bottom), axis=1)
+    elif pad[0][0] > 0 and pad[0][1] > 0 and pad[1][0] == 0 and pad[1][1] == 0:
+        return npa.concatenate((left, arr, right), axis=0)
+    elif pad[0][0] == 0 and pad[0][1] == 0 and pad[1][0] == 0 and pad[1][1] == 0:
+        return arr
+    else:
+        raise ValueError(
+            "At least one of the padding numbers is invalid."
+        )
 
 
-def simple_2d_filter(x, h):
+def simple_2d_filter(x, h, periodic_axes = None):
     """A simple 2d filter algorithm that is differentiable with autograd.
     Uses a 2D fft approach since it is typically faster and preserves the shape
     of the input and output arrays.
@@ -90,23 +101,44 @@ def simple_2d_filter(x, h):
         Input array to be filtered. Must be 2D.
     h : array_like (2D)
         Filter kernel (before the DFT). Must be same size as `x`
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
 
     Returns
     -------
     array_like (2D)
         The output of the 2d convolution.
     """
-    (kx, ky) = x.shape
-    h = _proper_pad(h, 3 * np.array([kx, ky]))
+    (sx, sy) = x.shape
+
+    if periodic_axes is None:
+        h = _proper_pad(h, 3 * np.array([sx, sy]))
+        x = _edge_pad(x, ((sx, sx), (sy, sy)))
+    else:
+        (kx, ky) = h.shape
+
+        npx = int(np.ceil((2*kx-1)/sx)) # 2*kx-1 is the size of a complete kernel in the x direction
+        npy = int(np.ceil((2*ky-1)/sy)) # 2*ky-1 is the size of a complete kernel in the y direction
+        if npx % 2 == 0: npx += 1 # Ensure npx is an odd number
+        if npy % 2 == 0: npy += 1 # Ensure npy is an odd number
+
+        # Repeat the design pattern in periodic directions according to the kernel size
+        x = npa.tile(x, (npx if 0 in periodic_axes else 1, npy if 1 in periodic_axes else 1))
+
+        npadx = 0 if 0 in periodic_axes else sx
+        npady = 0 if 1 in periodic_axes else sy
+        x = _edge_pad(x, ((npadx, npadx), (npady, npady))) # pad only in nonperiodic directions
+        h = _proper_pad(h, np.array([npx*sx if 0 in periodic_axes else 3*sx, npy*sy if 1 in periodic_axes else 3*sy]))
+
     h = h / npa.sum(h)  # Normalize the kernel
-    x = _edge_pad(x, ((kx, kx), (ky, ky)))
 
     return _centered(
-        npa.real(npa.fft.ifft2(npa.fft.fft2(x) * npa.fft.fft2(h))), (kx, ky)
+        npa.real(npa.fft.ifft2(npa.fft.fft2(x) * npa.fft.fft2(h))), (sx, sy)
     )
 
 
-def cylindrical_filter(x, radius, Lx, Ly, resolution):
+
+def cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes = None):
     """A uniform cylindrical filter [1]. Typically allows for sharper transitions.
 
     Parameters
@@ -121,6 +153,8 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
 
     Returns
     -------
@@ -139,14 +173,23 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
+    # If the design pattern is periodic in a direction,
+    # the size of the kernel in that direction needs to be adjusted according to the filter radius. 
+    if periodic_axes is not None:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            xv = np.arange(0, np.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution)
+        if 1 in periodic_axes:
+            yv = np.arange(0, np.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution)
+
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(X**2 + Y**2 < radius**2, 1, 0)
 
     # Filter the response
-    return simple_2d_filter(x, h)
+    return simple_2d_filter(x, h, periodic_axes)
 
 
-def conic_filter(x, radius, Lx, Ly, resolution):
+def conic_filter(x, radius, Lx, Ly, resolution, periodic_axes = None):
     """A linear conic filter, also known as a "Hat" filter in the literature [1].
 
     Parameters
@@ -161,6 +204,8 @@ def conic_filter(x, radius, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
 
     Returns
     -------
@@ -179,16 +224,25 @@ def conic_filter(x, radius, Lx, Ly, resolution):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
+    # If the design pattern is periodic in a direction,
+    # the size of the kernel in that direction needs to be adjusted according to the filter radius. 
+    if periodic_axes is not None:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            xv = np.arange(0, np.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution)
+        if 1 in periodic_axes:
+            yv = np.arange(0, np.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution)
+
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(
         X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
     )
 
     # Filter the response
-    return simple_2d_filter(x, h)
+    return simple_2d_filter(x, h, periodic_axes)
 
 
-def gaussian_filter(x, sigma, Lx, Ly, resolution):
+def gaussian_filter(x, sigma, Lx, Ly, resolution, periodic_axes = None):
     """A simple gaussian filter of the form exp(-x **2 / sigma ** 2) [1].
 
     Parameters
@@ -203,6 +257,8 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
 
     Returns
     -------
@@ -221,11 +277,20 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
+    # If the design pattern is periodic in a direction,
+    # the size of the kernel in that direction needs to be adjusted according to 3σ. 
+    if periodic_axes is not None:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            xv = np.arange(0, np.ceil(6 * sigma / Lx) * Lx / 2, 1 / resolution)
+        if 1 in periodic_axes:
+            yv = np.arange(0, np.ceil(6 * sigma / Ly) * Ly / 2, 1 / resolution)
+
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.exp(-(X**2 + Y**2) / sigma**2)
 
     # Filter the response
-    return simple_2d_filter(x, h)
+    return simple_2d_filter(x, h, periodic_axes)
 
 
 """
@@ -234,7 +299,7 @@ Erosion and dilation operators
 """
 
 
-def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
+def exponential_erosion(x, radius, beta, Lx, Ly, resolution, periodic_axes = None):
     """Performs and exponential erosion operation.
 
     Parameters
@@ -251,6 +316,8 @@ def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -269,12 +336,12 @@ def exponential_erosion(x, radius, beta, Lx, Ly, resolution):
     x_hat = npa.exp(beta * (1 - x))
     return (
         1
-        - npa.log(cylindrical_filter(x_hat, radius, Lx, Ly, resolution).flatten())
+        - npa.log(cylindrical_filter(x_hat, radius, Lx, Ly, resolution, periodic_axes).flatten())
         / beta
     )
 
 
-def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
+def exponential_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes = None):
     """Performs a exponential dilation operation.
 
     Parameters
@@ -291,6 +358,8 @@ def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -308,11 +377,11 @@ def exponential_dilation(x, radius, beta, Lx, Ly, resolution):
 
     x_hat = npa.exp(beta * x)
     return (
-        npa.log(cylindrical_filter(x_hat, radius, Lx, Ly, resolution).flatten()) / beta
+        npa.log(cylindrical_filter(x_hat, radius, Lx, Ly, resolution, periodic_axes).flatten()) / beta
     )
 
 
-def heaviside_erosion(x, radius, beta, Lx, Ly, resolution):
+def heaviside_erosion(x, radius, beta, Lx, Ly, resolution, periodic_axes = None):
     """Performs a heaviside erosion operation.
 
     Parameters
@@ -342,11 +411,11 @@ def heaviside_erosion(x, radius, beta, Lx, Ly, resolution):
     numerical methods in engineering, 61(2), 238-254.
     """
 
-    x_hat = cylindrical_filter(x, radius, Lx, Ly, resolution).flatten()
+    x_hat = cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes).flatten()
     return npa.exp(-beta * (1 - x_hat)) + npa.exp(-beta) * (1 - x_hat)
 
 
-def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
+def heaviside_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes = None):
     """Performs a heaviside dilation operation.
 
     Parameters
@@ -363,6 +432,8 @@ def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -376,11 +447,11 @@ def heaviside_dilation(x, radius, beta, Lx, Ly, resolution):
     numerical methods in engineering, 61(2), 238-254.
     """
 
-    x_hat = cylindrical_filter(x, radius, Lx, Ly, resolution).flatten()
+    x_hat = cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes).flatten()
     return 1 - npa.exp(-beta * x_hat) + npa.exp(-beta) * x_hat
 
 
-def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
+def geometric_erosion(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None):
     """Performs a geometric erosion operation.
 
     Parameters
@@ -397,6 +468,8 @@ def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -410,11 +483,11 @@ def geometric_erosion(x, radius, alpha, Lx, Ly, resolution):
     """
     x_hat = npa.log(x + alpha)
     return (
-        npa.exp(cylindrical_filter(x_hat, radius, Lx, Ly, resolution)).flatten() - alpha
+        npa.exp(cylindrical_filter(x_hat, radius, Lx, Ly, resolution, periodic_axes)).flatten() - alpha
     )
 
 
-def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
+def geometric_dilation(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None):
     """Performs a geometric dilation operation.
 
     Parameters
@@ -431,6 +504,8 @@ def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -445,13 +520,13 @@ def geometric_dilation(x, radius, alpha, Lx, Ly, resolution):
 
     x_hat = npa.log(1 - x + alpha)
     return (
-        -npa.exp(cylindrical_filter(x_hat, radius, Lx, Ly, resolution)).flatten()
+        -npa.exp(cylindrical_filter(x_hat, radius, Lx, Ly, resolution, periodic_axes)).flatten()
         + alpha
         + 1
     )
 
 
-def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
+def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None):
     """Performs a harmonic erosion operation.
 
     Parameters
@@ -468,6 +543,8 @@ def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -481,10 +558,10 @@ def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution):
     """
 
     x_hat = 1 / (x + alpha)
-    return 1 / cylindrical_filter(x_hat, radius, Lx, Ly, resolution).flatten() - alpha
+    return 1 / cylindrical_filter(x_hat, radius, Lx, Ly, resolution, periodic_axes).flatten() - alpha
 
 
-def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution):
+def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None):
     """Performs a harmonic dilation operation.
 
     Parameters
@@ -501,6 +578,8 @@ def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution):
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        Array that indicates the input array `x` is periodic along which axes.
 
     Returns
     -------
@@ -515,7 +594,7 @@ def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution):
 
     x_hat = 1 / (1 - x + alpha)
     return (
-        1 - 1 / cylindrical_filter(x_hat, radius, Lx, Ly, resolution).flatten() + alpha
+        1 - 1 / cylindrical_filter(x_hat, radius, Lx, Ly, resolution, periodic_axes).flatten() + alpha
     )
 
 
