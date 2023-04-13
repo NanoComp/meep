@@ -1,4 +1,3 @@
-import nlopt
 from autograd import numpy as npa
 from autograd import grad
 from typing import Callable, List
@@ -36,8 +35,9 @@ def reverse_design(target: List[float], processing: Callable, maxiter: int = 50)
     def f(x, gradient):
         gradient[:] = grad(design_diff, 0)(x)
         return design_diff(x)
-
-    algorithm = nlopt.LD_MMA
+        
+    import nlopt
+    algorithm = nlopt.LD_CCSAQ
     n = len(target)
     x = target
     lb, ub = np.zeros((n,)), np.ones((n,))
