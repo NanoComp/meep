@@ -95,6 +95,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_source.py                 \
     $(TEST_DIR)/test_timing_measurements.py    \
     $(TEST_DIR)/test_user_defined_material.py  \
+    $(TEST_DIR)/test_verbosity_mgr.py          \
     $(TEST_DIR)/test_visualization.py          \
     $(WVG_SRC_TEST)
 
