@@ -618,17 +618,17 @@ As a demonstration, we compute the [extraction efficiency of an LED](https://mee
 |   6.7  |          0.321860         |        0.036       |    101   |
 |   9.5  |          0.324270         |        0.028       |    141   |
 
-The extraction efficiency computed thus far is for *all* angles. To compute the extraction efficiency within an angular cone (i.e., as part of an overall calculation of the [radiation pattern](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna)), we would need to surround the emitting structure with a closed box of near-field monitors. However, because the LED slab is infinitely extended a non-closed box will introduce [truncation errors](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna) which are unavoidable.
+The extraction efficiency computed thus far is for *all* angles. To compute the extraction efficiency within an angular cone (i.e., as part of an overall calculation of the [radiation pattern](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna)), we would need to surround the emitting structure with a closed box of near-field monitors. However, because the LED slab is infinitely extended a non-closed box must be used.  This will introduce [truncation errors](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna) which are unavoidable.
 
-The procedure for computing the extraction efficiency within an angular cone for a dipole source at $r > 0$ involves:
+The procedure for computing the extraction efficiency within an angular cone for a dipole source at $r > 0$ involves five steps:
 
-1. For each $m$ simulation in the Fourier-series expansion, compute the far fields ($\vec{E}_m$, $\vec{H}_m$) for $N$ points along the circumference of a quarter circle in the angular range [0°, 90°] with "infinite" radius (i.e., $R \gg \lambda$) using a near-to-far field transformation.
-2. Obtain the *total* far fields by summing the far fields from (1): $\vec{E}_{tot} = \sum_{m=0}^M \vec{E}_m$ and $\vec{H}_{tot} = \sum_{m=0}^M \vec{H}_m$.
-3. Compute the radial Poynting flux $P_{r,i}$ for each point $i$ on the circumference using $\vec{E}_{tot} \times \vec{H}^*_{tot}$.
-4. Compute the ratio of the radial Poynting flux within an angular cone ($\sum_{i'} P_{r,i'}$) to the total radial Poynting flux ($\sum_{i=0}^N P_{r,i}$).
+1. For each simulation in the Fourier-series expansion ($m = 0, 1, ..., M$), compute the far fields $\vec{E}_m$, $\vec{H}_m$ for $N$ points along the circumference of a quarter circle spanning the angular range [0°, 90°] with "infinite" radius (i.e., $R \gg \lambda$) using a near-to-far field transformation.
+2. Obtain the *total* far fields by summing the far fields from (1): $\vec{E}_{tot} = \vec{E}_{m=0} + 2\sum_{m=1}^M \Re\{\vec{E}_m\}$ and $\vec{H}_{tot} = \vec{H}_{m=0} + 2\sum_{m=1}^M \Re\{\vec{H}_m\}$.
+3. Compute the radial Poynting flux $P_{r,i}$ for each point $i = 0, 1, ..., N - 1$ on the circumference using $\vec{E}_{tot} \times \vec{H}^*_{tot}$.
+4. Compute the ratio of the radial Poynting flux within an angular cone $\sum_{i'} P_{r,i'}$ to the total radial Poynting flux $\sum_{i=0}^{N-1} P_{r,i}$.
 5. Multiply (4) by the extraction efficiency for all angles.
 
-Note that because we are computing the far fields at discrete points in space, we cannot simply compute the radiation pattern using the Poynting flux of the far fields $\vec{P}_m$ and then average these radiation patterns in post processing. This is because $\vec{P}_m$ from different $m$ simulations are *not* orthogonal. The important point is that while the near fields $\vec{E}_{near,m}, \vec{E}_{near,m}$ are Fourier orthogonal, the far fields $\vec{E}_m, \vec{H}_m$ are not.
+Note that because we are computing the far fields at *discrete* points in space, we cannot simply compute the radiation pattern using the Poynting flux of the far fields $\vec{P}_m$ for $m = 0, 1, ..., M$ and then average these $M + 1$ radiation patterns in post processing. This is because $\vec{P}_m$ from different $m$ simulations is *not* orthogonal. The important point is that while the axisymmetric near fields $\vec{E}_{near,m}, \vec{E}_{near,m}$ are Fourier orthogonal, the nonaxisymmetric far fields $\vec{E}_m, \vec{H}_m$ are not.
 
 The simulation script is in [examples/point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/point_dipole_cyl.py).
 
