@@ -333,7 +333,7 @@ The simulation setup is shown in the figures below for 3D Cartesian (cross secti
 
 ![](../images/dipole_extraction_eff_cyl.png#center)
 
-The total emitted power obtained using the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V$ for a source at the origin turns out to be $\pi/(resolution)^3$ and in 3D it is $1/(resolution)^3$.
+The total emitted power obtained from the LDOS terms using the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V = \Delta r \times \Delta z \times 2 \pi r$. For stability purposes, a source at $r = 0$ is actually positioned at $r = 0.5 \Delta r$. This means $\Delta V = \pi / resolution^3$ since $\Delta r = \Delta z = 1 / resolution$. In 3D, $\Delta V = \Delta x \times \Delta y \times \Delta z = 1 / resolution^3$ for every voxel in the cell.
 
 As shown in the figure below, the results from the two coordinate systems have good agreement.
 
