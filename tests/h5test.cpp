@@ -35,7 +35,7 @@ double funky_eps_3d(const vec &p_) {
 
 symmetry make_identity(const grid_volume &gv) {
   (void)gv; // unused
-  return identity();
+  return meep::identity();
 }
 
 symmetry make_mirrorx(const grid_volume &gv) { return mirror(X, gv); }
