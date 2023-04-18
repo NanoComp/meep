@@ -333,7 +333,7 @@ The simulation setup is shown in the figures below for 3D Cartesian (cross secti
 
 ![](../images/dipole_extraction_eff_cyl.png#center)
 
-The total emitted power obtained from the LDOS terms of the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V = \Delta r \times \Delta z \times 2 \pi r$. Since $\Delta r \rightarrow 0$ with increasing resolution, Meep implements an $r = 0$ source at $r = 0.5 \Delta r$. This means that for a source at $r = 0$, $\Delta V = \pi / resolution^3$ since $\Delta r = \Delta z = 1 / resolution$. In 3D, $\Delta V = \Delta x \times \Delta y \times \Delta z = 1 / resolution^3$ for every voxel in the cell.
+The total emitted power obtained from the LDOS terms of the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V = \Delta r \times \Delta z \times 2 \pi r$. Meep implements an $r = 0$ source at $r = 0.5 \Delta r$, corresponding to the smallest-$r$ `Er` Yee grid point. This means that for a source at $r = 0$, $\Delta V = \pi / resolution^3$ since $\Delta r = \Delta z = 1 / resolution$. In 3D, $\Delta V = \Delta x \times \Delta y \times \Delta z = 1 / resolution^3$ for every voxel in the cell.
 
 As shown in the figure below, the results from the two coordinate systems have good agreement.
 
