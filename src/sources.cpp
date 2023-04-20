@@ -271,6 +271,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
 
     vec rel_loc = loc - data->center;
 
+    // in cylindrical coordinates, we need to account for the r term in the integral.
     if (fc->gv.dim == Dcyl)
       amps_array[idx_vol] =
           IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2) * amp * data->A(rel_loc);
@@ -483,9 +484,16 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   src_vol_chunkloop_data data;
   data.A = A ? A : one;
   data.amp = amp;
+  // correct units for J delta-function amplitude
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (gv.dim != Dcyl && where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
-      data.amp *= gv.a; // correct units for J delta-function amplitude
+    if (where.in_direction(d) == 0.0 && !nosize_direction(d)) { // delta-fun
+      if (d == R && where.center().in_direction(d) > 0)
+        // in cylindrical coordinates, we need to scale by $r$ for a dipole.
+        data.amp *= 1.0 / where.center().in_direction(d);
+      else if (gv.dim != Dcyl)
+        // we handle the resolution scaling at the chunk level for cylindrical coordinates.
+        data.amp *= gv.a;
+    }
   }
   sources = src.add_to(sources, &data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
@@ -760,6 +768,11 @@ diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::comple
   p = p_;
 };
 
+/*
+Occasionally, it's useful to check the sum of all the actual source amplitudes
+(e.g. to ensure that the boundary weights are being computed properly).
+`sum_sources()` provides a convenient interface to do just that.
+*/
 std::complex<double> fields::sum_sources(field_type ft) {
   std::complex<double> total_sources = 0.0;
 
