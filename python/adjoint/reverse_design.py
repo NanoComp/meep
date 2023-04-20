@@ -3,7 +3,7 @@ from autograd import grad
 from typing import Callable, List
 
 
-def reverse_design(target: List[float], processing: Callable, maxiter: int = 50):
+def reverse_design(target: List[float], processing: Callable, maxiter: int = 100):
     """Given a processing function, uses optimization to compute x that minimizes
     the frobenius norm ||target-processing(x)||_F
 
