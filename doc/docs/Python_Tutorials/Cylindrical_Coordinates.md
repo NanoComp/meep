@@ -620,15 +620,20 @@ As a demonstration, we compute the [extraction efficiency of an LED](https://mee
 
 The extraction efficiency computed thus far is for *all* angles. To compute the extraction efficiency within an angular cone (i.e., as part of an overall calculation of the [radiation pattern](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna)), we would need to surround the emitting structure with a closed box of near-field monitors. However, because the LED slab is infinitely extended a non-closed box must be used.  This will introduce [truncation errors](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna) which are unavoidable.
 
-The procedure for computing the extraction efficiency within an angular cone for a dipole source at $r > 0$ involves five steps:
+In principle, computing extraction efficiency first involves computing the radiation $P(\theta, \phi)$ (the power as a function of spherical angles), and then computing the fraction of this power (integrated over azimuthal angle $\phi$) that lies within a given angular cone $\theta \in [0,\theta_0]$.   It turns out that there is a simplification because we can compute the azimuthal $P(\theta) = \int P(\theta, \phi) d\phi$ more efficiently without first computing $P(\theta, \phi)$.   However, it is instructive to explain how to compute both $P(\theta, \phi)$ and the extraction efficiency
 
-1. For each simulation in the Fourier-series expansion ($m = 0, 1, ..., M$), compute the far fields $\vec{E}_m$, $\vec{H}_m$ for $N$ points along the circumference of a quarter circle spanning the angular range [0°, 90°] with "infinite" radius (i.e., $R \gg \lambda$) using a near-to-far field transformation.
-2. Obtain the *total* far fields by summing the far fields from (1): $\vec{E}_{tot} = \vec{E}_{m=0} + 2\sum_{m=1}^M \Re\{\vec{E}_m\}$ and $\vec{H}_{tot} = \vec{H}_{m=0} + 2\sum_{m=1}^M \Re\{\vec{H}_m\}$.
-3. Compute the radial Poynting flux $P_{r,i}$ for each point $i = 0, 1, ..., N - 1$ on the circumference using $\vec{E}_{tot} \times \vec{H}^*_{tot}$.
-4. Compute the ratio of the radial Poynting flux within an angular cone $\sum_{i'} P_{r,i'}$ to the total radial Poynting flux $\sum_{i=0}^{N-1} P_{r,i}$.
-5. Multiply (4) by the extraction efficiency for all angles.
+To compute the radiation pattern $P(\theta, \phi)$ requires three steps:
 
-Note that because we are computing the far fields at *discrete* points in space, we cannot simply compute the radiation pattern using the Poynting flux of the far fields $\vec{P}_m$ for $m = 0, 1, ..., M$ and then average these $M + 1$ radiation patterns in post processing. This is because $\vec{P}_m$ from different $m$ simulations is *not* orthogonal. The important point is that while the axisymmetric near fields $\vec{E}_{near,m}, \vec{E}_{near,m}$ are Fourier orthogonal, the nonaxisymmetric far fields $\vec{E}_m, \vec{H}_m$ are not.
+1. For each simulation in the Fourier-series expansion ($m = 0, 1, ..., M$), compute the far fields $\vec{E}_m$, $\vec{H}_m$ for the desired $\theta$ points in the $rz$ ($\phi = 0$) plane, at an "infinite" radius (i.e., $R \gg \lambda$) using a near-to-far field transformation.
+2. Obtain the *total* far fields at these points, for a given $\phi$ by summing the far fields from (1): $\vec{E}_{tot}(\theta, \phi) = \vec{E}_{m=0}(\theta) + 2\sum_{m=1}^M \Re\{\vec{E}_m(\theta)e^{im\phi}\}$ and $\vec{H}_{tot}(\theta, \phi) = \vec{H}_{m=0}(\theta) + 2\sum_{m=1}^M \Re\{\vec{H}_m(\theta)e^{im\phi}\}$.  (Note that $\vec{E}_m$ and $\vec{H}_m$ are generally complex, and are conjugates for $\pm m$.)
+3. Compute the radial Poynting flux $P_{r,i}(\theta, \phi)$ for each point $i = 0, 1, ..., N - 1$ on the circumference using $\Re[\vec{E}_{tot}(\theta, \phi) \times \vec{H}^*_{tot}(\theta, \phi)]$.
+
+However, if you want to compute $P(\theta) = \int P(\theta, \phi) d\phi$ in order to obtain the extraction efficiency, the calculations simplify because the cross terms in $\vec{E}_{tot} \times \vec{H}^*_{tot}$ between different $m$'s integrate to zero when integrated over $\phi$ from $0$ to $2\pi$.  So, one can replace step (2) with a direct computation of the powers $P(\theta)$ rather than summing the fields.  As a result, the procedure for computing the extraction efficiency within an angular cone for a dipole source at $r > 0$ involves four steps:
+
+1. For each simulation in the Fourier-series expansion ($m = 0, 1, ..., M$), compute the far fields $\vec{E}_m$, $\vec{H}_m$ for the desired $\theta$ points in the $rz$ ($\phi = 0$) plane, at an "infinite" radius (i.e., $R \gg \lambda$) using a near-to-far field transformation.
+2. Obtain the powers $P(\theta) from these far fields by summing: $P(\theta) = 2\pi \Re\left[ \vec{E}_{m=0}(\theta) \times \vec{H}_{m=0}(\theta)^* + 2\sum_{m=1}^M \vec{E}_{m}(\theta) \times \vec{H}_{m}(\theta)^* \right]$.
+3. Compute the fraction of the radial Poynting flux within an angular cone $\int_0^\theta P(\theta') d\theta' / \int_0^{\pi/2} P(\theta') d\theta'$ (by some discretized integral, e.g. a [trapezoidal rule](https://en.wikipedia.org/wiki/Trapezoidal_rule) or something fancier).
+4. Multiply (3) by the extraction efficiency.
 
 The simulation script is in [examples/point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/point_dipole_cyl.py).
 
