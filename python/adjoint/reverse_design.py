@@ -41,7 +41,7 @@ def reverse_design(target: List[float], processing: Callable, maxiter: int = 100
     algorithm = nlopt.LD_CCSAQ
     n = len(target)
     x = target
-    lb, ub = np.zeros((n,)), np.ones((n,))
+    lb, ub = npa.zeros((n,)), npa.ones((n,))
     ftol = 1e-5
     solver = nlopt.opt(algorithm, n)
     solver.set_lower_bounds(lb)
