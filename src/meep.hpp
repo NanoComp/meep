@@ -1524,6 +1524,10 @@ public:
   }
 
   double last_source_time();
+
+  // sources.cpp
+  std::complex<double> sum_sources(field_type ft);
+
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
@@ -1760,6 +1764,9 @@ public:
   void log(const char *prefix = "");
   void change_m(double new_m);
   bool has_nonlinearities(bool parallel = true) const;
+
+  // sources.coo
+  std::complex<double> sum_sources(field_type ft);
 
   // time.cpp
   std::vector<double> time_spent_on(time_sink sink);

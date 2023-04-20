@@ -270,7 +270,12 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     loc += shift * (0.5 * inva);
 
     vec rel_loc = loc - data->center;
-    amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1) * amp * data->A(rel_loc);
+
+    if (fc->gv.dim == Dcyl)
+      amps_array[idx_vol] =
+          IVEC_LOOP_WEIGHT(s0, s1, e0, e1, dV0 + dV1 * loop_i2) * amp * data->A(rel_loc);
+    else
+      amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1) * amp * data->A(rel_loc);
 
     // check for invalid sources at r=0 in cylindrical coordinates
     if (fc->gv.dim == Dcyl && loc.r() == 0 && amps_array[idx_vol] != 0.0) {
@@ -479,7 +484,7 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
   data.A = A ? A : one;
   data.amp = amp;
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    if (where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
+    if (gv.dim != Dcyl && where.in_direction(d) == 0.0 && !nosize_direction(d)) // delta-fun
       data.amp *= gv.a; // correct units for J delta-function amplitude
   }
   sources = src.add_to(sources, &data.src);
@@ -754,5 +759,25 @@ diffractedplanewave::diffractedplanewave(int g_[3], double axis_[3], std::comple
   s = s_;
   p = p_;
 };
+
+std::complex<double> fields::sum_sources(field_type ft) {
+  std::complex<double> total_sources = 0.0;
+
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine()) total_sources += chunks[i]->sum_sources(ft);
+
+  return sum_to_all(total_sources);
+}
+
+std::complex<double> fields_chunk::sum_sources(field_type ft) {
+  std::complex<double> total_sources = 0.0;
+  for (const src_vol &sv : sources[ft]) {
+    for (size_t j = 0; j < sv.num_points(); j++) {
+      meep::master_printf("src %f\n", sv.amplitude_at(j));
+      total_sources += sv.amplitude_at(j);
+    }
+  }
+  return total_sources;
+}
 
 } // namespace meep
