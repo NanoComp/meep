@@ -944,8 +944,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 print(f"PASSED: fwidth={fwidth:.5f}, m={m}, err={rel_err:.10f}")
 
     def test_periodic_design(self):
-        """Verifies that the constaint functions are invariant when
-        the design pattern is shifted along periodic directions."""
+        """Verifies that lengthscale constaint functions are invariant when
+        a design pattern is shifted along periodic directions."""
         print("*** TESTING PERIODIC DESIGN ***")
 
         # shifted design patterns
