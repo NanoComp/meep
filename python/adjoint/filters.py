@@ -102,7 +102,7 @@ def simple_2d_filter(x, h, periodic_axes = None):
     h : array_like (2D)
         Filter kernel (before the DFT). Must be same size as `x`
     periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -154,7 +154,7 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes = None):
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -205,7 +205,7 @@ def conic_filter(x, radius, Lx, Ly, resolution, periodic_axes = None):
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -258,7 +258,7 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, periodic_axes = None):
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -317,7 +317,7 @@ def exponential_erosion(x, radius, beta, Lx, Ly, resolution, periodic_axes = Non
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -359,7 +359,7 @@ def exponential_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes = No
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -398,6 +398,8 @@ def heaviside_erosion(x, radius, beta, Lx, Ly, resolution, periodic_axes = None)
         Length of design region in Y direction (in "meep units")
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -433,7 +435,7 @@ def heaviside_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes = None
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -469,7 +471,7 @@ def geometric_erosion(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -505,7 +507,7 @@ def geometric_dilation(x, radius, alpha, Lx, Ly, resolution, periodic_axes = Non
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -544,7 +546,7 @@ def harmonic_erosion(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None)
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -579,7 +581,7 @@ def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution, periodic_axes = None
     resolution : int
         Resolution of the design grid (not the meep simulation resolution)
     periodic_axes: array_like (1D)
-        Array that indicates the input array `x` is periodic along which axes.
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -778,7 +780,7 @@ def get_conic_radius_from_eta_e(b, eta_e):
         )
 
 
-def indicator_solid(x, c, filter_f, threshold_f, resolution):
+def indicator_solid(x, c, filter_f, threshold_f, resolution, periodic_axes = None):
     """Calculates the indicator function for the void phase needed for minimum length optimization [1].
 
     Parameters
@@ -787,12 +789,12 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
         Design parameters
     c : float
         Decay rate parameter (1e0 - 1e8)
-    eta_e : float
-        Erosion threshold limit (0-1)
     filter_f : function_handle
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -807,7 +809,19 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
 
     filtered_field = filter_f(x)
     design_field = threshold_f(filtered_field)
-    gradient_filtered_field = npa.gradient(filtered_field)
+
+    if periodic_axes is None:
+        gradient_filtered_field = npa.gradient(filtered_field)
+    else:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            filtered_field = npa.tile(filtered_field, (3,1))
+        if 1 in periodic_axes:
+            filtered_field = npa.tile(filtered_field, (1,3))
+        gradient_filtered_field = npa.gradient(filtered_field)
+        gradient_filtered_field[0] = _centered(gradient_filtered_field[0], x.shape)
+        gradient_filtered_field[1] = _centered(gradient_filtered_field[1], x.shape)
+
     grad_mag = (gradient_filtered_field[0] * resolution) ** 2 + (
         gradient_filtered_field[1] * resolution
     ) ** 2
@@ -818,7 +832,7 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution):
     return design_field * npa.exp(-c * grad_mag)
 
 
-def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
+def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution, periodic_axes = None):
     """Calculates the constraint function of the solid phase needed for minimum length optimization [1].
 
     Parameters
@@ -833,6 +847,8 @@ def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -852,12 +868,12 @@ def constraint_solid(x, c, eta_e, filter_f, threshold_f, resolution):
 
     filtered_field = filter_f(x)
     I_s = indicator_solid(
-        x.reshape(filtered_field.shape), c, filter_f, threshold_f, resolution
+        x.reshape(filtered_field.shape), c, filter_f, threshold_f, resolution, periodic_axes
     ).flatten()
     return npa.mean(I_s * npa.minimum(filtered_field.flatten() - eta_e, 0) ** 2)
 
 
-def indicator_void(x, c, filter_f, threshold_f, resolution):
+def indicator_void(x, c, filter_f, threshold_f, resolution, periodic_axes = None):
     """Calculates the indicator function for the void phase needed for minimum length optimization [1].
 
     Parameters
@@ -872,6 +888,8 @@ def indicator_void(x, c, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
 
     Returns
     -------
@@ -886,7 +904,19 @@ def indicator_void(x, c, filter_f, threshold_f, resolution):
 
     filtered_field = filter_f(x).reshape(x.shape)
     design_field = threshold_f(filtered_field)
-    gradient_filtered_field = npa.gradient(filtered_field)
+
+    if periodic_axes is None:
+        gradient_filtered_field = npa.gradient(filtered_field)
+    else:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            filtered_field = npa.tile(filtered_field, (3,1))
+        if 1 in periodic_axes:
+            filtered_field = npa.tile(filtered_field, (1,3))
+        gradient_filtered_field = npa.gradient(filtered_field)
+        gradient_filtered_field[0] = _centered(gradient_filtered_field[0], x.shape)
+        gradient_filtered_field[1] = _centered(gradient_filtered_field[1], x.shape)
+
     grad_mag = (gradient_filtered_field[0] * resolution) ** 2 + (
         gradient_filtered_field[1] * resolution
     ) ** 2
@@ -897,7 +927,7 @@ def indicator_void(x, c, filter_f, threshold_f, resolution):
     return (1 - design_field) * npa.exp(-c * grad_mag)
 
 
-def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
+def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution, periodic_axes = None):
     """Calculates the constraint function of the void phase needed for minimum length optimization [1].
 
     Parameters
@@ -912,6 +942,8 @@ def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
         Filter function. Must be differntiable by autograd.
     threshold_f : function_handle
         Threshold function. Must be differntiable by autograd.
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic).
 
     Returns
     -------
@@ -931,7 +963,7 @@ def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution):
 
     filtered_field = filter_f(x)
     I_v = indicator_void(
-        x.reshape(filtered_field.shape), c, filter_f, threshold_f, resolution
+        x.reshape(filtered_field.shape), c, filter_f, threshold_f, resolution, periodic_axes
     ).flatten()
     return npa.mean(I_v * npa.minimum(eta_d - filtered_field.flatten(), 0) ** 2)
 
