@@ -597,9 +597,9 @@ A point-dipole source at $r_0 > 0$ can be represented as a Dirac delta function 
 
 Simulating a point-dipole source involves two parts: (1) perform a series of simulations for $m = 0, 1, 2, ..., M$ for some cutoff $M$ of the Fourier-series expansion (the solutions for $\pm m$ are simply complex conjugates), and (2) because of power orthogonality, sum the results from each $m$-simulation in post processing, where the $m > 0$ terms are multiplied by two to account for the $-m$ solutions. This procedure is described in more detail below.
 
-Physically, the *total* field $E(x,y,z)$ is a sum of $E_m(r,z)e^{im\phi}$ terms, one for the solution at each $m$ (similarly for $H$). Computing the total Poynting flux, however, involves integrating $\Re [E \times H^*]$ over a surface that includes an integral over $\phi$ in the range $[0,2\pi]$. The key point is that the cross terms $E_mH^*_ne^{i(m-n)\phi}$ integrate to zero due to Fourier orthogonality. **The total Poynting flux is therefore simply a sum over the Poynting fluxes calculated separately for each $m$.**
+Physically, the *total* field $E(x,y,z)$ is a sum of $E_m(r,z)e^{im\phi}$ terms, one for the solution at each $m$ (similarly for $H$). Computing the total Poynting flux, however, involves integrating $\Re [E \times H^*]$ over a surface that includes an integral over $\phi$ in the range $[0,2\pi]$. The key point is that the cross terms $E_mH^*_ne^{i(m-n)\phi}$ integrate to zero due to Fourier orthogonality. **The total Poynting flux is therefore a sum of the Poynting fluxes calculated separately for each $m$.**
 
-A note regarding the source polarization at $r > 0$. The $\hat{x}$ polarization in 3d (the "in-plane" polarization) corresponds to the $\hat{r}$ polarization in cylindrical coordinates. An $\hat{r}$-polarized point-dipole source involves $\hat{r}$-polarized point sources in the $m$-simulations. Even though $\hat{r}$ is $\phi$-dependent, $\hat{r}$ is only evaluated at $\phi = 0$ because of $\delta(\phi)$. $\hat{r}$ is therefore equivalent to $\hat{x}$. This property does not hold for an $\hat{x}$-polarized point source at $r = 0$ (where $\delta(\phi)$ is replaced by $1/2\pi$): in that case, we write $\hat{x} = \hat{r}\cos(\phi) - \hat{\phi}\sin(\phi)$, and the $\sin$ and $\cos$ terms yield simulations for $m = \pm 1$. See also [Tutorial/Scattering Cross Section of a Finite Dielectric Cylinder](#scattering-cross-section-of-a-finite-dielectric-cylinder).
+A note regarding the source polarization at $r > 0$. The $\hat{x}$ polarization in 3d (the "in-plane" polarization) corresponds to the $\hat{r}$ polarization in cylindrical coordinates. An $\hat{r}$-polarized point-dipole source involves $\hat{r}$-polarized point sources in the $m$-simulations. Even though $\hat{r}$ is in fact $\phi$-dependent, $\hat{r}$ is only evaluated at $\phi = 0$ because of $\delta(\phi)$. $\hat{r}$ is therefore equivalent to $\hat{x}$. This property does not hold for an $\hat{x}$-polarized point source at $r = 0$ (where $\delta(\phi)$ is replaced by $1/2\pi$): in that case, we write $\hat{x} = \hat{r}\cos(\phi) - \hat{\phi}\sin(\phi)$, and the $\sin$ and $\cos$ terms yield simulations for $m = \pm 1$. See also [Tutorial/Scattering Cross Section of a Finite Dielectric Cylinder](#scattering-cross-section-of-a-finite-dielectric-cylinder) which demonstrates setting up a linearly polarized planewave using a similar approach. However, in practice, a single $\hat{r}$-polarized point source at $r = 0$ is necessary for $m = \pm 1$.
 
 Two features of this method may provide a significant speedup compared to an identical 3d simulation:
 
@@ -609,7 +609,9 @@ Two features of this method may provide a significant speedup compared to an ide
 
 ![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
 
-As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. In this test, the extraction efficiency should be independent of the dipole location. The results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718. Results are shown in the table below. At this resolution, the relative error is at most ~4% even when $M + 1$ is relatively large (141). The error decreases with increasing resolution.
+As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. The test involves verifying that the extraction efficiency is independent of the dipole location. The results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718.
+
+Results are shown in the table below. At this resolution, the relative error is at most ~4% even when $M + 1$ is relatively large (141). The error decreases with increasing resolution.
 
 | `rpos` | **extraction efficiency** | **relative error** |  $M + 1$ |
 |:------:|:-------------------------:|:------------------:|:--------:|
@@ -620,7 +622,7 @@ As a demonstration, we compute the [extraction efficiency of an LED](https://mee
 
 The extraction efficiency computed thus far is for *all* angles. To compute the extraction efficiency within an angular cone (i.e., as part of an overall calculation of the [radiation pattern](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna)), we would need to surround the emitting structure with a closed box of near-field monitors. However, because the LED slab is infinitely extended a non-closed box must be used.  This will introduce [truncation errors](Near_to_Far_Field_Spectra.md#truncation-errors-from-a-non-closed-near-field-surface) which are unavoidable.
 
-In principle, computing extraction efficiency first involves computing the radiation $P(\theta, \phi)$ (the power as a function of [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system)), and then computing the fraction of this power (integrated over the azimuthal angle $\phi$) that lies within a given angular cone $\theta \in [0,\theta_0]$.   It turns out that there is a simplification because we can compute the azimuthal $P(\theta) = \int P(\theta, \phi) d\phi$ more efficiently without first computing $P(\theta, \phi)$.   However, it is instructive to explain how to compute both $P(\theta, \phi)$ and the extraction efficiency.
+In principle, computing extraction efficiency first involves computing the radiation pattern $P(\theta, \phi)$ (the power as a function of [spherical angles](https://en.wikipedia.org/wiki/Spherical_coordinate_system)), and then computing the fraction of this power (integrated over the azimuthal angle $\phi$) that lies within a given angular cone $\theta \in [0,\theta_0]$.   It turns out that there is a simplification because we can compute the azimuthal $P(\theta) = \int P(\theta, \phi) d\phi$ more efficiently without first computing $P(\theta, \phi)$.   However, it is instructive to explain how to compute both $P(\theta, \phi)$ and the extraction efficiency.
 
 To compute the radiation pattern $P(\theta, \phi)$ requires three steps:
 
@@ -651,17 +653,18 @@ fcen = 1 / wvl  # center frequency of source/monitor
 
 
 def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
-    """Computes the radiated and total flux of a point source embedded
-       within a dielectric layer above a lossless ground plane.
+    """Computes the radiated and total flux (necessary for computing the
+       extraction efficiency) of a point source embedded within a dielectric
+       layer above a lossless-metallic ground plane.
 
     Args:
-       dmat: thickness of dielectric layer.
-       h: height of dipole above ground plane as a fraction of dmat.
-       rpos: position of source in radial direction.
-       m: angular φ dependence of the fields exp(imφ).
+        dmat: thickness of dielectric layer.
+        h: height of dipole above ground plane as a fraction of dmat.
+        rpos: position of source in radial direction.
+        m: angular φ dependence of the fields exp(imφ).
 
     Returns:
-       The radiated and total flux as a 2-Tuple.
+        The radiated and total flux as a 2-Tuple.
     """
     L = 20  # length of non-PML region in radial direction
     dair = 1.0  # thickness of air padding
@@ -761,14 +764,11 @@ if __name__ == "__main__":
     flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
     rpos = [3.5, 6.7, 9.5]
     for rp in rpos:
-        # analytic upper bound on m based on coupling to free-space modes
-        # in light cone of source medium
-        cutoff_M = int(rp * 2 * np.pi * fcen * n)
-        ms = range(cutoff_M + 1)
         flux_src_tot = 0
         flux_air_tot = 0
         flux_air_max = 0
-        for m in ms:
+        m = 0
+        while True:
             flux_air, flux_src = led_flux(
                 layer_thickness,
                 dipole_height,
@@ -781,7 +781,9 @@ if __name__ == "__main__":
                 flux_air_max = flux_air
             if m > 0 and (flux_air / flux_air_max) < flux_tol:
                 break
+            m += 1
 
         ext_eff = flux_air_tot / flux_src_tot
         print(f"exteff:, {rp}, {ext_eff:.6f}")
+
 ```
