@@ -90,6 +90,11 @@ void display_geometric_object_info(int indentby, GEOMETRIC_OBJECT o);
 
 %}
 
+%ignore meep::eigenmode_data::mdata;
+%ignore meep::eigenmode_data::fft_data_H;
+%ignore meep::eigenmode_data::fft_data_E;
+%ignore meep::eigenmode_data::H;
+
 %include "numpy.i"
 %include "std_vector.i"
 
