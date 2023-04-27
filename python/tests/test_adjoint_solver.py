@@ -4,7 +4,7 @@ try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
-
+import os
 import unittest
 from enum import Enum
 from typing import List, Union, Tuple
