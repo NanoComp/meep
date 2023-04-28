@@ -1,9 +1,9 @@
 """Tutorial example for point-dipole sources in cylindrical coordinates.
 
-This example demonstrates that the total and radiated flux from a point dipole
-in a dielectric layer (a quantum well) above a lossless ground plane (an LED)
-computed in cylindrical coordinates as part of the calculation of the extraction
-efficiency is independent of the dipole's position in the radial direction.
+This example demonstrates that the extraction efficiency of a point dipole
+in a dielectric layer (a quantum well) above a lossless-metallic ground plane
+(an LED) computed in cylindrical coordinates is independent of the dipole's
+position in the radial direction.
 
 reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#nonaxisymmetric-dipole-sources
 """
@@ -21,17 +21,18 @@ fcen = 1 / wvl  # center frequency of source/monitor
 
 
 def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
-    """Computes the radiated and total flux of a point source embedded
-       within a dielectric layer above a lossless ground plane.
+    """Computes the radiated and total flux (necessary for computing the
+       extraction efficiency) of a point source embedded within a dielectric
+       layer above a lossless-metallic ground plane.
 
     Args:
-       dmat: thickness of dielectric layer.
-       h: height of dipole above ground plane as a fraction of dmat.
-       rpos: position of source in radial direction.
-       m: angular φ dependence of the fields exp(imφ).
+        dmat: thickness of dielectric layer.
+        h: height of dipole above ground plane as a fraction of dmat.
+        rpos: position of source in radial direction.
+        m: angular φ dependence of the fields exp(imφ).
 
     Returns:
-       The radiated and total flux as a 2-Tuple.
+        The radiated and total flux as a 2-Tuple.
     """
     L = 20  # length of non-PML region in radial direction
     dair = 1.0  # thickness of air padding
@@ -131,14 +132,11 @@ if __name__ == "__main__":
     flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
     rpos = [3.5, 6.7, 9.5]
     for rp in rpos:
-        # analytic upper bound on m based on coupling to free-space modes
-        # in light cone of source medium
-        cutoff_M = int(rp * 2 * np.pi * fcen * n)
-        ms = range(cutoff_M + 1)
         flux_src_tot = 0
         flux_air_tot = 0
         flux_air_max = 0
-        for m in ms:
+        m = 0
+        while True:
             flux_air, flux_src = led_flux(
                 layer_thickness,
                 dipole_height,
@@ -151,6 +149,7 @@ if __name__ == "__main__":
                 flux_air_max = flux_air
             if m > 0 and (flux_air / flux_air_max) < flux_tol:
                 break
+            m += 1
 
         ext_eff = flux_air_tot / flux_src_tot
         print(f"exteff:, {rp}, {ext_eff:.6f}")
