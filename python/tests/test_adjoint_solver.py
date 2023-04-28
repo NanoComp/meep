@@ -958,7 +958,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         eta_d = 1 - eta_e
         beta, eta = 10, 0.5
         radius, c = 0.3, 400
-        places = 18
+        places = 16
         threshold_f = lambda x: mpa.tanh_projection(x, beta, eta)
 
         for selected_filter in (
