@@ -943,6 +943,123 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 self.assertLessEqual(rel_err, tol)
                 print(f"PASSED: fwidth={fwidth:.5f}, m={m}, err={rel_err:.10f}")
 
+    def test_periodic_design(self):
+        """Verifies that lengthscale constaint functions are invariant when
+        a design pattern is shifted along periodic directions."""
+        print("*** TESTING PERIODIC DESIGN ***")
+
+        # shifted design patterns
+        idx_row_shift, idx_col_shift = int(0.19 * self.Nx), int(0.28 * self.Ny)
+        p = self.p.reshape(self.Nx, self.Ny)
+        p_row_shift = np.vstack((p[idx_row_shift:, :], p[0:idx_row_shift, :]))
+        p_col_shift = np.hstack((p[:, idx_col_shift:], p[:, 0:idx_col_shift]))
+
+        eta_e = 0.55
+        eta_d = 1 - eta_e
+        beta, eta = 10, 0.5
+        radius, c = 0.3, 400
+        places = 18
+        threshold_f = lambda x: mpa.tanh_projection(x, beta, eta)
+
+        for selected_filter in (
+            mpa.conic_filter,
+            mpa.cylindrical_filter,
+            mpa.gaussian_filter,
+        ):
+            for periodic_axes in (0, 1, (0, 1)):
+                filter_f = lambda x: selected_filter(
+                    x,
+                    radius,
+                    self.design_region_size.x,
+                    self.design_region_size.y,
+                    self.design_region_resolution,
+                    periodic_axes,
+                )
+
+                constraint_solid_original = mpa.constraint_solid(
+                    self.p,
+                    c,
+                    eta_e,
+                    filter_f,
+                    threshold_f,
+                    self.design_region_resolution,
+                    periodic_axes,
+                )
+
+                constraint_void_original = mpa.constraint_void(
+                    self.p,
+                    c,
+                    eta_d,
+                    filter_f,
+                    threshold_f,
+                    self.design_region_resolution,
+                    periodic_axes,
+                )
+
+                if periodic_axes in (0, (0, 1)):
+                    constraint_solid_row_shift = mpa.constraint_solid(
+                        p_row_shift,
+                        c,
+                        eta_e,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    self.assertAlmostEqual(
+                        constraint_solid_original,
+                        constraint_solid_row_shift,
+                        places=places,
+                    )
+
+                    constraint_void_row_shift = mpa.constraint_void(
+                        p_row_shift,
+                        c,
+                        eta_d,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    self.assertAlmostEqual(
+                        constraint_void_original,
+                        constraint_void_row_shift,
+                        places=places,
+                    )
+
+                if periodic_axes in (1, (0, 1)):
+                    constraint_solid_col_shift = mpa.constraint_solid(
+                        p_col_shift,
+                        c,
+                        eta_e,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    self.assertAlmostEqual(
+                        constraint_solid_original,
+                        constraint_solid_col_shift,
+                        places=places,
+                    )
+
+                    constraint_void_col_shift = mpa.constraint_void(
+                        p_col_shift,
+                        c,
+                        eta_d,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    self.assertAlmostEqual(
+                        constraint_void_original,
+                        constraint_void_col_shift,
+                        places=places,
+                    )
+
+            print(f"PASSED: filter function = {selected_filter.__name__}")
+
 
 if __name__ == "__main__":
     unittest.main()
