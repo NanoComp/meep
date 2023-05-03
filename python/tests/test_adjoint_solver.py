@@ -4,7 +4,7 @@ try:
     import meep.adjoint as mpa
 except:
     import adjoint as mpa
-
+import os
 import unittest
 from enum import Enum
 from typing import List, Union, Tuple
@@ -1059,6 +1059,25 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     )
 
             print(f"PASSED: filter function = {selected_filter.__name__}")
+
+    def test_unfilter_design(self):
+        """Verifies that the unfilter_design on a given structure
+        finds initialization close to what it found previously."""
+        print("*** TESTING unfilter_design ***")
+
+        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
+        expected = np.load(os.path.join(data_dir, "mpa_unfilter_design.npy"))
+        target = np.load(os.path.join(data_dir, "mpa_unfilter_design_target.npy"))
+
+        def processing(x):
+            filtered_field = mpa.conic_filter(x, 0.1, 2, 2, 200)
+            projected_field = mpa.tanh_projection(filtered_field, 8, 0.5)
+            return projected_field.flatten()
+
+        reverse_x = mpa.unfilter_design(target, processing)
+        tol = 1e-8
+        self.assertClose(expected, reverse_x, epsilon=tol)
+        print(f"PASSED: unfilter_design={reverse_x}, expeced_design={expected}")
 
 
 if __name__ == "__main__":
