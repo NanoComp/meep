@@ -237,6 +237,8 @@ That is, you have $\omega(\beta_r) = \omega_r + i\omega_i$ where the subscripts 
 
 This analysis is only valid if the loss is small, i.e. $\omega_i \ll \omega_r$. This should always be the case in any reasonable waveguide, where the light can travel for many wavelengths before dissipating/escaping. If you have extremely large losses so that it only propagates for a few wavelengths or less, then you would have to treat the problem differently &mdash; but in this case, the whole concept of a "waveguide mode" is not clearly defined.
 
+For a *lossless* waveguide, the (real) effective index is defined as $\beta / \omega$. $\beta$ and $\omega$ are purely real quantities in this case. As in the calculation of the complex effective index, $\beta$ is specified in the simulation using the `k_point` input variable and $\omega$ is obtained using [Harminv](Python_User_Interface.md#harminv).
+
 ### How do I compute the group velocity of a mode?
 
 There are two possible approaches for manually computing the [group velocity](https://en.wikipedia.org/wiki/Group_velocity) $\nabla_\textbf{k}\omega$: (1) compute the [dispersion relation](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#band-diagram) $\omega(\textbf{k})$ using [Harminv](Python_User_Interface.md#harminv), fit it to a polynomial, and calculate its derivative using a [finite difference](https://en.wikipedia.org/wiki/Finite_difference) (i.e. $[ \omega(\textbf{k} + \Delta \textbf{k}) - \omega(\textbf{k}-\Delta \textbf{k}) ] / (2\|\Delta \textbf{k}\|)$, or (2) excite the mode using a narrowband pulse and compute the ratio of the Poynting flux to electric-field energy density.
