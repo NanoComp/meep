@@ -3,7 +3,7 @@ from autograd import grad
 from typing import Callable, List
 
 
-def reverse_design(target: List[float], processing: Callable, maxiter: int = 100):
+def unfilter_design(target: List[float], processing: Callable, maxiter: int = 100):
     """Given a processing function, uses optimization to compute x that minimizes
     the frobenius norm ||target-processing(x)||_F
 
@@ -38,6 +38,8 @@ def reverse_design(target: List[float], processing: Callable, maxiter: int = 100
 
     import nlopt
 
+    # Due to a potential bug in LD_MMA, we are switching to LD_CCSAQ
+    # See https://github.com/NanoComp/meep/issues/2400
     algorithm = nlopt.LD_CCSAQ
     n = len(target)
     x = target

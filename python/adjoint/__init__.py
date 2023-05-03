@@ -18,7 +18,7 @@ from .filters import *
 
 from .connectivity import *
 
-from .reverse_design import *
+from .unfilter_design import *
 
 try:
     from .wrapper import MeepJaxWrapper
