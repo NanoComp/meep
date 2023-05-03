@@ -183,7 +183,7 @@ class ContinuousSource(SourceTime):
         end_time=1.0e20,
         width=0,
         fwidth=float("inf"),
-        cutoff=3.0,
+        slowness=3.0,
         wavelength=None,
         is_integrated=False,
         **kwargs,
@@ -204,14 +204,16 @@ class ContinuousSource(SourceTime):
           10<sup>20</sup> (never turn off).
 
         + **`width` [`number`]** — Roughly, the temporal width of the smoothing
-          (technically, the inverse of the exponential rate at which the current turns off
-          and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which
+          (technically, the inverse of the exponential rate at which the current turns on).
+          Default is 0 (no smoothing). You can instead specify `fwidth=x`, which
           is a synonym for `width=1/x` (i.e. the frequency width is proportional to the
           inverse of the temporal width).
 
         + **`slowness` [`number`]** — Controls how far into the exponential tail of the
           tanh function the source turns on. Default is 3.0. A larger value means that the
-          source turns on more gradually at the beginning.
+          source turns on more gradually at the beginning. For a detailed explanation
+          of the effects of `width` and `slowness` on the time profile of the source,
+          see [here](FAQ.md##why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
         + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
           current (the [dipole
@@ -233,9 +235,9 @@ class ContinuousSource(SourceTime):
         self.start_time = start_time
         self.end_time = end_time
         self.width = max(width, 1 / fwidth)
-        self.cutoff = cutoff
+        self.slowness = slowness
         self.swigobj = mp.continuous_src_time(
-            self.frequency, self.width, self.start_time, self.end_time, self.cutoff
+            self.frequency, self.width, self.start_time, self.end_time, self.slowness
         )
         self.swigobj.is_integrated = self.is_integrated
 
