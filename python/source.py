@@ -183,6 +183,7 @@ class ContinuousSource(SourceTime):
         end_time=1.0e20,
         width=0,
         fwidth=float("inf"),
+        cutoff=None,
         slowness=3.0,
         wavelength=None,
         is_integrated=False,
@@ -204,8 +205,8 @@ class ContinuousSource(SourceTime):
           10<sup>20</sup> (never turn off).
 
         + **`width` [`number`]** — Roughly, the temporal width of the smoothing
-          (technically, the inverse of the exponential rate at which the current turns on).
-          Default is 0 (no smoothing). You can instead specify `fwidth=x`, which
+          (technically, the inverse of the exponential rate at which the current turns off
+          and on). Default is 0 (no smoothing). You can instead specify `fwidth=x`, which
           is a synonym for `width=1/x` (i.e. the frequency width is proportional to the
           inverse of the temporal width).
 
@@ -229,6 +230,13 @@ class ContinuousSource(SourceTime):
             raise ValueError(
                 f"Must set either frequency or wavelength in {self.__class__.__name__}."
             )
+
+        if cutoff is not None:
+            warnings.warn(
+                "cutoff property is deprecated, use slowness instead.",
+                DeprecationWarning,
+            )
+            slowness = cutoff
 
         super().__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
