@@ -183,7 +183,8 @@ class ContinuousSource(SourceTime):
         end_time=1.0e20,
         width=0,
         fwidth=float("inf"),
-        cutoff=3.0,
+        cutoff=None,
+        slowness=3.0,
         wavelength=None,
         is_integrated=False,
         **kwargs,
@@ -211,7 +212,9 @@ class ContinuousSource(SourceTime):
 
         + **`slowness` [`number`]** — Controls how far into the exponential tail of the
           tanh function the source turns on. Default is 3.0. A larger value means that the
-          source turns on more gradually at the beginning.
+          source turns on more gradually at the beginning. For a detailed explanation
+          of the effects of `width` and `slowness` on the time profile of the source,
+          see [here](FAQ.md##why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
         + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
           current (the [dipole
@@ -228,14 +231,21 @@ class ContinuousSource(SourceTime):
                 f"Must set either frequency or wavelength in {self.__class__.__name__}."
             )
 
+        if cutoff is not None:
+            warnings.warn(
+                "cutoff property is deprecated, use slowness instead.",
+                DeprecationWarning,
+            )
+            slowness = cutoff
+
         super().__init__(is_integrated=is_integrated, **kwargs)
         self.frequency = 1 / wavelength if wavelength else float(frequency)
         self.start_time = start_time
         self.end_time = end_time
         self.width = max(width, 1 / fwidth)
-        self.cutoff = cutoff
+        self.slowness = slowness
         self.swigobj = mp.continuous_src_time(
-            self.frequency, self.width, self.start_time, self.end_time, self.cutoff
+            self.frequency, self.width, self.start_time, self.end_time, self.slowness
         )
         self.swigobj.is_integrated = self.is_integrated
 
