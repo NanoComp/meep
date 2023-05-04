@@ -229,13 +229,17 @@ Note: any real-valued signal consists of both positive and negative frequency co
 
 ### How do I compute the effective index of an eigenmode of a lossy waveguide?
 
-To compute the [effective index](https://www.rp-photonics.com/effective_refractive_index.html), you will need to first compute the *complex* $\omega$ (the loss in time) for a *real* $\beta$ (the propagation constant) and then convert this quantity into a loss in space (*complex* $\beta$ at a *real* $\omega$) by dividing by the group velocity $v_g$. This procedure is described in more detail below.
+The [effective index](https://www.rp-photonics.com/effective_refractive_index.html) is usually defined as $n_{eff} = \beta / \omega$.
+
+To compute the (complex) effective index of a lossy waveguide, you will need to first compute the *complex* $\omega$ (the loss in time) for a *real* $\beta$ (the propagation constant) and then convert this quantity into a loss in space (*complex* $\beta$ at a *real* $\omega$) by dividing by the group velocity $v_g$. This procedure is described in more detail below.
 
 To obtain the loss in time, you make your computational cell a cross-section of your waveguide (i.e. 2d for a waveguide with constant cross-section), and set Bloch-periodic boundary conditions via the `k_point` input variable &mdash; this specifies your (real) $\beta$. You then treat it exactly the same as a [resonant-cavity problem](Python_Tutorials/Resonant_Modes_and_Transmission_in_a_Waveguide_Cavity.md#resonant-modes): you excite the system with a short pulse source, monitor the field at some point, and then analyze the result with [Harminv](Python_User_Interface.md#harminv); all of which is done if you call `run_kpoints`. This will give you the complex $\omega$ at the given $\beta$, where the imaginary part is the loss rate in time. Note: the loss in a uniform waveguide, with no absorption or disorder, is zero, even in the discretized system.
 
 That is, you have $\omega(\beta_r) = \omega_r + i\omega_i$ where the subscripts $r$ and $i$ denote real and imaginary parts. Now, what you want to do is to get the complex $\beta$ at the real $\omega$ which is given by: $\beta(\omega_r) = \beta_r - i\omega_i/v_g + \mathcal{O}(\omega_i^2)$. That is, to first order in the loss, the imaginary part of $\beta$ (the propagation loss) at the real frequency $\omega_r$ is given just by dividing $\omega_i$ by the group velocity $v_g = \frac{d\omega}{d\beta}$, which you can [get from the dispersion relation in the absence of loss](#how-do-i-compute-the-group-velocity-of-a-mode). This relationship is just a consequence of the first-order Taylor expansion of the dispersion relation $\omega(\beta)$ in the complex plane.
 
 This analysis is only valid if the loss is small, i.e. $\omega_i \ll \omega_r$. This should always be the case in any reasonable waveguide, where the light can travel for many wavelengths before dissipating/escaping. If you have extremely large losses so that it only propagates for a few wavelengths or less, then you would have to treat the problem differently &mdash; but in this case, the whole concept of a "waveguide mode" is not clearly defined.
+
+For a *lossless* waveguide, $\beta$ and $\omega$ are purely real quantities. This means you do not have to worry about group velocity and imaginary parts. You can also compute $\omega(\beta)$ (more efficiently) using the mode solver [MPB](https://mpb.readthedocs.io/en/latest/).
 
 ### How do I compute the group velocity of a mode?
 
