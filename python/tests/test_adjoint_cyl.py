@@ -29,8 +29,9 @@ boundary_layers = [mp.PML(thickness=dpml)]
 design_region_resolution = int(2 * resolution)
 design_r = 5
 design_z = 2
-Nr, Nz = int(design_r * design_region_resolution), int(
-    design_z * design_region_resolution
+Nr, Nz = (
+    int(design_r * design_region_resolution) + 1,
+    int(design_z * design_region_resolution) + 1,
 )
 
 fcen = 1 / 1.55

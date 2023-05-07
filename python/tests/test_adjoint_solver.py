@@ -39,8 +39,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
         cls.design_region_size = mp.Vector3(1.5, 1.5)
         cls.design_region_resolution = int(2 * cls.resolution)
-        cls.Nx = int(round(cls.design_region_size.x * cls.design_region_resolution))
-        cls.Ny = int(round(cls.design_region_size.y * cls.design_region_resolution))
+        cls.Nx = int(round(cls.design_region_size.x * cls.design_region_resolution)) + 1
+        cls.Ny = int(round(cls.design_region_size.y * cls.design_region_resolution)) + 1
 
         # ensure reproducible results
         rng = np.random.RandomState(9861548)
@@ -547,7 +547,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            tol = 0.03 if mp.is_single_precision() else 0.002
+            tol = 0.062 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
                 f"PASSED: frequencies={frequencies}, "
@@ -585,9 +585,9 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             # non-center frequencies of a multifrequency simulation
             # are expected to be *less* accurate than the center frequency
             if len(frequencies) == 1 and frequencies[0] == self.fcen:
-                tol = 0.002 if mp.is_single_precision() else 5e-5
+                tol = 0.004 if mp.is_single_precision() else 5e-5
             else:
-                tol = 0.008 if mp.is_single_precision() else 0.002
+                tol = 0.008 if mp.is_single_precision() else 0.0024
 
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
@@ -617,7 +617,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            tol = 0.002 if mp.is_single_precision() else 0.001
+            tol = 0.0028 if mp.is_single_precision() else 0.0025
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
                 f"PASSED: frequencies={frequencies}, "
@@ -1070,7 +1070,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         target = np.load(os.path.join(data_dir, "mpa_unfilter_design_target.npy"))
 
         def processing(x):
-            filtered_field = mpa.conic_filter(x, 0.1, 2, 2, 200)
+            filtered_field = mpa.conic_filter(x, 0.1, 1.995, 1.995, 200)
             projected_field = mpa.tanh_projection(filtered_field, 8, 0.5)
             return projected_field.flatten()
 

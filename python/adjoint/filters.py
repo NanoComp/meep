@@ -180,8 +180,8 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
-    Nx = int(round(Lx * resolution))
-    Ny = int(round(Ly * resolution))
+    Nx = int(round(Lx * resolution)) + 1
+    Ny = int(round(Ly * resolution)) + 1
     x = x.reshape(Nx, Ny)  # Ensure the input is 2D
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
@@ -231,8 +231,8 @@ def conic_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
     [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
-    Nx = int(round(Lx * resolution))
-    Ny = int(round(Ly * resolution))
+    Nx = int(round(Lx * resolution)) + 1
+    Ny = int(round(Ly * resolution)) + 1
     x = x.reshape(Nx, Ny)  # Ensure the input is 2D
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
@@ -284,8 +284,8 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, periodic_axes=None):
     [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of
     topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
     """
-    Nx = int(round(Lx * resolution))
-    Ny = int(round(Ly * resolution))
+    Nx = int(round(Lx * resolution)) + 1
+    Ny = int(round(Ly * resolution)) + 1
     x = x.reshape(Nx, Ny)  # Ensure the input is 2D
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
