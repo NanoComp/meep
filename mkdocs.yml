@@ -26,10 +26,6 @@ markdown_extensions:
 extra_javascript:
  - 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS_HTML'
 
-formats:
-  - epub
-  - pdf
-
 nav:
 - 'Manual': 'index.md'
 - 'Introduction': 'Introduction.md'
