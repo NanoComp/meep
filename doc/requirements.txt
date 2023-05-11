@@ -1,3 +1,4 @@
 mkdocs==1.4.3
 python-markdown-math
 mkdocs-material
+jinja2<3.1.0
