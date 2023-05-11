@@ -22,15 +22,20 @@ n2 = 1.0
 
 
 def refl_coeff_meep(pol: Polarization, theta: float, L: float) -> complex:
-    """Computes the reflection coefficient of a TIR mode using mode
-       decomposition.
+    """Returns the complex reflection coefficient of a TIR mode computed
+       using mode decomposition.
 
     Args:
         pol: polarization of the incident planewave (S or P).
         theta: angle of the incident planewave (radians).
-        L: position of the mode monitor relative to the flat interface. 0 is
-            interface position.
+        L: position of the mode monitor relative to the flat interface.
     """
+    if theta < math.asin(n2 / n1):
+        raise ValueError(
+            f"incident angle of {math.degrees(theta):.2f}° is "
+            f"not a total internal reflected mode."
+        )
+
     resolution = 50.0
 
     # cell size is arbitrary
@@ -40,14 +45,14 @@ def refl_coeff_meep(pol: Polarization, theta: float, L: float) -> complex:
     cell_size = mp.Vector3(sx + 2 * dpml, sy, 0)
     pml_layers = [mp.PML(dpml, direction=mp.X)]
 
-    fcen = 1.0  # center frequency
+    fcen = 1.0  # source/monitor frequency
     df = 0.1 * fcen
 
     # k (in source medium) with correct length
     # plane of incidence is xy
     k = mp.Vector3(n1 * fcen, 0, 0).rotate(mp.Vector3(0, 0, 1), theta)
 
-    # planewave amplitude function (for source)
+    # planewave amplitude function (for line source)
     def pw_amp(k, x0):
         def _pw_amp(x):
             return cmath.exp(1j * 2 * math.pi * k.dot(x + x0))
@@ -155,7 +160,7 @@ def refl_coeff_meep(pol: Polarization, theta: float, L: float) -> complex:
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(
             50,
-            mp.Ez,
+            src_cmpt,
             mp.Vector3(-L, 0, 0),
             1e-6,
         ),
@@ -182,12 +187,12 @@ def refl_coeff_meep(pol: Polarization, theta: float, L: float) -> complex:
 
 
 def refl_coeff_Fresnel(pol: Polarization, theta: float) -> complex:
-    """Computes the reflection coefficient of a TIR mode using the Fresnel
-       equations.
+    """Returns the complex reflection coefficient of a TIR mode computed
+       using the Fresnel equations.
 
     Args:
         pol: polarization of the incident planewave (S or P).
-        theta: angle of the incident planewave (degrees).
+        theta: angle of the incident planewave (radians).
     """
     if pol.name == "S":
         refl_coeff = (
@@ -206,34 +211,39 @@ def refl_coeff_Fresnel(pol: Polarization, theta: float) -> complex:
 
 
 if __name__ == "__main__":
-    thetas = [54.3, 48.5]  # angle of incident planewave (degrees)
-    Ls = [0.4, 1.2]  # position of mode monitor relative to flat interface
-    pols = [Polarization.S, Polarization.P]  # polarization of incident planewave
+    # angle of incident planewave (degrees)
+    thetas = [54.3, 48.5]
+
+    # position of mode monitor relative to flat interface
+    Ls = [0.4, 1.2]
+
+    # polarization of incident planewave
+    pols = [Polarization.S, Polarization.P]
 
     for pol, theta, L in zip(pols, thetas, Ls):
         theta_rad = np.radians(theta)
-        rc_m = refl_coeff_meep(pol, theta_rad, L)
-        rc_f = refl_coeff_Fresnel(pol, theta_rad)
+        R_meep = refl_coeff_meep(pol, theta_rad, L)
+        R_fres = refl_coeff_Fresnel(pol, theta_rad)
 
-        rc_m_str = f"{rc_m.real:.5f}{rc_m.imag:+.5f}j"
-        rc_f_str = f"{rc_f.real:.5f}{rc_f.imag:+.5f}j"
+        complex_to_str = lambda cnum: f"{cnum.real:.5f}{cnum.imag:+.5f}j"
         print(
-            f"refl-coeff:, {pol.name}, {theta}, {rc_m_str} (Meep), "
-            f"{rc_f_str} (Fresnel)"
+            f"refl-coeff:, {pol.name}, {theta}, "
+            f"{complex_to_str(R_meep)} (Meep), "
+            f"{complex_to_str(R_fres)} (Fresnel)"
         )
 
-        mag_m = abs(rc_m)
-        mag_f = abs(rc_f)
-        err_mag = abs(mag_m - mag_f) / mag_f
+        mag_meep = abs(R_meep)
+        mag_fres = abs(R_fres)
+        err_mag = abs(mag_meep - mag_fres) / mag_fres
         print(
-            f"magnitude:, {mag_m:.5f} (Meep), {mag_f:.5f} (Fresnel), "
+            f"magnitude:, {mag_meep:.5f} (Meep), {mag_fres:.5f} (Fresnel), "
             f"{err_mag:.5f} (error)"
         )
 
-        phase_m = cmath.phase(rc_m)
-        phase_f = cmath.phase(rc_f)
-        err_phase = abs(phase_m - phase_f) / abs(phase_f)
+        phase_meep = cmath.phase(R_meep)
+        phase_fres = cmath.phase(R_fres)
+        err_phase = abs(phase_meep - phase_fres) / abs(phase_fres)
         print(
-            f"phase:, {phase_m:.5f} (Meep), {phase_f:.5f} (Fresnel), "
+            f"phase:, {phase_meep:.5f} (Meep), {phase_fres:.5f} (Fresnel), "
             f"{err_phase:.5f} (error)"
         )
