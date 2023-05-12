@@ -10,7 +10,7 @@ from enum import Enum
 from typing import List, Union, Tuple
 import numpy as np
 from autograd import numpy as npa
-from autograd import tensor_jacobian_product
+from autograd import grad, tensor_jacobian_product
 from utils import ApproxComparisonTestCase
 
 MonitorObject = Enum("MonitorObject", "EIGENMODE DFT LDOS")
@@ -954,12 +954,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         p_row_shift = np.vstack((p[idx_row_shift:, :], p[0:idx_row_shift, :]))
         p_col_shift = np.hstack((p[:, idx_col_shift:], p[:, 0:idx_col_shift]))
 
-        eta_e = 0.55
+        eta_e = 0.75
         eta_d = 1 - eta_e
-        beta, eta = 10, 0.5
+        beta, eta_i = 10, 0.5
         radius, c = 0.3, 400
-        places = 16
-        threshold_f = lambda x: mpa.tanh_projection(x, beta, eta)
+        places = 15
+        threshold_f = lambda x: mpa.tanh_projection(x, beta, eta_i)
 
         for selected_filter in (
             mpa.conic_filter,
@@ -976,8 +976,8 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     periodic_axes,
                 )
 
-                constraint_solid_original = mpa.constraint_solid(
-                    self.p,
+                constraint_solid = mpa.constraint_solid(
+                    p,
                     c,
                     eta_e,
                     filter_f,
@@ -986,8 +986,28 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                     periodic_axes,
                 )
 
-                constraint_void_original = mpa.constraint_void(
-                    self.p,
+                constraint_void = mpa.constraint_void(
+                    p,
+                    c,
+                    eta_d,
+                    filter_f,
+                    threshold_f,
+                    self.design_region_resolution,
+                    periodic_axes,
+                )
+
+                solid_grad = grad(mpa.constraint_solid, 0)(
+                    p,
+                    c,
+                    eta_e,
+                    filter_f,
+                    threshold_f,
+                    self.design_region_resolution,
+                    periodic_axes,
+                )
+
+                void_grad = grad(mpa.constraint_void, 0)(
+                    p,
                     c,
                     eta_d,
                     filter_f,
@@ -1007,7 +1027,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         periodic_axes,
                     )
                     self.assertAlmostEqual(
-                        constraint_solid_original,
+                        constraint_solid,
                         constraint_solid_row_shift,
                         places=places,
                     )
@@ -1022,8 +1042,40 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         periodic_axes,
                     )
                     self.assertAlmostEqual(
-                        constraint_void_original,
+                        constraint_void,
                         constraint_void_row_shift,
+                        places=places,
+                    )
+
+                    solid_row_shift_grad = grad(mpa.constraint_solid, 0)(
+                        p_row_shift,
+                        c,
+                        eta_e,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    solid_grad_row_shift = np.vstack((solid_grad[idx_row_shift:, :], solid_grad[0:idx_row_shift, :]))
+                    self.assertAlmostEqual(
+                        np.sum(abs(solid_grad_row_shift-solid_row_shift_grad)),
+                        0,
+                        places=places,
+                    )
+
+                    void_row_shift_grad = grad(mpa.constraint_void, 0)(
+                        p_row_shift,
+                        c,
+                        eta_d,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    void_grad_row_shift = np.vstack((void_grad[idx_row_shift:, :], void_grad[0:idx_row_shift, :]))
+                    self.assertAlmostEqual(
+                        np.sum(abs(void_grad_row_shift-void_row_shift_grad)),
+                        0,
                         places=places,
                     )
 
@@ -1038,7 +1090,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         periodic_axes,
                     )
                     self.assertAlmostEqual(
-                        constraint_solid_original,
+                        constraint_solid,
                         constraint_solid_col_shift,
                         places=places,
                     )
@@ -1053,8 +1105,40 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         periodic_axes,
                     )
                     self.assertAlmostEqual(
-                        constraint_void_original,
+                        constraint_void,
                         constraint_void_col_shift,
+                        places=places,
+                    )
+
+                    solid_col_shift_grad = grad(mpa.constraint_solid, 0)(
+                        p_col_shift,
+                        c,
+                        eta_e,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    solid_grad_col_shift = np.hstack((solid_grad[:, idx_col_shift:], solid_grad[:, 0:idx_col_shift]))
+                    self.assertAlmostEqual(
+                        np.sum(abs(solid_grad_col_shift-solid_col_shift_grad)),
+                        0,
+                        places=places,
+                    )
+
+                    void_col_shift_grad = grad(mpa.constraint_void, 0)(
+                        p_col_shift,
+                        c,
+                        eta_d,
+                        filter_f,
+                        threshold_f,
+                        self.design_region_resolution,
+                        periodic_axes,
+                    )
+                    void_grad_col_shift = np.hstack((void_grad[:, idx_col_shift:], void_grad[:, 0:idx_col_shift]))
+                    self.assertAlmostEqual(
+                        np.sum(abs(void_grad_col_shift-void_col_shift_grad)),
+                        0,
                         places=places,
                     )
 
