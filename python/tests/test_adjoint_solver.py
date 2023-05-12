@@ -1056,9 +1056,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         self.design_region_resolution,
                         periodic_axes,
                     )
-                    solid_grad_row_shift = np.vstack((solid_grad[idx_row_shift:, :], solid_grad[0:idx_row_shift, :]))
+                    solid_grad_row_shift = np.vstack(
+                        (solid_grad[idx_row_shift:, :], solid_grad[0:idx_row_shift, :])
+                    )
                     self.assertAlmostEqual(
-                        np.sum(abs(solid_grad_row_shift-solid_row_shift_grad)),
+                        np.sum(abs(solid_grad_row_shift - solid_row_shift_grad)),
                         0,
                         places=places,
                     )
@@ -1072,9 +1074,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         self.design_region_resolution,
                         periodic_axes,
                     )
-                    void_grad_row_shift = np.vstack((void_grad[idx_row_shift:, :], void_grad[0:idx_row_shift, :]))
+                    void_grad_row_shift = np.vstack(
+                        (void_grad[idx_row_shift:, :], void_grad[0:idx_row_shift, :])
+                    )
                     self.assertAlmostEqual(
-                        np.sum(abs(void_grad_row_shift-void_row_shift_grad)),
+                        np.sum(abs(void_grad_row_shift - void_row_shift_grad)),
                         0,
                         places=places,
                     )
@@ -1119,9 +1123,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         self.design_region_resolution,
                         periodic_axes,
                     )
-                    solid_grad_col_shift = np.hstack((solid_grad[:, idx_col_shift:], solid_grad[:, 0:idx_col_shift]))
+                    solid_grad_col_shift = np.hstack(
+                        (solid_grad[:, idx_col_shift:], solid_grad[:, 0:idx_col_shift])
+                    )
                     self.assertAlmostEqual(
-                        np.sum(abs(solid_grad_col_shift-solid_col_shift_grad)),
+                        np.sum(abs(solid_grad_col_shift - solid_col_shift_grad)),
                         0,
                         places=places,
                     )
@@ -1135,9 +1141,11 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                         self.design_region_resolution,
                         periodic_axes,
                     )
-                    void_grad_col_shift = np.hstack((void_grad[:, idx_col_shift:], void_grad[:, 0:idx_col_shift]))
+                    void_grad_col_shift = np.hstack(
+                        (void_grad[:, idx_col_shift:], void_grad[:, 0:idx_col_shift])
+                    )
                     self.assertAlmostEqual(
-                        np.sum(abs(void_grad_col_shift-void_col_shift_grad)),
+                        np.sum(abs(void_grad_col_shift - void_col_shift_grad)),
                         0,
                         places=places,
                     )
