@@ -902,7 +902,7 @@ def plot2D(
     ax: Optional[Axes] = None,
     output_plane: Optional[Volume] = None,
     fields: Optional = None,
-    labels: Optional[bool] = False,
+    labels: bool = False,
     eps_parameters: Optional[dict] = None,
     boundary_parameters: Optional[dict] = None,
     source_parameters: Optional[dict] = None,

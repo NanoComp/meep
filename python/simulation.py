@@ -923,26 +923,26 @@ class PadeDFT:
         of the run, it uses the scipy Padé algorithm to approximate the analytic
         frequency response at the specified point.
 
-        + **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
-         No default.
-        + **`vol` [`Volume`]** — Specifies the volume over which to accumulate fields
-         (may be 0d, 1d, 2d, or 3d). No default.
+        + **`c` [`component` constant]** — The field component to use for extrapolation.
+          No default.
+        + **`vol` [`Volume`]** — The volume over which to accumulate the fields
+          (may be 0d, 1d, 2d, or 3d). No default.
         + **`center` [`Vector3` class]** — Alternative method for specifying volume, using a center point
         + **`size` [`Vector3` class]** — Alternative method for specifying volume, using a size vector
-        + **`m` [`Optional[int]`]** — Directly pecifies the order of the numerator $P$. If not specified,
-         defaults to the length of aggregated field data times `m_frac`.
-        + **`n` [`Optional[int]`]** — Specifies the order of the denominator $Q$. Defaults
-         to length of field data - m - 1.
+        + **`m` [`int`]** — The order of the numerator $P$. If not specified,
+          defaults to the length of aggregated field data times `m_frac`.
+        + **`n` [`int`]** — The order of the denominator $Q$. Defaults
+          to length of field data - `m` - 1.
         + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
-         field samples to use as order for numerator. Default is 0.5.
-        + **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for
-         denominator. No default.
-        + **`sampling_interval` [`int`]** — Specifies the interval at which to sample the field data.
-         Defaults to 1.
-        + **`start_time` [`int`]** — Specifies the time (in increments of dt) at which
-         to start sampling the field data. Default 0 (beginning of simulation).
-        + **`stop_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
-         to stop sampling the field data. Default is `None` (end of simulation).
+          field samples to use as the order for numerator. Default is 0.5.
+        + **`n_frac` [`float`]** — Fraction of field samples to use as order for
+          denominator. No default.
+        + **`sampling_interval` [`int`]** — The interval at which to sample the field data.
+          Defaults to 1.
+        + **`start_time` [`int`]** — The time (in increments of $$\\Delta t$$) at which
+          to start sampling the field data. Default is 0 (beginning of simulation).
+        + **`stop_time` [`int`]** — The time (in increments of $$\\Delta t$$) at which
+          to stop sampling the field data. Default is `None` (end of simulation).
         """
         self.c = c
         self.vol = vol
@@ -1215,7 +1215,7 @@ class Simulation:
 
     def __init__(
         self,
-        cell_size: Optional[Vector3Type] = None,
+        cell_size: Vector3Type = None,
         resolution: float = None,
         geometry: Optional[List[GeometricObject]] = None,
         sources: Optional[List[Source]] = None,
@@ -3857,37 +3857,34 @@ class Simulation:
 
     def get_array(
         self,
-        component=None,
-        vol=None,
-        center=None,
-        size=None,
-        cmplx=None,
-        arr=None,
-        frequency=0,
-        snap=False,
+        component: int = None,
+        vol: Volume = None,
+        center: Vector3Type = None,
+        size: Vector3Type = None,
+        cmplx: bool = None,
+        arr: np.ndarray = None,
+        frequency: float = 0,
+        snap: bool = False,
     ):
         """
-        Takes as input a subregion of the cell and the field/material component. The
-        method returns a NumPy array containing values of the field/material at the
-        current simulation time.
+        Returns a slice of the fields or materials over a subregion of the cell at the
+        current simulation time as a NumPy array.
 
-        **Parameters:**
+        + **`component` [ `component` constant ]** — The field or material component (e.g., `meep.Ex`,
+          `meep.Hy`, `meep.Sz`, `meep.Dielectric`, etc) of the array data. No default.
 
-        + `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The
-          return value of `get_array` has the same dimensions as the `Volume`'s `size`
+        + **`vol` [ `Volume` ]** — The rectilinear subregion/slice of the cell volume.
+          The return value of `get_array` has the same dimensions as the `Volume`'s `size`
           attribute. If `None` (default), then a `size` and `center` must be specified.
 
-        + `center`, `size` : `Vector3`; if both are specified, the library will construct
+        + **`center`, `size` [ `Vector3` ]** — If both are specified, the method will construct
           an appropriate `Volume`. This is a convenience feature and alternative to
           supplying a `Volume`.
 
-        + `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`,
-          `mp.Dielectric`, etc). Defaults to `None`.
-
-        + `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return
+        + **`cmplx` [ `boolean` ]** — If `True`, return complex-valued data otherwise return
           real-valued data (default).
 
-        + `arr`: optional parameter to pass a pre-allocated NumPy array of the correct size and
+        + **`arr` [ `numpy.ndarray` ]** — Optional parameter to pass a pre-allocated NumPy array of the correct size and
           type (either `numpy.float32` or `numpy.float64` depending on the [floating-point precision
           of the fields and materials](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays))
           which will be overwritten with the field/material data instead of allocating a
@@ -3895,11 +3892,11 @@ class Simulation:
           `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when
           fetching the same slice repeatedly at different times).
 
-        + `frequency`: optional frequency point over which the average eigenvalue of the
+        + **`frequency` [ `number` ]** — The frequency at which the average eigenvalue of the
           $\\varepsilon$ and $\\mu$ tensors are evaluated. Defaults to 0 which is the
           instantaneous $\\varepsilon$.
 
-        + `snap`: By default, the elements of the grid slice are obtained using a bilinear
+        + **`snap` [ `boolean` ]** — By default, the elements of the grid slice are obtained using a bilinear
           interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
           are "collapsed" into a single element. However, if `snap` is set to `True`, this
           interpolation behavior is disabled and the grid slice is instead "snapped"
@@ -3979,19 +3976,22 @@ class Simulation:
 
         return arr
 
-    def get_dft_array(self, dft_obj, component, num_freq):
+    def get_dft_array(
+        self,
+        dft_obj: DftObj = None,
+        component: int = None,
+        num_freq: int = None,
+    ):
         """
         Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
         or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays).
 
-        **Parameters:**
-
-        + `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
+        + **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
           obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
 
-        + `component`: a field component (e.g., `mp.Ez`).
+        + **`component` [ `component` constant ]**— The field component (e.g., `meep.Ez`).
 
-        + `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
+        + **`num_freq` [ `int` ]** — The index of the frequency. An integer in the range `0...nfreq-1`,
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
           `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
         """
@@ -4740,7 +4740,7 @@ class Simulation:
         ax: Optional[Axes] = None,
         output_plane: Optional[Volume] = None,
         fields: Optional = None,
-        labels: Optional[bool] = False,
+        labels: bool = False,
         eps_parameters: Optional[dict] = None,
         boundary_parameters: Optional[dict] = None,
         source_parameters: Optional[dict] = None,
@@ -4792,7 +4792,7 @@ class Simulation:
           `mp.Hz`) to superimpose over the simulation geometry. Default is `None`, where
           no fields are superimposed.
         * `labels`: if `True`, then labels will appear over each of the simulation
-          elements.
+          elements. Defaults to `False`.
         * `eps_parameters`: a `dict` of optional plotting parameters that override the
           default parameters for the geometry.
             - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
