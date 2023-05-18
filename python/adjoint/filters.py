@@ -853,9 +853,9 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution, periodic_axes=None)
             filtered_field = npa.tile(filtered_field, (3, 1))
         if 1 in periodic_axes:
             filtered_field = npa.tile(filtered_field, (1, 3))
-        gradient_filtered_field = npa.gradient(filtered_field)
-        gradient_filtered_field[0] = _centered(gradient_filtered_field[0], x.shape)
-        gradient_filtered_field[1] = _centered(gradient_filtered_field[1], x.shape)
+        gradient_filtered_field = _centered(
+            npa.array(npa.gradient(filtered_field)), (2,) + x.shape
+        )
 
     grad_mag = (gradient_filtered_field[0] * resolution) ** 2 + (
         gradient_filtered_field[1] * resolution
@@ -944,7 +944,7 @@ def indicator_void(x, c, filter_f, threshold_f, resolution, periodic_axes=None):
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     """
 
-    filtered_field = filter_f(x).reshape(x.shape)
+    filtered_field = filter_f(x)
     design_field = threshold_f(filtered_field)
 
     if periodic_axes is None:
@@ -955,9 +955,9 @@ def indicator_void(x, c, filter_f, threshold_f, resolution, periodic_axes=None):
             filtered_field = npa.tile(filtered_field, (3, 1))
         if 1 in periodic_axes:
             filtered_field = npa.tile(filtered_field, (1, 3))
-        gradient_filtered_field = npa.gradient(filtered_field)
-        gradient_filtered_field[0] = _centered(gradient_filtered_field[0], x.shape)
-        gradient_filtered_field[1] = _centered(gradient_filtered_field[1], x.shape)
+        gradient_filtered_field = _centered(
+            npa.array(npa.gradient(filtered_field)), (2,) + x.shape
+        )
 
     grad_mag = (gradient_filtered_field[0] * resolution) ** 2 + (
         gradient_filtered_field[1] * resolution
