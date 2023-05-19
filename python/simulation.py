@@ -870,7 +870,7 @@ class PadeDFT:
     which allows it to be used as a step function that collects field data from a given
     point and runs [Padé](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
     on that data to extract an analytic rational function which approximates the frequency response.
-    For more information about the Padé approximant, see: https://en.wikipedia.org/wiki/Padé_approximant.
+    For more information about the Padé approximant, see the [Wikipedia article](https://en.wikipedia.org/wiki/Padé_approximant).
 
     See [`__init__`](#PadeDFT.__init__) for details about constructing a `PadeDFT`.
 
@@ -962,7 +962,7 @@ class PadeDFT:
 
     def __call__(self, sim, todo):
         """
-        Allows a Pade instance to be used as a step function.
+        Allows a PadeDFT instance to be used as a step function.
         """
         self.step_func(sim, todo)
 
