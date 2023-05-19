@@ -86,7 +86,7 @@ control various parameters of the Meep computation.
 
 ```python
 def __init__(self,
-             cell_size: Union[meep.geom.Vector3, Tuple[float, ...], NoneType] = None,
+             cell_size: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
              resolution: float = None,
              geometry: Optional[List[meep.geom.GeometricObject]] = None,
              sources: Optional[List[meep.source.Source]] = None,
@@ -2119,7 +2119,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Python_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d, 3d, or cylindrical region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
-This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Since the "far" fields are computed using the full Green's functions, they should be able to be computed *anywhere* outside of the near-field surface monitor. The only limiting factor should be discretization errors but for any given distannce, the "far" fields should converge to the actual DFT fields at that location with resolution (assuming the distance separation is >> resolution).
+This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Since the "far" fields are computed using the full Green's functions, they should be able to be computed *anywhere* outside of the near-field surface monitor. The only limiting factor should be discretization errors but for any given distance, the "far" fields should converge to the actual DFT fields at that location with resolution (assuming the distance separation is >> resolution).
 
 There are three steps to using the near-to-far-field feature: first, define the "near" surface(s) as a set of surfaces capturing *all* outgoing radiation in the desired direction(s); second, run the simulation, typically with a pulsed source, to allow Meep to accumulate the Fourier transforms on the near surface(s); third, tell Meep to compute the far fields at any desired points (optionally saving the far fields from a grid of points to an HDF5 file). To define the near surfaces, use this `Simulation` method:
 
@@ -2447,7 +2447,7 @@ is a 1d array of `nfreq` dimensions.
 These functions add support for saving and restoring parts of the
 `Simulation` state.
 
-For all functions listed below, when dumping/loading state to/from a distributed filesystem
+For all functions listed below, when dumping/loading state to/from a distributed file system
 (using say, parallel HDF5) and running in an MPI environment, setting
 `single_parallel_file=True` (the default) will result in all
 processes writing/reading to/from the same/single file after computing their respective offsets into this file.
@@ -2766,7 +2766,7 @@ def plot2D(self,
            ax: Optional[matplotlib.axes._axes.Axes] = None,
            output_plane: Optional[meep.simulation.Volume] = None,
            fields: Optional = None,
-           labels: Optional[bool] = False,
+           labels: bool = False,
            eps_parameters: Optional[dict] = None,
            boundary_parameters: Optional[dict] = None,
            source_parameters: Optional[dict] = None,
@@ -2820,7 +2820,7 @@ to be called on all processes, but only generates a plot on the master process.
   `mp.Hz`) to superimpose over the simulation geometry. Default is `None`, where
   no fields are superimposed.
 * `labels`: if `True`, then labels will appear over each of the simulation
-  elements.
+  elements. Defaults to `False`.
 * `eps_parameters`: a `dict` of optional plotting parameters that override the
   default parameters for the geometry.
     - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
@@ -3234,7 +3234,6 @@ accurately. See [Synchronizing the Magnetic and Electric
 Fields](Synchronizing_the_Magnetic_and_Electric_Fields.md).
 
 </div>
-
 
 <a id="output_hpwr"></a>
 
@@ -3817,39 +3816,36 @@ The output functions described above write the data for the fields and materials
 
 ```python
 def get_array(self,
-              component=None,
-              vol=None,
-              center=None,
-              size=None,
-              cmplx=None,
-              arr=None,
-              frequency=0,
-              snap=False):
+              component: int = None,
+              vol: meep.simulation.Volume = None,
+              center: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+              size: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+              cmplx: bool = None,
+              arr: numpy.ndarray = None,
+              frequency: float = 0,
+              snap: bool = False):
 ```
 
 <div class="method_docstring" markdown="1">
 
-Takes as input a subregion of the cell and the field/material component. The
-method returns a NumPy array containing values of the field/material at the
-current simulation time.
+Returns a slice of the fields or materials over a subregion of the cell at the
+current simulation time as a NumPy array.
 
-**Parameters:**
++ **`component` [ `component` constant ]** — The field or material component (e.g., `meep.Ex`,
+  `meep.Hy`, `meep.Sz`, `meep.Dielectric`, etc) of the array data. No default.
 
-+ `vol`: `Volume`; the orthogonal subregion/slice of the computational volume. The
-  return value of `get_array` has the same dimensions as the `Volume`'s `size`
++ **`vol` [ `Volume` ]** — The rectilinear subregion/slice of the cell volume.
+  The return value of `get_array` has the same dimensions as the `Volume`'s `size`
   attribute. If `None` (default), then a `size` and `center` must be specified.
 
-+ `center`, `size` : `Vector3`; if both are specified, the library will construct
++ **`center`, `size` [ `Vector3` ]** — If both are specified, the method will construct
   an appropriate `Volume`. This is a convenience feature and alternative to
   supplying a `Volume`.
 
-+ `component`: field/material component (i.e., `mp.Ex`, `mp.Hy`, `mp.Sz`,
-  `mp.Dielectric`, etc). Defaults to `None`.
-
-+ `cmplx`: `boolean`; if `True`, return complex-valued data otherwise return
++ **`cmplx` [ `boolean` ]** — If `True`, return complex-valued data otherwise return
   real-valued data (default).
 
-+ `arr`: optional parameter to pass a pre-allocated NumPy array of the correct size and
++ **`arr` [ `numpy.ndarray` ]** — Optional parameter to pass a pre-allocated NumPy array of the correct size and
   type (either `numpy.float32` or `numpy.float64` depending on the [floating-point precision
   of the fields and materials](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays))
   which will be overwritten with the field/material data instead of allocating a
@@ -3857,11 +3853,11 @@ current simulation time.
   `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when
   fetching the same slice repeatedly at different times).
 
-+ `frequency`: optional frequency point over which the average eigenvalue of the
++ **`frequency` [ `number` ]** — The frequency at which the average eigenvalue of the
   $\varepsilon$ and $\mu$ tensors are evaluated. Defaults to 0 which is the
   instantaneous $\varepsilon$.
 
-+ `snap`: By default, the elements of the grid slice are obtained using a bilinear
++ **`snap` [ `boolean` ]** — By default, the elements of the grid slice are obtained using a bilinear
   interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
   are "collapsed" into a single element. However, if `snap` is set to `True`, this
   interpolation behavior is disabled and the grid slice is instead "snapped"
@@ -3900,7 +3896,10 @@ arrays; rather, you should simply rely on Meep's output.
 <div class="class_members" markdown="1">
 
 ```python
-def get_dft_array(self, dft_obj, component, num_freq):
+def get_dft_array(self,
+                  dft_obj: meep.simulation.DftObj = None,
+                  component: int = None,
+                  num_freq: int = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -3908,14 +3907,12 @@ def get_dft_array(self, dft_obj, component, num_freq):
 Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
 or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays).
 
-**Parameters:**
-
-+ `dft_obj`: a `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
++ **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
   obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
 
-+ `component`: a field component (e.g., `mp.Ez`).
++ **`component` [ `component` constant ]**— The field component (e.g., `meep.Ez`).
 
-+ `num_freq`: the index of the frequency. An integer in the range `0...nfreq-1`,
++ **`num_freq` [ `int` ]** — The index of the frequency. An integer in the range `0...nfreq-1`,
   where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
   `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
 
@@ -4072,7 +4069,7 @@ The following step function collects field data from a given point and runs [Har
 
 #### PadeDFT Step Function
 
-The following step function collects field data from a given point or volume and performs spectral extrapolation by computing the [Pade approximant](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html) of the DFT at every specified spatial point.
+The following step function collects field data from a given point or volume and performs spectral extrapolation by computing the [Padé approximant](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html) of the DFT at every specified spatial point.
 
 * [PadeDFT class](#PadeDFT)
 
@@ -6303,7 +6300,7 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = <function <lambda> at 0x7fc8c5bb7760>):
+             pml_profile: Callable[[float], float] = lambda u: u * u,
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6816,7 +6813,8 @@ def __init__(self,
              end_time=1e+20,
              width=0,
              fwidth=inf,
-             cutoff=3.0,
+             cutoff=None,
+             slowness=3.0,
              wavelength=None,
              is_integrated=False,
              **kwargs):
@@ -6846,7 +6844,9 @@ Construct a `ContinuousSource`.
 
 + **`slowness` [`number`]** — Controls how far into the exponential tail of the
   tanh function the source turns on. Default is 3.0. A larger value means that the
-  source turns on more gradually at the beginning.
+  source turns on more gradually at the beginning. For a detailed explanation
+  of the effects of `width` and `slowness` on the time profile of the source,
+  see [here](FAQ.md##why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
 + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
   current (the [dipole
@@ -7516,7 +7516,7 @@ Padé approximant based spectral extrapolation is implemented as a class with a 
 which allows it to be used as a step function that collects field data from a given
 point and runs [Padé](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
 on that data to extract an analytic rational function which approximates the frequency response.
-For more information about the Padé approximant, see the [wiki](https://en.wikipedia.org/wiki/Padé_approximant).
+For more information about the Padé approximant, see the [Wikipedia article](https://en.wikipedia.org/wiki/Padé_approximant).
 
 See [`__init__`](#PadeDFT.__init__) for details about constructing a `PadeDFT`.
 
@@ -7571,20 +7571,18 @@ Allows a PadeDFT instance to be used as a step function.
 <div class="class_members" markdown="1">
 
 ```python
-def __init__(
-    self,
-    c: int = None,
-    vol: Volume = None,
-    center: Vector3Type = None,
-    size: Vector3Type = None,
-    m: Optional[int] = None,
-    n: Optional[int] = None,
-    m_frac: float = 0.5,
-    n_frac: Optional[float] = None,
-    sampling_interval: int = 1,
-    start_time: int = 0,
-    stop_time: Optional[int] = None,
-):
+def __init__(self,
+             c: int = None,
+             vol: meep.simulation.Volume = None,
+             center: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+             size: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
+             m: Optional[int] = None,
+             n: Optional[int] = None,
+             m_frac: float = 0.5,
+             n_frac: Optional[float] = None,
+             sampling_interval: int = 1,
+             start_time: int = 0,
+             stop_time: Optional[int] = None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -7596,25 +7594,25 @@ A `PadeDFT` is a step function that collects data from the field component `c`
 of the run, it uses the scipy Padé algorithm to approximate the analytic
 frequency response at the specified point.
 
-+ **`c` [`component` constant]** — Specifies the field component to use for extrapolation.
++ **`c` [`component` constant]** — The field component to use for extrapolation.
   No default.
-+ **`vol` [`Volume`]** — Specifies the volume over which to accumulate fields
++ **`vol` [`Volume`]** — The volume over which to accumulate the fields
   (may be 0d, 1d, 2d, or 3d). No default.
 + **`center` [`Vector3` class]** — Alternative method for specifying volume, using a center point
 + **`size` [`Vector3` class]** — Alternative method for specifying volume, using a size vector
-+ **`m` [`Optional[int]`]** — Directly pecifies the order of the numerator $P$. If not specified,
++ **`m` [`int`]** — The order of the numerator $P$. If not specified,
   defaults to the length of aggregated field data times `m_frac`.
-+ **`n` [`Optional[int]`]** — Specifies the order of the denominator $Q$. Defaults
-  to length of field data - m - 1.
++ **`n` [`int`]** — The order of the denominator $Q$. Defaults
+  to length of field data - `m` - 1.
 + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
-  field samples to use as order for numerator. Default is 0.5.
-+ **`n_frac` [`Optional[float]`]** — Fraction of field samples to use as order for
+  field samples to use as the order for numerator. Default is 0.5.
++ **`n_frac` [`float`]** — Fraction of field samples to use as order for
   denominator. No default.
-+ **`sampling_interval` [`int`]** — Specifies the interval at which to sample the field data.
++ **`sampling_interval` [`int`]** — The interval at which to sample the field data.
   Defaults to 1.
-+ **`start_time` [`int`]** — Specifies the time (in increments of dt) at which
-  to start sampling the field data. Default 0 (beginning of simulation).
-+ **`stop_time` [`Optional[int]`]** — Specifies the time (in increments of dt) at which
++ **`start_time` [`int`]** — The time (in increments of $$\Delta t$$) at which
+  to start sampling the field data. Default is 0 (beginning of simulation).
++ **`stop_time` [`int`]** — The time (in increments of $$\Delta t$$) at which
   to stop sampling the field data. Default is `None` (end of simulation).
 
 </div>
