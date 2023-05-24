@@ -883,10 +883,10 @@ class PadeDFT:
     coefficients which are the sampled field data. We then compute the Padé approximant
     to be the analytic form of this function as:
 
-    $$R(f) = R(2 \\pi \\omega) = \\frac{P(f)}{Q(f)}$$
+    $$R(f) = R(\\omega / 2\\pi) = \\frac{P(f)}{Q(f)}$$
 
     Where $P$ and $Q$ are polynomials of degree $m$ and $n$, and $m + n + 1$ is the
-    degree of agreement of the Padé approximant to the analytic function $f(2 \\pi \\omega)$. This
+    degree of agreement of the Padé approximant to the analytic function $f(\\omega / 2\\pi)$. This
     function $R$ is stored in the callable method `pade_instance.dft`. Note that the computed polynomials
     $P$ and $Q$ for each spatial point are stored as well in the instance variable `pade_instance.polys`,
     as a spatial array of dicts: `[{"P": P(t), "Q": Q(t)}]` with no spectral extrapolation performed.
@@ -923,25 +923,25 @@ class PadeDFT:
         of the run, it uses the scipy Padé algorithm to approximate the analytic
         frequency response at the specified point.
 
-        + **`c` [`component` constant]** — The field component to use for extrapolation.
+        + **`c` [ `component` constant ]** — The field component to use for extrapolation.
           No default.
-        + **`vol` [`Volume`]** — The volume over which to accumulate the fields
+        + **`vol` [ `Volume` ]** — The volume over which to accumulate the fields
           (may be 0d, 1d, 2d, or 3d). No default.
-        + **`center` [`Vector3` class]** — Alternative method for specifying volume, using a center point
-        + **`size` [`Vector3` class]** — Alternative method for specifying volume, using a size vector
-        + **`m` [`int`]** — The order of the numerator $P$. If not specified,
+        + **`center` [ `Vector3` class ]** — Alternative method for specifying volume, using a center point
+        + **`size` [ `Vector3` class ]** — Alternative method for specifying volume, using a size vector
+        + **`m` [ `int` ]** — The order of the numerator $P$. If not specified,
           defaults to the length of aggregated field data times `m_frac`.
-        + **`n` [`int`]** — The order of the denominator $Q$. Defaults
+        + **`n` [ `int` ]** — The order of the denominator $Q$. Defaults
           to length of field data - `m` - 1.
-        + **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
+        + **`m_frac` [ `float` ]** — Method for specifying `m` as a fraction of
           field samples to use as the order for numerator. Default is 0.5.
-        + **`n_frac` [`float`]** — Fraction of field samples to use as order for
+        + **`n_frac` [ `float` ]** — Fraction of field samples to use as order for
           denominator. No default.
-        + **`sampling_interval` [`int`]** — The interval at which to sample the field data.
+        + **`sampling_interval` [ `int` ]** — The interval at which to sample the field data.
           Defaults to 1.
-        + **`start_time` [`int`]** — The time (in increments of $$\\Delta t$$) at which
+        + **`start_time` [ `int` ]** — The time (in increments of $\\Delta t$) at which
           to start sampling the field data. Default is 0 (beginning of simulation).
-        + **`stop_time` [`int`]** — The time (in increments of $$\\Delta t$$) at which
+        + **`stop_time` [ `int` ]** — The time (in increments of $\\Delta t$) at which
           to stop sampling the field data. Default is `None` (end of simulation).
         """
         self.c = c
@@ -3862,7 +3862,7 @@ class Simulation:
         center: Vector3Type = None,
         size: Vector3Type = None,
         cmplx: bool = None,
-        arr: np.ndarray = None,
+        arr: Optional[np.ndarray] = None,
         frequency: float = 0,
         snap: bool = False,
     ):

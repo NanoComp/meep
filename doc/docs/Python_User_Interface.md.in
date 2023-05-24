@@ -55,7 +55,7 @@ Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `E
 —
 These are additional components which are not actually stored by Meep but are computed as needed, mainly for use in output functions. One of `Sx`, `Sy`, `Sz`, `Sr`, `Sp`, `EnergyDensity`, `D_EnergyDensity`, `H_EnergyDensity` for $S_x$, $S_y$, $S_z$, $S_r$, $S_\phi$ (components of the Poynting vector $\mathrm{Re}\,\mathbf{E}^* \times \mathbf{H}$), $(\mathbf{E}^* \cdot \mathbf{D} + \mathbf{H}^* \cdot \mathbf{B})/2$, $\mathbf{E}^* \cdot \mathbf{D}/2$, $\mathbf{H}^* \cdot \mathbf{B}/2$, respectively.
 
-
+There are two convenience functions `meep.component_name` and `meep.direction_name` which, given a `component`/`derived_component` and `direction` argument respectively, return the equivalent string representation (e.g., `meep.component_name(meep.Ex)` returns `ex` and `meep.direction_name(meep.R)` returns `r`, etc.).
 
 The Simulation Class
 ---------------------

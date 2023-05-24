@@ -51,11 +51,13 @@ Specify particular boundary in the positive `High` (e.g., +`X`) or negative `Low
 —
 Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hy`, `Hp`, `Hz`, `Bx`, `By`, `Bz`, `By`, `Bp`, `Bz`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, ε, μ, respectively.
 
+There are two convenience functions `meep.component_name` and `meep.direction_name` which, given a `component`/`derived_component` and `direction` argument respectively, return the equivalent string representation (e.g., `meep.component_name(meep.Ex)` returns `ex` and `meep.direction_name(meep.R)` returns `r`, etc.).
+
 **`derived_component` constants**
 —
 These are additional components which are not actually stored by Meep but are computed as needed, mainly for use in output functions. One of `Sx`, `Sy`, `Sz`, `Sr`, `Sp`, `EnergyDensity`, `D_EnergyDensity`, `H_EnergyDensity` for $S_x$, $S_y$, $S_z$, $S_r$, $S_\phi$ (components of the Poynting vector $\mathrm{Re}\,\mathbf{E}^* \times \mathbf{H}$), $(\mathbf{E}^* \cdot \mathbf{D} + \mathbf{H}^* \cdot \mathbf{B})/2$, $\mathbf{E}^* \cdot \mathbf{D}/2$, $\mathbf{H}^* \cdot \mathbf{B}/2$, respectively.
 
-
+There are two convenience functions `meep.component_name` and `meep.direction_name` which, given a `component`/`derived_component` and `direction` argument respectively, return the equivalent string representation (e.g., `meep.component_name(meep.Ex)` returns `ex` and `meep.direction_name(meep.R)` returns `r`, etc.).
 
 The Simulation Class
 ---------------------
@@ -3821,7 +3823,7 @@ def get_array(self,
               center: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
               size: Union[meep.geom.Vector3, Tuple[float, ...]] = None,
               cmplx: bool = None,
-              arr: numpy.ndarray = None,
+              arr: Optional[numpy.ndarray] = None,
               frequency: float = 0,
               snap: bool = False):
 ```
@@ -7529,10 +7531,10 @@ The above is a "Taylor-like" polynomial in $n$ with a Fourier basis and
 coefficients which are the sampled field data. We then compute the Padé approximant
 to be the analytic form of this function as:
 
-$$R(f) = R(2 \pi \omega) = \frac{P(f)}{Q(f)}$$
+$$R(f) = R(\omega / 2\pi) = \frac{P(f)}{Q(f)}$$
 
 Where $P$ and $Q$ are polynomials of degree $m$ and $n$, and $m + n + 1$ is the
-degree of agreement of the Padé approximant to the analytic function $f(2 \pi \omega)$. This
+degree of agreement of the Padé approximant to the analytic function $f(\omega / 2\pi)$. This
 function $R$ is stored in the callable method `pade_instance.dft`. Note that the computed polynomials
 $P$ and $Q$ for each spatial point are stored as well in the instance variable `pade_instance.polys`,
 as a spatial array of dicts: `[{"P": P(t), "Q": Q(t)}]` with no spectral extrapolation performed.
@@ -7594,25 +7596,25 @@ A `PadeDFT` is a step function that collects data from the field component `c`
 of the run, it uses the scipy Padé algorithm to approximate the analytic
 frequency response at the specified point.
 
-+ **`c` [`component` constant]** — The field component to use for extrapolation.
++ **`c` [ `component` constant ]** — The field component to use for extrapolation.
   No default.
-+ **`vol` [`Volume`]** — The volume over which to accumulate the fields
++ **`vol` [ `Volume` class ]** — The volume over which to accumulate the fields
   (may be 0d, 1d, 2d, or 3d). No default.
-+ **`center` [`Vector3` class]** — Alternative method for specifying volume, using a center point
-+ **`size` [`Vector3` class]** — Alternative method for specifying volume, using a size vector
-+ **`m` [`int`]** — The order of the numerator $P$. If not specified,
++ **`center` [ `Vector3` class ]** — Alternative method for specifying volume, using a center point
++ **`size` [ `Vector3` class ]** — Alternative method for specifying volume, using a size vector
++ **`m` [ `int` ]** — The order of the numerator $P$. If not specified,
   defaults to the length of aggregated field data times `m_frac`.
-+ **`n` [`int`]** — The order of the denominator $Q$. Defaults
++ **`n` [ `int` ]** — The order of the denominator $Q$. Defaults
   to length of field data - `m` - 1.
-+ **`m_frac` [`float`]** — Method for specifying `m` as a fraction of
++ **`m_frac` [ `float` ]** — Method for specifying `m` as a fraction of
   field samples to use as the order for numerator. Default is 0.5.
-+ **`n_frac` [`float`]** — Fraction of field samples to use as order for
++ **`n_frac` [ `float` ]** — Fraction of field samples to use as order for
   denominator. No default.
-+ **`sampling_interval` [`int`]** — The interval at which to sample the field data.
++ **`sampling_interval` [ `int` ]** — The interval at which to sample the field data.
   Defaults to 1.
-+ **`start_time` [`int`]** — The time (in increments of $$\Delta t$$) at which
++ **`start_time` [ `int` ]** — The time (in increments of $\Delta t$) at which
   to start sampling the field data. Default is 0 (beginning of simulation).
-+ **`stop_time` [`int`]** — The time (in increments of $$\Delta t$$) at which
++ **`stop_time` [ `int` ]** — The time (in increments of $\Delta t$) at which
   to stop sampling the field data. Default is `None` (end of simulation).
 
 </div>
