@@ -1,5 +1,21 @@
 # Meep Release Notes
 
+## Meep 1.27.0
+
+5/25/2023
+
+* Support for spectral extrapolation using Padé approximants ([#2440]).
+
+* Support for periodic design regions of adjoint solver ([#2465], [#2518]).
+
+* Support for "unfiltering" a given set of design weights for adjoint optimization ([#2462]).
+
+* MPB is no longer a required dependency ([#2486]).
+
+* Bug fix for sources at $r = 0$ in cylindrical coordinates ([#2459]).
+
+* Additional unit tests and documentation ([#2428], [#2433], [#2452], [#2474]) and various improvements and minor bug fixes ([#2499], [#2504]).
+
 ## Meep 1.26.0
 
 3/9/2023
