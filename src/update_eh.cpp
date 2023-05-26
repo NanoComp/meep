@@ -197,6 +197,31 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
     }
   }
 
+  // Special case for m=0 and r=0 in cylindrical coordinates.
+  // TODO (oskooi): add support for nonlinearities, PML.
+  if (gv.dim == Dcyl && gv.origin_r() == 0.0 && m == 0) DOCMP FOR_FT_COMPONENTS(ft, ec) {
+      if (f[ec][cmp] && (ec == Ep || ec == Ez || ec == Hr)) {
+        component dc = field_type_component(ft2, ec);
+        if (f[ec][cmp] == f[dc][cmp]) continue;
+        const int yee_idx = gv.yee_index(ec);
+        const int d_ec = component_direction(ec);
+        const int sR = gv.stride(R), nZ = gv.num_direction(Z);
+        realnum *E = f[ec][cmp];
+        const realnum *D = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
+        const realnum *chi1inv = s->chi1inv[ec][d_ec];
+        if (chi1inv)
+          for (int iZ = 0; iZ < nZ; iZ++) {
+            const int i = yee_idx + iZ - sR;
+            E[i] = chi1inv[i] * D[i];
+          }
+        else
+          for (int iZ = 0; iZ < nZ; iZ++) {
+            const int i = yee_idx + iZ - sR;
+            E[i] = D[i];
+          }
+      }
+    }
+
   return allocated_eh;
 }
 
