@@ -584,4 +584,78 @@ void step_update_EDHB(RPR f, component fc, const grid_volume &gv, const ivec is,
   }
 }
 
+// Specialized version of step_update_EDHB for r=0 in cylindrical coordinates.
+// Assumes there are no off-diagonal components of chi1inv that would
+// break axisymmetry at r=0, regardless of m.
+void step_update_EDHB0(RPR f, component fc, const grid_volume &gv, const ivec is, const ivec ie_,
+                       const RPR g, const RPR u, ptrdiff_t s, const RPR chi2, const RPR chi3,
+                       RPR fw, direction dsigw, const RPR sigw, const RPR kapw) {
+  (void)fc; // currently unused
+  if (!f) return;
+
+  ivec ie = ie_;
+  if (is.dim == Dcyl && is.r() == 0)
+    ie.set_direction(R, 0);
+  else
+    return;
+
+  if (dsigw != NO_DIRECTION) { //////// PML case (with fw) /////////////
+    KSTRIDE_DEF(dsigw, kw, is, gv);
+    { // diagonal u
+      if (chi3) {
+        {
+          PLOOP_OVER_IVECS(gv, is, ie, i) {
+            realnum gs = g[i];
+            realnum us = u[i];
+            DEF_kw;
+            realnum fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+            fw[i] = (gs * us) * calc_nonlinear_u(gs * gs, gs, us, chi2[i], chi3[i]);
+            f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
+          }
+        }
+      }
+      else if (u) {
+        PLOOP_OVER_IVECS(gv, is, ie, i) {
+          realnum gs = g[i];
+          realnum us = u[i];
+          DEF_kw;
+          realnum fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+          fw[i] = (gs * us);
+          f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
+        }
+      }
+      else {
+        PLOOP_OVER_IVECS(gv, is, ie, i) {
+          DEF_kw;
+          realnum fwprev = fw[i], kapwkw = kapw[kw], sigwkw = sigw[kw];
+          fw[i] = g[i];
+          f[i] += (kapwkw + sigwkw) * fw[i] - (kapwkw - sigwkw) * fwprev;
+        }
+      }
+    }
+  }
+  else { /////////////// no PML (no fw) ///////////////////
+    {    // diagonal u
+      if (chi3) {
+        {
+          PLOOP_OVER_IVECS(gv, is, ie, i) {
+            realnum gs = g[i];
+            realnum us = u[i];
+            f[i] = (gs * us) * calc_nonlinear_u(gs * gs, gs, us, chi2[i], chi3[i]);
+          }
+        }
+      }
+      else if (u) {
+        PLOOP_OVER_IVECS(gv, is, ie, i) {
+          realnum gs = g[i];
+          realnum us = u[i];
+          f[i] = (gs * us);
+        }
+      }
+      else
+        PLOOP_OVER_IVECS(gv, is, ie, i) { f[i] = g[i]; }
+    }
+  }
+}
+
 } // namespace meep

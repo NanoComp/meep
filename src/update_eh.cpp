@@ -187,40 +187,22 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
                  sizeof(realnum) * gv.ntot());
         }
 
-        if (f[ec][cmp] != f[dc][cmp])
+        if (f[ec][cmp] != f[dc][cmp]) {
           STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, gvs_eh[ft][i].little_owned_corner0(ec),
                            gvs_eh[ft][i].big_corner(), dmp[dc][cmp], dmp[dc_1][cmp], dmp[dc_2][cmp],
                            s->chi1inv[ec][d_ec], dmp[dc_1][cmp] ? s->chi1inv[ec][d_1] : NULL,
                            dmp[dc_2][cmp] ? s->chi1inv[ec][d_2] : NULL, s_ec, s_1, s_2, s->chi2[ec],
                            s->chi3[ec], f_w[ec][cmp], dsigw, s->sig[dsigw], s->kap[dsigw]);
+
+          // special update for r=0 in cylindrical coordinates
+          STEP_UPDATE_EDHB0(f[ec][cmp], ec, gv, gvs_eh[ft][i].little_owned_corner(ec),
+                            gvs_eh[ft][i].big_corner(), dmp[dc][cmp], s->chi1inv[ec][d_ec], s_ec,
+                            s->chi2[ec], s->chi3[ec], f_w[ec][cmp], dsigw, s->sig[dsigw],
+                            s->kap[dsigw]);
+        }
       }
     }
   }
-
-  // Special case for m=0 and r=0 in cylindrical coordinates.
-  // TODO (oskooi): add support for nonlinearities, PML.
-  if (gv.dim == Dcyl && gv.origin_r() == 0.0 && m == 0) DOCMP FOR_FT_COMPONENTS(ft, ec) {
-      if (f[ec][cmp] && (ec == Ep || ec == Ez || ec == Hr)) {
-        component dc = field_type_component(ft2, ec);
-        if (f[ec][cmp] == f[dc][cmp]) continue;
-        const int yee_idx = gv.yee_index(ec);
-        const int d_ec = component_direction(ec);
-        const int sR = gv.stride(R), nZ = gv.num_direction(Z);
-        realnum *E = f[ec][cmp];
-        const realnum *D = f_minus_p[dc][cmp] ? f_minus_p[dc][cmp] : f[dc][cmp];
-        const realnum *chi1inv = s->chi1inv[ec][d_ec];
-        if (chi1inv)
-          for (int iZ = 0; iZ < nZ; iZ++) {
-            const int i = yee_idx + iZ - sR;
-            E[i] = chi1inv[i] * D[i];
-          }
-        else
-          for (int iZ = 0; iZ < nZ; iZ++) {
-            const int i = yee_idx + iZ - sR;
-            E[i] = D[i];
-          }
-      }
-    }
 
   return allocated_eh;
 }
