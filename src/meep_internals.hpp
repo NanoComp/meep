@@ -100,11 +100,6 @@ void step_update_EDHB(realnum *f, component fc, const grid_volume &gv, const ive
                       const realnum *chi2, const realnum *chi3, realnum *fw, direction dsigw,
                       const realnum *sigw, const realnum *kapw);
 
-void step_update_EDHB0(realnum *f, component fc, const grid_volume &gv, const ivec is,
-                       const ivec ie_, const realnum *g, const realnum *u, ptrdiff_t s,
-                       const realnum *chi2, const realnum *chi3, realnum *fw, direction dsigw,
-                       const realnum *sigw, const realnum *kapw);
-
 void step_beta(realnum *f, component c, const realnum *g, const grid_volume &gv, const ivec is,
                const ivec ie, realnum betadt, direction dsig, const realnum *siginv, realnum *fu,
                direction dsigu, const realnum *siginvu, const realnum *cndinv, realnum *fcnd);
@@ -156,11 +151,6 @@ void step_beta_stride1(realnum *f, component c, const realnum *g, const grid_vol
     else                                                                                           \
       step_update_EDHB(f, fc, gv, is, ie, g, g1, g2, u, u1, u2, s, s1, s2, chi2, chi3, fw, dsigw,  \
                        sigw, kapw);                                                                \
-  } while (0)
-
-#define STEP_UPDATE_EDHB0(f, fc, gv, is, ie, g, u, s, chi2, chi3, fw, dsigw, sigw, kapw)           \
-  do {                                                                                             \
-    step_update_EDHB0(f, fc, gv, is, ie, g, u, s, chi2, chi3, fw, dsigw, sigw, kapw);              \
   } while (0)
 
 #define STEP_BETA(f, c, g, gv, is, ie, betadt, dsig, siginv, fu, dsigu, siginvu, cndinv, fcnd)     \

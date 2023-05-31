@@ -194,11 +194,18 @@ bool fields_chunk::update_eh(field_type ft, bool skip_w_components) {
                            dmp[dc_2][cmp] ? s->chi1inv[ec][d_2] : NULL, s_ec, s_1, s_2, s->chi2[ec],
                            s->chi3[ec], f_w[ec][cmp], dsigw, s->sig[dsigw], s->kap[dsigw]);
 
-          // special update for r=0 in cylindrical coordinates
-          STEP_UPDATE_EDHB0(f[ec][cmp], ec, gv, gvs_eh[ft][i].little_owned_corner(ec),
-                            gvs_eh[ft][i].big_corner(), dmp[dc][cmp], s->chi1inv[ec][d_ec], s_ec,
-                            s->chi2[ec], s->chi3[ec], f_w[ec][cmp], dsigw, s->sig[dsigw],
-                            s->kap[dsigw]);
+          if (gv.dim == Dcyl) {
+            ivec is = gvs_eh[ft][i].little_owned_corner(ec);
+            if (is.r() == 0) {
+              ivec ie = gvs_eh[ft][i].big_corner();
+              ie.set_direction(R, 0);
+              /* pass NULL for off-diagonal terms since they must be
+                 zero at r=0 for an axisymmetric structure: */
+              STEP_UPDATE_EDHB(f[ec][cmp], ec, gv, is, ie, dmp[dc][cmp], NULL, NULL,
+                               s->chi1inv[ec][d_ec], NULL, NULL, s_ec, s_1, s_2, s->chi2[ec],
+                               s->chi3[ec], f_w[ec][cmp], dsigw, s->sig[dsigw], s->kap[dsigw]);
+            }
+          }
         }
       }
     }
