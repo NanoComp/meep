@@ -1162,7 +1162,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         target = np.load(os.path.join(data_dir, "mpa_unfilter_design_target.npy"))
 
         def processing(x):
-            filtered_field = mpa.conic_filter(x, 0.1, 1.995, 1.995, 200)
+            filtered_field = mpa.conic_filter(x, 0.1, 0.75, 0.75, 200)
             projected_field = mpa.tanh_projection(filtered_field, 8, 0.5)
             return projected_field.flatten()
 
