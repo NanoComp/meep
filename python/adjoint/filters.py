@@ -1,35 +1,51 @@
 """
-General filter functions to be used in other projection and morphological transform routines.
+A collection of routines for use in topology optimization comprising
+filters, projection operators, and morphological transforms.
 """
+from typing import List, Union
+
+from autograd import numpy as npa
 import meep as mp
 import numpy as np
-from autograd import numpy as npa
 from scipy import signal, special
 
+ArrayLikeType = Union[List, Tuple, np.ndarray]
 
-def _centered(arr, newshape):
-    """Helper function that reformats the padded array of the fft filter operation.
-    Borrowed from scipy:
+
+def _centered(arr: np.ndarray = None, newshape: ArrayLikeType = None) -> np.ndarray:
+    """Reformats the zero-padded array of the FFT filter.
+
+    A helper function borrowed from SciPy:
     https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
+
+    Args:
+        arr: the zero-padded array to be used as the FFT filter.
+        newshape: a 1d array containing the dimensions of the new array.
+
+    Returns:
+        The reformatted array with center based on the new array dimensions.
     """
-    # Return the center newshape portion of the array.
     newshape = np.asarray(newshape)
     currshape = np.array(arr.shape)
     startind = (currshape - newshape) // 2
     endind = startind + newshape
     myslice = [slice(startind[k], endind[k]) for k in range(len(endind))]
+
     return arr[tuple(myslice)]
 
 
-def _proper_pad(arr, pad_to):
-    """Return a zero-padded/expanded version of filter arr (≈1/4 of kernel) to size pad_to, for convolution.
+def _proper_pad(arr: np.ndarray = None, pad_to: np.ndarray = None) -> np.ndarray:
+    """Zero-pads the filter array for convolution.
 
-    Parameters
-    ----------
-    arr : 2d input array representing the nonnegative-coordinate ≈1/4 of a filter kernel.
-    pad_to : 1d array composed of two integers indicating the total size to be padded to.
+    Args:
+        arr: 2d input array representing the nonnegative coordinates of a
+            filter kernel with C4v symmetry.
+        pad_to: 1d array of two elements (integers) indicating the size
+            of the zero-padded array.
+
+    Returns:
+        A 2d array with zero padding.
     """
-
     pad_size = pad_to - 2 * np.array(arr.shape) + 1
 
     top = np.zeros((pad_size[0], arr.shape[1]))
@@ -53,18 +69,18 @@ def _proper_pad(arr, pad_to):
     )
 
 
-def _edge_pad(arr, pad):
+def _edge_pad(arr: np.ndarray = None, pad: np.ndarray = None) -> np.ndarray:
     # fill sides
-    left = npa.tile(arr[0, :], (pad[0][0], 1))  # left side
-    right = npa.tile(arr[-1, :], (pad[0][1], 1))  # right side
-    top = npa.tile(arr[:, 0], (pad[1][0], 1)).transpose()  # top side
-    bottom = npa.tile(arr[:, -1], (pad[1][1], 1)).transpose()  # bottom side)
+    left = npa.tile(arr[0, :], (pad[0][0], 1))
+    right = npa.tile(arr[-1, :], (pad[0][1], 1))
+    top = npa.tile(arr[:, 0], (pad[1][0], 1)).transpose()
+    bottom = npa.tile(arr[:, -1], (pad[1][1], 1)).transpose()
 
     # fill corners
-    top_left = npa.tile(arr[0, 0], (pad[0][0], pad[1][0]))  # top left
-    top_right = npa.tile(arr[-1, 0], (pad[0][1], pad[1][0]))  # top right
-    bottom_left = npa.tile(arr[0, -1], (pad[0][0], pad[1][1]))  # bottom left
-    bottom_right = npa.tile(arr[-1, -1], (pad[0][1], pad[1][1]))  # bottom right
+    top_left = npa.tile(arr[0, 0], (pad[0][0], pad[1][0]))
+    top_right = npa.tile(arr[-1, 0], (pad[0][1], pad[1][0]))
+    bottom_left = npa.tile(arr[0, -1], (pad[0][0], pad[1][1]))
+    bottom_right = npa.tile(arr[-1, -1], (pad[0][1], pad[1][1]))
 
     if pad[0][0] > 0 and pad[0][1] > 0 and pad[1][0] > 0 and pad[1][1] > 0:
         return npa.concatenate(
@@ -85,25 +101,22 @@ def _edge_pad(arr, pad):
         raise ValueError("At least one of the padding numbers is invalid.")
 
 
-def simple_2d_filter(x, h, periodic_axes=None):
-    """A simple 2d filter algorithm that is differentiable with autograd.
-    Uses a 2D fft approach since it is typically faster and preserves the shape
-    of the input and output arrays.
+def simple_2d_filter(
+    x: np.ndarray = None, h: np.ndarrray = None, periodic_axes: ArrayLike = None
+) -> np.ndarray:
+    """A simple 2d filter function.
 
-    The ffts pad the operation to prevent any circular convolution garbage.
+    Uses a 2d FFT since it is typically faster and preserves the shape
+    of the input and output arrays. The FFTs pad the operation to prevent
+    unwanted effects from the edges of the array.
 
-    Parameters
-    ----------
-    x : array_like (2D)
-        Input array to be filtered. Must be 2D.
-    h : array_like (2D)
-        Filter kernel (before the DFT). Must be same size as `x`
-    periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+    Args:
+        x: 2d design weights (unfiltered).
+        h: filter kernel prior to applying the FFT. Must be same size as `x`
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
 
-    Returns
-    -------
-    array_like (2D)
+    Returns:
         The output of the 2d convolution.
     """
     (sx, sy) = x.shape
@@ -125,7 +138,8 @@ def simple_2d_filter(x, h, periodic_axes=None):
         if npy % 2 == 0:
             npy += 1  # Ensure npy is an odd number
 
-        # Repeat the design pattern in periodic directions according to the kernel size
+        # Repeat the design pattern in periodic directions according to
+        # the kernel size
         x = npa.tile(
             x, (npx if 0 in periodic_axes else 1, npy if 1 in periodic_axes else 1)
         )
@@ -152,33 +166,34 @@ def simple_2d_filter(x, h, periodic_axes=None):
     )
 
 
-def cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
-    """A uniform cylindrical filter [1]. Typically allows for sharper transitions.
+def cylindrical_filter(
+    x: np.ndarray = None,
+    radius: float = None,
+    Lx: float = None,
+    Ly: float = None,
+    resolution: int = None,
+    periodic_axes: ArrayLikeType = None,
+) -> np.ndarray:
+    """A uniform cylindrical filter.
 
-    Parameters
-    ----------
-    x : array_like (2D)
-        Design parameters
-    radius : float
-        Filter radius (in "meep units")
-    Lx : float
-        Length of design region in X direction (in "meep units")
-    Ly : float
-        Length of design region in Y direction (in "meep units")
-    resolution : int
-        Resolution of the design grid (not the meep simulation resolution)
-    periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+    Typically allows for sharper transitions.
 
-    Returns
-    -------
-    array_like (2D)
-        Filtered design parameters.
+    Ref: B.S. Lazarov, F. Wang, & O. Sigmund, Length scale and
+    manufacturability in density-based topology optimization,
+    Archive of Applied Mechanics, 86(1-2), pp. 189-218 (2016).
 
-    References
-    ----------
-    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
-    density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
+    Args:
+        x: 2d design weights to be filtered.
+        radius: filter radius (in Meep units).
+        Lx: length of design region in X direction (in Meep units).
+        Ly: length of design region in Y direction (in Meep units).
+        resolution: resolution of the design grid (not the Meep grid
+            resolution)
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
+
+    Returns:
+        The filtered design weights.
     """
     Nx = int(round(Lx * resolution)) + 1
     Ny = int(round(Ly * resolution)) + 1
@@ -187,8 +202,9 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
-    # If the design pattern is periodic in a direction,
-    # the size of the kernel in that direction needs to be adjusted according to the filter radius.
+    # If the design weights are periodic in a direction,
+    # the size of the kernel in that direction needs to be adjusted
+    # according to the filter radius.
     if periodic_axes is not None:
         periodic_axes = np.array(periodic_axes)
         if 0 in periodic_axes:
@@ -199,37 +215,35 @@ def cylindrical_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(X**2 + Y**2 < radius**2, 1, 0)
 
-    # Filter the response
     return simple_2d_filter(x, h, periodic_axes)
 
 
-def conic_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
-    """A linear conic filter, also known as a "Hat" filter in the literature [1].
+def conic_filter(
+    x: np.ndarray = None,
+    radius: float = None,
+    Lx: float = None,
+    Ly: float = None,
+    resolution: int = None,
+    periodic_axes: ArrayLikeType = None,
+) -> np.ndarray:
+    """A linear conic (or "hat") filter.
 
-    Parameters
-    ----------
-    x : array_like (2D)
-        Design parameters
-    radius : float
-        Filter radius (in "meep units")
-    Lx : float
-        Length of design region in X direction (in "meep units")
-    Ly : float
-        Length of design region in Y direction (in "meep units")
-    resolution : int
-        Resolution of the design grid (not the meep simulation resolution)
-    periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+    Ref: B.S. Lazarov, F. Wang, & O. Sigmund, Length scale and
+    manufacturability in density-based topology optimization.
+    Archive of Applied Mechanics, 86(1-2), pp. 189-218 (2016).
 
-    Returns
-    -------
-    array_like (2D)
-        Filtered design parameters.
+    Args:
+        x: 2d design weights (unfiltered).
+        radius: filter radius (in Meep units).
+        Lx: length of design region in X direction (in Meep units).
+        Ly: length of design region in Y direction (in Meep units).
+        resolution: resolution of the design grid (not the Meep grid
+            resolution).
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
 
-    References
-    ----------
-    [1] Lazarov, B. S., Wang, F., & Sigmund, O. (2016). Length scale and manufacturability in
-    density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
+    Returns:
+        The filtered design weights.
     """
     Nx = int(round(Lx * resolution)) + 1
     Ny = int(round(Ly * resolution)) + 1
@@ -239,7 +253,8 @@ def conic_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     # If the design pattern is periodic in a direction,
-    # the size of the kernel in that direction needs to be adjusted according to the filter radius.
+    # the size of the kernel in that direction needs to be adjusted
+    # according to the filter radius.
     if periodic_axes is not None:
         periodic_axes = np.array(periodic_axes)
         if 0 in periodic_axes:
@@ -252,37 +267,35 @@ def conic_filter(x, radius, Lx, Ly, resolution, periodic_axes=None):
         X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
     )
 
-    # Filter the response
     return simple_2d_filter(x, h, periodic_axes)
 
 
-def gaussian_filter(x, sigma, Lx, Ly, resolution, periodic_axes=None):
-    """A simple gaussian filter of the form exp(-x **2 / sigma ** 2) [1].
+def gaussian_filter(
+    x: np.ndarray = None,
+    sigma: float = None,
+    Lx: float = None,
+    Ly: float = None,
+    resolution: int = None,
+    periodic_axes: ArrayLikeType = None,
+):
+    """A simple Gaussian filter of the form exp(-x**2 / sigma**2).
 
-    Parameters
-    ----------
-    x : array_like (2D)
-        Design parameters
-    sigma : float
-        Filter radius (in "meep units")
-    Lx : float
-        Length of design region in X direction (in "meep units")
-    Ly : float
-        Length of design region in Y direction (in "meep units")
-    resolution : int
-        Resolution of the design grid (not the meep simulation resolution)
-    periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+    Ref: E. W. Wang, D. Sell, T. Phan, & J. A. Fan, Robust design of
+    topology-optimized metasurfaces, Optical Materials Express, 9(2),
+    pp. 469-482 (2019).
 
-    Returns
-    -------
-    array_like (2D)
-        Filtered design parameters.
+    Args:
+        x: 2d design weights (unfiltered).
+        sigma: filter radius (in Meep units).
+        Lx: length of design region in X direction (in Meep units).
+        Ly: length of design region in Y direction (in Meep units).
+        resolution: resolution of the design grid (not the Meep grid
+            resolution).
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
 
-    References
-    ----------
-    [1] Wang, E. W., Sell, D., Phan, T., & Fan, J. A. (2019). Robust design of
-    topology-optimized metasurfaces. Optical Materials Express, 9(2), 469-482.
+    Returns:
+        The filtered design weights.
     """
     Nx = int(round(Lx * resolution)) + 1
     Ny = int(round(Ly * resolution)) + 1
@@ -292,7 +305,8 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, periodic_axes=None):
     yv = np.arange(0, Ly / 2, 1 / resolution)
 
     # If the design pattern is periodic in a direction,
-    # the size of the kernel in that direction needs to be adjusted according to 3σ.
+    # the size of the kernel in that direction needs to be
+    # adjusted according to 3σ.
     if periodic_axes is not None:
         periodic_axes = np.array(periodic_axes)
         if 0 in periodic_axes:
@@ -303,18 +317,19 @@ def gaussian_filter(x, sigma, Lx, Ly, resolution, periodic_axes=None):
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.exp(-(X**2 + Y**2) / sigma**2)
 
-    # Filter the response
     return simple_2d_filter(x, h, periodic_axes)
 
 
-"""
-# ------------------------------------------------------------------------------------ #
-Erosion and dilation operators
-"""
-
-
-def exponential_erosion(x, radius, beta, Lx, Ly, resolution, periodic_axes=None):
-    """Performs and exponential erosion operation.
+def exponential_erosion(
+    x: np.ndarray = None,
+    radius: float = None,
+    beta: float = None,
+    Lx: float = None,
+    Ly: float = None,
+    resolution: int = None,
+    periodic_axes: ArrayLikeType = None,
+):
+    """Exponential erosion operation.
 
     Parameters
     ----------
@@ -635,33 +650,21 @@ def harmonic_dilation(x, radius, alpha, Lx, Ly, resolution, periodic_axes=None):
     )
 
 
-"""
-# ------------------------------------------------------------------------------------ #
-Projection filters
-"""
+def tanh_projection(x: np.ndarray, beta: float, eta: float) -> np.ndarray:
+    """Sigmoid projection filter.
 
+    Ref: F. Wang, B. S. Lazarov, & O. Sigmund, On projection methods,
+    convergence and robust formulations in topology optimization.
+    Structural and Multidisciplinary Optimization, 43(6), pp. 767-784 (2011).
 
-def tanh_projection(x, beta, eta):
-    """Projection filter that thresholds the input parameters between 0 and 1. Typically
-    the "strongest" projection.
+    Args:
+        x: 2d design weights to be filtered.
+        beta: thresholding parameter in the range [0, inf]. Determines the
+            degree of binarization of the output.
+        eta: threshold point in the range [0, 1].
 
-    Parameters
-    ----------
-    x : array_like
-        Design parameters
-    beta : float
-        Thresholding parameter (0 to infinity). Dictates how "binary" the output will be.
-    eta: float
-        Threshold point (0 to 1)
-
-    Returns
-    -------
-    array_like
-        Projected and flattened design parameters.
-    References
-    ----------
-    [1] Wang, F., Lazarov, B. S., & Sigmund, O. (2011). On projection methods, convergence and robust
-    formulations in topology optimization. Structural and Multidisciplinary Optimization, 43(6), 767-784.
+    Returns:
+        The filtered design weights.
     """
 
     return (npa.tanh(beta * eta) + npa.tanh(beta * (x - eta))) / (
