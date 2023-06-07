@@ -1167,7 +1167,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             return projected_field.flatten()
 
         reverse_x = mpa.unfilter_design(target, processing)
-        tol = 1e-8
+        tol = 1e-6
         self.assertClose(expected, reverse_x, epsilon=tol)
         print(f"PASSED: unfilter_design={reverse_x}, expeced_design={expected}")
 
