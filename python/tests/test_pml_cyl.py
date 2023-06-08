@@ -20,6 +20,7 @@ class TestPMLCylindrical(unittest.TestCase):
 
     @parameterized.parameterized.expand(
         [
+            (0.0, 0.04, False),
             (-1.0, 0.0, False),
             (2.0, 0.14, False),
             (3.0, 0.17, True),
@@ -28,14 +29,13 @@ class TestPMLCylindrical(unittest.TestCase):
     def test_pml_cyl(
         self, m: float, rpos: float, accurate_fields_near_cylorigin: bool = False
     ):
-        """Verifies that the z-PML in cylindrical coordinates properly
-        attenuates fields at r=0.
+        """Verifies that the z-PML properly attenuates fields at r=0.
 
         Args:
            m: exp(imϕ) angular dependence of the fields.
            rpos: position of source along R direction.
            accurate_fields_near_cylorigin: whether to compute more accurate
-              fields near the origin r=0.
+              fields near r=0 for |m| > 1.
         """
 
         pml_layers = [
@@ -43,9 +43,16 @@ class TestPMLCylindrical(unittest.TestCase):
             mp.PML(self.dpml_z, direction=mp.Z),
         ]
 
+        if abs(m) == 1:
+            fwidth = 0.02 * self.fcen
+            cutoff = 10.0
+        else:
+            fwidth = 0.1 * self.fcen
+            cutoff = 5.0
+
         sources = [
             mp.Source(
-                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
+                src=mp.GaussianSource(self.fcen, fwidth=fwidth, cutoff=cutoff),
                 center=mp.Vector3(rpos, 0, 0),
                 component=mp.Er,
             ),
@@ -124,6 +131,8 @@ class TestPMLCylindrical(unittest.TestCase):
 
             print(f"flux:, {sim.meep_time()}, {cur_flux_str}, {flux_tot:.6f}")
 
+            # Check that the flux is converged with runtime long after the
+            # source has turned off.
             places = 6 if mp.is_single_precision() else 8
             for i in range(len(cur_flux)):
                 self.assertAlmostEqual(
