@@ -1,8 +1,8 @@
 """
 A collection of routines for use in topology optimization comprising
-filters, projection operators, and morphological transforms.
+convolution filters, projection operators, and morphological transforms.
 """
-from typing import List, Union
+from typing import List, Tuple, Union
 
 from autograd import numpy as npa
 import meep as mp
@@ -12,7 +12,7 @@ from scipy import signal, special
 ArrayLikeType = Union[List, Tuple, np.ndarray]
 
 
-def _centered(arr: np.ndarray = None, newshape: ArrayLikeType = None) -> np.ndarray:
+def _centered(arr: np.ndarray, newshape: ArrayLikeType) -> np.ndarray:
     """Reformats the zero-padded array of the FFT filter.
 
     A helper function borrowed from SciPy:
@@ -34,8 +34,8 @@ def _centered(arr: np.ndarray = None, newshape: ArrayLikeType = None) -> np.ndar
     return arr[tuple(myslice)]
 
 
-def _proper_pad(arr: np.ndarray = None, pad_to: np.ndarray = None) -> np.ndarray:
-    """Zero-pads the filter array for convolution.
+def _proper_pad(arr: np.ndarray, pad_to: np.ndarray) -> np.ndarray:
+    """Zero-pads the array as preprocessing for convolution filter.
 
     Args:
         arr: 2d input array representing the nonnegative coordinates of a
@@ -69,7 +69,18 @@ def _proper_pad(arr: np.ndarray = None, pad_to: np.ndarray = None) -> np.ndarray
     )
 
 
-def _edge_pad(arr: np.ndarray = None, pad: np.ndarray = None) -> np.ndarray:
+def _edge_pad(arr: np.ndarray, pad: np.ndarray) -> np.ndarray:
+    """Zero-pads the edges of the array as preprocessing for convolution filter.
+
+    Args:
+        arr: 2d array representing the nonnegative coordinates of a
+            filter kernel with C4v symmetry.
+        pad_to: 2x2 array of integers indicating the size
+            of the zero-padded array.
+
+    Returns:
+        A 2d array with zero padding.
+    """
     # fill sides
     left = npa.tile(arr[0, :], (pad[0][0], 1))
     right = npa.tile(arr[-1, :], (pad[0][1], 1))
@@ -102,11 +113,11 @@ def _edge_pad(arr: np.ndarray = None, pad: np.ndarray = None) -> np.ndarray:
 
 
 def simple_2d_filter(
-    x: np.ndarray = None, h: np.ndarrray = None, periodic_axes: ArrayLike = None
+    x: np.ndarray, h: np.ndarray, periodic_axes: ArrayLikeType = None
 ) -> np.ndarray:
     """A simple 2d filter function.
 
-    Uses a 2d FFT since it is typically faster and preserves the shape
+    Uses a 2d FFT which is typically faster and preserves the shape
     of the input and output arrays. The FFTs pad the operation to prevent
     unwanted effects from the edges of the array.
 
@@ -167,16 +178,16 @@ def simple_2d_filter(
 
 
 def cylindrical_filter(
-    x: np.ndarray = None,
-    radius: float = None,
-    Lx: float = None,
-    Ly: float = None,
-    resolution: int = None,
+    x: np.ndarray,
+    radius: float,
+    Lx: float,
+    Ly: float,
+    resolution: int,
     periodic_axes: ArrayLikeType = None,
 ) -> np.ndarray:
     """A uniform cylindrical filter.
 
-    Typically allows for sharper transitions.
+    Typically allows for sharper features.
 
     Ref: B.S. Lazarov, F. Wang, & O. Sigmund, Length scale and
     manufacturability in density-based topology optimization,
@@ -219,11 +230,11 @@ def cylindrical_filter(
 
 
 def conic_filter(
-    x: np.ndarray = None,
-    radius: float = None,
-    Lx: float = None,
-    Ly: float = None,
-    resolution: int = None,
+    x: np.ndarray,
+    radius: float,
+    Lx: float,
+    Ly: float,
+    resolution: int,
     periodic_axes: ArrayLikeType = None,
 ) -> np.ndarray:
     """A linear conic (or "hat") filter.
@@ -271,11 +282,11 @@ def conic_filter(
 
 
 def gaussian_filter(
-    x: np.ndarray = None,
-    sigma: float = None,
-    Lx: float = None,
-    Ly: float = None,
-    resolution: int = None,
+    x: np.ndarray,
+    sigma: float,
+    Lx: float,
+    Ly: float,
+    resolution: int,
     periodic_axes: ArrayLikeType = None,
 ):
     """A simple Gaussian filter of the form exp(-x**2 / sigma**2).
@@ -321,47 +332,38 @@ def gaussian_filter(
 
 
 def exponential_erosion(
-    x: np.ndarray = None,
-    radius: float = None,
-    beta: float = None,
-    Lx: float = None,
-    Ly: float = None,
-    resolution: int = None,
+    x: np.ndarray,
+    radius: float,
+    beta: float,
+    Lx: float,
+    Ly: float,
+    resolution: int,
     periodic_axes: ArrayLikeType = None,
 ):
-    """Exponential erosion operation.
+    """Morphological erosion using exponential projection.
 
-    Parameters
-    ----------
-    x : array_like
-        Design parameters
-    radius : float
-        Filter radius (in "meep units")
-    beta : float
-        Thresholding parameter
-    Lx : float
-        Length of design region in X direction (in "meep units")
-    Ly : float
-        Length of design region in Y direction (in "meep units")
-    resolution : int
-        Resolution of the design grid (not the meep simulation resolution)
-    periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+    Refs:
+    O. Sigmund, Morphology-based black and white filters for topology
+    optimization. Structural and Multidisciplinary Optimization,
+    33(4-5), pp. 401-424 (2007).
+    M. Schevenels & O. Sigmund, On the implementation and effectiveness of
+    morphological close-open and open-close filters for topology optimization.
+    Structural and Multidisciplinary Optimization, 54(1), pp. 15-21 (2016).
 
-    Returns
-    -------
-    array_like
-        Eroded design parameters.
+    Args:
+        x: 2d design weights (unfiltered).
+        radius: filter radius (in Meep units).
+        beta: threshold value for projection. Range of [0, inf].
+        Lx: length of design region in X direction (in Meep units).
+        Ly: length of design region in Y direction (in Meep units).
+        resolution: resolution of the design grid (not the Meep grid
+            resolution).
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
 
-    References
-    ----------
-    [1] Sigmund, O. (2007). Morphology-based black and white filters for topology optimization.
-    Structural and Multidisciplinary Optimization, 33(4-5), 401-424.
-    [2] Schevenels, M., & Sigmund, O. (2016). On the implementation and effectiveness of
-    morphological close-open and open-close filters for topology optimization. Structural
-    and Multidisciplinary Optimization, 54(1), 15-21.
+    Returns:
+        The eroded design weights.
     """
-
     x_hat = npa.exp(beta * (1 - x))
     return (
         1
@@ -375,39 +377,30 @@ def exponential_erosion(
 
 
 def exponential_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes=None):
-    """Performs a exponential dilation operation.
+    """Morphological dilation using exponential projection.
 
-    Parameters
-    ----------
-    x : array_like
-        Design parameters
-    radius : float
-        Filter radius (in "meep units")
-    beta : float
-        Thresholding parameter
-    Lx : float
-        Length of design region in X direction (in "meep units")
-    Ly : float
-        Length of design region in Y direction (in "meep units")
-    resolution : int
-        Resolution of the design grid (not the meep simulation resolution)
-    periodic_axes: array_like (1D)
-        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+    Refs:
+    O. Sigmund, Morphology-based black and white filters for topology
+    optimization. Structural and Multidisciplinary Optimization,
+    33(4-5), pp. 401-424 (2007).
+    M. Schevenels & O. Sigmund, On the implementation and effectiveness of
+    morphological close-open and open-close filters for topology optimization.
+    Structural and Multidisciplinary Optimization, 54(1), pp. 15-21 (2016).
 
-    Returns
-    -------
-    array_like
-        Dilated design parameters.
+    Args:
+        x: 2d design weights (unfiltered).
+        radius: filter radius (in Meep units).
+        beta: threshold value for projection. Range of [0, inf].
+        Lx: length of design region in X direction (in Meep units).
+        Ly: length of design region in Y direction (in Meep units).
+        resolution: resolution of the design grid (not the Meep grid
+            resolution).
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
 
-    References
-    ----------
-    [1] Sigmund, O. (2007). Morphology-based black and white filters for topology optimization.
-    Structural and Multidisciplinary Optimization, 33(4-5), 401-424.
-    [2] Schevenels, M., & Sigmund, O. (2016). On the implementation and effectiveness of
-    morphological close-open and open-close filters for topology optimization. Structural
-    and Multidisciplinary Optimization, 54(1), 15-21.
+    Returns:
+        The dilated design weights.
     """
-
     x_hat = npa.exp(beta * x)
     return (
         npa.log(
