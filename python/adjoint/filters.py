@@ -34,8 +34,8 @@ def _centered(arr: np.ndarray, newshape: ArrayLikeType) -> np.ndarray:
     return arr[tuple(myslice)]
 
 
-def _proper_pad(arr: np.ndarray, pad_to: np.ndarray) -> np.ndarray:
-    """Zero-pads the array as preprocessing for convolution filter.
+def _quarter_to_full_kernel(arr: np.ndarray, pad_to: np.ndarray) -> np.ndarray:
+    """Constructs the full kernel from its nonnegative quadrant.
 
     Args:
         arr: 2d input array representing the nonnegative coordinates of a
@@ -133,7 +133,7 @@ def simple_2d_filter(
     (sx, sy) = x.shape
 
     if periodic_axes is None:
-        h = _proper_pad(h, 3 * np.array([sx, sy]))
+        h = _quarter_to_full_kernel(h, 3 * np.array([sx, sy]))
         x = _edge_pad(x, ((sx, sx), (sy, sy)))
     else:
         (kx, ky) = h.shape
@@ -160,7 +160,7 @@ def simple_2d_filter(
         x = _edge_pad(
             x, ((npadx, npadx), (npady, npady))
         )  # pad only in nonperiodic directions
-        h = _proper_pad(
+        h = _quarter_to_full_kernel(
             h,
             np.array(
                 [
