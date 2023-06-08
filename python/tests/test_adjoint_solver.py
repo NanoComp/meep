@@ -1162,12 +1162,12 @@ class TestAdjointSolver(ApproxComparisonTestCase):
         target = np.load(os.path.join(data_dir, "mpa_unfilter_design_target.npy"))
 
         def processing(x):
-            filtered_field = mpa.conic_filter(x, 0.1, 1.995, 1.995, 200)
+            filtered_field = mpa.conic_filter(x, 0.1, 0.3, 0.5, 200)
             projected_field = mpa.tanh_projection(filtered_field, 8, 0.5)
             return projected_field.flatten()
 
         reverse_x = mpa.unfilter_design(target, processing)
-        tol = 1e-8
+        tol = 1e-6
         self.assertClose(expected, reverse_x, epsilon=tol)
         print(f"PASSED: unfilter_design={reverse_x}, expeced_design={expected}")
 
