@@ -1,6 +1,7 @@
 """
 A collection of routines for use in topology optimization comprising
-convolution filters, projection operators, and morphological transforms.
+convolution filters (kernels), projection operators, and morphological
+transforms.
 """
 from typing import List, Tuple, Union
 
@@ -13,17 +14,18 @@ ArrayLikeType = Union[List, Tuple, np.ndarray]
 
 
 def _centered(arr: np.ndarray, newshape: ArrayLikeType) -> np.ndarray:
-    """Reformats the zero-padded array of the FFT filter.
+    """Formats the output of an FFT to center the zero-frequency component.
 
     A helper function borrowed from SciPy:
     https://github.com/scipy/scipy/blob/v1.4.1/scipy/signal/signaltools.py#L263-L270
 
     Args:
-        arr: the zero-padded array to be used as the FFT filter.
-        newshape: a 1d array containing the dimensions of the new array.
+        arr: output array from an FFT operation.
+        newshape: 1d array with two elements (integers) specifying the dimensions
+            of the array to be returned.
 
     Returns:
-        The reformatted array with center based on the new array dimensions.
+        The input array with the zero-frequency component as the central element.
     """
     newshape = np.asarray(newshape)
     currshape = np.array(arr.shape)
@@ -38,13 +40,13 @@ def _quarter_to_full_kernel(arr: np.ndarray, pad_to: np.ndarray) -> np.ndarray:
     """Constructs the full kernel from its nonnegative quadrant.
 
     Args:
-        arr: 2d input array representing the nonnegative coordinates of a
+        arr: 2d input array representing the nonnegative quadrant of a
             filter kernel with C4v symmetry.
-        pad_to: 1d array of two elements (integers) indicating the size
-            of the zero-padded array.
+        pad_to: 1d array with two elements (integers) specifying the size
+            of the zero padding.
 
     Returns:
-        A 2d array with zero padding.
+        The complete kernel.
     """
     pad_size = pad_to - 2 * np.array(arr.shape) + 1
 
@@ -70,12 +72,14 @@ def _quarter_to_full_kernel(arr: np.ndarray, pad_to: np.ndarray) -> np.ndarray:
 
 
 def _edge_pad(arr: np.ndarray, pad: np.ndarray) -> np.ndarray:
-    """Zero-pads the edges of the array as preprocessing for convolution filter.
+    """Zero-pads the edges of an array.
+
+    Used to preprocess the design weights prior to convolution with the filter.
 
     Args:
         arr: 2d array representing the nonnegative coordinates of a
             filter kernel with C4v symmetry.
-        pad_to: 2x2 array of integers indicating the size
+        pad: 2x2 array of integers indicating the size
             of the zero-padded array.
 
     Returns:
@@ -112,23 +116,24 @@ def _edge_pad(arr: np.ndarray, pad: np.ndarray) -> np.ndarray:
         raise ValueError("At least one of the padding numbers is invalid.")
 
 
-def simple_2d_filter(
+def convolve_design_weights_and_kernel(
     x: np.ndarray, h: np.ndarray, periodic_axes: ArrayLikeType = None
 ) -> np.ndarray:
-    """A simple 2d filter function.
+    """Convolves the design weights with the kernel.
 
-    Uses a 2d FFT which is typically faster and preserves the shape
-    of the input and output arrays. The FFTs pad the operation to prevent
-    unwanted effects from the edges of the array.
+    Uses a 2d FFT to perform the convolution operation. This approach is
+    typically faster than a direct calculation. It also preserves the shape
+    of the input and output arrays. The arrays are zero-padded prior to the
+    FFT to prevent unwanted effects from the edges.
 
     Args:
-        x: 2d design weights (unfiltered).
-        h: filter kernel prior to applying the FFT. Must be same size as `x`
+        x: 2d design weights.
+        h: filter kernel. Must be same size as `x`
         periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
             periodic. Default is None (all axes are non-periodic).
 
     Returns:
-        The output of the 2d convolution.
+        The convolution of the design weights with the kernel as a 2d array.
     """
     (sx, sy) = x.shape
 
@@ -185,21 +190,21 @@ def cylindrical_filter(
     resolution: int,
     periodic_axes: ArrayLikeType = None,
 ) -> np.ndarray:
-    """A uniform cylindrical filter.
+    """A cylindrical convolution filter.
 
-    Typically allows for sharper features.
+    Typically allows for sharper features compared to other types of filters.
 
     Ref: B.S. Lazarov, F. Wang, & O. Sigmund, Length scale and
     manufacturability in density-based topology optimization,
     Archive of Applied Mechanics, 86(1-2), pp. 189-218 (2016).
 
     Args:
-        x: 2d design weights to be filtered.
+        x: 2d design weights.
         radius: filter radius (in Meep units).
         Lx: length of design region in X direction (in Meep units).
         Ly: length of design region in Y direction (in Meep units).
         resolution: resolution of the design grid (not the Meep grid
-            resolution)
+            resolution).
         periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
             periodic. Default is None (all axes are non-periodic).
 
@@ -208,7 +213,7 @@ def cylindrical_filter(
     """
     Nx = int(round(Lx * resolution)) + 1
     Ny = int(round(Ly * resolution)) + 1
-    x = x.reshape(Nx, Ny)  # Ensure the input is 2D
+    x = x.reshape(Nx, Ny)  # Ensure the input is 2d
 
     xv = np.arange(0, Lx / 2, 1 / resolution)
     yv = np.arange(0, Ly / 2, 1 / resolution)
@@ -226,7 +231,7 @@ def cylindrical_filter(
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(X**2 + Y**2 < radius**2, 1, 0)
 
-    return simple_2d_filter(x, h, periodic_axes)
+    return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
 def conic_filter(
@@ -244,7 +249,7 @@ def conic_filter(
     Archive of Applied Mechanics, 86(1-2), pp. 189-218 (2016).
 
     Args:
-        x: 2d design weights (unfiltered).
+        x: 2d design weights.
         radius: filter radius (in Meep units).
         Lx: length of design region in X direction (in Meep units).
         Ly: length of design region in Y direction (in Meep units).
@@ -278,7 +283,7 @@ def conic_filter(
         X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
     )
 
-    return simple_2d_filter(x, h, periodic_axes)
+    return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
 def gaussian_filter(
@@ -289,14 +294,14 @@ def gaussian_filter(
     resolution: int,
     periodic_axes: ArrayLikeType = None,
 ):
-    """A simple Gaussian filter of the form exp(-x**2 / sigma**2).
+    """A Gaussian filter.
 
     Ref: E. W. Wang, D. Sell, T. Phan, & J. A. Fan, Robust design of
     topology-optimized metasurfaces, Optical Materials Express, 9(2),
     pp. 469-482 (2019).
 
     Args:
-        x: 2d design weights (unfiltered).
+        x: 2d design weights.
         sigma: filter radius (in Meep units).
         Lx: length of design region in X direction (in Meep units).
         Ly: length of design region in Y direction (in Meep units).
@@ -328,7 +333,7 @@ def gaussian_filter(
     X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.exp(-(X**2 + Y**2) / sigma**2)
 
-    return simple_2d_filter(x, h, periodic_axes)
+    return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
 def exponential_erosion(
@@ -340,7 +345,7 @@ def exponential_erosion(
     resolution: int,
     periodic_axes: ArrayLikeType = None,
 ):
-    """Morphological erosion using exponential projection.
+    """Morphological erosion using an exponential projection operator.
 
     Refs:
     O. Sigmund, Morphology-based black and white filters for topology
@@ -351,7 +356,7 @@ def exponential_erosion(
     Structural and Multidisciplinary Optimization, 54(1), pp. 15-21 (2016).
 
     Args:
-        x: 2d design weights (unfiltered).
+        x: 2d design weights.
         radius: filter radius (in Meep units).
         beta: threshold value for projection. Range of [0, inf].
         Lx: length of design region in X direction (in Meep units).
@@ -377,7 +382,7 @@ def exponential_erosion(
 
 
 def exponential_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes=None):
-    """Morphological dilation using exponential projection.
+    """Morphological dilation using an exponential projection operator.
 
     Refs:
     O. Sigmund, Morphology-based black and white filters for topology
@@ -388,7 +393,7 @@ def exponential_dilation(x, radius, beta, Lx, Ly, resolution, periodic_axes=None
     Structural and Multidisciplinary Optimization, 54(1), pp. 15-21 (2016).
 
     Args:
-        x: 2d design weights (unfiltered).
+        x: 2d design weights.
         radius: filter radius (in Meep units).
         beta: threshold value for projection. Range of [0, inf].
         Lx: length of design region in X direction (in Meep units).
