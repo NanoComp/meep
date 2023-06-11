@@ -1,27 +1,26 @@
+from typing import Union
 import unittest
 
 import numpy as np
 
 
-def compare_arrays(test_instance, exp, res, tol=1e-3):
-    exp_1d = exp.ravel()
-    res_1d = res.ravel()
-
-    norm_exp = np.linalg.norm(exp_1d)
-    norm_res = np.linalg.norm(res_1d)
-
-    if norm_exp == 0:
-        test_instance.assertEqual(norm_res, 0)
-    else:
-        diff = np.linalg.norm(res_1d - exp_1d) / norm_exp
-        test_instance.assertLess(diff, tol)
-
-
 class ApproxComparisonTestCase(unittest.TestCase):
-    """A mixin for adding proper floating point value and vector comparison."""
+    """A mixin for adding correct scalar/vector comparison."""
 
-    def assertClose(self, x, y, epsilon=1e-2, msg=""):
-        """Asserts that two values or vectors satisfy ‖x-y‖ ≤ ε * max(‖x‖, ‖y‖)."""
+    def assertClose(
+        self,
+        x: Union[float, np.ndarray],
+        y: Union[float, np.ndarray],
+        epsilon: float = 1e-2,
+        msg: str = "",
+    ):
+        """Checks if two scalars or vectors satisfy ‖x-y‖ ≤ ε * max(‖x‖, ‖y‖).
+
+        Args:
+            x, y: two quantities to be compared (scalars or 1d arrays).
+            epsilon: threshold value (maximum) of the relative error.
+            msg: a string to display if the inequality is violated.
+        """
         x = np.atleast_1d(x).ravel()
         y = np.atleast_1d(y).ravel()
         x_norm = np.linalg.norm(x, ord=np.inf)

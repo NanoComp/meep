@@ -1,4 +1,3 @@
-import glob
 import math
 import os
 import re
@@ -7,16 +6,18 @@ import time
 import unittest
 
 import h5py
-import numpy as np
-from scipy.optimize import minimize_scalar, ridder
-from utils import compare_arrays
-
 import meep as mp
+import numpy as np
 from meep import mpb
+from scipy.optimize import minimize_scalar, ridder
+from utils import ApproxComparisonTestCase
 
 
-@unittest.skipIf(os.getenv("MEEP_SKIP_LARGE_TESTS", False), "skipping large tests")
-class TestModeSolver(unittest.TestCase):
+@unittest.skipIf(
+    os.getenv("MEEP_SKIP_LARGE_TESTS", False),
+    "skipping large tests",
+)
+class TestModeSolver(ApproxComparisonTestCase):
 
     data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
     examples_dir = os.path.abspath(
@@ -224,7 +225,7 @@ class TestModeSolver(unittest.TestCase):
             ref_arr[1::3] = ref_y.ravel()
             ref_arr[2::3] = ref_z.ravel()
 
-            compare_arrays(self, ref_arr, field)
+            self.assertClose(ref_arr, field, epsilon=1e-4)
 
     def compare_h5_files(self, ref_path, res_path, tol=1e-3):
         with h5py.File(ref_path) as ref:
@@ -233,7 +234,7 @@ class TestModeSolver(unittest.TestCase):
                     if k == "description":
                         self.assertEqual(ref[k][()], res[k][()])
                     else:
-                        compare_arrays(self, ref[k][()], res[k][()], tol=tol)
+                        self.assertClose(ref[k][()], res[k][()], epsilon=1e-3)
 
     def test_update_band_range_data(self):
         brd = []
@@ -526,7 +527,7 @@ class TestModeSolver(unittest.TestCase):
 
         expected_energy_in_dielectric = 0.6990769686037558
 
-        compare_arrays(self, np.array(expected_energy), np.array(energy))
+        self.assertClose(np.array(expected_energy), np.array(energy), epsilon=1e-4)
         self.assertAlmostEqual(
             expected_energy_in_dielectric, energy_in_dielectric, places=3
         )
@@ -913,7 +914,7 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, "r") as f:
             expected = f["data-new"][()]
 
-        compare_arrays(self, expected, converted_dpwr[-1])
+        self.assertClose(expected, converted_dpwr[-1], epsilon=1e-3)
 
     def test_hole_slab(self):
         from mpb_hole_slab import ms
@@ -1389,7 +1390,7 @@ class TestModeSolver(unittest.TestCase):
             expected_re = f["z.r-new"][()]
             expected_im = f["z.i-new"][()]
             expected = np.vectorize(complex)(expected_re, expected_im)
-            compare_arrays(self, expected, new_efield)
+            self.assertClose(expected, new_efield, epsilon=1e-4)
 
         ms.run_te()
 
@@ -1460,7 +1461,7 @@ class TestModeSolver(unittest.TestCase):
 
         with h5py.File(ref_path, "r") as f:
             ref = f["data-new"][()]
-            compare_arrays(self, ref, new_eps, tol=1e-3)
+            self.assertClose(ref, new_eps, epsilon=1e-4)
 
     def test_subpixel_averaging(self):
         ms = self.init_solver()
@@ -1573,7 +1574,7 @@ class TestModeSolver(unittest.TestCase):
         mu = ms.get_mu()
         with h5py.File(data_path, "r") as f:
             data = f["data"][()]
-            compare_arrays(self, data, mu)
+            self.assertClose(data, mu, epsilon=1e-4)
 
     def test_output_tot_pwr(self):
         ms = self.init_solver()
@@ -1591,7 +1592,7 @@ class TestModeSolver(unittest.TestCase):
         with h5py.File(ref_path, "r") as f:
             expected = f["data"][()]
 
-        compare_arrays(self, expected, arr)
+        self.assertClose(expected, arr, epsilon=1e-4)
 
     def test_get_eigenvectors(self):
         ms = self.init_solver()
@@ -1738,7 +1739,7 @@ class TestModeSolver(unittest.TestCase):
         ]
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
-        compare_arrays(self, expected_freqs, ms.all_freqs[-1])
+        self.assertClose(expected_freqs, ms.all_freqs[-1], 1e-4)
 
         self.check_gap_list(expected_gap_list, ms.gap_list)
 
@@ -2071,7 +2072,7 @@ class TestModeSolver(unittest.TestCase):
         md = mpb.MPBData(rectify=True, resolution=32, periods=3)
         result2 = md.convert(efield_no_bloch)
 
-        compare_arrays(self, result1, result2, tol=1e-5)
+        self.assertClose(result1, result2, epsilon=1e-4)
 
     def test_poynting(self):
         ms = self.init_solver()
