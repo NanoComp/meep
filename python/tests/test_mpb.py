@@ -1604,7 +1604,7 @@ class TestModeSolver(ApproxComparisonTestCase):
                 # Reshape the last dimension of 2 reals into one complex
                 expected = np.vectorize(complex)(expected[..., 0], expected[..., 1])
                 ev = ms.get_eigenvectors(start, cols)
-                np.testing.assert_allclose(expected, ev, rtol=1e-3)
+                self.assertClose(expected, ev, epsilon=1e-3)
 
         # Get all columns
         compare_eigenvectors("tutorial-te-eigenvectors.h5", 1, 8)
