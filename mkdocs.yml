@@ -17,6 +17,7 @@ markdown_extensions:
     - wikilinks
     - toc:
         title: Table of Contents
+        permalink: []
     - attr_list
     - fenced_code
     - md_in_html
