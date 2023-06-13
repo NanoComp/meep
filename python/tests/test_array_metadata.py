@@ -1,13 +1,16 @@
 import unittest
 
+import meep as mp
 import numpy as np
 from utils import ApproxComparisonTestCase
-
-import meep as mp
 
 
 class TestArrayMetadata(ApproxComparisonTestCase):
     def test_array_metadata(self):
+        """
+        Verifies that the CW fields via the modal volume of a ring resonator
+        are the same for the CW solver and time stepping using a pulsed source.
+        """
         resolution = 25
 
         n = 3.4
@@ -37,7 +40,11 @@ class TestArrayMetadata(ApproxComparisonTestCase):
 
         # CW source
         src = [
-            mp.Source(mp.ContinuousSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1)),
+            mp.Source(
+                mp.ContinuousSource(fcen, fwidth=df),
+                mp.Ez,
+                mp.Vector3(r + 0.1),
+            ),
             mp.Source(
                 mp.ContinuousSource(fcen, fwidth=df),
                 mp.Ez,
@@ -57,7 +64,14 @@ class TestArrayMetadata(ApproxComparisonTestCase):
         )
 
         sim.init_sim()
-        sim.solve_cw(1e-5 if mp.is_single_precision() else 1e-6, 1000, 10)
+        # The convergence properties of the CW solver's biCGSTAB-L algorithm
+        # is sensitive to the floating-point precision of the fields. This
+        # requires using a smaller L for single compared to double precision.
+        sim.solve_cw(
+            1e-4 if mp.is_single_precision() else 1e-6,  # tol
+            1000,  # maxiters
+            7 if mp.is_single_precision() else 10,  # L
+        )
 
         def electric_energy(r, ez, eps):
             return np.real(eps * np.conj(ez) * ez)
@@ -78,7 +92,11 @@ class TestArrayMetadata(ApproxComparisonTestCase):
 
         # pulsed source
         src = [
-            mp.Source(mp.GaussianSource(fcen, fwidth=df), mp.Ez, mp.Vector3(r + 0.1)),
+            mp.Source(
+                mp.GaussianSource(fcen, fwidth=df),
+                mp.Ez,
+                mp.Vector3(r + 0.1),
+            ),
             mp.Source(
                 mp.GaussianSource(fcen, fwidth=df),
                 mp.Ez,
@@ -108,8 +126,12 @@ class TestArrayMetadata(ApproxComparisonTestCase):
         vec_func_sum = np.sum(W * (xm**2 + 2 * ym**2))
         pulse_modal_volume = np.sum(W * EpsE2) / np.max(EpsE2) * vec_func_sum
 
-        tol = 5e-2 if mp.is_single_precision() else 1e-2
-        self.assertClose(cw_modal_volume / pulse_modal_volume, 1.0, epsilon=tol)
+        tol = 0.05 if mp.is_single_precision() else 0.01
+        self.assertClose(
+            cw_modal_volume / pulse_modal_volume,
+            1.0,
+            epsilon=tol,
+        )
 
 
 if __name__ == "__main__":
