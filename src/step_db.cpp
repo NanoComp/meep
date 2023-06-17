@@ -314,27 +314,78 @@ bool fields_chunk::step_db(field_type ft) {
         if (!f[cc][cmp]) continue;
         const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
         const realnum *f_m = ft == D_stuff ? f[Hz][cmp] : (f[Ez][1 - cmp] + (nz + 1));
+        const realnum *cnd = s->conductivity[cc][d_c];
         const realnum *cndinv = s->condinv[cc][d_c];
         realnum *fcnd = f_cond[cc][cmp];
         const direction dsig = cycle_direction(gv.dim, d_c, 1);
+        const realnum *sig = s->sigsize[dsig] > 1 ? s->sig[dsig] : 0;
+        const realnum *kap = s->sigsize[dsig] > 1 ? s->kap[dsig] : 0;
         const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
         const int dk = gv.iyee_shift(cc).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
+        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sig[dsigu] : 0;
+        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kap[dsigu] : 0;
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
-        realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
-        realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
         int sd = ft == D_stuff ? +1 : -1;
         realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
 
-        for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
-          realnum df;
-          realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
-                          (cndinv ? cndinv[iz] : 1);
-          if (fcnd) fcnd[iz] += dfcnd;
-          the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
-          if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
+        if ((cc == Dp) && sig && !sigu) {
+          // dsig = Z, dsigu = R
+          if (fcnd) { // step_generic.cpp:176-187
+            realnum dt2 = dt * 0.5;
+            for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+              realnum fcnd_prev = fcnd[iz];
+              ptrdiff_t idx = dk + 2 * (dsig == Z) * iz;
+              fcnd[iz] = ((1 - dt2 * cnd[iz]) * fcnd[iz] -
+                          Courant * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz])) *
+                         cndinv[iz];
+              f[cc][cmp][iz] =
+                  ((kap[idx] - sig[idx]) * f[cc][cmp][iz] + (fcnd[iz] - fcnd_prev)) * siginv[idx];
+            }
+          }
+          else { // step_generic.cpp:198-204
+            for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+              ptrdiff_t idx = dk + 2 * (dsig == Z) * iz;
+              f[cc][cmp][iz] = ((kap[idx] - sig[idx]) * f[cc][cmp][iz] -
+                                Courant * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz])) *
+                               siginv[idx];
+            }
+          }
         }
+        else if ((cc == Br) && !sig && sigu) {
+          // dsig = P, dsigu = Z
+          if (fcnd) { // step_generic.cpp:132-143
+            realnum dt2 = dt * 0.5;
+            for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+              ptrdiff_t idx = dku + 2 * (dsigu == Z) * iz;
+              realnum fprev = f_u[cc][cmp][iz];
+              f_u[cc][cmp][iz] = ((1 - dt2 * cnd[iz]) * fprev -
+                                  Courant * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz])) *
+                                 cndinv[iz];
+              f[cc][cmp][iz] = siginvu[idx] * ((kapu[idx] - sigu[idx]) * f[cc][cmp][iz] +
+                                               f_u[cc][cmp][iz] - fprev);
+            }
+          }
+          else { // step_generic.cpp:154-161
+            for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+              ptrdiff_t idx = dku + 2 * (dsigu == Z) * iz;
+              realnum fprev = f_u[cc][cmp][iz];
+              f_u[cc][cmp][iz] -= Courant * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]);
+              f[cc][cmp][iz] = siginvu[idx] * ((kapu[idx] - sigu[idx]) * f[cc][cmp][iz] +
+                                               f_u[cc][cmp][iz] - fprev);
+            }
+          }
+        }
+        else { // no z-PML
+          for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+            realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
+                            (cndinv ? cndinv[iz] : 1);
+            if (fcnd) fcnd[iz] += dfcnd;
+            f[cc][cmp][iz] += dfcnd;
+          }
+        }
+
         if (ft == D_stuff) {
           ZERO_Z(f[Dz][cmp]);
           if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);

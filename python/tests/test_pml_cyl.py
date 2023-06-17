@@ -43,18 +43,9 @@ class TestPMLCylindrical(unittest.TestCase):
             mp.PML(self.dpml_z, direction=mp.Z),
         ]
 
-        # A hack to ensure the test passes due to a bug
-        # in the z-PML at r=0 for |m| = 1. See #2182.
-        if abs(m) == 1:
-            fwidth = 0.02 * self.fcen
-            cutoff = 10.0
-        else:
-            fwidth = 0.1 * self.fcen
-            cutoff = 5.0
-
         sources = [
             mp.Source(
-                src=mp.GaussianSource(self.fcen, fwidth=fwidth, cutoff=cutoff),
+                src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
                 center=mp.Vector3(rpos, 0, 0),
                 component=mp.Er,
             ),
@@ -128,7 +119,7 @@ class TestPMLCylindrical(unittest.TestCase):
                 mp.get_fluxes(flux_plus_r)[0],
                 mp.get_fluxes(flux_minus_z)[0],
             ]
-            cur_flux_str = ", ".join(f"{c:.6f}" for c in cur_flux)
+            cur_flux_str = ", ".join(f"{c:.9f}" for c in cur_flux)
             flux_tot = sum(cur_flux)
 
             print(f"flux:, {sim.meep_time()}, {cur_flux_str}, {flux_tot:.6f}")
