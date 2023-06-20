@@ -1,5 +1,5 @@
 """
-A collection of geometry-related  objects and helper routines.
+A collection of geometry- and material-related objects and helper routines.
 """
 
 from __future__ import annotations
@@ -1694,7 +1694,7 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
     f_memo = memoize(f)
 
     def lazy(x):
-        return x if isinstance(x, numbers.Number) else x()
+        return x if isinstance(x, Number) else x()
 
     def pick_bound(which):
         def _pb():
@@ -1736,7 +1736,7 @@ def find_root_deriv(f, tol, x_min, x_max, x_guess=None):
         ):
             raise ValueError("failed to bracket the root in find_root_deriv")
 
-        if isinstance(a, numbers.Number) and isinstance(b, numbers.Number):
+        if isinstance(a, Number) and isinstance(b, Number):
             is_in_bounds = in_bounds(x, f, df, a, b)
         else:
             is_in_bounds = in_bounds(x, f, df, x_min, x_max)
