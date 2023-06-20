@@ -1448,7 +1448,7 @@ class Simulation:
           that are specified by geometric objects. You should list any materials other
           than scalar dielectrics that are returned by `material_function` here.
 
-        + **`chunk_layout` [ `string` or `Simulation` instance or `BinaryPartition` class]** —
+        + **`chunk_layout` [ `string` or `Simulation` instance or `BinaryPartition` class ]** —
           This will cause the `Simulation` to use the chunk layout described by either
           (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
           `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
