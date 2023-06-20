@@ -223,21 +223,21 @@ class PML:
         pml_profile: Callable[[float], float] = DefaultPMLProfile,
     ):
         """
-        + **`thickness` [`number`]** — The spatial thickness of the PML layer which
+        + **`thickness` [ `number` ]** — The spatial thickness of the PML layer which
           extends from the boundary towards the *inside* of the cell. The thinner it is,
           the more numerical reflections become a problem. No default value.
 
-        + **`direction` [`direction` constant ]** — Specify the direction of the
+        + **`direction` [ `direction` constant ]** — Specify the direction of the
           boundaries to put the PML layers next to. e.g. if `X`, then specifies PML on the
           $\\pm x$ boundaries (depending on the value of `side`, below). Default is the
           special value `ALL`, which puts PML layers on the boundaries in all directions.
 
-        + **`side` [`side` constant ]** — Specify which side, `Low` or `High` of the
+        + **`side` [ `side` constant ]** — Specify which side, `Low` or `High` of the
           boundary or boundaries to put PML on. e.g. if side is `Low` and direction is
           `meep.X`, then a PML layer is added to the $-x$ boundary. Default is the special
           value `meep.ALL`, which puts PML layers on both sides.
 
-        + **`R_asymptotic` [`number`]** — The asymptotic reflection in the limit of
+        + **`R_asymptotic` [ `number` ]** — The asymptotic reflection in the limit of
           infinite resolution or infinite PML thickness, for reflections from air (an
           upper bound for other media with index &gt; 1). For a finite resolution or
           thickness, the reflection will be *much larger*, due to the discretization of
@@ -246,7 +246,7 @@ class PML:
           within the PML are attenuated sufficiently, but making `R_asymptotic` too small
           will increase the numerical reflection due to discretization.
 
-        + **`pml_profile` [`function`]** — By default, Meep turns on the PML conductivity
+        + **`pml_profile` [ `function` ]** — By default, Meep turns on the PML conductivity
           quadratically within the PML layer &mdash; one doesn't want to turn it on
           suddenly, because that exacerbates reflections due to the discretization. More
           generally, with `pml_profile` one can specify an arbitrary PML "profile"
@@ -354,11 +354,11 @@ class Symmetry:
         """
         Construct a `Symmetry`.
 
-        + **`direction` [`direction` constant ]** — The direction of the symmetry (the
+        + **`direction` [ `direction` constant ]** — The direction of the symmetry (the
           normal to a mirror plane or the axis for a rotational symmetry). e.g. `X`, `Y`,
           or `Z` (only Cartesian/grid directions are allowed). No default value.
 
-        + **`phase` [`complex`]** — An additional phase to multiply the fields by when
+        + **`phase` [ `complex` ]** — An additional phase to multiply the fields by when
           operating the symmetry on them. Default is +1, e.g. a phase of -1 for a mirror
           plane corresponds to an *odd* mirror. Technically, you are essentially
           specifying the representation of the symmetry group that your fields and sources
@@ -526,22 +526,22 @@ class FluxRegion:
         """
         Construct a `FluxRegion` object.
 
-        + **`center` [`Vector3`]** — The center of the flux region (no default).
+        + **`center` [ `Vector3` ]** — The center of the flux region (no default).
 
-        + **`size` [`Vector3`]** — The size of the flux region along each of the coordinate
+        + **`size` [ `Vector3` ]** — The size of the flux region along each of the coordinate
           axes. Default is `(0,0,0)`; a single point.
 
-        + **`direction` [`direction` constant ]** — The direction in which to compute the
+        + **`direction` [ `direction` constant ]** — The direction in which to compute the
           flux (e.g. `mp.X`, `mp.Y`, etcetera). Default is `AUTOMATIC`, in which the
           direction is determined by taking the normal direction if the flux region is a
           plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point
           or volume), then you *must* specify the `direction` explicitly (not doing so
           will lead to an error).
 
-        + **`weight` [`complex`]** — A weight factor to multiply the flux by when it is
+        + **`weight` [ `complex` ]** — A weight factor to multiply the flux by when it is
           computed. Default is 1.0.
 
-        + **`volume` [`Volume`]** — A `meep.Volume` can be used to specify the flux region
+        + **`volume` [ `Volume` ]** — A `meep.Volume` can be used to specify the flux region
           instead of a `center` and a `size`.
         """
         if center is None and volume is None:
@@ -580,7 +580,7 @@ class ForceRegion(FluxRegion):
     + **`weight` [ `complex` ]** — A weight factor to multiply the force by when it is
       computed. Default is 1.0.
 
-    + **`volume` [`Volume`]** — A `meep.Volume` can be used to specify the force region
+    + **`volume` [ `Volume` ]** — A `meep.Volume` can be used to specify the force region
       instead of a `center` and a `size`.
 
     In most circumstances, you should define a set of `ForceRegion`s whose union is a
@@ -594,12 +594,12 @@ class EnergyRegion(FluxRegion):
     A region (volume, plane, line, or point) in which to compute the integral of the
     energy density of the Fourier-transformed fields. Its properties are:
 
-    + **`center` [`Vector3`]** — The center of the energy region (no default).
+    + **`center` [ `Vector3` ]** — The center of the energy region (no default).
 
-    + **`size` [`Vector3`]** — The size of the energy region along each of the coordinate
+    + **`size` [ `Vector3` ]** — The size of the energy region along each of the coordinate
       axes. Default is (0,0,0): a single point.
 
-    + **`weight` [`complex`]** — A weight factor to multiply the energy density by when it
+    + **`weight` [ `complex` ]** — A weight factor to multiply the energy density by when it
       is computed. Default is 1.0.
     """
 
@@ -1290,7 +1290,7 @@ class Simulation:
           to pick some characteristic lengthscale of your problem and set that length to 1.
           See also [Units](Introduction.md#units-in-meep). Required argument (no default).
 
-        + **`default_material` [`Medium` class ]** — Holds the default material that is
+        + **`default_material` [ `Medium` class ]** — Holds the default material that is
           used for points not in any object of the geometry list. Defaults to `air` (ε=1).
           This can also be a NumPy array that defines a dielectric function much like
           `epsilon_input_file` below (see below). If you want to use a material function
@@ -1304,7 +1304,7 @@ class Simulation:
           returns the dielectric constant at that point. See also [Material
           Function](#medium). Defaults to `None`.
 
-        + **`epsilon_input_file` [`string`]** — If this string is not empty (the default),
+        + **`epsilon_input_file` [ `string` ]** — If this string is not empty (the default),
           then it should be the name of an HDF5 file whose first/only dataset defines a
           scalar, real-valued, frequency-independent dielectric function over some
           discrete grid. Alternatively, the dataset name can be specified explicitly if
@@ -1317,7 +1317,7 @@ class Simulation:
           `default_material`, whereas other properties (μ, susceptibilities,
           nonlinearities, etc.) of `default_material` are still used.
 
-        + **`dimensions` [`integer`]** — Explicitly specifies the dimensionality of the
+        + **`dimensions` [ `integer` ]** — Explicitly specifies the dimensionality of the
           simulation, if the value is less than 3. If the value is 3 (the default), then
           the dimensions are automatically reduced to 2 if possible when `cell_size` in
           the $z$ direction is `0`. If `dimensions` is the special value of `CYLINDRICAL`,
@@ -1326,11 +1326,11 @@ class Simulation:
           must be along the $z$ direction and only $E_x$ and $H_y$ field components are
           permitted. If `dimensions` is 2, then the cell must be in the $xy$ plane.
 
-        + **`m` [`number`]** — For `CYLINDRICAL` simulations, specifies that the angular
+        + **`m` [ `number` ]** — For `CYLINDRICAL` simulations, specifies that the angular
           $\\phi$ dependence of the fields is of the form $e^{im\\phi}$ (default is `m=0`).
           If the simulation cell includes the origin $r=0$, then `m` must be an integer.
 
-        + **`accurate_fields_near_cylorigin` [`boolean`]** — For `CYLINDRICAL` simulations
+        + **`accurate_fields_near_cylorigin` [ `boolean` ]** — For `CYLINDRICAL` simulations
           with |*m*| &gt; 1, compute more accurate fields near the origin $r=0$ at the
           expense of requiring a smaller Courant factor. Empirically, when this option is
           set to `True`, a Courant factor of roughly $\\min[0.5, 1 / (|m| + 0.5)]$ or
@@ -1339,10 +1339,10 @@ class Simulation:
           usually ensures stability with the default Courant factor of 0.5, at the expense
           of slowing convergence of the fields near $r=0$.
 
-        + **`resolution` [`number`]** — Specifies the computational grid resolution in
+        + **`resolution` [ `number` ]** — Specifies the computational grid resolution in
           pixels per distance unit. Required argument. No default.
 
-        + **`k_point` [`False` or `Vector3`]** — If `False` (the default), then the
+        + **`k_point` [ `False` or `Vector3` ]** — If `False` (the default), then the
           boundaries are perfect metallic (zero electric field). If a `Vector3`, then the
           boundaries are Bloch-periodic: the fields at one side are
           $\\exp(i\\mathbf{k}\\cdot\\mathbf{R})$ times the fields at the other side, separated
@@ -1352,7 +1352,7 @@ class Simulation:
           equivalent to taking MPB's `k_points` through its function
           `reciprocal->cartesian`.
 
-        + **`kz_2d` [`"complex"`, `"real/imag"`, or `"3d"`]** — A 2d cell (i.e.,
+        + **`kz_2d` [ `"complex"`, `"real/imag"`, or `"3d"` ]** — A 2d cell (i.e.,
           `dimensions=2`) combined with a `k_point` that has a *non-zero* component in $z$
           would normally result in a 3d simulation with complex fields. However, by
           default (`kz_2d="complex"`), Meep will use a 2d computational cell in which
@@ -1365,12 +1365,12 @@ class Simulation:
           this option requires some care to use. See [2d Cell with Out-of-Plane
           Wavevector](2d_Cell_Special_kz.md).
 
-        + **`ensure_periodicity` [`boolean`]** — If `True` (the default) *and* if the
+        + **`ensure_periodicity` [ `boolean` ]** — If `True` (the default) *and* if the
           boundary conditions are periodic (`k_point` is not `False`), then the geometric
           objects are automatically repeated periodically according to the lattice vectors
           which define the size of the cell.
 
-        + **`eps_averaging` [`boolean`]** — If `True` (the default), then [subpixel
+        + **`eps_averaging` [ `boolean` ]** — If `True` (the default), then [subpixel
           averaging](Subpixel_Smoothing.md) is used when initializing the dielectric
           function. For simulations involving a [material function](#medium),
           `eps_averaging` is `False` (the default) and must be
@@ -1384,13 +1384,13 @@ class Simulation:
           effects and irregular
           convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
 
-        + **`force_complex_fields` [`boolean`]** — By default, Meep runs its simulations
+        + **`force_complex_fields` [ `boolean` ]** — By default, Meep runs its simulations
           with purely real fields whenever possible. It uses complex fields which require
           twice the memory and computation if the `k_point` is non-zero or if `m` is
           non-zero. However, by setting `force_complex_fields` to `True`, Meep will always
           use complex fields.
 
-        + **`force_all_components` [`boolean`]** — By default, in a 2d simulation Meep
+        + **`force_all_components` [ `boolean` ]** — By default, in a 2d simulation Meep
           uses only the field components that might excited by your current sources:
           either the in-plane $(E_x,E_y,H_z)$ or out-of-plane $(H_x,H_y,E_z)$ polarization,
           depending on the source.  (Both polarizations are excited if you use multiple source
@@ -1400,12 +1400,12 @@ class Simulation:
           simulate all fields, even those that remain zero throughout the simulation, by
           setting `force_all_components` to `True`.
 
-        + **`filename_prefix` [`string`]** — A string prepended to all output filenames
+        + **`filename_prefix` [ `string` ]** — A string prepended to all output filenames
           (e.g., for HDF5 files). If `None` (the default), then Meep constructs a default
           prefix based on the current Python filename ".py" replaced by "-" (e.g. `foo.py`
           uses a `"foo-"` prefix). You can get this prefix by calling `get_filename_prefix`.
 
-        + **`Courant` [`number`]** — Specify the
+        + **`Courant` [ `number` ]** — Specify the
           [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition)
           $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$.
           Default is 0.5. For numerical stability, the Courant factor must be *at
@@ -1413,26 +1413,26 @@ class Simulation:
           the minimum refractive index (usually 1), and in practice $S$ should be slightly
           smaller.
 
-        + **`loop_tile_base_db`, `loop_tile_base_eh` [`number`]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
+        + **`loop_tile_base_db`, `loop_tile_base_eh` [ `number` ]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
           of the field updates, Meep has an experimental feature to "tile" the loops over the Yee grid
           voxels. The splitting of the update loops for step-curl and update-eh into tiles or subdomains
           involves a recursive-bisection method in which the base case for the number of voxels is
           specified using these two parameters, respectively. The default value is 0 or no tiling;
           a typical nonzero value to try would be 10000.
 
-        + **`output_volume` [`Volume` class ]** — Specifies the default region of space
+        + **`output_volume` [ `Volume` class ]** — Specifies the default region of space
           that is output by the HDF5 output functions (below); see also the `Volume` class
           which manages `meep::volume*` objects. Default is `None`, which means that the
           whole cell is output. Normally, you should use the `in_volume(...)` function to
           modify the output volume instead of setting `output_volume` directly.
 
-        + **`output_single_precision` [`boolean`]** — Meep performs its computations in
+        + **`output_single_precision` [ `boolean` ]** — Meep performs its computations in
           [double-precision floating point](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays),
           and by default its output HDF5 files are in the same format. However, by setting
           this variable to `True` (default is `False`) you can instead output in single
           precision which saves a factor of two in space.
 
-        + **`progress_interval` [`number`]** — Time interval (seconds) after which Meep
+        + **`progress_interval` [ `number` ]** — Time interval (seconds) after which Meep
           prints a progress message. Default is 4 seconds.
 
         + **`extra_materials` [ list of `Medium` class ]** — By default, Meep turns off
@@ -1448,7 +1448,7 @@ class Simulation:
           that are specified by geometric objects. You should list any materials other
           than scalar dielectrics that are returned by `material_function` here.
 
-        + **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
+        + **`chunk_layout` [ `string` or `Simulation` instance or `BinaryPartition` class]** —
           This will cause the `Simulation` to use the chunk layout described by either
           (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
           `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
@@ -1458,21 +1458,21 @@ class Simulation:
         The following require a bit more understanding of the inner workings of Meep to
         use. See also [SWIG Wrappers](#swig-wrappers).
 
-        + **`structure` [`meep::structure*`]** — Pointer to the current structure being
+        + **`structure` [ `meep::structure*` ]** — Pointer to the current structure being
           simulated; initialized by `_init_structure` which is called automatically by
           `init_sim()` which is called automatically by any of the [run
           functions](#run-functions). The structure initialization is handled by the
           `Simulation` class, and most users will not need to call `_init_structure`.
 
-        + **`fields` [`meep::fields*`]** — Pointer to the current fields being simulated;
+        + **`fields` [ `meep::fields*` ]** — Pointer to the current fields being simulated;
           initialized by `init_sim()` which is called automatically by any of the [run
           functions](#run-functions).
 
-        + **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
+        + **`num_chunks` [ `integer` ]** — Minimum number of "chunks" (subregions) to divide
           the structure/fields into. Overrides the default value determined by
           the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
-        + **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
+        + **`split_chunks_evenly` [ `boolean` ]** — When `True` (the default), the work per
           [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
           up for multiple processors. The cell is simply split up into equal chunks (with
           the exception of PML regions, which must be on their own chunk). When `False`,
