@@ -21,6 +21,27 @@ class OptimizationProblem:
     calculation) and optionally its gradient (adjoint calculation).
     This is done by the __call__ method.
 
+    Attributes:
+        simulation: The corresponding Meep `Simulation` object that describes
+          the problem (e.g. sources, geometry)
+        objective_functions: list of objective functions on objective_arguments
+        objective_arguments: list of differential objective quantities as arguments
+          of objective functions
+        design_regions: list of design regions to be optimized
+        frequencies: list of frequencies in the problem
+        fcen: center frequency
+        df: range of frequencies
+        nf: number of frequencies
+        decay_by: simulation stops once all the field components and frequencies of
+          every DFT object have decayed by at least this amount. Default is 1e-11.
+        decimation_factor: an integer so that the DFT fields are updated at every
+          decimation_factor timesteps. The default is 0, at which the value is
+          automatically determined from the Nyquist rate of the bandwidth-limited
+          sources and the DFT monitor. It can be turned off by setting it to 1
+        minimum_run_time: minimum runtime for each simulation. Default is 0
+        maximum_run_time: maximum runtime for each simulation
+        finite_difference_step: step size for calculation of finite difference gradients
+        step_funcs: list of step functions to be called at each timestep
     """
 
     def __init__(
@@ -40,13 +61,7 @@ class OptimizationProblem:
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
         step_funcs: list = None,
     ):
-        """
-        + **`simulation` [ `Simulation` ]** — The corresponding Meep
-        `Simulation` object that describes the problem (e.g. sources,
-        geometry)
 
-        + **`objective_functions` [ `list of ` ]** —
-        """
         self.step_funcs = step_funcs if step_funcs is not None else []
         self.sim = simulation
 
@@ -123,7 +138,29 @@ class OptimizationProblem:
         need_gradient: bool = True,
         beta: float = None,
     ) -> Tuple[List[np.ndarray], List[List[np.ndarray]]]:
-        """Evaluate value and/or gradient of objective function."""
+        """Evaluate value and/or gradient of objective function.
+
+        Args:
+            rho_vector: lists of design variables. Each list represents design variables
+              of one design region. The design is updated to the specified values; functions
+              and gradients will then be evaluated at this configuration of design variables.
+            need_value: whether forward evaluations are needed. Default is True.
+            need_gradient: whether adjoint and gradients evaluatiosn are needed. Default is True.
+            beta: the strength of projection of rho_vector. Default to None.
+
+        Returns:
+            A tuple (f0, gradient) where:
+            f0 is the list of objective functions values when design variables
+              are set to rho_vector
+            gradient is the lists of gradients of objective functions with respect to
+              the design variables when they are set to rho_vector. There is a list of
+              gradients for each design region and for each objective functions. Generally,
+              the first axis is the index of objective functions and the second is the index
+              of design region; and each gradient is a 2d array where the first axis is for
+              the design variables, and the second is the index of frequency. Empty dimensions
+              are squeezed.
+
+        """
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
 
@@ -320,7 +357,7 @@ class OptimizationProblem:
         elif len(self.gradient[0]) == 1:
             self.gradient = [
                 g[0] for g in self.gradient
-            ]  # multiple objective functions bu one design region
+            ]  # multiple objective functions but one design region
         # Return optimizer's state to initialization
         self.current_state = "INIT"
 
