@@ -20,7 +20,6 @@ class OptimizationProblem:
     of design variables, compute the objective function value (forward
     calculation) and optionally its gradient (adjoint calculation).
     This is done by the __call__ method.
-
     """
 
     def __init__(
@@ -40,13 +39,37 @@ class OptimizationProblem:
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
         step_funcs: list = None,
     ):
-        """
-        + **`simulation` [ `Simulation` ]** — The corresponding Meep
-        `Simulation` object that describes the problem (e.g. sources,
-        geometry)
 
-        + **`objective_functions` [ `list of ` ]** —
+        """Initialize an instance of OptimizationProblem.
+
+        Args:
+          sim: the corresponding Meep `Simulation` object that describes the
+            problem (e.g. sources, geometry)
+          objective_functions: list of differentiable functions (callable objects) whose arguments are
+            given by objective_arguments. The functions should take all of objective_arguments
+            as argument, even if not all of them are used in the functions.
+            For example, if we are interested in functions f(A,B) and g(B,C) of quantities A, B, C, then the
+            objective_functions list has to be [f1, g1] where f1 = lambda A, B, C: f(A,B) and g1 = lambda A, B, C: g(B,C);
+            and we have to specify arguments as [A,B,C]
+          objective_arguments: list of ObjectiveQuantity passed as arguments of objective functions
+          design_regions: list of DesignRegion to be optimized
+          frequencies: list of frequencies of interest in the problem. If not specified, then the list of frequencies
+            will be created from fcen, df, and nf: a list of size nf that goes from fcen-df/2 to fcen+df/2
+          fcen: center frequency
+          df: range of frequencies, i.e. maximum frequency -  minimum frequency
+          nf: number of frequencies
+          decay_by: an number used to specify the amount by which all the field components and frequencies
+            frequencies of every DFT object have to decay before simulation stops. Default is 1e-11.
+          decimation_factor: an integer used to specify the number of timesteps between updates of
+            updates of the DFT fields. The default is 0, at which the value is
+            automatically determined from the Nyquist rate of the bandwidth-limited
+            sources and the DFT monitor. It can be turned off by setting it to 1
+          minimum_run_time: a number ensures the minimum runtime for each simulation. Default is 0
+          maximum_run_time: a number caps the maximum runtime for each simulation
+          finite_difference_step: step size for calculation of finite difference gradients
+          step_funcs: list of step functions to be called at each timestep
         """
+
         self.step_funcs = step_funcs if step_funcs is not None else []
         self.sim = simulation
 
@@ -123,7 +146,28 @@ class OptimizationProblem:
         need_gradient: bool = True,
         beta: float = None,
     ) -> Tuple[List[np.ndarray], List[List[np.ndarray]]]:
-        """Evaluate value and/or gradient of objective function."""
+        """Evaluate value and/or gradient of objective function.
+
+        Args:
+            rho_vector: lists of design variables. Each list represents design variables
+              of one design region. The design is updated to the specified values; functions
+              and gradients will then be evaluated at this configuration of design variables.
+            need_value: whether forward evaluations are needed. Default is True.
+            need_gradient: whether adjoint and gradients evaluatiosn are needed. Default is True.
+            beta: the strength of projection of rho_vector. Default to None.
+
+        Returns:
+            A tuple (f0, gradient) where:
+            f0 is the list of objective functions values when design variables
+              are set to rho_vector
+            gradient is a list (over objective functions) of lists (over design regions) of 2d arrays
+              (design variables by frequencies) of derivatives. If there is only a single objective function,
+              the outer 1-element list is replaced by just that element, and similarly if there is only one design region
+              then those 1-element list are replaced by just those elements. In addition, if there is only one frequency
+              then the innermost array is squeezed to a 1d array.
+              For example, if there is only a single objective function, a single design region, and a single frequency,
+              then gradient is simply a 1d array of the derivatives.
+        """
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
 
@@ -320,7 +364,7 @@ class OptimizationProblem:
         elif len(self.gradient[0]) == 1:
             self.gradient = [
                 g[0] for g in self.gradient
-            ]  # multiple objective functions bu one design region
+            ]  # multiple objective functions but one design region
         # Return optimizer's state to initialization
         self.current_state = "INIT"
 
