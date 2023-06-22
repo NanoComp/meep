@@ -533,11 +533,17 @@ class Near2FarFields(ObjectiveQuantity):
 class LDOS(ObjectiveQuantity):
     """A differentiable LDOS"""
 
-    def __init__(self, sim: mp.Simulation, **kwargs):
+    def __init__(
+        self, sim: mp.Simulation, decimation_factor: Optional[int] = 0, **kwargs
+    ):
         """Initialize a differentiable LDOS instance
 
         Args:
           sim: the Meep simulation object of the problem.
+          decimation_factor: An integer used to specify the number of timesteps between updates of
+            the DFT fields. The default is 0, at which the value is automatically determined from the
+            Nyquist rate of the bandwidth-limited sources and the DFT monitor. It can be turned off
+            by setting it to 1.
         """
         super().__init__(sim)
         self.srckwarg = kwargs
