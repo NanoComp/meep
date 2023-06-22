@@ -1,3 +1,7 @@
+"""
+A collection of objects and helper routines for setting up the simulation.
+"""
+
 import functools
 import math
 import numbers
@@ -8,7 +12,7 @@ import subprocess
 import sys
 import warnings
 from collections import OrderedDict, namedtuple
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, NamedTuple, Optional, Tuple, Union
 from scipy.interpolate import pade
 
 try:
@@ -4125,18 +4129,18 @@ class Simulation:
 
     def get_eigenmode_coefficients(
         self,
-        flux,
-        bands,
-        eig_parity=mp.NO_PARITY,
-        eig_vol=None,
-        eig_resolution=0,
-        eig_tolerance=1e-12,
-        kpoint_func=None,
-        direction=mp.AUTOMATIC,
-    ):
+        flux: DftFlux,
+        bands: Union[List[int], DiffractedPlanewave],
+        eig_parity: int = mp.NO_PARITY,
+        eig_vol: Volume = None,
+        eig_resolution: float = 0,
+        eig_tolerance: float = 1e-12,
+        kpoint_func: Callable[[float, int], float] = None,
+        direction: int = mp.AUTOMATIC,
+    ) -> NamedTuple:
         """
-        Given a flux object and list of band indices `bands` or `DiffractedPlanewave`, return a `namedtuple` with the
-        following fields:
+        Given a flux object and list of band indices (integers) `bands` or a `DiffractedPlanewave` object,
+        return a `namedtuple` with the following fields:
 
         + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
           (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes
