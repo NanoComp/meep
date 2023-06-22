@@ -315,7 +315,7 @@ bool fields_chunk::step_db(field_type ft) {
         const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
         const realnum *f_m = ft == D_stuff ? f[Hz][cmp] : (f[Ez][1 - cmp] + (nz + 1));
         const realnum *cndinv = s->condinv[cc][d_c];
-        const realnum *cnd = s->cond[cc][d_c];
+        const realnum *cnd = s->conductivity[cc][d_c];
         realnum *fcnd = f_cond[cc][cmp];
         const direction dsig = cycle_direction(gv.dim, d_c, 1);
         const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
@@ -324,8 +324,8 @@ bool fields_chunk::step_db(field_type ft) {
         const int dk = gv.iyee_shift(cc).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
-        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sigu[dsigu] : 0;
-        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kapu[dsigu] : 0;
+        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sig[dsigu] : 0;
+        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kap[dsigu] : 0;
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
