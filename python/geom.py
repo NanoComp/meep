@@ -10,7 +10,7 @@ import functools
 import math
 from numbers import Number
 import operator
-from typing import List, NamedTuple, Optional, Type, Tuple, Union
+from typing import List, NamedTuple, Optional, Tuple, Union
 import warnings
 
 import numpy as np
@@ -321,8 +321,8 @@ class Medium:
         epsilon_offdiag: Vector3 = Vector3(),
         mu_diag: Vector3 = Vector3(1.0, 1.0, 1.0),
         mu_offdiag: Vector3 = Vector3(),
-        E_susceptibilities: Optional[List[Type[Susceptibility]]] = None,
-        H_susceptibilities: Optional[List[Type[Susceptibility]]] = None,
+        E_susceptibilities: Optional[List[Susceptibility]] = None,
+        H_susceptibilities: Optional[List[Susceptibility]] = None,
         E_chi2_diag: Vector3 = Vector3(),
         E_chi3_diag: Vector3 = Vector3(),
         H_chi2_diag: Vector3 = Vector3(),
