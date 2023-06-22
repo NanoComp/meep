@@ -147,20 +147,7 @@ class ObjectiveQuantity(abc.ABC):
 
 
 class EigenmodeCoefficient(ObjectiveQuantity):
-    """A differentiable frequency-dependent eigenmode coefficient.
-
-    Attributes:
-        volume: the volume over which the eigenmode coefficient is calculated.
-        mode: the eigenmode number.
-        forward: whether the forward or backward mode coefficient is returned as
-          the result of the evaluation.
-        kpoint_func: an optional k-point function to use when evaluating the eigenmode coefficient.
-        kpoint_func_overlap_idx: the index of the mode coefficient to return when
-          specifying `kpoint_func`.
-        decimation_factor: An integer used to specify the number of timesteps between updates of the DFT fields.
-        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from a previous normalization run.
-        eigenmode_kwargs: additional argument for EigenModeSource
-    """
+    """A differentiable frequency-dependent eigenmode coefficient."""
 
     def __init__(
         self,
@@ -307,16 +294,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    """A differentiable frequency-dependent Fourier fields (dft_fields)
-
-    Attributes:
-        volume: the volume over which the Fourier fields are calculated.
-        component: field component (e.g. mp.Ex, mp.Hz, etc.) of the Fourier fields
-        yee_grid: whether the Fourier fields are evaluated at the corresponding Yee grid points
-          or interpolated fields at the center of each voxel
-        decimation_factor: An integer used to specify the number of timesteps between updates of the DFT fields.
-        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from a previous normalization run.
-    """
+    """A differentiable frequency-dependent Fourier fields (dft_fields)"""
 
     def __init__(
         self,
@@ -443,16 +421,7 @@ class FourierFields(ObjectiveQuantity):
 
 
 class Near2FarFields(ObjectiveQuantity):
-    """A differentiable near2far field transformation
-
-    Attributes:
-        Near2FarRegions: List of mp.Near2FarRegion over which the near fields are collected
-        far_pts: list of far points at which fields are computed
-        nperiods: If nperiods > 1, sum of 2*nperiods+1 Bloch-periodic copies of near fields
-          is computed to approximate the lattice sum from Bloch periodic boundary condition.
-        decimation_factor: An integer used to specify the number of timesteps between updates of the DFT fields.
-        norm_near_fields: the DFT fields obtained using `get_near2far_data` from a previous normalization run.
-    """
+    """A differentiable near2far field transformation"""
 
     def __init__(
         self,
@@ -562,11 +531,7 @@ class Near2FarFields(ObjectiveQuantity):
 
 
 class LDOS(ObjectiveQuantity):
-    """A differentiable LDOS
-
-    Attributes:
-        srckwarg: additional arguments for the source
-    """
+    """A differentiable LDOS"""
 
     def __init__(self, sim: mp.Simulation, **kwargs):
         """Initialize a differentiable LDOS instance

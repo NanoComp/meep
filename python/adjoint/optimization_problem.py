@@ -20,27 +20,6 @@ class OptimizationProblem:
     of design variables, compute the objective function value (forward
     calculation) and optionally its gradient (adjoint calculation).
     This is done by the __call__ method.
-
-    Attributes:
-        sim: the corresponding Meep `Simulation` object of the problem
-        objective_functions: list of objective functions on objective_arguments
-        objective_arguments: list of ObjectiveQuantity as arguments of objective functions
-        design_regions: list of DesignRegion under optimization
-        frequencies: list of frequencies of interest in the problem
-        fcen: center frequency
-        df: range of frequencies, i.e. maximum frequency -  minimum frequency
-        nf: number of frequencies
-        fcen_idx: index of center frequency
-        decay_by: an number used to specify the amount by which every DFT object have to decay
-          before simulation stops.
-        decimation_factor: an integer used to specify the number of timesteps between updates of the DFT fields.
-        minimum_run_time: minimum runtime for each simulation.
-        maximum_run_time: maximum runtime for each simulation
-        finite_difference_step: step size for calculation of finite difference gradients
-        step_funcs: list of step functions to be called at each timestep
-        f_bank: the history of objective functions evaluations
-        num_design_params: list of the numbers of design parameters for each design region
-        num_design_regions: number of design regions
     """
 
     def __init__(
@@ -66,11 +45,12 @@ class OptimizationProblem:
         Args:
           sim: the corresponding Meep `Simulation` object that describes the
             problem (e.g. sources, geometry)
-          objective_functions: list of objective functions on objective_arguments. The functions should
-            take all of objective_arguments as argument, even if not all of them are used in the functions.
+          objective_functions: list of differentiable functions (callable objects) whose arguments are
+            given by objective_arguments. The functions should take all of objective_arguments
+            as argument, even if not all of them are used in the functions.
             For example, if we are interested in functions f(A,B) and g(B,C) of quantities A, B, C, then the
-            objective functions have to be lambda A, B, C: f(A,B) and lambda A, B, C: g(B,C); and we have to
-            specify arguments as [A,B,C]
+            objective_functions list has to be [f1, g1] where f1 = lambda A, B, C: f(A,B) and g1 = lambda A, B, C: g(B,C);
+            and we have to specify arguments as [A,B,C]
           objective_arguments: list of ObjectiveQuantity passed as arguments of objective functions
           design_regions: list of DesignRegion to be optimized
           frequencies: list of frequencies of interest in the problem. If not specified, then the list of frequencies
@@ -180,14 +160,13 @@ class OptimizationProblem:
             A tuple (f0, gradient) where:
             f0 is the list of objective functions values when design variables
               are set to rho_vector
-            gradient is the lists of gradients of objective functions with respect to
-              the design variables when they are set to rho_vector. There is a list of
-              gradients for each design region and for each objective functions. Generally,
-              the first axis is the index of objective functions and the second is the index
-              of design region; and each gradient is a 2d array where the first axis is for
-              the design variables, and the second is the index of frequency. Empty dimensions
-              are squeezed.
-
+            gradient is a list (over objective functions) of lists (over design regions) of 2d arrays
+              (design variables by frequencies) of derivatives. If there is only a single objective function,
+              the outer 1-element list is replaced by just that element, and similarly if there is only one design region
+              then those 1-element list are replaced by just those elements. In addition, if there is only one frequency
+              then the innermost array is squeezed to a 1d array.
+              For example, if there is only a single objective function, a single design region, and a single frequency,
+              then gradient is simply a 1d array of the derivatives.
         """
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
