@@ -342,8 +342,9 @@ bool fields_chunk::step_db(field_type ft) {
             dfcnd = fcnd[iz] - fcnd_prev;
           }
           int k = dk + 2 * (dsig == Z) * iz, ku = dku + 2 * (dsigu == Z) * iz;
-          the_f[iz] = ((kap ? : kap[k] - sig[k] : 1) * the_f[iz] + dfcnd) * (siginv ? siginv[k] : 1);
-          if (fu) fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[i] + the_f[iz] - fprev);
+          the_f[iz] = ((kap ? kap[k] - sig[k] : 1) * the_f[iz] + dfcnd) * (siginv ? siginv[k] : 1);
+          if (fu)
+            fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[iz] + the_f[iz] - fprev);
         }
         if (ft == D_stuff) {
           ZERO_Z(f[Dz][cmp]);
