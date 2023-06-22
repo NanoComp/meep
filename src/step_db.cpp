@@ -315,25 +315,35 @@ bool fields_chunk::step_db(field_type ft) {
         const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
         const realnum *f_m = ft == D_stuff ? f[Hz][cmp] : (f[Ez][1 - cmp] + (nz + 1));
         const realnum *cndinv = s->condinv[cc][d_c];
+        const realnum *cnd = s->cond[cc][d_c];
         realnum *fcnd = f_cond[cc][cmp];
         const direction dsig = cycle_direction(gv.dim, d_c, 1);
         const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+        const realnum *sig = s->sigsize[dsig] > 1 ? s->sig[dsig] : 0;
+        const realnum *kap = s->sigsize[dsig] > 1 ? s->kap[dsig] : 0;
         const int dk = gv.iyee_shift(cc).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sigu[dsigu] : 0;
+        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kapu[dsigu] : 0;
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
         int sd = ft == D_stuff ? +1 : -1;
         realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
+        realnum dt2 = dt * 0.5;
 
         for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
-          realnum df;
-          realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
-                          (cndinv ? cndinv[iz] : 1);
-          if (fcnd) fcnd[iz] += dfcnd;
-          the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
-          if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
+          realnum fprev = the_f[iz];
+          realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]);
+          if (fcnd) {
+            realnum fcnd_prev = fcnd[iz];
+            fcnd[iz] = ((1 - dt2 * cnd[iz]) * fcnd[iz] + dfcnd) * cndinv[iz];
+            dfcnd = fcnd[iz] - fcnd_prev;
+          }
+          int k = dk + 2 * (dsig == Z) * iz, ku = dku + 2 * (dsigu == Z) * iz;
+          the_f[iz] = ((kap ? : kap[k] - sig[k] : 1) * the_f[iz] + dfcnd) * (siginv ? siginv[k] : 1);
+          if (fu) fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[i] + the_f[iz] - fprev);
         }
         if (ft == D_stuff) {
           ZERO_Z(f[Dz][cmp]);
