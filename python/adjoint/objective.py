@@ -148,25 +148,18 @@ class ObjectiveQuantity(abc.ABC):
 
 class EigenmodeCoefficient(ObjectiveQuantity):
     """A differentiable frequency-dependent eigenmode coefficient.
+
     Attributes:
         volume: the volume over which the eigenmode coefficient is calculated.
         mode: the eigenmode number.
         forward: whether the forward or backward mode coefficient is returned as
           the result of the evaluation.
-        kpoint_func: an optional k-point function to use when evaluating the eigenmode
-          coefficient. When specified, this overrides the effect of `forward`.
+        kpoint_func: an optional k-point function to use when evaluating the eigenmode coefficient.
         kpoint_func_overlap_idx: the index of the mode coefficient to return when
-          specifying `kpoint_func`. When specified, this overrides the effect of
-          `forward` and should have a value of either 0 or 1.
-        decimation_factor: an integer so that the DFT fields are updated at every
-          decimation_factor timesteps. The default is 0, at which the value is
-          automatically determined from the Nyquist rate of the bandwidth-limited
-          sources and the DFT monitor. It can be turned off by setting it to 1.
-        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from
-          a previous normalization run. This is subtracted from the DFT fields
-          of this mode monitor in order to improve the accuracy of the
-          reflectance measurement (i.e., the $S_{11}$ scattering parameter).
-          Default is None.
+          specifying `kpoint_func`.
+        decimation_factor: An integer used to specify the number of timesteps between updates of the DFT fields.
+        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from a previous normalization run.
+        eigenmode_kwargs: additional argument for EigenModeSource
     """
 
     def __init__(
@@ -181,8 +174,29 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         subtracted_dft_fields: Optional[FluxData] = None,
         **kwargs
     ):
-        """
-        + **`sim` [ `Simulation` ]** —
+        """Initialize an instance of differentiable frequency-dependent eigenmode coefficient.
+
+        Args:
+          sim: the Meep simulation object of the problem.
+          volume: the volume over which the eigenmode coefficient is calculated.
+          mode: the eigenmode number.
+          forward: whether the forward or backward mode coefficient is returned as
+            the result of the evaluation. Default is True.
+          kpoint_func: an optional k-point function to use when evaluating the eigenmode
+            coefficient. When specified, this overrides the effect of `forward`.
+          kpoint_func_overlap_idx: the index of the mode coefficient to return when
+            specifying `kpoint_func`. When specified, this overrides the effect of
+            `forward` and should have a value of either 0 or 1.
+          decimation_factor: An integer used to specify the number of timesteps between updates of
+            the DFT fields. The default is 0, at which the value is automatically determined from the
+            Nyquist rate of the bandwidth-limited sources and the DFT monitor. It can be turned off
+            by setting it to 1.
+          subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from
+            a previous normalization run. This is subtracted from the DFT fields
+            of this mode monitor in order to improve the accuracy of the
+            reflectance measurement (i.e., the $S_{11}$ scattering parameter).
+            Default is None.
+          eigenmode_kwargs: additional argument for EigenModeSource
         """
         super().__init__(sim)
         if kpoint_func_overlap_idx not in [0, 1]:
@@ -293,23 +307,15 @@ class EigenmodeCoefficient(ObjectiveQuantity):
 
 
 class FourierFields(ObjectiveQuantity):
-    """A differentiable frequency-dependent Fourier Fields (dft_fields)
+    """A differentiable frequency-dependent Fourier fields (dft_fields)
+
     Attributes:
-        volume: the volume over which the Fourier Fields are calculated. Due to an unsolved bug,
-          the size must not be zero in at least one direction.
-        component: field component (e.g. mp.Ex, mp.Hz, etc.)
-        yee_grid: if True, the Fourier fields evaluated at corresponding Yee grid point
-          are returned; otherwise, interpolated fields at the center of each voxel
-          are returned
-        decimation_factor: an integer so that the DFT fields are updated at every
-          decimation_factor timesteps. The default is 0, at which the value is
-          automatically determined from the Nyquist rate of the bandwidth-limited
-          sources and the DFT monitor. It can be turned off by setting it to 1.
-        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from
-          a previous normalization run. This is subtracted from the DFT fields
-          of this mode monitor in order to improve the accuracy of the
-          reflectance measurement (i.e., the $S_{11}$ scattering parameter).
-          Default is None.
+        volume: the volume over which the Fourier fields are calculated.
+        component: field component (e.g. mp.Ex, mp.Hz, etc.) of the Fourier fields
+        yee_grid: whether the Fourier fields are evaluated at the corresponding Yee grid points
+          or interpolated fields at the center of each voxel
+        decimation_factor: An integer used to specify the number of timesteps between updates of the DFT fields.
+        subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from a previous normalization run.
     """
 
     def __init__(
@@ -321,7 +327,24 @@ class FourierFields(ObjectiveQuantity):
         decimation_factor: Optional[int] = 0,
         subtracted_dft_fields: Optional[FluxData] = None,
     ):
-        """ """
+        """Initialize an instance of differentiable Fourier fields instance.
+
+        Args:
+          sim: the Meep simulation object of the problem.
+          volume: the volume over which the eigenmode coefficient is calculated. Due to an unresolved bug,
+            the size must not be zero in at least one direction.
+          component: field component (e.g. mp.Ex, mp.Hz, etc.) of the Fourier fields
+          yee_grid: if True, the Fourier fields are evaluated at the corresponding Yee grid points;
+            otherwise, they are interpolated fields at the center of each voxel. Default is False
+          decimation_factor: An integer used to specify the number of timesteps between updates of
+            the DFT fields. The default is 0, at which the value is automatically determined from the
+            Nyquist rate of the bandwidth-limited sources and the DFT monitor. It can be turned off
+            by setting it to 1.
+          subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from
+            a previous normalization run. This is subtracted from the DFT fields
+            of this mode monitor in order to improve the accuracy of the
+            reflectance measurement (i.e., the $S_{11}$ scattering parameter). Default is None.
+        """
         super().__init__(sim)
         self.volume = sim._fit_volume_to_simulation(volume)
         self.component = component
@@ -372,11 +395,11 @@ class FourierFields(ObjectiveQuantity):
         scale factor for each point (rather than a scale vector).
         """
 
-        self.all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(
+        all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(
             self.volume.swigobj, self.component, self.sim.fields, dJ
         )
 
-        for fourier_data in self.all_fouriersrcdata:
+        for fourier_data in all_fouriersrcdata:
             amp_arr = np.array(fourier_data.amp_arr).reshape(-1, self.num_freq)
             scale = amp_arr * self._adj_src_scale(include_resolution=False)
 
@@ -421,21 +444,14 @@ class FourierFields(ObjectiveQuantity):
 
 class Near2FarFields(ObjectiveQuantity):
     """A differentiable near2far field transformation
+
     Attributes:
         Near2FarRegions: List of mp.Near2FarRegion over which the near fields are collected
         far_pts: list of far points at which fields are computed
         nperiods: If nperiods > 1, sum of 2*nperiods+1 Bloch-periodic copies of near fields
-          is computed to approximate the lattice sum with Bloch periodic condition.
-          Default is 1 (no sum).
-        decimation_factor: an integer so that the DFT fields are updated at every
-          decimation_factor timesteps. The default is 0, at which the value is
-          automatically determined from the Nyquist rate of the bandwidth-limited
-          sources and the DFT monitor. It can be turned off by setting it to 1.
-        norm_near_fields: the DFT fields obtained using `get_near2far_data` from
-          a previous normalization run. This is subtracted from the DFT fields
-          of this near2far monitor in order to improve the accuracy of the
-          reflectance measurement (i.e., the $S_{11}$ scattering parameter).
-          Default is None.
+          is computed to approximate the lattice sum from Bloch periodic boundary condition.
+        decimation_factor: An integer used to specify the number of timesteps between updates of the DFT fields.
+        norm_near_fields: the DFT fields obtained using `get_near2far_data` from a previous normalization run.
     """
 
     def __init__(
@@ -447,7 +463,25 @@ class Near2FarFields(ObjectiveQuantity):
         decimation_factor: Optional[int] = 0,
         norm_near_fields: Optional[NearToFarData] = None,
     ):
-        """ """
+        """Initialize an instance of differentiable Fourier fields instance.
+
+        Args:
+          sim: the Meep simulation object of the problem.
+          Near2FarRegions: List of mp.Near2FarRegion over which the near fields are collected
+          far_pts: list of far points at which fields are computed
+          nperiods: If nperiods > 1, sum of 2*nperiods+1 Bloch-periodic copies of near fields
+            is computed to approximate the lattice sum from Bloch periodic boundary condition.
+            Default is 1 (no sum).
+          decimation_factor: An integer used to specify the number of timesteps between updates of
+            the DFT fields. The default is 0, at which the value is automatically determined from the
+            Nyquist rate of the bandwidth-limited sources and the DFT monitor. It can be turned off
+            by setting it to 1.
+          norm_near_fields: the DFT fields obtained using `get_near2far_data` from
+            a previous normalization run. This is subtracted from the DFT fields
+            of this near2far monitor in order to improve the accuracy of the
+            reflectance measurement (i.e., the $S_{11}$ scattering parameter).
+            Default is None.
+        """
         super().__init__(sim)
         self.Near2FarRegions = Near2FarRegions
         self.far_pts = far_pts  # list of far pts
@@ -531,23 +565,21 @@ class LDOS(ObjectiveQuantity):
     """A differentiable LDOS
 
     Attributes:
-    decimation_factor: an integer so that the DFT fields are updated at every
-      decimation_factor timesteps. The default is 0, at which the value is
-      automatically determined from the Nyquist rate of the bandwidth-limited
-      sources and the DFT monitor. It can be turned off by setting it to 1.
+        srckwarg: additional arguments for the source
     """
 
-    def __init__(
-        self, sim: mp.Simulation, decimation_factor: Optional[int] = 0, **kwargs
-    ):
-        """ """
+    def __init__(self, sim: mp.Simulation, **kwargs):
+        """Initialize a differentiable LDOS instance
+
+        Args:
+          sim: the Meep simulation object of the problem.
+        """
         super().__init__(sim)
-        self.decimation_factor = decimation_factor
         self.srckwarg = kwargs
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
-        self.forward_src = self.sim.sources
+        self._forward_src = self.sim.sources
         return
 
     def place_adjoint_source(self, dJ):
@@ -557,7 +589,7 @@ class LDOS(ObjectiveQuantity):
         dJ = dJ.flatten()
         sources = []
         forward_f_scale = np.array(
-            [self.ldos_scale / self.ldos_Jdata[k] for k in range(self.num_freq)]
+            [self._ldos_scale / self._ldos_Jdata[k] for k in range(self.num_freq)]
         )
         if self._frequencies.size == 1:
             amp = (dJ * self._adj_src_scale(False) * forward_f_scale)[0]
@@ -571,7 +603,7 @@ class LDOS(ObjectiveQuantity):
                 self.sim.fields.dt,
             )
             amp = 1
-        for forward_src_i in self.forward_src:
+        for forward_src_i in self._forward_src:
             if isinstance(forward_src_i, mp.EigenModeSource):
                 src_i = mp.EigenModeSource(
                     src,
@@ -599,12 +631,12 @@ class LDOS(ObjectiveQuantity):
         return sources
 
     def __call__(self):
-        """The values of ldos_Jdata at each frequency
+        """The values of LDOS at each frequency
 
         Returns:
             1D array of LDOS corresponding to each of self.frequencies
         """
         self._eval = self.sim.ldos_data
-        self.ldos_scale = self.sim.ldos_scale
-        self.ldos_Jdata = self.sim.ldos_Jdata
+        self._ldos_scale = self.sim.ldos_scale
+        self._ldos_Jdata = self.sim.ldos_Jdata
         return np.array(self._eval)

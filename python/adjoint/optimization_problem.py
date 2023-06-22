@@ -22,26 +22,25 @@ class OptimizationProblem:
     This is done by the __call__ method.
 
     Attributes:
-        simulation: The corresponding Meep `Simulation` object that describes
-          the problem (e.g. sources, geometry)
+        sim: the corresponding Meep `Simulation` object of the problem
         objective_functions: list of objective functions on objective_arguments
-        objective_arguments: list of differential objective quantities as arguments
-          of objective functions
-        design_regions: list of design regions to be optimized
-        frequencies: list of frequencies in the problem
+        objective_arguments: list of ObjectiveQuantity as arguments of objective functions
+        design_regions: list of DesignRegion under optimization
+        frequencies: list of frequencies of interest in the problem
         fcen: center frequency
-        df: range of frequencies
+        df: range of frequencies, i.e. maximum frequency -  minimum frequency
         nf: number of frequencies
-        decay_by: simulation stops once all the field components and frequencies of
-          every DFT object have decayed by at least this amount. Default is 1e-11.
-        decimation_factor: an integer so that the DFT fields are updated at every
-          decimation_factor timesteps. The default is 0, at which the value is
-          automatically determined from the Nyquist rate of the bandwidth-limited
-          sources and the DFT monitor. It can be turned off by setting it to 1
-        minimum_run_time: minimum runtime for each simulation. Default is 0
+        fcen_idx: index of center frequency
+        decay_by: an number used to specify the amount by which every DFT object have to decay
+          before simulation stops.
+        decimation_factor: an integer used to specify the number of timesteps between updates of the DFT fields.
+        minimum_run_time: minimum runtime for each simulation.
         maximum_run_time: maximum runtime for each simulation
         finite_difference_step: step size for calculation of finite difference gradients
         step_funcs: list of step functions to be called at each timestep
+        f_bank: the history of objective functions evaluations
+        num_design_params: list of the numbers of design parameters for each design region
+        num_design_regions: number of design regions
     """
 
     def __init__(
@@ -61,6 +60,35 @@ class OptimizationProblem:
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
         step_funcs: list = None,
     ):
+
+        """Initialize an instance of OptimizationProblem.
+
+        Args:
+          sim: the corresponding Meep `Simulation` object that describes the
+            problem (e.g. sources, geometry)
+          objective_functions: list of objective functions on objective_arguments. The functions should
+            take all of objective_arguments as argument, even if not all of them are used in the functions.
+            For example, if we are interested in functions f(A,B) and g(B,C) of quantities A, B, C, then the
+            objective functions have to be lambda A, B, C: f(A,B) and lambda A, B, C: g(B,C); and we have to
+            specify arguments as [A,B,C]
+          objective_arguments: list of ObjectiveQuantity passed as arguments of objective functions
+          design_regions: list of DesignRegion to be optimized
+          frequencies: list of frequencies of interest in the problem. If not specified, then the list of frequencies
+            will be created from fcen, df, and nf: a list of size nf that goes from fcen-df/2 to fcen+df/2
+          fcen: center frequency
+          df: range of frequencies, i.e. maximum frequency -  minimum frequency
+          nf: number of frequencies
+          decay_by: an number used to specify the amount by which all the field components and frequencies
+            frequencies of every DFT object have to decay before simulation stops. Default is 1e-11.
+          decimation_factor: an integer used to specify the number of timesteps between updates of
+            updates of the DFT fields. The default is 0, at which the value is
+            automatically determined from the Nyquist rate of the bandwidth-limited
+            sources and the DFT monitor. It can be turned off by setting it to 1
+          minimum_run_time: a number ensures the minimum runtime for each simulation. Default is 0
+          maximum_run_time: a number caps the maximum runtime for each simulation
+          finite_difference_step: step size for calculation of finite difference gradients
+          step_funcs: list of step functions to be called at each timestep
+        """
 
         self.step_funcs = step_funcs if step_funcs is not None else []
         self.sim = simulation
