@@ -281,21 +281,34 @@ bool fields_chunk::step_db(field_type ft) {
         // d(Dz)/dt = (1/r) * d(r*Hp)/dr
         const realnum *g = f[Hp][cmp];
         const realnum *cndinv = s->condinv[Dz][Z];
+        const realnum *cnd = s->conductivity[Dz][Z];
         realnum *fcnd = f_cond[Dz][cmp];
         const direction dsig = cycle_direction(gv.dim, Z, 1);
         const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
+        const realnum *sig = s->sigsize[dsig] > 1 ? s->sig[dsig] : 0;
+        const realnum *kap = s->sigsize[dsig] > 1 ? s->kap[dsig] : 0;
         const int dk = gv.iyee_shift(Dz).in_direction(dsig);
         const direction dsigu = cycle_direction(gv.dim, Z, 2);
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
+        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sig[dsigu] : 0;
+        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kap[dsigu] : 0;
         const int dku = gv.iyee_shift(Dz).in_direction(dsigu);
         realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
         realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
+        realnum dt2 = dt * 0.5;
+        
         for (int iz = 0; iz < nz; ++iz) {
           // Note: old code (prior to Meep 0.2) was missing factor of 4??
-          realnum df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
-          if (fcnd) fcnd[iz] += dfcnd;
-          the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
-          if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
+          realnum fprev = the_f[iz];
+          realnum dfcnd = g[iz] * (Courant * 4);
+          if (fcnd) {
+            realnum fcnd_prev = fcnd[iz];
+            fcnd[iz] = ((1 - dt2 * cnd[iz]) * fcnd[iz] + dfcnd) * cndinv[iz];
+            dfcnd = fcnd[iz] - fcnd_prev;
+          }
+          int k = dk + 2 * (dsig == Z) * iz, ku = dku + 2 * (dsigu == Z) * iz;
+          the_f[iz] = ((kap ? kap[k] - sig[k] : 1) * the_f[iz] + dfcnd) * (siginv ? siginv[k] : 1);
+          if (fu) fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[iz] + the_f[iz] - fprev);
         }
         ZERO_Z(f[Dp][cmp]);
         if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
