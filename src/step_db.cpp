@@ -296,7 +296,7 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
         realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
         realnum dt2 = dt * 0.5;
-        
+
         for (int iz = 0; iz < nz; ++iz) {
           // Note: old code (prior to Meep 0.2) was missing factor of 4??
           realnum fprev = the_f[iz];
@@ -308,7 +308,8 @@ bool fields_chunk::step_db(field_type ft) {
           }
           int k = dk + 2 * (dsig == Z) * iz, ku = dku + 2 * (dsigu == Z) * iz;
           the_f[iz] = ((kap ? kap[k] - sig[k] : 1) * the_f[iz] + dfcnd) * (siginv ? siginv[k] : 1);
-          if (fu) fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[iz] + the_f[iz] - fprev);
+          if (fu)
+            fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[iz] + the_f[iz] - fprev);
         }
         ZERO_Z(f[Dp][cmp]);
         if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
@@ -342,7 +343,7 @@ bool fields_chunk::step_db(field_type ft) {
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
-        int sd = ft == D_stuff ? +1 : -1;
+        int sd = ft == D_stuff ? -1 : +1;
         realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
         realnum dt2 = dt * 0.5;
 
