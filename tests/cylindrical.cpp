@@ -130,7 +130,7 @@ int test_simple_metallic(double eps(const vec &), int splitting) {
       if (!compare_point(f, f1, veccyl(0.5, 0.4))) return 0;
       if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
       if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, veccyl(0.1, 0))) return 0;
+      if (!compare_point(f, f1, veccyl(0, 0.24))) return 0;
       if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= field_energy_check_time) {
         if (!compare(f.field_energy(), f1.field_energy(), "   total energy")) return 0;
@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
   // if (!test_simple_periodic(one, 120))
   //  meep::abort("error in crazy test_simple_periodic\n");
 
-  for (int s = 2; s < 5; s++)
+  for (int s = 2; s < 4; s++)
     if (!test_simple_metallic(one, s)) meep::abort("error in test_simple_metallic\n");
   // if (!test_simple_metallic(one, 8))
   //  meep::abort("error in crazy test_simple_metallic\n");

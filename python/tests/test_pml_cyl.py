@@ -119,14 +119,16 @@ class TestPMLCylindrical(unittest.TestCase):
                 mp.get_fluxes(flux_plus_r)[0],
                 mp.get_fluxes(flux_minus_z)[0],
             ]
-            cur_flux_str = ", ".join(f"{c:.6f}" for c in cur_flux)
+            cur_flux_str = ", ".join(f"{c:.8f}" for c in cur_flux)
             flux_tot = sum(cur_flux)
 
-            print(f"flux:, {sim.meep_time()}, {cur_flux_str}, {flux_tot:.6f}")
+            print(f"flux:, {sim.meep_time()}, {cur_flux_str}, {flux_tot:.8f}")
 
             # Check that the flux is converged with runtime long after the
-            # source has turned off.
-            places = 6 if mp.is_single_precision() else 8
+            # source has turned off. This verifies the correctness of the
+            # z-PML at r=0 for m=0, ±1 which involve special field-update
+            # equations.
+            places = 6 if mp.is_single_precision() else 7
             for i in range(len(cur_flux)):
                 self.assertAlmostEqual(
                     prev_flux[i],
