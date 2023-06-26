@@ -223,7 +223,7 @@ int test_pml(double eps(const vec &), int splitting) {
       if (!compare_point(f, f1, veccyl(0.5, 7.0))) return 0;
       if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
       if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
+      if (!compare_point(f, f1, veccyl(0, 0.02), 1e-7)) return 0;
       if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= field_energy_check_time) {
         if (!compare(f.field_energy(), f1.field_energy(), "pml total energy", 1e-13)) return 0;
