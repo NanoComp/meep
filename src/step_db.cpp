@@ -343,7 +343,7 @@ bool fields_chunk::step_db(field_type ft) {
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
-        int sd = ft == D_stuff ? -1 : +1;
+        int sd = ft == D_stuff ? +1 : -1;
         realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
         realnum dt2 = dt * 0.5;
 
