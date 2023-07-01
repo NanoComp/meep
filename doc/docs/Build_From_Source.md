@@ -277,9 +277,9 @@ make
 
 ### Building From Source
 
-The following instructions are for building parallel PyMeep with all optional features from source on Ubuntu 16.04/18.04. (There is a separate [script](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep.sh) if you only want the Scheme interface.) The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. If you really don't want to install MPI and parallel HDF5, just replace `libhdf5-openmpi-dev` with `libhdf5-dev`, and remove the `--with-mpi`, `CC=mpicc`, and `CPP=mpicxx` flags. The paths to HDF5 will also need to be adjusted to `/usr/lib/x86_64-linux-gnu/hdf5/serial` and `/usr/include/hdf5/serial`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
+The following instructions are for building parallel PyMeep with all optional features from source on Linux. (There is a separate [script](http://ab-initio.mit.edu/~oskooi/meep_discuss/build_meep.sh) if you only want the Scheme interface.) The parallel version can still be run serially by running a script with just `python` instead of `mpirun -np 4 python`. Note that this script builds with Python 3 by default. If you want to use Python 2, just point the `PYTHON` variable to the appropriate interpreter when calling `autogen.sh` for building Meep, and use `pip` instead of `pip3`.
 
-The entire build and install procedure can also be performed using an automated script:
+The entire build and install procedure can be performed using an automated script:
 
 ```sh
 mkdir -p /where/to/install/meep
@@ -289,108 +289,7 @@ chmod +x build-meep.sh
 ./build-meep.sh
 ```
 
-#### Ubuntu 16.04 and 18.04
-
-There are a few differences in building for 16.04 and 18.04, so be sure to read the script and adjust appropriately.
- (Ubuntu 20.04 will not work without a few changes.)
-
-```bash
-#!/bin/bash
-
-set -e
-
-RPATH_FLAGS="-Wl,-rpath,/usr/local/lib:/usr/lib/x86_64-linux-gnu/hdf5/openmpi"
-MY_LDFLAGS="-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu/hdf5/openmpi ${RPATH_FLAGS}"
-MY_CPPFLAGS="-I/usr/local/include -I/usr/include/hdf5/openmpi"
-
-sudo apt-get update
-
-# If building on Ubuntu 18.04LTS, replace libpng16-dev with libpng-dev,
-# and libpython3.5-dev with libpython3-dev.
-sudo apt-get -y install     \
-    build-essential         \
-    gfortran                \
-    libblas-dev             \
-    liblapack-dev           \
-    libgmp-dev              \
-    swig                    \
-    libgsl-dev              \
-    autoconf                \
-    pkg-config              \
-    libpng16-dev            \
-    git                     \
-    guile-2.0-dev           \
-    libfftw3-dev            \
-    libhdf5-openmpi-dev     \
-    hdf5-tools              \
-    libpython3.5-dev        \
-    python3-pip             \
-    cmake                   \
-
-mkdir -p ~/install
-
-cd ~/install
-git clone https://github.com/NanoComp/harminv.git
-cd harminv/
-sh autogen.sh --enable-shared
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/NanoComp/libctl.git
-cd libctl/
-sh autogen.sh --enable-shared
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/NanoComp/h5utils.git
-cd h5utils/
-sh autogen.sh CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/NanoComp/mpb.git
-cd mpb/
-sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
-make && sudo make install
-
-cd ~/install
-git clone https://github.com/HomerReid/libGDSII.git
-cd libGDSII/
-sh autogen.sh
-make && sudo make install
-
-# The next line is only required on Ubuntu  16.04
-sudo pip3 install --upgrade pip
-
-pip3 install --user --no-cache-dir mpi4py
-pip3 install --user Cython==0.29.16
-export HDF5_MPI="ON"
-pip3 install --user --no-binary=h5py h5py
-pip3 install --user autograd
-pip3 install --user scipy
-pip3 install --user matplotlib>3.0.0
-pip3 install --user ffmpeg
-
-cd ~/install
-git clone https://github.com/stevengj/nlopt.git
-cd nlopt/
-cmake -DPYTHON_EXECUTABLE=/usr/bin/python3 && make && sudo make install
-
-cd ~/install
-git clone https://github.com/NanoComp/meep.git
-cd meep/
-sh autogen.sh --enable-shared --with-mpi --with-openmp PYTHON=python3 LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}"
-make && sudo make install
-```
-
-You may want to add the following line to your `.profile` so Python can always find the `meep` (and `nlopt`) package:
-
-```bash
-# Ubuntu 16.04
-export PYTHONPATH=/usr/local/lib/python3.5/site-packages:/usr/local/lib/python3/dist-packages
-# Ubuntu 18.04
-export PYTHONPATH=/usr/local/lib/python3.6/site-packages:/usr/local/lib/python3/dist-packages
-```
+You can run `build-meep.sh -h` to get more information about the options you can use during installation.
 
 #### CentOS 7
 
