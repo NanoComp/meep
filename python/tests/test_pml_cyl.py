@@ -21,7 +21,7 @@ class TestPMLCylindrical(unittest.TestCase):
     @parameterized.parameterized.expand(
         [
             (0.0, 0.04, False),
-            (-1.0, 0.0, False),
+            (-1.0, 0, False),
             (2.0, 0.14, False),
             (3.0, 0.17, True),
         ]

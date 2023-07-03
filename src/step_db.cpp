@@ -298,7 +298,6 @@ bool fields_chunk::step_db(field_type ft) {
         realnum dt2 = dt * 0.5;
 
         for (int iz = 0; iz < nz; ++iz) {
-          // Note: old code (prior to Meep 0.2) was missing factor of 4??
           realnum fprev = the_f[iz];
           realnum dfcnd = g[iz] * (Courant * 4);
           if (fcnd) {
@@ -347,7 +346,7 @@ bool fields_chunk::step_db(field_type ft) {
         realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
         realnum dt2 = dt * 0.5;
 
-        for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
+        for (int iz = (ft == D_stuff); iz < nz; ++iz) {
           realnum fprev = the_f[iz];
           realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]);
           if (fcnd) {
@@ -356,6 +355,7 @@ bool fields_chunk::step_db(field_type ft) {
             dfcnd = fcnd[iz] - fcnd_prev;
           }
           int k = dk + 2 * (dsig == Z) * iz, ku = dku + 2 * (dsigu == Z) * iz;
+
           the_f[iz] = ((kap ? kap[k] - sig[k] : 1) * the_f[iz] + dfcnd) * (siginv ? siginv[k] : 1);
           if (fu)
             fu[iz] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[iz] + the_f[iz] - fprev);

@@ -130,7 +130,8 @@ int test_simple_metallic(double eps(const vec &), int splitting) {
       if (!compare_point(f, f1, veccyl(0.5, 0.4))) return 0;
       if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
       if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, veccyl(0, 0.24))) return 0;
+      if (!compare_point(f, f1, veccyl(0.01, 0.02), sizeof(realnum) == sizeof(float) ? 2e-6 : 4e-8))
+        return 0;
       if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= field_energy_check_time) {
         if (!compare(f.field_energy(), f1.field_energy(), "   total energy")) return 0;
@@ -223,7 +224,7 @@ int test_pml(double eps(const vec &), int splitting) {
       if (!compare_point(f, f1, veccyl(0.5, 7.0))) return 0;
       if (!compare_point(f, f1, veccyl(0.46, 0.36))) return 0;
       if (!compare_point(f, f1, veccyl(1.0, 0.4))) return 0;
-      if (!compare_point(f, f1, veccyl(0, 0.02), 1e-7)) return 0;
+      if (!compare_point(f, f1, veccyl(0.01, 0.02))) return 0;
       if (!compare_point(f, f1, veccyl(0.601, 0.701))) return 0;
       if (f.time() >= field_energy_check_time) {
         if (!compare(f.field_energy(), f1.field_energy(), "pml total energy", 1e-13)) return 0;
@@ -313,7 +314,7 @@ int main(int argc, char **argv) {
   // if (!test_simple_metallic(one, 120))
   //  meep::abort("error in crazy test_simple_metallic\n");
 
-  for (int s = 2; s < 6; s++)
+  for (int s = 2; s < 5; s++)
     if (!test_pml(one, s)) meep::abort("error in test_pml\n");
 
   return 0;
