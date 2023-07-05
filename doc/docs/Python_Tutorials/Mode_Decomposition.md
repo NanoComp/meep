@@ -163,13 +163,13 @@ With this setup, we measure the phase of the reflection coefficient for two diff
 | $S$ pol., $\theta$ = 54.3° | reflection coefficient | phase (radians) |
 |:--------------------------:|:----------------------:|:---------------:|
 |            Meep            |    0.23415-0.96597j    |     -1.33299    |
-|           Fresnel          |    0.22587-0.97416j    |     -1.34296    |
+|           Theory           |    0.22587-0.97416j    |     -1.34296    |
 
 
 | $P$ pol., $\theta$ = 48.5° | reflection coefficient | phase (radians) |
 |:--------------------------:|:----------------------:|:---------------:|
 |            Meep            |    0.11923+0.98495j    |      1.45033    |
-|           Fresnel          |    0.14645+0.98922j    |      1.42382    |
+|           Theory           |    0.14645+0.98922j    |      1.42382    |
 
 The simulation script is in [examples/mode_coeff_phase.py](https://github.com/NanoComp/meep/blob/master/python/examples/mode_coeff_phase.py).
 
