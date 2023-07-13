@@ -1,4 +1,7 @@
-"""Handling of objective functions and objective quantities."""
+"""
+A collection of objects and helper methods for defining objective functions
+used in topology optimization.
+"""
 import abc
 from collections import namedtuple
 from typing import Callable, List, Optional
@@ -17,9 +20,11 @@ class ObjectiveQuantity(abc.ABC):
     """A differentiable objective quantity.
 
     Attributes:
-        sim: the Meep simulation object with which the objective quantity is registered.
-        frequencies: the frequencies at which the objective quantity is evaluated.
-        num_freq: the number of frequencies at which the objective quantity is evaluated.
+        sim: the Meep simulation object used to register the objective quantity.
+        frequencies: the frequencies at which the objective quantity is
+            evaluated.
+        num_freq: the number of frequencies at which the objective quantity is
+            evaluated.
     """
 
     def __init__(self, sim):
@@ -53,7 +58,8 @@ class ObjectiveQuantity(abc.ABC):
             return self._eval
         else:
             raise RuntimeError(
-                "You must first run a forward simulation before requesting the evaluation of an objective quantity."
+                "You must first run a forward simulation before requesting the"
+                "evaluation of an objective quantity."
             )
 
     def _adj_src_scale(self, include_resolution=True):
@@ -90,15 +96,14 @@ class ObjectiveQuantity(abc.ABC):
             )
             * dt
             / np.sqrt(2 * np.pi)
-        )  # dtft
+        )
 
-        # Interestingly, the real parts of the DTFT and fourier transform match, but the imaginary parts are very different...
+        # Interestingly, the real parts of the DTFT and Fourier transform match,
+        # but the imaginary parts are very different...
         # fwd_dtft = src.fourier_transform(src.frequency)
-        """
-        For some reason, there seems to be an additional phase
-        factor at the center frequency that needs to be applied
-        to *all* frequencies...
-        """
+        #
+        # Note: for some reason, there seems to be an additional phase factor at
+        # the center frequency that needs to be applied to *all* frequencies...
         src_center_dtft = (
             np.matmul(
                 np.exp(
@@ -117,26 +122,29 @@ class ObjectiveQuantity(abc.ABC):
         adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
 
         if self._frequencies.size == 1:
-            # Single frequency simulations. We need to drive it with a time profile.
+            # Single-frequency simulations. Requires a time profile.
             scale = dV * iomega / fwd_dtft / adj_src_phase  # final scale factor
         else:
-            # multi frequency simulations
+            # Multi-frequency simulations.
             scale = dV * iomega / adj_src_phase
-        # compensate for the fact that real fields take the real part of the current,
-        # which halves the Fourier amplitude at the positive frequency (Re[J] = (J + J*)/2)
+
+        # Cmpensate for the fact that real fields take the real part of the
+        # current, which halves the Fourier amplitude at the positive frequency
+        # (i.e. Re[J] = (J + J*)/2).
         if self.sim.using_real_fields():
             scale *= 2
         return scale
 
     def _create_time_profile(self, fwidth_frac=0.1, adj_cutoff=5):
-        """Creates a time domain waveform for normalizing the adjoint source(s).
+        """Creates a time-domain waveform for normalizing the adjoint source(s).
 
-        For single frequency objective functions, we should generate a guassian pulse with a reasonable
-        bandwidth centered at said frequency.
+        For single-frequency objective functions, we should generate a Gaussian
+        pulse with a reasonable bandwidth centered at the given frequency.
 
         TODO:
-        The user may specify a scalar valued objective function across multiple frequencies (e.g. MSE) in
-        which case we should check that all the frequencies fit in the specified bandwidth.
+        The user may specify a scalar-valued objective function across multiple
+        frequencies (e.g. MSE) in which case we should check that all the
+        frequencies fit in the specified bandwidth.
         """
         self.fwidth_scale = np.exp(-2j * np.pi * adj_cutoff / fwidth_frac)
         return mp.GaussianSource(
@@ -161,29 +169,32 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         subtracted_dft_fields: Optional[FluxData] = None,
         **kwargs
     ):
-        """Initialize an instance of differentiable frequency-dependent eigenmode coefficient.
+        """Initialize an instance of a differentiable frequency-dependent
+        eigenmode coefficient.
 
         Args:
           sim: the Meep simulation object of the problem.
           volume: the volume over which the eigenmode coefficient is calculated.
           mode: the eigenmode number.
-          forward: whether the forward or backward mode coefficient is returned as
-            the result of the evaluation. Default is True.
-          kpoint_func: an optional k-point function to use when evaluating the eigenmode
-            coefficient. When specified, this overrides the effect of `forward`.
-          kpoint_func_overlap_idx: the index of the mode coefficient to return when
-            specifying `kpoint_func`. When specified, this overrides the effect of
-            `forward` and should have a value of either 0 or 1.
-          decimation_factor: An integer used to specify the number of timesteps between updates of
-            the DFT fields. The default is 0, at which the value is automatically determined from the
-            Nyquist rate of the bandwidth-limited sources and the DFT monitor. It can be turned off
-            by setting it to 1.
-          subtracted_dft_fields: the DFT fields obtained using `get_flux_data` from
-            a previous normalization run. This is subtracted from the DFT fields
-            of this mode monitor in order to improve the accuracy of the
-            reflectance measurement (i.e., the $S_{11}$ scattering parameter).
-            Default is None.
-          eigenmode_kwargs: additional argument for EigenModeSource
+          forward: whether the forward or backward mode coefficient is returned
+              as the result of the evaluation. Default is True.
+          kpoint_func: an optional k-point function to use when evaluating the
+              eigenmode coefficient. When specified, this overrides the effect
+              of `forward`.
+          kpoint_func_overlap_idx: the index of the mode coefficient to return
+              when specifying `kpoint_func`. When specified, this overrides the
+              effect of `forward` and should have a value of either 0 or 1.
+          decimation_factor: An integer used to specify the number of timesteps
+              between updates of the DFT fields. The default is 0, at which the
+              value is automatically determined from the Nyquist rate of the
+              bandwidth-limited sources and the DFT monitor. It can be turned
+              off by setting it to 1.
+          subtracted_dft_fields: the DFT fields obtained using `get_flux_data`
+              from a previous normalization run. This is subtracted from the
+              DFT fields of this mode monitor in order to improve the accuracy
+              of the reflectance measurement (i.e., the $S_{11}$ scattering
+              parameter). Default is None.
+          eigenmode_kwargs: additional keyword arguments for EigenModeSource.
         """
         super().__init__(sim)
         if kpoint_func_overlap_idx not in [0, 1]:
@@ -262,10 +273,11 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         return [source]
 
     def __call__(self):
-        """The values of eigenmode coefficient at each frequency
+        """The values of the eigenmode coefficient at each frequency.
 
         Returns:
-            1D array of eigenmode coefficients corresponding to each of self.frequencies
+            1D array of eigenmode coefficients for each frequency in
+            self.frequencies.
         """
         if self.kpoint_func:
             kpoint_func = self.kpoint_func
