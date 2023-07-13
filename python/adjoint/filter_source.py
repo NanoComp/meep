@@ -1,27 +1,33 @@
+"""
+The class used to define an adjoint source for use in the adjoint
+(i.e., reverse-mode) simulation.
+"""
+from meep import CustomSource
 import numpy as np
 from scipy import linalg, signal
-
-from meep import CustomSource
 
 
 class FilteredSource(CustomSource):
     def __init__(
         self,
-        center_frequency,
-        frequencies,
+        center_frequency: float,
+        frequencies: np.ndarray,
         frequency_response,
         dt,
         time_src=None,
     ):
-        dt = dt / 2  # divide by two to compensate for staggered E,H time interval
+        # divide by two to compensate for staggered E, H time interval
+        dt = dt / 2
         self.dt = dt
         self.frequencies = frequencies
         self.center_frequencies = frequencies
 
-        # For now, the basis functions cannot overlap much in the frequency domain. Otherwise, the
-        # resulting nodes are wildly large and induce numerical precision errors. We can always
-        # produce a safe simulation by forcing the length of each basis function to meet the minimum
-        # frequency requirements. This method still minimizes storage requirements.
+        # For now, the basis functions cannot overlap much in the frequency
+        # domain. Otherwise, the resulting nodes are wildly large and induce
+        # numerical precision errors. We can always produce a safe result
+        # by forcing the length of each basis function to meet the minimum
+        # frequency requirements. This method still minimizes storage
+        # requirements.
         self.T = np.max(np.abs(1 / np.diff(frequencies)))
         self.N = np.rint(self.T / self.dt)
         self.t = np.arange(0, dt * (self.N), dt)
@@ -60,10 +66,10 @@ class FilteredSource(CustomSource):
         else:
             signal_dtft = 1
 
-        # multiply sampled dft of input signal with filter transfer function
+        # Multiply sampled dft of input signal with filter transfer function.
         H = signal_dtft * frequency_response
 
-        # estimate the impulse response using a sinc function RBN
+        # Estimate the impulse response using a sinc function RBN.
         self.nodes, self.err = self.estimate_impulse_response(H)
 
         # initialize super
@@ -106,7 +112,9 @@ class FilteredSource(CustomSource):
     def rect(self, t, f0):
         n = np.rint((t) / self.dt)
         return np.where(
-            n.any() < 0.0 or n.any() > self.N, 0, np.exp(-1j * 2 * np.pi * f0 * t)
+            n.any() < 0.0 or n.any() > self.N,
+            0,
+            np.exp(-1j * 2 * np.pi * f0 * t),
         )
 
     def hann(self, t, f0):
@@ -125,10 +133,10 @@ class FilteredSource(CustomSource):
         a = [0.355768, 0.4873960, 0.144232, 0.012604]
         return self.cos_window_fd(a, f, f0)
 
-    ## compute the bandwidth of the DTFT of the Nuttall window function
-    ## (magnitude) assuming it has decayed from its peak value by some
-    ## tolerance by fitting it to an asymptotic power law of the form
-    ## C / f^3 where C is a constant and f is the frequency
+    # Compute the bandwidth of the DTFT of the Nuttall window function
+    # (magnitude) assuming it has decayed from its peak value by some
+    # tolerance by fitting it to an asymptotic power law of the form
+    # C / f^3 where C is a constant and f is the frequency.
     def nuttall_bandwidth(self):
         tol = 1e-7
         fwidth = 1 / (self.N * self.dt)
@@ -164,11 +172,15 @@ class FilteredSource(CustomSource):
         return _f
 
     def estimate_impulse_response(self, H):
-        # Use vandermonde matrix to calculate weights of each gaussian. Each window is centered at each frequency point.
-        # TODO: come up with a more sophisticated way to choose temporal window size and basis locations
-        # that will minimize l2 estimation error and the node weights (since matrix is ill-conditioned)
+        # Use a Vandermonde matrix to calculate the weights of each Gaussian
+        # term. Each window is centered at each frequency point.
+        #
+        # TODO: come up with a more sophisticated way to choose the temporal
+        # window size and basis locations that will minimize l2 estimation
+        # error and the node weights (since matrix is ill-conditioned).
         vandermonde = self.nuttall_dtft(
-            self.frequencies[:, np.newaxis], self.center_frequencies[np.newaxis, :]
+            self.frequencies[:, np.newaxis],
+            self.center_frequencies[np.newaxis, :],
         )
         nodes = np.matmul(linalg.pinv(vandermonde), H.T)
         H_hat = np.matmul(vandermonde, nodes)
