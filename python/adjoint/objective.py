@@ -26,6 +26,7 @@ class ObjectiveQuantity(abc.ABC):
         num_freq: the number of frequencies at which the objective quantity is
             evaluated.
     """
+
     def __init__(self, sim):
         self.sim = sim
         self._eval = None
@@ -57,8 +58,8 @@ class ObjectiveQuantity(abc.ABC):
             return self._eval
         else:
             raise RuntimeError(
-                "You must first run a forward simulation before requesting the
-                evaluation of an objective quantity."
+                "You must first run a forward simulation before requesting the"
+                "evaluation of an objective quantity."
             )
 
     def _adj_src_scale(self, include_resolution=True):
@@ -118,8 +119,7 @@ class ObjectiveQuantity(abc.ABC):
             * dt
             / np.sqrt(2 * np.pi)
         )
-        adj_src_phase = (np.exp(1j * np.angle(src_center_dtft)) *
-                         self.fwidth_scale)
+        adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
 
         if self._frequencies.size == 1:
             # Single-frequency simulations. Requires a time profile.
@@ -243,8 +243,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 np.min(self.frequencies) + np.max(self.frequencies)
             )
             direction = mp.Vector3(
-                *(np.eye(3)[self._monitor.normal_direction] *
-                  np.abs(center_frequency))
+                *(np.eye(3)[self._monitor.normal_direction] * np.abs(center_frequency))
             )
             eig_kpoint = -1 * direction if self.forward else direction
 
@@ -288,11 +287,9 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 np.min(self.frequencies) + np.max(self.frequencies)
             )
             kpoint = mp.Vector3(
-                *(np.eye(3)[self._monitor.normal_direction] *
-                  np.abs(center_frequency))
+                *(np.eye(3)[self._monitor.normal_direction] * np.abs(center_frequency))
             )
-            kpoint_func = (lambda *not_used: kpoint if self.forward else
-                           -1 * kpoint)
+            kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
         ob = self.sim.get_eigenmode_coefficients(
             self._monitor,
