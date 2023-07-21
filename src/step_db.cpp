@@ -171,105 +171,96 @@ bool fields_chunk::step_db(field_type ft) {
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         const realnum the_m =
             m * (1 - 2 * cmp) * (1 - 2 * (ft == B_stuff)) * (1 - 2 * (d_c == R)) * Courant;
-        const realnum ir0 = gv.origin_r() * gv.a + 0.5 * gv.iyee_shift(cc).in_direction(R);
-        int sr = gv.nz() + 1;
+        const ivec is = gv.little_owned_corner0(cc);
 
         // 8 special cases of the same loop (sigh):
         if (siginv) {    // PML in f update
           if (siginvu) { // PML + fu
             if (cndinv)  // PML + fu + conductivity
               //////////////////// MOST GENERAL CASE //////////////////////
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  int k = dk + 2 * (dsig == Z ? iz : ir);
-                  int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  realnum df, dfcnd = rinv * g[idx] * cndinv[idx];
-                  fcnd[idx] += dfcnd;
-                  fu[idx] += (df = dfcnd * siginv[k]);
-                  the_f[idx] += siginvu[ku] * df;
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                KSTRIDE_DEF(dsig, k, is, gv);
+                DEF_k;
+                KSTRIDE_DEF(dsigu, ku, is, gv);
+                DEF_ku;
+                realnum df, dfcnd = rinv * g[i] * cndinv[i];
+                fcnd[i] += dfcnd;
+                fu[i] += (df = dfcnd * siginv[k]);
+                the_f[i] += siginvu[ku] * df;
               }
             /////////////////////////////////////////////////////////////
             else // PML + fu - conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  int k = dk + 2 * (dsig == Z ? iz : ir);
-                  int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  realnum df, dfcnd = rinv * g[idx];
-                  fu[idx] += (df = dfcnd * siginv[k]);
-                  the_f[idx] += siginvu[ku] * df;
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                KSTRIDE_DEF(dsig, k, is, gv);
+                DEF_k;
+                KSTRIDE_DEF(dsigu, ku, is, gv);
+                DEF_ku;
+                realnum df, dfcnd = rinv * g[i];
+                fu[i] += (df = dfcnd * siginv[k]);
+                the_f[i] += siginvu[ku] * df;
               }
           }
           else {        // PML - fu
             if (cndinv) // PML - fu + conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  int k = dk + 2 * (dsig == Z ? iz : ir);
-                  realnum dfcnd = rinv * g[idx] * cndinv[idx];
-                  fcnd[idx] += dfcnd;
-                  the_f[idx] += dfcnd * siginv[k];
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                KSTRIDE_DEF(dsig, k, is, gv);
+                DEF_k;
+                realnum dfcnd = rinv * g[i] * cndinv[i];
+                fcnd[i] += dfcnd;
+                the_f[i] += dfcnd * siginv[k];
               }
             else // PML - fu - conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  int k = dk + 2 * (dsig == Z ? iz : ir);
-                  realnum dfcnd = rinv * g[idx];
-                  the_f[idx] += dfcnd * siginv[k];
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                KSTRIDE_DEF(dsig, k, is, gv);
+                DEF_k;
+                realnum dfcnd = rinv * g[i];
+                the_f[i] += dfcnd * siginv[k];
               }
           }
         }
         else {           // no PML in f update
           if (siginvu) { // no PML + fu
             if (cndinv)  // no PML + fu + conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  realnum df = rinv * g[idx] * cndinv[idx];
-                  fu[idx] += df;
-                  the_f[idx] += siginvu[ku] * df;
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                KSTRIDE_DEF(dsigu, ku, is, gv);
+                DEF_ku;
+                realnum df = rinv * g[i] * cndinv[i];
+                fu[i] += df;
+                the_f[i] += siginvu[ku] * df;
               }
             else // no PML + fu - conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  int ku = dku + 2 * (dsigu == Z ? iz : ir);
-                  realnum df = rinv * g[idx];
-                  fu[idx] += df;
-                  the_f[idx] += siginvu[ku] * df;
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                KSTRIDE_DEF(dsigu, ku, is, gv);
+                DEF_ku;
+                realnum df = rinv * g[i];
+                fu[i] += df;
+                the_f[i] += siginvu[ku] * df;
               }
           }
           else {        // no PML - fu
             if (cndinv) // no PML - fu + conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  the_f[idx] += rinv * g[idx] * cndinv[idx];
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                the_f[i] += rinv * g[i] * cndinv[i];
               }
             else // no PML - fu - conductivity
-              for (int ir = ir0 == 0; ir <= gv.nr(); ++ir) {
-                realnum rinv = the_m / (ir + ir0);
-                for (int iz = 0; iz <= gv.nz(); ++iz) {
-                  ptrdiff_t idx = ir * sr + iz;
-                  the_f[idx] += rinv * g[idx];
-                }
+              LOOP_OVER_VOL_OWNED0(gv, cc, i) {
+                const ptrdiff_t ir = loop_i2;
+                realnum rinv = the_m / ir;
+                the_f[i] += rinv * g[i];
               }
           }
         }
