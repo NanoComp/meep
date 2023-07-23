@@ -169,9 +169,13 @@ bool fields_chunk::step_db(field_type ft) {
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
-        const realnum the_m =
-            m * (1 - 2 * cmp) * (1 - 2 * (ft == B_stuff)) * (1 - 2 * (d_c == R)) * Courant;
         const ivec is = gv.little_owned_corner0(cc);
+
+        // Factor of 2 is necessary because in LOOP_OVER_VOL_OWNED0 macro each
+        // increment of the array index in the grid_volume in the R direction
+        // corresponds to a change of 0.5*Δr in real space.
+        const realnum the_m =
+            2 * m * (1 - 2 * cmp) * (1 - 2 * (ft == B_stuff)) * (1 - 2 * (d_c == R)) * Courant;
 
         // 8 special cases of the same loop (sigh):
         if (siginv) {    // PML in f update
