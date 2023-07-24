@@ -171,7 +171,8 @@ bool fields_chunk::step_db(field_type ft) {
         const int dku = gv.iyee_shift(cc).in_direction(dsigu);
         const ivec is = gv.little_owned_corner0(cc);
 
-        // Factor of 2 is necessary because in LOOP_OVER_VOL_OWNED0 macro each
+        // Constant factor for the i*m component of the i*m/r term.
+        // A factor of 2 is included because in LOOP_OVER_VOL_OWNED0 each
         // increment of the array index in the grid_volume in the R direction
         // corresponds to a change of 0.5*Δr in real space.
         const realnum the_m =
