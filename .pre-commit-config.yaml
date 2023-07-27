@@ -22,7 +22,6 @@ repos:
     rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
     hooks:
       - id: black
-        exclude: ^python/examples
 
   # - repo: https://gitlab.com/pycqa/flake8
   #   rev: "21d3c70d676007470908d39b73f0521d39b3b997"
@@ -68,6 +67,7 @@ repos:
     rev: 'v14.0.6'  # Use the sha / tag you want to point at
     hooks:
     -   id: clang-format
+        types: [c++, python]
   # - repo: https://github.com/pre-commit/mirrors-mypy
   #   rev: "214c33306afe17f1cc7d2d55e4da705b6ebe0627"
   #   hooks:
