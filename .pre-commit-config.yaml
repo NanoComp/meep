@@ -22,6 +22,7 @@ repos:
     rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
     hooks:
       - id: black
+        exclude: ^python/examples
 
   # - repo: https://gitlab.com/pycqa/flake8
   #   rev: "21d3c70d676007470908d39b73f0521d39b3b997"
