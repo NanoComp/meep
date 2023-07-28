@@ -687,7 +687,7 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   }
   if (vslice) {
     memcpy(vslice, vslice_uncollapsed, slice_size * elem_size * sizeof(realnum));
-    delete[](realnum *) vslice_uncollapsed;
+    delete[] (realnum *)vslice_uncollapsed;
   }
   else
     vslice = vslice_uncollapsed;
@@ -772,7 +772,7 @@ complex<realnum> *fields::get_source_slice(const volume &where, component source
 
   if (slice) {
     memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(realnum));
-    delete[](complex<realnum> *) slice_collapsed;
+    delete[] (complex<realnum> *)slice_collapsed;
   }
   else
     slice = slice_collapsed;

@@ -13,46 +13,46 @@
 # See https://github.com/pre-commit/pre-commit
 
 repos:
-  # Standard hooks
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
-    hooks:
-      - id: check-yaml
-      - id: end-of-file-fixer
-      - id: trailing-whitespace
 
-  # Black, the code formatter, natively supports pre-commit
-  - repo: https://github.com/psf/black
-    rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
-    hooks:
-      - id: black
+# Standard hooks
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.4.0
+  hooks:
+    - id: check-yaml
+    - id: end-of-file-fixer
+    - id: trailing-whitespace
 
-  # Automatically upgrade syntax for newer versions of the language.
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.3
-    hooks:
-      - id: pyupgrade
-        args: [--py37-plus, --keep-runtime-typing]
+# Black, the code formatter, natively supports pre-commit
+- repo: https://github.com/psf/black
+  rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
+  hooks:
+    - id: black
 
+# Automatically upgrade syntax for newer versions of the language
+- repo: https://github.com/asottile/pyupgrade
+  rev: v3.9.0
+  hooks:
+    - id: pyupgrade
+      args: [--py37-plus, --keep-runtime-typing]
 
-  # A collection of fast, cheap, regex based pre-commit hooks.
-  - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.10.0
-    hooks:
-      - id: python-use-type-annotations
+# Collection of fast, cheap, regex based pre-commit hooks
+- repo: https://github.com/pre-commit/pygrep-hooks
+  rev: v1.10.0
+  hooks:
+    - id: python-use-type-annotations
 
-  # Find common security issues in Python code.
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.5
-    hooks:
-      - id: bandit
-        args: [--exit-zero]
-        # ignore all tests, not just tests data
-        exclude: ^tests/
+# Find common security issues in Python code
+- repo: https://github.com/PyCQA/bandit
+  rev: 1.7.5
+  hooks:
+    - id: bandit
+      args: [--exit-zero]
+      # ignore all tests, not just tests data
+      exclude: ^python/tests/
 
-  # Widely used C++ formatter.
-  - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v16.0.6  # Use the sha / tag you want to point at
-    hooks:
-    -   id: clang-format
-        types: [c++, python]
+# Clang C/C++ formatter
+- repo: https://github.com/pre-commit/mirrors-clang-format
+  rev: v16.0.6  # Use the sha / tag you want to point at
+  hooks:
+  - id: clang-format
+    types: [c++]
