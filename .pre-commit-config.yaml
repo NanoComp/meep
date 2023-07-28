@@ -1,113 +1,58 @@
+# To use:
+#
+#     pre-commit run -a
+#
+# Or:
+#
+#     pre-commit install  # (runs every time you commit in git)
+#
+# To update this file:
+#
+#     pre-commit autoupdate
+#
+# See https://github.com/pre-commit/pre-commit
+
 repos:
+  # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "08b4be84be2d74173246b7c9b6c22212a6c15a2d"
+    rev: v4.4.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  # - repo: https://github.com/hakancelik96/unimport
-  #   rev: df8eb1a4c91acb84da197828af8157708968b596
-  #   hooks:
-  #     - id: unimport
-  #       args: [--remove, --include-star-import]
-  # - repo: https://github.com/pycqa/isort
-  #   rev: "12cc5fbd67eebf92eb2213b03c07b138ae1fb448"
-  #   hooks:
-  #     - id: isort
-  #       files: "python/.*"
-  #       args: ["--profile", "black", "--filter-files"]
-
+  # Black, the code formatter, natively supports pre-commit
   - repo: https://github.com/psf/black
     rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
     hooks:
       - id: black
 
-  # - repo: https://gitlab.com/pycqa/flake8
-  #   rev: "21d3c70d676007470908d39b73f0521d39b3b997"
-  #   hooks:
-  #     - id: flake8
-
-  # - repo: https://github.com/kynan/nbstripout
-  #   rev: 8cafdcc393232045208137698dbeb42d6e0dd9e8
-  #   hooks:
-  #     - id: nbstripout
-  #       files: ".ipynb"
-
+  # Automatically upgrade syntax for newer versions of the language.
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.37.3
     hooks:
       - id: pyupgrade
         args: [--py37-plus, --keep-runtime-typing]
 
-  # - repo: https://github.com/codespell-project/codespell
-  #   rev: 4d782511b3999c243feb3858cd7062270eb13291
-  #   hooks:
-  #     - id: codespell
-  #       args: ["-L TE,TE/TM,te,ba,FPR,fpr_spacing,ro"]
 
-  # - repo: https://github.com/shellcheck-py/shellcheck-py
-  #   rev: f87a493c6596a5338d69395905a4e13ed65584f6
-  #   hooks:
-  #     - id: shellcheck
-
+  # A collection of fast, cheap, regex based pre-commit hooks.
   - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: dc89c436469616a7c48293ec60c8e21e9d95be08 # Use the ref you want to point at
+    rev: v1.10.0
     hooks:
       - id: python-use-type-annotations
 
+  # Find common security issues in Python code.
   - repo: https://github.com/PyCQA/bandit
-    rev: 97501817e621db9975dfa6a2a1d36370942d1812
+    rev: 1.7.5
     hooks:
       - id: bandit
         args: [--exit-zero]
         # ignore all tests, not just tests data
         exclude: ^tests/
+
+  # Widely used C++ formatter.
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: 'v14.0.6'  # Use the sha / tag you want to point at
+    rev: v16.0.6  # Use the sha / tag you want to point at
     hooks:
     -   id: clang-format
         types: [c++, python]
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: "214c33306afe17f1cc7d2d55e4da705b6ebe0627"
-  #   hooks:
-  #     - id: mypy
-  #       exclude: ^(docs/|example-plugin/|tests/fixtures)
-  #       additional_dependencies:
-  #         - "pydantic"
-  # - repo: https://github.com/terrencepreilly/darglint
-  #   rev: master
-  #   hooks:
-  #     - id: darglint
-
-  # - repo: https://github.com/pycqa/pydocstyle
-  #   rev: ""
-  #   hooks:
-  #     - id: pydocstyle
-  # - repo: https://github.com/asottile/reorder_python_imports
-  #   rev: 2b2f0c74acdb3de316e23ceb7dd0d7945c354050
-  #   hooks:
-  #     - id: reorder-python-imports
-  # - repo: https://github.com/PyCQA/pylint
-  #   rev: v2.14.1
-  #   hooks:
-  #     - id: pylint
-  #       args: [--exit-zero]
-  # - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  #   rev: 6565d773ca281682d7062d4c0be74538cc474cc9
-  #   hooks:
-  #     - id: pretty-format-java
-  #       args: [--autofix]
-  #     - id: pretty-format-kotlin
-  #       args: [--autofix]
-  #     - id: pretty-format-yaml
-  #       args: [--autofix, --indent, "2"]
-  # - repo: https://github.com/adrienverge/yamllint.git
-  #   rev: v1.21.0 # or higher tag
-  #   hooks:
-  #       - id: yamllint
-  #         args: [--format, parsable, --strict]
-  # - repo: https://github.com/jumanjihouse/pre-commit-hook-yamlfmt
-  #   rev: 0.1.0 # or specific tag
-  #   hooks:
-  #       - id: yamlfmt
