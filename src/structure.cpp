@@ -333,9 +333,9 @@ void structure::add_to_effort_volumes(const grid_volume &new_effort_volume, doub
 }
 
 structure::structure(const structure &s)
-    : num_chunks{s.num_chunks}, shared_chunks{false}, gv(s.gv),
-      user_volume(s.user_volume), a{s.a}, Courant{s.Courant}, dt{s.dt}, v(s.v), S(s.S),
-      outdir(s.outdir), num_effort_volumes{s.num_effort_volumes}, bp(new binary_partition(*s.bp)) {
+    : num_chunks{s.num_chunks}, shared_chunks{false}, gv(s.gv), user_volume(s.user_volume), a{s.a},
+      Courant{s.Courant}, dt{s.dt}, v(s.v), S(s.S), outdir(s.outdir),
+      num_effort_volumes{s.num_effort_volumes}, bp(new binary_partition(*s.bp)) {
   chunks = new structure_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++) {
     chunks[i] = new structure_chunk(s.chunks[i]);

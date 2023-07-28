@@ -461,7 +461,7 @@ public:
     int dindex;
     char *dataname;
     struct extending_s *next;
-  } * extending;
+  } *extending;
   extending_s *get_extending(const char *dataname) const;
 };
 

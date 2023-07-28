@@ -234,9 +234,9 @@ mode_solver::mode_solver(int num_bands, double resolution[3], lattice lat, doubl
       use_simple_preconditioner(use_simple_preconditioner), grid_size(grid_size), nwork_alloc(0),
       eigensolver_nwork(eigensolver_nwork), eigensolver_block_size(eigensolver_block_size),
       last_parity(-2), iterations(0), eigensolver_flops(flops), geometry_list{},
-      geometry_tree(NULL), vol(0), R{}, G{}, mdata(NULL), mtdata(NULL),
-      curfield_band(0), H{}, Hblock{}, muinvH{}, W{}, freqs(num_bands), verbose(verbose),
-      deterministic(deterministic), kpoint_index(0), curfield(NULL), curfield_type('-'), eps(true) {
+      geometry_tree(NULL), vol(0), R{}, G{}, mdata(NULL), mtdata(NULL), curfield_band(0), H{},
+      Hblock{}, muinvH{}, W{}, freqs(num_bands), verbose(verbose), deterministic(deterministic),
+      kpoint_index(0), curfield(NULL), curfield_type('-'), eps(true) {
 
   // See geom-ctl-io-defaults.c in libctl
   geometry_lattice = lat;
