@@ -1152,6 +1152,99 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             print(f"PASSED: filter function = {selected_filter.__name__}")
 
+    def test_anisotropic_resolution(self):
+        """Verifies that anisotropic design-grid resolution is supported."""
+        print("*** TESTING ANISOTROPIC RESOLUTION ***")
+
+        p = self.p.reshape(self.Nx, self.Ny)
+        eta_e = 0.75
+        eta_d = 1 - eta_e
+        beta, eta_i = 10, 0.5
+        radius, c = 0.3, 400
+        places = 15
+        threshold_f = lambda x: mpa.tanh_projection(x, beta, eta_i)
+
+        for selected_filter in (
+            mpa.conic_filter,
+            mpa.cylindrical_filter,
+            mpa.gaussian_filter,
+        ):
+
+            for periodic_axes in (0, 1):
+                if periodic_axes == 0:
+                    # The 1d design-grid is defined in the y direction
+                    # while periodic in the x direction.
+                    design_1d = p[0, :]
+                    resolution = (0, self.design_region_resolution)
+                else:
+                    # The 1d design-grid is defined in the x direction
+                    # while periodic in the y direction.
+                    design_1d = p[:, 0]
+                    resolution = (self.design_region_resolution, 0)
+
+                filter_f = lambda x: selected_filter(
+                    x,
+                    radius,
+                    self.design_region_size.x,
+                    self.design_region_size.y,
+                    resolution,
+                )
+                constraint_solid_nonperiodic = mpa.constraint_solid(
+                    design_1d,
+                    c,
+                    eta_e,
+                    filter_f,
+                    threshold_f,
+                    resolution,
+                )
+                constraint_void_nonperiodic = mpa.constraint_void(
+                    design_1d,
+                    c,
+                    eta_d,
+                    filter_f,
+                    threshold_f,
+                    resolution,
+                )
+
+                filter_f = lambda x: selected_filter(
+                    x,
+                    radius,
+                    self.design_region_size.x,
+                    self.design_region_size.y,
+                    resolution,
+                    periodic_axes,
+                )
+                constraint_solid_periodic = mpa.constraint_solid(
+                    design_1d,
+                    c,
+                    eta_e,
+                    filter_f,
+                    threshold_f,
+                    resolution,
+                    periodic_axes,
+                )
+                constraint_void_periodic = mpa.constraint_void(
+                    design_1d,
+                    c,
+                    eta_d,
+                    filter_f,
+                    threshold_f,
+                    resolution,
+                    periodic_axes,
+                )
+
+                self.assertAlmostEqual(
+                    constraint_solid_nonperiodic,
+                    constraint_solid_periodic,
+                    places=places,
+                )
+                self.assertAlmostEqual(
+                    constraint_void_nonperiodic,
+                    constraint_void_periodic,
+                    places=places,
+                )
+            print(f"PASSED: filter function = {selected_filter.__name__}")
+
     def test_unfilter_design(self):
         """Verifies that the unfilter_design on a given structure
         finds initialization close to what it found previously."""
