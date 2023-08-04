@@ -235,7 +235,8 @@ def mesh_grid(
 
     if Nx <= 1 and Ny <= 1:
         raise AssertionError(
-            "The grid size is improper. Check the size and resolution of the design region.")
+            "The grid size is improper. Check the size and resolution of the design region."
+        )
 
     xv = np.arange(0, Lx / 2, 1 / resolution[0]) if resolution[0] > 0 else [0]
     yv = np.arange(0, Ly / 2, 1 / resolution[1]) if resolution[1] > 0 else [0]
@@ -943,7 +944,9 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution, periodic_axes=None)
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     """
-    design_field, grad_mag = length_indicator(x, filter_f, threshold_f, resolution, periodic_axes)
+    design_field, grad_mag = length_indicator(
+        x, filter_f, threshold_f, resolution, periodic_axes
+    )
     return design_field * npa.exp(-c * grad_mag)
 
 
@@ -1023,7 +1026,9 @@ def indicator_void(x, c, filter_f, threshold_f, resolution, periodic_axes=None):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     """
-    design_field, grad_mag = length_indicator(x, filter_f, threshold_f, resolution, periodic_axes)
+    design_field, grad_mag = length_indicator(
+        x, filter_f, threshold_f, resolution, periodic_axes
+    )
     return (1 - design_field) * npa.exp(-c * grad_mag)
 
 
