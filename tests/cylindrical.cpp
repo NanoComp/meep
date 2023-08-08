@@ -307,14 +307,14 @@ int main(int argc, char **argv) {
   // if (!test_simple_periodic(one, 120))
   //  meep::abort("error in crazy test_simple_periodic\n");
 
-  for (int s = 2; s < 4; s++)
+  for (int s = 2; s < 5; s++)
     if (!test_simple_metallic(one, s)) meep::abort("error in test_simple_metallic\n");
   // if (!test_simple_metallic(one, 8))
   //  meep::abort("error in crazy test_simple_metallic\n");
   // if (!test_simple_metallic(one, 120))
   //  meep::abort("error in crazy test_simple_metallic\n");
 
-  for (int s = 2; s < 5; s++)
+  for (int s = 2; s < 6; s++)
     if (!test_pml(one, s)) meep::abort("error in test_pml\n");
 
   return 0;
