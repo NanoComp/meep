@@ -1152,7 +1152,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
 
             print(f"PASSED: filter function = {selected_filter.__name__}")
 
-    def test_anisotropic_resolution(self):
+    def test_unequal_horizontal_vertical_resolution(self):
         """Verifies that anisotropic design-grid resolution is supported."""
         print("*** TESTING ANISOTROPIC RESOLUTION ***")
 
