@@ -3,12 +3,10 @@ A collection of routines for use in topology optimization comprising
 convolution filters (kernels), projection operators, and morphological
 transforms.
 """
-from typing import List, Tuple, Union
-
-from autograd import numpy as npa
-import meep as mp
 import numpy as np
+from autograd import numpy as npa
 from scipy import signal, special
+from typing import List, Tuple, Union
 
 ArrayLikeType = Union[List, Tuple, np.ndarray]
 
@@ -154,6 +152,7 @@ def convolve_design_weights_and_kernel(
         if npy % 2 == 0:
             npy += 1  # Ensure npy is an odd number
 
+        periodic_axes = np.array(periodic_axes)
         # Repeat the design pattern in periodic directions according to
         # the kernel size
         x = npa.tile(
@@ -182,12 +181,94 @@ def convolve_design_weights_and_kernel(
     )
 
 
+def _get_resolution(resolution: ArrayLikeType) -> tuple:
+    """Converts input design-grid resolution to the acceptable format.
+
+    Args:
+        resolution: number of list of numbers representing design-grid
+                    resolution, allowing anisotropic resolution.
+
+    Returns:
+        A two-element tuple composed of the resolution in x and y directions.
+    """
+    if isinstance(resolution, (tuple, list, np.ndarray)):
+        if len(resolution) == 2:
+            return resolution
+        elif len(resolution) == 1:
+            return resolution[0], resolution[0]
+        else:
+            raise ValueError(
+                "The dimension of the design-grid resolution is incorrect."
+            )
+    elif isinstance(resolution, (int, float)):
+        return resolution, resolution
+    else:
+        raise ValueError("The input for design-grid resolution is invalid.")
+
+
+def mesh_grid(
+    radius: float,
+    Lx: float,
+    Ly: float,
+    resolution: ArrayLikeType,
+    periodic_axes: ArrayLikeType = None,
+) -> tuple:
+    """Obtains the numbers of grid points and the coordinates of the grid
+    of the design region.
+
+    Args:
+        radius: filter radius (in Meep units).
+        Lx: length of design region in X direction (in Meep units).
+        Ly: length of design region in Y direction (in Meep units).
+        resolution: resolution of the design grid (not the Meep grid
+            resolution).
+        periodic_axes: list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
+
+    Returns:
+        A four-element tuple composed of the numbers of grid points and
+        the coordinates of the grid.
+    """
+    resolution = _get_resolution(resolution)
+    Nx = int(round(Lx * resolution[0])) + 1
+    Ny = int(round(Ly * resolution[1])) + 1
+
+    if Nx <= 1 and Ny <= 1:
+        raise AssertionError(
+            "The grid size is improper. Check the size and resolution of the design region."
+        )
+
+    xv = np.arange(0, Lx / 2, 1 / resolution[0]) if resolution[0] > 0 else [0]
+    yv = np.arange(0, Ly / 2, 1 / resolution[1]) if resolution[1] > 0 else [0]
+
+    # If the design weights are periodic in a direction,
+    # the size of the kernel in that direction needs to be adjusted
+    # according to the filter radius.
+    if periodic_axes is not None:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            xv = (
+                np.arange(0, np.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution[0])
+                if resolution[0] > 0
+                else [0]
+            )
+        if 1 in periodic_axes:
+            yv = (
+                np.arange(0, np.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution[1])
+                if resolution[1] > 0
+                else [0]
+            )
+
+    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
+    return Nx, Ny, X, Y
+
+
 def cylindrical_filter(
     x: np.ndarray,
     radius: float,
     Lx: float,
     Ly: float,
-    resolution: int,
+    resolution: ArrayLikeType,
     periodic_axes: ArrayLikeType = None,
 ) -> np.ndarray:
     """A cylindrical convolution filter.
@@ -211,26 +292,9 @@ def cylindrical_filter(
     Returns:
         The filtered design weights.
     """
-    Nx = int(round(Lx * resolution)) + 1
-    Ny = int(round(Ly * resolution)) + 1
+    Nx, Ny, X, Y = mesh_grid(radius, Lx, Ly, resolution, periodic_axes)
     x = x.reshape(Nx, Ny)  # Ensure the input is 2d
-
-    xv = np.arange(0, Lx / 2, 1 / resolution)
-    yv = np.arange(0, Ly / 2, 1 / resolution)
-
-    # If the design weights are periodic in a direction,
-    # the size of the kernel in that direction needs to be adjusted
-    # according to the filter radius.
-    if periodic_axes is not None:
-        periodic_axes = np.array(periodic_axes)
-        if 0 in periodic_axes:
-            xv = np.arange(0, np.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution)
-        if 1 in periodic_axes:
-            yv = np.arange(0, np.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution)
-
-    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
     h = np.where(X**2 + Y**2 < radius**2, 1, 0)
-
     return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
@@ -239,7 +303,7 @@ def conic_filter(
     radius: float,
     Lx: float,
     Ly: float,
-    resolution: int,
+    resolution: ArrayLikeType,
     periodic_axes: ArrayLikeType = None,
 ) -> np.ndarray:
     """A linear conic (or "hat") filter.
@@ -261,28 +325,11 @@ def conic_filter(
     Returns:
         The filtered design weights.
     """
-    Nx = int(round(Lx * resolution)) + 1
-    Ny = int(round(Ly * resolution)) + 1
-    x = x.reshape(Nx, Ny)  # Ensure the input is 2D
-
-    xv = np.arange(0, Lx / 2, 1 / resolution)
-    yv = np.arange(0, Ly / 2, 1 / resolution)
-
-    # If the design pattern is periodic in a direction,
-    # the size of the kernel in that direction needs to be adjusted
-    # according to the filter radius.
-    if periodic_axes is not None:
-        periodic_axes = np.array(periodic_axes)
-        if 0 in periodic_axes:
-            xv = np.arange(0, np.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution)
-        if 1 in periodic_axes:
-            yv = np.arange(0, np.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution)
-
-    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
+    Nx, Ny, X, Y = mesh_grid(radius, Lx, Ly, resolution, periodic_axes)
+    x = x.reshape(Nx, Ny)  # Ensure the input is 2d
     h = np.where(
         X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
     )
-
     return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
@@ -291,7 +338,7 @@ def gaussian_filter(
     sigma: float,
     Lx: float,
     Ly: float,
-    resolution: int,
+    resolution: ArrayLikeType,
     periodic_axes: ArrayLikeType = None,
 ):
     """A Gaussian filter.
@@ -313,26 +360,9 @@ def gaussian_filter(
     Returns:
         The filtered design weights.
     """
-    Nx = int(round(Lx * resolution)) + 1
-    Ny = int(round(Ly * resolution)) + 1
-    x = x.reshape(Nx, Ny)  # Ensure the input is 2D
-
-    xv = np.arange(0, Lx / 2, 1 / resolution)
-    yv = np.arange(0, Ly / 2, 1 / resolution)
-
-    # If the design pattern is periodic in a direction,
-    # the size of the kernel in that direction needs to be
-    # adjusted according to 3σ.
-    if periodic_axes is not None:
-        periodic_axes = np.array(periodic_axes)
-        if 0 in periodic_axes:
-            xv = np.arange(0, np.ceil(6 * sigma / Lx) * Lx / 2, 1 / resolution)
-        if 1 in periodic_axes:
-            yv = np.arange(0, np.ceil(6 * sigma / Ly) * Ly / 2, 1 / resolution)
-
-    X, Y = np.meshgrid(xv, yv, sparse=True, indexing="ij")
+    Nx, Ny, X, Y = mesh_grid(3 * sigma, Lx, Ly, resolution, periodic_axes)
+    x = x.reshape(Nx, Ny)  # Ensure the input is 2d
     h = np.exp(-(X**2 + Y**2) / sigma**2)
-
     return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
@@ -816,8 +846,80 @@ def get_conic_radius_from_eta_e(b, eta_e):
         )
 
 
+def length_indicator(x, filter_f, threshold_f, resolution, periodic_axes=None):
+    """Calculates the design field and the magnitude of its gradient for lengthscale indicators [1].
+
+    Parameters
+    ----------
+    x : array_like
+        Design parameters
+    filter_f : function_handle
+        Filter function. Must be differntiable by autograd.
+    threshold_f : function_handle
+        Threshold function. Must be differntiable by autograd.
+    periodic_axes: array_like (1D)
+        List of axes (x, y = 0, 1) that are to be treated as periodic (default is none: all axes are non-periodic)
+
+    Returns
+    -------
+        A two-element tuple composed of the design field and the magnitude of its gradient
+
+    References
+    ----------
+    [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
+    geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
+    """
+
+    filtered_field = npa.squeeze(filter_f(x))
+    design_field = threshold_f(filtered_field)
+    design_dim = filtered_field.ndim
+    resolution = _get_resolution(resolution)
+
+    if periodic_axes is None:
+        gradient_filtered_field = npa.gradient(filtered_field)
+    else:
+        periodic_axes = np.array(periodic_axes)
+        if 0 in periodic_axes:
+            if design_dim == 2:
+                filtered_field = npa.tile(filtered_field, (3, 1))
+            if design_dim == 1 and resolution[0] > resolution[1]:
+                filtered_field = npa.tile(filtered_field, 3)
+
+        if 1 in periodic_axes:
+            if design_dim == 2:
+                filtered_field = npa.tile(filtered_field, (1, 3))
+            if design_dim == 1 and resolution[0] < resolution[1]:
+                filtered_field = npa.tile(filtered_field, 3)
+
+        if design_dim == 2:
+            gradient_filtered_field = _centered(
+                npa.array(npa.gradient(filtered_field)), (2,) + x.shape
+            )
+        elif design_dim == 1:
+            gradient_filtered_field = _centered(
+                npa.array(npa.gradient(filtered_field)), design_field.shape
+            )
+        else:
+            raise ValueError(
+                "The design fields must be 1d or 2d. Check input array and filter functions."
+            )
+
+    if design_dim == 2:
+        grad_mag = (gradient_filtered_field[0] * resolution[0]) ** 2 + (
+            gradient_filtered_field[1] * resolution[1]
+        ) ** 2
+    else:
+        grad_mag = (npa.squeeze(gradient_filtered_field) * max(resolution)) ** 2
+
+    if grad_mag.ndim not in (1, 2):
+        raise ValueError(
+            "The gradient fields must be 1d or 2d. Check input array and filter functions."
+        )
+    return design_field, grad_mag
+
+
 def indicator_solid(x, c, filter_f, threshold_f, resolution, periodic_axes=None):
-    """Calculates the indicator function for the void phase needed for minimum length optimization [1].
+    """Calculates the indicator function for the solid phase needed for minimum length constraint [1].
 
     Parameters
     ----------
@@ -842,36 +944,16 @@ def indicator_solid(x, c, filter_f, threshold_f, resolution, periodic_axes=None)
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     """
-
-    filtered_field = filter_f(x)
-    design_field = threshold_f(filtered_field)
-
-    if periodic_axes is None:
-        gradient_filtered_field = npa.gradient(filtered_field)
-    else:
-        periodic_axes = np.array(periodic_axes)
-        if 0 in periodic_axes:
-            filtered_field = npa.tile(filtered_field, (3, 1))
-        if 1 in periodic_axes:
-            filtered_field = npa.tile(filtered_field, (1, 3))
-        gradient_filtered_field = _centered(
-            npa.array(npa.gradient(filtered_field)), (2,) + x.shape
-        )
-
-    grad_mag = (gradient_filtered_field[0] * resolution) ** 2 + (
-        gradient_filtered_field[1] * resolution
-    ) ** 2
-    if grad_mag.ndim != 2:
-        raise ValueError(
-            "The gradient fields must be 2 dimensional. Check input array and filter functions."
-        )
+    design_field, grad_mag = length_indicator(
+        x, filter_f, threshold_f, resolution, periodic_axes
+    )
     return design_field * npa.exp(-c * grad_mag)
 
 
 def constraint_solid(
     x, c, eta_e, filter_f, threshold_f, resolution, periodic_axes=None
 ):
-    """Calculates the constraint function of the solid phase needed for minimum length optimization [1].
+    """Calculates the constraint function of the solid phase needed for minimum length constraint [1].
 
     Parameters
     ----------
@@ -917,7 +999,7 @@ def constraint_solid(
 
 
 def indicator_void(x, c, filter_f, threshold_f, resolution, periodic_axes=None):
-    """Calculates the indicator function for the void phase needed for minimum length optimization [1].
+    """Calculates the indicator function for the void phase needed for minimum length constraint [1].
 
     Parameters
     ----------
@@ -944,34 +1026,14 @@ def indicator_void(x, c, filter_f, threshold_f, resolution, periodic_axes=None):
     [1] Zhou, M., Lazarov, B. S., Wang, F., & Sigmund, O. (2015). Minimum length scale in topology optimization by
     geometric constraints. Computer Methods in Applied Mechanics and Engineering, 293, 266-282.
     """
-
-    filtered_field = filter_f(x)
-    design_field = threshold_f(filtered_field)
-
-    if periodic_axes is None:
-        gradient_filtered_field = npa.gradient(filtered_field)
-    else:
-        periodic_axes = np.array(periodic_axes)
-        if 0 in periodic_axes:
-            filtered_field = npa.tile(filtered_field, (3, 1))
-        if 1 in periodic_axes:
-            filtered_field = npa.tile(filtered_field, (1, 3))
-        gradient_filtered_field = _centered(
-            npa.array(npa.gradient(filtered_field)), (2,) + x.shape
-        )
-
-    grad_mag = (gradient_filtered_field[0] * resolution) ** 2 + (
-        gradient_filtered_field[1] * resolution
-    ) ** 2
-    if grad_mag.ndim != 2:
-        raise ValueError(
-            "The gradient fields must be 2 dimensional. Check input array and filter functions."
-        )
+    design_field, grad_mag = length_indicator(
+        x, filter_f, threshold_f, resolution, periodic_axes
+    )
     return (1 - design_field) * npa.exp(-c * grad_mag)
 
 
 def constraint_void(x, c, eta_d, filter_f, threshold_f, resolution, periodic_axes=None):
-    """Calculates the constraint function of the void phase needed for minimum length optimization [1].
+    """Calculates the constraint function of the void phase needed for minimum length constraint [1].
 
     Parameters
     ----------
