@@ -585,6 +585,7 @@ The output functions described above write the data for the fields and materials
 @@ Simulation.get_array @@
 @@ Simulation.get_dft_array @@
 
+Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), internally the DFT fields are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d. Additionally, `get_array` interpolates all fields to the center of the Yee cell. In summary, the output of `get_array` and `get_dft_array` is always centered on the Yee cell.
 
 #### Array Metadata
 
