@@ -29,9 +29,10 @@ using namespace std;
 
 namespace meep {
 
-fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin,
-               int loop_tile_base_db, int loop_tile_base_eh)
-    : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta),
+fields::fields(structure *s, double m, double need_bfast_theta, double need_bfast_phi, double beta,
+               bool zero_fields_near_cylorigin, int loop_tile_base_db, int loop_tile_base_eh)
+    : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m),
+      need_bfast_theta(need_bfast_theta), need_bfast_phi(need_bfast_phi), beta(beta),
       loop_tile_base_db(loop_tile_base_db), loop_tile_base_eh(loop_tile_base_eh),
       working_on(&times_spent) {
   shared_chunks = s->shared_chunks;
@@ -59,8 +60,8 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   typedef fields_chunk *fields_chunk_ptr;
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
-    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i,
-                                 loop_tile_base_db);
+    chunks[i] = new fields_chunk(s->chunks[i], outdir, m, need_bfast_theta, need_bfast_phi, beta,
+                                 zero_fields_near_cylorigin, i, loop_tile_base_db);
   FOR_FIELD_TYPES(ft) {
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
@@ -93,6 +94,8 @@ fields::fields(const fields &thef)
   outdir = new char[strlen(thef.outdir) + 1];
   strcpy(outdir, thef.outdir);
   m = thef.m;
+  need_bfast_theta = thef.need_bfast_theta;
+  need_bfast_phi = thef.need_bfast_phi;
   beta = thef.beta;
   phasein_time = thef.phasein_time;
   for (int d = 0; d < 5; d++) {
@@ -171,12 +174,14 @@ fields_chunk::~fields_chunk() {
     delete[] f_u[c][cmp];
     delete[] f_w[c][cmp];
     delete[] f_cond[c][cmp];
+    delete[] f_bfast[c][cmp]; // added
     delete[] f_minus_p[c][cmp];
     delete[] f_w_prev[c][cmp];
     delete[] f_backup[c][cmp];
     delete[] f_u_backup[c][cmp];
     delete[] f_w_backup[c][cmp];
     delete[] f_cond_backup[c][cmp];
+    delete[] f_bfast_backup[c][cmp]; // added
   }
   delete[] f_rderiv_int;
   while (dft_chunks) {
@@ -236,9 +241,11 @@ void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
     meep::abort("v_grid_points = %zu, sum(tiles) = %zu\n", v_grid_points, sum);
 }
 
-fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
+fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m,
+                           double need_bfast_theta, double need_bfast_phi, double beta,
                            bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db)
-    : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
+    : gv(the_s->gv), v(the_s->v), m(m), need_bfast_theta(need_bfast_theta),
+      need_bfast_phi(need_bfast_phi), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
       beta(beta) {
   s = the_s;
   chunk_idx = chunkidx;
@@ -278,12 +285,14 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, dou
     f_u[c][cmp] = NULL;
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
+    f_bfast[c][cmp] = NULL; // added
     f_minus_p[c][cmp] = NULL;
     f_w_prev[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_u_backup[c][cmp] = NULL;
     f_w_backup[c][cmp] = NULL;
     f_cond_backup[c][cmp] = NULL;
+    f_bfast_backup[c][cmp] = NULL; // added
   }
   f_rderiv_int = NULL;
   FOR_FIELD_TYPES(ft) {
@@ -299,6 +308,8 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   s->refcount++;
   outdir = thef.outdir;
   m = thef.m;
+  need_bfast_theta = thef.need_bfast_theta;
+  need_bfast_phi = thef.need_bfast_phi;
   zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;
   beta = thef.beta;
   new_s = thef.new_s;
@@ -333,10 +344,12 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
     f_u[c][cmp] = NULL;
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
+    f_bfast[c][cmp] = NULL; // added
     f_backup[c][cmp] = NULL;
     f_u_backup[c][cmp] = NULL;
     f_w_backup[c][cmp] = NULL;
     f_cond_backup[c][cmp] = NULL;
+    f_bfast_backup[c][cmp] = NULL; // added
   }
   FOR_COMPONENTS(c) DOCMP {
     if (!is_magnetic(c) && thef.f[c][cmp]) {
@@ -354,6 +367,10 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
     if (thef.f_cond[c][cmp]) {
       f_cond[c][cmp] = new realnum[gv.ntot()];
       memcpy(f_cond[c][cmp], thef.f_cond[c][cmp], sizeof(realnum) * gv.ntot());
+    }
+    if (thef.f_bfast[c][cmp]) {
+      f_bfast[c][cmp] = new realnum[gv.ntot()];
+      memcpy(f_bfast[c][cmp], thef.f_bfast[c][cmp], sizeof(realnum) * gv.ntot()); // added
     }
   }
   FOR_MAGNETIC_COMPONENTS(c) DOCMP {
@@ -617,10 +634,12 @@ void fields_chunk::zero_fields() {
     ZERO(f_u[c][cmp]);
     ZERO(f_w[c][cmp]);
     ZERO(f_cond[c][cmp]);
+    ZERO(f_bfast[c][cmp]); // added
     ZERO(f_backup[c][cmp]);
     ZERO(f_u_backup[c][cmp]);
     ZERO(f_w_backup[c][cmp]);
     ZERO(f_cond_backup[c][cmp]);
+    ZERO(f_bfast_backup[c][cmp]); // added
 #undef ZERO
   }
   if (is_mine()) FOR_FIELD_TYPES(ft) {
@@ -730,7 +749,8 @@ void fields::unset_solve_cw_omega() {
 void fields::log(const char *prefix) {
   master_printf("%sFields State:\n", prefix);
   master_printf("%s  a = %g, dt = %g\n", prefix, a, dt);
-  master_printf("%s  m = %g, beta = %g\n", prefix, m, beta);
+  master_printf("%s  m = %g, beta = %g, need_bfast_theta = %g, need_bfast_phi = %g\n", prefix, m,
+                beta, need_bfast_theta, need_bfast_phi);
   master_printf("%s  t = %d, phasein_time = %d, is_real = %d\n", prefix, t, phasein_time, is_real);
   master_printf("\n");
   master_printf("%s  num_chunks = %d (shared=%d)\n", prefix, num_chunks, shared_chunks);

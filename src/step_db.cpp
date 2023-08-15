@@ -62,6 +62,7 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *f_p = have_p ? f[c_p][cmp] : NULL;
         realnum *f_m = have_m ? f[c_m][cmp] : NULL;
         realnum *the_f = f[cc][cmp];
+        // printf(" (%f,%f,%f) ",cc,c_p,c_m);
 
         if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
           f_cond[cc][cmp] = new realnum[gv.ntot()];
@@ -71,6 +72,11 @@ bool fields_chunk::step_db(field_type ft) {
           f_u[cc][cmp] = new realnum[gv.ntot()];
           memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
           allocated_u = true;
+        }
+        if ((need_bfast_theta != 0 || need_bfast_phi != 0) && !f_bfast[cc][cmp]) {
+          f_bfast[cc][cmp] = new realnum[gv.ntot()];
+          memset(f_bfast[cc][cmp], 0, sizeof(realnum) * gv.ntot());
+          // memcpy(f_bfast[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
         }
 
         if (ft == D_stuff) { // strides are opposite sign for H curl
@@ -120,6 +126,35 @@ bool fields_chunk::step_db(field_type ft) {
                   sub_gv.big_corner(), Courant, dsig, s->sig[dsig], s->kap[dsig], s->siginv[dsig],
                   f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu], dt,
                   s->conductivity[cc][d_c], s->condinv[cc][d_c], f_cond[cc][cmp]);
+
+        if (need_bfast_theta != 0 || need_bfast_phi != 0) {
+          realnum theta = (pi / 180) * need_bfast_theta;
+          realnum phi = (pi / 180) * need_bfast_phi;
+          // realnum k[3] = {sin(theta)*cos(phi),sin(theta)*sin(phi),0};  //
+          realnum k[3] = {sin(theta), 0, 0};
+          // realnum k1 = k[component_direction(c_m)]; //puts k1 in direction of g2
+          // realnum k2 = k[component_direction(c_p)]; //puts k2 in direction of g1
+          realnum k1;
+          realnum k2;
+          if (component_direction(cc) == X) {
+            k1 = k[2];
+            k2 = k[1];
+          }
+          else if (component_direction(cc) == Y) {
+            k1 = k[0];
+            k2 = k[2];
+          }
+          else if (component_direction(cc) == Z) {
+            k1 = k[1];
+            k2 = k[0];
+          }
+          else { printf("AHA"); }
+          STEP_BFAST(the_f, cc, f_p, f_m, stride_p, stride_m, gv, sub_gv.little_owned_corner0(cc),
+                     sub_gv.big_corner(), Courant, dsig, s->sig[dsig], s->kap[dsig],
+                     s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],
+                     s->siginv[dsigu], dt, s->conductivity[cc][d_c], s->condinv[cc][d_c],
+                     f_cond[cc][cmp], f_bfast[cc][cmp], k1, k2);
+        }
       }
     }
   }
