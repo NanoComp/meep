@@ -24,7 +24,7 @@ wvl = 0.5  # center wavelength
 fcen = 1 / wvl  # center frequency
 df = 0.05 * fcen  # frequency width
 
-ng = 1  # 1.5
+ng = 1.5
 glass = mp.Medium(index=ng)
 
 use_cw_solver = False  # CW solver or time stepping?
@@ -90,9 +90,6 @@ else:
 input_flux = mp.get_fluxes(refl_flux)
 input_flux_data = sim.get_flux_data(refl_flux)
 
-print(input_flux, "input flux")
-print(input_flux_data, "input_flux_data")
-"""
 sim.reset_meep()
 
 geometry = [
@@ -181,5 +178,3 @@ t_flux = mp.get_fluxes(tran_flux)
 Rflux = -r_flux[0] / input_flux[0]
 Tflux = t_flux[0] / input_flux[0]
 print(f"poynting-flux:, {Rflux:.6f}, {Tflux:.6f}, {Rflux + Tflux:.6f}")
-
-"""
