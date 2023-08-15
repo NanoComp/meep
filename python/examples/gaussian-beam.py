@@ -14,7 +14,7 @@ dpml = 2
 
 cell_size = mp.Vector3(s, s)
 
-boundary_layers = [mp.PML(thickness=dpml, direction=mp.Z)]
+boundary_layers = [mp.PML(thickness=dpml)]
 
 beam_x0 = mp.Vector3(0, 3.0)  # beam focus (relative to source center)
 rot_angle = 0  # CCW rotation angle about z axis (0: +y axis)

@@ -5,16 +5,16 @@ import meep as mp
 
 resolution = 50  # pixels/μm
 
-cell_size = mp.Vector3(4, 2, 0)
+cell_size = mp.Vector3(14, 10, 0)
 
-pml_layers = [mp.PML(thickness=1, direction=mp.X)]
+pml_layers = [mp.PML(thickness=2, direction=mp.X)]
 
 # rotation angle (in degrees) of planewave, counter clockwise (CCW) around z-axis
-rot_angle = np.radians(10)
+rot_angle = np.radians(0)
 
 fsrc = 1.0  # frequency of planewave (wavelength = 1/fsrc)
 
-n = 1  # refractive index of homogeneous material
+n = 1.5  # refractive index of homogeneous material
 default_material = mp.Medium(index=n)
 
 k_point = mp.Vector3(fsrc * n).rotate(mp.Vector3(z=1), rot_angle)
@@ -23,7 +23,7 @@ sources = [
     mp.EigenModeSource(
         src=mp.ContinuousSource(fsrc),
         center=mp.Vector3(),
-        size=mp.Vector3(y=2),
+        size=mp.Vector3(y=10),
         direction=mp.AUTOMATIC if rot_angle == 0 else mp.NO_DIRECTION,
         eig_kpoint=k_point,
         eig_band=1,
@@ -44,7 +44,7 @@ sim = mp.Simulation(
 
 sim.run(until=100)
 
-nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(2, 2, 0))
+nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10, 10, 0))
 
 sim.plot2D(fields=mp.Ez, output_plane=nonpml_vol)
 
