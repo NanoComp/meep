@@ -179,15 +179,15 @@ void fields::process_incoming_chunk_data(field_type ft, const chunk_pair &comm_p
     const comms_key key = {ft, CONNECT_PHASE, comm_pair};
     size_t num_transfers = get_comm_size(key) / 2; // Two realnums per complex
     if (num_transfers) {
-      const std::complex<realnum> *pair_comm_block_complex =
-          reinterpret_cast<const std::complex<realnum> *>(pair_comm_block);
       const std::vector<realnum *> &incoming_connection =
           chunks[this_chunk_idx]->connections_in.at(key);
       const std::vector<std::complex<realnum> > &connection_phase_for_ft =
           chunks[this_chunk_idx]->connection_phases[key];
 
       for (size_t n = 0; n < num_transfers; ++n) {
-        std::complex<realnum> temp = connection_phase_for_ft[n] * pair_comm_block_complex[n];
+        std::complex<realnum> temp =
+            connection_phase_for_ft[n] *
+            std::complex<realnum>(pair_comm_block[2 * n], pair_comm_block[2 * n + 1]);
         *(incoming_connection[2 * n]) = temp.real();
         *(incoming_connection[2 * n + 1]) = temp.imag();
       }
