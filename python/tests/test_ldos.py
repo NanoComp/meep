@@ -16,7 +16,7 @@ class TestLDOS(unittest.TestCase):
         cls.fcen = 1 / cls.wvl
 
         # termination criteria
-        cls.tol = 1e-6
+        cls.tol = 1e-8
 
     def bulk_ldos_cyl(self):
         """Computes the LDOS of a point dipole in a homogeneous dielectric
@@ -197,18 +197,14 @@ class TestLDOS(unittest.TestCase):
     def ext_eff_cyl(self, dmat, h, m):
         """Computes the extraction efficiency of a point dipole embedded
         within a dielectric layer above a lossless ground plane in
-        cylindrical coordinates using a near-to-far field transformation.
+        cylindrical coordinates.
 
         Args:
           dmat: thickness of dielectric layer.
           h: height of dipole above ground plane as fraction of dmat.
           m: angular dependence of the fields, exp(imφ).
         """
-        # Because the near-field surface is not closed, it is necessary
-        # to increase its length to reduce truncation errors.
-        Lr = 6 * self.L
-
-        sr = Lr + self.dpml
+        sr = self.L + self.dpml
         sz = dmat + self.dair + self.dpml
         cell_size = mp.Vector3(sr, 0, sz)
 
@@ -218,7 +214,13 @@ class TestLDOS(unittest.TestCase):
         ]
 
         src_cmpt = mp.Er
-        src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+
+        # Because (1) Er is not defined at r=0 on the Yee grid, and (2) there
+        # seems to be a bug in the restriction of an Er point source at r = 0,
+        # the source is placed at r = ~Δr (just outside the first voxel).
+        # This incurs a small error which decreases linearly with resolution.
+        src_pt = mp.Vector3(1.5 / self.resolution, 0, -0.5 * sz + h * dmat)
+
         sources = [
             mp.Source(
                 src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
@@ -245,16 +247,16 @@ class TestLDOS(unittest.TestCase):
             geometry=geometry,
         )
 
-        n2f_mon = sim.add_near2far(
+        flux_air = sim.add_flux(
             self.fcen,
             0,
             1,
-            mp.Near2FarRegion(
-                center=mp.Vector3(0.5 * Lr, 0, 0.5 * sz - self.dpml),
-                size=mp.Vector3(Lr, 0, 0),
+            mp.FluxRegion(
+                center=mp.Vector3(0.5 * self.L, 0, 0.5 * sz - self.dpml),
+                size=mp.Vector3(self.L, 0, 0),
             ),
-            mp.Near2FarRegion(
-                center=mp.Vector3(Lr, 0, 0.5 * sz - self.dpml - 0.5 * self.dair),
+            mp.FluxRegion(
+                center=mp.Vector3(self.L, 0, 0.5 * sz - self.dpml - 0.5 * self.dair),
                 size=mp.Vector3(0, 0, self.dair),
             ),
         )
@@ -262,37 +264,17 @@ class TestLDOS(unittest.TestCase):
         sim.run(
             mp.dft_ldos(self.fcen, 0, 1),
             until_after_sources=mp.stop_when_fields_decayed(
-                50, src_cmpt, src_pt, self.tol
+                20, src_cmpt, src_pt, self.tol
             ),
         )
 
-        # number of angular points in [0, π/2] to sample radial flux
-        npts = 50
+        out_flux = mp.get_fluxes(flux_air)[0]
 
-        angles = np.linspace(0, 0.5 * np.pi, npts)
+        if src_pt.x == 0:
+            dV = np.pi / (self.resolution**3)
+        else:
+            dV = 2 * np.pi * src_pt.x / (self.resolution**2)
 
-        # distance from the origin of point monitors
-        r = 1000 * self.wvl
-
-        E = np.zeros((npts, 3), dtype=np.complex128)
-        H = np.zeros((npts, 3), dtype=np.complex128)
-        for i in range(npts):
-            ff = sim.get_farfield(
-                n2f_mon, mp.Vector3(r * np.sin(angles[i]), 0, r * np.cos(angles[i]))
-            )
-            E[i, :] = [np.conj(ff[j]) for j in range(3)]
-            H[i, :] = [ff[j + 3] for j in range(3)]
-
-        Pr = np.real(E[:, 1] * H[:, 2] - E[:, 2] * H[:, 1])
-        Pz = np.real(E[:, 0] * H[:, 1] - E[:, 1] * H[:, 0])
-        Prz = np.sqrt(np.square(Pr) + np.square(Pz))
-
-        # Total radiated flux is the product of the solid angle of a hemisphere
-        # of radius r (2πr) and the radial flux integrated on a line over the
-        # angular range of [0, π/2].
-        out_flux = 2 * np.pi * r * np.sum(Prz) * 0.5 * np.pi * r / npts
-
-        dV = np.pi / (self.resolution**3)
         total_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
         ext_eff = out_flux / total_flux
         print(f"extraction efficiency (cyl):, " f"{dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
@@ -386,7 +368,7 @@ class TestLDOS(unittest.TestCase):
         sim.run(
             mp.dft_ldos(self.fcen, 0, 1),
             until_after_sources=mp.stop_when_fields_decayed(
-                50, src_cmpt, src_pt, self.tol
+                20, src_cmpt, src_pt, self.tol
             ),
         )
 
@@ -465,14 +447,14 @@ class TestLDOS(unittest.TestCase):
         ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height, -1.0)
         ext_eff_3D = self.ext_eff_3D(layer_thickness, dipole_height)
 
-        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.06)
+        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.02)
 
         ext_eff_cyl_m_plus = self.ext_eff_cyl(
             layer_thickness,
             dipole_height,
             +1.0,
         )
-        self.assertAlmostEqual(ext_eff_cyl, ext_eff_cyl_m_plus, places=8)
+        self.assertEqual(ext_eff_cyl, ext_eff_cyl_m_plus)
 
 
 if __name__ == "__main__":
