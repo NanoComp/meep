@@ -73,10 +73,9 @@ bool fields_chunk::step_db(field_type ft) {
           memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
           allocated_u = true;
         }
-        if ((need_bfast_theta != 0 || need_bfast_phi != 0) && !f_bfast[cc][cmp]) {
+        if (need_bfast && !f_bfast[cc][cmp]) {
           f_bfast[cc][cmp] = new realnum[gv.ntot()];
           memset(f_bfast[cc][cmp], 0, sizeof(realnum) * gv.ntot());
-          // memcpy(f_bfast[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
         }
 
         if (ft == D_stuff) { // strides are opposite sign for H curl
@@ -127,28 +126,19 @@ bool fields_chunk::step_db(field_type ft) {
                   f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu], dt,
                   s->conductivity[cc][d_c], s->condinv[cc][d_c], f_cond[cc][cmp]);
 
-        if (need_bfast_theta != 0 || need_bfast_phi != 0) {
-          realnum theta = (pi / 180) * need_bfast_theta;
-          realnum phi = (pi / 180) * need_bfast_phi;
-          // realnum k[3] = {sin(theta)*cos(phi),sin(theta)*sin(phi),0};  //
-          realnum k[3] = {sin(theta), 0, 0};
-          // realnum k1 = k[component_direction(c_m)]; //puts k1 in direction of g2
-          // realnum k2 = k[component_direction(c_p)]; //puts k2 in direction of g1
-          realnum k1;
-          realnum k2;
-          if (component_direction(cc) == X) {
-            k1 = k[2];
-            k2 = k[1];
+        if (need_bfast) {
+          std::vector<realnum> k = bfast_k_bar;
+          realnum k1 =
+              have_m ? k[component_index(c_m)] : 0; // puts k1 in direction of g2 k[d_deriv_m];//
+          realnum k2 =
+              have_p ? k[component_index(c_p)] : 0; // puts k2 in direction of g1 k[d_deriv_p];//
+          bool curl_h = false;
+          if (ft == D_stuff) {
+            k1 = -k1;
+            k2 = -k2;
           }
-          else if (component_direction(cc) == Y) {
-            k1 = k[0];
-            k2 = k[2];
-          }
-          else if (component_direction(cc) == Z) {
-            k1 = k[1];
-            k2 = k[0];
-          }
-          else { printf("AHA"); }
+          // master_printf("bfast: k1=%g, k2=%g, g1=%s, g2=%s\n",k1,k2,component_name(have_p ? c_p:
+          // NO_COMPONENT),component_name(have_m ? c_m : NO_COMPONENT));
           STEP_BFAST(the_f, cc, f_p, f_m, stride_p, stride_m, gv, sub_gv.little_owned_corner0(cc),
                      sub_gv.big_corner(), Courant, dsig, s->sig[dsig], s->kap[dsig],
                      s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],

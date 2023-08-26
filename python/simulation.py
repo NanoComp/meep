@@ -1230,8 +1230,8 @@ class Simulation:
         force_complex_fields: bool = False,
         default_material: Medium = mp.Medium(),
         m: float = 0,
-        need_bfast_theta: float = 0,
-        need_bfast_phi: float = 0,
+        need_bfast: bool = False,
+        bfast_k_bar: Vector3Type = (0, 0, 0),
         k_point: Union[Vector3Type, bool] = False,
         kz_2d: str = "complex",
         extra_materials: Optional[List[Medium]] = None,
@@ -1529,8 +1529,8 @@ class Simulation:
         self.last_eps_filename = ""
         self.output_h5_hook = lambda fname: False
         self.interactive = False
-        self.need_bfast_theta = need_bfast_theta
-        self.need_bfast_phi = need_bfast_phi
+        self.need_bfast = need_bfast
+        self.bfast_k_bar = bfast_k_bar
         self.is_cylindrical = False
         self.material_function = material_function
         self.epsilon_func = epsilon_func
@@ -2475,8 +2475,8 @@ class Simulation:
         self.fields = mp.fields(
             self.structure,
             self.m if self.is_cylindrical else 0,
-            self.need_bfast_theta,
-            self.need_bfast_phi,
+            self.need_bfast,
+            self.bfast_k_bar,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin,
             self.loop_tile_base_db,

@@ -343,24 +343,23 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
   if (!g1) {                  // swap g1 and g2
     SWAP(const RPR, g1, g2);
     SWAP(ptrdiff_t, s1, s2);
-    SWAP(const realnum, k1, k2); // need to swap in cross product
+    SWAP(realnum, k1, k2); // need to swap in cross product
   }
-  // printf("bfast");
   if (dsig == NO_DIRECTION) {    // no PML in f update
     if (dsigu == NO_DIRECTION) { // no fu update
       if (cnd) {
         if (g2) {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            f[i] += (F_prev - F[i]) * cndinv[i];
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            f[i] += (F[i] - F_prev) * cndinv[i];
           }
         }
         else {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            f[i] += (F_prev - F[i]) * cndinv[i];
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            f[i] += (F[i] - F_prev) * cndinv[i];
           }
         }
       }
@@ -368,15 +367,15 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
         if (g2) {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            f[i] += (F_prev - F[i]); // this one
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            f[i] += (F[i] - F_prev); // this one
           }
         }
         else {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]);
-            f[i] += (F_prev - F[i]);
+            F[i] = k1 * (g1[i + s1] + g1[i]);
+            f[i] += (F[i] - F_prev);
           }
         }
       }
@@ -389,8 +388,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            fu[i] += (df = (F_prev - F[i]) * cndinv[i]);
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            fu[i] += (df = (F[i] - F_prev) * cndinv[i]);
             f[i] += siginvu[ku] * df;
           }
         }
@@ -399,8 +398,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            fu[i] += (df = (F_prev - F[i]) * cndinv[i]);
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            fu[i] += (df = (F[i] - F_prev) * cndinv[i]);
             f[i] += siginvu[ku] * df;
           }
         }
@@ -411,8 +410,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            fu[i] += (df = (F_prev - F[i]));
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            fu[i] += (df = (F[i] - F_prev));
             f[i] += siginvu[ku] * df; // this one
           }
         }
@@ -421,8 +420,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            fu[i] += (df = (F_prev - F[i]));
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            fu[i] += (df = (F[i] - F_prev));
             f[i] += siginvu[ku] * df;
           }
         }
@@ -438,8 +437,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             DEF_k;
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            realnum dfcnd = (F_prev - F[i]) * cndinv[i];
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            realnum dfcnd = (F[i] - F_prev) * cndinv[i];
             fcnd[i] += dfcnd;
             f[i] += dfcnd * siginv[k];
           }
@@ -448,8 +447,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             DEF_k;
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            realnum dfcnd = (F_prev - F[i]) * cndinv[i];
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            realnum dfcnd = (F[i] - F_prev) * cndinv[i];
             fcnd[i] += dfcnd;
             f[i] += dfcnd * siginv[k];
           }
@@ -460,16 +459,16 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             DEF_k;
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            f[i] += (F_prev - F[i]) * siginv[k]; // this one
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            f[i] += (F[i] - F_prev) * siginv[k]; // this one
           }
         }
         else {
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             DEF_k;
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            f[i] += (F_prev - F[i]) * siginv[k];
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            f[i] += (F[i] - F_prev) * siginv[k];
           }
         }
       }
@@ -484,9 +483,9 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) -
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) -
                    F[i]; // NEED TO CHECK SIGNS (-dtdx) for all cases
-            realnum dfcnd = (F_prev - F[i]) * cndinv[i];
+            realnum dfcnd = (F[i] - F_prev) * cndinv[i];
             fcnd[i] += dfcnd;
             fu[i] += (df = dfcnd * siginv[k]);
             f[i] += siginvu[ku] * df;
@@ -499,8 +498,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            realnum dfcnd = (F_prev - F[i]) * cndinv[i];
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            realnum dfcnd = (F[i] - F_prev) * cndinv[i];
             fcnd[i] += dfcnd;
             fu[i] += (df = dfcnd * siginv[k]);
             f[i] += siginvu[ku] * df;
@@ -514,8 +513,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -(k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            fu[i] += (df = (F_prev - F[i]) * siginv[k]);
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
+            fu[i] += (df = (F[i] - F_prev) * siginv[k]);
             f[i] += siginvu[ku] * df;
           }
         }
@@ -525,8 +524,8 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = -k1 * (g1[i + s1] + g1[i]) - F[i];
-            fu[i] += (df = (F_prev - F[i]) * siginv[k]);
+            F[i] = k1 * (g1[i + s1] + g1[i]) - F[i];
+            fu[i] += (df = (F[i] - F_prev) * siginv[k]);
             f[i] += siginvu[ku] * df;
           }
         }
