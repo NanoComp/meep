@@ -129,7 +129,7 @@ void fields::dump(const char *filename, bool single_parallel_file) {
                           [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
   dump_fields_chunk_field(
       &file, single_parallel_file, "f_bfast",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_bfast[c][d]); }); // added
+      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_bfast[c][d]); });
   dump_fields_chunk_field(
       &file, single_parallel_file, "f_w_prev",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w_prev[c][d]); });
@@ -262,7 +262,7 @@ void fields::load(const char *filename, bool single_parallel_file) {
                           [](fields_chunk *chunk, int c, int d) { return &(chunk->f_cond[c][d]); });
   load_fields_chunk_field(
       &file, single_parallel_file, "f_bfast",
-      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_bfast[c][d]); }); // added
+      [](fields_chunk *chunk, int c, int d) { return &(chunk->f_bfast[c][d]); });
   load_fields_chunk_field(
       &file, single_parallel_file, "f_w_prev",
       [](fields_chunk *chunk, int c, int d) { return &(chunk->f_w_prev[c][d]); });

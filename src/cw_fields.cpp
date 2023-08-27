@@ -35,7 +35,7 @@ static void fields_to_array(const fields &f, complex<realnum> *x) {
           COPY_FROM_FIELD(f[c]);
           COPY_FROM_FIELD(f_u[c]);
           COPY_FROM_FIELD(f_cond[c]);
-          COPY_FROM_FIELD(f_bfast[c]); // added
+          COPY_FROM_FIELD(f_bfast[c]);
           component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
           COPY_FROM_FIELD(f_w[c2]);
           if (f.chunks[i]->f_w[c2][0]) COPY_FROM_FIELD(f[c2]);
@@ -59,7 +59,7 @@ static void array_to_fields(const complex<realnum> *x, fields &f) {
           COPY_TO_FIELD(f[c]);
           COPY_TO_FIELD(f_u[c]);
           COPY_TO_FIELD(f_cond[c]);
-          COPY_TO_FIELD(f_bfast[c]); // added
+          COPY_TO_FIELD(f_bfast[c]);
           component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
           COPY_TO_FIELD(f_w[c2]);
           if (f.chunks[i]->f_w[c2][0]) COPY_TO_FIELD(f[c2]);
@@ -164,8 +164,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
              problems getting that working) */
           N += 2 * chunks[i]->gv.nowned(c) *
                (1 + (chunks[i]->f_u[c][0] != NULL) + (chunks[i]->f_w[c2][0] != NULL) * 2 +
-                (chunks[i]->f_cond[c][0] != NULL) +
-                (chunks[i]->f_bfast[c][0] != NULL)); // added but not sure if correct
+                (chunks[i]->f_cond[c][0] != NULL));
         }
       }
     }

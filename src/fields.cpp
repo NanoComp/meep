@@ -174,14 +174,14 @@ fields_chunk::~fields_chunk() {
     delete[] f_u[c][cmp];
     delete[] f_w[c][cmp];
     delete[] f_cond[c][cmp];
-    delete[] f_bfast[c][cmp]; // added
+    delete[] f_bfast[c][cmp];
     delete[] f_minus_p[c][cmp];
     delete[] f_w_prev[c][cmp];
     delete[] f_backup[c][cmp];
     delete[] f_u_backup[c][cmp];
     delete[] f_w_backup[c][cmp];
     delete[] f_cond_backup[c][cmp];
-    delete[] f_bfast_backup[c][cmp]; // added
+    delete[] f_bfast_backup[c][cmp];
   }
   delete[] f_rderiv_int;
   while (dft_chunks) {
@@ -284,14 +284,14 @@ fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, boo
     f_u[c][cmp] = NULL;
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
-    f_bfast[c][cmp] = NULL; // added
+    f_bfast[c][cmp] = NULL;
     f_minus_p[c][cmp] = NULL;
     f_w_prev[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_u_backup[c][cmp] = NULL;
     f_w_backup[c][cmp] = NULL;
     f_cond_backup[c][cmp] = NULL;
-    f_bfast_backup[c][cmp] = NULL; // added
+    f_bfast_backup[c][cmp] = NULL;
   }
   f_rderiv_int = NULL;
   FOR_FIELD_TYPES(ft) {
@@ -343,12 +343,12 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
     f_u[c][cmp] = NULL;
     f_w[c][cmp] = NULL;
     f_cond[c][cmp] = NULL;
-    f_bfast[c][cmp] = NULL; // added
+    f_bfast[c][cmp] = NULL;
     f_backup[c][cmp] = NULL;
     f_u_backup[c][cmp] = NULL;
     f_w_backup[c][cmp] = NULL;
     f_cond_backup[c][cmp] = NULL;
-    f_bfast_backup[c][cmp] = NULL; // added
+    f_bfast_backup[c][cmp] = NULL;
   }
   FOR_COMPONENTS(c) DOCMP {
     if (!is_magnetic(c) && thef.f[c][cmp]) {
@@ -369,7 +369,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
     }
     if (thef.f_bfast[c][cmp]) {
       f_bfast[c][cmp] = new realnum[gv.ntot()];
-      memcpy(f_bfast[c][cmp], thef.f_bfast[c][cmp], sizeof(realnum) * gv.ntot()); // added
+      memcpy(f_bfast[c][cmp], thef.f_bfast[c][cmp], sizeof(realnum) * gv.ntot());
     }
   }
   FOR_MAGNETIC_COMPONENTS(c) DOCMP {
@@ -633,12 +633,12 @@ void fields_chunk::zero_fields() {
     ZERO(f_u[c][cmp]);
     ZERO(f_w[c][cmp]);
     ZERO(f_cond[c][cmp]);
-    ZERO(f_bfast[c][cmp]); // added
+    ZERO(f_bfast[c][cmp]);
     ZERO(f_backup[c][cmp]);
     ZERO(f_u_backup[c][cmp]);
     ZERO(f_w_backup[c][cmp]);
     ZERO(f_cond_backup[c][cmp]);
-    ZERO(f_bfast_backup[c][cmp]); // added
+    ZERO(f_bfast_backup[c][cmp]);
 #undef ZERO
   }
   if (is_mine()) FOR_FIELD_TYPES(ft) {

@@ -62,7 +62,6 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *f_p = have_p ? f[c_p][cmp] : NULL;
         realnum *f_m = have_m ? f[c_m][cmp] : NULL;
         realnum *the_f = f[cc][cmp];
-        // printf(" (%f,%f,%f) ",cc,c_p,c_m);
 
         if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
           f_cond[cc][cmp] = new realnum[gv.ntot()];
@@ -128,17 +127,13 @@ bool fields_chunk::step_db(field_type ft) {
 
         if (need_bfast) {
           std::vector<realnum> k = bfast_k_bar;
-          realnum k1 =
-              have_m ? k[component_index(c_m)] : 0; // puts k1 in direction of g2 k[d_deriv_m];//
-          realnum k2 =
-              have_p ? k[component_index(c_p)] : 0; // puts k2 in direction of g1 k[d_deriv_p];//
+          realnum k1 = have_m ? k[component_index(c_m)] : 0; // puts k1 in direction of g2
+          realnum k2 = have_p ? k[component_index(c_p)] : 0; // puts k2 in direction of g1
           bool curl_h = false;
           if (ft == D_stuff) {
             k1 = -k1;
             k2 = -k2;
           }
-          // master_printf("bfast: k1=%g, k2=%g, g1=%s, g2=%s\n",k1,k2,component_name(have_p ? c_p:
-          // NO_COMPONENT),component_name(have_m ? c_m : NO_COMPONENT));
           STEP_BFAST(the_f, cc, f_p, f_m, stride_p, stride_m, gv, sub_gv.little_owned_corner0(cc),
                      sub_gv.big_corner(), Courant, dsig, s->sig[dsig], s->kap[dsig],
                      s->siginv[dsig], f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu],

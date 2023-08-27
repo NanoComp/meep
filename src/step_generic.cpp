@@ -368,7 +368,7 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
           PLOOP_OVER_IVECS(gv, is, ie, i) {
             realnum F_prev = F[i];
             F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            f[i] += (F[i] - F_prev); // this one
+            f[i] += (F[i] - F_prev);
           }
         }
         else {
@@ -412,7 +412,7 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             realnum F_prev = F[i];
             F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
             fu[i] += (df = (F[i] - F_prev));
-            f[i] += siginvu[ku] * df; // this one
+            f[i] += siginvu[ku] * df;
           }
         }
         else {
@@ -460,7 +460,7 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_k;
             realnum F_prev = F[i];
             F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
-            f[i] += (F[i] - F_prev) * siginv[k]; // this one
+            f[i] += (F[i] - F_prev) * siginv[k];
           }
         }
         else {
@@ -483,8 +483,7 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
             DEF_ku;
             realnum df;
             realnum F_prev = F[i];
-            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) -
-                   F[i]; // NEED TO CHECK SIGNS (-dtdx) for all cases
+            F[i] = (k1 * (g1[i + s1] + g1[i]) - k2 * (g2[i + s2] + g2[i])) - F[i];
             realnum dfcnd = (F[i] - F_prev) * cndinv[i];
             fcnd[i] += dfcnd;
             fu[i] += (df = dfcnd * siginv[k]);
