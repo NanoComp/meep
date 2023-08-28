@@ -2475,12 +2475,12 @@ class Simulation:
         self.fields = mp.fields(
             self.structure,
             self.m if self.is_cylindrical else 0,
-            self.need_bfast,
-            self.bfast_k_bar,
             self.k_point.z if self.special_kz and self.k_point else 0,
             not self.accurate_fields_near_cylorigin,
             self.loop_tile_base_db,
             self.loop_tile_base_eh,
+            self.need_bfast,
+            self.bfast_k_bar,
         )
 
         if self.force_all_components and self.dimensions != 1:

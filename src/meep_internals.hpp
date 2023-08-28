@@ -107,8 +107,7 @@ void step_beta(realnum *f, component c, const realnum *g, const grid_volume &gv,
 void step_bfast(realnum *f, component c, const realnum *g1, const realnum *g2, ptrdiff_t s1,
                 ptrdiff_t s2, // strides for g1/g2 shift
                 const grid_volume &gv, const ivec is, const ivec ie, realnum dtdx, direction dsig,
-                const realnum *sig, const realnum *kap, const realnum *siginv,
-                realnum *fu, // why do variables have different types
+                const realnum *sig, const realnum *kap, const realnum *siginv, realnum *fu,
                 direction dsigu, const realnum *sigu, const realnum *kapu, const realnum *siginvu,
                 realnum dt, const realnum *cnd, const realnum *cndinv, realnum *fcnd, realnum *F,
                 realnum k1, realnum k2);

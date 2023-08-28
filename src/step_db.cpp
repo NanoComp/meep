@@ -126,10 +126,8 @@ bool fields_chunk::step_db(field_type ft) {
                   s->conductivity[cc][d_c], s->condinv[cc][d_c], f_cond[cc][cmp]);
 
         if (need_bfast) {
-          std::vector<realnum> k = bfast_k_bar;
-          realnum k1 = have_m ? k[component_index(c_m)] : 0; // puts k1 in direction of g2
-          realnum k2 = have_p ? k[component_index(c_p)] : 0; // puts k2 in direction of g1
-          bool curl_h = false;
+          realnum k1 = have_m ? bfast_k_bar[component_index(c_m)] : 0; // puts k1 in direction of g2
+          realnum k2 = have_p ? bfast_k_bar[component_index(c_p)] : 0; // puts k2 in direction of g1
           if (ft == D_stuff) {
             k1 = -k1;
             k2 = -k2;

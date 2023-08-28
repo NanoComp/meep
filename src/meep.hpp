@@ -1512,9 +1512,9 @@ public:
   const char *outdir;
   int chunk_idx;
 
-  fields_chunk(structure_chunk *, const char *outdir, double m, bool need_bfast,
-               std::vector<double> bfast_k_bar, double beta, bool zero_fields_near_cylorigin,
-               int chunkidx, int loop_tile_base_db);
+  fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
+               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db,
+               bool need_bfast, std::vector<double> bfast_k_bar);
 
   fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
@@ -1754,10 +1754,9 @@ public:
   size_t loop_tile_base_db, loop_tile_base_eh;
 
   // fields.cpp methods:
-  fields(structure *, double m = 0, bool need_bfast = false,
-         std::vector<double> bfast_k_bar = {0, 0, 0}, double beta = 0,
-         bool zero_fields_near_cylorigin = true, int loop_tile_base_db = 0,
-         int loop_tile_base_eh = 0);
+  fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,
+         int loop_tile_base_db = 0, int loop_tile_base_eh = 0, bool need_bfast = false,
+         std::vector<double> bfast_k_bar = {0, 0, 0});
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;

@@ -164,7 +164,7 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
              problems getting that working) */
           N += 2 * chunks[i]->gv.nowned(c) *
                (1 + (chunks[i]->f_u[c][0] != NULL) + (chunks[i]->f_w[c2][0] != NULL) * 2 +
-                (chunks[i]->f_cond[c][0] != NULL));
+                (chunks[i]->f_cond[c][0] != NULL) + (chunks[i]->f_bfast[c][0] != NULL));
         }
       }
     }
