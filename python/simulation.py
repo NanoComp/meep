@@ -3871,8 +3871,9 @@ class Simulation:
         snap: bool = False,
     ):
         """
-        Returns a slice of the fields or materials over a subregion of the cell at the
-        current simulation time as a NumPy array.
+        Returns a slice of the materials or time-domain fields over a subregion of the cell at the
+        current simulation time as a NumPy array. The materials/fields are centered on the Yee-grid voxels
+        using a bilinear interpolation of the nearest Yee-grid points.
 
         + **`component` [ `component` constant ]** — The field or material component (e.g., `meep.Ex`,
           `meep.Hy`, `meep.Sz`, `meep.Dielectric`, etc) of the array data. No default.
@@ -3900,9 +3901,8 @@ class Simulation:
           $\\varepsilon$ and $\\mu$ tensors are evaluated. Defaults to 0 which is the
           instantaneous $\\varepsilon$.
 
-        + **`snap` [ `boolean` ]** — By default, the elements of the grid slice are obtained using a bilinear
-          interpolation of the nearest Yee grid points. Empty dimensions of the grid slice
-          are "collapsed" into a single element. However, if `snap` is set to `True`, this
+        + **`snap` [ `boolean` ]** — Empty dimensions of the grid slice are "collapsed"
+          into a single element. However, if `snap` is set to `True`, this
           interpolation behavior is disabled and the grid slice is instead "snapped"
           everywhere to the nearest grid point. (Empty slice dimensions are still of size
           one.) This feature is mainly useful for comparing results with the
@@ -3988,7 +3988,7 @@ class Simulation:
     ):
         """
         Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
-        or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays).
+        or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays). The DFT fields are centered on the Yee-grid voxels using bilinear interpolation of the nearest Yee-grid points.
 
         + **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
           obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
