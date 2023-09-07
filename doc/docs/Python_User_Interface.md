@@ -1419,7 +1419,7 @@ following fields:
 + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
   (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes
   propagating in the forward (+) or backward (-) directions defined relative to
-  the sign of the propagation constant β of the mode (the wavevector component in the direction perpendicular to the mode-monitor plane)
+  the sign of the propagation constant β of the mode (the wavevector component in the direction perpendicular to the mode-monitor plane).
 + `vgrp`: the group velocity as a NumPy array.
 + `kpoints`: a list of `mp.Vector3`s of the `kpoint` used in the mode calculation.
 + `kdom`: a list of `mp.Vector3`s of the mode's dominant wavevector.
