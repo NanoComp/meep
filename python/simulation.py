@@ -4874,7 +4874,7 @@ class Simulation:
             output_plane=output_plane,
             fields=fields,
             labels=labels,
-            label_geometry = label_geometry,
+            label_geometry=label_geometry,
             eps_parameters=eps_parameters,
             boundary_parameters=boundary_parameters,
             source_parameters=source_parameters,

@@ -92,7 +92,12 @@ default_volume_parameters = {
 
 default_label_parameters = {"label_color": "r", "offset": 20, "label_alpha": 0.3}
 
-default_label_geometry_parameters = {"label_color": "w", "arrow_color": "r", "offset": 20, "label_alpha": 0.8}
+default_label_geometry_parameters = {
+    "label_color": "w",
+    "arrow_color": "r",
+    "offset": 20,
+    "label_alpha": 0.8,
+}
 
 # Used to remove the elements of a dictionary (dict_to_filter) that
 # don't correspond to the keyword arguments of a particular
@@ -162,7 +167,9 @@ def place_label(
         ha="center",
         va="bottom",
         bbox=dict(boxstyle="round,pad=0.2", fc=color, alpha=alpha),
-        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.5", color=arrow_color),
+        arrowprops=dict(
+            arrowstyle="->", connectionstyle="arc3,rad=0.5", color=arrow_color
+        ),
     )
     return ax
 
@@ -622,7 +629,6 @@ def plot_eps(
                 colorbar_parameters=colorbar_parameters,
             )
 
-
         if label_geometry:
             for el in sim.geometry:
                 if sim_size.x == 0:
@@ -647,10 +653,8 @@ def plot_eps(
                     center_second,
                     sim_first,
                     sim_second,
-                    label_parameters = default_label_geometry_parameters,
+                    label_parameters=default_label_geometry_parameters,
                 )
-
-
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
