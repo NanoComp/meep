@@ -31,7 +31,7 @@ tol = 1e-8
 # number of angular grid points in [0, π/2]
 npts = 100
 
-# grid of polar angles for evaluating radiated flux in far field
+# grid of polar angles for computing radiated flux in far field
 thetas = np.linspace(0, 0.5 * math.pi, npts)
 
 # radius of quarter circle for computing flux in far field
@@ -41,7 +41,7 @@ r = 1000 * wvl
 def plot_radiation_pattern_polar(Ptheta: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
-    The angles increase clockwise with zero at the top.
+    The angles increase clockwise with zero at the top (+z direction).
 
     Args:
         Ptheta: radial flux of the far fields in polar coordinates.
@@ -127,11 +127,11 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
 
 def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     """Computes the total radiated flux from a point dipole embedded
-    within a dielectric layer above a lossless ground plane using
+    within a dielectric disc above a lossless ground plane using
     its near and far fields as separate calculations.
 
     Args:
-        dmat: thickness of dielectric layer.
+        dmat: thickness of dielectric disc.
         h: height of dipole above ground plane as fraction of dmat.
 
     Returns:
@@ -229,17 +229,17 @@ def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     dphi = 2 * math.pi
     flux_far = np.sum(Ptheta * np.sin(thetas)) * r * r * dtheta * dphi
 
-    err = abs(flux_near - flux_far) / flux_near
-    print(
-        f"total_flux:, {flux_near:.5f} (near), {flux_far:.5f} (far), "
-        f"{err:.5f} (error)"
-    )
-
     return flux_near, flux_far
 
 
 if __name__ == "__main__":
-    layer_thickness = 0.7 * wvl / n
+    disc_thickness = 0.7 * wvl / n
     dipole_height = 0.5
 
-    near_flux, far_flux = disc_total_flux(layer_thickness, dipole_height)
+    near_flux, far_flux = disc_total_flux(disc_thickness, dipole_height)
+
+    err = abs(near_flux - far_flux) / near_flux
+    print(
+        f"total_flux:, {near_flux:.5f} (near), {far_flux:.5f} (far), "
+        f"{err:.5f} (error)"
+    )

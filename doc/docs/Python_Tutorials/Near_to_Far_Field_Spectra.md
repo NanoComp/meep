@@ -360,27 +360,27 @@ if __name__ == '__main__':
 Radiation Pattern of a Disc in Cylindrical Coordinates
 ------------------------------------------------------
 
-The near-to-far field transformation feature can also be used in [cylindrical coordinates](../Cylindrical_Coordinates.md). As a demonstration, we compute the radiation pattern of a dielectric disc and verify Poynting's theorem that the total radiated flux computed from the far fields is equivalent to using the near fields via `add_flux`. (The same result is demonstrated in [Tutorial/Radiation Pattern of an Antenna](#radiation-pattern-of-an-antenna) for 2d Cartesian coordinates.)
+The near-to-far field transformation feature can also be used in [cylindrical coordinates](Cylindrical_Coordinates.md). As a demonstration, we compute the radiation pattern of a dielectric disc and verify Poynting's theorem: the total radiated flux computed from the far fields is equivalent to using the near fields via `add_flux`. (The same result is demonstrated in [Tutorial/Radiation Pattern of an Antenna](#radiation-pattern-of-an-antenna) for 2D Cartesian coordinates.)
 
-The simulation consists of an $E_r$ point-dipole source ($\lambda = 1.0 \mu m$) at $r = 0.6 \mu m$ embedded within a disc (radius of 1.2 μm) of index $n = 2.4$ above a perfect-metallic ground plane. This is similar to the configuration in [Tutorial/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led). Unlike the infinitely extended slab of the LED, a *finite* structure such as the disc (or no structure at all) ensures that all the power from the dipole emitter is radiated. The LED, however, contains waveguide modes which are more challenging to disentagle from the radiated power.
+The simulation consists of an $E_r$ point-dipole source ($\lambda$ = 1.0 μm) at $r$ = 0.6 μm embedded within a disc (radius of 1.2 μm) of index $n$ = 2.4 above a perfect-metallic ground plane. This is similar to the configuration in [Tutorial/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led). Unlike the infinitely extended slab of the LED, a *finite* structure such as the disc ensures that all the power from the dipole emitter is radiated. The LED contains waveguide modes which are more challenging to disentagle from the radiated power.
 
-A schematic of the simulation layout is shown below.
+A schematic of the simulation layout is shown below. The flux and near-field monitors (shown in blue) are overlapping.
 
 ![](../images/disc_radiation_layout.png#center)
 
-Obtaining the radiation pattern $P(\theta)$ of the disc involves computing the radial (or "outgoing") flux from the far fields along the circumference of a quarter circle (i.e. angular range of $[0, \pi/2]$). The radius of the circle needs to be sufficiently large ($\gg \lambda$) but is otherwise arbitrary. The total flux is then computed from $P(\theta)$ by integrating over a solid angle of a hemisphere in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
+Obtaining the radiation pattern $P(\theta)$ of the disc involves computing the radial (or "outgoing") flux from the far fields along the circumference of a quarter circle (i.e. angular range of $[0, \pi/2]$). The radius $r$ of the circle needs to be sufficiently large ($\gg \lambda$) to ensure accurate results but is otherwise arbitrary. The total flux is then computed by integrating $P(\theta)$ over the surface of a hemisphere with radius $r$ in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
 $$P_{total} = \int_0^{2\pi} \int_0^{\frac{\pi}{2}} P(\theta) r^2 \sin(\theta) d\theta d\phi = 2 \pi r^2 \sum_{n=0}^{N-1} P(\theta_n) \sin(\theta_n) \Delta \theta$$
 
-An angular grid of $N$ equally spaced points in $[0, \pi/2]$ has $\Delta \theta = \frac{\pi}{2N}$.
+An angular grid of $N$ equally spaced points in $[0, \pi/2]$ has $\Delta \theta = \frac{\pi}{2(N - 1)}$. Note that the same $r^2 \sin(\theta)$ weighting is necessary for the power in any cone, not just over all angles.
 
-A plot of the radiation pattern in polar coordinates and 3d is shown below.
+A plot of the radiation pattern in polar coordinates and 3D is shown below. Note regarding the coordinate axes in the polar plot: 0° is in the $+z$ direction which is normal to the ground plane and 90° is in the $+r$ direction which is parallel to the ground plane. This is consistent with the convention for the polar angle $\theta$ used in spherical coordinates.
 
-![](../images/led_radiation_pattern_polar_vs_3d.png#center)
+![](../images/disc_radiation_pattern_polar_vs_3d.png#center)
 
-The total flux computed using the near and far fields is shown to be in close agreement (relative error of ~7%).
+The total flux computed using the near and far fields is shown to be in close agreement with a relative error of ~7%.
 
-```py
+```
 total_flux:, 643.65058 (near), 597.72713 (far), 0.07135 (error)
 ```
 
@@ -412,10 +412,10 @@ fcen = 1 / wvl  # center frequency of source/monitor
 # field decay threshold for runtime termination criteria
 tol = 1e-8
 
-# number of angular grid points
+# number of angular grid points in [0, π/2]
 npts = 100
 
-# grid of polar angles for evaluating radiated flux in far field
+# grid of polar angles for computing radiated flux in far field
 thetas = np.linspace(0, 0.5 * math.pi, npts)
 
 # radius of quarter circle for computing flux in far field
@@ -425,7 +425,7 @@ r = 1000 * wvl
 def plot_radiation_pattern_polar(Ptheta: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
-    The angles increase clockwise with zero at the top.
+    The angles increase clockwise with zero at the top (+z direction).
 
     Args:
         Ptheta: radial flux of the far fields in polar coordinates.
@@ -511,11 +511,11 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
 
 def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     """Computes the total radiated flux from a point dipole embedded
-    within a dielectric layer above a lossless ground plane using
+    within a dielectric disc above a lossless ground plane using
     its near and far fields as separate calculations.
 
     Args:
-        dmat: thickness of dielectric layer.
+        dmat: thickness of dielectric disc.
         h: height of dipole above ground plane as fraction of dmat.
 
     Returns:
@@ -613,20 +613,20 @@ def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     dphi = 2 * math.pi
     flux_far = np.sum(Ptheta * np.sin(thetas)) * r * r * dtheta * dphi
 
-    err = abs(flux_near - flux_far) / flux_near
-    print(
-        f"total_flux:, {flux_near:.5f} (near), {flux_far:.5f} (far), "
-        f"{err:.5f} (error)"
-    )
-
     return flux_near, flux_far
 
 
 if __name__ == "__main__":
-    layer_thickness = 0.7 * wvl / n
+    disc_thickness = 0.7 * wvl / n
     dipole_height = 0.5
 
-    near_flux, far_flux = disc_total_flux(layer_thickness, dipole_height)
+    near_flux, far_flux = disc_total_flux(disc_thickness, dipole_height)
+
+    err = abs(near_flux - far_flux) / near_flux
+    print(
+        f"total_flux:, {near_flux:.5f} (near), {far_flux:.5f} (far), "
+        f"{err:.5f} (error)"
+    )
 ```
 
 Focusing Properties of a Metasurface Lens
