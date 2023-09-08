@@ -1067,7 +1067,7 @@ class GeometricObject:
     ```
     """
 
-    def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None):
+    def __init__(self, material=Medium(), center=Vector3(), epsilon_func=None, label=None):
         """
         Construct a `GeometricObject`.
 
@@ -1095,6 +1095,7 @@ class GeometricObject:
             epsilon_func.eps = True
             material = epsilon_func
 
+        self.label = label
         self.material = material
         self.center = Vector3(*center)
 
