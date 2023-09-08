@@ -1,16 +1,16 @@
-# Verifies that the total flux from a light-emitting diode (LED) computed
-# in cylindrical coordinates using its near fields is equivalent to using
+# Verifies that the total flux from a lossless dielectric disc computed in
+# cylindrical coordinates using its near fields is equivalent to using
 # its far fields via the radiation pattern obtained using a near-to-far field
 # transformation.
 
-# tutorial reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Near_to_Far_Field_Spectra/#radiation-pattern-of-a-light-emitting-diode-led
+# tutorial reference: https://meep.readthedocs.io/en/latest/Python_Tutorials/Near_to_Far_Field_Spectra/#radiation-pattern-of-a-disc-in-cylindrical-coordinates
 
 import math
 from typing import Tuple
 
-import numpy as np
-import meep as mp
 import matplotlib
+import meep as mp
+import numpy as np
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 resolution = 100  # pixels/μm
 dpml = 0.5  # thickness of PML
 dair = 1.0  # thickness of air padding
-L = 10.0  # length of non-PML region
+L = 6.0  # length of non-PML region
 n = 2.4  # refractive index of surrounding medium
 wvl = 1.0  # wavelength (in vacuum)
 
@@ -28,7 +28,7 @@ fcen = 1 / wvl  # center frequency of source/monitor
 # field decay threshold for runtime termination criteria
 tol = 1e-8
 
-# number of angular grid points
+# number of angular grid points in [0, π/2]
 npts = 100
 
 # grid of polar angles for evaluating radiated flux in far field
@@ -41,26 +41,34 @@ r = 1000 * wvl
 def plot_radiation_pattern_polar(Ptheta: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
+    The angles increase clockwise with zero at the top.
+
     Args:
         Ptheta: radial flux of the far fields in polar coordinates.
     """
-    fig, ax = plt.subplots(subplot_kw={"projection": "polar"})
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
     ax.plot(
         thetas,
         Ptheta,
         "b-",
     )
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(0.5 * math.pi)
     ax.set_thetalim(0, 0.5 * math.pi)
     ax.grid(True)
     ax.set_rlabel_position(22)
     ax.set_title("radiation pattern in polar coordinates")
 
     if mp.am_master():
-        fig.savefig("led_radpattern_polar.png", dpi=150, bbox_inches="tight")
+        fig.savefig(
+            "led_radpattern_polar.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
 
 
 def plot_radiation_pattern_3d(Ptheta: np.ndarray):
-    """Plots the radiation pattern in spherical coordinates.
+    """Plots the radiation pattern in 3d Cartesian coordinates.
 
     Args:
         Ptheta: radial flux of the far fields in polar coordinates.
@@ -73,12 +81,11 @@ def plot_radiation_pattern_3d(Ptheta: np.ndarray):
 
     for i, theta in enumerate(thetas):
         for j, phi in enumerate(phis):
-            xs[i, j] = Ptheta[i] * np.cos(theta) * np.cos(phi)
-            ys[i, j] = Ptheta[i] * np.cos(theta) * np.sin(phi)
-            zs[i, j] = Ptheta[i] * np.sin(theta)
+            xs[i, j] = Ptheta[i] * np.sin(theta) * np.cos(phi)
+            ys[i, j] = Ptheta[i] * np.sin(theta) * np.sin(phi)
+            zs[i, j] = Ptheta[i] * np.cos(theta)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(projection="3d")
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(6, 6))
     ax.plot_surface(xs, ys, zs, cmap="inferno")
     ax.set_title("radiation pattern in 3d")
 
@@ -99,14 +106,14 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
 
     Returns:
         Array of radial Poynting flux, one for each point on the circumference of
-        a quarter circle with angular range of [0, π/2] rad. 0 rad is the +r
-        direction and π/2 is +z.
+        a quarter circle with angular range of [0, π/2] rad. 0 rad is the +z
+        direction and π/2 is +r.
     """
     E = np.zeros((npts, 3), dtype=np.complex128)
     H = np.zeros((npts, 3), dtype=np.complex128)
     for n in range(npts):
         ff = sim.get_farfield(
-            n2f_mon, mp.Vector3(r * math.cos(thetas[n]), 0, r * math.sin(thetas[n]))
+            n2f_mon, mp.Vector3(r * math.sin(thetas[n]), 0, r * math.cos(thetas[n]))
         )
         E[n, :] = [np.conj(ff[j]) for j in range(3)]
         H[n, :] = [ff[j + 3] for j in range(3)]
@@ -118,7 +125,7 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
     return Prz
 
 
-def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
+def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     """Computes the total radiated flux from a point dipole embedded
     within a dielectric layer above a lossless ground plane using
     its near and far fields as separate calculations.
@@ -141,7 +148,7 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     ]
 
     src_cmpt = mp.Er
-    src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+    src_pt = mp.Vector3(0.1 * L, 0, -0.5 * sz + h * dmat)
     sources = [
         mp.Source(
             src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
@@ -153,8 +160,8 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     geometry = [
         mp.Block(
             material=mp.Medium(index=n),
-            center=mp.Vector3(0, 0, -0.5 * sz + 0.5 * dmat),
-            size=mp.Vector3(mp.inf, mp.inf, dmat),
+            center=mp.Vector3(0.1 * L, 0, -0.5 * sz + 0.5 * dmat),
+            size=mp.Vector3(0.2 * L, mp.inf, dmat),
         )
     ]
 
@@ -178,8 +185,8 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
             size=mp.Vector3(L, 0, 0),
         ),
         mp.FluxRegion(
-            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
-            size=mp.Vector3(0, 0, dair),
+            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * (dair + dmat)),
+            size=mp.Vector3(0, 0, dair + dmat),
         ),
     )
 
@@ -193,15 +200,15 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
             size=mp.Vector3(L, 0, 0),
         ),
         mp.FluxRegion(
-            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
-            size=mp.Vector3(0, 0, dair),
+            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * (dair + dmat)),
+            size=mp.Vector3(0, 0, dair + dmat),
         ),
     )
 
     fig, ax = plt.subplots()
     sim.plot2D(ax=ax)
     if mp.am_master():
-        fig.savefig("led_plot2D.png", dpi=150, bbox_inches="tight")
+        fig.savefig("disc_simulation_layout.png", dpi=150, bbox_inches="tight")
 
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(
@@ -218,9 +225,9 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     plot_radiation_pattern_polar(r * r * Ptheta)
     plot_radiation_pattern_3d(r * r * Ptheta)
 
-    dtheta = 0.5 * math.pi / npts
+    dtheta = 0.5 * math.pi / (npts - 1)
     dphi = 2 * math.pi
-    flux_far = np.sum(Ptheta * np.cos(thetas)) * r * r * dtheta * dphi
+    flux_far = np.sum(Ptheta * np.sin(thetas)) * r * r * dtheta * dphi
 
     err = abs(flux_near - flux_far) / flux_near
     print(
@@ -235,4 +242,4 @@ if __name__ == "__main__":
     layer_thickness = 0.7 * wvl / n
     dipole_height = 0.5
 
-    near_flux, far_flux = led_total_flux(layer_thickness, dipole_height)
+    near_flux, far_flux = disc_total_flux(layer_thickness, dipole_height)

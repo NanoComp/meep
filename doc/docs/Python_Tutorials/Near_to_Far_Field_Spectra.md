@@ -357,22 +357,20 @@ if __name__ == '__main__':
     print("norm:, {:.6f}".format(np.linalg.norm(Pr_pec_norm-Pr_theory_norm)))
 ```
 
-Radiation Pattern of a Light-Emitting Diode (LED)
--------------------------------------------------
+Radiation Pattern of a Disc in Cylindrical Coordinates
+------------------------------------------------------
 
-The near-to-far field transformation feature can also be used in [cylindrical coordinates](../Cylindrical_Coordinates.md). As a demonstration, we compute the radiation pattern of a [light-emitting diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) and verify Poynting's theorem that the total radiated flux computed from the radiation pattern is equivalent to using the near fields via `add_flux`.
+The near-to-far field transformation feature can also be used in [cylindrical coordinates](../Cylindrical_Coordinates.md). As a demonstration, we compute the radiation pattern of a dielectric disc and verify Poynting's theorem that the total radiated flux computed from the far fields is equivalent to using the near fields via `add_flux`. (The same result is demonstrated in [Tutorial/Radiation Pattern of an Antenna](#radiation-pattern-of-an-antenna) for 2d Cartesian coordinates.)
 
-The simulation consists of an $E_r$ point dipole at $r = 0$ embedded within a layer of a lossless dielectric of index $n = 2.4$ above a perfect-metallic conducting ground plane. This is identical to the configuration in [Tutorial/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led).
-
-In this case, because the dielectric layer is infinitely extended in the $r$ direction, it is not possible to specify a *closed* near-field surface for capturing all outgoing waves in the air region above the structure. The only workaround is to make the computational cell sufficiently wide in order to minimize the [errors from the finite truncation](#truncation-errors-from-a-non-closed-near-field-surface).
+The simulation consists of an $E_r$ point-dipole source ($\lambda = 1.0 \mu m$) at $r = 0.6 \mu m$ embedded within a disc (radius of 1.2 μm) of index $n = 2.4$ above a perfect-metallic ground plane. This is similar to the configuration in [Tutorial/Extraction Efficiency of a Light-Emitting Diode (LED)](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led). Unlike the infinitely extended slab of the LED, a *finite* structure such as the disc (or no structure at all) ensures that all the power from the dipole emitter is radiated. The LED, however, contains waveguide modes which are more challenging to disentagle from the radiated power.
 
 A schematic of the simulation layout is shown below.
 
-![](../images/led_radiation_layout.png#center)
+![](../images/disc_radiation_layout.png#center)
 
-Obtaining the radiation pattern $P(\theta)$ of the LED involves computing the radial flux along the circumference of a quarter circle (i.e. angular range of $[0, \pi/2]$) in the far field. The total flux is then computed from $P(\theta)$ by integrating over a solid angle of a hemisphere in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
+Obtaining the radiation pattern $P(\theta)$ of the disc involves computing the radial (or "outgoing") flux from the far fields along the circumference of a quarter circle (i.e. angular range of $[0, \pi/2]$). The radius of the circle needs to be sufficiently large ($\gg \lambda$) but is otherwise arbitrary. The total flux is then computed from $P(\theta)$ by integrating over a solid angle of a hemisphere in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
-$$P_{total} = \int_0^{2\pi} \int_0^{\frac{\pi}{2}} P(\theta) r^2 \cos(\theta) d\theta d\phi = 2 \pi r^2 \sum_{n=0}^{N-1} P(\theta_n) \cos(\theta_n) \Delta \theta$$
+$$P_{total} = \int_0^{2\pi} \int_0^{\frac{\pi}{2}} P(\theta) r^2 \sin(\theta) d\theta d\phi = 2 \pi r^2 \sum_{n=0}^{N-1} P(\theta_n) \sin(\theta_n) \Delta \theta$$
 
 An angular grid of $N$ equally spaced points in $[0, \pi/2]$ has $\Delta \theta = \frac{\pi}{2N}$.
 
@@ -380,20 +378,23 @@ A plot of the radiation pattern in polar coordinates and 3d is shown below.
 
 ![](../images/led_radiation_pattern_polar_vs_3d.png#center)
 
-The total flux computed using the near and far fields is shown to be in close agreement.
+The total flux computed using the near and far fields is shown to be in close agreement (relative error of ~7%).
+
 ```py
-total_flux:, 0.21454 (near), 0.15004 (far), 0.30064 (error)
+total_flux:, 643.65058 (near), 597.72713 (far), 0.07135 (error)
 ```
 
-The simulation script is in [examples/led_radiation_pattern.py](https://github.com/NanoComp/meep/blob/master/python/examples/led_radiation_pattern.py).
+The error decreases with increasing (1) grid resolution, (2) runtime, and (3) number of angular grid points.
+
+The simulation script is in [examples/disc_radiation_pattern.py](https://github.com/NanoComp/meep/blob/master/python/examples/disc_radiation_pattern.py).
 
 ```py
 import math
 from typing import Tuple
 
-import numpy as np
-import meep as mp
 import matplotlib
+import meep as mp
+import numpy as np
 
 matplotlib.use("agg")
 import matplotlib.pyplot as plt
@@ -402,7 +403,7 @@ import matplotlib.pyplot as plt
 resolution = 100  # pixels/μm
 dpml = 0.5  # thickness of PML
 dair = 1.0  # thickness of air padding
-L = 10.0  # length of non-PML region
+L = 6.0  # length of non-PML region
 n = 2.4  # refractive index of surrounding medium
 wvl = 1.0  # wavelength (in vacuum)
 
@@ -415,7 +416,7 @@ tol = 1e-8
 npts = 100
 
 # grid of polar angles for evaluating radiated flux in far field
-thetas = np.linspace(0, 0.5*math.pi, npts)
+thetas = np.linspace(0, 0.5 * math.pi, npts)
 
 # radius of quarter circle for computing flux in far field
 r = 1000 * wvl
@@ -424,31 +425,39 @@ r = 1000 * wvl
 def plot_radiation_pattern_polar(Ptheta: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
+    The angles increase clockwise with zero at the top.
+
     Args:
         Ptheta: radial flux of the far fields in polar coordinates.
     """
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6,6))
     ax.plot(
         thetas,
         Ptheta,
-        'b-',
+        "b-",
     )
-    ax.set_thetalim(0, 0.5*math.pi)
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(0.5 * math.pi)
+    ax.set_thetalim(0, 0.5 * math.pi)
     ax.grid(True)
     ax.set_rlabel_position(22)
-    ax.set_title('radiation pattern in polar coordinates')
+    ax.set_title("radiation pattern in polar coordinates")
 
     if mp.am_master():
-        fig.savefig('led_radpattern_polar.png', dpi=150, bbox_inches='tight')
+        fig.savefig(
+            "led_radpattern_polar.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
 
 
 def plot_radiation_pattern_3d(Ptheta: np.ndarray):
-    """Plots the radiation pattern in spherical coordinates.
+    """Plots the radiation pattern in 3d Cartesian coordinates.
 
     Args:
         Ptheta: radial flux of the far fields in polar coordinates.
     """
-    phis = np.linspace(0, 2*np.pi, npts)
+    phis = np.linspace(0, 2 * np.pi, npts)
 
     xs = np.zeros((len(thetas), len(phis)))
     ys = np.zeros((len(thetas), len(phis)))
@@ -456,20 +465,19 @@ def plot_radiation_pattern_3d(Ptheta: np.ndarray):
 
     for i, theta in enumerate(thetas):
         for j, phi in enumerate(phis):
-            xs[i, j] = Ptheta[i] * np.cos(theta) * np.cos(phi)
-            ys[i, j] = Ptheta[i] * np.cos(theta) * np.sin(phi)
-            zs[i, j] = Ptheta[i] * np.sin(theta)
+            xs[i, j] = Ptheta[i] * np.sin(theta) * np.cos(phi)
+            ys[i, j] = Ptheta[i] * np.sin(theta) * np.sin(phi)
+            zs[i, j] = Ptheta[i] * np.cos(theta)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
-    ax.plot_surface(xs, ys, zs, cmap='inferno')
-    ax.set_title('radiation pattern in 3d')
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(6,6))
+    ax.plot_surface(xs, ys, zs, cmap="inferno")
+    ax.set_title("radiation pattern in 3d")
 
     if mp.am_master():
         fig.savefig(
-            'led_radpattern_3d.png',
+            "led_radpattern_3d.png",
             dpi=150,
-            bbox_inches='tight',
+            bbox_inches="tight",
         )
 
 
@@ -482,27 +490,26 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
 
     Returns:
         Array of radial Poynting flux, one for each point on the circumference of
-        a quarter circle with angular range of [0, π/2] rad. 0 rad is the +r
-        direction and π/2 is +z.
+        a quarter circle with angular range of [0, π/2] rad. 0 rad is the +z
+        direction and π/2 is +r.
     """
-    E = np.zeros((npts,3), dtype=np.complex128)
-    H = np.zeros((npts,3), dtype=np.complex128)
+    E = np.zeros((npts, 3), dtype=np.complex128)
+    H = np.zeros((npts, 3), dtype=np.complex128)
     for n in range(npts):
-        ff = sim.get_farfield(n2f_mon,
-                              mp.Vector3(r*math.cos(thetas[n]),
-                                         0,
-                                         r*math.sin(thetas[n])))
-        E[n,:] = [np.conj(ff[j]) for j in range(3)]
-        H[n,:] = [ff[j+3] for j in range(3)]
+        ff = sim.get_farfield(
+            n2f_mon, mp.Vector3(r * math.sin(thetas[n]), 0, r * math.cos(thetas[n]))
+        )
+        E[n, :] = [np.conj(ff[j]) for j in range(3)]
+        H[n, :] = [ff[j + 3] for j in range(3)]
 
-    Pr = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
-    Pz = np.real(E[:,0]*H[:,1]-E[:,1]*H[:,0])
-    Prz = np.sqrt(np.square(Pr)+np.square(Pz))
+    Pr = np.real(E[:, 1] * H[:, 2] - E[:, 2] * H[:, 1])
+    Pz = np.real(E[:, 0] * H[:, 1] - E[:, 1] * H[:, 0])
+    Prz = np.sqrt(np.square(Pr) + np.square(Pz))
 
     return Prz
 
 
-def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
+def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     """Computes the total radiated flux from a point dipole embedded
     within a dielectric layer above a lossless ground plane using
     its near and far fields as separate calculations.
@@ -525,7 +532,7 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     ]
 
     src_cmpt = mp.Er
-    src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+    src_pt = mp.Vector3(0.1 * L, 0, -0.5 * sz + h * dmat)
     sources = [
         mp.Source(
             src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
@@ -537,8 +544,8 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     geometry = [
         mp.Block(
             material=mp.Medium(index=n),
-            center=mp.Vector3(0, 0, -0.5 * sz + 0.5 * dmat),
-            size=mp.Vector3(mp.inf, mp.inf, dmat),
+            center=mp.Vector3(0.1 * L, 0, -0.5 * sz + 0.5 * dmat),
+            size=mp.Vector3(0.2 * L, mp.inf, dmat),
         )
     ]
 
@@ -562,8 +569,8 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
             size=mp.Vector3(L, 0, 0),
         ),
         mp.FluxRegion(
-            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
-            size=mp.Vector3(0, 0, dair),
+            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * (dair + dmat)),
+            size=mp.Vector3(0, 0, dair + dmat),
         ),
     )
 
@@ -577,15 +584,15 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
             size=mp.Vector3(L, 0, 0),
         ),
         mp.FluxRegion(
-            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
-            size=mp.Vector3(0, 0, dair),
+            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * (dair + dmat)),
+            size=mp.Vector3(0, 0, dair + dmat),
         ),
     )
 
     fig, ax = plt.subplots()
     sim.plot2D(ax=ax)
     if mp.am_master():
-        fig.savefig('led_plot2D.png', dpi=150, bbox_inches='tight')
+        fig.savefig("disc_simulation_layout.png", dpi=150, bbox_inches="tight")
 
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(
@@ -602,13 +609,15 @@ def led_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     plot_radiation_pattern_polar(r * r * Ptheta)
     plot_radiation_pattern_3d(r * r * Ptheta)
 
-    dtheta = 0.5 * math.pi / npts
+    dtheta = 0.5 * math.pi / (npts - 1)
     dphi = 2 * math.pi
-    flux_far = np.sum(Ptheta * np.cos(thetas)) * r * r * dtheta * dphi
+    flux_far = np.sum(Ptheta * np.sin(thetas)) * r * r * dtheta * dphi
 
     err = abs(flux_near - flux_far) / flux_near
-    print(f"total_flux:, {flux_near:.5f} (near), {flux_far:.5f} (far), "
-          f"{err:.5f} (error)")
+    print(
+        f"total_flux:, {flux_near:.5f} (near), {flux_far:.5f} (far), "
+        f"{err:.5f} (error)"
+    )
 
     return flux_near, flux_far
 
@@ -617,7 +626,7 @@ if __name__ == "__main__":
     layer_thickness = 0.7 * wvl / n
     dipole_height = 0.5
 
-    near_flux, far_flux = led_total_flux(layer_thickness, dipole_height)
+    near_flux, far_flux = disc_total_flux(layer_thickness, dipole_height)
 ```
 
 Focusing Properties of a Metasurface Lens
