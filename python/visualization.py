@@ -646,15 +646,16 @@ def plot_eps(
                     center_second = el.center.y
                     sim_first = sim_center.x
                     sim_second = sim_center.y
-                ax = place_label(
-                    ax,
-                    el.label,
-                    center_first,
-                    center_second,
-                    sim_first,
-                    sim_second,
-                    label_parameters=default_label_geometry_parameters,
-                )
+                if el.label is not None:
+                    ax = place_label(
+                        ax,
+                        el.label,
+                        center_first,
+                        center_second,
+                        sim_first,
+                        sim_second,
+                        label_parameters=default_label_geometry_parameters,
+                    )
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
