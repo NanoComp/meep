@@ -75,7 +75,7 @@ so-called "epigraph" formulation: introducing a new "dummy"
 optimization variable $t$ and adding each independent function
 $f_k(x)$ as a new nonlinear constraint $t \ge f_k(x)$. See the [NLopt
 documentation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems)
-for an overview of this approach. The minimax/epigraph approach is
+for an overview of this approach. (Note: this tutorial example requires NLopt [version 2.7.0](https://github.com/stevengj/nlopt/releases/tag/v2.7.0) or higher.) The minimax/epigraph approach is
 also covered in the [near-to-far field
 tutorial](https://nbviewer.org/github/NanoComp/meep/blob/master/python/examples/adjoint_optimization/06-Near2Far-Epigraph.ipynb).
 
@@ -258,8 +258,8 @@ Si = mp.Medium(index=nSi)
 
 design_region_size = mp.Vector3(dx, dy, 0)
 design_region_resolution = int(2 * resolution)
-Nx = int(design_region_size.x * design_region_resolution)
-Ny = int(design_region_size.y * design_region_resolution)
+Nx = int(design_region_size.x * design_region_resolution) + 1
+Ny = int(design_region_size.y * design_region_resolution) + 1
 
 # impose a bit "mask" of thickness equal to the filter radius
 # around the edges of the design region in order to prevent
