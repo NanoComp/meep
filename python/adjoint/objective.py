@@ -240,25 +240,30 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             if self.kpoint_func:
                 eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
             else:
-                center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
-                    self.frequencies))
+                center_frequency = 0.5 * (
+                    np.min(self.frequencies) + np.max(self.frequencies)
+                )
                 direction = mp.Vector3(
-                    *(np.eye(3)[self._monitor.normal_direction] *
-                      np.abs(center_frequency)))
+                    *(
+                        np.eye(3)[self._monitor.normal_direction]
+                        * np.abs(center_frequency)
+                    )
+                )
                 eig_kpoint = -1 * direction if self.forward else direction
 
         elif isinstance(self.mode, mp.DiffractedPlanewave):
             new_dp = mp.DiffractedPlanewave(
-                [-1*gg for gg in self.mode.g] if self.forward else self.mode.g,
+                [-1 * gg for gg in self.mode.g] if self.forward else self.mode.g,
                 self.mode.axis,
                 self.mode.s,
-                self.mode.p
+                self.mode.p,
             )
 
         else:
-            raise TypeError("mode property of EigenModeCoefficient must be either an"
-                            "integer or DiffractedPlaneWave object.")
-
+            raise TypeError(
+                "mode property of EigenModeCoefficient must be either an"
+                "integer or DiffractedPlaneWave class object."
+            )
 
         if self._frequencies.size == 1:
             amp = da_dE * dJ * scale
@@ -285,12 +290,8 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 center=self.volume.center,
                 **self.eigenmode_kwargs,
             )
-<<<<<<< HEAD
 
-        else isinstance(self.mode, mp.DiffractedPlanewave):
-=======
-        elif isinstance(self.mode,mp.DiffractedPlanewave):
->>>>>>> 9b8bf646 (whoops)
+        else:
             source = mp.EigenModeSource(
                 src,
                 eig_band=new_dp,
@@ -315,10 +316,15 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 kpoint_func = self.kpoint_func
                 overlap_idx = self.kpoint_func_overlap_idx
             else:
-                center_frequency = 0.5 * (np.min(self.frequencies) + np.max(
-                    self.frequencies))
-                kpoint = mp.Vector3(*(np.eye(3)[self._monitor.normal_direction] *
-                                      np.abs(center_frequency)))
+                center_frequency = 0.5 * (
+                    np.min(self.frequencies) + np.max(self.frequencies)
+                )
+                kpoint = mp.Vector3(
+                    *(
+                        np.eye(3)[self._monitor.normal_direction]
+                        * np.abs(center_frequency)
+                    )
+                )
                 kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
                 overlap_idx = 0
             ob = self.sim.get_eigenmode_coefficients(
@@ -329,13 +335,13 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 **self.eigenmode_kwargs,
             )
 
-        elif isinstance(self.mode,mp.DiffractedPlanewave):
+        elif isinstance(self.mode, mp.DiffractedPlanewave):
             overlap_idx = 0
             new_dp = mp.DiffractedPlanewave(
-                self.mode.g if self.forward else [-1*gg for gg in self.mode.g],
+                self.mode.g if self.forward else [-1 * gg for gg in self.mode.g],
                 self.mode.axis,
                 self.mode.s,
-                self.mode.p
+                self.mode.p,
             )
             ob = self.sim.get_eigenmode_coefficients(
                 self._monitor,
