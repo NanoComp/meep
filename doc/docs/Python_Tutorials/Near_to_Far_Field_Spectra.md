@@ -384,7 +384,9 @@ The total flux computed using the near and far fields is shown to be in close ag
 total_flux:, 643.65058 (near), 597.72713 (far), 0.07135 (error)
 ```
 
-The error decreases with increasing (1) grid resolution, (2) runtime, and (3) number of angular grid points.
+The error decreases with increasing (1) grid resolution, (2) runtime, and (3) number of angular grid points. However, this only applies to a *closed* near-field surface which is not the case in this example. This is because the ground plane, which extends to infinity, contains $H_r$ and $H_\phi$ fields on its surface which are not zero (unlike the $E_r$ and $E_phi$ fields). These magnetic fields produce equivalent currents which radiate into the far field. The PML in the $r$ direction does not mitigate this effect.
+
+Because the near-field surface actually extends to infinity in the $r$ direction, one approach to reducing the error introduced by its finite truncation would be to simply make the cell size in the $r$ direction larger (the parameter `L` in the script below). Another option which would remove this error entirely would be to simulate the same structure using a closed surface by removing the ground plane and duplicating the structure and source below the $z = 0$ plane. This is known as the method of images. See [Tutorial/Antenna above a Perfect Electric Conductor Ground Plane ](#antenna-above-a-perfect-electric-conductor-ground-plane) for a demonstration of this approach.
 
 The simulation script is in [examples/disc_radiation_pattern.py](https://github.com/NanoComp/meep/blob/master/python/examples/disc_radiation_pattern.py).
 
