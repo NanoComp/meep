@@ -24,13 +24,13 @@ repos:
 
 # Black, the code formatter, natively supports pre-commit
 - repo: https://github.com/psf/black
-  rev: "23.9.1"
+  rev: "4f1772e2aed8356e57b923eacf45f813ec3324a0"
   hooks:
     - id: black
 
 # Automatically upgrade syntax for newer versions of the language
 - repo: https://github.com/asottile/pyupgrade
-  rev: v3.13.0
+  rev: v3.9.0
   hooks:
     - id: pyupgrade
       args: [--py37-plus, --keep-runtime-typing]
