@@ -455,6 +455,152 @@ As shown below, the results for the scattering cross section computed using cyli
 ![](../images/cylinder_cross_section.png#center)
 
 
+Scattering of Sphere with Oblique Planewave 
+-------------------------------------------
+
+It is also possible to launch an oblique incident planewave in cylindrical coordinate by decomposing the planewave $A_xe^{ik_xx+ik_yy}\hat{x} + A_ye^{ik_xx+ik_yy}\hat{y}$ into $\sum_m (J_r(r, m)\hat{r} + J_\phi(r, m)\hat{\phi})e^{im\phi}$. The exact expressions of $J_r(r,m)$ and $J_\phi(r,m)$ are given [here](http://github.com/zlin-opt/axisym_meta3d_inverse_design/blob/master/Implementation_of_FDFD_with_Cylindrical_Coordinates.pdf) by Zin Lin. In the simplest case of normal incidence, $J_r(r,m)$ and $J_\phi(r,m)$ are nonzero only when $m = \pm 1$, as shown in the [previous tutorial](https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#scattering-cross-section-of-a-finite-dielectric-cylinder). 
+
+Given the decomposition of planewave into the sum of different current sources at each $m$, we can run individual simulations at each $m$ with their corresponding source amplitudes and record the relevant physical quantities. For quantities such fields, linearity implies that we can simply sum the results from each simulations; for quantities such as flux, orthogonality implies cross terms will be zero, and we can again simply sum the results. Moreover, simulations
+at each $m$ values are embarrassingly parallel so they can be run simultaneously.
+
+On the other hand, because the source amplitudes $J_r(r,m)$ and $J_\phi(r,m)$ are generally not constant and extend to infinity, we have to make sure the sources are wide enough to accurately approximate the actual incident wave.
+
+We present an example below that calculates the scattered flux of a sphere. Because of the spherical symmetry, incidence at different angle should have identical results. We can thus use this feature to check our approach. Note that because of the axial symmetry in the cylindrical coordinates, we cannot distinguish different azimuthal angles but we can distinguish different polar angles. We thus simply choose our incidence to be of form $E_ye^{ik_xx}$, and we can vary the angle of incidence by varying $k_x$.
+
+```py
+import numpy as np
+from scipy import special
+import meep as mp
+mp.verbosity(0)
+r = 0.7  # radius of sphere
+h = 2 * r  # height/diameter of sphere
+
+wvl = 2 * np.pi * r / 4
+frq_cen = 1 / wvl
+dfrq = 0.2
+nfrq = 1
+resolution, dair_fac, mrange = 50, 10, 5
+src_offset = 3/resolution # a small offset in source size 
+dpml = 0.5 * wvl
+dair = 1.0 * wvl
+pml_layers = [mp.PML(thickness=dpml)]
+sr = r + dair_fac*dair + dpml
+sz = dpml + dair + h + dair + dpml
+cell_size = mp.Vector3(sr, 0, sz)
+n_cyl = 2.0
+geometry = [mp.Sphere(material=mp.Medium(index=n_cyl), center=mp.Vector3(), radius=r)]
+
+k_cen = 2 * np.pi * frq_cen
+alpha_list = [0, np.pi/36, np.pi/24, np.pi/12]
+alpha_range = len(alpha_list)
+
+scatt_flux_m = np.zeros((alpha_range, 2*mrange+1))
+for alpha_i in range(alpha_range):
+  alpha = alpha_list[alpha_i]
+  kxy, kz = k_cen*np.sin(alpha), k_cen * np.cos(alpha)
+
+  for cur_m in range(-mrange, mrange+1):
+    coeff_p1 = 0.5 * (1j)**(cur_m+1)
+    coeff_m1 = 0.5 * (1j)**(cur_m-1)
+
+    if abs(cur_m) > 1:
+        src_cen = 0.5 * (r + dair_fac*dair) + 0.5*src_offset
+    else:
+        src_cen = 0.5 * (r + dair_fac*dair) #+ 0.5*src_offset
+    Jpm = lambda v3: coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) + coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
+    Jrm = lambda v3: 1j * coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) - 1j * coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
+
+    if abs(cur_m) > 1:
+        sources = [
+              mp.Source(
+                  mp.GaussianSource(frq_cen, fwidth=dfrq),
+                  component=mp.Er,
+                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
+                  size=mp.Vector3(r + dair_fac*dair -src_offset),
+                  amp_func = Jrm),
+              mp.Source(
+                  mp.GaussianSource(frq_cen, fwidth=dfrq),
+                  component=mp.Ep,
+                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
+                  size=mp.Vector3(r + dair_fac*dair -src_offset),
+                  amp_func = Jpm),]
+    else:
+        sources = [
+              mp.Source(
+                  mp.GaussianSource(frq_cen, fwidth=dfrq),
+                  component=mp.Er,
+                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
+                  size=mp.Vector3(r + dair_fac*dair),
+                  amp_func = Jrm),
+              mp.Source(
+                  mp.GaussianSource(frq_cen, fwidth=dfrq),
+                  component=mp.Ep,
+                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
+                  size=mp.Vector3(r + dair_fac*dair),
+                  amp_func = Jpm),]
+    
+    sim = mp.Simulation(
+        cell_size=cell_size,
+        boundary_layers=pml_layers,
+        resolution=resolution,
+        sources=sources,
+        dimensions=mp.CYLINDRICAL,
+        m=cur_m,)
+
+    box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
+        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
+    box_z2 = sim.add_flux(frq_cen, dfrq, nfrq,
+        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, +0.5 * h), size=mp.Vector3(r)))
+    box_r = sim.add_flux(frq_cen, dfrq, nfrq,
+        mp.FluxRegion(center=mp.Vector3(r), size=mp.Vector3(z=h)))
+
+    sim.run(until_after_sources=10)
+
+    freqs = mp.get_flux_freqs(box_z1)
+    box_z1_data = sim.get_flux_data(box_z1)
+    box_z2_data = sim.get_flux_data(box_z2)
+    box_r_data = sim.get_flux_data(box_r)
+    box_z1_flux0 = mp.get_fluxes(box_z1)
+
+    sim.reset_meep()
+
+
+    sim = mp.Simulation(
+        cell_size=cell_size,
+        geometry=geometry,
+        boundary_layers=pml_layers,
+        resolution=resolution,
+        sources=sources,
+        dimensions=mp.CYLINDRICAL,
+        m=cur_m,)
+
+    box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
+        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
+    box_z2 = sim.add_flux(frq_cen, dfrq, nfrq,
+        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, +0.5 * h), size=mp.Vector3(r)))
+    box_r = sim.add_flux(frq_cen, dfrq, nfrq,
+        mp.FluxRegion(center=mp.Vector3(r), size=mp.Vector3(z=h)))
+
+    sim.load_minus_flux_data(box_z1, box_z1_data)
+    sim.load_minus_flux_data(box_z2, box_z2_data)
+    sim.load_minus_flux_data(box_r, box_r_data)
+
+    sim.run(until_after_sources=100)
+
+    box_z1_flux = mp.get_fluxes(box_z1)
+    box_z2_flux = mp.get_fluxes(box_z2)
+    box_r_flux = mp.get_fluxes(box_r)
+
+    scatt_flux_m[alpha_i, cur_m + mrange] = box_z1_flux[0] - box_z2_flux[0] - box_r_flux[0]
+    sim.reset_meep()
+
+scatt_power_m = np.zeros((alpha_range, mrange))
+
+for i in range(mrange):
+  scatt_power_m[:,i] = - np.sum(scatt_flux_m[:,(mrange-i):(mrange+i+1)], axis=1)
+
+print(scatt_power_m)
+```
 
 Focusing Properties of a Binary-Phase Zone Plate
 ------------------------------------------------
