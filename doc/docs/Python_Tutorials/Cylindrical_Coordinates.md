@@ -455,10 +455,10 @@ As shown below, the results for the scattering cross section computed using cyli
 ![](../images/cylinder_cross_section.png#center)
 
 
-Scattering of Sphere with Oblique Planewave 
+Scattering of Sphere with Oblique Planewave
 -------------------------------------------
 
-It is also possible to launch an oblique incident planewave in cylindrical coordinate by decomposing the planewave $A_xe^{ik_xx+ik_yy}\hat{x} + A_ye^{ik_xx+ik_yy}\hat{y}$ into $\sum_m (J_r(r, m)\hat{r} + J_\phi(r, m)\hat{\phi})e^{im\phi}$. The exact expressions of $J_r(r,m)$ and $J_\phi(r,m)$ are given [here](http://github.com/zlin-opt/axisym_meta3d_inverse_design/blob/master/Implementation_of_FDFD_with_Cylindrical_Coordinates.pdf) by Zin Lin. In the simplest case of normal incidence, $J_r(r,m)$ and $J_\phi(r,m)$ are nonzero only when $m = \pm 1$, as shown in the [previous tutorial](https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#scattering-cross-section-of-a-finite-dielectric-cylinder). 
+It is also possible to launch an oblique incident planewave in cylindrical coordinate by decomposing the planewave $A_xe^{ik_xx+ik_yy}\hat{x} + A_ye^{ik_xx+ik_yy}\hat{y}$ into $\sum_m (J_r(r, m)\hat{r} + J_\phi(r, m)\hat{\phi})e^{im\phi}$. The exact expressions of $J_r(r,m)$ and $J_\phi(r,m)$ are given [here](http://github.com/zlin-opt/axisym_meta3d_inverse_design/blob/master/Implementation_of_FDFD_with_Cylindrical_Coordinates.pdf) by Zin Lin. In the simplest case of normal incidence, $J_r(r,m)$ and $J_\phi(r,m)$ are nonzero only when $m = \pm 1$, as shown in the [previous tutorial](https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#scattering-cross-section-of-a-finite-dielectric-cylinder).
 
 Given the decomposition of planewave into the sum of different current sources at each $m$, we can run individual simulations at each $m$ with their corresponding source amplitudes and record the relevant physical quantities. For quantities such fields, linearity implies that we can simply sum the results from each simulations; for quantities such as flux, orthogonality implies cross terms will be zero, and we can again simply sum the results. Moreover, simulations
 at each $m$ values are embarrassingly parallel so they can be run simultaneously.
@@ -480,7 +480,7 @@ frq_cen = 1 / wvl
 dfrq = 0.2
 nfrq = 1
 resolution, dair_fac, mrange = 50, 10, 5
-src_offset = 3/resolution # a small offset in source size 
+src_offset = 3/resolution # a small offset in source size
 dpml = 0.5 * wvl
 dair = 1.0 * wvl
 pml_layers = [mp.PML(thickness=dpml)]
@@ -506,7 +506,7 @@ for alpha_i in range(alpha_range):
     if abs(cur_m) > 1:
         src_cen = 0.5 * (r + dair_fac*dair) + 0.5*src_offset
     else:
-        src_cen = 0.5 * (r + dair_fac*dair) #+ 0.5*src_offset
+        src_cen = 0.5 * (r + dair_fac*dair)
     Jpm = lambda v3: coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) + coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
     Jrm = lambda v3: 1j * coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) - 1j * coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
 
@@ -538,7 +538,7 @@ for alpha_i in range(alpha_range):
                   center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
                   size=mp.Vector3(r + dair_fac*dair),
                   amp_func = Jpm),]
-    
+
     sim = mp.Simulation(
         cell_size=cell_size,
         boundary_layers=pml_layers,
