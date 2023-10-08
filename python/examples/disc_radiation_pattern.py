@@ -220,6 +220,9 @@ def disc_total_flux(dmat: float, h: float) -> Tuple[float, float]:
     )
 
     flux_near = mp.get_fluxes(flux_mon)[0]
+    flux_near_n2f = mp.get_fluxes(n2f_mon)[0]
+
+    print(f"flux:, {flux_near}, {flux_near_n2f}")
 
     Ptheta = radiation_pattern(sim, n2f_mon)
     plot_radiation_pattern_polar(r * r * Ptheta)
