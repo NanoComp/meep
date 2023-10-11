@@ -637,9 +637,9 @@ def plot_eps(
                     sim_first = sim_center.y
                     sim_second = sim_center.z
                 elif sim_size.y == 0:
-                    center_first = el.center.y
+                    center_first = el.center.x
                     center_second = el.center.z
-                    sim_first = sim_center.y
+                    sim_first = sim_center.x
                     sim_second = sim_center.z
                 elif sim_size.z == 0:
                     center_first = el.center.x
