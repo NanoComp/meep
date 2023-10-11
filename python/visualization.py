@@ -92,6 +92,13 @@ default_volume_parameters = {
 
 default_label_parameters = {"label_color": "r", "offset": 20, "label_alpha": 0.3}
 
+default_label_geometry_parameters = {
+    "label_color": "w",
+    "arrow_color": "r",
+    "offset": 20,
+    "label_alpha": 0.8,
+}
+
 # Used to remove the elements of a dictionary (dict_to_filter) that
 # don't correspond to the keyword arguments of a particular
 # function (func_with_kwargs.)
@@ -138,6 +145,10 @@ def place_label(
     offset = label_parameters["offset"]
     alpha = label_parameters["label_alpha"]
     color = label_parameters["label_color"]
+    if "arrow_color" in label_parameters:
+        arrow_color = label_parameters["arrow_color"]
+    else:
+        arrow_color = color
 
     if x > centerx:
         xtext = -offset
@@ -156,7 +167,9 @@ def place_label(
         ha="center",
         va="bottom",
         bbox=dict(boxstyle="round,pad=0.2", fc=color, alpha=alpha),
-        arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0.5", color=color),
+        arrowprops=dict(
+            arrowstyle="->", connectionstyle="arc3,rad=0.5", color=arrow_color
+        ),
     )
     return ax
 
@@ -507,6 +520,7 @@ def plot_eps(
     eps_parameters: Optional[dict] = None,
     colorbar_parameters: Optional[dict] = None,
     frequency: Optional[float] = None,
+    label_geometry: bool = False,
 ) -> Union[Axes, Any]:
     # consolidate plotting parameters
     if eps_parameters is None:
@@ -614,6 +628,34 @@ def plot_eps(
                 default_label=r"$\epsilon_r$",
                 colorbar_parameters=colorbar_parameters,
             )
+
+        if label_geometry:
+            for el in sim.geometry:
+                if sim_size.x == 0:
+                    center_first = el.center.y
+                    center_second = el.center.z
+                    sim_first = sim_center.y
+                    sim_second = sim_center.z
+                elif sim_size.y == 0:
+                    center_first = el.center.x
+                    center_second = el.center.z
+                    sim_first = sim_center.x
+                    sim_second = sim_center.z
+                elif sim_size.z == 0:
+                    center_first = el.center.x
+                    center_second = el.center.y
+                    sim_first = sim_center.x
+                    sim_second = sim_center.y
+                if el.label is not None:
+                    ax = place_label(
+                        ax,
+                        el.label,
+                        center_first,
+                        center_second,
+                        sim_first,
+                        sim_second,
+                        label_parameters=default_label_geometry_parameters,
+                    )
 
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
@@ -903,6 +945,7 @@ def plot2D(
     output_plane: Optional[Volume] = None,
     fields: Optional = None,
     labels: bool = False,
+    label_geometry: bool = False,
     eps_parameters: Optional[dict] = None,
     boundary_parameters: Optional[dict] = None,
     source_parameters: Optional[dict] = None,
@@ -945,6 +988,7 @@ def plot2D(
             eps_parameters=eps_parameters,
             colorbar_parameters=colorbar_parameters,
             frequency=frequency,
+            label_geometry=label_geometry,
         )
 
     # Plot boundaries

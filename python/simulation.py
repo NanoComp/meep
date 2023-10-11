@@ -4745,6 +4745,7 @@ class Simulation:
         output_plane: Optional[Volume] = None,
         fields: Optional = None,
         labels: bool = False,
+        label_geometry: bool = True,
         eps_parameters: Optional[dict] = None,
         boundary_parameters: Optional[dict] = None,
         source_parameters: Optional[dict] = None,
@@ -4797,6 +4798,8 @@ class Simulation:
           no fields are superimposed.
         * `labels`: if `True`, then labels will appear over each of the simulation
           elements. Defaults to `False`.
+        * `label_geometry`: if `True`, then labels will appear over each of the geometry
+          elements. Defaults to `True`.
         * `eps_parameters`: a `dict` of optional plotting parameters that override the
           default parameters for the geometry.
             - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
@@ -4871,6 +4874,7 @@ class Simulation:
             output_plane=output_plane,
             fields=fields,
             labels=labels,
+            label_geometry=label_geometry,
             eps_parameters=eps_parameters,
             boundary_parameters=boundary_parameters,
             source_parameters=source_parameters,
