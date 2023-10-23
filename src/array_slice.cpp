@@ -786,6 +786,8 @@ complex<realnum> *fields::get_source_slice(const volume &where, component source
 /***************************************************************/
 /***************************************************************/
 std::vector<double> fields::get_array_metadata(const volume &where) {
+  if (where.dim == Dcyl)
+    meep::abort("get_array_metadata does not support cylindrical coordinates.");
 
   /* get extremal corners of subgrid and array of weights, collapsed if necessary */
   size_t dims[3];

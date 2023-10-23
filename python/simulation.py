@@ -4053,7 +4053,7 @@ class Simulation:
         or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
 
         + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
-          grid slice
+          grid slice. Cylindrical coordinates is not supported.
         + `w` is a NumPy array of the same dimensions as the array returned by
           `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule
           for integrating over the spatial region (with the points in the cubature rule
