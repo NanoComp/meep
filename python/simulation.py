@@ -2768,6 +2768,7 @@ class Simulation:
         """
         if not dname:
             dname = self.get_filename_prefix() + "-out"
+            self.filename_prefix = None
 
         closure = {"trashed": False}
 
@@ -2783,7 +2784,6 @@ class Simulation:
 
         if self.fields is not None:
             hook()
-        self.filename_prefix = None
 
         return dname
 
