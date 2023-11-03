@@ -281,21 +281,38 @@ bool fields_chunk::step_db(field_type ft) {
         // d(Dz)/dt = (1/r) * d(r*Hp)/dr
         const realnum *g = f[Hp][cmp];
         const realnum *cndinv = s->condinv[Dz][Z];
+        const realnum *cnd = s->conductivity[Dz][Z];
         realnum *fcnd = f_cond[Dz][cmp];
         const direction dsig = cycle_direction(gv.dim, Z, 1);
         const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
-        const int dk = gv.iyee_shift(Dz).in_direction(dsig);
+        const realnum *sig = s->sigsize[dsig] > 1 ? s->sig[dsig] : 0;
+        const realnum *kap = s->sigsize[dsig] > 1 ? s->kap[dsig] : 0;
         const direction dsigu = cycle_direction(gv.dim, Z, 2);
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
-        const int dku = gv.iyee_shift(Dz).in_direction(dsigu);
+        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sig[dsigu] : 0;
+        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kap[dsigu] : 0;
         realnum *fu = siginvu && f_u[Dz][cmp] ? f[Dz][cmp] : 0;
         realnum *the_f = fu ? f_u[Dz][cmp] : f[Dz][cmp];
-        for (int iz = 0; iz < nz; ++iz) {
-          // Note: old code (prior to Meep 0.2) was missing factor of 4??
-          realnum df, dfcnd = g[iz] * (Courant * 4) * (cndinv ? cndinv[iz] : 1);
-          if (fcnd) fcnd[iz] += dfcnd;
-          the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
-          if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
+        realnum dt2 = dt * 0.5;
+
+        ivec is = gv.little_owned_corner(Dz);
+        ivec ie = gv.big_owned_corner(Dz);
+        ie.set_direction(R, 0);
+        LOOP_OVER_IVECS(gv, is, ie, i) {
+          realnum fprev = the_f[i];
+          realnum dfcnd = g[i] * (Courant * 4);
+          if (fcnd) {
+            realnum fcnd_prev = fcnd[i];
+            fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] + dfcnd) * cndinv[i];
+            dfcnd = fcnd[i] - fcnd_prev;
+          }
+          KSTRIDE_DEF(dsig, k, is, gv);
+          DEF_k;
+          KSTRIDE_DEF(dsigu, ku, is, gv);
+          DEF_ku;
+          the_f[i] = ((kap ? kap[k] - sig[k] : 1) * the_f[i] + dfcnd) * (siginv ? siginv[k] : 1);
+          if (fu)
+            fu[i] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[i] + the_f[i] - fprev);
         }
         ZERO_Z(f[Dp][cmp]);
         if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
@@ -315,25 +332,40 @@ bool fields_chunk::step_db(field_type ft) {
         const realnum *f_p = f[ft == D_stuff ? Hr : Ep][cmp];
         const realnum *f_m = ft == D_stuff ? f[Hz][cmp] : (f[Ez][1 - cmp] + (nz + 1));
         const realnum *cndinv = s->condinv[cc][d_c];
+        const realnum *cnd = s->conductivity[cc][d_c];
         realnum *fcnd = f_cond[cc][cmp];
         const direction dsig = cycle_direction(gv.dim, d_c, 1);
         const realnum *siginv = s->sigsize[dsig] > 1 ? s->siginv[dsig] : 0;
-        const int dk = gv.iyee_shift(cc).in_direction(dsig);
+        const realnum *sig = s->sigsize[dsig] > 1 ? s->sig[dsig] : 0;
+        const realnum *kap = s->sigsize[dsig] > 1 ? s->kap[dsig] : 0;
         const direction dsigu = cycle_direction(gv.dim, d_c, 2);
         const realnum *siginvu = s->sigsize[dsigu] > 1 ? s->siginv[dsigu] : 0;
-        const int dku = gv.iyee_shift(cc).in_direction(dsigu);
+        const realnum *sigu = s->sigsize[dsigu] > 1 ? s->sig[dsigu] : 0;
+        const realnum *kapu = s->sigsize[dsigu] > 1 ? s->kap[dsigu] : 0;
         realnum *fu = siginvu && f_u[cc][cmp] ? f[cc][cmp] : 0;
         realnum *the_f = fu ? f_u[cc][cmp] : f[cc][cmp];
         int sd = ft == D_stuff ? +1 : -1;
         realnum f_m_mult = ft == D_stuff ? 2 : (1 - 2 * cmp) * m;
+        realnum dt2 = dt * 0.5;
 
-        for (int iz = (ft == D_stuff); iz < nz + (ft == D_stuff); ++iz) {
-          realnum df;
-          realnum dfcnd = (sd * Courant) * (f_p[iz] - f_p[iz - sd] - f_m_mult * f_m[iz]) *
-                          (cndinv ? cndinv[iz] : 1);
-          if (fcnd) fcnd[iz] += dfcnd;
-          the_f[iz] += (df = dfcnd * (siginv ? siginv[dk + 2 * (dsig == Z) * iz] : 1));
-          if (fu) fu[iz] += siginvu[dku + 2 * (dsigu == Z) * iz] * df;
+        ivec is = gv.little_owned_corner(cc);
+        ivec ie = gv.big_owned_corner(cc);
+        ie.set_direction(R, 0);
+        LOOP_OVER_IVECS(gv, is, ie, i) {
+          realnum fprev = the_f[i];
+          realnum dfcnd = (sd * Courant) * (f_p[i] - f_p[i - sd] - f_m_mult * f_m[i]);
+          if (fcnd) {
+            realnum fcnd_prev = fcnd[i];
+            fcnd[i] = ((1 - dt2 * cnd[i]) * fcnd[i] + dfcnd) * cndinv[i];
+            dfcnd = fcnd[i] - fcnd_prev;
+          }
+          KSTRIDE_DEF(dsig, k, is, gv);
+          DEF_k;
+          KSTRIDE_DEF(dsigu, ku, is, gv);
+          DEF_ku;
+          the_f[i] = ((kap ? kap[k] - sig[k] : 1) * the_f[i] + dfcnd) * (siginv ? siginv[k] : 1);
+          if (fu)
+            fu[i] = siginvu[ku] * ((kapu ? kapu[ku] - sigu[ku] : 1) * fu[i] + the_f[i] - fprev);
         }
         if (ft == D_stuff) {
           ZERO_Z(f[Dz][cmp]);

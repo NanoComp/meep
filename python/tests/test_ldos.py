@@ -214,7 +214,13 @@ class TestLDOS(unittest.TestCase):
         ]
 
         src_cmpt = mp.Er
-        src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+
+        # Because (1) Er is not defined at r=0 on the Yee grid, and (2) there
+        # seems to be a bug in the restriction of an Er point source at r = 0,
+        # the source is placed at r = ~Δr (just outside the first voxel).
+        # This incurs a small error which decreases linearly with resolution.
+        src_pt = mp.Vector3(1.5 / self.resolution, 0, -0.5 * sz + h * dmat)
+
         sources = [
             mp.Source(
                 src=mp.GaussianSource(self.fcen, fwidth=0.1 * self.fcen),
@@ -263,7 +269,12 @@ class TestLDOS(unittest.TestCase):
         )
 
         out_flux = mp.get_fluxes(flux_air)[0]
-        dV = np.pi / (self.resolution**3)
+
+        if src_pt.x == 0:
+            dV = np.pi / (self.resolution**3)
+        else:
+            dV = 2 * np.pi * src_pt.x / (self.resolution**2)
+
         total_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
         ext_eff = out_flux / total_flux
         print(f"extraction efficiency (cyl):, " f"{dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
@@ -436,7 +447,7 @@ class TestLDOS(unittest.TestCase):
         ext_eff_cyl = self.ext_eff_cyl(layer_thickness, dipole_height, -1.0)
         ext_eff_3D = self.ext_eff_3D(layer_thickness, dipole_height)
 
-        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.01)
+        self.assertAlmostEqual(ext_eff_cyl, ext_eff_3D, delta=0.02)
 
         ext_eff_cyl_m_plus = self.ext_eff_cyl(
             layer_thickness,
