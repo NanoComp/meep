@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.7, '3.10']
+        python-version: [3.9, '3.11']
         enable-mpi: [false, true]
 
     steps:
@@ -129,7 +129,7 @@ jobs:
       run: pip install nlopt
 
     - name: Install coverage
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
       run: pip install coverage
 
     - name: Install mpi4py
@@ -143,7 +143,7 @@ jobs:
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
     - name: Run configure with OpenMP
-      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.7) && !(matrix.enable-mpi == true && matrix.python-version == 3.10) }}
+      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.9) && !(matrix.enable-mpi == true && matrix.python-version == 3.10) }}
       run: |
         mkdir -p build &&
         pushd build &&
@@ -151,7 +151,7 @@ jobs:
         popd
 
     - name: Run configure with coverage
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
       run: ./configure --enable-maintainer-mode --with-coverage --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: Run configure with single-precision floating point and swig threads
@@ -163,25 +163,25 @@ jobs:
         popd
 
     - name: Run make
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
       run: make ${MKCHECKFLAGS}
 
     - name: Run make check
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
       run: |
         pushd python/ &&
         { make ${MKCHECKFLAGS} check || cat test-suite.log; } &&
         popd
 
     - name: Run make distcheck
-      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.7) }}
+      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
       run: |
         pushd build &&
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
     - name: Generate coverage report
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
       run: |
         pushd python/ &&
         coverage combine -a &&
@@ -190,20 +190,20 @@ jobs:
         popd
 
     - name: Upload coverage to Codecov
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.7 }}
+      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
       uses: codecov/codecov-action@v3
       with:
         files: ${{ github.workspace }}/python/coverage.xml
 
     - name: Archive C++ test logs
-      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.7) }}
+      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
       uses: actions/upload-artifact@v3
       with:
         name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
 
     - name: Archive Python test logs
-      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.7) }}
+      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
       uses: actions/upload-artifact@v3
       with:
         name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
