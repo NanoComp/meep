@@ -1,14 +1,13 @@
-# Verifies that the extraction efficiency of a point dipole in a
-# dielectric layer above a lossless ground plane computed in
-# cylindrical and 3D Cartesian coordinates agree.
+"""Computes the extraction efficiency in 3D and cylindrical coordinates.
 
-import numpy as np
-import meep as mp
-import matplotlib
+Verifies that the extraction efficiency of a point dipole in a dielectric
+layer above a lossless metallic ground plane computed in two different
+coordinate systems agree.
+"""
 
-matplotlib.use("agg")
 import matplotlib.pyplot as plt
-
+import meep as mp
+import numpy as np
 
 resolution = 80  # pixels/μm
 dpml = 0.5  # thickness of PML
@@ -24,13 +23,14 @@ tol = 1e-8
 
 
 def extraction_eff_cyl(dmat: float, h: float) -> float:
-    """Computes the extraction efficiency of a point dipole embedded
-    within a dielectric layer above a lossless ground plane in
-    cylindrical coordinates.
+    """Computes the extraction efficiency in cylindrical coordinates.
 
     Args:
       dmat: thickness of dielectric layer.
       h: height of dipole above ground plane as fraction of dmat.
+
+    Returns:
+      The extraction efficiency of the dipole within the dielecric layer.
     """
     sr = L + dpml
     sz = dmat + dair + dpml
@@ -42,7 +42,14 @@ def extraction_eff_cyl(dmat: float, h: float) -> float:
     ]
 
     src_cmpt = mp.Er
-    src_pt = mp.Vector3(0, 0, -0.5 * sz + h * dmat)
+
+    # Because (1) Er is not defined at r=0 on the Yee grid, and (2) there
+    # seems to be a bug in the interpolation of an Er point source at r=0,
+    # the source is placed at r=~Δr (just outside the first voxel).
+    # This incurs a small error which decreases linearly with resolution.
+    # Ref: https://github.com/NanoComp/meep/issues/2704
+    src_pt = mp.Vector3(1.5 / resolution, 0, -0.5 * sz + h * dmat)
+
     sources = [
         mp.Source(
             src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
@@ -89,7 +96,10 @@ def extraction_eff_cyl(dmat: float, h: float) -> float:
     )
 
     out_flux = mp.get_fluxes(flux_air)[0]
-    dV = np.pi / (resolution**3)
+    if src_pt.x == 0:
+        dV = np.pi / (resolution**3)
+    else:
+        dV = 2 * np.pi * src_pt.x / (resolution**2)
     total_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
     ext_eff = out_flux / total_flux
     print(f"extraction efficiency (cyl):, " f"{dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
@@ -98,19 +108,23 @@ def extraction_eff_cyl(dmat: float, h: float) -> float:
 
 
 def extraction_eff_3D(dmat: float, h: float) -> float:
-    """Computes the extraction efficiency of a point dipole embedded
-    within a dielectric layer above a lossless ground plane in
-    3D Cartesian coordinates.
+    """Computes the extraction efficiency in 3D Cartesian coordinates.
 
     Args:
       dmat: thickness of dielectric layer.
       h: height of dipole above ground plane as fraction of dmat.
+
+    Returns:
+      The extraction efficiency of the dipole within the dielecric layer.
     """
     sxy = L + 2 * dpml
     sz = dmat + dair + dpml
     cell_size = mp.Vector3(sxy, sxy, sz)
 
-    symmetries = [mp.Mirror(direction=mp.X, phase=-1), mp.Mirror(direction=mp.Y)]
+    symmetries = [
+        mp.Mirror(direction=mp.X, phase=-1),
+        mp.Mirror(direction=mp.Y),
+    ]
 
     boundary_layers = [
         mp.PML(dpml, direction=mp.X),
@@ -182,7 +196,7 @@ def extraction_eff_3D(dmat: float, h: float) -> float:
     dV = 1 / (resolution**3)
     total_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
     ext_eff = out_flux / total_flux
-    print(f"extraction efficiency (3D):, " f"{dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
+    print(f"extraction efficiency (3D):, {dmat:.4f}, {h:.4f}, {ext_eff:.6f}")
 
     return ext_eff
 
@@ -199,7 +213,7 @@ if __name__ == "__main__":
 
     plt.plot(dipole_height, exteff_cyl, "bo-", label="cylindrical")
     plt.plot(dipole_height, exteff_3D, "ro-", label="3D Cartesian")
-    plt.xlabel(f"height of dipole above ground plane " f"(fraction of layer thickness)")
+    plt.xlabel("height of dipole above ground plane (fraction of layer thickness)")
     plt.ylabel("extraction efficiency")
     plt.legend()
 
