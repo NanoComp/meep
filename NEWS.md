@@ -1,5 +1,15 @@
 # Meep Release Notes
 
+## Meep 1.28.0
+
+11/9/2023
+
+* Improved special field updates for r=0 in cylindrical coordinates ([#2538]).
+
+* Geometric objects now have a `label` field that appears when `Simulation.plot2D` is called with `label_geometry=True` ([#2631]).
+
+* Various improvements and minor bug fixes ([#2554], [#2599], [#2560], [#2611], [#2684], [#2695]) and additional documentation.
+
 ## Meep 1.27.0
 
 5/25/2023
@@ -1177,3 +1187,11 @@ Meep 1.0.1
 [#2499]: https://github.com/NanoComp/meep/issues/2499
 [#2504]: https://github.com/NanoComp/meep/issues/2504
 [#2518]: https://github.com/NanoComp/meep/issues/2518
+[#2538]: https://github.com/NanoComp/meep/issues/2538
+[#2554]: https://github.com/NanoComp/meep/issues/2554
+[#2560]: https://github.com/NanoComp/meep/issues/2560
+[#2599]: https://github.com/NanoComp/meep/issues/2599
+[#2611]: https://github.com/NanoComp/meep/issues/2611
+[#2631]: https://github.com/NanoComp/meep/issues/2631
+[#2684]: https://github.com/NanoComp/meep/issues/2684
+[#2695]: https://github.com/NanoComp/meep/issues/2695
