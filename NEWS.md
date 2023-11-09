@@ -1,6 +1,6 @@
 # Meep Release Notes
 
-## Meep 1.27.1
+## Meep 1.28.0
 
 11/9/2023
 
