@@ -1,5 +1,13 @@
 # Meep Release Notes
 
+## Meep 1.28.0
+
+11/9/2023
+
+* Improved special field updates for r=0 in cylindrical coordinates ([#2538]).
+
+* Various improvements and minor bug fixes ([#2554], [#2599], [#2560], [#2611], [#2631], [#2684], [#2695]) and additional documentation.
+
 ## Meep 1.27.0
 
 5/25/2023
