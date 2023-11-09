@@ -6,7 +6,9 @@
 
 * Improved special field updates for r=0 in cylindrical coordinates ([#2538]).
 
-* Various improvements and minor bug fixes ([#2554], [#2599], [#2560], [#2611], [#2631], [#2684], [#2695]) and additional documentation.
+* Geometric objects now have a `label` field that appears when `sim.plot2D` is called ([#2631]).
+
+* Various improvements and minor bug fixes ([#2554], [#2599], [#2560], [#2611], [#2684], [#2695]) and additional documentation.
 
 ## Meep 1.27.0
 
