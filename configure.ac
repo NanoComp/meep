@@ -7,7 +7,7 @@ AC_CONFIG_SRCDIR(src/step.cpp)
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="33:0:0" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="32:1:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
