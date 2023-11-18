@@ -337,10 +337,9 @@ void step_bfast(RPR f, component c, const RPR g1, const RPR g2, ptrdiff_t s1,
                 const grid_volume &gv, const ivec is, const ivec ie, realnum dtdx, direction dsig,
                 const RPR sig, const RPR kap, const RPR siginv, RPR fu, direction dsigu,
                 const RPR sigu, const RPR kapu, const RPR siginvu, realnum dt, const RPR cnd,
-                const RPR cndinv, RPR fcnd, RPR F, realnum k1,
-                realnum k2) { // correct type of k1 & k2?
-  (void)c;                    // currently unused
-  if (!g1) {                  // swap g1 and g2
+                const RPR cndinv, RPR fcnd, RPR F, realnum k1, realnum k2) {
+  (void)c;   // currently unused
+  if (!g1) { // swap g1 and g2
     SWAP(const RPR, g1, g2);
     SWAP(ptrdiff_t, s1, s2);
     SWAP(realnum, k1, k2); // need to swap in cross product

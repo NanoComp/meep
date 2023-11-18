@@ -13,7 +13,10 @@ redefined so that the boundary conditions become periodic and the angle
 of the incident wave can be fixed over a broad frequency spectrum. This
 requires the addition of a new field. It is assumed that the reader is
 already familiar with the UPML formulation in MEEP [3], from which
-the equations will be modified.
+the equations will be modified.  B. Liang et al applied this method by
+splitting the electric and magnetic fields into multiple terms. This is
+different from the UPML formulation in MEEP, which allows simulation of
+more complex media, and so the method of B. Liang et al has to be adapted.
 
 Boundary conditions
 ===================
@@ -111,6 +114,19 @@ equation (14) was replaced with
 only first order accuracy would be achieved, since this is a backward
 difference scheme. To achieve second order accuracy would require
 $\vec{H}^{n+1.5}$ to be known.
+
+Application to the source code
+=========
+
+$\vec{C}$ is first time-stepped using the original function in the MEEP source code, i.e. using
+```math
+\vec{C}^{n+1}=(1+\frac{\sigma_{D} \Delta t}{2})^{-1} [(1-\frac{\sigma_D \Delta t}{2}) \vec{C}^n+\Delta t\vec{K}^{n+0.5}]. \tag{17}
+```
+When fixed angle broadband simulations are required, a new function is called which recovers equation (15) using
+```math
+\vec{C'}^{n+1} = (1+\frac{\sigma_{D} \Delta t}{2})^{-1} (\vec{F}^{n}-\vec{F}^{n+1}) + \vec{C}^{n+1}. \tag{18}
+```
+Similarly, all other fields which depend on the value of $\vec{C}$ have new terms added to them, multiplied by the relevant conductivity. Therefore the original functions in MEEP remain unchanged.
 
 Stability
 =========
