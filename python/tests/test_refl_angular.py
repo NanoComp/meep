@@ -1,5 +1,5 @@
 import math
-from typing import Tuple
+from typing import List, Tuple
 import unittest
 
 import numpy as np
@@ -12,7 +12,7 @@ import meep as mp
 class TestReflectanceAngular(ApproxComparisonTestCase):
     @classmethod
     def setUpClass(cls):
-        cls.resolution = 400  # pixels/μm
+        cls.resolution = 200  # pixels/μm
 
         cls.n1 = 1.4  # refractive index of medium 1
         cls.n2 = 3.5  # refractive index of medium 2
@@ -29,13 +29,10 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         cls.frequency_width = cls.frequency_max - cls.frequency_min
         cls.num_freq = 11
 
-
     def reflectance_angular(
-            self,
-            theta_deg: float,
-            need_bfast: bool
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Computes properties of the reflected planewave from an interface.
+        self, theta_deg: float, need_bfast: bool
+    ) -> Tuple[List, List, np.ndarray]:
+        """Computes properties of the incident and reflected planewave.
 
         Args:
           theta_deg: angle of incident planewave.
@@ -45,20 +42,19 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
 
         Returns:
           A 3-tuple comprising the frequencies of the incident planewave,
-          angles of the incident planewave, and the reflectance as 1D arrays.
+          angles of the incident planewave, and the reflectance.
         """
         theta_rad = math.radians(theta_deg)
 
         if need_bfast:
-            bfast_k_bar = (np.sin(theta_rad), 0, 0)
+            bfast_k_bar = (self.n1 * np.sin(theta_rad), 0, 0)
 
             k = mp.Vector3()
 
             if theta_deg > 40.0:
-                # TODO(oskooi): determine whether a lower value is necessary.
                 Courant = 0.05
             else:
-                Courant = 0.5
+                Courant = 0.1
 
         else:
             bfast_k_bar = (0, 0, 0)
@@ -83,10 +79,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
 
         sources = [
             mp.Source(
-                mp.GaussianSource(
-                    self.frequency_center,
-                    fwidth=self.frequency_width
-                ),
+                mp.GaussianSource(self.frequency_center, fwidth=self.frequency_width),
                 component=source_component,
                 center=mp.Vector3(z=-0.5 * self.size_z + self.dpml),
             )
@@ -102,20 +95,17 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             k_point=k,
             need_bfast=need_bfast,
             bfast_k_bar=bfast_k_bar,
-            Courant=Courant
+            Courant=Courant,
         )
 
         monitor_point = -0.5 * self.size_z + self.dpml + 0.25 * self.dz
         monitor_region = mp.FluxRegion(center=mp.Vector3(z=monitor_point))
         flux_monitor = sim.add_flux(
-            self.frequency_center,
-            self.frequency_width,
-            self.num_freq,
-            monitor_region
+            self.frequency_center, self.frequency_width, self.num_freq, monitor_region
         )
 
         termination_criteria = mp.stop_when_fields_decayed(
-            50, source_component, mp.Vector3(z=monitor_point), 1e-9
+            50, source_component, mp.Vector3(z=monitor_point), 1e-6
         )
         sim.run(until_after_sources=termination_criteria)
 
@@ -143,14 +133,11 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             need_bfast=need_bfast,
             bfast_k_bar=bfast_k_bar,
             Courant=Courant,
-            geometry=geometry
+            geometry=geometry,
         )
 
         flux_monitor = sim.add_flux(
-            self.frequency_center,
-            self.frequency_width,
-            self.num_freq,
-            monitor_region
+            self.frequency_center, self.frequency_width, self.num_freq, monitor_region
         )
         sim.load_minus_flux_data(flux_monitor, empty_data)
 
@@ -172,17 +159,18 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
 
         return freqs, theta_in_rad, reflectance
 
-
-    @parameterized.parameterized.expand([(0, True), (20.6, True)])
+    @parameterized.parameterized.expand(
+        [(0, False), (20.6, False), (0, True), (35.7, True)]
+    )
     def test_reflectance_angular(self, theta_deg: float, need_bfast: bool):
         (
             frequency_meep,
             theta_in_rad_meep,
-            reflectance_meep
+            reflectance_meep,
         ) = self.reflectance_angular(theta_deg, need_bfast)
 
-        # Returns angle of refracted planewave in medium n2 given an
-        # incident planewave in medium n1 at angle theta_in_rad.
+        # Returns angle of refracted planewave in medium n2 given
+        # an incident planewave in medium n1 at angle theta_in_rad.
         theta_out = lambda theta_in_rad: math.asin(
             self.n1 * math.sin(theta_in_rad) / self.n2
         )
@@ -192,11 +180,12 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         reflectance_fresnel = lambda theta_in_rad: (
             math.fabs(
                 (
-                    self.n1 * math.cos(theta_out(theta_in_rad)) -
-                    self.n2 * math.cos(theta_in_rad))
+                    self.n1 * math.cos(theta_out(theta_in_rad))
+                    - self.n2 * math.cos(theta_in_rad)
+                )
                 / (
-                    self.n1 * math.cos(theta_out(theta_in_rad)) +
-                    self.n2 * math.cos(theta_in_rad)
+                    self.n1 * math.cos(theta_out(theta_in_rad))
+                    + self.n2 * math.cos(theta_in_rad)
                 )
             )
             ** 2
@@ -209,23 +198,21 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         )
         for i in range(self.num_freq):
             reflectance_analytic[i] = reflectance_fresnel(theta_in_rad_meep[i])
-            err = (abs(reflectance_meep[i] - reflectance_analytic[i]) /
-                   reflectance_analytic[i])
+            err = (
+                abs(reflectance_meep[i] - reflectance_analytic[i])
+                / reflectance_analytic[i]
+            )
             print(
                 "refl:, {:4.2f}, {:4.2f}, {:8.6f}, {:8.6f}, {:6.4f}".format(
                     1 / frequency_meep[i],
                     math.degrees(theta_in_rad_meep[i]),
                     reflectance_meep[i],
                     reflectance_analytic[i],
-                    err
+                    err,
                 )
             )
 
-        if need_bfast:
-            tol = 0.1
-        else:
-            tol = 0.005 if mp.is_single_precision() else 0.004
-
+        tol = 0.02
         self.assertClose(reflectance_meep, reflectance_analytic, epsilon=tol)
 
 
