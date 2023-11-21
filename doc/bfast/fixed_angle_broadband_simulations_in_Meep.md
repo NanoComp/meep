@@ -79,10 +79,10 @@ This new field satisfies the equation:
 ```
 where
 ```math
-\vec{\bar{k}} =\frac{1}{\omega}\begin{pmatrix} k_{x} \\ k_{y}\\0 \end{pmatrix} \ =\begin{pmatrix} \sin{\theta}\cos{\phi} \\ \sin{\theta}\sin{\phi}\\0 \end{pmatrix} \ \tag{11}
+\vec{\bar{k}} =\frac{1}{\omega}\begin{pmatrix} k_{x} \\ k_{y}\\0 \end{pmatrix} \ = n \begin{pmatrix} \sin{\theta}\cos{\phi} \\ \sin{\theta}\sin{\phi}\\0 \end{pmatrix} \ \tag{11}
 ```
 and so $\vec{\bar{k}}$ is the wave vector with its frequency dependence
-removed. $\theta$ and $\phi$ are the propagating direction angles and c,
+removed. $\theta$ and $\phi$ are the propagating direction angles, $n$ is the refractive index of the source medium and c,
 the speed of light is taken to be 1. Therefore by defining $\vec{F}$,
 the angle of the incident wave is fixed. Equation
 (10) can be discretized as:
