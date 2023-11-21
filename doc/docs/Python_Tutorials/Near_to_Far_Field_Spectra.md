@@ -374,7 +374,7 @@ $$P_{total} = \int_0^{2\pi} \int_0^{\frac{\pi}{2}} P(\theta) r^2 \sin(\theta) d\
 
 An angular grid of $N$ equally spaced points in $[0, \pi/2]$ has $\Delta \theta = \frac{\pi}{2(N - 1)}$. Note that the same $r^2 \sin(\theta)$ weighting is necessary for the power in any cone, not just over all angles.
 
-A plot of the radiation pattern in polar coordinates and 3D is shown below. Note regarding the coordinate axes in the polar plot: 0° is in the $+z$ direction which is normal to the ground plane and 90° is in the $+r$ direction which is parallel to the ground plane. This is consistent with the convention for the polar angle $\theta$ used in spherical coordinates.
+A plot of the radiation pattern in polar coordinates and 3D is shown below. Note regarding the coordinate axes in the polar plot: 0° is in the $+z$ direction which is normal to the ground plane and 90° is in the $+r$ direction which is parallel to the ground plane. This is consistent with the convention for the polar angle $\theta$ used in spherical coordinates. Also note that the radial flux is a dimensionful quantity but because Meep uses $c = 1$, $\varepsilon_0 = 1$, and $\mu_0 = 1$ its units are arbitrary.
 
 ![](../images/disc_radiation_pattern_polar_vs_3d.png#center)
 
@@ -443,6 +443,7 @@ def plot_radiation_pattern_polar(Ptheta: np.ndarray):
     ax.set_thetalim(0, 0.5 * math.pi)
     ax.grid(True)
     ax.set_rlabel_position(22)
+    ax.set_ylabel("radial flux (a.u.)")
     ax.set_title("radiation pattern in polar coordinates")
 
     if mp.am_master():
@@ -474,6 +475,9 @@ def plot_radiation_pattern_3d(Ptheta: np.ndarray):
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(6,6))
     ax.plot_surface(xs, ys, zs, cmap="inferno")
     ax.set_title("radiation pattern in 3d")
+    ax.set_box_aspect((np.amax(xs), np.amax(ys), np.amax(zs)))
+    ax.set_zlabel("radial flux (a.u.)")
+    ax.set(xticklabels=[], yticklabels=[])
 
     if mp.am_master():
         fig.savefig(
