@@ -110,6 +110,7 @@ void fields_chunk::backup_component(component c) {
       BACKUP(f_u);
       BACKUP(f_w);
       BACKUP(f_cond);
+      BACKUP(f_bfast);
 
 #undef BACKUP
     }
@@ -126,6 +127,7 @@ void fields_chunk::restore_component(component c) {
     RESTORE(f_u);
     RESTORE(f_w);
     RESTORE(f_cond);
+    RESTORE(f_bfast);
 
 #undef RESTORE
   }

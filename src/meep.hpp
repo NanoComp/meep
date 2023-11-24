@@ -1465,6 +1465,8 @@ public:
   realnum *f_w[NUM_FIELD_COMPONENTS][2];    // E/H integrated from these
   realnum *f_cond[NUM_FIELD_COMPONENTS][2]; // aux field for PML+conductivity
 
+  realnum *f_bfast[NUM_FIELD_COMPONENTS][2];
+
   /* sometimes, to synchronize the E and H fields, e.g. for computing
      flux at a given time, we need to timestep H by 1/2; in this case
      we save backup copies of (some of) the fields to resume timestepping */
@@ -1473,6 +1475,7 @@ public:
   realnum *f_w_backup[NUM_FIELD_COMPONENTS][2];
   realnum *f_cond_backup[NUM_FIELD_COMPONENTS][2];
 
+  realnum *f_bfast_backup[NUM_FIELD_COMPONENTS][2];
   // W (or E/H) field from prev. timestep, only stored if needed by update_pols
   realnum *f_w_prev[NUM_FIELD_COMPONENTS][2];
 
@@ -1499,6 +1502,8 @@ public:
   volume v;
   double m;                        // angular dependence in cyl. coords
   bool zero_fields_near_cylorigin; // fields=0 m pixels near r=0 for stability
+  bool need_bfast;
+  std::vector<double> bfast_k_bar;
   double beta;
   int is_real;
   std::vector<src_vol> sources[NUM_FIELD_TYPES];
@@ -1508,7 +1513,8 @@ public:
   int chunk_idx;
 
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
-               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db);
+               bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db,
+               bool need_bfast, std::vector<double> bfast_k_bar);
 
   fields_chunk(const fields_chunk &, int chunkidx);
   ~fields_chunk();
@@ -1736,6 +1742,8 @@ public:
   grid_volume gv, user_volume;
   volume v;
   double m;
+  bool need_bfast;
+  std::vector<double> bfast_k_bar;
   double beta;
   int t, phasein_time, is_real;
   std::complex<double> k[5], eikna[5];
@@ -1747,7 +1755,8 @@ public:
 
   // fields.cpp methods:
   fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,
-         int loop_tile_base_db = 0, int loop_tile_base_eh = 0);
+         int loop_tile_base_db = 0, int loop_tile_base_eh = 0, bool need_bfast = false,
+         std::vector<double> bfast_k_bar = {0, 0, 0});
   fields(const fields &);
   ~fields();
   bool equal_layout(const fields &f) const;
