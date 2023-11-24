@@ -656,6 +656,11 @@ if __name__ == "__main__":
     )
 ```
 
+### Extraction Efficiency of a Collection of Dipoles in a Disc
+
+The simulation script is in [examples/disc_extraction_efficiency.py](https://github.com/NanoComp/meep/blob/master/python/examples/disc_extraction_efficiency.py).
+
+
 Focusing Properties of a Metasurface Lens
 -----------------------------------------
 
