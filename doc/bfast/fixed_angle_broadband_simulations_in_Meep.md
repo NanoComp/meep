@@ -134,7 +134,7 @@ Stability
 As the incident angle increases, the maximum possible $\Delta t$ value
 decreases, following the formula:
 ```math
-\frac{c\Delta t}{\Delta x} \leq \frac{(1-sin(\theta))}{\sqrt{D}} \tag{17}
+\frac{c\Delta t}{\Delta x} \leq \frac{(1-\sin(\theta))}{\sqrt{D}} \tag{17}
 ```
 where D is the number of dimensions [2].
 
