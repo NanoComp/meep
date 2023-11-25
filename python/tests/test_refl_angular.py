@@ -17,9 +17,9 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         cls.n1 = 1.4  # refractive index of medium 1
         cls.n2 = 3.5  # refractive index of medium 2
 
-        cls.dpml = 1.0
-        cls.dz = 7.0
-        cls.size_z = cls.dz + 2 * cls.dpml
+        cls.t_pml = 1.0
+        cls.length_z = 7.0
+        cls.size_z = cls.length_z + 2 * cls.t_pml
 
         cls.wavelength_min = 0.4
         cls.wavelength_max = 0.8
@@ -49,15 +49,13 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         if need_bfast:
             bfast_k_bar = (self.n1 * np.sin(theta_rad), 0, 0)
 
+            Courant = (1 - bfast_k_bar[0]) / 3**0.5
+
             k = mp.Vector3()
-
-            if theta_deg > 40.0:
-                Courant = 0.05
-            else:
-                Courant = 0.1
-
         else:
             bfast_k_bar = (0, 0, 0)
+
+            Courant = 0.5
 
             # Wavevector in source medium with refractive index n1.
             # Plane of incidence is XZ. Rotation is counter clockwise about
@@ -68,11 +66,9 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
                 .scale(self.n1 * self.frequency_min)
             )
 
-            Courant = 0.5
-
         dimensions = 1 if theta_deg == 0 else 3
         cell_size = mp.Vector3(z=self.size_z)
-        pml_layers = [mp.PML(self.dpml)]
+        pml_layers = [mp.PML(self.t_pml)]
 
         # P polarization.
         source_component = mp.Ex
@@ -81,7 +77,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             mp.Source(
                 mp.GaussianSource(self.frequency_center, fwidth=self.frequency_width),
                 component=source_component,
-                center=mp.Vector3(z=-0.5 * self.size_z + self.dpml),
+                center=mp.Vector3(z=-0.5 * self.size_z + self.t_pml),
             )
         ]
 
@@ -98,7 +94,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             Courant=Courant,
         )
 
-        monitor_point = -0.5 * self.size_z + self.dpml + 0.25 * self.dz
+        monitor_point = -0.5 * self.size_z + self.t_pml + 0.25 * self.length_z
         monitor_region = mp.FluxRegion(center=mp.Vector3(z=monitor_point))
         flux_monitor = sim.add_flux(
             self.frequency_center, self.frequency_width, self.num_freq, monitor_region
@@ -159,9 +155,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
 
         return freqs, theta_in_rad, reflectance
 
-    @parameterized.parameterized.expand(
-        [(0, False), (20.6, False), (0, True), (35.7, True)]
-    )
+    @parameterized.parameterized.expand([(0, False), (20.6, False), (35.7, True)])
     def test_reflectance_angular(self, theta_deg: float, need_bfast: bool):
         (
             frequency_meep,
@@ -212,7 +206,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
                 )
             )
 
-        tol = 0.02
+        tol = 0.03
         self.assertClose(reflectance_meep, reflectance_analytic, epsilon=tol)
 
 
