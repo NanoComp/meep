@@ -62,6 +62,7 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *f_p = have_p ? f[c_p][cmp] : NULL;
         realnum *f_m = have_m ? f[c_m][cmp] : NULL;
         realnum *the_f = f[cc][cmp];
+        bool need_bfast = (bfast_scaled_k[0] || bfast_scaled_k[1] || bfast_scaled_k[2]) ? 1 : 0;
 
         if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
           f_cond[cc][cmp] = new realnum[gv.ntot()];
@@ -126,8 +127,10 @@ bool fields_chunk::step_db(field_type ft) {
                   s->conductivity[cc][d_c], s->condinv[cc][d_c], f_cond[cc][cmp]);
 
         if (need_bfast) {
-          realnum k1 = have_m ? bfast_k_bar[component_index(c_m)] : 0; // puts k1 in direction of g2
-          realnum k2 = have_p ? bfast_k_bar[component_index(c_p)] : 0; // puts k2 in direction of g1
+          realnum k1 =
+              have_m ? bfast_scaled_k[component_index(c_m)] : 0; // puts k1 in direction of g2
+          realnum k2 =
+              have_p ? bfast_scaled_k[component_index(c_p)] : 0; // puts k2 in direction of g1
           if (ft == D_stuff) {
             k1 = -k1;
             k2 = -k2;

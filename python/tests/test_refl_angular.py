@@ -47,13 +47,13 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         theta_rad = math.radians(theta_deg)
 
         if need_bfast:
-            bfast_k_bar = (self.n1 * np.sin(theta_rad), 0, 0)
+            bfast_scaled_k = (self.n1 * np.sin(theta_rad), 0, 0)
 
-            Courant = (1 - bfast_k_bar[0]) / 3**0.5
+            Courant = (1 - bfast_scaled_k[0]) / 3**0.5
 
             k = mp.Vector3()
         else:
-            bfast_k_bar = (0, 0, 0)
+            bfast_scaled_k = (0, 0, 0)
 
             Courant = 0.5
 
@@ -89,8 +89,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             sources=sources,
             boundary_layers=pml_layers,
             k_point=k,
-            need_bfast=need_bfast,
-            bfast_k_bar=bfast_k_bar,
+            bfast_scaled_k=bfast_scaled_k,
             Courant=Courant,
         )
 
@@ -126,8 +125,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             sources=sources,
             boundary_layers=pml_layers,
             k_point=k,
-            need_bfast=need_bfast,
-            bfast_k_bar=bfast_k_bar,
+            bfast_scaled_k=bfast_scaled_k,
             Courant=Courant,
             geometry=geometry,
         )
