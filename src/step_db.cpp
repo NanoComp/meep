@@ -62,7 +62,7 @@ bool fields_chunk::step_db(field_type ft) {
         realnum *f_p = have_p ? f[c_p][cmp] : NULL;
         realnum *f_m = have_m ? f[c_m][cmp] : NULL;
         realnum *the_f = f[cc][cmp];
-        bool need_bfast = (bfast_scaled_k[0] || bfast_scaled_k[1] || bfast_scaled_k[2]) ? 1 : 0;
+        bool use_bfast = bfast_scaled_k[0] || bfast_scaled_k[1] || bfast_scaled_k[2];
 
         if (dsig != NO_DIRECTION && s->conductivity[cc][d_c] && !f_cond[cc][cmp]) {
           f_cond[cc][cmp] = new realnum[gv.ntot()];
@@ -73,7 +73,7 @@ bool fields_chunk::step_db(field_type ft) {
           memcpy(f_u[cc][cmp], the_f, gv.ntot() * sizeof(realnum));
           allocated_u = true;
         }
-        if (need_bfast && !f_bfast[cc][cmp]) {
+        if (use_bfast && !f_bfast[cc][cmp]) {
           f_bfast[cc][cmp] = new realnum[gv.ntot()];
           memset(f_bfast[cc][cmp], 0, sizeof(realnum) * gv.ntot());
         }
@@ -126,7 +126,7 @@ bool fields_chunk::step_db(field_type ft) {
                   f_u[cc][cmp], dsigu, s->sig[dsigu], s->kap[dsigu], s->siginv[dsigu], dt,
                   s->conductivity[cc][d_c], s->condinv[cc][d_c], f_cond[cc][cmp]);
 
-        if (need_bfast) {
+        if (use_bfast) {
           realnum k1 =
               have_m ? bfast_scaled_k[component_index(c_m)] : 0; // puts k1 in direction of g2
           realnum k2 =
