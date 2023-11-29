@@ -30,11 +30,10 @@ using namespace std;
 namespace meep {
 
 fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylorigin,
-               int loop_tile_base_db, int loop_tile_base_eh, bool need_bfast,
-               std::vector<double> bfast_k_bar)
+               int loop_tile_base_db, int loop_tile_base_eh, std::vector<double> bfast_scaled_k)
     : S(s->S), gv(s->gv), user_volume(s->user_volume), v(s->v), m(m), beta(beta),
       loop_tile_base_db(loop_tile_base_db), loop_tile_base_eh(loop_tile_base_eh),
-      working_on(&times_spent), need_bfast(need_bfast), bfast_k_bar(bfast_k_bar) {
+      working_on(&times_spent), bfast_scaled_k(bfast_scaled_k) {
   shared_chunks = s->shared_chunks;
   components_allocated = false;
   synchronized_magnetic_fields = 0;
@@ -61,7 +60,7 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
   chunks = new fields_chunk_ptr[num_chunks];
   for (int i = 0; i < num_chunks; i++)
     chunks[i] = new fields_chunk(s->chunks[i], outdir, m, beta, zero_fields_near_cylorigin, i,
-                                 loop_tile_base_db, need_bfast, bfast_k_bar);
+                                 loop_tile_base_db, bfast_scaled_k);
   FOR_FIELD_TYPES(ft) {
     typedef realnum *realnum_ptr;
     comm_blocks[ft] = new realnum_ptr[num_chunks * num_chunks];
@@ -94,8 +93,7 @@ fields::fields(const fields &thef)
   outdir = new char[strlen(thef.outdir) + 1];
   strcpy(outdir, thef.outdir);
   m = thef.m;
-  need_bfast = thef.need_bfast;
-  bfast_k_bar = thef.bfast_k_bar;
+  bfast_scaled_k = thef.bfast_scaled_k;
   beta = thef.beta;
   phasein_time = thef.phasein_time;
   for (int d = 0; d < 5; d++) {
@@ -243,9 +241,9 @@ void check_tiles(grid_volume gv, const std::vector<grid_volume> &gvs) {
 
 fields_chunk::fields_chunk(structure_chunk *the_s, const char *od, double m, double beta,
                            bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db,
-                           bool need_bfast, std::vector<double> bfast_k_bar)
+                           std::vector<double> bfast_scaled_k)
     : gv(the_s->gv), v(the_s->v), m(m), zero_fields_near_cylorigin(zero_fields_near_cylorigin),
-      beta(beta), need_bfast(need_bfast), bfast_k_bar(bfast_k_bar) {
+      beta(beta), bfast_scaled_k(bfast_scaled_k) {
   s = the_s;
   chunk_idx = chunkidx;
   s->refcount++;
@@ -307,8 +305,7 @@ fields_chunk::fields_chunk(const fields_chunk &thef, int chunkidx) : gv(thef.gv)
   s->refcount++;
   outdir = thef.outdir;
   m = thef.m;
-  need_bfast = thef.need_bfast;
-  bfast_k_bar = thef.bfast_k_bar;
+  bfast_scaled_k = thef.bfast_scaled_k;
   zero_fields_near_cylorigin = thef.zero_fields_near_cylorigin;
   beta = thef.beta;
   new_s = thef.new_s;

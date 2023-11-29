@@ -30,13 +30,13 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         cls.num_freq = 11
 
     def reflectance_angular(
-        self, theta_deg: float, need_bfast: bool
+        self, theta_deg: float, use_bfast: bool
     ) -> Tuple[List, List, np.ndarray]:
         """Computes properties of the incident and reflected planewave.
 
         Args:
           theta_deg: angle of incident planewave.
-          need_bfast: whether to use the same angle for the incident planewave
+          use_bfast: whether to use the same angle for the incident planewave
             for all frequencies. If False, the incident angle is frequency
             dependent.
 
@@ -46,14 +46,14 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         """
         theta_rad = math.radians(theta_deg)
 
-        if need_bfast:
-            bfast_k_bar = (self.n1 * np.sin(theta_rad), 0, 0)
+        if use_bfast:
+            bfast_scaled_k = (self.n1 * np.sin(theta_rad), 0, 0)
 
-            Courant = (1 - bfast_k_bar[0]) / 3**0.5
+            Courant = (1 - bfast_scaled_k[0]) / 3**0.5
 
             k = mp.Vector3()
         else:
-            bfast_k_bar = (0, 0, 0)
+            bfast_scaled_k = (0, 0, 0)
 
             Courant = 0.5
 
@@ -89,8 +89,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             sources=sources,
             boundary_layers=pml_layers,
             k_point=k,
-            need_bfast=need_bfast,
-            bfast_k_bar=bfast_k_bar,
+            bfast_scaled_k=bfast_scaled_k,
             Courant=Courant,
         )
 
@@ -126,8 +125,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
             sources=sources,
             boundary_layers=pml_layers,
             k_point=k,
-            need_bfast=need_bfast,
-            bfast_k_bar=bfast_k_bar,
+            bfast_scaled_k=bfast_scaled_k,
             Courant=Courant,
             geometry=geometry,
         )
@@ -144,7 +142,7 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
 
         reflectance = -np.array(flux_monitor_flux) / np.array(empty_flux)
 
-        if need_bfast:
+        if use_bfast:
             theta_in_rad = [theta_rad] * self.num_freq
         else:
             # Returns the angle of the incident planewave in medium n1 based
@@ -156,12 +154,12 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         return freqs, theta_in_rad, reflectance
 
     @parameterized.parameterized.expand([(0, False), (20.6, False), (35.7, True)])
-    def test_reflectance_angular(self, theta_deg: float, need_bfast: bool):
+    def test_reflectance_angular(self, theta_deg: float, use_bfast: bool):
         (
             frequency_meep,
             theta_in_rad_meep,
             reflectance_meep,
-        ) = self.reflectance_angular(theta_deg, need_bfast)
+        ) = self.reflectance_angular(theta_deg, use_bfast)
 
         # Returns angle of refracted planewave in medium n2 given
         # an incident planewave in medium n1 at angle theta_in_rad.
