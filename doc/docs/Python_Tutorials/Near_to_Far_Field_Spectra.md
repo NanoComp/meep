@@ -658,6 +658,16 @@ if __name__ == "__main__":
 
 ### Extraction Efficiency of a Collection of Dipoles in a Disc
 
+[Tutorial/Radiation Pattern of a Disc in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-a-disc-in-cylindrical-coordinates) demonstrated the procedure for computing the radiation pattern of a *single* dipole (actually a "ring" current source) with a fixed angular dependence $exp(im\phi)$. Separately, [Tutorial/Nonaxisymmetric Dipole Sources](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) described the method for modeling a point dipole at $r > 0$ in cylindrical coordinates using a Fourier-series expansion of the fields in $\phi$. These two results can be combined to compute the radiation pattern for a point dipole anywhere in the cylindrical cell. Computing the extraction efficiency of a light-emitting diode (LED), however, involves a collection of spatially incoherent dipole emitters. [Tutorial/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) described a method for computing the emission of an LED using a series of single-dipole simulations and averaging the emission profiles in post processing. The example used a 2D simulation involving a 1D binary grating. This tutorial demonstrates how this approach can be extended to cylindrical coordinates for structures with rotational symmetry.
+
+The example uses the same setup as the [previous tutorial](#radiation-pattern-of-a-disc-in-cylindrical-coordinates) involving a dielectric disc above a lossless-reflector ground plane. The dipoles are arranged with equal spacing $\Delta r$ on a line extending from $r = 0$ to $r = R$ where $R$ is the radius of the disc. The height of the dipoles ($z$ coordinate) is fixed. We compute the radiation pattern $P(r,\theta)$ for a dipole at $r$ using a Fourier-series expansion in $\phi$. The *total* radiation pattern $P(\theta)$ for $N$ dipoles is the average of the per-dipole results:
+
+$$P(\theta) = \int_0^R P(r,\theta) s(r) 2\pi rdr = \sum_{n=0}^{N-1} P(r_n,\theta) s(r_n) 2\pi r_n \Delta r$$,
+
+where $s(r)$ is a weighting function necessary for ensuring equal contribution from all dipoles relative to the dipole at $r = 0$. Note: an $E_r$ dipole at $r = 0$ must be placed at $r_0 = 1.5\Delta r$ due to an [interpolation bug](https://github.com/NanoComp/meep/issues/2704). $s(r)$ can be determined empirically by computing the emission in vacuum for a set of dipoles at different radial positions. The emission profiles of all dipoles in vacuum must be identical which yields: $s(r) = \frac{1}{2(r/r_0)^2}$.
+
+![](../images/disc_dipoles_radiation_pattern.png#center)
+
 The simulation script is in [examples/disc_extraction_efficiency.py](https://github.com/NanoComp/meep/blob/master/python/examples/disc_extraction_efficiency.py).
 
 
