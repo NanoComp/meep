@@ -692,6 +692,8 @@ WAVELENGTH_UM = 1.0  # wavelength (in vacuum)
 # radius of quarter circle for computing flux in far field
 FARFIELD_RADIUS_UM = 1000 * WAVELENGTH_UM
 
+RESOLUTION = 50  # pixels/μm
+
 
 def plot_radiation_pattern_polar(theta_rad: np.ndarray, radial_flux: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
@@ -827,8 +829,6 @@ def dipole_in_disc(
     Returns:
       A 2-tuple of the total flux and the radiation pattern.
     """
-    resolution = 50  # pixels/μm
-
     t_pml_um = 0.5  # thickness of PML
     t_air_um = 1.0  # thickness of air padding above disc
     length_r_um = 5.0  # length of cell in r
@@ -846,11 +846,6 @@ def dipole_in_disc(
         mp.PML(t_pml_um, direction=mp.R),
         mp.PML(t_pml_um, direction=mp.Z, side=mp.High),
     ]
-
-    # An Er source at r=0 needs to be slighty offset.
-    # https://github.com/NanoComp/meep/issues/2704
-    if rpos == 0:
-        rpos = 1.5 / resolution
 
     src_cmpt = mp.Er
     src_pt = mp.Vector3(rpos, 0, -0.5 * size_z + h_disc * t_disc_um)
@@ -871,7 +866,7 @@ def dipole_in_disc(
     ]
 
     sim = mp.Simulation(
-        resolution=resolution,
+        resolution=RESOLUTION,
         cell_size=cell_size,
         dimensions=mp.CYLINDRICAL,
         m=m,
@@ -906,7 +901,7 @@ def dipole_in_disc(
         ),
     )
 
-    delta_vol = 2 * np.pi * rpos / (resolution**2)
+    delta_vol = 2 * np.pi * rpos / (RESOLUTION**2)
     dipole_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * delta_vol
 
     dipole_radiation_pattern = radiation_pattern(theta_rad, sim, n2f_mon)
@@ -919,6 +914,10 @@ if __name__ == "__main__":
     dipole_height = 0.5
     num_dipoles = 11
     dipole_rpos = np.linspace(0, DISC_RADIUS_UM, num_dipoles)
+
+    # An Er source at r=0 needs to be slighty offset.
+    # https://github.com/NanoComp/meep/issues/2704
+    dipole_rpos[0] = 1.5 / RESOLUTION
 
     delta_rpos = dipole_rpos[2] - dipole_rpos[1]
 
@@ -987,6 +986,9 @@ if __name__ == "__main__":
         print(
             f"dipole:, {rpos:.4f}, {m}, " f"{dipole_radiation_pattern_total_flux:.6f}"
         )
+
+    flux_total /= num_dipoles
+    radiation_pattern_total /= num_dipoles
 
     radiation_pattern_total_flux = radiation_pattern_flux(
         theta_rad, radiation_pattern_total
