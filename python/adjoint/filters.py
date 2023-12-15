@@ -1099,3 +1099,147 @@ def gray_indicator(x):
     density-based topology optimization. Archive of Applied Mechanics, 86(1-2), 189-218.
     """
     return npa.mean(4 * x.flatten() * (1 - x.flatten())) * 100
+
+def hybrid_levelset(
+    x: ArrayLikeType,
+    beta: float,
+    eta: float,
+    Lx: float,
+    Ly: float,
+    resolution: float,
+    filter_radius: float,
+    periodic_axes: ArrayLikeType = None,
+):
+    """Filter and project using subpixel smoothing, which allows for β→∞.
+
+    This technique integrates out the discontinuity within the projection
+    function, allowing the user to smoothly increase β from 0 to ∞ without
+    losing the gradient. Effectively, a level set is created, and from this
+    level set, first-order subpixel smoothing is applied to the interfaces (if
+    any are present).
+
+    While the original approach involves numerical quadrature, this approach
+    performs a "trick" by assuming that the user is always infinitely projecting
+    (β=∞). In this case, the expensive quadrature simplifies to an analytic
+    fill-factor expression. When to use this fill factor requires some careful
+    logic.
+
+    For one, we want to make sure that the user can indeed project at any level
+    (not just infinity). So in these cases, we simply check if in interface is
+    within the pixel. If not, we revert to the standard filter plus project
+    technique.
+
+    If there is an interface, we want to make sure the derivative remains
+    continuous both as the interface leaves the cell, *and* as it crosses the
+    center. To ensure this, we need to account for the different possibilities.
+
+    Args:
+        x: The (2D) input design parameters.
+        beta: The thresholding parameter in the range [0, inf]. Determines the
+            degree of binarization of the output.
+        eta: The threshold point in the range [0, 1].
+        Lx: The length of design region in X direction (in Meep units).
+        Ly: The length of design region in Y direction (in Meep units).
+        resolution: The resolution of the design grid (not the Meep grid
+            resolution).
+        filter_radius: The filter radius (in Meep units).
+        periodic_axes: The list of axes (x, y = 0, 1) that are to be treated as
+            periodic. Default is None (all axes are non-periodic).
+    Returns:
+        The projected and smoothed output.
+    
+    Example:
+        >>> Lx = 2
+        >>> Ly = 2
+        >>> resolution = 50
+        >>> eta_i = 0.5
+        >>> eta_e = 0.75
+        >>> lengthscale = 0.1
+        >>> filter_radius = get_conic_radius_from_eta_e(lengthscale, eta_e)
+        >>> Nx = onp.round(Lx * resolution) + 1
+        >>> Ny = onp.round(Ly * resolution) + 1
+        >>> A = onp.random.rand(Nx, Ny)
+        >>> beta = npa.inf
+        >>> A_smoothed = hybrid_levelset(A, beta, eta_i, Lx, Ly, resolution, filter_radius)
+    """
+    # Note that currently, the underlying assumption is that the smoothing
+    # kernel is a circle, which means dx = dy.
+    dx = dy = 1 / resolution
+    pixel_radius = dx / 2
+
+    # Perform the standard filter and projection common in density-based TO
+    x_filtered = conic_filter(
+        x,
+        radius=filter_radius,
+        Lx=Lx,
+        Ly=Ly,
+        resolution=resolution,
+        periodic_axes=periodic_axes,
+    )
+    x_projected = npa.clip(tanh_projection(x_filtered, beta=beta, eta=eta), 0, 1)
+
+    # Compute the spatial gradient (using finite differences) of the *filtered*
+    # field, which will always be smooth and is the key to our approach. This
+    # gradient essentially represents the normal direction pointing the the
+    # nearest inteface.
+    x_grad = npa.gradient(x_filtered)
+    x_grad_norm = npa.sqrt((x_grad[0] / dx) ** 2 + (x_grad[1] / dy) ** 2)
+
+    # The distance for the center of the pixel to the nearest interface
+    d = (eta - x_filtered) / x_grad_norm
+
+    # The fill factor is used to perform simple, first-order subpixel smoothing.
+    # We use the (2D) analytic expression that comes when assuming the smoothing
+    # kernel is a cylinder. Note that because the kernel contains some
+    # expressions that are sensitive to NaNs, we have to use the "double where"
+    # trick to avoid the Nans in the backward trace. This is a common problem
+    # with array-based AD tracers, apparently. See here:
+    # https://github.com/google/jax/issues/1052#issuecomment-5140833520
+    fill_factor = npa.where(
+        (d <= pixel_radius) & (npa.abs(d / pixel_radius) <= 1), # domain of arccos() and sqrt()
+        (1 / (npa.pi * pixel_radius**2))
+        * (
+            pixel_radius**2
+            * npa.arccos(
+                # "double where" trick
+                npa.where(
+                    npa.abs(d / pixel_radius) < 1,
+                    d / pixel_radius,
+                    0.0,
+                )
+            )
+            - d
+            * npa.sqrt(
+                # "double where" trick
+                npa.where(
+                    (pixel_radius**2 - d**2) > 0, pixel_radius**2 - d**2, 0
+                )
+            )
+        ),
+        1,
+    )
+
+    # Determine the upper and lower bounds of materials in the current pixel.
+    x_minus = x_projected - x_grad_norm * pixel_radius
+    x_plus = x_projected + x_grad_norm * pixel_radius
+
+    # Create an "effective" set of materials that will ensure everything is
+    # piecewise differentiable, even if an interface moves out of a pixel, or
+    # through the pixel center.
+    x_minus_eff = npa.where(
+        d > 0,
+        (x_filtered * d + x_minus * (pixel_radius - d)) / pixel_radius,
+        x_minus,
+    )
+    x_plus_eff = npa.where(
+        d > 0,
+        x_plus,
+        (-x_filtered * d + x_plus * (pixel_radius + d)) / pixel_radius,
+    )
+
+    # Only apply smoothing to interfaces
+    return npa.where(
+        npa.abs(d) > pixel_radius,
+        x_projected,
+        (1 - fill_factor) * x_minus_eff + (fill_factor) * x_plus_eff,
+    )
