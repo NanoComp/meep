@@ -1100,6 +1100,7 @@ def gray_indicator(x):
     """
     return npa.mean(4 * x.flatten() * (1 - x.flatten())) * 100
 
+
 def hybrid_levelset(
     x: ArrayLikeType,
     beta: float,
@@ -1147,7 +1148,7 @@ def hybrid_levelset(
             periodic. Default is None (all axes are non-periodic).
     Returns:
         The projected and smoothed output.
-    
+
     Example:
         >>> Lx = 2
         >>> Ly = 2
@@ -1196,7 +1197,8 @@ def hybrid_levelset(
     # with array-based AD tracers, apparently. See here:
     # https://github.com/google/jax/issues/1052#issuecomment-5140833520
     fill_factor = npa.where(
-        (d <= pixel_radius) & (npa.abs(d / pixel_radius) <= 1), # domain of arccos() and sqrt()
+        (d <= pixel_radius)
+        & (npa.abs(d / pixel_radius) <= 1),  # domain of arccos() and sqrt()
         (1 / (npa.pi * pixel_radius**2))
         * (
             pixel_radius**2
