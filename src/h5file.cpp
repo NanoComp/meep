@@ -693,14 +693,18 @@ static void _write_chunk(hid_t data_id, h5file::extending_s *cur, int rank,
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                          float *data) {
+  #ifdef HAVE_HDF5 // attempting to fix error with "H5T_NATIVE_FLOAT" not defined
   _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
                H5T_NATIVE_FLOAT, data);
+  #endif
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                          double *data) {
+  #ifdef HAVE_HDF5 // attempting to fix error with "H5T_NATIVE_DOUBLE" not defined
   _write_chunk(HID(cur_id), get_extending(cur_dataname), rank, chunk_start, chunk_dims,
                H5T_NATIVE_DOUBLE, data);
+  #endif
 }
 
 void h5file::write_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
@@ -835,12 +839,16 @@ static void _read_chunk(hid_t data_id, int rank, const size_t *chunk_start,
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                         float *data) {
+  #ifdef HAVE_HDF5 // attempting to fix error with "H5T_NATIVE_FLOAT" not defined
   _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, H5T_NATIVE_FLOAT, data);
+  #endif
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
                         double *data) {
+  #ifdef HAVE_HDF5
   _read_chunk(HID(cur_id), rank, chunk_start, chunk_dims, H5T_NATIVE_DOUBLE, data);
+  #endif
 }
 
 void h5file::read_chunk(int rank, const size_t *chunk_start, const size_t *chunk_dims,
