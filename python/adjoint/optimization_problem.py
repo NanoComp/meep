@@ -28,7 +28,7 @@ class OptimizationProblem:
         objective_functions: List[Callable],
         objective_arguments: List[ObjectiveQuantity],
         design_regions: List[DesignRegion],
-        frequencies: Optional[Union[float, List[float]]] = None,
+        frequencies: Optional[Union[np.ndarray, List[float]]] = None,
         fcen: Optional[float] = None,
         df: Optional[float] = None,
         nf: Optional[int] = None,
@@ -53,7 +53,7 @@ class OptimizationProblem:
             and we have to specify arguments as [A,B,C]
           objective_arguments: list of ObjectiveQuantity passed as arguments of objective functions
           design_regions: list of DesignRegion to be optimized
-          frequencies: list of frequencies of interest in the problem. If not specified, then the list of frequencies
+          frequencies: array/list of frequencies of interest in the problem. If not specified, then the list of frequencies
             will be created from fcen, df, and nf: a list of size nf that goes from fcen-df/2 to fcen+df/2
           fcen: center frequency
           df: range of frequencies, i.e. maximum frequency -  minimum frequency
@@ -88,10 +88,18 @@ class OptimizationProblem:
         self.num_design_params = [ni.num_design_params for ni in self.design_regions]
         self.num_design_regions = len(self.design_regions)
 
-        # TODO typecheck frequency choices
         if frequencies is not None:
-            self.frequencies = frequencies
-            self.nf = np.array(frequencies).size
+            if isinstance(frequencies, (np.ndarray, List)):
+                self.frequencies = frequencies
+                if isinstance(frequencies, np.ndarray):
+                    self.nf = frequencies.size
+                else:
+                    self.nf = len(frequencies)
+            else:
+                raise TypeError(
+                    "frequencies argument of OptimizationProblem "
+                    "constructor must be a Numpy array or List."
+                )
         elif nf == 1:
             self.nf = nf
             self.frequencies = [fcen]
