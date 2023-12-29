@@ -692,7 +692,8 @@ W_susc = [
 W = mp.Medium(epsilon=1.0, E_susceptibilities=W_susc, valid_freq_range=metal_range)
 
 # ------------------------------------------------------------------
-# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996 (2015)
+# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 083097 (2014)
+# including Errata from J. Nanophotonics, Vol. 8, 089996 (2014)
 # wavelength range: 0.4 - 0.8 μm
 
 metal_visible_range = mp.FreqRange(min=um_scale / 0.8, max=um_scale / 0.4)
@@ -701,11 +702,11 @@ metal_visible_range = mp.FreqRange(min=um_scale / 0.8, max=um_scale / 0.4)
 # fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9 (1972)
 
 Au_JC_visible_frq0 = 1 / (0.139779231751333 * um_scale)
-Au_JC_visible_gam0 = 1 / (1.12834046202759 * um_scale)
+Au_JC_visible_gam0 = 1 / (26.1269913352870 * um_scale)
 Au_JC_visible_sig0 = 1
 
 Au_JC_visible_frq1 = 1 / (0.404064525036786 * um_scale)
-Au_JC_visible_gam1 = 1 / (26.1269913352870 * um_scale)
+Au_JC_visible_gam1 = 1 / (1.12834046202759 * um_scale)
 Au_JC_visible_sig1 = 2.07118534879440
 
 Au_JC_visible_susc = [
@@ -728,11 +729,11 @@ Au_JC_visible = mp.Medium(
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
 Au_visible_frq0 = 1 / (0.0473629248511456 * um_scale)
-Au_visible_gam0 = 1 / (0.255476199605166 * um_scale)
+Au_visible_gam0 = 1 / (0.381870287531951 * um_scale)
 Au_visible_sig0 = 1
 
 Au_visible_frq1 = 1 / (0.800619321082804 * um_scale)
-Au_visible_gam1 = 1 / (0.381870287531951 * um_scale)
+Au_visible_gam1 = 1 / (0.255476199605166 * um_scale)
 Au_visible_sig1 = -169.060953137985
 
 Au_visible_susc = [
@@ -751,17 +752,15 @@ Au_visible = mp.Medium(
 )
 
 # ------------------------------------------------------------------
-## WARNING: unstable; field divergence may occur
-
 # silver (Au)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
 Ag_visible_frq0 = 1 / (0.142050162130618 * um_scale)
-Ag_visible_gam0 = 1 / (18.0357292925015 * um_scale)
+Ag_visible_gam0 = 1 / (0.257794324096575 * um_scale)
 Ag_visible_sig0 = 1
 
 Ag_visible_frq1 = 1 / (0.115692151792108 * um_scale)
-Ag_visible_gam1 = 1 / (0.257794324096575 * um_scale)
+Ag_visible_gam1 = 1 / (18.0357292925015 * um_scale)
 Ag_visible_sig1 = 3.74465275944019
 
 Ag_visible_susc = [
@@ -780,17 +779,15 @@ Ag_visible = mp.Medium(
 )
 
 # ------------------------------------------------------------------
-## WARNING: unstable; field divergence may occur
-
 # aluminum (Al)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
 Al_visible_frq0 = 1 / (0.0625841659042985 * um_scale)
-Al_visible_gam0 = 1 / (0.606007002962666 * um_scale)
+Al_visible_gam0 = 1 / (0.291862527666814 * um_scale)
 Al_visible_sig0 = 1
 
 Al_visible_frq1 = 1 / (0.528191199577075 * um_scale)
-Al_visible_gam1 = 1 / (0.291862527666814 * um_scale)
+Al_visible_gam1 = 1 / (0.606007002962666 * um_scale)
 Al_visible_sig1 = -44.4456675577921
 
 Al_visible_susc = [
@@ -813,11 +810,11 @@ Al_visible = mp.Medium(
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
 Cr_visible_frq0 = 1 / (0.118410119507342 * um_scale)
-Cr_visible_gam0 = 1 / (0.628596264869804 * um_scale)
+Cr_visible_gam0 = 1 / (0.731117670900812 * um_scale)
 Cr_visible_sig0 = 1
 
 Cr_visible_frq1 = 1 / (0.565709598452496 * um_scale)
-Cr_visible_gam1 = 1 / (0.731117670900812 * um_scale)
+Cr_visible_gam1 = 1 / (0.628596264869804 * um_scale)
 Cr_visible_sig1 = 13.2912419951294
 
 Cr_visible_susc = [
@@ -836,17 +833,15 @@ Cr_visible = mp.Medium(
 )
 
 # ------------------------------------------------------------------
-## WARNING: unstable; field divergence may occur
-
 # titanium (Ti)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
 Ti_visible_frq0 = 1 / (0.101331651921602 * um_scale)
-Ti_visible_gam0 = 1 / (0.365743382258719 * um_scale)
+Ti_visible_gam0 = 1 / (5.86441957443603e-10 * um_scale)
 Ti_visible_sig0 = 1
 
 Ti_visible_frq1 = 1 / (4.56839173979216e-09 * um_scale)
-Ti_visible_gam1 = 1 / (5.86441957443603e-10 * um_scale)
+Ti_visible_gam1 = 1 / (0.365743382258719 * um_scale)
 Ti_visible_sig1 = 54742662.1963414
 
 Ti_visible_susc = [
