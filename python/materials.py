@@ -692,7 +692,8 @@ W_susc = [
 W = mp.Medium(epsilon=1.0, E_susceptibilities=W_susc, valid_freq_range=metal_range)
 
 # ------------------------------------------------------------------
-# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 08996 (2015)
+# metals from D. Barchiesi and T. Grosges, J. Nanophotonics, Vol. 8, 083097 (2014)
+# including Errata from J. Nanophotonics, Vol. 8, 089996 (2014)
 # wavelength range: 0.4 - 0.8 μm
 
 metal_visible_range = mp.FreqRange(min=um_scale / 0.8, max=um_scale / 0.4)
@@ -701,11 +702,11 @@ metal_visible_range = mp.FreqRange(min=um_scale / 0.8, max=um_scale / 0.4)
 # fit to P.B. Johnson and R.W. Christy, Physical Review B, Vol. 6, pp. 4370-9 (1972)
 
 Au_JC_visible_frq0 = 1 / (0.139779231751333 * um_scale)
-Au_JC_visible_gam0 = 1 / (1.12834046202759 * um_scale)
+Au_JC_visible_gam0 = 1 / (26.1269913352870 * um_scale)
 Au_JC_visible_sig0 = 1
 
 Au_JC_visible_frq1 = 1 / (0.404064525036786 * um_scale)
-Au_JC_visible_gam1 = 1 / (26.1269913352870 * um_scale)
+Au_JC_visible_gam1 = 1 / (1.12834046202759 * um_scale)
 Au_JC_visible_sig1 = 2.07118534879440
 
 Au_JC_visible_susc = [
@@ -836,18 +837,16 @@ Cr_visible = mp.Medium(
 )
 
 # ------------------------------------------------------------------
-## WARNING: unstable; field divergence may occur
-
 # titanium (Ti)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
-Ti_visible_frq0 = 1 / (0.101331651921602 * um_scale)
-Ti_visible_gam0 = 1 / (0.365743382258719 * um_scale)
+Ti_visible_frq0 = 1 / (0.2213799986964903 * um_scale)
+Ti_visible_gam0 = 1 / (12.815176733218491 * um_scale)
 Ti_visible_sig0 = 1
 
-Ti_visible_frq1 = 1 / (4.56839173979216e-09 * um_scale)
-Ti_visible_gam1 = 1 / (5.86441957443603e-10 * um_scale)
-Ti_visible_sig1 = 54742662.1963414
+Ti_visible_frq1 = 1 / (0.6425774603632576 * um_scale)
+Ti_visible_gam1 = 1 / (0.1738808794709548 * um_scale)
+Ti_visible_sig1 = 74.4496
 
 Ti_visible_susc = [
     mp.DrudeSusceptibility(
@@ -859,7 +858,7 @@ Ti_visible_susc = [
 ]
 
 Ti_visible = mp.Medium(
-    epsilon=-5.4742e7,
+    epsilon=2.17069,
     E_susceptibilities=Ti_visible_susc,
     valid_freq_range=metal_visible_range,
 )
