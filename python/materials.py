@@ -717,7 +717,11 @@ Au_JC_visible_susc = [
     ),
 ]
 
-Au_JC_visible = mp.Medium(epsilon=6.1599, E_susceptibilities=Au_JC_visible_susc)
+Au_JC_visible = mp.Medium(
+    epsilon=6.1599,
+    E_susceptibilities=Au_JC_visible_susc,
+    valid_freq_range=metal_visible_range,
+)
 
 # ------------------------------------------------------------------
 # gold (Au)
