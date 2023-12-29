@@ -752,6 +752,8 @@ Au_visible = mp.Medium(
 )
 
 # ------------------------------------------------------------------
+## WARNING: unstable; field divergence may occur
+
 # silver (Au)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
@@ -779,6 +781,8 @@ Ag_visible = mp.Medium(
 )
 
 # ------------------------------------------------------------------
+## WARNING: unstable; field divergence may occur
+
 # aluminum (Al)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
@@ -815,7 +819,7 @@ Cr_visible_sig0 = 1
 
 Cr_visible_frq1 = 1 / (0.565709598452496 * um_scale)
 Cr_visible_gam1 = 1 / (0.731117670900812 * um_scale)
-Cr_visible_sig1 = 13.2908
+Cr_visible_sig1 = 13.2912419951294
 
 Cr_visible_susc = [
     mp.DrudeSusceptibility(
