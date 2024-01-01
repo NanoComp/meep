@@ -197,14 +197,14 @@ jobs:
 
     - name: Archive C++ test logs
       if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
 
     - name: Archive Python test logs
       if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log
