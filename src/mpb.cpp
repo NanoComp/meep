@@ -340,11 +340,11 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   else
     eig_gv = vol3d(eig_vol.in_direction(X), eig_vol.in_direction(Y), eig_vol.in_direction(Z), a);
   vec kpoint(_kpoint);
-  if (d != NO_DIRECTION) LOOP_OVER_DIRECTIONS(v.dim, dd) {
-      if (dd != d && eig_gv.num_direction(dd) == user_volume.num_direction(dd))
-        if (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)
-          kpoint.set_direction(dd, real(k[dd]));
-    }
+  LOOP_OVER_DIRECTIONS(v.dim, dd) {
+    if (dd != d && eig_gv.num_direction(dd) == user_volume.num_direction(dd))
+      if (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)
+        kpoint.set_direction(dd, real(k[dd]));
+  }
 
   bool empty_dim[3] = {false, false, false};
 
@@ -368,7 +368,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   if (where.dim != gv.dim || eig_vol.dim != gv.dim)
     meep::abort("invalid volume dimensionality in add_eigenmode_source");
 
-  if (!eig_vol.contains(where))
+  if (d != NO_DIRECTION && !eig_vol.contains(where))
     meep::abort("invalid grid_volume in get_eigenmode: "
                 "where must be in eig_vol");
 
