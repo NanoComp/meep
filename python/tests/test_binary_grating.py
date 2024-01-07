@@ -175,7 +175,7 @@ class TestEigCoeffs(unittest.TestCase):
                     kpoint_func=lambda *not_used: mp.Vector3(np.sqrt(kx2), ky, 0),
                     eig_parity=eig_parity,
                     direction=mp.NO_DIRECTION,
-                    # We must specify the monitor volume to be a single pixel
+                    # We must specify the length of the line monitor to be ~0
                     # in the periodic direction in order for MPB to interpret
                     # its Bloch wavevector as a planewave wavevector.
                     eig_vol=mp.Volume(center=refl_pt, size=mp.Vector3(0, 1e-7, 0)),
@@ -204,7 +204,7 @@ class TestEigCoeffs(unittest.TestCase):
                     kpoint_func=lambda *not_used: mp.Vector3(np.sqrt(kx2), ky, 0),
                     eig_parity=eig_parity,
                     direction=mp.NO_DIRECTION,
-                    # We must specify the monitor volume to be a single pixel
+                    # We must specify the length of the line monitor to be ~0
                     # in the periodic direction in order for MPB to interpret
                     # its Bloch wavevector as a planewave wavevector.
                     eig_vol=mp.Volume(center=tran_pt, size=mp.Vector3(0, 1e-7, 0)),
