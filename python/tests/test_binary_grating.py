@@ -57,9 +57,8 @@ class TestEigCoeffs(unittest.TestCase):
 
     @parameterized.parameterized.expand([(0.0,), (10.7,)])
     def test_binary_grating_oblique(self, theta):
-        """Verifies that the sum of the reflectance and transmittance of all
-        the diffracted orders of a binary grating is equivalent to one.
-        """
+        """Verifies energy conservation."""
+
         if theta == 0:
             symmetries = [mp.Mirror(mp.Y)]
             eig_parity = mp.ODD_Z + mp.EVEN_Y
@@ -170,20 +169,16 @@ class TestEigCoeffs(unittest.TestCase):
             ky = k.y + nm / self.cell_size.y
             kx2 = (self.fcen * self.ng) ** 2 - ky**2
             if kx2 > 0:
-                kdiff = mp.Vector3(np.sqrt(kx2), ky, 0)
-                print(f"kdiff = ({kdiff.x:.6f}, {kdiff.y:.6f}, {kdiff.z:.6f})")
                 res = sim.get_eigenmode_coefficients(
                     refl_flux,
                     bands=[1],
-                    kpoint_func=lambda *not_used: kdiff,
+                    kpoint_func=lambda *not_used: mp.Vector3(np.sqrt(kx2), ky, 0),
                     eig_parity=eig_parity,
                     direction=mp.NO_DIRECTION,
                     # We must specify the monitor volume to be a single pixel
                     # in the periodic direction in order for MPB to interpret
                     # its Bloch wavevector as a planewave wavevector.
-                    eig_vol=mp.Volume(
-                        center=refl_pt, size=mp.Vector3(0, 1 / self.resolution, 0)
-                    ),
+                    eig_vol=mp.Volume(center=refl_pt, size=mp.Vector3(0, 1e-7, 0)),
                 )
                 R = abs(res.alpha[0, 0, 1]) ** 2 / input_flux[0]
                 print(f"refl-order:, {nm:+d}, {R:.6f}")
@@ -203,19 +198,16 @@ class TestEigCoeffs(unittest.TestCase):
             ky = k.y + nm / self.cell_size.y
             kx2 = self.fcen**2 - ky**2
             if kx2 > 0:
-                kdiff = mp.Vector3(np.sqrt(kx2), ky, 0)
                 res = sim.get_eigenmode_coefficients(
                     tran_flux,
                     bands=[1],
-                    kpoint_func=lambda *not_used: kdiff,
+                    kpoint_func=lambda *not_used: mp.Vector3(np.sqrt(kx2), ky, 0),
                     eig_parity=eig_parity,
                     direction=mp.NO_DIRECTION,
                     # We must specify the monitor volume to be a single pixel
                     # in the periodic direction in order for MPB to interpret
                     # its Bloch wavevector as a planewave wavevector.
-                    eig_vol=mp.Volume(
-                        center=tran_pt, size=mp.Vector3(0, 1 / self.resolution, 0)
-                    ),
+                    eig_vol=mp.Volume(center=tran_pt, size=mp.Vector3(0, 1e-7, 0)),
                 )
                 T = abs(res.alpha[0, 0, 0]) ** 2 / input_flux[0]
                 print(f"tran-order:, {nm:+d}, {T:.6f}")
