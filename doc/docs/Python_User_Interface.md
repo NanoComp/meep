@@ -4691,7 +4691,7 @@ def __init__(self,
              medium2: meep.geom.Medium,
              weights: numpy.ndarray = None,
              grid_type: str = 'U_DEFAULT',
-             do_averaging: bool = True,
+             do_averaging: bool = False,
              beta: float = 0,
              eta: float = 0.5,
              damping: float = 0):

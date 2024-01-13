@@ -597,7 +597,7 @@ class MaterialGrid:
         medium2: Medium,
         weights: np.ndarray = None,
         grid_type: str = "U_DEFAULT",
-        do_averaging: bool = True,
+        do_averaging: bool = False,
         beta: float = 0,
         eta: float = 0.5,
         damping: float = 0,
