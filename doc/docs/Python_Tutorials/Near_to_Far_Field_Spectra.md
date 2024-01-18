@@ -683,13 +683,15 @@ import numpy as np
 
 
 RESOLUTION_UM = 50
+WAVELENGTH_UM = 1.0
 N_DISC = 2.4
 DISC_RADIUS_UM = 1.2
-WAVELENGTH_UM = 1.0
+DISC_THICKNESS_UM = 0.7 * WAVELENGTH_UM / N_DISC
 NUM_FARFIELD_PTS = 200
-FARFIELD_ANGLES = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
 FARFIELD_RADIUS_UM = 1e6 * WAVELENGTH_UM
 NUM_DIPOLES = 11
+
+farfield_angles = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
 
 
 def plot_radiation_pattern_polar(radial_flux: np.ndarray):
@@ -700,7 +702,7 @@ def plot_radiation_pattern_polar(radial_flux: np.ndarray):
     """
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
     ax.plot(
-        FARFIELD_ANGLES,
+        farfield_angles,
         radial_flux,
         "b-",
     )
@@ -732,7 +734,7 @@ def plot_radiation_pattern_3d(radial_flux: np.ndarray):
     ys = np.zeros((NUM_FARFIELD_PTS, NUM_FARFIELD_PTS))
     zs = np.zeros((NUM_FARFIELD_PTS, NUM_FARFIELD_PTS))
 
-    for i, theta in enumerate(FARFIELD_ANGLES):
+    for i, theta in enumerate(farfield_angles):
         for j, phi in enumerate(phis):
             xs[i, j] = radial_flux[i] * np.sin(theta) * np.cos(phi)
             ys[i, j] = radial_flux[i] * np.sin(theta) * np.sin(phi)
@@ -769,18 +771,20 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
         far_field = sim.get_farfield(
             n2f_mon,
             mp.Vector3(
-                FARFIELD_RADIUS_UM * math.sin(FARFIELD_ANGLES[n]),
+                FARFIELD_RADIUS_UM * math.sin(farfield_angles[n]),
                 0,
-                FARFIELD_RADIUS_UM * math.cos(FARFIELD_ANGLES[n]),
+                FARFIELD_RADIUS_UM * math.cos(farfield_angles[n]),
             ),
         )
         e_field[n, :] = [far_field[j] for j in range(3)]
         h_field[n, :] = [far_field[j + 3] for j in range(3)]
 
-    flux_x = np.real(np.conj(e_field[:, 1]) * h_field[:, 2] -
-                     np.conj(e_field[:, 2]) * h_field[:, 1])
-    flux_z = np.real(np.conj(e_field[:, 0]) * h_field[:, 1] -
-                     np.conj(e_field[:, 1]) * h_field[:, 0])
+    flux_x = np.real(
+        np.conj(e_field[:, 1]) * h_field[:, 2] - np.conj(e_field[:, 2]) * h_field[:, 1]
+    )
+    flux_z = np.real(
+        np.conj(e_field[:, 0]) * h_field[:, 1] - np.conj(e_field[:, 1]) * h_field[:, 0]
+    )
     flux_r = np.sqrt(np.square(flux_x) + np.square(flux_z))
 
     return flux_r
@@ -789,17 +793,17 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
 def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
     """Computes the total flux from the radiation pattern.
 
-    Based on integrating the radiation pattern over solid angles spanned by
-    polar angles in the range of [0, π/2].
+    Based on integrating the radiation pattern over solid angles
+    spanned by polar angles in the range of [0, π/2].
 
     Args:
       radial_flux: radial flux of the far fields in polar coordinates.
     """
     dphi = 2 * math.pi
-    dtheta = FARFIELD_ANGLES[1] - FARFIELD_ANGLES[0]
+    dtheta = farfield_angles[1] - farfield_angles[0]
 
     total_flux = (
-        np.sum(radial_flux * np.sin(FARFIELD_ANGLES))
+        np.sum(radial_flux * np.sin(farfield_angles))
         * FARFIELD_RADIUS_UM**2
         * dtheta
         * dphi
@@ -809,13 +813,12 @@ def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
 
 
 def dipole_in_disc(
-        disc_um: float, zpos: float, rpos_um: float, m: int
+        zpos: float, rpos_um: float, m: int
 ) -> Tuple[float, np.ndarray]:
     """Computes the total flux and radiation pattern of a dipole in a disc.
 
     Args:
-      disc_um: thickness of disc.
-      zpos: height of dipole above ground plane as fraction of disc_um.
+      zpos: height of dipole above ground plane as fraction of disc thickness.
       rpos_um: radial position of dipole.
       m: angular φ dependence of the fields exp(imφ).
 
@@ -828,11 +831,11 @@ def dipole_in_disc(
 
     frequency = 1 / WAVELENGTH_UM  # center frequency of source/monitor
 
-    # field decay threshold for runtime termination criteria
-    field_decay_threshold = 1e-6
+    # runtime termination criteria
+    dft_decay_threshold = 1e-4
 
     size_r = r_um + pml_um
-    size_z = disc_um + padding_um + pml_um
+    size_z = DISC_THICKNESS_UM + padding_um + pml_um
     cell_size = mp.Vector3(size_r, 0, size_z)
 
     boundary_layers = [
@@ -841,7 +844,7 @@ def dipole_in_disc(
     ]
 
     src_cmpt = mp.Er
-    src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * disc_um)
+    src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * DISC_THICKNESS_UM)
     sources = [
         mp.Source(
             src=mp.GaussianSource(frequency, fwidth=0.1 * frequency),
@@ -853,10 +856,8 @@ def dipole_in_disc(
     geometry = [
         mp.Block(
             material=mp.Medium(index=N_DISC),
-            center=mp.Vector3(
-                0.5 * DISC_RADIUS_UM, 0, -0.5 * size_z + 0.5 * disc_um
-            ),
-            size=mp.Vector3(DISC_RADIUS_UM, mp.inf, disc_um),
+            center=mp.Vector3(0.5 * DISC_RADIUS_UM, 0, -0.5 * size_z + 0.5 * DISC_THICKNESS_UM),
+            size=mp.Vector3(DISC_RADIUS_UM, mp.inf, DISC_THICKNESS_UM),
         )
     ]
 
@@ -880,27 +881,21 @@ def dipole_in_disc(
         ),
         mp.FluxRegion(
             center=mp.Vector3(
-                r_um,
-                0,
-                0.5 * size_z - pml_um - 0.5 * (padding_um + disc_um)
+                r_um, 0, 0.5 * size_z - pml_um - 0.5 * (padding_um + DISC_THICKNESS_UM)
             ),
-            size=mp.Vector3(0, 0, padding_um + disc_um),
+            size=mp.Vector3(0, 0, padding_um + DISC_THICKNESS_UM),
         ),
     )
 
     sim.run(
         mp.dft_ldos(frequency, 0, 1),
-        until_after_sources=mp.stop_when_fields_decayed(
-            50,
-            src_cmpt,
-            src_pt,
-            field_decay_threshold,
+        until_after_sources=mp.stop_when_dft_decayed(
+            tol=dft_decay_threshold,
         ),
     )
 
     delta_vol = 2 * np.pi * rpos_um / (RESOLUTION_UM**2)
-    dipole_flux = (-np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) *
-                   delta_vol)
+    dipole_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * delta_vol
 
     dipole_radiation_pattern = radiation_pattern(sim, n2f_mon)
 
@@ -908,7 +903,6 @@ def dipole_in_disc(
 
 
 if __name__ == "__main__":
-    disc_thickness = 0.7 * WAVELENGTH_UM / N_DISC
     dipole_height = 0.5
     dipole_rpos_um = np.linspace(0, DISC_RADIUS_UM, NUM_DIPOLES)
 
@@ -921,11 +915,15 @@ if __name__ == "__main__":
     # Er source at r = 0 requires a single simulation with m = ±1.
     m = -1
     dipole_flux, dipole_radiation_pattern = dipole_in_disc(
-        disc_thickness, dipole_height, dipole_rpos_um[0], m,
+        dipole_height,
+        dipole_rpos_um[0],
+        m,
     )
 
     flux_total = dipole_flux * dipole_rpos_um[0] * delta_rpos_um
-    radiation_pattern_total = dipole_radiation_pattern * dipole_rpos_um[0] * delta_rpos_um
+    radiation_pattern_total = (
+        dipole_radiation_pattern * dipole_rpos_um[0] * delta_rpos_um
+    )
 
     print(
         f"dipole:, {dipole_rpos_um[0]:.4f}, "
@@ -944,35 +942,36 @@ if __name__ == "__main__":
         m = 0
         while True:
             dipole_flux, dipole_radiation_pattern = dipole_in_disc(
-                disc_thickness, dipole_height, rpos_um, m
+                dipole_height, rpos_um, m
             )
             dipole_flux_total += dipole_flux * (2 if m == 0 else 1)
-            dipole_radiation_pattern_total += (dipole_radiation_pattern *
-                                               (2 if m == 0 else 1))
+            dipole_radiation_pattern_total += dipole_radiation_pattern * (
+                2 if m == 0 else 1
+            )
 
             dipole_radiation_pattern_flux = radiation_pattern_flux(
                 dipole_radiation_pattern
             )
-            if (dipole_radiation_pattern_flux >
-                dipole_radiation_pattern_flux_max):
+            print(
+                f"dipole:, {rpos_um:.4f}, {m}, "
+                f"{dipole_radiation_pattern_flux:.6f}"
+            )
+
+            if dipole_radiation_pattern_flux > dipole_radiation_pattern_flux_max:
                 dipole_radiation_pattern_flux_max = dipole_radiation_pattern_flux
 
             if (m > 0 and
                 (dipole_radiation_pattern_flux /
                  dipole_radiation_pattern_flux_max) < flux_decay_threshold):
                 break
+            else:
+                m += 1
 
-            print(
-                f"dipole:, {rpos_um:.4f}, {m}, {dipole_radiation_pattern_flux:.6f}"
-            )
-            m += 1
-
-        scale_factor = (dipole_rpos_um[0] / rpos_um)**2
+        scale_factor = (dipole_rpos_um[0] / rpos_um) ** 2
         flux_total += dipole_flux_total * scale_factor * rpos_um * delta_rpos_um
         radiation_pattern_total += (
             dipole_radiation_pattern_total * scale_factor * rpos_um * delta_rpos_um
         )
-
 
     flux_total /= NUM_DIPOLES
     radiation_pattern_total /= NUM_DIPOLES
