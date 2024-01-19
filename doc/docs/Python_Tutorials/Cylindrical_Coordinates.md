@@ -609,6 +609,8 @@ Two features of this method may provide a significant speedup compared to an ide
 
 ![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
 
+Note: in a simulation with `m = 0`, the real and imaginary parts of the fields are decoupled. As a runtime optimization, Meep simulates only the *real* part of the fields for this case which roughly halves the number of floating-point operations during timestepping. However, using purely real fields effectively *halves* the current source. Combining the results of the different $m$-simulations correctly using the Fourier-series expansion of the fields requires either setting `force_complex_fields=True` or multiplying the power from the `m = 0` run by four. This tutorial uses the former approach since the cost for using complex fields for only a single run among many is usually insignificant.
+
 As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. The test involves verifying that the extraction efficiency is independent of the dipole location. The results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718.
 
 Results are shown in the table below. At this resolution, the relative error is at most ~4% even when $M + 1$ is relatively large (141). The error decreases with increasing resolution.
@@ -645,42 +647,45 @@ import meep as mp
 import numpy as np
 
 
-resolution = 80  # pixels/μm
-n = 2.4  # refractive index of dielectric layer
-wvl = 1.0  # wavelength (in vacuum)
-fcen = 1 / wvl  # center frequency of source/monitor
+RESOLUTION_UM = 50
+WAVELENGTH_UM = 1.0
+N_SLAB = 2.4
+SLAB_THICKNESS_UM = 0.7 * WAVELENGTH_UM / N_SLAB
 
 
-def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
-    """Computes the radiated and total flux (necessary for computing the
-       extraction efficiency) of a point source embedded within a dielectric
-       layer above a lossless-metallic ground plane.
+def dipole_in_slab(zpos: float, rpos_um: float, m: int) -> Tuple[float, float]:
+    """Computes the flux from a dipole in a slab.
 
     Args:
-        dmat: thickness of dielectric layer.
-        h: height of dipole above ground plane as a fraction of dmat.
-        rpos: position of source in radial direction.
-        m: angular φ dependence of the fields exp(imφ).
+      zpos: position of dipole as a fraction of layer thickness.
+      rpos_um: position of source in radial direction.
+      m: angular φ dependence of the fields exp(imφ).
 
     Returns:
-        The radiated and total flux as a 2-Tuple.
+      A 2-tuple of the radiated and total flux.
     """
-    L = 20  # length of non-PML region in radial direction
-    dair = 1.0  # thickness of air padding
-    dpml = 1.0  # PML thickness
-    sr = L + dpml
-    sz = dmat + dair + dpml
-    cell_size = mp.Vector3(sr, 0, sz)
+    pml_um = 1.0  # thickness of PML
+    padding_um = 1.0  # thickness of air padding
+    r_um = 20.0  # length of cell in r
+
+    frequency = 1 / WAVELENGTH_UM  # center frequency of source/monitor
+
+    # runtime termination criteria
+    flux_decay_threshold = 1e-4
+
+    size_r = r_um + pml_um
+    size_z = SLAB_THICKNESS_UM + padding_um + pml_um
+    cell_size = mp.Vector3(size_r, 0, size_z)
 
     boundary_layers = [
-        mp.PML(dpml, direction=mp.R),
-        mp.PML(dpml, direction=mp.Z, side=mp.High),
+        mp.PML(pml_um, direction=mp.R),
+        mp.PML(pml_um, direction=mp.Z, side=mp.High),
     ]
 
-    src_pt = mp.Vector3(rpos, 0, -0.5 * sz + h * dmat)
+    src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * SLAB_THICKNESS_UM)
     sources = [
         mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=0.1 * fcen),
+            src=mp.GaussianSource(frequency, fwidth=0.05 * frequency),
             component=mp.Er,
             center=src_pt,
         ),
@@ -688,101 +693,105 @@ def led_flux(dmat: float, h: float, rpos: float, m: int) -> Tuple[float, float]:
 
     geometry = [
         mp.Block(
-            material=mp.Medium(index=n),
-            center=mp.Vector3(0, 0, -0.5 * sz + 0.5 * dmat),
-            size=mp.Vector3(mp.inf, mp.inf, dmat),
+            material=mp.Medium(index=N_SLAB),
+            center=mp.Vector3(0, 0, -0.5 * size_z + 0.5 * SLAB_THICKNESS_UM),
+            size=mp.Vector3(mp.inf, mp.inf, SLAB_THICKNESS_UM),
         )
     ]
 
     sim = mp.Simulation(
-        resolution=resolution,
+        resolution=RESOLUTION_UM,
         cell_size=cell_size,
         dimensions=mp.CYLINDRICAL,
         m=m,
         boundary_layers=boundary_layers,
         sources=sources,
         geometry=geometry,
+        force_complex_fields=True
     )
 
-    flux_air_mon = sim.add_flux(
-        fcen,
+    flux_mon = sim.add_flux(
+        frequency,
         0,
         1,
         mp.FluxRegion(
-            center=mp.Vector3(0.5 * L, 0, 0.5 * sz - dpml),
-            size=mp.Vector3(L, 0, 0),
+            center=mp.Vector3(0.5 * r_um, 0, 0.5 * size_z - pml_um),
+            size=mp.Vector3(r_um, 0, 0),
         ),
         mp.FluxRegion(
-            center=mp.Vector3(L, 0, 0.5 * sz - dpml - 0.5 * dair),
-            size=mp.Vector3(0, 0, dair),
+            center=mp.Vector3(r_um, 0, 0.5 * size_z - pml_um - 0.5 * padding_um),
+            size=mp.Vector3(0, 0, padding_um),
         ),
     )
 
     sim.run(
-        mp.dft_ldos(fcen, 0, 1),
-        until_after_sources=mp.stop_when_fields_decayed(
-            50.0,
-            mp.Er,
-            src_pt,
-            1e-8,
+        mp.dft_ldos(frequency, 0, 1),
+        until_after_sources=mp.stop_when_dft_decayed(
+            tol=flux_decay_threshold
         ),
     )
 
-    flux_air = mp.get_fluxes(flux_air_mon)[0]
+    radiated_flux = mp.get_fluxes(flux_mon)[0]
 
-    if rpos == 0:
-        dV = np.pi / (resolution**3)
-    else:
-        dV = 2 * np.pi * rpos / (resolution**2)
+    # volume of the ring current source
+    delta_vol = 2 * np.pi * rpos_um / (RESOLUTION_UM**2)
 
     # total flux from point source via LDOS
-    flux_src = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * dV
+    source_flux = (-np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) *
+                   delta_vol)
 
-    print(f"flux-cyl:, {rpos:.2f}, {m:3d}, {flux_src:.6f}, {flux_air:.6f}")
+    print(f"flux-cyl:, {rpos_um:.2f}, {m:3d}, "
+          f"{source_flux:.6f}, {radiated_flux:.6f}")
 
-    return flux_air, flux_src
+    return radiated_flux, source_flux
 
 
 if __name__ == "__main__":
-    layer_thickness = 0.7 * wvl / n
     dipole_height = 0.5
 
-    # r = 0 source requires a single simulation with m = ±1
-    rpos = 0
+    # An Er source at r = 0 needs to be slightly offset.
+    # https://github.com/NanoComp/meep/issues/2704
+    dipole_rpos_um = 1.5 / RESOLUTION_UM
+
+    # Er source at r = 0 requires a single simulation with m = ±1.
     m = 1
-    flux_air, flux_src = led_flux(
-        layer_thickness,
+    radiated_flux, source_flux = dipole_in_slab(
         dipole_height,
-        rpos,
+        dipole_rpos_um,
         m,
     )
-    ext_eff = flux_air / flux_src
-    print(f"exteff:, {rpos}, {ext_eff:.6f}")
+    extraction_efficiency = radiated_flux / source_flux
+    print(f"exteff:, {dipole_rpos_um}, {extraction_efficiency:.6f}")
 
-    # r > 0 source requires Fourier-series expansion of φ
-    flux_tol = 1e-5  # threshold flux to determine when to truncate expansion
-    rpos = [3.5, 6.7, 9.5]
-    for rp in rpos:
-        flux_src_tot = 0
-        flux_air_tot = 0
-        flux_air_max = 0
+    # Er source at r > 0 requires Fourier-series expansion of φ.
+
+    # Threshold flux to determine when to truncate expansion.
+    flux_decay_threshold = 1e-2
+
+    dipole_rpos_um = [3.5, 6.7, 9.5]
+    for rpos_um in dipole_rpos_um:
+        source_flux_total = 0
+        radiated_flux_total = 0
+        radiated_flux_max = 0
         m = 0
         while True:
-            flux_air, flux_src = led_flux(
-                layer_thickness,
+            radiated_flux, source_flux = dipole_in_slab(
                 dipole_height,
-                rp,
+                rpos_um,
                 m,
             )
-            flux_air_tot += flux_air if m == 0 else 2 * flux_air
-            flux_src_tot += flux_src if m == 0 else 2 * flux_src
-            if flux_air > flux_air_max:
-                flux_air_max = flux_air
-            if m > 0 and (flux_air / flux_air_max) < flux_tol:
+            radiated_flux_total += radiated_flux * (1 if m == 0 else 2)
+            source_flux_total += source_flux * (1 if m == 0 else 2)
+
+            if radiated_flux > radiated_flux_max:
+                radiated_flux_max = radiated_flux
+
+            if (m > 0 and
+                (radiated_flux / radiated_flux_max) < flux_decay_threshold):
                 break
-            m += 1
+            else:
+                m += 1
 
-        ext_eff = flux_air_tot / flux_src_tot
-        print(f"exteff:, {rp}, {ext_eff:.6f}")
-
+        extraction_efficiency = radiated_flux_total / source_flux_total
+        print(f"exteff:, {rpos_um}, {extraction_efficiency:.6f}")
 ```
