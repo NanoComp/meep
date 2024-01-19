@@ -155,7 +155,7 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
     """
     pml_um = 1.0  # thickness of PML
     padding_um = 1.0  # thickness of air padding above disc
-    r_um = 5.0  # length of cell in r
+    r_um = 4.0  # length of cell in r
 
     frequency = 1 / WAVELENGTH_UM  # center frequency of source/monitor
 
@@ -175,7 +175,7 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
     src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * DISC_THICKNESS_UM)
     sources = [
         mp.Source(
-            src=mp.GaussianSource(frequency, fwidth=0.1 * frequency),
+            src=mp.GaussianSource(frequency, fwidth=0.05 * frequency),
             component=src_cmpt,
             center=src_pt,
         )
@@ -199,6 +199,7 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
         boundary_layers=boundary_layers,
         sources=sources,
         geometry=geometry,
+        force_complex_fields=True,
     )
 
     n2f_mon = sim.add_near2far(
@@ -267,16 +268,16 @@ if __name__ == "__main__":
 
     for rpos_um in dipole_rpos_um[1:]:
         dipole_flux_total = 0
-        dipole_radiation_pattern_total = np.zeros((NUM_FARFIELD_PTS,))
+        dipole_radiation_pattern_total = np.zeros(NUM_FARFIELD_PTS)
         dipole_radiation_pattern_flux_max = 0
         m = 0
         while True:
             dipole_flux, dipole_radiation_pattern = dipole_in_disc(
                 dipole_height, rpos_um, m
             )
-            dipole_flux_total += dipole_flux * (2 if m == 0 else 1)
+            dipole_flux_total += dipole_flux * (1 if m == 0 else 2)
             dipole_radiation_pattern_total += dipole_radiation_pattern * (
-                2 if m == 0 else 1
+                1 if m == 0 else 2
             )
 
             dipole_radiation_pattern_flux = radiation_pattern_flux(
@@ -298,10 +299,15 @@ if __name__ == "__main__":
             else:
                 m += 1
 
-        scale_factor = (dipole_rpos_um[0] / rpos_um) ** 2
-        flux_total += dipole_flux_total * scale_factor * rpos_um * delta_rpos_um
+        dipole_position_scale_factor = 0.5 * (dipole_rpos_um[0] / rpos_um) ** 2
+        flux_total += (
+            dipole_flux_total * dipole_position_scale_factor * rpos_um * delta_rpos_um
+        )
         radiation_pattern_total += (
-            dipole_radiation_pattern_total * scale_factor * rpos_um * delta_rpos_um
+            dipole_radiation_pattern_total
+            * dipole_position_scale_factor
+            * rpos_um
+            * delta_rpos_um
         )
 
     flux_total /= NUM_DIPOLES
