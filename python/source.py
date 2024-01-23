@@ -567,20 +567,10 @@ class EigenModeSource(Source):
         self.eig_resolution = eig_resolution
         self.eig_tolerance = eig_tolerance
 
-        if eig_vol:
+        if eig_vol is not None:
             self.eig_vol = eig_vol.swigobj
-        elif self.eig_lattice_center and self.eig_lattice_size:
-            self.eig_vol = mp.Volume(
-                self.eig_lattice_center,
-                self.eig_lattice_size,
-                sim.dimensions,
-                is_cylindrical=sim.is_cylindrical,
-            ).swigobj
         else:
-            raise ValueError(
-                "only one of eig_vol or (eig_lattice_center, eig_lattice_size) "
-                "can be specified."
-            )
+            self.eig_vol = None
 
     @property
     def eig_lattice_size(self):
@@ -658,6 +648,20 @@ class EigenModeSource(Source):
             direction = sim.fields.normal_direction(where)
         else:
             direction = self.direction
+
+        if self.eig_lattice_center is not None and self.eig_lattice_size is not None:
+            if self.eig_vol is None:
+                self.eig_vol = mp.Volume(
+                    self.eig_lattice_center,
+                    self.eig_lattice_size,
+                    sim.dimensions,
+                    is_cylindrical=sim.is_cylindrical,
+                ).swigobj
+            else:
+                raise ValueError(
+                    "Only one of eig_vol or (eig_lattice_center, "
+                    "eig_lattice_size) can be specified."
+                )
 
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
             eig_band = 1
