@@ -463,6 +463,7 @@ class EigenModeSource(Source):
         volume=None,
         eig_lattice_size=None,
         eig_lattice_center=None,
+        eig_vol=None,
         component=mp.ALL_COMPONENTS,
         direction=mp.AUTOMATIC,
         eig_band=1,
@@ -551,7 +552,7 @@ class EigenModeSource(Source):
           optional `eig_lattice_size` and `eig_lattice_center`, which define a volume
           (which must enclose `size` and `center`) that is used for the unit cell in MPB
           with the dielectric function ε taken from the corresponding region in the Meep
-          simulation.
+          simulation. Alternatively, a volume object `eig_vol` can be specified.
         """
 
         super().__init__(src, component, center, volume, **kwargs)
@@ -565,6 +566,21 @@ class EigenModeSource(Source):
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution
         self.eig_tolerance = eig_tolerance
+
+        if eig_vol:
+            self.eig_vol = eig_vol.swigobj
+        elif self.eig_lattice_center and self.eig_lattice_size:
+            self.eig_vol = mp.Volume(
+                self.eig_lattice_center,
+                self.eig_lattice_size,
+                sim.dimensions,
+                is_cylindrical=sim.is_cylindrical,
+            ).swigobj
+        else:
+            raise ValueError(
+                "only one of eig_vol or (eig_lattice_center, eig_lattice_size) "
+                "can be specified."
+            )
 
     @property
     def eig_lattice_size(self):
@@ -643,13 +659,6 @@ class EigenModeSource(Source):
         else:
             direction = self.direction
 
-        eig_vol = mp.Volume(
-            self.eig_lattice_center,
-            self.eig_lattice_size,
-            sim.dimensions,
-            is_cylindrical=sim.is_cylindrical,
-        ).swigobj
-
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
             eig_band = 1
             diffractedplanewave = mp.simulation.bands_to_diffractedplanewave(
@@ -663,7 +672,7 @@ class EigenModeSource(Source):
             self.src.swigobj,
             direction,
             where,
-            eig_vol,
+            self.eig_vol,
             eig_band,
             mp.py_v3_to_vec(
                 sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
