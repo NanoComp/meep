@@ -288,7 +288,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   /* Perform phi integral.  Since phi integrand is smooth, quadrature with equally spaced points
      should converge exponentially fast with the number N of quadrature points.  We
      repeatedly double N until convergence to tol is achieved, re-using previous points. */
-  const int N0 = 4;
+  const int N0 = 16 + int(4 * abs(m));
   double dphi = 2.0 / N0; // factor of 2*pi*r is already included in add_dft weight
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
