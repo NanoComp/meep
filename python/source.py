@@ -558,6 +558,7 @@ class EigenModeSource(Source):
         super().__init__(src, component, center, volume, **kwargs)
         self.eig_lattice_size = eig_lattice_size
         self.eig_lattice_center = eig_lattice_center
+        self.eig_vol = eig_vol
         self.component = component
         self.direction = direction
         self.eig_band = eig_band
@@ -566,11 +567,6 @@ class EigenModeSource(Source):
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution
         self.eig_tolerance = eig_tolerance
-
-        if eig_vol is not None:
-            self.eig_vol = eig_vol.swigobj
-        else:
-            self.eig_vol = None
 
     @property
     def eig_lattice_size(self):
@@ -649,19 +645,13 @@ class EigenModeSource(Source):
         else:
             direction = self.direction
 
-        if self.eig_lattice_center is not None and self.eig_lattice_size is not None:
-            if self.eig_vol is None:
-                self.eig_vol = mp.Volume(
-                    self.eig_lattice_center,
-                    self.eig_lattice_size,
-                    sim.dimensions,
-                    is_cylindrical=sim.is_cylindrical,
-                ).swigobj
-            else:
-                raise ValueError(
-                    "Only one of eig_vol or (eig_lattice_center, "
-                    "eig_lattice_size) can be specified."
-                )
+        if self.eig_vol is None:
+            self.eig_vol = mp.Volume(
+                self.eig_lattice_center,
+                self.eig_lattice_size,
+                sim.dimensions,
+                is_cylindrical=sim.is_cylindrical,
+            )
 
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
             eig_band = 1
@@ -676,7 +666,7 @@ class EigenModeSource(Source):
             self.src.swigobj,
             direction,
             where,
-            self.eig_vol,
+            self.eig_vol.swigobj,
             eig_band,
             mp.py_v3_to_vec(
                 sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
