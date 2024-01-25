@@ -472,15 +472,14 @@ import numpy as np
 from scipy import special
 import meep as mp
 mp.verbosity(0)
-r = 0.7  # radius of sphere
+r = 0.5  # radius of sphere
 h = 2 * r  # height/diameter of sphere
 
 wvl = 2 * np.pi * r / 4
 frq_cen = 1 / wvl
 dfrq = 0.2
 nfrq = 1
-resolution, dair_fac, mrange = 50, 10, 5
-src_offset = 3/resolution # a small offset in source size
+resolution, dair_fac, mrange = 50, 20, 4
 dpml = 0.5 * wvl
 dair = 1.0 * wvl
 pml_layers = [mp.PML(thickness=dpml)]
@@ -503,41 +502,17 @@ for alpha_i in range(alpha_range):
     coeff_p1 = 0.5 * (1j)**(cur_m+1)
     coeff_m1 = 0.5 * (1j)**(cur_m-1)
 
-    if abs(cur_m) > 1:
-        src_cen = 0.5 * (r + dair_fac*dair) + 0.5*src_offset
-    else:
-        src_cen = 0.5 * (r + dair_fac*dair)
+    src_cen = 0.5 * (r + dair_fac*dair)
     Jpm = lambda v3: coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) + coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
     Jrm = lambda v3: 1j * coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) - 1j * coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
 
-    if abs(cur_m) > 1:
-        sources = [
-              mp.Source(
-                  mp.GaussianSource(frq_cen, fwidth=dfrq),
-                  component=mp.Er,
-                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
-                  size=mp.Vector3(r + dair_fac*dair -src_offset),
-                  amp_func = Jrm),
-              mp.Source(
-                  mp.GaussianSource(frq_cen, fwidth=dfrq),
-                  component=mp.Ep,
-                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
-                  size=mp.Vector3(r + dair_fac*dair -src_offset),
-                  amp_func = Jpm),]
-    else:
-        sources = [
-              mp.Source(
-                  mp.GaussianSource(frq_cen, fwidth=dfrq),
-                  component=mp.Er,
-                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
-                  size=mp.Vector3(r + dair_fac*dair),
-                  amp_func = Jrm),
-              mp.Source(
-                  mp.GaussianSource(frq_cen, fwidth=dfrq),
-                  component=mp.Ep,
-                  center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
-                  size=mp.Vector3(r + dair_fac*dair),
-                  amp_func = Jpm),]
+    sources = [
+        mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),
+            component=mp.Er, center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
+            size=mp.Vector3(r + dair_fac*dair), amp_func = Jrm),
+        mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),
+            component=mp.Ep, center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
+            size=mp.Vector3(r + dair_fac*dair), amp_func = Jpm),]
 
     sim = mp.Simulation(
         cell_size=cell_size,
@@ -545,7 +520,10 @@ for alpha_i in range(alpha_range):
         resolution=resolution,
         sources=sources,
         dimensions=mp.CYLINDRICAL,
-        m=cur_m,)
+        m=cur_m,
+        force_complex_fields = True,
+        accurate_fields_near_cylorigin=True,
+        Courant=0.2)
 
     box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
         mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
@@ -564,7 +542,6 @@ for alpha_i in range(alpha_range):
 
     sim.reset_meep()
 
-
     sim = mp.Simulation(
         cell_size=cell_size,
         geometry=geometry,
@@ -572,7 +549,10 @@ for alpha_i in range(alpha_range):
         resolution=resolution,
         sources=sources,
         dimensions=mp.CYLINDRICAL,
-        m=cur_m,)
+        m=cur_m,
+        force_complex_fields = True,
+        accurate_fields_near_cylorigin=True,
+        Courant=0.2)
 
     box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
         mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
@@ -594,12 +574,12 @@ for alpha_i in range(alpha_range):
     scatt_flux_m[alpha_i, cur_m + mrange] = box_z1_flux[0] - box_z2_flux[0] - box_r_flux[0]
     sim.reset_meep()
 
-scatt_power_m = np.zeros((alpha_range, mrange))
-
-for i in range(mrange):
+scatt_power_m = np.zeros((alpha_range, mrange+1))
+for i in range(mrange+1):
   scatt_power_m[:,i] = - np.sum(scatt_flux_m[:,(mrange-i):(mrange+i+1)], axis=1)
 
 print(scatt_power_m)
+
 ```
 
 Focusing Properties of a Binary-Phase Zone Plate
