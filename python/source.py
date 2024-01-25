@@ -463,6 +463,7 @@ class EigenModeSource(Source):
         volume=None,
         eig_lattice_size=None,
         eig_lattice_center=None,
+        eig_vol=None,
         component=mp.ALL_COMPONENTS,
         direction=mp.AUTOMATIC,
         eig_band=1,
@@ -551,12 +552,13 @@ class EigenModeSource(Source):
           optional `eig_lattice_size` and `eig_lattice_center`, which define a volume
           (which must enclose `size` and `center`) that is used for the unit cell in MPB
           with the dielectric function ε taken from the corresponding region in the Meep
-          simulation.
+          simulation. Alternatively, a volume object `eig_vol` can be specified.
         """
 
         super().__init__(src, component, center, volume, **kwargs)
         self.eig_lattice_size = eig_lattice_size
         self.eig_lattice_center = eig_lattice_center
+        self.eig_vol = eig_vol
         self.component = component
         self.direction = direction
         self.eig_band = eig_band
@@ -643,12 +645,13 @@ class EigenModeSource(Source):
         else:
             direction = self.direction
 
-        eig_vol = mp.Volume(
-            self.eig_lattice_center,
-            self.eig_lattice_size,
-            sim.dimensions,
-            is_cylindrical=sim.is_cylindrical,
-        ).swigobj
+        if self.eig_vol is None:
+            self.eig_vol = mp.Volume(
+                self.eig_lattice_center,
+                self.eig_lattice_size,
+                sim.dimensions,
+                is_cylindrical=sim.is_cylindrical,
+            )
 
         if isinstance(self.eig_band, mp.DiffractedPlanewave):
             eig_band = 1
@@ -663,7 +666,7 @@ class EigenModeSource(Source):
             self.src.swigobj,
             direction,
             where,
-            eig_vol,
+            self.eig_vol.swigobj,
             eig_band,
             mp.py_v3_to_vec(
                 sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
