@@ -368,7 +368,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   if (where.dim != gv.dim || eig_vol.dim != gv.dim)
     meep::abort("invalid volume dimensionality in add_eigenmode_source");
 
-  if (!eig_vol.contains(where))
+  if (d != NO_DIRECTION && !eig_vol.contains(where))
     meep::abort("invalid grid_volume in get_eigenmode: "
                 "where must be in eig_vol");
 
