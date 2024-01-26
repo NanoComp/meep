@@ -658,13 +658,13 @@ if __name__ == "__main__":
 
 ### Extraction Efficiency of a Collection of Dipoles in a Disc
 
-[Tutorial/Radiation Pattern of a Disc in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-a-disc-in-cylindrical-coordinates) demonstrated the procedure for computing the radiation pattern of a *single* dipole (actually a "ring" current source with angular dependence $exp(im\phi)$). [Tutorial/Nonaxisymmetric Dipole Sources](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) described the method for modeling a point dipole at $r > 0$ in cylindrical coordinates using a Fourier-series expansion of the fields in $\phi$. [Tutorial/Extraction Efficiency of a Light-Emitting Diode](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) described the procedure for computing the extraction efficiency of a dipole at $r = 0$. These three demonstrations can be combined to compute the extraction efficiency for a point dipole *anywhere* in the cylindrical cell. Computing the extraction efficiency of an actual light-emitting diode (LED), however, involves a collection of spatially incoherent dipole emitters. [Tutorial/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) described a method for computing the emission of a collection of dipoles using a series of single-dipole calculations and then averaging the emission profiles in post processing. The example used a 2D simulation involving a 1D binary grating (or photonic crystal). This tutorial demonstrates how this approach for modeling spatially incoherent dipoles can be extended to cylindrical coordinates for structures with rotational symmetry.
+[Tutorial/Radiation Pattern of a Disc in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-a-disc-in-cylindrical-coordinates) demonstrated the procedure for computing the radiation pattern of a *single* dipole (actually a "ring" current source with angular dependence $e^{im\phi}$). [Tutorial/Nonaxisymmetric Dipole Sources](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) described the method for modeling a point dipole at $r > 0$ in cylindrical coordinates using a Fourier-series expansion of the fields in $\phi$. [Tutorial/Extraction Efficiency of a Light-Emitting Diode](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) described the procedure for computing the extraction efficiency of a dipole at $r = 0$. These three demonstrations can be combined to compute the extraction efficiency for a point dipole *anywhere* in the cylindrical cell. Computing the extraction efficiency of an actual light-emitting diode (LED), however, involves a collection of spatially incoherent dipole emitters. [Tutorial/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) described a method for computing the emission of a collection of dipoles using a series of single-dipole calculations and then averaging the emission profiles in post processing. The example used a 2D simulation involving a 1D binary grating (or photonic crystal). This tutorial demonstrates how this approach for modeling spatially incoherent dipoles can be extended to cylindrical coordinates for structures with rotational symmetry.
 
-The example uses the same setup as the [previous tutorial](#radiation-pattern-of-a-disc-in-cylindrical-coordinates) involving a dielectric disc above a lossless-reflector ground plane. The dipoles are arranged on a line extending from $r = 0$ to $r = R$ where $R$ is the disc radius. The height of the dipoles ($z$ coordinate) within the disc is fixed. The radiation pattern $P(r,\theta)$ for a dipole at $r$ is computed using a Fourier-series expansion in $\phi$. The *total* radiation pattern $P(\theta)$ for an ensemble of incoherent dipoles is just the integral of the individual dipole powers, which we can approximate by a sum::
+The example uses the same setup as the [previous tutorial](#radiation-pattern-of-a-disc-in-cylindrical-coordinates) involving a dielectric disc above a lossless-reflector ground plane. The dipoles are arranged on a line extending from $r = 0$ to $r = R$ where $R$ is the disc radius. The height of the dipoles ($z$ coordinate) within the disc is fixed. The radiation pattern $P(r,\theta)$ for a dipole at $r$ is computed using a Fourier-series expansion in $\phi$. The *total* radiation pattern $P(\theta)$ for an ensemble of incoherent dipoles is just the integral of the individual dipole powers, which we can approximate by a sum:
 
 $$P(\theta) \approx \int_0^R P(r,\theta) s(r) 2\pi rdr = \sum_{n=0}^{N-1} P(r_n,\theta) s(r_n) 2\pi r_n \Delta r$$,
 
-where $s(r)$ is a weighting function necessary for ensuring equal contribution from all dipoles relative to the dipole at $r = 0$. Note: an $E_r$ dipole at $r = 0$ must be placed at $r_0 = 1.5\Delta r$ due to an [interpolation bug](https://github.com/NanoComp/meep/issues/2704). $s(r)$ can be determined empirically by computing the emission in vacuum for a set of dipoles at different radial positions. The emission profile of a dipole in vacuum is a constant independent of its position. This criteria is used to obtain $s(r) = 0.5(r_0/r)^2$.  (A $1/r^2$ dependence is expected because a cylindrical delta function should really include a $1/r$ factor in order to integrate to 1 with $\int r \, dr$, but Meep currently does not include this $1/r$ in sources that have zero radial width, and power goes like the square of the current amplitude—therefore, we must include an additional $1/r^2$ factor to obtain the correct relative power for dipoles at different radii.) This weighting function is also used to average the flux emitted by each dipole (obtained using using the LDOS feature). This quantity is the denominator in the expression for the extraction efficiency.
+where $s(r)$ is a weighting function necessary for ensuring equal contribution from all dipoles relative to the dipole at $r = 0$. Note: an $E_r$ dipole at $r = 0$ must be placed at $r_0 = 1.5\Delta r$ due to an [interpolation bug](https://github.com/NanoComp/meep/issues/2704). $s(r)$ can be determined empirically by computing the emission in vacuum for a set of dipoles at different radial positions. The emission profile of a dipole in vacuum is a constant independent of its position. This criteria is used to obtain $s(r) = 0.5(r_0/r)^2$. (A $1/r^2$ dependence is expected because a cylindrical delta function should really include a $1/r$ factor in order to integrate to 1 with $\int r \, dr$, but Meep currently does not include this $1/r$ in sources that have zero radial width, and power goes like the square of the current amplitude—therefore, we must include an additional $1/r^2$ factor to obtain the correct relative power for dipoles at different radii.) This weighting function is also used to sum the flux emitted by each dipole (obtained using using the LDOS feature). This quantity is the denominator in the expression for the extraction efficiency.
 
 This figure shows the radiation pattern from $N=11$ dipoles with $\lambda$ of 1.0 $\mu$m in the middle of a disc of height 0.29 $\mu$m, radius 1.2 $\mu$m, and refractive index 2.4. The extraction efficiency for this setup is 0.933517. The runtime is about two hours using two Intel 4.2 GHz Xeon cores.
 
@@ -698,7 +698,7 @@ def plot_radiation_pattern_polar(radial_flux: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
     Args:
-      radial_flux: radial flux of the far fields in polar coordinates.
+      radial_flux: radial flux of the far fields at each angle.
     """
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
     ax.plot(
@@ -726,7 +726,7 @@ def plot_radiation_pattern_3d(radial_flux: np.ndarray):
     """Plots the radiation pattern in 3d Cartesian coordinates.
 
     Args:
-      radial_flux: radial flux of the far fields in polar coordinates.
+      radial_flux: radial flux of the far fields at each angle.
     """
     phis = np.linspace(0, 2 * np.pi, NUM_FARFIELD_PTS)
 
@@ -797,7 +797,7 @@ def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
     spanned by polar angles in the range of [0, π/2].
 
     Args:
-      radial_flux: radial flux of the far fields in polar coordinates.
+      radial_flux: radial flux of the far fields at each angle.
     """
     dphi = 2 * math.pi
     dtheta = farfield_angles[1] - farfield_angles[0]
@@ -829,7 +829,7 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
 
     frequency = 1 / WAVELENGTH_UM  # center frequency of source/monitor
 
-    # runtime termination criteria
+    # Runtime termination criteria.
     dft_decay_threshold = 1e-4
 
     size_r = r_um + pml_um
@@ -841,12 +841,11 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
         mp.PML(pml_um, direction=mp.Z, side=mp.High),
     ]
 
-    src_cmpt = mp.Er
     src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * DISC_THICKNESS_UM)
     sources = [
         mp.Source(
             src=mp.GaussianSource(frequency, fwidth=0.05 * frequency),
-            component=src_cmpt,
+            component=mp.Er,
             center=src_pt,
         )
     ]
@@ -906,14 +905,14 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
 if __name__ == "__main__":
     dipole_height = 0.5
     dipole_rpos_um = np.linspace(0, DISC_RADIUS_UM, NUM_DIPOLES)
+    delta_rpos_um = DISC_RADIUS_UM / (NUM_DIPOLES - 1)
 
-    # An Er source at r = 0 needs to be slighty offset.
+    # 1. Er source at r = 0 requires a single simulation with m = ±1.
+
+    # An Er source at r = 0 needs to be slighty offset due to a bug.
     # https://github.com/NanoComp/meep/issues/2704
     dipole_rpos_um[0] = 1.5 / RESOLUTION_UM
 
-    delta_rpos_um = dipole_rpos_um[2] - dipole_rpos_um[1]
-
-    # Er source at r = 0 requires a single simulation with m = ±1.
     m = -1
     dipole_flux, dipole_radiation_pattern = dipole_in_disc(
         dipole_height,
@@ -931,7 +930,7 @@ if __name__ == "__main__":
         f"{radiation_pattern_flux(dipole_radiation_pattern):.6f}"
     )
 
-    # Er source at r > 0 requires Fourier-series expansion of φ.
+    # 2. Er source at r > 0 requires Fourier-series expansion of φ.
 
     # Threshold flux to determine when to truncate expansion.
     flux_decay_threshold = 1e-2
@@ -979,8 +978,6 @@ if __name__ == "__main__":
             rpos_um * delta_rpos_um
         )
 
-    flux_total /= NUM_DIPOLES
-    radiation_pattern_total /= NUM_DIPOLES
     radiation_pattern_total_flux = radiation_pattern_flux(radiation_pattern_total)
     extraction_efficiency = radiation_pattern_total_flux / flux_total
     print(f"exteff:, {extraction_efficiency:.6f}")
