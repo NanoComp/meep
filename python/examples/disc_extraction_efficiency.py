@@ -28,7 +28,7 @@ def plot_radiation_pattern_polar(radial_flux: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
     Args:
-      radial_flux: radial flux of the far fields in polar coordinates.
+      radial_flux: radial flux of the far fields at each angle.
     """
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
     ax.plot(
@@ -56,7 +56,7 @@ def plot_radiation_pattern_3d(radial_flux: np.ndarray):
     """Plots the radiation pattern in 3d Cartesian coordinates.
 
     Args:
-      radial_flux: radial flux of the far fields in polar coordinates.
+      radial_flux: radial flux of the far fields at each angle.
     """
     phis = np.linspace(0, 2 * np.pi, NUM_FARFIELD_PTS)
 
@@ -127,7 +127,7 @@ def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
     spanned by polar angles in the range of [0, π/2].
 
     Args:
-      radial_flux: radial flux of the far fields in polar coordinates.
+      radial_flux: radial flux of the far fields at each angle.
     """
     dphi = 2 * math.pi
     dtheta = farfield_angles[1] - farfield_angles[0]
@@ -159,7 +159,7 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
 
     frequency = 1 / WAVELENGTH_UM  # center frequency of source/monitor
 
-    # runtime termination criteria
+    # Runtime termination criteria.
     dft_decay_threshold = 1e-4
 
     size_r = r_um + pml_um
@@ -171,12 +171,11 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
         mp.PML(pml_um, direction=mp.Z, side=mp.High),
     ]
 
-    src_cmpt = mp.Er
     src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * DISC_THICKNESS_UM)
     sources = [
         mp.Source(
             src=mp.GaussianSource(frequency, fwidth=0.05 * frequency),
-            component=src_cmpt,
+            component=mp.Er,
             center=src_pt,
         )
     ]
@@ -236,14 +235,14 @@ def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarr
 if __name__ == "__main__":
     dipole_height = 0.5
     dipole_rpos_um = np.linspace(0, DISC_RADIUS_UM, NUM_DIPOLES)
+    delta_rpos_um = DISC_RADIUS_UM / (NUM_DIPOLES - 1)
 
-    # An Er source at r = 0 needs to be slighty offset.
+    # 1. Er source at r = 0 requires a single simulation with m = ±1.
+
+    # An Er source at r = 0 needs to be slighty offset due to a bug.
     # https://github.com/NanoComp/meep/issues/2704
     dipole_rpos_um[0] = 1.5 / RESOLUTION_UM
 
-    delta_rpos_um = dipole_rpos_um[2] - dipole_rpos_um[1]
-
-    # Er source at r = 0 requires a single simulation with m = ±1.
     m = -1
     dipole_flux, dipole_radiation_pattern = dipole_in_disc(
         dipole_height,
@@ -261,7 +260,7 @@ if __name__ == "__main__":
         f"{radiation_pattern_flux(dipole_radiation_pattern):.6f}"
     )
 
-    # Er source at r > 0 requires Fourier-series expansion of φ.
+    # 2. Er source at r > 0 requires Fourier-series expansion of φ.
 
     # Threshold flux to determine when to truncate expansion.
     flux_decay_threshold = 1e-2
@@ -310,8 +309,6 @@ if __name__ == "__main__":
             * delta_rpos_um
         )
 
-    flux_total /= NUM_DIPOLES
-    radiation_pattern_total /= NUM_DIPOLES
     radiation_pattern_total_flux = radiation_pattern_flux(radiation_pattern_total)
     extraction_efficiency = radiation_pattern_total_flux / flux_total
     print(f"exteff:, {extraction_efficiency:.6f}")
