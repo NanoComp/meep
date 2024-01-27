@@ -3,6 +3,7 @@ import numpy as np
 
 import meep as mp
 
+
 resolution = 50  # pixels/μm
 
 cell_size = mp.Vector3(14, 10, 0)
@@ -10,9 +11,9 @@ cell_size = mp.Vector3(14, 10, 0)
 pml_layers = [mp.PML(thickness=2, direction=mp.X)]
 
 # rotation angle (in degrees) of planewave, counter clockwise (CCW) around z-axis
-rot_angle = np.radians(0)
+rot_angle = np.radians(23.2)
 
-fsrc = 1.0  # frequency of planewave (wavelength = 1/fsrc)
+fsrc = 1.0  # frequency (wavelength = 1/fsrc)
 
 n = 1.5  # refractive index of homogeneous material
 default_material = mp.Medium(index=n)
@@ -26,11 +27,19 @@ sources = [
         size=mp.Vector3(y=10),
         direction=mp.AUTOMATIC if rot_angle == 0 else mp.NO_DIRECTION,
         eig_kpoint=k_point,
-        eig_band=1,
         eig_parity=mp.EVEN_Y + mp.ODD_Z if rot_angle == 0 else mp.ODD_Z,
-        eig_match_freq=True,
     )
 ]
+
+## equivalent definition
+# sources = [
+#     mp.EigenModeSource(
+#         src=mp.ContinuousSource(fsrc),
+#         center=mp.Vector3(),
+#         size=mp.Vector3(y=10),
+#         eig_band=mp.DiffractedPlanewave((0, 0, 0), mp.Vector3(0, 1, 0), 1, 0),
+#     )
+# ]
 
 sim = mp.Simulation(
     cell_size=cell_size,
@@ -42,12 +51,11 @@ sim = mp.Simulation(
     symmetries=[mp.Mirror(mp.Y)] if rot_angle == 0 else [],
 )
 
-sim.run(until=100)
+sim.run(until=20.0)
 
-nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10, 10, 0))
+nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10.0, 10.0, 0))
 
 sim.plot2D(fields=mp.Ez, output_plane=nonpml_vol)
 
-if mp.am_master():
-    plt.axis("off")
-    plt.savefig("pw.png", bbox_inches="tight")
+plt.axis("off")
+plt.savefig("pw.png", bbox_inches="tight")
