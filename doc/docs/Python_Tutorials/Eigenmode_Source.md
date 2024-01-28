@@ -229,62 +229,97 @@ Increasing the size of the cell improves results at the expense of a larger simu
 Planewaves in Homogeneous Media
 -------------------------------
 
-The eigenmode source can also be used to launch [planewaves](https://en.wikipedia.org/wiki/Plane_wave) in homogeneous media. The dispersion relation for a planewave is $\omega=|\vec{k}|/n$ where $\omega$ is the angular frequency of the planewave and $\vec{k}$ its wavevector; $n$ is the refractive index of the homogeneous medium ($c=1$ in Meep units). This example demonstrates launching planewaves in a uniform medium with $n=1.5$ at three rotation angles: 0°, 20°, and 40°. Bloch-periodic boundaries via the `k_point` are used and specified by the wavevector $\vec{k}$. PML boundaries are used only along the $x$-direction.
+The eigenmode source can also be used to launch [planewaves](https://en.wikipedia.org/wiki/Plane_wave) in homogeneous media. The dispersion relation for a planewave is $\omega=|\vec{k}|/n$ where $\omega$ is the angular frequency of the planewave and $\vec{k}$ its wavevector; $n$ is the refractive index of the homogeneous medium ($c=1$ in Meep units). This example demonstrates launching planewaves in a uniform medium with $n=1.5$ at four incident angles: 0°, 40°, 120°, and 210°.
 
 The simulation script is in [examples/oblique-planewave.py](https://github.com/NanoComp/meep/blob/master/python/examples/oblique-planewave.py). The notebook is in [examples/oblique-planewave.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/oblique-planewave.ipynb).
 
 ```py
+import matplotlib.pyplot as plt
 import meep as mp
 import numpy as np
-import matplotlib.pyplot as plt
 
-resolution = 50 # pixels/μm
 
-cell_size = mp.Vector3(14,10,0)
+mp.verbosity(2)
 
-pml_layers = [mp.PML(thickness=2,direction=mp.X)]
+resolution_um = 50
+pml_um = 2.0
+size_um = 10.0
+cell_size = mp.Vector3(size_um + 2 * pml_um, size_um, 0)
+pml_layers = [mp.PML(thickness=pml_um, direction=mp.X)]
 
-# rotation angle (in degrees) of planewave, counter clockwise (CCW) around z-axis
-rot_angle = np.radians(0)
+# Incident angle of planewave. 0 is +x with rotation in
+# counter clockwise (CCW) direction around z axis.
+incident_angle = np.radians(40.0)
 
-fsrc = 1.0 # frequency of planewave (wavelength = 1/fsrc)
+wavelength_um = 1.0
+frequency = 1 / wavelength_um
 
-n = 1.5  # refractive index of homogeneous material
-default_material = mp.Medium(index=n)
+n_mat = 1.5  # refractive index of homogeneous material
+default_material = mp.Medium(index=n_mat)
 
-k_point = mp.Vector3(fsrc*n).rotate(mp.Vector3(z=1), rot_angle)
+k_point = mp.Vector3(n_mat * frequency, 0, 0).rotate(
+    mp.Vector3(0, 0, 1),
+    incident_angle
+)
 
-sources = [mp.EigenModeSource(src=mp.ContinuousSource(fsrc),
-                              center=mp.Vector3(),
-                              size=mp.Vector3(y=10),
-                              direction=mp.AUTOMATIC if rot_angle == 0 else mp.NO_DIRECTION,
-                              eig_kpoint=k_point,
-                              eig_band=1,
-                              eig_parity=mp.EVEN_Y+mp.ODD_Z if rot_angle == 0 else mp.ODD_Z,
-                              eig_match_freq=True)]
+if incident_angle == 0:
+    direction = mp.AUTOMATIC
+    eig_parity = mp.EVEN_Y + mp.ODD_Z
+    symmetries = [mp.Mirror(mp.Y)]
+    eig_vol = None
+else:
+    direction = mp.NO_DIRECTION
+    eig_parity = mp.ODD_Z
+    symmetries = []
+    eig_vol = mp.Volume(
+        center=mp.Vector3(),
+        size=mp.Vector3(0, 1 / resolution_um, 0)
+    )
 
-sim = mp.Simulation(cell_size=cell_size,
-                    resolution=resolution,
-                    boundary_layers=pml_layers,
-                    sources=sources,
-                    k_point=k_point,
-                    default_material=default_material,
-                    symmetries=[mp.Mirror(mp.Y)] if rot_angle == 0 else [])
+sources = [
+    mp.EigenModeSource(
+        src=mp.ContinuousSource(frequency),
+        center=mp.Vector3(),
+        size=mp.Vector3(0, size_um, 0),
+        direction=direction,
+        eig_kpoint=k_point,
+        eig_band=1,
+        eig_parity=eig_parity,
+        eig_vol=eig_vol
+    )
+]
 
-sim.run(until=100)
+sim = mp.Simulation(
+    cell_size=cell_size,
+    resolution=resolution_um,
+    boundary_layers=pml_layers,
+    sources=sources,
+    k_point=k_point,
+    default_material=default_material,
+    symmetries=symmetries
+)
 
-nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10,10,0))
+sim.run(until=23.56)
 
-sim.plot2D(fields=mp.Ez,
-           output_plane=nonpml_vol)
+output_plane = mp.Volume(
+    center=mp.Vector3(),
+    size=mp.Vector3(size_um, size_um, 0)
+)
 
-if mp.am_master():
-    plt.axis('off')
-    plt.savefig('pw.png',bbox_inches='tight')
+fig, ax = plt.subplots()
+sim.plot2D(fields=mp.Ez, output_plane=output_plane, ax=ax)
+fig.savefig("planewave_source.png", bbox_inches="tight")
 ```
 
-Note that the line source spans the *entire* length of the cell. (Planewave sources extending into the PML region must include `is_integrated=True`.) This example involves a continuous-wave (CW) time profile. For a pulse profile, the oblique planewave is incident at a given angle for only a *single* frequency component of the source as described in [Tutorial/Basics/Angular Reflectance Spectrum of a Planar Interface](../Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface). This is a fundamental feature of FDTD simulations and not of Meep per se. To simulate an incident planewave at multiple angles for a given frequency $\omega$, you will need to do separate simulations involving different values of $\vec{k}$ (`k_point`) since each set of $(\vec{k},\omega)$ specifying the Bloch-periodic boundaries and the frequency of the source will produce a different angle of the planewave. For more details, refer to Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+There are several items to note in this script.
 
-Shown below are the steady-state field profiles generated by the planewave for the three rotation angles. Residues of the backward-propagating waves due to the discretization are slightly visible.
+1. The line source spans the *entire* length of the cell. Planewave sources extending into the PML region must include `is_integrated=True` in the source definition.
+2. The wavevector of the planewave $\vec{k}$ is defined using the `k_point` which specifies Bloch-periodic boundaries. PML boundaries are used only along the $x$ direction.
+3. The `eig_vol` parameter of the `EigenModeSource` defines a volume that is one-pixel thick in the direction of the line monitor. This is necessary to ensure that the`eig_kpoint` is interpreted by MPB as the wavevector of a planewave — that is, so it is the wavevector as defined for a homogeneous material (continuous translational symmetry) rather than as a Bloch wavevector for a system with discrete translational symmetry.
+4. Based on the convention used to define the incident angle whereby 0° is the $x$ direction with rotation counter clockwise around the $z$ axis, a planewave with an incident angle of 120° is propagating towards the (-x, +y) direction and 210° is propagating towards the (-x, -y) direction.
+
+This example involves a continuous-wave (CW) time profile. For a pulse profile, the oblique planewave is incident at a given angle for only a *single* frequency component of the source as described in [Tutorial/Basics/Angular Reflectance Spectrum of a Planar Interface](../Python_Tutorials/Basics.md#angular-reflectance-spectrum-of-a-planar-interface). This is a fundamental feature of FDTD simulations and not of Meep per se. To simulate an incident planewave at multiple angles for a given frequency $\omega$, you will need to perform separate simulations involving different values of $\vec{k}$ (`k_point`) since each set of $(\vec{k},\omega)$ specifying the Bloch-periodic boundaries and the frequency of the source will produce a different angle of the planewave. For more details, refer to Section 4.5 ("Efficient Frequency-Angle Coverage") in [Chapter 4](https://arxiv.org/abs/1301.5366) ("Electromagnetic Wave Source Conditions") of [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707).
+
+Shown below are the steady-state field profiles generated by the planewave for the four incident angles. Residues of the backward-propagating waves due to the discretization are slightly visible.
 
 ![](../images/eigenmode_planewave.png#center)

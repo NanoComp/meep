@@ -1,53 +1,74 @@
+"""Demonstration of launching a planewave source at oblique incidence.
+
+tutorial reference:
+https://meep.readthedocs.io/en/latest/Python_Tutorials/Eigenmode_Source/#planewaves-in-homogeneous-media
+"""
+
 import matplotlib.pyplot as plt
+import meep as mp
 import numpy as np
 
-import meep as mp
 
-resolution = 50  # pixels/μm
+mp.verbosity(2)
 
-cell_size = mp.Vector3(14, 10, 0)
+resolution_um = 50
+pml_um = 2.0
+size_um = 10.0
+cell_size = mp.Vector3(size_um + 2 * pml_um, size_um, 0)
+pml_layers = [mp.PML(thickness=pml_um, direction=mp.X)]
 
-pml_layers = [mp.PML(thickness=2, direction=mp.X)]
+# Incident angle of planewave. 0 is +x with rotation in
+# counter clockwise (CCW) direction around z axis.
+incident_angle = np.radians(40.0)
 
-# rotation angle (in degrees) of planewave, counter clockwise (CCW) around z-axis
-rot_angle = np.radians(0)
+wavelength_um = 1.0
+frequency = 1 / wavelength_um
 
-fsrc = 1.0  # frequency of planewave (wavelength = 1/fsrc)
+n_mat = 1.5  # refractive index of homogeneous material
+default_material = mp.Medium(index=n_mat)
 
-n = 1.5  # refractive index of homogeneous material
-default_material = mp.Medium(index=n)
+k_point = mp.Vector3(n_mat * frequency, 0, 0).rotate(
+    mp.Vector3(0, 0, 1), incident_angle
+)
 
-k_point = mp.Vector3(fsrc * n).rotate(mp.Vector3(z=1), rot_angle)
+if incident_angle == 0:
+    direction = mp.AUTOMATIC
+    eig_parity = mp.EVEN_Y + mp.ODD_Z
+    symmetries = [mp.Mirror(mp.Y)]
+    eig_vol = None
+else:
+    direction = mp.NO_DIRECTION
+    eig_parity = mp.ODD_Z
+    symmetries = []
+    eig_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(0, 1 / resolution_um, 0))
 
 sources = [
     mp.EigenModeSource(
-        src=mp.ContinuousSource(fsrc),
+        src=mp.ContinuousSource(frequency),
         center=mp.Vector3(),
-        size=mp.Vector3(y=10),
-        direction=mp.AUTOMATIC if rot_angle == 0 else mp.NO_DIRECTION,
+        size=mp.Vector3(0, size_um, 0),
+        direction=direction,
         eig_kpoint=k_point,
         eig_band=1,
-        eig_parity=mp.EVEN_Y + mp.ODD_Z if rot_angle == 0 else mp.ODD_Z,
-        eig_match_freq=True,
+        eig_parity=eig_parity,
+        eig_vol=eig_vol,
     )
 ]
 
 sim = mp.Simulation(
     cell_size=cell_size,
-    resolution=resolution,
+    resolution=resolution_um,
     boundary_layers=pml_layers,
     sources=sources,
     k_point=k_point,
     default_material=default_material,
-    symmetries=[mp.Mirror(mp.Y)] if rot_angle == 0 else [],
+    symmetries=symmetries,
 )
 
-sim.run(until=100)
+sim.run(until=23.56)
 
-nonpml_vol = mp.Volume(center=mp.Vector3(), size=mp.Vector3(10, 10, 0))
+output_plane = mp.Volume(center=mp.Vector3(), size=mp.Vector3(size_um, size_um, 0))
 
-sim.plot2D(fields=mp.Ez, output_plane=nonpml_vol)
-
-if mp.am_master():
-    plt.axis("off")
-    plt.savefig("pw.png", bbox_inches="tight")
+fig, ax = plt.subplots()
+sim.plot2D(fields=mp.Ez, output_plane=output_plane, ax=ax)
+fig.savefig("planewave_source.png", bbox_inches="tight")
