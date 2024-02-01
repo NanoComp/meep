@@ -342,6 +342,7 @@ $$ \hat{E}_x = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) + e^{-i
 A $y$-polarized planewave involves subtracting rather than adding the two terms in parentheses:
 
 $$ \hat{E}_y = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) - e^{-i\phi}(\hat{E}_\rho - i\hat{E}_\phi)\right] $$
+(Note, however, that for axisymmetric problems the $\hat{E}_y$ solution is merely a 90° rotation of the $\hat{E}_x$ solution.)
 
 In principle, this involves performing *two* separate simulations for $m=\pm 1$. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. As a simplification, in the case of a material with isotropic permittivity (and/or real permittivity), only one of the two simulations is necessary: the scattered power is the same for $m=\pm 1$ due to the mirror (and/or conjugate) symmetry of the structure.
 
