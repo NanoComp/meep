@@ -333,15 +333,22 @@ Finally, as reference, the same calculation can be set up in Cartesian coordinat
 Scattering Cross Section of a Finite Dielectric Cylinder
 --------------------------------------------------------
 
-As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical ($r$,$z$) cell are validated by comparing to the same simulation in 3d Cartesian ($x$,$y$,$z$) coordinates which tends to be much slower and less accurate at the same grid resolution.
+As an alternative to the "ring" sources of the previous examples, it is also possible to launch planewaves in cylindrical coordinates. This is demonstrated in this example which involves computing the scattering cross section of a finite-height dielectric cylinder. The results for the 2d simulation involving the cylindrical ($r$, $z$) or ($\rho$, $z$) cell are validated by comparing to the same simulation in 3d Cartesian ($x$, $y$, $z$) coordinates which tends to be much slower and less accurate at the same grid resolution.
 
 The calculation of the scattering cross section is described in [Tutorial/Basics/Mie Scattering of a Lossless Dielectric Sphere](Basics.md#mie-scattering-of-a-lossless-dielectric-sphere) which is modified for this example. A linearly-polarized ($x$) planewave is normally incident on a $z$-oriented cylinder which is enclosed by a DFT flux box. Expressed in cylindrical coordinates, an $x$-polarized planewave propagating in the $z$ direction is the sum of two circularly-polarized planewaves of opposite chirality:
 
 $$ \hat{E}_x = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) + e^{-i\phi}(\hat{E}_\rho - i\hat{E}_\phi)\right] $$
 
-(Note: a $y$-polarized planewave involves subtracting rather than adding the two terms above.)
+A $y$-polarized planewave involves subtracting rather than adding the two terms in parentheses:
 
-In practice, this involves performing *two* separate simulations for $m=\pm 1$. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. However, in the case of a material with isotropic permittivity, only one of the two simulations is necessary: the scattered power is the same for $m=\pm 1$ due to the mirror symmetry of the structure. A chiral material based on an anisotropic permittivity with principle axes not aligned with the coordinates axes breaks the mirror symmetry and thus would require two separate simulations. (Note that a linearly-polarized planewave is *not* $m=0$, which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m=\pm 1$) and is *not* rotationally invariant; it flips sign if it is rotated by 180°.)
+$$ \hat{E}_y = \frac{1}{2} \left[e^{i\phi}(\hat{E}_\rho + i\hat{E}_\phi) - e^{-i\phi}(\hat{E}_\rho - i\hat{E}_\phi)\right] $$
+(Note, however, that for axisymmetric problems the $\hat{E}_y$ solution is merely a 90° rotation of the $\hat{E}_x$ solution.)
+
+In principle, this involves performing *two* separate simulations for $m=\pm 1$. The scattered power from each simulation is then simply summed since the cross term in the total Poynting flux cancels for the different $m$ values when integrated over the $\phi$ direction. As a simplification, in the case of a material with isotropic permittivity (and/or real permittivity), only one of the two simulations is necessary: the scattered power is the same for $m=\pm 1$ due to the mirror (and/or conjugate) symmetry of the structure.
+
+If one has a gyromagnetic material (which breaks mirror symmetry, conjugate symmetry, and reciprocity), then ±m simulations are generally inequivalent and one may require two separate simulations. For a given linearly-polarized planewave, the solution is computed by combining the fields from the two current sources of opposite chirality in separate runs (and subsequently computing Poynting flux or other desired quantities).
+
+Note that a linearly-polarized planewave is *not* $m=0$, which corresponds to a field pattern that is *invariant* under rotations similar to [TE<sub>01</sub>/TM<sub>01</sub> modes](https://en.wikipedia.org/wiki/Transverse_mode). A linear polarization is the superposition of left and right circularly-polarized waves ($m=\pm 1$) and is *not* rotationally invariant; it flips sign if it is rotated by 180°.
 
 The simulation script is in [examples/cylinder_cross_section.py](https://github.com/NanoComp/meep/blob/master/python/examples/cylinder_cross_section.py). The notebook is [examples/cylinder_cross_section.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/cylinder_cross_section.ipynb).
 
