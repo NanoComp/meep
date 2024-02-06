@@ -4,6 +4,7 @@ convolution filters (kernels), projection operators, and morphological
 transforms.
 """
 import numpy as np
+import sys
 from autograd import numpy as npa
 from scipy import signal, special
 from typing import List, Tuple, Union
@@ -694,10 +695,14 @@ def tanh_projection(x: np.ndarray, beta: float, eta: float) -> np.ndarray:
     Returns:
         The filtered design weights.
     """
-
-    return (npa.tanh(beta * eta) + npa.tanh(beta * (x - eta))) / (
-        npa.tanh(beta * eta) + npa.tanh(beta * (1 - eta))
-    )
+    if beta == npa.inf:
+        # Note that backpropagating through here can produce NaNs. So we
+        # manually specify the step function to keep the gradient clean.
+        return npa.where(x > eta, 1.0, 0.0)
+    else:
+        return (npa.tanh(beta * eta) + npa.tanh(beta * (x - eta))) / (
+            npa.tanh(beta * eta) + npa.tanh(beta * (1 - eta))
+        )
 
 
 def smoothed_projection(
@@ -774,8 +779,8 @@ def smoothed_projection(
     # and determine where smoothing is actually needed. The value where we don't
     # need smoothings doesn't actually matter, since all our computations our
     # purely element-wise (no spatial locality) and those pixels will instead
-    # rely on the standard projection. So just use 1, since it's well behaved.
-    nonzero_norm = npa.abs(x_grad_helper) > 0
+    # rely on the standard projection.
+    nonzero_norm = npa.abs(x_grad_helper) > sys.float_info.epsilon
 
     x_grad_norm = npa.sqrt(npa.where(nonzero_norm, x_grad_helper, 1))
     x_grad_norm_eff = npa.where(nonzero_norm, x_grad_norm, 1)
@@ -787,6 +792,7 @@ def smoothed_projection(
     # actually an "effective" d by this point, we need to ignore values that may
     # have been sanitized earlier on.
     needs_smoothing = nonzero_norm & (npa.abs(d) <= pixel_radius)
+    d = npa.where(needs_smoothing, d, 1)
 
     # The fill factor is used to perform simple, first-order subpixel smoothing.
     # We use the (2D) analytic expression that comes when assuming the smoothing
@@ -811,16 +817,16 @@ def smoothed_projection(
             1,
         )
     )
-
-    fill_factor = npa.where(
+    fill_factor = (1 / (npa.pi * pixel_radius**2)) * (arccos_term - sqrt_term)
+    fill_factor_eff = npa.where(
         needs_smoothing,
-        (1 / (npa.pi * pixel_radius**2)) * (arccos_term - sqrt_term),
+        fill_factor,
         1,
     )
 
     # Determine the upper and lower bounds of materials in the current pixel.
-    x_minus = x_smoothed - x_grad_norm * pixel_radius
-    x_plus = x_smoothed + x_grad_norm * pixel_radius
+    x_minus = x_smoothed - x_grad_norm_eff * pixel_radius
+    x_plus = x_smoothed + x_grad_norm_eff * pixel_radius
 
     # Create an "effective" set of materials that will ensure everything is
     # piecewise differentiable, even if an interface moves out of a pixel, or
@@ -839,7 +845,8 @@ def smoothed_projection(
     )
 
     # Only apply smoothing to interfaces
-    x_projected_smoothed = (1 - fill_factor) * x_minus_eff + (fill_factor) * x_plus_eff
+    x_projected_smoothed = (1 - fill_factor_eff) * x_minus_eff + (fill_factor_eff) * x_plus_eff
+
     return npa.where(
         needs_smoothing,
         x_projected_smoothed,
