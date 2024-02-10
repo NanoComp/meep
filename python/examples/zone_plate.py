@@ -1,153 +1,185 @@
+"""Computes the diffraction spectra of a zone plate in cylindrical coords."""
+
 import math
 
 import matplotlib.pyplot as plt
+import meep as mp
 import numpy as np
 
-import meep as mp
 
-resolution = 25  # pixels/μm
+resolution_um = 25
 
-dpml = 1.0  # PML thickness
-dsub = 2.0  # substrate thickness
-dpad = 2.0  # padding betweeen zone plate and PML
-zh = 0.5  # zone-plate height
-zN = 25  # number of zones (odd zones: π phase shift, even zones: none)
-focal_length = 200  # focal length of zone plate
-spot_length = 100  # far-field line length
-ff_res = 10  # far-field resolution
+pml_um = 1.0
+substrate_um = 2.0
+padding_um = 2.0
+height_um = 0.5
+focal_length_um = 200
+scan_length_z_um = 100
+farfield_resolution_um = 10
 
-pml_layers = [mp.PML(thickness=dpml)]
+pml_layers = [mp.PML(thickness=pml_um)]
 
-wvl_cen = 0.5
-frq_cen = 1 / wvl_cen
-dfrq = 0.2 * frq_cen
+wavelength_um = 0.5
+frequency = 1 / wavelength_um
+frequench_width = 0.2 * frequency
 
-## radii of zones
-## ref: eq. 7 of http://zoneplate.lbl.gov/theory
-r = [
-    math.sqrt(n * wvl_cen * (focal_length + n * wvl_cen / 4)) for n in range(1, zN + 1)
-]
+# The number of zones in the zone plate.
+# Odd-numbered zones impart a π phase shift and
+# even-numbered zones impart no phase shift.
+num_zones = 25
 
-sr = r[-1] + dpad + dpml
-sz = dpml + dsub + zh + dpad + dpml
-cell_size = mp.Vector3(sr, 0, sz)
+# Specify the radius of each zone using the equation
+# from https://en.wikipedia.org/wiki/Zone_plate.
+zone_radius_um = np.zeros(num_zones)
+for n in range(1, num_zones + 1):
+    zone_radius_um[n - 1] = math.sqrt(
+        n * wavelength_um * (focal_length_um + n * wavelength_um / 4)
+    )
 
+size_r_um = zone_radius_um[-1] + padding_um + pml_um
+size_z_um = pml_um + substrate_um + height_um + padding_um + pml_um
+cell_size = mp.Vector3(size_r_um, 0, size_z_um)
+
+# Specify a (linearly polarized) planewave at normal incidence.
 sources = [
     mp.Source(
-        mp.GaussianSource(frq_cen, fwidth=dfrq, is_integrated=True),
+        mp.GaussianSource(frequency, fwidth=frequench_width, is_integrated=True),
         component=mp.Er,
-        center=mp.Vector3(0.5 * sr, 0, -0.5 * sz + dpml),
-        size=mp.Vector3(sr),
+        center=mp.Vector3(0.5 * size_r_um, 0, -0.5 * size_z_um + pml_um),
+        size=mp.Vector3(size_r_um),
     ),
     mp.Source(
-        mp.GaussianSource(frq_cen, fwidth=dfrq, is_integrated=True),
+        mp.GaussianSource(frequency, fwidth=frequench_width, is_integrated=True),
         component=mp.Ep,
-        center=mp.Vector3(0.5 * sr, 0, -0.5 * sz + dpml),
-        size=mp.Vector3(sr),
+        center=mp.Vector3(0.5 * size_r_um, 0, -0.5 * size_z_um + pml_um),
+        size=mp.Vector3(size_r_um),
         amplitude=-1j,
     ),
 ]
 
 glass = mp.Medium(index=1.5)
 
+# Add the substrate.
 geometry = [
     mp.Block(
         material=glass,
-        size=mp.Vector3(sr, 0, dpml + dsub),
-        center=mp.Vector3(0.5 * sr, 0, -0.5 * sz + 0.5 * (dpml + dsub)),
+        size=mp.Vector3(size_r_um, 0, pml_um + substrate_um),
+        center=mp.Vector3(
+            0.5 * size_r_um, 0, -0.5 * size_z_um + 0.5 * (pml_um + substrate_um)
+        ),
     )
 ]
 
-geometry.extend(
-    mp.Block(
-        material=glass if n % 2 == 0 else mp.vacuum,
-        size=mp.Vector3(r[n], 0, zh),
-        center=mp.Vector3(0.5 * r[n], 0, -0.5 * sz + dpml + dsub + 0.5 * zh),
+# Add the zone plates starting with the ones with largest radius.
+for n in range(num_zones - 1, -1, -1):
+    geometry.append(
+        mp.Block(
+            material=glass if n % 2 == 0 else mp.vacuum,
+            size=mp.Vector3(zone_radius_um[n], 0, height_um),
+            center=mp.Vector3(
+                0.5 * zone_radius_um[n],
+                0,
+                -0.5 * size_z_um + pml_um + substrate_um + 0.5 * height_um,
+            ),
+        )
     )
-    for n in range(zN - 1, -1, -1)
-)
 
 sim = mp.Simulation(
     cell_size=cell_size,
     boundary_layers=pml_layers,
-    resolution=resolution,
+    resolution=resolution_um,
     sources=sources,
     geometry=geometry,
     dimensions=mp.CYLINDRICAL,
     m=-1,
 )
 
-## near-field monitor
-n2f_obj = sim.add_near2far(
-    frq_cen,
+# Add the near-field monitor (must be entirely in air).
+n2f_monitor = sim.add_near2far(
+    frequency,
     0,
     1,
     mp.Near2FarRegion(
-        center=mp.Vector3(0.5 * (sr - dpml), 0, 0.5 * sz - dpml),
-        size=mp.Vector3(sr - dpml),
+        center=mp.Vector3(0.5 * (size_r_um - pml_um), 0, 0.5 * size_z_um - pml_um),
+        size=mp.Vector3(size_r_um - pml_um, 0, 0),
     ),
     mp.Near2FarRegion(
-        center=mp.Vector3(sr - dpml, 0, 0.5 * sz - dpml - 0.5 * (dsub + zh + dpad)),
-        size=mp.Vector3(z=dsub + zh + dpad),
-    ),
-)
-
-sim.plot2D()
-if mp.am_master():
-    plt.savefig("zone_plate_epsilon.png", bbox_inches="tight", dpi=150)
-
-sim.run(until_after_sources=100)
-
-ff_r = sim.get_farfields(
-    n2f_obj,
-    ff_res,
-    center=mp.Vector3(
-        0.5 * (sr - dpml), 0, -0.5 * sz + dpml + dsub + zh + focal_length
-    ),
-    size=mp.Vector3(sr - dpml),
-)
-
-ff_z = sim.get_farfields(
-    n2f_obj,
-    ff_res,
-    center=mp.Vector3(z=-0.5 * sz + dpml + dsub + zh + focal_length),
-    size=mp.Vector3(z=spot_length),
-)
-
-E2_r = (
-    np.absolute(ff_r["Ex"]) ** 2
-    + np.absolute(ff_r["Ey"]) ** 2
-    + np.absolute(ff_r["Ez"]) ** 2
-)
-E2_z = (
-    np.absolute(ff_z["Ex"]) ** 2
-    + np.absolute(ff_z["Ey"]) ** 2
-    + np.absolute(ff_z["Ez"]) ** 2
-)
-
-if mp.am_master():
-    plt.figure(dpi=200)
-    plt.subplot(1, 2, 1)
-    plt.semilogy(np.linspace(0, sr - dpml, len(E2_r)), E2_r, "bo-")
-    plt.xlim(-2, 20)
-    plt.xticks(list(np.arange(0, 25, 5)))
-    plt.grid(True, axis="y", which="both", ls="-")
-    plt.xlabel(r"$r$ coordinate (μm)")
-    plt.ylabel(r"energy density of far fields, |E|$^2$")
-    plt.subplot(1, 2, 2)
-    plt.semilogy(
-        np.linspace(
-            focal_length - 0.5 * spot_length,
-            focal_length + 0.5 * spot_length,
-            len(E2_z),
+        center=mp.Vector3(
+            size_r_um - pml_um,
+            0,
+            0.5 * size_z_um - pml_um - 0.5 * (height_um + padding_um),
         ),
-        E2_z,
-        "bo-",
-    )
-    plt.grid(True, axis="y", which="both", ls="-")
-    plt.xlabel(r"$z$ coordinate (μm)")
-    plt.ylabel(r"energy density of far fields, |E|$^2$")
-    plt.suptitle(f"binary-phase zone plate with focal length $z$ = {focal_length} μm")
+        size=mp.Vector3(0, 0, height_um + padding_um),
+    ),
+)
 
-    plt.tight_layout()
-    plt.savefig("zone_plate_farfields.png")
+fig, ax = plt.subplots()
+sim.plot2D(ax=ax)
+if mp.am_master():
+    fig.savefig("zone_plate_layout.png", bbox_inches="tight", dpi=150)
+
+# Timestep the fields until they have sufficiently decayed away.
+sim.run(
+    until_after_sources=mp.stop_when_fields_decayed(
+        50.0, mp.Er, mp.Vector3(0.5 * size_r_um, 0, 0), 1e-6
+    )
+)
+
+farfields_r = sim.get_farfields(
+    n2f_monitor,
+    farfield_resolution_um,
+    center=mp.Vector3(
+        0.5 * (size_r_um - pml_um),
+        0,
+        -0.5 * size_z_um + pml_um + substrate_um + height_um + focal_length_um,
+    ),
+    size=mp.Vector3(size_r_um - pml_um, 0, 0),
+)
+
+farfields_z = sim.get_farfields(
+    n2f_monitor,
+    farfield_resolution_um,
+    center=mp.Vector3(
+        0, 0, -0.5 * size_z_um + pml_um + substrate_um + height_um + focal_length_um
+    ),
+    size=mp.Vector3(0, 0, scan_length_z_um),
+)
+
+intensity_r = (
+    np.absolute(farfields_r["Ex"]) ** 2
+    + np.absolute(farfields_r["Ey"]) ** 2
+    + np.absolute(farfields_r["Ez"]) ** 2
+)
+intensity_z = (
+    np.absolute(farfields_z["Ex"]) ** 2
+    + np.absolute(farfields_z["Ey"]) ** 2
+    + np.absolute(farfields_z["Ez"]) ** 2
+)
+
+# Plot the intensity data and save the result to disk.
+fig, ax = plt.subplots(ncols=2)
+
+ax[0].semilogy(np.linspace(0, size_r_um - pml_um, intensity_r.size), intensity_r, "bo-")
+ax[0].set_xlim(-2, 20)
+ax[0].set_xticks(np.arange(0, 25, 5))
+ax[0].grid(True, axis="y", which="both", ls="-")
+ax[0].set_xlabel(r"$r$ coordinate (μm)")
+ax[0].set_ylabel(r"energy density of far fields, |E|$^2$")
+
+ax[1].semilogy(
+    np.linspace(
+        focal_length_um - 0.5 * scan_length_z_um,
+        focal_length_um + 0.5 * scan_length_z_um,
+        intensity_z.size,
+    ),
+    intensity_z,
+    "bo-",
+)
+ax[1].grid(True, axis="y", which="both", ls="-")
+ax[1].set_xlabel(r"$z$ coordinate (μm)")
+ax[1].set_ylabel(r"energy density of far fields, |E|$^2$")
+
+fig.suptitle(f"binary-phase zone plate with focal length $z$ = {focal_length_um} μm")
+
+if mp.am_master():
+    fig.savefig("zone_plate_farfields.png", dpi=200, bbox_inches="tight")
