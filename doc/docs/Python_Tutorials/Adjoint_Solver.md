@@ -804,6 +804,17 @@ if __name__ == "__main__":
         )
 ```
 
+Binary Grating as a Level Set
+-----------------------------
+
+This is a demonstration of computing the gradient of a level set using the adjoint solver.
+
+![](../images/levelset_gradient_backpropagation.png#center)
+
+![](../images/levelset_jacobian_matrix.png#center)
+
+![](../images/levelset_weights_and_jacobian.png#center)
+
 Compact Notebook Tutorials of Basic Features
 --------------------------------------------
 
