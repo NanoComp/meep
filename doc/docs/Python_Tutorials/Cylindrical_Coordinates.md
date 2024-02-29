@@ -463,7 +463,7 @@ It is also possible to launch an oblique incident planewave in cylindrical coord
 Given the decomposition of planewave into the sum of different current sources at each $m$, we can run individual simulations at each $m$ with their corresponding source amplitudes and record the relevant physical quantities. For quantities such fields, linearity implies that we can simply sum the results from each simulations; for quantities such as flux, orthogonality implies cross terms will be zero, and we can again simply sum the results. Moreover, simulations
 at each $m$ values are embarrassingly parallel so they can be run simultaneously.
 
-On the other hand, because the source amplitudes $J_r(r,m)$ and $J_\phi(r,m)$ are generally not constant and extend to infinity, we have to make sure the sources are wide enough to accurately approximate the actual incident wave.
+On the other hand, because the source amplitudes $J_r(r,m)$ and $J_\phi(r,m)$ are generally not constant and extend to infinity, we used the principle of equivalence (for reference, see [Electromagnetic wave source condition](https://arxiv.org/pdf/1301.5366.pdf)) to create equivalent sources that are of finite sizes.
 
 We present an example below that calculates the scattered flux of a sphere. Because of the spherical symmetry, incidence at different angle should have identical results. We can thus use this feature to check our approach. Note that because of the axial symmetry in the cylindrical coordinates, we cannot distinguish different azimuthal angles but we can distinguish different polar angles. We thus simply choose our incidence to be of form $E_ye^{ik_xx}$, and we can vary the angle of incidence by varying $k_x$.
 
@@ -472,111 +472,135 @@ import numpy as np
 from scipy import special
 import meep as mp
 mp.verbosity(0)
-r = 0.5  # radius of sphere
+r = 0.6  # size of flux box
+cyl_r = 0.5 # radius of sphere
 h = 2 * r  # height/diameter of sphere
 
-wvl = 2 * np.pi * r / 4
+wvl = 2 * np.pi * cyl_r / 4
 frq_cen = 1 / wvl
 dfrq = 0.2
 nfrq = 1
-resolution, dair_fac, mrange = 50, 20, 4
+resolution, mrange = 50, 5
 dpml = 0.5 * wvl
 dair = 1.0 * wvl
 pml_layers = [mp.PML(thickness=dpml)]
-sr = r + dair_fac*dair + dpml
+sr = r + dair + dpml
 sz = dpml + dair + h + dair + dpml
 cell_size = mp.Vector3(sr, 0, sz)
 n_cyl = 2.0
-geometry = [mp.Sphere(material=mp.Medium(index=n_cyl), center=mp.Vector3(), radius=r)]
+geometry = [mp.Sphere(material=mp.Medium(index=n_cyl), center=mp.Vector3(), radius=cyl_r)]
 
 k_cen = 2 * np.pi * frq_cen
-alpha_list = [0, np.pi/36, np.pi/24, np.pi/12]
+alpha_list = [0, np.pi/36, np.pi/24, np.pi/18, np.pi/12]
 alpha_range = len(alpha_list)
 
-scatt_flux_m = np.zeros((alpha_range, 2*mrange+1))
+
+src_size_tb = 2*r
+src_size_side = 3*r
+src_center_top = mp.Vector3(src_size_tb/2, 0, src_size_side/2)
+src_center_bottom = mp.Vector3(src_size_tb/2, 0, -src_size_side/2)
+src_center_side = mp.Vector3(src_size_tb, 0, 0)
+
+scatt_flux_m = np.zeros((alpha_range, mrange+1))
 for alpha_i in range(alpha_range):
-  alpha = alpha_list[alpha_i]
-  kxy, kz = k_cen*np.sin(alpha), k_cen * np.cos(alpha)
+    alpha = alpha_list[alpha_i]
+    kxy, kz = k_cen*np.sin(alpha), k_cen * np.cos(alpha)
+    amp_side = lambda v3: np.exp(1j * kz*(v3.z+src_size_side/2))
+    phase_top = amp_side(src_center_top)
 
-  for cur_m in range(-mrange, mrange+1):
-    coeff_p1 = 0.5 * (1j)**(cur_m+1)
-    coeff_m1 = 0.5 * (1j)**(cur_m-1)
+    for cur_m in range(0, mrange+1):
+        if alpha!=0 or cur_m == 1:
+            coeff_p1 = 0.5 * (1j)**(cur_m+1)
+            coeff_m1 = 0.5 * (1j)**(cur_m-1)
 
-    src_cen = 0.5 * (r + dair_fac*dair)
-    Jpm = lambda v3: coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) + coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
-    Jrm = lambda v3: 1j * coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) - 1j * coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
+            src_cen = src_size_tb/2
+            Jpm = lambda v3: coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) + coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
+            Jrm = lambda v3: 1j * coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) - 1j * coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
+            Jside = (1j)**cur_m * special.jv(cur_m, kxy*src_size_tb) * kxy/k_cen
 
-    sources = [
-        mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),
-            component=mp.Er, center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
-            size=mp.Vector3(r + dair_fac*dair), amp_func = Jrm),
-        mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),
-            component=mp.Ep, center=mp.Vector3(src_cen, 0, -0.5 * sz + dpml),
-            size=mp.Vector3(r + dair_fac*dair), amp_func = Jpm),]
 
-    sim = mp.Simulation(
-        cell_size=cell_size,
-        boundary_layers=pml_layers,
-        resolution=resolution,
-        sources=sources,
-        dimensions=mp.CYLINDRICAL,
-        m=cur_m,
-        force_complex_fields = True,
-        accurate_fields_near_cylorigin=True,
-        Courant=0.2)
+            sourcesp = [
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Er, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -kz/k_cen, amp_func = Jrm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ep, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -kz/k_cen, amp_func = Jpm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hr, center=src_center_bottom,size=mp.Vector3(src_size_tb), amp_func = Jpm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hp, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -1, amp_func = Jrm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Er, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top*kz/k_cen, amp_func = Jrm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ep, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top*kz/k_cen, amp_func = Jpm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hr, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = -phase_top, amp_func = Jpm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hp, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top, amp_func = Jrm),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ez, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = -Jrm(src_center_top)*kz/k_cen, amp_func = amp_side),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hz, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = Jpm(src_center_top), amp_func = amp_side),
+                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ep, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = Jside, amp_func = amp_side),
+                ]
 
-    box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
-        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
-    box_z2 = sim.add_flux(frq_cen, dfrq, nfrq,
-        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, +0.5 * h), size=mp.Vector3(r)))
-    box_r = sim.add_flux(frq_cen, dfrq, nfrq,
-        mp.FluxRegion(center=mp.Vector3(r), size=mp.Vector3(z=h)))
 
-    sim.run(until_after_sources=10)
+            sim = mp.Simulation(
+                cell_size=cell_size,
+                boundary_layers=pml_layers,
+                resolution=resolution,
+                sources=sourcesp,
+                dimensions=mp.CYLINDRICAL,
+                m=cur_m,
+                force_complex_fields = True,
+                accurate_fields_near_cylorigin=True,
+                Courant=min(0.5, 1/(abs(cur_m)+0.5)))
 
-    freqs = mp.get_flux_freqs(box_z1)
-    box_z1_data = sim.get_flux_data(box_z1)
-    box_z2_data = sim.get_flux_data(box_z2)
-    box_r_data = sim.get_flux_data(box_r)
-    box_z1_flux0 = mp.get_fluxes(box_z1)
+            box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
+                mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
+            box_z2 = sim.add_flux(frq_cen, dfrq, nfrq,
+                mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, +0.5 * h), size=mp.Vector3(r)))
+            box_r = sim.add_flux(frq_cen, dfrq, nfrq,
+                mp.FluxRegion(center=mp.Vector3(r), size=mp.Vector3(z=h)))
 
-    sim.reset_meep()
 
-    sim = mp.Simulation(
-        cell_size=cell_size,
-        geometry=geometry,
-        boundary_layers=pml_layers,
-        resolution=resolution,
-        sources=sources,
-        dimensions=mp.CYLINDRICAL,
-        m=cur_m,
-        force_complex_fields = True,
-        accurate_fields_near_cylorigin=True,
-        Courant=0.2)
+            sim.run(until_after_sources=10)
 
-    box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
-        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
-    box_z2 = sim.add_flux(frq_cen, dfrq, nfrq,
-        mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, +0.5 * h), size=mp.Vector3(r)))
-    box_r = sim.add_flux(frq_cen, dfrq, nfrq,
-        mp.FluxRegion(center=mp.Vector3(r), size=mp.Vector3(z=h)))
+            freqs = mp.get_flux_freqs(box_z1)
+            box_z1_data = sim.get_flux_data(box_z1)
+            box_z2_data = sim.get_flux_data(box_z2)
+            box_r_data = sim.get_flux_data(box_r)
+            box_z1_flux0 = mp.get_fluxes(box_z1)
 
-    sim.load_minus_flux_data(box_z1, box_z1_data)
-    sim.load_minus_flux_data(box_z2, box_z2_data)
-    sim.load_minus_flux_data(box_r, box_r_data)
 
-    sim.run(until_after_sources=100)
+            sim.reset_meep()
 
-    box_z1_flux = mp.get_fluxes(box_z1)
-    box_z2_flux = mp.get_fluxes(box_z2)
-    box_r_flux = mp.get_fluxes(box_r)
+            sim = mp.Simulation(
+                cell_size=cell_size,
+                geometry=geometry,
+                boundary_layers=pml_layers,
+                resolution=resolution,
+                sources=sourcesp,
+                dimensions=mp.CYLINDRICAL,
+                m=cur_m,
+                force_complex_fields = True,
+                accurate_fields_near_cylorigin=True,
+                Courant=min(0.5, 1/(abs(cur_m)+0.5)))
 
-    scatt_flux_m[alpha_i, cur_m + mrange] = box_z1_flux[0] - box_z2_flux[0] - box_r_flux[0]
-    sim.reset_meep()
+            box_z1 = sim.add_flux(frq_cen, dfrq, nfrq,
+                mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, -0.5 * h), size=mp.Vector3(r)))
+            box_z2 = sim.add_flux(frq_cen, dfrq, nfrq,
+                mp.FluxRegion(center=mp.Vector3(0.5 * r, 0, +0.5 * h), size=mp.Vector3(r)))
+            box_r = sim.add_flux(frq_cen, dfrq, nfrq,
+                mp.FluxRegion(center=mp.Vector3(r), size=mp.Vector3(z=h)))
+
+
+            sim.load_minus_flux_data(box_z1, box_z1_data)
+            sim.load_minus_flux_data(box_z2, box_z2_data)
+            sim.load_minus_flux_data(box_r, box_r_data)
+
+
+            sim.run(until_after_sources=100)
+
+            box_z1_flux = mp.get_fluxes(box_z1)
+            box_z2_flux = mp.get_fluxes(box_z2)
+            box_r_flux = mp.get_fluxes(box_r)
+
+            scatt_flux_m[alpha_i, cur_m] = box_z1_flux[0] - box_z2_flux[0] - box_r_flux[0]
+            sim.reset_meep()
 
 scatt_power_m = np.zeros((alpha_range, mrange+1))
 for i in range(mrange+1):
-  scatt_power_m[:,i] = - np.sum(scatt_flux_m[:,(mrange-i):(mrange+i+1)], axis=1)
+  scatt_power_m[:,i] = - 2*np.sum(scatt_flux_m[:,0:(i+1)], axis=1) + scatt_flux_m[:,0]
 
 print(scatt_power_m)
 
