@@ -1407,22 +1407,22 @@ class Animate2D:
         """
         Construct an `Animate2D` object.
 
-        + **`sim=None`** — Optional Simulation object (this has no effect, and is included for backwards compatibility).
+        + **`sim`** — Optional `Simulation` object (this has no effect, and is included for backwards compatibility).
 
-        + **`fields=None`** — Optional Field component to record at each time instant.
+        + **`fields`** — Optional field component to record at each time instant.
 
-        + **`f=None`** — Optional `matplotlib` figure object that the routine will update
+        + **`f`** — Optional `matplotlib` figure object that the routine will update
           on each call. If not supplied, then a new one will be created upon
           initialization.
 
-        + **`realtime=False`** — Whether or not to update a figure window in realtime as
+        + **`realtime`** — Whether or not to update a figure window in realtime as
           the simulation progresses. Disabled by default.
 
-        + **`normalize=False`** — Records fields at each time step in memory in a NumPy
+        + **`normalize`** — Records fields at each time step in memory in a NumPy
           array and then normalizes the result by dividing by the maximum field value at a
           single point in the cell over all the time snapshots.
 
-        + **`plot_modifiers=None`** — A list of functions that can modify the figure's
+        + **`plot_modifiers`** — A list of functions that can modify the figure's
           `axis` object. Each function modifier accepts a single argument, an `axis`
           object, and must return that same axis object. The following modifier changes
           the `xlabel`:
@@ -1435,9 +1435,9 @@ class Animate2D:
           plot_modifiers = [mod1]
         ```
 
-        + **`update_epsilon=False`** — Redraw epsilon on each call. (Useful for topology optimization)
+        + **`update_epsilon`** — Redraw epsilon on each call. (Useful for topology optimization)
 
-        + **`nb=False`** — For the animation work in a Jupyter notebook, set to True and use the cell magic:
+        + **`nb`** — For the animation work in a Jupyter notebook, set to True and use the cell magic:
             `%matplotlib ipympl`
         + **`**customization_args`** — Customization keyword arguments passed to
           `plot2D()` (i.e. `labels`, `eps_parameters`, `boundary_parameters`, etc.)

@@ -65,7 +65,7 @@ For a wavelength-dependent, purely-real permittivity (i.e., with no loss) which 
 
 $$\varepsilon(\lambda) = 1 + \sum_n \frac{B_n \lambda^2}{\lambda^2 - C_n}$$
 
-where $\lambda$ is the vacuum wavelength, each term containing two coefficients ($B_n$ and $C_n$) can be directly transferred to a Lorentzian polarization field using a simple substitution of variables: $\omega_n=1/\sqrt{C_n}$, $\gamma_n=0$, and $\sigma_n=B_n$. Several examples of importing Sellmeier coefficients from published fitting data including [germanium](https://github.com/NanoComp/meep/blob/master/python/materials.py#L884-L901) (Ge) and [gallium nitride](https://github.com/NanoComp/meep/blob/master/python/materials.py#L1162-L1188) (GaN) are provided in the [Materials Library](#materials-library).
+where $\lambda$ is the vacuum wavelength, each term containing two coefficients ($B_n$ and $C_n$) can be directly transferred to a Lorentzian polarization field using a simple substitution of variables: $\omega_n=1/\sqrt{C_n}$, $\gamma_n=0$, and $\sigma_n=B_n$. Several examples of importing Sellmeier coefficients from published fitting data including [germanium](https://github.com/NanoComp/meep/blob/master/python/materials.py#L1046-L1065) (Ge) and [gallium nitride](https://github.com/NanoComp/meep/blob/master/python/materials.py#L1460-L1500) (GaN) are provided in the [Materials Library](#materials-library).
 
 Numerical Stability
 -------------------

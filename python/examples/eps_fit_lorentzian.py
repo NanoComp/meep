@@ -110,6 +110,9 @@ if __name__ == "__main__":
     idx_end = end_idx[0][-1] + 1
 
     # The fitting function is ε(f) where f is the frequency, rather than ε(λ).
+    # Note: an equally spaced grid of wavelengths results in the larger
+    #       wavelengths having a finer frequency grid than smaller ones.
+    #       This feature may impact the accuracy of the fit.
     freqs = 1000 / wl  # units of 1/μm
     freqs_reduced = freqs[idx_start:idx_end]
     wl_reduced = wl[idx_start:idx_end]
