@@ -4142,8 +4142,9 @@ class Simulation:
         direction: int = mp.AUTOMATIC,
     ) -> NamedTuple:
         """
-        Given a flux object and list of band indices (integers) `bands` or a `DiffractedPlanewave` object,
-        return a `namedtuple` with the following fields:
+        Given a flux object and either a list of indices `bands` (starts at one)
+        or a `DiffractedPlanewave` object, return a `namedtuple` with the
+        following fields:
 
         + `alpha`: the complex eigenmode coefficients as a 3d NumPy array of size
           (`len(bands)`, `flux.nfreqs`, `2`). The last/third dimension refers to modes
