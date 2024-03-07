@@ -9,7 +9,7 @@ The [near-to-far field transformation](../Python_User_Interface.md#near-to-far-f
 Radiation Pattern of an Antenna
 -------------------------------
 
-In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna in free space. This involves computing the far fields of an electric-current point dipole emitter in vacuum. The source is placed at the center of a 2D cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways from *closed* surfaces: (1) sides of a square and (2) circumference of a circle, having a length/radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal polarizations of the input source.
+In this example, we compute the [radiation pattern](https://en.wikipedia.org/wiki/Radiation_pattern) of an antenna in free space. The calculation involves computing the far fields of an electric-current point dipole emitter in vacuum. The source is placed at the center of a 2D cell surrounded by PML. The near fields are obtained on a bounding box defined along the edges of the non-PML region. The far fields are computed in two ways from *closed* surfaces: (1) sides of a square and (2) circumference of a circle, having a length or radius many times larger than the source wavelength and lying beyond the cell. From both the near and far fields, we will also compute the total outgoing Poynting flux and demonstrate that they are equivalent. Results will be shown for three orthogonal dipole orientations and verified using antenna theory.
 
 The simulation geometry is shown in the following schematic.
 
@@ -38,7 +38,7 @@ pml_layers = [mp.PML(dpml)]
 
 fcen = 1.0
 df = 0.4
-src_cmpt = mp.Ez
+src_cmpt = mp.Ex
 sources = [mp.Source(src=mp.GaussianSource(fcen,fwidth=df),
                     center=mp.Vector3(),
                     component=src_cmpt)]
@@ -52,6 +52,8 @@ elif src_cmpt == mp.Ey:
 elif src_cmpt == mp.Ez:
     symmetries = [mp.Mirror(mp.X,phase=+1),
                   mp.Mirror(mp.Y,phase=+1)]
+else:
+    symmetries = []
 
 sim = mp.Simulation(cell_size=cell,
                     resolution=resolution,
@@ -119,7 +121,7 @@ far_flux_box = (nearfield_box.flux(mp.Y,
                                    res_ff)[0])
 ```
 
-For the second of two cases, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally-spaced points along the circumference of a circle with radius of 1 mm. The six far field components ($E_x$, $E_y$, $E_z$, $H_x$, $H_y$, $H_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where $P_x$ and $P_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2d simulation. The total flux is computed and the three flux values are displayed.
+For the second of two cases, we use the `get_farfield` routine to compute the far fields by looping over a set of 100 equally spaced points along the circumference of a circle with radius of 1 mm. The six far field components ($E_x$, $E_y$, $E_z$, $H_x$, $H_y$, $H_z$) are stored as separate arrays of complex numbers. From the far fields at each point $\mathbf{r}$, we compute the outgoing or radial flux: $\sqrt{P_x^2+P_y^2}$, where $P_x$ and $P_y$ are the components of the Poynting vector $\mathbf{P}(\mathbf{r})=(P_x,P_y,P_z)=\mathrm{Re}\, \mathbf{E}(\mathbf{r})^*\times\mathbf{H}(\mathbf{r})$. Note that $P_z$ is always 0 since this is a 2D simulation. The total flux is computed and the three flux values are displayed.
 
 ```py
 npts = 100  # number of points in [0,2*pi) range of angles
@@ -131,30 +133,49 @@ for n in range(npts):
     ff = sim.get_farfield(nearfield_box,
                           mp.Vector3(r*math.cos(angles[n]),
                                      r*math.sin(angles[n])))
-    E[n,:] = [np.conj(ff[j]) for j in range(3)]
+    E[n,:] = [ff[j] for j in range(3)]
     H[n,:] = [ff[j+3] for j in range(3)]
 
-Px = np.real(E[:,1]*H[:,2]-E[:,2]*H[:,1])
-Py = np.real(E[:,2]*H[:,0]-E[:,0]*H[:,2])
-Pr = np.sqrt(np.square(Px)+np.square(Py))
+Px = np.real(np.conj(E[:, 1]) * H[:, 2] - np.conj(E[:, 2]) * H[:, 1])
+Py = np.real(np.conj(E[:, 2]) * H[:, 0] - np.conj(E[:, 0]) * H[:, 2])
+Pr = np.sqrt(np.square(Px) + np.square(Py))
 
 # integrate the radial flux over the circle circumference
 far_flux_circle = np.sum(Pr)*2*np.pi*r/len(Pr)
 
 print("flux:, {:.6f}, {:.6f}, {:.6f}".format(near_flux,far_flux_box,far_flux_circle))
 
-ax = plt.subplot(111, projection='polar')
+# Analytic formulas for the radiation pattern as the Poynting vector
+# of an electric dipole in vacuum. From Section 4.2 "Infinitesimal Dipole"
+# of Antenna Theory: Analysis and Design, 4th Edition (2016) by C. Balanis.
+if src_cmpt == mp.Ex:
+    flux_theory = np.sin(angles) ** 2
+elif src_cmpt == mp.Ey:
+    flux_theory = np.cos(angles) ** 2
+elif src_cmpt == mp.Ez:
+    flux_theory = np.ones((npts,))
+
+fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
 ax.plot(angles,Pr/max(Pr),'b-')
 ax.set_rmax(1)
 ax.set_rticks([0,0.5,1])
 ax.grid(True)
 ax.set_rlabel_position(22)
-plt.show()
+ax.legend()
+
+if mp.am_master():
+    fig.savefig(
+        f"radiation_pattern_{mp.component_name(src_cmpt)}.png",
+        dpi=150,
+        bbox_inches="tight",
+    )
 ```
 
 By [Poynting's theorem](https://en.wikipedia.org/wiki/Poynting%27s_theorem), the total outgoing flux obtained by integrating around a *closed* surface should be the same whether it is calculated from the near or far fields (unless there are sources or absorbers in between). The flux of the near fields for the $J_z$ source is 2.456196 and that for the far fields is 2.458030 (box) and 2.457249 (circle). The ratio of near- to far-field (circle) flux is 0.999571. Similarly, for the $J_x$ source, the values are 1.227786 (near-field), 1.227651 (far-field box), and 1.227260 (far-field circle). The ratio of near- to far-field (circle) flux is 1.000429. The slight differences in the flux values are due to discretization effects and will decrease as the resolution is increased.
 
-Finally, we plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly-scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src_cmpt` of $E_x$, $E_y$, and $E_z$. As expected, the $J_x$ and $J_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while $J_z$ has a monopole pattern.
+From antenna theory, a linearly polarized dipole with orientation along $\theta = 0^{\circ}$ produces a $\sin^2(\theta)$ radiation pattern in 2D. This contains two lobes (a "dipole") at $\theta = 90^{\circ}$ and $\theta = 270^{\circ}$. The same radiation pattern in 3D resembles a "donut." For reference, see Section 4.2 "Infinitesimal Dipole" of Antenna Theory: Analysis and Design, 4th Edition (2016) by C Balanis.
+
+Finally, we plot the radial flux normalized by its maximum value over the entire interval to obtain a range of values between 0 and 1. These are shown below in the linearly scaled, polar-coordinate plots. The three figures are obtained using separate runs involving a `src_cmpt` of $E_x$, $E_y$, and $E_z$. As expected, the $J_x$ and $J_y$ sources produce [dipole](https://en.wikipedia.org/wiki/Electric_dipole_moment) radiation patterns while $J_z$ has a monopole pattern. The radiation pattern from the simulation agrees with the analytic result for all three dipole orientations.
 
 ```py
 ax = plt.subplot(111, projection='polar')
@@ -633,6 +654,337 @@ if __name__ == "__main__":
         f"total_flux:, {near_flux:.5f} (near), {far_flux:.5f} (far), "
         f"{err:.5f} (error)"
     )
+```
+
+### Extraction Efficiency of a Collection of Dipoles in a Disc
+
+[Tutorial/Radiation Pattern of a Disc in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-a-disc-in-cylindrical-coordinates) demonstrated the procedure for computing the radiation pattern of a *single* dipole (actually a "ring" current source with angular dependence $e^{im\phi}$). [Tutorial/Nonaxisymmetric Dipole Sources](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) described the method for modeling a point dipole at $r > 0$ in cylindrical coordinates using a Fourier-series expansion of the fields in $\phi$. [Tutorial/Extraction Efficiency of a Light-Emitting Diode](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) described the procedure for computing the extraction efficiency of a dipole at $r = 0$. These three demonstrations can be combined to compute the extraction efficiency for a point dipole *anywhere* in the cylindrical cell. Computing the extraction efficiency of an actual light-emitting diode (LED), however, involves a collection of spatially incoherent dipole emitters. [Tutorial/Stochastic Dipole Emission in Light Emitting Diodes](Custom_Source.md#stochastic-dipole-emission-in-light-emitting-diodes) described a method for computing the emission of a collection of dipoles using a series of single-dipole calculations and then averaging the emission profiles in post processing. The example used a 2D simulation involving a 1D binary grating (or photonic crystal). This tutorial demonstrates how this approach for modeling spatially incoherent dipoles can be extended to cylindrical coordinates for structures with rotational symmetry.
+
+The example uses the same setup as the [previous tutorial](#radiation-pattern-of-a-disc-in-cylindrical-coordinates) involving a dielectric disc above a lossless-reflector ground plane. The dipoles are arranged on a line extending from $r = 0$ to $r = R$ where $R$ is the disc radius. The height of the dipoles ($z$ coordinate) within the disc is fixed. The radiation pattern $P(r,\theta)$ for a dipole at $r > 0$ is computed using a Fourier-series expansion in $\phi$. The *total* radiation pattern $P(\theta)$ for an ensemble of incoherent dipoles is just the integral of the individual dipole powers, which we can approximate by a sum:
+
+$$P(\theta) \approx \int_0^R P(r,\theta) s(r) 2\pi rdr = \sum_{n=0}^{N-1} P(r_n,\theta) s(r_n) 2\pi r_n \Delta r$$,
+
+where $s(r)$ is a weighting function necessary for ensuring equal contribution from all dipoles relative to the dipole at $r = 0$. Note that a dipole placed exactly at $r = 0$ would have *zero* contribution to the total radiation pattern because its area ($2\pi rdr$) is zero. In this example, the $E_r$ dipole at $r = 0$ is actually placed at $r_0 = 1.5\Delta r$ due to an [interpolation bug](https://github.com/NanoComp/meep/issues/2704). $s(r)$ can be determined empirically by computing the radiation pattern in vacuum for a set of dipoles at different radial positions. The radiation pattern of an $E_r$ dipole in vacuum is $cos^2(\theta) + 1$ which is independent of its position in $r$. This criteria is used to obtain $s(r_0) = 1$ and $s(r > 0) = 0.5(r_0/r)^2$. (A $1/r^2$ dependence is expected because a cylindrical delta function should really include a $1/r$ factor in order to integrate to 1 with $\int r \, dr$, but Meep currently does not include this $1/r$ in sources that have zero radial width, and power goes like the square of the current amplitude—therefore, we must include an additional $1/r^2$ factor to obtain the correct relative power for dipoles at different radii.) This weighting function is also used to sum the flux emitted by each dipole (obtained using using the LDOS feature). This quantity is the denominator in the expression for the extraction efficiency.
+
+This figure shows the radiation pattern from $N=11$ dipoles with $\lambda$ of 1.0 $\mu$m in the middle of a disc of height 0.29 $\mu$m, radius 1.2 $\mu$m, and refractive index 2.4. The extraction efficiency for this setup is 0.933517. The runtime is about two hours using two Intel 4.2 GHz Xeon cores.
+
+![](../images/disc_dipoles_radiation_pattern.png#center)
+
+The simulation script is in [examples/disc_extraction_efficiency.py](https://github.com/NanoComp/meep/blob/master/python/examples/disc_extraction_efficiency.py).
+
+
+```py
+import math
+from typing import Tuple
+
+import matplotlib.pyplot as plt
+import meep as mp
+import numpy as np
+
+
+RESOLUTION_UM = 50
+WAVELENGTH_UM = 1.0
+N_DISC = 2.4
+DISC_RADIUS_UM = 1.2
+DISC_THICKNESS_UM = 0.7 * WAVELENGTH_UM / N_DISC
+NUM_FARFIELD_PTS = 200
+FARFIELD_RADIUS_UM = 1e6 * WAVELENGTH_UM
+NUM_DIPOLES = 11
+
+farfield_angles = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
+
+
+def plot_radiation_pattern_polar(radial_flux: np.ndarray):
+    """Plots the radiation pattern in polar coordinates.
+
+    Args:
+      radial_flux: radial flux of the far fields at each angle.
+    """
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
+    ax.plot(
+        farfield_angles,
+        radial_flux,
+        "b-",
+    )
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(0.5 * math.pi)
+    ax.set_thetalim(0, 0.5 * math.pi)
+    ax.grid(True)
+    ax.set_rlabel_position(22)
+    ax.set_ylabel("radial flux (a.u.)")
+    ax.set_title("radiation pattern in polar coordinates")
+
+    if mp.am_master():
+        fig.savefig(
+            "disc_radiation_pattern_polar.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+
+
+def plot_radiation_pattern_3d(radial_flux: np.ndarray):
+    """Plots the radiation pattern in 3d Cartesian coordinates.
+
+    Args:
+      radial_flux: radial flux of the far fields at each angle.
+    """
+    phis = np.linspace(0, 2 * np.pi, NUM_FARFIELD_PTS)
+
+    xs = np.zeros((NUM_FARFIELD_PTS, NUM_FARFIELD_PTS))
+    ys = np.zeros((NUM_FARFIELD_PTS, NUM_FARFIELD_PTS))
+    zs = np.zeros((NUM_FARFIELD_PTS, NUM_FARFIELD_PTS))
+
+    for i, theta in enumerate(farfield_angles):
+        for j, phi in enumerate(phis):
+            xs[i, j] = radial_flux[i] * np.sin(theta) * np.cos(phi)
+            ys[i, j] = radial_flux[i] * np.sin(theta) * np.sin(phi)
+            zs[i, j] = radial_flux[i] * np.cos(theta)
+
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(6, 6))
+    ax.plot_surface(xs, ys, zs, cmap="inferno")
+    ax.set_title("radiation pattern in 3d")
+    ax.set_box_aspect((np.amax(xs), np.amax(ys), np.amax(zs)))
+    ax.set_zlabel("radial flux (a.u.)")
+    ax.set(xticklabels=[], yticklabels=[])
+
+    if mp.am_master():
+        fig.savefig(
+            "disc_radiation_pattern_3d.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+
+
+def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray:
+    """Computes the radiation pattern from the near fields.
+
+    Args:
+      sim: a `Simulation` object.
+      n2f_mon: a `DftNear2Far` object returned by `Simulation.add_near2far`.
+
+    Returns:
+      The radiation pattern (radial flux at each angle) as a 1d array.
+    """
+    e_field = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
+    h_field = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
+    for n in range(NUM_FARFIELD_PTS):
+        far_field = sim.get_farfield(
+            n2f_mon,
+            mp.Vector3(
+                FARFIELD_RADIUS_UM * math.sin(farfield_angles[n]),
+                0,
+                FARFIELD_RADIUS_UM * math.cos(farfield_angles[n]),
+            ),
+        )
+        e_field[n, :] = [far_field[j] for j in range(3)]
+        h_field[n, :] = [far_field[j + 3] for j in range(3)]
+
+    flux_x = np.real(
+        np.conj(e_field[:, 1]) * h_field[:, 2] - np.conj(e_field[:, 2]) * h_field[:, 1]
+    )
+    flux_z = np.real(
+        np.conj(e_field[:, 0]) * h_field[:, 1] - np.conj(e_field[:, 1]) * h_field[:, 0]
+    )
+    flux_r = np.sqrt(np.square(flux_x) + np.square(flux_z))
+
+    return flux_r
+
+
+def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
+    """Computes the total flux from the radiation pattern.
+
+    Based on integrating the radiation pattern over solid angles
+    spanned by polar angles in the range of [0, π/2].
+
+    Args:
+      radial_flux: radial flux of the far fields at each angle.
+    """
+    dphi = 2 * math.pi
+    dtheta = farfield_angles[1] - farfield_angles[0]
+
+    total_flux = (
+        np.sum(radial_flux * np.sin(farfield_angles))
+        * FARFIELD_RADIUS_UM**2
+        * dtheta
+        * dphi
+    )
+
+    return total_flux
+
+
+def dipole_in_disc(zpos: float, rpos_um: float, m: int) -> Tuple[float, np.ndarray]:
+    """Computes the total flux and radiation pattern of a dipole in a disc.
+
+    Args:
+      zpos: height of dipole above ground plane as fraction of disc thickness.
+      rpos_um: radial position of dipole.
+      m: angular φ dependence of the fields exp(imφ).
+
+    Returns:
+      A 2-tuple of the total flux and the radiation pattern.
+    """
+    pml_um = 1.0  # thickness of PML
+    padding_um = 1.0  # thickness of air padding above disc
+    r_um = 4.0  # length of cell in r
+
+    frequency = 1 / WAVELENGTH_UM  # center frequency of source/monitor
+
+    # Runtime termination criteria.
+    dft_decay_threshold = 1e-4
+
+    size_r = r_um + pml_um
+    size_z = DISC_THICKNESS_UM + padding_um + pml_um
+    cell_size = mp.Vector3(size_r, 0, size_z)
+
+    boundary_layers = [
+        mp.PML(pml_um, direction=mp.R),
+        mp.PML(pml_um, direction=mp.Z, side=mp.High),
+    ]
+
+    src_pt = mp.Vector3(rpos_um, 0, -0.5 * size_z + zpos * DISC_THICKNESS_UM)
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(frequency, fwidth=0.05 * frequency),
+            component=mp.Er,
+            center=src_pt,
+        )
+    ]
+
+    geometry = [
+        mp.Block(
+            material=mp.Medium(index=N_DISC),
+            center=mp.Vector3(
+                0.5 * DISC_RADIUS_UM, 0, -0.5 * size_z + 0.5 * DISC_THICKNESS_UM
+            ),
+            size=mp.Vector3(DISC_RADIUS_UM, mp.inf, DISC_THICKNESS_UM),
+        )
+    ]
+
+    sim = mp.Simulation(
+        resolution=RESOLUTION_UM,
+        cell_size=cell_size,
+        dimensions=mp.CYLINDRICAL,
+        m=m,
+        boundary_layers=boundary_layers,
+        sources=sources,
+        geometry=geometry,
+        force_complex_fields=True
+    )
+
+    n2f_mon = sim.add_near2far(
+        frequency,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * r_um, 0, 0.5 * size_z - pml_um),
+            size=mp.Vector3(r_um, 0, 0),
+        ),
+        mp.FluxRegion(
+            center=mp.Vector3(
+                r_um, 0, 0.5 * size_z - pml_um - 0.5 * (padding_um + DISC_THICKNESS_UM)
+            ),
+            size=mp.Vector3(0, 0, padding_um + DISC_THICKNESS_UM),
+        ),
+    )
+
+    sim.run(
+        mp.dft_ldos(frequency, 0, 1),
+        until_after_sources=mp.stop_when_dft_decayed(
+            tol=dft_decay_threshold,
+        ),
+    )
+
+    delta_vol = 2 * np.pi * rpos_um / (RESOLUTION_UM**2)
+    dipole_flux = -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) * delta_vol
+
+    dipole_radiation_pattern = radiation_pattern(sim, n2f_mon)
+
+    return dipole_flux, dipole_radiation_pattern
+
+
+if __name__ == "__main__":
+    dipole_height = 0.5
+    dipole_rpos_um = np.linspace(0, DISC_RADIUS_UM, NUM_DIPOLES)
+    delta_rpos_um = DISC_RADIUS_UM / (NUM_DIPOLES - 1)
+
+    # 1. Er source at r = 0 requires a single simulation with m = ±1.
+
+    # An Er source at r = 0 needs to be slighty offset due to a bug.
+    # https://github.com/NanoComp/meep/issues/2704
+    dipole_rpos_um[0] = 1.5 / RESOLUTION_UM
+
+    m = -1
+    dipole_flux, dipole_radiation_pattern = dipole_in_disc(
+        dipole_height,
+        dipole_rpos_um[0],
+        m,
+    )
+
+    flux_total = dipole_flux * dipole_rpos_um[0] * delta_rpos_um
+    radiation_pattern_total = (
+        dipole_radiation_pattern * dipole_rpos_um[0] * delta_rpos_um
+    )
+
+    print(
+        f"dipole:, {dipole_rpos_um[0]:.4f}, "
+        f"{radiation_pattern_flux(dipole_radiation_pattern):.6f}"
+    )
+
+    # 2. Er source at r > 0 requires Fourier-series expansion of φ.
+
+    # Threshold flux to determine when to truncate expansion.
+    flux_decay_threshold = 1e-2
+
+    for rpos_um in dipole_rpos_um[1:]:
+        dipole_flux_total = 0
+        dipole_radiation_pattern_total = np.zeros(NUM_FARFIELD_PTS)
+        dipole_radiation_pattern_flux_max = 0
+        m = 0
+        while True:
+            dipole_flux, dipole_radiation_pattern = dipole_in_disc(
+                dipole_height, rpos_um, m
+            )
+            dipole_flux_total += dipole_flux * (1 if m == 0 else 2)
+            dipole_radiation_pattern_total += dipole_radiation_pattern * (
+                1 if m == 0 else 2
+            )
+
+            dipole_radiation_pattern_flux = radiation_pattern_flux(
+                dipole_radiation_pattern
+            )
+            print(
+                f"dipole:, {rpos_um:.4f}, {m}, " f"{dipole_radiation_pattern_flux:.6f}"
+            )
+
+            if dipole_radiation_pattern_flux > dipole_radiation_pattern_flux_max:
+                dipole_radiation_pattern_flux_max = dipole_radiation_pattern_flux
+
+            if (
+                m > 0
+                and (dipole_radiation_pattern_flux / dipole_radiation_pattern_flux_max)
+                < flux_decay_threshold
+            ):
+                break
+            else:
+                m += 1
+
+        dipole_position_scale_factor = 0.5 * (dipole_rpos_um[0] / rpos_um) ** 2
+        flux_total += (
+            dipole_flux_total * dipole_position_scale_factor *
+            rpos_um * delta_rpos_um
+        )
+        radiation_pattern_total += (
+            dipole_radiation_pattern_total * dipole_position_scale_factor *
+            rpos_um * delta_rpos_um
+        )
+
+    radiation_pattern_total_flux = radiation_pattern_flux(radiation_pattern_total)
+    extraction_efficiency = radiation_pattern_total_flux / flux_total
+    print(f"exteff:, {extraction_efficiency:.6f}")
+
+    radiation_pattern_scaled = radiation_pattern_total * FARFIELD_RADIUS_UM**2
+    plot_radiation_pattern_polar(radiation_pattern_scaled)
+    plot_radiation_pattern_3d(radiation_pattern_scaled)
 ```
 
 Focusing Properties of a Metasurface Lens

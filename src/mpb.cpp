@@ -1,4 +1,4 @@
-/* Copyright (C) 2005-2023 Massachusetts Institute of Technology
+/* Copyright (C) 2005-2024 Massachusetts Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -368,7 +368,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   if (where.dim != gv.dim || eig_vol.dim != gv.dim)
     meep::abort("invalid volume dimensionality in add_eigenmode_source");
 
-  if (!eig_vol.contains(where))
+  if (d != NO_DIRECTION && !eig_vol.contains(where))
     meep::abort("invalid grid_volume in get_eigenmode: "
                 "where must be in eig_vol");
 

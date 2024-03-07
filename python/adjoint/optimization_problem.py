@@ -10,7 +10,7 @@ from . import LDOS, DesignRegion, utils, ObjectiveQuantity
 
 
 class OptimizationProblem:
-    """Top-level class in the MEEP adjoint module.
+    """Top-level class in the Meep adjoint module.
 
     Intended to be instantiated from user scripts with mandatory constructor
     input arguments specifying the data required to define an adjoint-based
@@ -19,7 +19,7 @@ class OptimizationProblem:
     The class knows how to do one basic thing: Given an input vector
     of design variables, compute the objective function value (forward
     calculation) and optionally its gradient (adjoint calculation).
-    This is done by the __call__ method.
+    This is done using the __call__ method.
     """
 
     def __init__(
@@ -28,7 +28,7 @@ class OptimizationProblem:
         objective_functions: List[Callable],
         objective_arguments: List[ObjectiveQuantity],
         design_regions: List[DesignRegion],
-        frequencies: Optional[Union[float, List[float]]] = None,
+        frequencies: Optional[Union[np.ndarray, List[float]]] = None,
         fcen: Optional[float] = None,
         df: Optional[float] = None,
         nf: Optional[int] = None,
@@ -37,37 +37,46 @@ class OptimizationProblem:
         minimum_run_time: Optional[float] = 0,
         maximum_run_time: Optional[float] = None,
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
-        step_funcs: list = None,
+        step_funcs: Optional[List[Callable]] = None,
     ):
 
         """Initialize an instance of OptimizationProblem.
 
         Args:
-          sim: the corresponding Meep `Simulation` object that describes the
-            problem (e.g. sources, geometry)
-          objective_functions: list of differentiable functions (callable objects) whose arguments are
-            given by objective_arguments. The functions should take all of objective_arguments
-            as argument, even if not all of them are used in the functions.
-            For example, if we are interested in functions f(A,B) and g(B,C) of quantities A, B, C, then the
-            objective_functions list has to be [f1, g1] where f1 = lambda A, B, C: f(A,B) and g1 = lambda A, B, C: g(B,C);
-            and we have to specify arguments as [A,B,C]
-          objective_arguments: list of ObjectiveQuantity passed as arguments of objective functions
-          design_regions: list of DesignRegion to be optimized
-          frequencies: list of frequencies of interest in the problem. If not specified, then the list of frequencies
-            will be created from fcen, df, and nf: a list of size nf that goes from fcen-df/2 to fcen+df/2
-          fcen: center frequency
-          df: range of frequencies, i.e. maximum frequency -  minimum frequency
-          nf: number of frequencies
-          decay_by: an number used to specify the amount by which all the field components and frequencies
-            frequencies of every DFT object have to decay before simulation stops. Default is 1e-11.
-          decimation_factor: an integer used to specify the number of timesteps between updates of
-            updates of the DFT fields. The default is 0, at which the value is
-            automatically determined from the Nyquist rate of the bandwidth-limited
-            sources and the DFT monitor. It can be turned off by setting it to 1
-          minimum_run_time: a number ensures the minimum runtime for each simulation. Default is 0
-          maximum_run_time: a number caps the maximum runtime for each simulation
-          finite_difference_step: step size for calculation of finite difference gradients
-          step_funcs: list of step functions to be called at each timestep
+          simulation: the `meep.Simulation` object that describes the problem
+            (i.e., defining sources, geometry, boundary layers, etc).
+          objective_functions: list of differentiable functions (callable
+            objects) whose arguments are given by objective_arguments. The
+            functions should take all objective_arguments as arguments even if
+            not all of them are used by each function. For example, if we are
+            interested in functions f(A,B) and g(B,C) of quantities A, B, C,
+            then objective_functions must be [f1, g1] where
+            f1 = lambda A, B, C: f(A,B) and g1 = lambda A, B, C: g(B,C), and
+            objective_arguments must be [A, B, C].
+          objective_arguments: list of ObjectiveQuantity objects passed as
+            arguments to the objective_functions.
+          design_regions: list of DesignRegion objects to be optimized.
+          frequencies: array/list of frequencies of interest in the problem.
+            If not specified then the list of frequencies will be created from
+            fcen, df, and nf as a list of size nf that goes from fcen-df/2 to
+            fcen+df/2.
+          fcen: the center frequency.
+          df: the frequency width (i.e., maximum frequency - minimum frequency).
+          nf: number of frequencies.
+          decay_by: the threshold value by which all field components at each
+            frequency of every DFT object have to decay relative to their
+            maximum before the simulation is terminated. Default is 1e-11.
+          decimation_factor: an integer used to specify the number of timesteps
+            between updates of the DFT fields. The default is 0, at which the
+            value is automatically determined from the Nyquist rate of the
+            bandwidth-limited sources and the DFT monitors. Can be disabled by
+            setting it to 1.
+          minimum_run_time: the minimum runtime for each simulation. Default
+            is 0.
+          maximum_run_time: the maximum runtime for each simulation.
+          finite_difference_step: the step size for calculation of the
+            finite-difference gradients.
+          step_funcs: list of step functions to be called at each timestep.
         """
 
         self.step_funcs = step_funcs if step_funcs is not None else []
@@ -88,10 +97,18 @@ class OptimizationProblem:
         self.num_design_params = [ni.num_design_params for ni in self.design_regions]
         self.num_design_regions = len(self.design_regions)
 
-        # TODO typecheck frequency choices
         if frequencies is not None:
-            self.frequencies = frequencies
-            self.nf = np.array(frequencies).size
+            if isinstance(frequencies, (np.ndarray, List)):
+                self.frequencies = frequencies
+                if isinstance(frequencies, np.ndarray):
+                    self.nf = frequencies.size
+                else:
+                    self.nf = len(frequencies)
+            else:
+                raise TypeError(
+                    "frequencies argument of OptimizationProblem "
+                    "constructor must be a Numpy array or List."
+                )
         elif nf == 1:
             self.nf = nf
             self.frequencies = [fcen]
@@ -149,24 +166,31 @@ class OptimizationProblem:
         """Evaluate value and/or gradient of objective function.
 
         Args:
-            rho_vector: lists of design variables. Each list represents design variables
-              of one design region. The design is updated to the specified values; functions
-              and gradients will then be evaluated at this configuration of design variables.
-            need_value: whether forward evaluations are needed. Default is True.
-            need_gradient: whether adjoint and gradients evaluatiosn are needed. Default is True.
-            beta: the strength of projection of rho_vector. Default to None.
+          rho_vector: list of design weights (which is itself a list). Each
+            list in the list represents the design weights for one design
+            region. The design weights are updated to the specified values.
+            The objective functions and their gradients are then evaluated
+            using these design weights.
+          need_value: whether forward simulations for evaluating the objective
+            functions are necessary. Default is True.
+          need_gradient: whether adjoint simulations for evaluating the
+            gradients are necessary. Default is True.
+          beta: the strength (or "bias") of projecting the design weights in
+            rho_vector using a hyperbolic tangent function. Default is None.
 
         Returns:
-            A tuple (f0, gradient) where:
-            f0 is the list of objective functions values when design variables
-              are set to rho_vector
-            gradient is a list (over objective functions) of lists (over design regions) of 2d arrays
-              (design variables by frequencies) of derivatives. If there is only a single objective function,
-              the outer 1-element list is replaced by just that element, and similarly if there is only one design region
-              then those 1-element list are replaced by just those elements. In addition, if there is only one frequency
-              then the innermost array is squeezed to a 1d array.
-              For example, if there is only a single objective function, a single design region, and a single frequency,
-              then gradient is simply a 1d array of the derivatives.
+          A 2-tuple (f0, gradient) for which:
+            f0 is the list of values of the objective functions.
+            gradient is a list (over objective functions) of lists (over design
+            regions) of 2d arrays (design weights by frequencies) of
+            derivatives. If there is only a single objective function, the
+            outer 1-element list is replaced by just that element, and
+            similarly if there is only one design region then those 1-element
+            list are replaced by just those elements. In addition, if there is
+            only one frequency then the innermost array is squeezed to a 1d
+            array. For example, if there is only a single objective function,
+            a single design region, and a single frequency, then gradient is
+            simply a 1d array of the derivatives.
         """
         if rho_vector:
             self.update_design(rho_vector=rho_vector, beta=beta)
@@ -199,7 +223,7 @@ class OptimizationProblem:
         return self.f0, self.gradient
 
     def get_fdf_funcs(self) -> Tuple[Callable, Callable]:
-        """construct callable functions for objective function value and gradient
+        """Construct callable functions for objective functions and gradients.
 
         Returns
         -------
