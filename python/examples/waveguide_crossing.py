@@ -243,7 +243,7 @@ def nlopt_fom(
     if gradient.size > 0:
         gradient[:] = backprop_gradient
 
-    print("FOM: {}".format(np.real(f0)))
+    print(f"FOM: {np.real(f0)}")
     results.append(np.real(f0))
 
     return float(np.real(f0))
@@ -278,6 +278,7 @@ def run_shape_optimization(
     dy: float = DEFAULT_DESIGN_REGION_HEIGHT,
     waveguide_width: float = DEFAULT_WAVEGUIDE_WIDTH,
     output_filename_prefix: Optional[str] = None,
+    plot_results: bool = True,
 ):
     """Run shape optimization using a cross as a starting guess.
 
@@ -291,6 +292,7 @@ def run_shape_optimization(
         waveguide_width: Waveguide width in microns.
         output_filename_prefix: The filename prefix that will store the
             optimization results. If `None`, no file is saved.
+        plot_results: Whether or not to plot results.
 
     Returns:
         The design and FOM result arrays, along with the optimization problem
@@ -348,7 +350,8 @@ def run_shape_optimization(
     f0, _ = opt(need_gradient=False)
     results.append(np.real(f0))
 
-    _plot_optimization_results(data, results)
+    if plot_results:
+        _plot_optimization_results(data, results)
 
     # Save to disk
     if mp.am_really_master() and (output_filename_prefix is not None):
@@ -537,8 +540,9 @@ def analyze_gradient_convergence(
 
     # plot results
     plt.figure(figsize=(5.2, 2.5), constrained_layout=True)
-    plt.loglog(beta_range, without_smoothing, label="W/o smoothing")
-    plt.loglog(beta_range, with_smoothing, label="W/ smoothing")
+    plt.loglog(beta_range, without_smoothing, "o-", label="W/o smoothing")
+    plt.loglog(beta_range, with_smoothing, "o-", label="W/ smoothing")
+    plt.legend()
     plt.xlabel("β")
     plt.ylabel("|df/dx|")
     plt.show()
@@ -575,15 +579,15 @@ def analyze_FOM_convergence(
         resolution=resolution,
         maxeval=maxeval,
         use_smoothed_projection=False,
+        plot_results=False,
     )
     print("Running shape optimization WITH smoothing...")
-    (
-        _,
-        results_smoothed,
-        _,
-        _,
-    ) = run_shape_optimization(
-        beta=beta, resolution=resolution, maxeval=maxeval, use_smoothed_projection=True
+    (_, results_smoothed, _, _,) = run_shape_optimization(
+        beta=beta,
+        resolution=resolution,
+        maxeval=maxeval,
+        use_smoothed_projection=True,
+        plot_results=False,
     )
 
     plt.figure(figsize=(5.2, 2.0), constrained_layout=True)
@@ -604,8 +608,8 @@ if __name__ == "__main__":
         resolution=25.0, beta_evolution=[8, 32, np.inf], maxeval=10
     )
 
-    analyze_FOM_convergence(resolution=25, beta=64, maxeval=25)
+    analyze_FOM_convergence(resolution=30, beta=64, maxeval=25)
 
     analyze_gradient_convergence(
-        beta_range=[2, 4, 8, 25, 50, 100, 200, 400, 1000], resolution=20
+        beta_range=np.logspace(1, 3, base=10, num=10), resolution=20
     )
