@@ -262,7 +262,7 @@ def _plot_optimization_results(
     plt.ylabel("FOM")
     for k in range(len(samples)):
         plt.subplot(2, 4, 5 + k)
-        plt.imshow(data[samples[k]], cmap="binary")
+        plt.imshow(data[samples[k]], cmap="binary", vmin=0.0, vmax=1.0)
         plt.axis("off")
         plt.title(f"It. {samples[k]+1}")
     plt.tight_layout()
@@ -410,7 +410,7 @@ def run_topology_optimization(
     solver.set_maxeval(maxeval)
 
     # initial guess, which is just a uniform gray region
-    x0 = np.ones((Nx, Ny))
+    x0 = 0.5 * np.ones((Nx, Ny))
     x0 = mapping(x0)
 
     # Create empty datastructures we can use to log the results
@@ -443,6 +443,8 @@ def run_topology_optimization(
     opt.update_design([mapping(x0)])
     f0, _ = opt(need_gradient=False)
     results.append(np.real(f0))
+
+    _plot_optimization_results(data, results)
 
     # Save to disk
     if mp.am_really_master() and (output_filename_prefix is not None):
@@ -599,7 +601,7 @@ if __name__ == "__main__":
     run_shape_optimization(resolution=25.0, beta=np.inf, maxeval=30)
 
     run_topology_optimization(
-        resolution=10.0, beta_evolution=[8, 32, np.inf], maxeval=10
+        resolution=25.0, beta_evolution=[8, 32, np.inf], maxeval=10
     )
 
     analyze_FOM_convergence(resolution=25, beta=64, maxeval=25)

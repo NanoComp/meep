@@ -845,7 +845,9 @@ def smoothed_projection(
     )
 
     # Only apply smoothing to interfaces
-    x_projected_smoothed = (1 - fill_factor_eff) * x_minus_eff + (fill_factor_eff) * x_plus_eff
+    x_projected_smoothed = (1 - fill_factor_eff) * x_minus_eff + (
+        fill_factor_eff
+    ) * x_plus_eff
 
     return npa.where(
         needs_smoothing,
