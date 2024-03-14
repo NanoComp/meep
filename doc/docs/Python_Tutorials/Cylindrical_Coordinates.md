@@ -615,6 +615,12 @@ print(scatt_power_m)
 
 ```
 
+The resulting `scatt_power_m` array is a table where each row `scatt_power_m[j,:]` corresponds to one angle, and
+the columns `scatt_power_m[j,M]` is the sum of power contributions for `|m| ≤ M`.  For `M` sufficiently large,
+these sums become the same, because the scattering from a sphere is angle independent.  For `M=5` are slight (≈2%)
+discrepancies between angles due to primarily discretization errors (doubling the resolution more than halves this
+error).
+
 Focusing Properties of a Binary-Phase Zone Plate
 ------------------------------------------------
 
