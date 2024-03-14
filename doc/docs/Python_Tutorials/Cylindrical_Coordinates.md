@@ -458,14 +458,16 @@ As shown below, the results for the scattering cross section computed using cyli
 Scattering of Sphere with Oblique Planewave
 -------------------------------------------
 
-It is also possible to launch an oblique incident planewave in cylindrical coordinate by decomposing the planewave $A_xe^{ik_xx+ik_yy}\hat{x} + A_ye^{ik_xx+ik_yy}\hat{y}$ into $\sum_m (J_r(r, m)\hat{r} + J_\phi(r, m)\hat{\phi})e^{im\phi}$. The exact expressions of $J_r(r,m)$ and $J_\phi(r,m)$ are given [here](http://github.com/zlin-opt/axisym_meta3d_inverse_design/blob/master/Implementation_of_FDFD_with_Cylindrical_Coordinates.pdf) by Zin Lin. In the simplest case of normal incidence, $J_r(r,m)$ and $J_\phi(r,m)$ are nonzero only when $m = \pm 1$, as shown in the [previous tutorial](https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#scattering-cross-section-of-a-finite-dielectric-cylinder).
+It is also possible to launch an oblique incident planewave in cylindrical coordinate by decomposing the planewave $A_xe^{ik_xx+ik_yy}\hat{x} + A_ye^{ik_xx+ik_yy}\hat{y}$ into $\sum_m (J_r(r, m)\hat{r} + J_\phi(r, m)\hat{\phi})e^{im\phi}$ through [Jacobi-Anger expansion](https://en.wikipedia.org/wiki/Jacobi%E2%80%93Anger_expansion). The exact expressions of $J_r(r,m)$ and $J_\phi(r,m)$ are given [here](http://github.com/zlin-opt/axisym_meta3d_inverse_design/blob/master/Implementation_of_FDFD_with_Cylindrical_Coordinates.pdf) by Zin Lin. In the simplest case of normal incidence, $J_r(r,m)$ and $J_\phi(r,m)$ are nonzero only when $m = \pm 1$, as shown in the [previous tutorial](https://meep.readthedocs.io/en/latest/Python_Tutorials/Cylindrical_Coordinates/#scattering-cross-section-of-a-finite-dielectric-cylinder).
 
-Given the decomposition of planewave into the sum of different current sources at each $m$, we can run individual simulations at each $m$ with their corresponding source amplitudes and record the relevant physical quantities. For quantities such fields, linearity implies that we can simply sum the results from each simulations; for quantities such as flux, orthogonality implies cross terms will be zero, and we can again simply sum the results. Moreover, simulations
+Given the decomposition of planewave into the sum of different current sources at each $m$, we can run individual simulations at each $m$ with their corresponding source amplitudes and record the relevant physical quantities. For some quantities such as fields, linearity implies that we can simply sum the results from each simulations; for some other quantities such as flux, orthogonality implies cross terms will be zero, and we can again simply sum the results. Moreover, simulations
 at each $m$ values are embarrassingly parallel so they can be run simultaneously.
 
-On the other hand, because the source amplitudes $J_r(r,m)$ and $J_\phi(r,m)$ are generally not constant and extend to infinity, we used the principle of equivalence (for reference, see [Electromagnetic wave source condition](https://arxiv.org/pdf/1301.5366.pdf)) to create equivalent sources that are of finite sizes.
-
 We present an example below that calculates the scattered flux of a sphere. Because of the spherical symmetry, incidence at different angle should have identical results. We can thus use this feature to check our approach. Note that because of the axial symmetry in the cylindrical coordinates, we cannot distinguish different azimuthal angles but we can distinguish different polar angles. We thus simply choose our incidence to be of form $E_ye^{ik_xx}$, and we can vary the angle of incidence by varying $k_x$.
+
+On the other hand, because the source amplitudes $J_r(r,m)$ and $J_\phi(r,m)$ are generally not constant and extend to infinity, we used the principle of equivalence (for reference, see [Electromagnetic wave source condition](https://arxiv.org/pdf/1301.5366.pdf)) to create equivalent sources that are of finite sizes. Specifically, with the chosen incidence, the E fields in space are $E_ye^{ik_xx+ik_zz}$, and thus H fields can be computed by taking the curl; then Jacobi-Anger expansion can express the dependencies in $x$ and $y$ in terms of $m$ and $r$; afterwards, we created a box of sources surrounding the geometry and specify sources of amplitude $J = n \times H$ and $K = - n \times E$.
+
+Empirically, we found that the Courant factor has to scale as $1/(|m|+0.5)$ in cylindrical coordinate to maintain numerical stability. By default, Meep uses the same Courant factor but instead zeros out fields near axis for $|m| > 1 $. In this tutorial, we choose to scale the Courant factor accordingly and force Meep to use the actual fields near axis via `accurate_fields_near_cylorigin=True`.
 
 ```py
 import numpy as np
@@ -518,20 +520,20 @@ for alpha_i in range(alpha_range):
             Jrm = lambda v3: 1j * coeff_p1 * special.jv(cur_m+1, kxy * (v3.x+src_cen)) - 1j * coeff_m1 * special.jv(cur_m-1, kxy * (v3.x+src_cen))
             Jside = (1j)**cur_m * special.jv(cur_m, kxy*src_size_tb) * kxy/k_cen
 
-
+            src_t  = mp.GaussianSource(frq_cen, fwidth=dfrq)
             sourcesp = [
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Er, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -kz/k_cen, amp_func = Jrm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ep, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -kz/k_cen, amp_func = Jpm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hr, center=src_center_bottom,size=mp.Vector3(src_size_tb), amp_func = Jpm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hp, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -1, amp_func = Jrm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Er, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top*kz/k_cen, amp_func = Jrm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ep, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top*kz/k_cen, amp_func = Jpm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hr, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = -phase_top, amp_func = Jpm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hp, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top, amp_func = Jrm),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ez, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = -Jrm(src_center_top)*kz/k_cen, amp_func = amp_side),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Hz, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = Jpm(src_center_top), amp_func = amp_side),
-                mp.Source(mp.GaussianSource(frq_cen, fwidth=dfrq),component=mp.Ep, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = Jside, amp_func = amp_side),
-                ]
+                mp.Source(src_t,component=mp.Er, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -kz/k_cen, amp_func = Jrm),
+                mp.Source(src_t,component=mp.Ep, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -kz/k_cen, amp_func = Jpm),
+                mp.Source(src_t,component=mp.Hr, center=src_center_bottom,size=mp.Vector3(src_size_tb), amp_func = Jpm),
+                mp.Source(src_t,component=mp.Hp, center=src_center_bottom,size=mp.Vector3(src_size_tb), amplitude = -1, amp_func = Jrm),
+                mp.Source(src_t,component=mp.Er, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top*kz/k_cen, amp_func = Jrm),
+                mp.Source(src_t,component=mp.Ep, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top*kz/k_cen, amp_func = Jpm),
+                mp.Source(src_t,component=mp.Hr, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = -phase_top, amp_func = Jpm),
+                mp.Source(src_t,component=mp.Hp, center=src_center_top,size=mp.Vector3(src_size_tb), amplitude = phase_top, amp_func = Jrm),
+                mp.Source(src_t,component=mp.Ez, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = -Jrm(src_center_top)*kz/k_cen, amp_func = amp_side),
+                mp.Source(src_t,component=mp.Hz, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = Jpm(src_center_top), amp_func = amp_side),
+                mp.Source(src_t,component=mp.Ep, center=src_center_side,size=mp.Vector3(z=src_size_side), amplitude = Jside, amp_func = amp_side),
+            ]
 
 
             sim = mp.Simulation(
@@ -600,7 +602,7 @@ for alpha_i in range(alpha_range):
 
 scatt_power_m = np.zeros((alpha_range, mrange+1))
 for i in range(mrange+1):
-  scatt_power_m[:,i] = - 2*np.sum(scatt_flux_m[:,0:(i+1)], axis=1) + scatt_flux_m[:,0]
+    scatt_power_m[:,i] = - 2*np.sum(scatt_flux_m[:,0:(i+1)], axis=1) + scatt_flux_m[:,0]
 
 print(scatt_power_m)
 
