@@ -1357,6 +1357,15 @@ class Simulation:
           equivalent to taking MPB's `k_points` through its function
           `reciprocal->cartesian`.
 
+        + **`bfast_scaled_k` [`Vector3`]** — For pulsed sources at oblique incidence, a
+          fixed `k_point` results in the [various frequency components having different angles](Python_Tutorials/Basics.md##angular-reflectance-spectrum-of-a-planar-interface). To ensure all frequency
+          components of a source in a lossless medium with refractive index $n$ have the
+          same angle $\theta$ relative to e.g. the $z$ axis with rotation in the $xz$ plane
+          in a 3D cell with Bloch-periodic boundaries in $x$ and $y$ requires setting the 3-tuple
+          `bfast_scaled_k` to `(n\\sin(\theta), 0, 0)`. For stability, this also requires
+          setting the `Courant` parameter to be *less* than $(1 - \\sin(\theta)) / \\sqrt{D}$
+          where $D$ is the dimensionality of the cell.
+
         + **`kz_2d` [ `"complex"`, `"real/imag"`, or `"3d"` ]** — A 2d cell (i.e.,
           `dimensions=2`) combined with a `k_point` that has a *non-zero* component in $z$
           would normally result in a 3d simulation with complex fields. However, by
