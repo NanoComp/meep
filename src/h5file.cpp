@@ -47,6 +47,8 @@ typedef hssize_t start_t;
 
 #else
 typedef int hid_t;
+#define H5T_NATIVE_FLOAT 0
+#define H5T_NATIVE_DOUBLE 0
 #endif
 
 #define HID(x) (*((hid_t *)(x)))
