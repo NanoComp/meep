@@ -3,11 +3,12 @@ A collection of routines for use in topology optimization comprising
 convolution filters (kernels), projection operators, and morphological
 transforms.
 """
-import numpy as np
 import sys
+from typing import List, Tuple, Union
+
+import numpy as np
 from autograd import numpy as npa
 from scipy import signal, special
-from typing import List, Tuple, Union
 
 ArrayLikeType = Union[List, Tuple, np.ndarray]
 
@@ -817,7 +818,7 @@ def smoothed_projection(
             1,
         )
     )
-    fill_factor = (1 / (npa.pi * pixel_radius**2)) * (arccos_term - sqrt_term)
+    fill_factor = (1 / npa.pi) * (arccos_term - sqrt_term)
     fill_factor_eff = npa.where(
         needs_smoothing,
         fill_factor,

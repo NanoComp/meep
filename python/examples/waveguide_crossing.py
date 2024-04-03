@@ -1,12 +1,15 @@
-# waveguide_crossing.py Using meep's adjoint solver, designs a waveguide
-# crossing that maximizes transmission at a single frequency. Two approaches are
-# demonstrated: (1) start with the nominal crossing shape and perform shape
-# optimization via meep's smoothed projection feature; (2) run a full topology
-# optimization starting from an initial grayscale. Evolve the design until β=∞.
-#
-# Importantly, this particular example highlights some of the ways one can use
-# the novel smoothed projection function to perform both shape and topology
-# optimization.
+"""waveguide_crossing.py - Using meep's adjoint solver, designs a waveguide
+crossing that maximizes transmission at a single frequency. 
+
+Two approaches are demonstrated: (1) start with the nominal crossing shape and
+perform shape optimization via meep's smoothed projection feature; (2) run a
+full topology optimization starting from an initial grayscale. Evolve the design
+until β=∞.
+
+Importantly, this particular example highlights some of the ways one can use the
+novel smoothed projection function to perform both shape and topology
+optimization.
+"""
 
 
 from typing import Callable, List, Optional, Tuple
@@ -42,6 +45,7 @@ def build_optimization_problem(
     waveguide_width: float = DEFAULT_WAVEGUIDE_WIDTH,
     eta: float = DEFAULT_ETA,
     eta_e: float = DEFAULT_ETA_E,
+    damping_factor: float = 0.0,
 ) -> Tuple[mpa.OptimizationProblem, Callable]:
     """Build the waveguide-crossing optimization problem.
 
@@ -67,6 +71,7 @@ def build_optimization_problem(
         waveguide_width: Waveguide width in microns.
         eta: Projection function threshold parameter.
         eta_e: Projection function eroded threshold parameter.
+        damping_factor: The material grid damping scalar factor.
 
     Returns:
         The corresponding optimization problem object and the mapping function
@@ -110,6 +115,7 @@ def build_optimization_problem(
         )
     ]
 
+    damping = damping_factor * fcen
     matgrid = mp.MaterialGrid(
         mp.Vector3(Nx, Ny),
         mp.air,
@@ -117,6 +123,7 @@ def build_optimization_problem(
         weights=np.ones((Nx, Ny)),
         beta=0,  # disable meep's internal smoothing
         do_averaging=False,  # disable meep's internal mg smoothing
+        damping=damping,
     )
 
     matgrid_region = mpa.DesignRegion(
@@ -191,12 +198,7 @@ def build_optimization_problem(
         )
 
         # Enforce the square symmetry
-        x = (
-            x
-            + npa.rot90(x)
-            + npa.rot90(npa.rot90(x))
-            + npa.rot90(npa.rot90(npa.rot90(x)))
-        ) / 4
+        x = (x + npa.rot90(x) + npa.rot90(x, 2) + npa.rot90(x, 3)) / 4
 
         # Only used the smoothed projection if prompted.
         if use_smoothed_projection:
@@ -205,8 +207,6 @@ def build_optimization_problem(
             )
         else:
             x = mpa.tanh_projection(x, beta=beta, eta=eta)
-
-        x = npa.clip(x, 0, 1)
 
         return x.flatten()
 
@@ -236,14 +236,23 @@ def nlopt_fom(
     """
     grid_size = opt.design_regions[0].design_parameters.grid_size
     Nx, Ny = int(grid_size.x), int(grid_size.y)
-    data.append(mapping(x).copy().reshape(Nx, Ny))
 
     f0, dJ_du = opt([mapping(x)])
     backprop_gradient = tensor_jacobian_product(mapping, 0)(x, dJ_du)
     if gradient.size > 0:
         gradient[:] = backprop_gradient
 
-    print(f"FOM: {np.real(f0)}")
+    data.append(
+        [
+            np.squeeze(x.copy().reshape(Nx,Ny)),
+            np.squeeze(mapping(x).copy().reshape(Nx, Ny)),
+            np.squeeze(backprop_gradient.reshape(Nx, Ny)),
+        ]
+    )
+
+    print(
+        f"FOM: {np.real(f0)} | x NaNs:{np.sum(np.isnan(backprop_gradient))} | grad NaNs: {np.sum(np.isnan(backprop_gradient))}"
+    )
     results.append(np.real(f0))
 
     return float(np.real(f0))
@@ -274,6 +283,7 @@ def run_shape_optimization(
     beta: float,
     maxeval: int,
     use_smoothed_projection: bool = True,
+    damping_factor: float = 0.0,
     dx: float = DEFAULT_DESIGN_REGION_WIDTH,
     dy: float = DEFAULT_DESIGN_REGION_HEIGHT,
     waveguide_width: float = DEFAULT_WAVEGUIDE_WIDTH,
@@ -307,6 +317,7 @@ def run_shape_optimization(
         dy=dy,
         waveguide_width=waveguide_width,
         use_smoothed_projection=use_smoothed_projection,
+        damping_factor=damping_factor,
     )
 
     # pull number of parameters from the design region
@@ -345,10 +356,17 @@ def run_shape_optimization(
     x_final = solver.optimize(x0)
 
     # Log the final results
-    data.append(x_final.copy())
-    opt.update_design([mapping(x_final)])
-    f0, _ = opt(need_gradient=False)
+    opt.update_design([x_final.copy(), mapping(x_final)])
+    f0, final_grad = opt(need_gradient=False)
+    final_backprop_gradient = tensor_jacobian_product(mapping, 0)(x_final, final_grad)
     results.append(np.real(f0))
+    data.append(
+        [
+            np.squeeze(x_final.copy().reshape(Nx,Ny)),
+            np.squeeze(mapping(x_final).copy().reshape(Nx, Ny)),
+            np.squeeze(final_backprop_gradient.reshape(Nx, Ny)),
+        ]
+    )
 
     if plot_results:
         _plot_optimization_results(data, results)
@@ -369,6 +387,7 @@ def run_topology_optimization(
     dy: float = DEFAULT_DESIGN_REGION_HEIGHT,
     waveguide_width: float = DEFAULT_WAVEGUIDE_WIDTH,
     output_filename_prefix: Optional[str] = None,
+    damping_factor: float = 0.0,
 ):
     """Run shape optimization using a cross as a starting guess.
 
@@ -398,6 +417,7 @@ def run_topology_optimization(
         dy=dy,
         waveguide_width=waveguide_width,
         use_smoothed_projection=use_smoothed_projection,
+        damping_factor=damping_factor,
     )
 
     # pull number of parameters from the design region
@@ -429,6 +449,7 @@ def run_topology_optimization(
             dy=dy,
             waveguide_width=waveguide_width,
             use_smoothed_projection=use_smoothed_projection,
+            damping_factor=damping_factor,
         )
 
         # prepare the optimizer objective function. We need to wrap the above fom in
@@ -441,11 +462,20 @@ def run_topology_optimization(
         # Run the optimization
         x0 = solver.optimize(x0)
 
+    x_final = x0
+
     # Log the final results
-    data.append(x0.copy())
-    opt.update_design([mapping(x0)])
-    f0, _ = opt(need_gradient=False)
+    opt.update_design([mapping(x_final)])
+    f0, final_grad = opt(need_gradient=False)
+    final_backprop_gradient = tensor_jacobian_product(mapping, 0)(x_final, final_grad)
     results.append(np.real(f0))
+    data.append(
+        [
+            np.squeeze(x_final.copy().reshape(Nx,Ny)),
+            np.squeeze(mapping(x_final).copy().reshape(Nx, Ny)),
+            np.squeeze(final_backprop_gradient.reshape(Nx, Ny)),
+        ]
+    )
 
     _plot_optimization_results(data, results)
 
@@ -551,9 +581,7 @@ def analyze_gradient_convergence(
 
 
 def analyze_FOM_convergence(
-    resolution: float,
-    beta: float,
-    maxeval: int,
+    resolution: float, beta: float, maxeval: int, damping_factor: float = 0.0
 ) -> Tuple[List[float], List[float]]:
     """Analyze the convergence of the new projection method.
 
@@ -573,26 +601,35 @@ def analyze_FOM_convergence(
         function of optimization iteration.
 
     """
-    print("Running shape optimization WITHOUT smoothing...")
-    _, results, _, _ = run_shape_optimization(
-        beta=beta,
-        resolution=resolution,
-        maxeval=maxeval,
-        use_smoothed_projection=False,
-        plot_results=False,
-    )
+    # print("Running shape optimization WITHOUT smoothing...")
+    # _, results, _, _ = run_shape_optimization(
+    #     beta=beta,
+    #     resolution=resolution,
+    #     maxeval=maxeval,
+    #     use_smoothed_projection=False,
+    #     plot_results=False,
+    #     output_filename_prefix=f"without_smoothing_grad_{beta}",
+    #     damping_factor=damping_factor,
+    # )
     print("Running shape optimization WITH smoothing...")
-    (_, results_smoothed, _, _,) = run_shape_optimization(
+    (
+        _,
+        results_smoothed,
+        _,
+        _,
+    ) = run_shape_optimization(
         beta=beta,
         resolution=resolution,
         maxeval=maxeval,
         use_smoothed_projection=True,
         plot_results=False,
+        output_filename_prefix=f"with_smoothing_grad_{beta}",
+        damping_factor=damping_factor,
     )
 
     plt.figure(figsize=(5.2, 2.0), constrained_layout=True)
-    plt.plot(results, "o-", label="W/o smoothing")
-    plt.plot(results_smoothed, "o-", label="W/ smoothing")
+    plt.loglog(results, "o-", label="W/o smoothing")
+    plt.loglog(results_smoothed, "o-", label="W/ smoothing")
     plt.legend()
     plt.xlabel("Optimization iteration")
     plt.ylabel("FOM")
@@ -602,14 +639,24 @@ def analyze_FOM_convergence(
 
 
 if __name__ == "__main__":
-    run_shape_optimization(resolution=25.0, beta=np.inf, maxeval=30)
+    # run_shape_optimization(resolution=25.0, beta=np.inf, maxeval=30)
 
-    run_topology_optimization(
-        resolution=25.0, beta_evolution=[8, 32, np.inf], maxeval=10
-    )
+    # run_topology_optimization(
+    #     resolution=25.0, beta_evolution=[8, 32, np.inf], maxeval=10
+    # )
 
-    analyze_FOM_convergence(resolution=30, beta=64, maxeval=25)
+    analyze_FOM_convergence(resolution=30, beta=64, maxeval=200, damping_factor=0.0)
+    # data = np.load("temp.npz")
+    # results=data["results"]
+    # results_smoothed=data["results_smoothed"]
+    # plt.figure(figsize=(5.2, 2.0), constrained_layout=True)
+    # plt.loglog(results, "o-", label="W/o smoothing")
+    # plt.loglog(results_smoothed, "o-", label="W/ smoothing")
+    # plt.legend()
+    # plt.xlabel("Optimization iteration")
+    # plt.ylabel("FOM")
+    # plt.show()
 
-    analyze_gradient_convergence(
-        beta_range=np.logspace(1, 3, base=10, num=10), resolution=20
-    )
+    # analyze_gradient_convergence(
+    #     beta_range=np.logspace(1, 3, base=10, num=10), resolution=20
+    # )
