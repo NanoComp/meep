@@ -3,6 +3,7 @@ A collection of routines for use in topology optimization comprising
 convolution filters (kernels), projection operators, and morphological
 transforms.
 """
+
 import sys
 from typing import List, Tuple, Union
 
@@ -329,9 +330,7 @@ def conic_filter(
     """
     Nx, Ny, X, Y = mesh_grid(radius, Lx, Ly, resolution, periodic_axes)
     x = x.reshape(Nx, Ny)  # Ensure the input is 2d
-    h = npa.where(
-        X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
-    )
+    h = npa.where(X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0)
     return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 
@@ -706,7 +705,6 @@ def tanh_projection(x: np.ndarray, beta: float, eta: float) -> np.ndarray:
         )
 
 
-
 def smoothed_projection(
     x_smoothed: ArrayLikeType,
     beta: float,
@@ -848,9 +846,11 @@ def smoothed_projection(
     # Finally, we project the extents of our range.
     x_plus_eff_projected = tanh_projection(x_plus_eff, beta=beta, eta=eta)
     x_minus_eff_projected = tanh_projection(x_minus_eff, beta=beta, eta=eta)
-    
+
     # Only apply smoothing to interfaces
-    x_projected_smoothed = (1 - fill_factor) * x_minus_eff_projected + (fill_factor) * x_plus_eff_projected
+    x_projected_smoothed = (1 - fill_factor) * x_minus_eff_projected + (
+        fill_factor
+    ) * x_plus_eff_projected
     return npa.where(
         needs_smoothing,
         x_projected_smoothed,

@@ -11,7 +11,6 @@ novel smoothed projection function to perform both shape and topology
 optimization.
 """
 
-
 from typing import Callable, List, Optional, Tuple
 
 import meep.adjoint as mpa
@@ -244,7 +243,7 @@ def nlopt_fom(
 
     data.append(
         [
-            np.squeeze(x.copy().reshape(Nx,Ny)),
+            np.squeeze(x.copy().reshape(Nx, Ny)),
             np.squeeze(mapping(x).copy().reshape(Nx, Ny)),
             np.squeeze(backprop_gradient.reshape(Nx, Ny)),
         ]
@@ -362,7 +361,7 @@ def run_shape_optimization(
     results.append(np.real(f0))
     data.append(
         [
-            np.squeeze(x_final.copy().reshape(Nx,Ny)),
+            np.squeeze(x_final.copy().reshape(Nx, Ny)),
             np.squeeze(mapping(x_final).copy().reshape(Nx, Ny)),
             np.squeeze(final_backprop_gradient.reshape(Nx, Ny)),
         ]
@@ -471,7 +470,7 @@ def run_topology_optimization(
     results.append(np.real(f0))
     data.append(
         [
-            np.squeeze(x_final.copy().reshape(Nx,Ny)),
+            np.squeeze(x_final.copy().reshape(Nx, Ny)),
             np.squeeze(mapping(x_final).copy().reshape(Nx, Ny)),
             np.squeeze(final_backprop_gradient.reshape(Nx, Ny)),
         ]
@@ -601,16 +600,16 @@ def analyze_FOM_convergence(
         function of optimization iteration.
 
     """
-    # print("Running shape optimization WITHOUT smoothing...")
-    # _, results, _, _ = run_shape_optimization(
-    #     beta=beta,
-    #     resolution=resolution,
-    #     maxeval=maxeval,
-    #     use_smoothed_projection=False,
-    #     plot_results=False,
-    #     output_filename_prefix=f"without_smoothing_grad_{beta}",
-    #     damping_factor=damping_factor,
-    # )
+    print("Running shape optimization WITHOUT smoothing...")
+    _, results, _, _ = run_shape_optimization(
+        beta=beta,
+        resolution=resolution,
+        maxeval=maxeval,
+        use_smoothed_projection=False,
+        plot_results=False,
+        output_filename_prefix=f"without_smoothing_grad_{beta}",
+        damping_factor=damping_factor,
+    )
     print("Running shape optimization WITH smoothing...")
     (
         _,
@@ -639,24 +638,7 @@ def analyze_FOM_convergence(
 
 
 if __name__ == "__main__":
-    # run_shape_optimization(resolution=25.0, beta=np.inf, maxeval=30)
 
-    # run_topology_optimization(
-    #     resolution=25.0, beta_evolution=[8, 32, np.inf], maxeval=10
-    # )
-
-    analyze_FOM_convergence(resolution=30, beta=64, maxeval=200, damping_factor=0.0)
-    # data = np.load("temp.npz")
-    # results=data["results"]
-    # results_smoothed=data["results_smoothed"]
-    # plt.figure(figsize=(5.2, 2.0), constrained_layout=True)
-    # plt.loglog(results, "o-", label="W/o smoothing")
-    # plt.loglog(results_smoothed, "o-", label="W/ smoothing")
-    # plt.legend()
-    # plt.xlabel("Optimization iteration")
-    # plt.ylabel("FOM")
-    # plt.show()
-
-    # analyze_gradient_convergence(
-    #     beta_range=np.logspace(1, 3, base=10, num=10), resolution=20
-    # )
+    analyze_gradient_convergence(
+        beta_range=np.logspace(1, 3, base=10, num=10), resolution=20
+    )
