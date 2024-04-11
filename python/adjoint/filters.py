@@ -3,10 +3,13 @@ A collection of routines for use in topology optimization comprising
 convolution filters (kernels), projection operators, and morphological
 transforms.
 """
+
+import sys
+from typing import List, Tuple, Union
+
 import numpy as np
 from autograd import numpy as npa
 from scipy import signal, special
-from typing import List, Tuple, Union
 
 ArrayLikeType = Union[List, Tuple, np.ndarray]
 
@@ -248,13 +251,13 @@ def mesh_grid(
         periodic_axes = np.array(periodic_axes)
         if 0 in periodic_axes:
             xv = (
-                np.arange(0, np.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution[0])
+                npa.arange(0, npa.ceil(2 * radius / Lx) * Lx / 2, 1 / resolution[0])
                 if resolution[0] > 0
                 else [0]
             )
         if 1 in periodic_axes:
             yv = (
-                np.arange(0, np.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution[1])
+                npa.arange(0, npa.ceil(2 * radius / Ly) * Ly / 2, 1 / resolution[1])
                 if resolution[1] > 0
                 else [0]
             )
@@ -327,7 +330,7 @@ def conic_filter(
     """
     Nx, Ny, X, Y = mesh_grid(radius, Lx, Ly, resolution, periodic_axes)
     x = x.reshape(Nx, Ny)  # Ensure the input is 2d
-    h = np.where(
+    h = npa.where(
         X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
     )
     return convolve_design_weights_and_kernel(x, h, periodic_axes)
@@ -694,10 +697,14 @@ def tanh_projection(x: np.ndarray, beta: float, eta: float) -> np.ndarray:
     Returns:
         The filtered design weights.
     """
-
-    return (npa.tanh(beta * eta) + npa.tanh(beta * (x - eta))) / (
-        npa.tanh(beta * eta) + npa.tanh(beta * (1 - eta))
-    )
+    if beta == npa.inf:
+        # Note that backpropagating through here can produce NaNs. So we
+        # manually specify the step function to keep the gradient clean.
+        return npa.where(x > eta, 1.0, 0.0)
+    else:
+        return (npa.tanh(beta * eta) + npa.tanh(beta * (x - eta))) / (
+            npa.tanh(beta * eta) + npa.tanh(beta * (1 - eta))
+        )
 
 
 def smoothed_projection(
@@ -818,7 +825,7 @@ def smoothed_projection(
         1,
     )
 
-    # Determine the upper and lower bounds of materials in the current pixel.
+    # Determine the upper and lower bounds of materials in the current pixel (before projection).
     x_minus = x_smoothed - x_grad_norm * pixel_radius
     x_plus = x_smoothed + x_grad_norm * pixel_radius
 
@@ -838,8 +845,14 @@ def smoothed_projection(
         x_plus_eff_pert,
     )
 
+    # Finally, we project the extents of our range.
+    x_plus_eff_projected = tanh_projection(x_plus_eff, beta=beta, eta=eta)
+    x_minus_eff_projected = tanh_projection(x_minus_eff, beta=beta, eta=eta)
+
     # Only apply smoothing to interfaces
-    x_projected_smoothed = (1 - fill_factor) * x_minus_eff + (fill_factor) * x_plus_eff
+    x_projected_smoothed = (1 - fill_factor) * x_minus_eff_projected + (
+        fill_factor
+    ) * x_plus_eff_projected
     return npa.where(
         needs_smoothing,
         x_projected_smoothed,
