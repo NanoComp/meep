@@ -330,7 +330,9 @@ def conic_filter(
     """
     Nx, Ny, X, Y = mesh_grid(radius, Lx, Ly, resolution, periodic_axes)
     x = x.reshape(Nx, Ny)  # Ensure the input is 2d
-    h = npa.where(X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0)
+    h = npa.where(
+        X**2 + Y**2 < radius**2, (1 - np.sqrt(abs(X**2 + Y**2)) / radius), 0
+    )
     return convolve_design_weights_and_kernel(x, h, periodic_axes)
 
 

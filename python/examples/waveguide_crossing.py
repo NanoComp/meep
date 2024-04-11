@@ -1,5 +1,5 @@
 """waveguide_crossing.py - Using meep's adjoint solver, designs a waveguide
-crossing that maximizes transmission at a single frequency. 
+crossing that maximizes transmission at a single frequency.
 
 Two approaches are demonstrated: (1) start with the nominal crossing shape and
 perform shape optimization via meep's smoothed projection feature; (2) run a
@@ -611,12 +611,7 @@ def analyze_FOM_convergence(
         damping_factor=damping_factor,
     )
     print("Running shape optimization WITH smoothing...")
-    (
-        _,
-        results_smoothed,
-        _,
-        _,
-    ) = run_shape_optimization(
+    (_, results_smoothed, _, _,) = run_shape_optimization(
         beta=beta,
         resolution=resolution,
         maxeval=maxeval,
