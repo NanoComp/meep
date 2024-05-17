@@ -674,6 +674,8 @@ This figure shows the radiation pattern from $N=11$ dipoles with $\lambda$ of 1.
 
 ![](../images/disc_dipoles_radiation_pattern.png#center)
 
+Note: in addition to calculating the extraction efficiency, it may also be useful to compute the "enhancement factor" for the QW emission. The "enhancement factor" is the ratio of the total power from the QW in a given structure to a reference structure for which the internal quantum efficiency may be known. The "enhancement factor" is a generalization of the Purcell enhancement factor which applies only to a *single* dipole emitter via the local density of states as described in Section 4.4.6 of the [book chapter](https://arxiv.org/pdf/1301.5366).
+
 The simulation script is in [examples/disc_extraction_efficiency.py](https://github.com/NanoComp/meep/blob/master/python/examples/disc_extraction_efficiency.py).
 
 
