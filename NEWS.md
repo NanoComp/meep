@@ -1,5 +1,15 @@
 # Meep Release Notes
 
+## Meep 1.29.0
+
+5/30/2024
+
+* Support for broadband planewave sources at fixed angle ([#2609]).
+
+* Support for subpixel smoothing for topology optimization ([#2741]).
+
+Various improvements and minor bug fixes ([#2747], [#2751], [#2752], [#2767], [#2285]) and additional documentation.
+
 ## Meep 1.28.0
 
 11/9/2023
@@ -1154,6 +1164,7 @@ Meep 1.0.1
 [#2253]: https://github.com/NanoComp/meep/issues/2253
 [#2264]: https://github.com/NanoComp/meep/issues/2264
 [#2271]: https://github.com/NanoComp/meep/issues/2271
+[#2285]: https://github.com/NanoComp/meep/issues/2285
 [#2289]: https://github.com/NanoComp/meep/issues/2289
 [#2290]: https://github.com/NanoComp/meep/issues/2290
 [#2305]: https://github.com/NanoComp/meep/issues/2305
@@ -1191,7 +1202,13 @@ Meep 1.0.1
 [#2554]: https://github.com/NanoComp/meep/issues/2554
 [#2560]: https://github.com/NanoComp/meep/issues/2560
 [#2599]: https://github.com/NanoComp/meep/issues/2599
+[#2609]: https://github.com/NanoComp/meep/issues/2609
 [#2611]: https://github.com/NanoComp/meep/issues/2611
 [#2631]: https://github.com/NanoComp/meep/issues/2631
 [#2684]: https://github.com/NanoComp/meep/issues/2684
 [#2695]: https://github.com/NanoComp/meep/issues/2695
+[#2741]: https://github.com/NanoComp/meep/issues/2741
+[#2747]: https://github.com/NanoComp/meep/issues/2747
+[#2751]: https://github.com/NanoComp/meep/issues/2751
+[#2752]: https://github.com/NanoComp/meep/issues/2752
+[#2767]: https://github.com/NanoComp/meep/issues/2767
