@@ -4,7 +4,7 @@
 
 5/30/2024
 
-* Support for broadband planewave sources at fixed angle ([#2609]).
+* Experimental support for broadband planewave sources at fixed angle ([#2609]).
 
 * Support for subpixel smoothing for topology optimization ([#2741]).
 
