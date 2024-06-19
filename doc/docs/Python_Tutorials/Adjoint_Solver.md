@@ -809,25 +809,11 @@ Binary Grating as a Level Set
 
 This is a demonstration of computing the gradient of a level set using the adjoint solver.
 
-Results show good agreement between the adjoint gradient and the finite difference for the $\mathcal{S}$ polarization but *not* the $\mathcal{P}$ polarization. The accuracy does not improve with increasing resolution.
-
 The simulation script is in [python/examples/adjoint_optimization/binary_grating_levelset.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/binary_grating_levelset.py).
-
-**$\mathcal{S}$ polarization**
-```
-directional-deriv:, -0.00394839 (finite difference), -0.00355608 (adjoint), 0.099361 (error)
-```
-
-**$\mathcal{P}$ polarization**
-```
-directional-deriv:, -0.00090782 (finite difference), -0.00382003 (adjoint), 3.207894 (error)
-```
 
 ![](../images/levelset_gradient_backpropagation.png#center)
 
 ![](../images/levelset_jacobian_matrix.png#center)
-
-![](../images/levelset_weights_and_jacobian.png#center)
 
 Compact Notebook Tutorials of Basic Features
 --------------------------------------------
