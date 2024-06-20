@@ -804,16 +804,41 @@ if __name__ == "__main__":
         )
 ```
 
-Binary Grating as a Level Set
------------------------------
+Adjoint Gradient of a Level Set
+-------------------------------
 
-This is a demonstration of computing the gradient of a level set using the adjoint solver.
+It is also possible to compute the gradient of a [level set](https://en.wikipedia.org/wiki/Level_set) (i.e., a discontinuous function) using the density-based adjoint solver. This is useful for applications involving [shape optimization](https://en.wikipedia.org/wiki/Shape_optimization) (or geometry parameterization).
+
+As a demonstration, we will compute the gradient of the diffraction efficiency of the first transmitted order of a 1D binary grating with respect to the grating height. The accuracy of the adjoint gradient is validated using a brute-force finite difference via the directional derivative.
+
+The calculation of the diffraction efficiency involves [mode decomposition](Python_User_Interface/#mode-decomposition) of planewaves which is described in [Tutorial/Transmissive Diffraction Spectrum for Planewave at Normal Incidence](Mode_Decomposition.md#transmissive-diffraction-spectrum-for-planewave-at-normal-incidence). An important aspect of specifying the `meep.adjoint.EigenmodeCoefficient` object for diffraction orders (planewaves) in 2D is to directly specify the wavevector using the `kpoint_func` parameter. Additionally, it is necessary to specify the `eig_vol` parameter to have a *length of one pixel in the periodic direction* in order for MPB to correctly interpret this wavevector in the Cartesian basis rather than the reciprocal-lattice basis defined by the grating period.
+
+```
+RESOLUTION_UM = 50
+dir-deriv:, -0.02535355 (finite difference), -0.01469133 (adjoint), 0.420542 (error)
+
+RESOLUTION_UM = 100
+dir-deriv:, -0.00604817 (finite difference), -0.00473221 (adjoint), 0.217580 (error)
+
+RESOLUTION_UM = 200
+dir-deriv:, -0.00284452 (finite difference), -0.00252470 (adjoint), 0.112432 (error)
+
+RESOLUTION_UM = 400
+dir-deriv:, -0.00140221 (finite difference), -0.00132065 (adjoint), 0.058165 (error)
+
+RESOLUTION_UM = 800
+dir-deriv:, -0.00069606 (finite difference), -0.00067547 (adjoint), 0.029583 (error)
+```
 
 The simulation script is in [python/examples/adjoint_optimization/binary_grating_levelset.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/binary_grating_levelset.py).
 
 ![](../images/levelset_gradient_backpropagation.png#center)
 
 ![](../images/levelset_jacobian_matrix.png#center)
+
+![](../images/levelset_adjoint_gradient.png#center)
+
+![](../images/levelset_adjoint_gradient_error_vs_resolution.png#center)
 
 Compact Notebook Tutorials of Basic Features
 --------------------------------------------
