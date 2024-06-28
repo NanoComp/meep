@@ -804,8 +804,8 @@ if __name__ == "__main__":
         )
 ```
 
-Adjoint Gradient of a Level Set
--------------------------------
+Derivatives with Respect to Shape Parameters
+--------------------------------------------
 
 It is also possible to compute the derivative of the Meep outputs with respect to a geometric parameter via a [level-set](https://en.wikipedia.org/wiki/Level_set) formulation (an implicit-function representation of a material discontinuity) using the density-based adjoint solver. This is useful for applications involving [shape optimization](https://en.wikipedia.org/wiki/Shape_optimization) of explicitly parameterized geometries.
 
