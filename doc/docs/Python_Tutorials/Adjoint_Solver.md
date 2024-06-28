@@ -846,7 +846,7 @@ dir-deriv:, -0.00069606 (finite difference), -0.00067547 (adjoint), 0.029583 (er
 
 A logarithmic plot of the relative error vs. grid resolution based on these results demonstrates linear convergence. This is expected for fields right on the boundary of a discontinuous interface.
 
-Note: because of a likely bug in the adjoint gradients for the $\mathcal{P}$ polarization (electric field in the $xy$ plane), there is a large error in the adjoint gradient which [does not decrease with resolution](https://github.com/NanoComp/meep/pull/2792#issuecomment-2171942477). This is why this demonstration only involved the $\mathcal{S}$ polarization.
+Currently, we recommend using this procedure only for the $\mathcal{S}$ ($E_z$) polarization, since for the for the $\mathcal{P}$ polarization (electric field in the $xy$ plane), there appear to be large discretization errors in the adjoint gradient which [we are currently investigating](https://github.com/NanoComp/meep/pull/2792#issuecomment-2171942477). This is why this demonstration only involved the $\mathcal{S}$ polarization.
 
 ![](../images/levelset_adjoint_gradient_error_vs_resolution.png#center)
 
