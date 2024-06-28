@@ -807,7 +807,7 @@ if __name__ == "__main__":
 Adjoint Gradient of a Level Set
 -------------------------------
 
-It is also possible to compute the gradient of a [level set](https://en.wikipedia.org/wiki/Level_set) (i.e., a discontinuous function) using the density-based adjoint solver. This is useful for applications involving [shape optimization](https://en.wikipedia.org/wiki/Shape_optimization) or geometry parameterization.
+It is also possible to compute the derivative of the Meep outputs with respect to a geometric parameter via a [level-set](https://en.wikipedia.org/wiki/Level_set) formulation (an implicit-function representation of a material discontinuity) using the density-based adjoint solver. This is useful for applications involving [shape optimization](https://en.wikipedia.org/wiki/Shape_optimization) of explicitly parameterized geometries.
 
 As a demonstration, we will compute the gradient of the diffraction efficiency of the first transmitted order with $\mathcal{S}$ polarization (electric field out of the plane, i.e. $E_z$) of a 1D binary grating with respect to the grating height. The accuracy of the adjoint gradient is validated using a brute-force finite difference via the directional derivative.
 
