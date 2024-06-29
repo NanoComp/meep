@@ -807,46 +807,46 @@ if __name__ == "__main__":
 Derivatives with Respect to Shape Parameters
 --------------------------------------------
 
-It is also possible to compute the derivative of the Meep outputs with respect to a geometric parameter via a [level-set](https://en.wikipedia.org/wiki/Level_set) formulation (an implicit-function representation of a material discontinuity) using the density-based adjoint solver. This is useful for applications involving [shape optimization](https://en.wikipedia.org/wiki/Shape_optimization) of explicitly parameterized geometries.
+It is also possible to compute the derivative of the Meep outputs with respect to a geometric parameter via a [level-set](https://en.wikipedia.org/wiki/Level_set) formulation (an [implicit-function](https://en.wikipedia.org/wiki/Implicit_function) representation of a material discontinuity) using the density-based adjoint solver. This is useful for applications involving [shape optimization](https://en.wikipedia.org/wiki/Shape_optimization) of explicitly parameterized geometries.
 
 As a demonstration, we will compute the derivative of the diffraction efficiency of the first transmitted order with $\mathcal{S}$ polarization (electric field out of the plane, i.e. $E_z$) of a 1D binary grating with respect to the grating height. The accuracy of the adjoint derivative is validated using a brute-force finite-difference approximation.
 
 The calculation of the diffraction efficiency involves [mode decomposition](Python_User_Interface/#mode-decomposition) of planewaves which is described in [Tutorial/Transmissive Diffraction Spectrum for Planewave at Normal Incidence](Mode_Decomposition.md#transmissive-diffraction-spectrum-for-planewave-at-normal-incidence). An important aspect of setting up this simulation is specifying a diffraction order (planewave) in 2D using the `meep.adjoint.EigenmodeCoefficient` object. This involves three components: (1) the wavevector via the `kpoint_func` parameter, (2) the polarization via the `eig_parity` parameter, and (3) the `eig_vol` parameter must be set to have a *length of one pixel in the periodic direction*. The latter is necessary for MPB to correctly interpret the wavevector in the Cartesian basis rather than the reciprocal-lattice basis defined by the grating period.
 
-The calculation of the derivative of the diffraction efficiency ($F$) with respect to the grating height ($h$) involves using the chain rule to obtain a product of two derivatives (Jacobians): (1) $\partial F / \partial \rho$ and (2) $\partial \rho / \partial h$, where $\rho$ are the density weights (2D grid of $N_x \times N_y = N$ points) used to represent the binary grating as a level set. (1) is the adjoint gradient computed by Meep. (2) requires the level set to be *smoothed* to ensure it that the derivative $\partial \rho / \partial h$ exists. (2) is implemented in Autograd using a custom vector–Jacobian product (vJP) which is used as part of reverse-mode differentiation (backpropagation) to compute $\partial F / \partial h$. An overview of this calculation is shown below.
+Calculating the derivative of the diffraction efficiency ($F$) with respect to the grating height ($h$) involves using the chain rule to obtain a product of two derivatives (Jacobians): (1) $\partial F / \partial \rho$ and (2) $\partial \rho / \partial h$, where $\rho$ are the density weights (2D grid of $N_x \times N_y = N$ points) used to represent the binary grating as a level set. (1) is the adjoint gradient computed by Meep. (2) requires the level set to be *smoothed* to ensure that the derivative $\partial \rho / \partial h$ exists. (2) is implemented in Autograd using a custom vector–Jacobian product (vJP) which is used as part of reverse-mode differentiation (backpropagation) to compute $\partial F / \partial h$. An overview of this calculation is shown below.
 
 ![](../images/levelset_gradient_backpropagation.png#center)
 
-The derivative $\partial \rho / \partial h$ can be approximated by a finite difference using a one-pixel perturbation applied to the grating height; this is computationally convenient because it greatly simplifies the construction of $\rho(h)$ as explained below. (A finite difference involves two function evaluations of $\rho(h)$, but the cost for this is negligible since it involves no Meep simulations.) The construction of $\rho(h)$ involves two steps: first, constructing a simple binary image $b(h)$ at a high resolution; and second, smoothing $b(h)$ into a continuous level-set function $\rho(h)$.  This smoothing of the image can be performed using a number of different methods including a [signed-distance function](https://en.wikipedia.org/wiki/Signed_distance_function) or convolution filter. In this example, the smoothing is based simply on downsampling the image from a high-resolution grid (10X the resolution of the simulation grid) to the lower-resolution simulation grid using bilinear interpolation, which leads to "gray" pixels at the boundaries between materials in a way that changes continuously with $h$. Only these boundary pixels have nonzero derivatives in the Jacobian $\partial\rho/\partial h$ in this case. This calculation is summarized in the schematic below.
+The derivative $\partial \rho / \partial h$ can be approximated by a finite difference using a one-pixel perturbation applied to the grating height; this is computationally convenient because it greatly simplifies the construction of $\rho(h)$ as explained below. (A finite difference involves two function evaluations of $\rho(h)$, but the cost for this is negligible since it involves no Meep simulations.) The construction of $\rho(h)$ involves two steps: first, constructing a simple binary image $b(h)$ at a high resolution; and second, smoothing $b(h)$ into a continuous level-set function $\rho(h)$. This smoothing of the image can be performed using a number of different methods including a [signed-distance function](https://en.wikipedia.org/wiki/Signed_distance_function) or convolution filter. In this example, the smoothing is based simply on downsampling the image from a high-resolution grid (10$\times$ the resolution of the simulation grid) to the lower-resolution simulation grid using bilinear interpolation, which leads to "gray" pixels at the boundaries between materials in a way that changes continuously with $h$. Only these boundary pixels have nonzero derivatives in the Jacobian $\partial\rho/\partial h$ in this case. This calculation is summarized in the schematic below.
 
 ![](../images/levelset_jacobian_matrix.png#center)
 
-A schematic of the simulation layout showing the design region containing the grating as a levelset is shown below. The adjoint gradient $\partial F / \partial \rho$ computed by Meep at a resolution of 400 pixels/$\mu$m is shown next to this schematic.
+A schematic of the simulation layout showing the design region containing the grating is shown below. The adjoint gradient $\partial F / \partial \rho$ computed by Meep at a resolution of 400 pixels/$\mu$m is shown next to this schematic.
 
 ![](../images/levelset_adjoint_gradient.png#center)
 
-The simulation script is in [python/examples/adjoint_optimization/binary_grating_levelset.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/binary_grating_levelset.py). Running this script at five different resolutions produces the output below for the directional derivative computed using the finite difference and the adjoint gradient as well as the relative error from these two results.
+The simulation script is in [python/examples/adjoint_optimization/binary_grating_levelset.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/binary_grating_levelset.py). Running this script at five different resolutions produces the output below for the derivative computed using the finite difference and the adjoint derivative as well as the relative error from these two results.
 
 ```
 RESOLUTION_UM = 50
-dir-deriv:, -0.02535355 (finite difference), -0.01469133 (adjoint), 0.420542 (error)
+deriv:, -0.02535355 (finite difference), -0.01469133 (adjoint), 0.420542 (error)
 
 RESOLUTION_UM = 100
-dir-deriv:, -0.00604817 (finite difference), -0.00473221 (adjoint), 0.217580 (error)
+deriv:, -0.00604817 (finite difference), -0.00473221 (adjoint), 0.217580 (error)
 
 RESOLUTION_UM = 200
-dir-deriv:, -0.00284452 (finite difference), -0.00252470 (adjoint), 0.112432 (error)
+deriv:, -0.00284452 (finite difference), -0.00252470 (adjoint), 0.112432 (error)
 
 RESOLUTION_UM = 400
-dir-deriv:, -0.00140221 (finite difference), -0.00132065 (adjoint), 0.058165 (error)
+deriv:, -0.00140221 (finite difference), -0.00132065 (adjoint), 0.058165 (error)
 
 RESOLUTION_UM = 800
-dir-deriv:, -0.00069606 (finite difference), -0.00067547 (adjoint), 0.029583 (error)
+deriv:, -0.00069606 (finite difference), -0.00067547 (adjoint), 0.029583 (error)
 ```
 
 A logarithmic plot of the relative error vs. grid resolution based on these results demonstrates linear convergence. This is expected for fields right on the boundary of a discontinuous interface.
 
-Currently, we recommend using this procedure only for the $\mathcal{S}$ ($E_z$) polarization, since for the for the $\mathcal{P}$ polarization (electric field in the $xy$ plane), there appear to be large discretization errors in the adjoint gradient which [we are currently investigating](https://github.com/NanoComp/meep/pull/2792#issuecomment-2171942477). This is why this demonstration only involved the $\mathcal{S}$ polarization.
+Currently, we recommend using this procedure only for the $\mathcal{S}$ ($E_z$) polarization, since for the $\mathcal{P}$ polarization (electric field in the $xy$ plane), there appear to be large discretization errors in the adjoint gradient which [we are currently investigating](https://github.com/NanoComp/meep/pull/2792#issuecomment-2171942477). This is why this demonstration only involved the $\mathcal{S}$ polarization.
 
 ![](../images/levelset_adjoint_gradient_error_vs_resolution.png#center)
 
@@ -1185,7 +1185,7 @@ if __name__ == "__main__":
         (fnd_directional_deriv - adj_directional_deriv) / fnd_directional_deriv
     )
     print(
-        f"dir-deriv:, {fnd_directional_deriv:.8f} (finite difference), "
+        f"deriv:, {fnd_directional_deriv:.8f} (finite difference), "
         f"{adj_directional_deriv:.8f} (adjoint), {rel_err:.6f} (error)"
     )
 ```

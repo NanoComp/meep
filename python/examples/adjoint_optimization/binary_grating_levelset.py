@@ -1,10 +1,13 @@
-"""Computes the adjoint gradient of a level set.
+"""Computes the adjoint derivative with respect to shape parameters.
 
-This is a 2D example for computing the gradient of the diffraction efficiency
+This is a 2D example for computing the derivative of the diffraction efficiency
 of the first transmitted order of a 1D grating with respect to the grating
-height. The adjoint gradient is validated using the brute-force finite
-difference via the directional derivative. The grating structure is
-represented as a level set.
+height. The accuracy of the adjoint derivative is validated using the
+brute-force finite-difference approximation. The grating structure is
+represented as a level-set formulation.
+
+Reference Tutorial:
+https://meep.readthedocs.io/en/latest/Python_Tutorials/Adjoint_Solver/#derivatives-with-respect-to-shape-parameters
 """
 
 from enum import Enum
@@ -341,6 +344,6 @@ if __name__ == "__main__":
         (fnd_directional_deriv - adj_directional_deriv) / fnd_directional_deriv
     )
     print(
-        f"dir-deriv:, {fnd_directional_deriv:.8f} (finite difference), "
+        f"deriv:, {fnd_directional_deriv:.8f} (finite difference), "
         f"{adj_directional_deriv:.8f} (adjoint), {rel_err:.6f} (error)"
     )
