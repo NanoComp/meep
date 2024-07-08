@@ -1190,6 +1190,12 @@ if __name__ == "__main__":
     )
 ```
 
+Shape Optimization of a Multilayer Stack
+----------------------------------------
+
+We extend the demonstration of the shape derivative from the previous tutorial to perform a shape optimization of a multilayer stack.
+
+
 Compact Notebook Tutorials of Basic Features
 --------------------------------------------
 

@@ -1,9 +1,13 @@
 """Shape optimization of a multilayer stack.
 
 The 1D stack consists of alternating materials of index N_LAYER_1 and N_LAYER_2
-in the arrangement: N_LAYER_1, N_LAYER_2, N_LAYER_1, N_LAYER_2, ..., N_LAYER_1.
+in the arrangement: N_LAYER_2, N_LAYER_1, N_LAYER_2, N_LAYER_1, ..., N_LAYER_2.
 
-The design parameters are the N layer thicknesses: [t_1, t_2, ..., t_N].
+The design parameters are the N layer thicknesses: [t_1, t_2, ..., t_N]. N must
+be odd.
+
+Note: N_LAYER_1 must be vacuum because the left and right sides of the stack
+are vacuum. This is a limitation of the current setup.
 """
 
 from typing import Callable
@@ -11,44 +15,39 @@ from typing import Callable
 from autograd.extend import primitive, defvjp
 from autograd import numpy as npa
 from autograd import tensor_jacobian_product
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.pyplot as plt
 import meep as mp
 import meep.adjoint as mpa
+import nlopt
 import numpy as np
 
 
-RESOLUTION_UM = 200
+RESOLUTION_UM = 800
 WAVELENGTH_UM = 1.0
 AIR_UM = 1.0
 PML_UM = 1.0
-NUM_LAYERS = 11
+NUM_LAYERS = 9
 MIN_LAYER_UM = 0.1
-MAX_LAYER_UM = 0.9
-N_LAYER_1 = 3.5
-N_LAYER_2 = 1.0  # TODO (oskooi): support arbitrary use case (not just air).
+MAX_LAYER_UM = 0.5
+N_LAYER_1 = 1.0  # TODO (oskooi): support arbitrary materials.
+N_LAYER_2 = 1.3
 LAYER_PERTURBATION_UM = 1.0 / RESOLUTION_UM
 DESIGN_REGION_RESOLUTION_UM = 10 * RESOLUTION_UM
-
-DEBUG_OUTPUT = True
-
-design_region_size = mp.Vector3(0, 0, NUM_LAYERS * MAX_LAYER_UM)
-nz_design_grid = int(design_region_size.z * DESIGN_REGION_RESOLUTION_UM) + 1
-nz_sim_grid = int(design_region_size.z * RESOLUTION_UM) + 1
-num_unit_cells = int(0.5 * (NUM_LAYERS - 1))
+DESIGN_REGION_SIZE = mp.Vector3(0, 0, NUM_LAYERS * MAX_LAYER_UM)
+NZ_DESIGN_GRID = int(DESIGN_REGION_SIZE.z * DESIGN_REGION_RESOLUTION_UM) + 1
+NZ_SIM_GRID = int(DESIGN_REGION_SIZE.z * RESOLUTION_UM) + 1
 
 
 def design_region_to_grid(nz: int) -> np.ndarray:
-    """Returns the 1D coordinates of the grid for the design region.
+    """Returns the coordinates of the grid for the design region.
 
     Args:
       nz: number of grid points.
 
     Returns:
-      The coordinates of the grid points.
+      The 1D coordinates of the grid points.
     """
 
-    z_grid = np.linspace(-0.5 * design_region_size.z, +0.5 * design_region_size.z, nz)
+    z_grid = np.linspace(-0.5 * DESIGN_REGION_SIZE.z, +0.5 * DESIGN_REGION_SIZE.z, nz)
 
     return z_grid
 
@@ -64,12 +63,12 @@ def levelset_and_smoothing(layer_thickness_um: np.ndarray) -> np.ndarray:
       The density weights as a flattened (1D) array.
     """
 
-    air_padding_um = 0.5 * (design_region_size.z - np.sum(layer_thickness_um))
+    air_padding_um = 0.5 * (DESIGN_REGION_SIZE.z - np.sum(layer_thickness_um))
 
-    weights = np.zeros(nz_design_grid)
-    z_grid = design_region_to_grid(nz_design_grid)
+    weights = np.zeros(NZ_DESIGN_GRID)
+    z_design_grid = design_region_to_grid(NZ_DESIGN_GRID)
 
-    # Air padding at left edge.
+    # Air padding at left edge
     z_start = 0
     z_end = int(air_padding_um * DESIGN_REGION_RESOLUTION_UM)
     weights[z_start:z_end] = 0
@@ -80,22 +79,14 @@ def levelset_and_smoothing(layer_thickness_um: np.ndarray) -> np.ndarray:
         weights[z_start:z_end] = 1 if (j % 2 == 0) else 0
         z_start = z_end
 
-    # Air padding at right edge.
-    weights[z_start:] = 0
+    # Air padding at right edge
+    z_end = z_start + int(air_padding_um * DESIGN_REGION_RESOLUTION_UM)
+    weights[z_start:z_end] = 0
 
     # Smooth the design weights by downsampling from the design grid
     # to the simulation grid using bilinear interpolation.
-    z_sim_grid = design_region_to_grid(nz_sim_grid)
-    smoothed_weights = np.interp(z_sim_grid, z_grid, weights)
-
-    if DEBUG_OUTPUT:
-        fig, ax = plt.subplots()
-        ax.plot(z_sim_grid, smoothed_weights, "b-")
-        ax.plot(z_grid, weights, "r-")
-        ax.set_xlabel(r"z ($\mu$m)")
-        ax.set_ylabel("design weights (smoothed)")
-        if mp.am_master():
-            fig.savefig("multilayer_stack_levelset.png", dpi=150, bbox_inches="tight")
+    z_sim_grid = design_region_to_grid(NZ_SIM_GRID)
+    smoothed_weights = np.interp(z_sim_grid, z_design_grid, weights)
 
     return smoothed_weights.flatten()
 
@@ -105,17 +96,18 @@ def levelset_and_smoothing_vjp(
 ) -> Callable[[np.ndarray], np.ndarray]:
     """Returns a function for computing the vector-Jacobian product."""
 
-    air_padding_um = 0.5 * (design_region_size.z - np.sum(layer_thickness_um))
+    total_layer_thickness_um = np.sum(layer_thickness_um)
+    air_padding_um = 0.5 * (DESIGN_REGION_SIZE.z - total_layer_thickness_um)
 
-    jacobian = np.zeros((nz_sim_grid, NUM_LAYERS))
+    jacobian = np.zeros((NZ_SIM_GRID, NUM_LAYERS))
 
-    z_grid = design_region_to_grid(nz_design_grid)
-    z_sim_grid = design_region_to_grid(nz_sim_grid)
+    z_design_grid = design_region_to_grid(NZ_DESIGN_GRID)
+    z_sim_grid = design_region_to_grid(NZ_SIM_GRID)
 
     for i in range(NUM_LAYERS):
-        weights = np.zeros(nz_design_grid)
+        weights = np.zeros(NZ_DESIGN_GRID)
 
-        # Air padding at left edge.
+        # Air padding at left edge
         z_start = 0
         z_end = int(air_padding_um * DESIGN_REGION_RESOLUTION_UM)
         weights[z_start:z_end] = 0
@@ -129,40 +121,26 @@ def levelset_and_smoothing_vjp(
             weights[z_start:z_end] = 1 if (j % 2 == 0) else 0
             z_start = z_end
 
-        # Air padding at right edge.
-        weights[z_start:] = 0
+        # Air padding at right edge
+        z_end = z_start + int(air_padding_um * DESIGN_REGION_RESOLUTION_UM)
+        weights[z_start:z_end] = 0
 
         # Smooth the design weights by downsampling from the design grid
         # to the simulation grid using bilinear interpolation.
-        smoothed_weights = np.interp(z_sim_grid, z_grid, weights)
+        smoothed_weights = np.interp(z_sim_grid, z_design_grid, weights)
 
         jacobian[:, i] = (smoothed_weights - ans) / LAYER_PERTURBATION_UM
-
-    if DEBUG_OUTPUT:
-        fig, ax = plt.subplots()
-        im = ax.imshow(
-            np.transpose(jacobian),
-            cmap="inferno",
-            interpolation="none",
-            aspect="equal",
-        )
-        ax.set_title(r"$\partial \rho_{smooth-levelset} / \partial t$")
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(im, cax=cax)
-        if mp.am_master():
-            fig.savefig("multilayer_stack_gradient.png", dpi=150, bbox_inches="tight")
 
     return lambda g: np.tensordot(g, jacobian, axes=1)
 
 
 def input_flux() -> float:
-    """Returns the flux generated by the source."""
+    """Returns the flux generated by the source in vacuum."""
 
     frequency = 1 / WAVELENGTH_UM
     pml_layers = [mp.PML(direction=mp.Z, thickness=PML_UM)]
 
-    size_z_um = PML_UM + AIR_UM + design_region_size.z + AIR_UM + PML_UM
+    size_z_um = PML_UM + AIR_UM + DESIGN_REGION_SIZE.z + AIR_UM + PML_UM
     cell_size = mp.Vector3(0, 0, size_z_um)
 
     src_cmpt = mp.Ex
@@ -185,9 +163,7 @@ def input_flux() -> float:
 
     tran_pt = mp.Vector3(0, 0, 0.5 * size_z_um - PML_UM)
 
-    flux_mon = sim.add_flux(
-        frequency, 0, 1, mp.FluxRegion(center=tran_pt, size=mp.Vector3())
-    )
+    flux_mon = sim.add_flux(frequency, 0, 1, mp.FluxRegion(center=tran_pt))
 
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(25.0, src_cmpt, tran_pt, 1e-6)
@@ -211,7 +187,7 @@ def multilayer_stack(norm_flux: float) -> mpa.OptimizationProblem:
     frequency = 1 / WAVELENGTH_UM
     pml_layers = [mp.PML(direction=mp.Z, thickness=PML_UM)]
 
-    size_z_um = PML_UM + AIR_UM + design_region_size.z + AIR_UM + PML_UM
+    size_z_um = PML_UM + AIR_UM + DESIGN_REGION_SIZE.z + AIR_UM + PML_UM
     cell_size = mp.Vector3(0, 0, size_z_um)
 
     src_cmpt = mp.Ex
@@ -228,16 +204,16 @@ def multilayer_stack(norm_flux: float) -> mpa.OptimizationProblem:
     mat_2 = mp.Medium(index=N_LAYER_2)
 
     matgrid = mp.MaterialGrid(
-        mp.Vector3(0, 0, nz_sim_grid),
+        mp.Vector3(0, 0, NZ_SIM_GRID),
         mat_1,
         mat_2,
-        weights=np.ones(nz_sim_grid),
+        weights=np.ones(NZ_SIM_GRID),
         do_averaging=False,
     )
 
     matgrid_region = mpa.DesignRegion(
         matgrid,
-        volume=mp.Volume(center=mp.Vector3(), size=design_region_size),
+        volume=mp.Volume(center=mp.Vector3(), size=DESIGN_REGION_SIZE),
     )
 
     geometry = [
@@ -263,6 +239,15 @@ def multilayer_stack(norm_flux: float) -> mpa.OptimizationProblem:
     ]
 
     def obj_func(dft_ex, dft_hy):
+        """Objective function for the optimization.
+
+        Args:
+          dft_ex, dft_hy: the discrete Fourier-transformed Ex and Hy fields.
+
+        Returns:
+          The transmittance through the stack.
+        """
+
         return npa.real(npa.conj(dft_ex) * dft_hy) / norm_flux
 
     opt = mpa.OptimizationProblem(
@@ -276,53 +261,61 @@ def multilayer_stack(norm_flux: float) -> mpa.OptimizationProblem:
     return opt
 
 
-if __name__ == "__main__":
-    layer_thickness_um = np.array(
-        [0.3, 0.1, 0.2, 0.1, 0.6, 0.4, 0.2, 0.1, 0.4, 0.3, 0.2]
-    )
+def nlopt_obj_func(layer_thickness_um: np.ndarray, grad: np.ndarray) -> float:
+    """Objective function for NLopt.
 
-    smoothed_design_weights = levelset_and_smoothing(layer_thickness_um)
+    Args:
+      layer_thickness_um: thickness of the layers in the stack.
+      grad: the gradient with respect to the layer thicknesses, modified in
+        place.
 
-    norm_flux = input_flux()
+    Returns:
+      The value of the objective function evaluated at the given layer thicknesses.
+    """
 
-    opt = multilayer_stack(norm_flux)
+    design_weights = levelset_and_smoothing(layer_thickness_um)
 
-    obj_val_unperturbed, grad_unperturbed = opt(
-        [smoothed_design_weights], need_gradient=True
-    )
-    print(f"obj_val_unperturbed[0] = {obj_val_unperturbed[0]}")
+    obj_val, gradient = opt([design_weights])
 
     defvjp(levelset_and_smoothing, levelset_and_smoothing_vjp)
-    grad_backprop = tensor_jacobian_product(levelset_and_smoothing, 0)(
-        layer_thickness_um, grad_unperturbed
+    gradient_backpropagate = tensor_jacobian_product(levelset_and_smoothing, 0)(
+        layer_thickness_um, gradient
     )
 
-    if DEBUG_OUTPUT:
-        fig, ax = plt.subplots()
-        ax.plot(grad_unperturbed)
-        ax.set_title(r"$\partial F / \partial \rho_{smooth-levelset}$")
-        if mp.am_master():
-            fig.savefig(
-                "gradient_wrt_smoothed_design_weights.png", dpi=150, bbox_inches="tight"
-            )
+    # TODO (oskooi): determine why factor of 0.5 is necessary.
+    gradient_backpropagate = 0.5 * gradient_backpropagate
 
-    perturbation_um = 1e-3 * np.ones(NUM_LAYERS)
-    perturbed_design_weights = levelset_and_smoothing(
-        layer_thickness_um + perturbation_um
-    )
-    perturbed_design_weights = perturbed_design_weights.flatten()
+    if grad.size > 0:
+        grad[:] = np.squeeze(gradient_backpropagate)
 
-    obj_val_perturbed, _ = opt([perturbed_design_weights], need_gradient=False)
-    print(f"obj_val_perturbed[0] = {obj_val_perturbed[0]}")
+    print(f"iteration:, {obj_val[0]}, {layer_thickness_um}")
 
-    adj_directional_deriv = (perturbation_um[None, :] @ grad_backprop)[0]
-    fnd_directional_deriv = obj_val_perturbed[0] - obj_val_unperturbed[0]
-    print(f"adj_directional_deriv:, {adj_directional_deriv}")
-    print(f"fnd_directional_deriv:, {fnd_directional_deriv}")
-    rel_err = abs(
-        (fnd_directional_deriv - adj_directional_deriv) / fnd_directional_deriv
-    )
-    print(
-        f"dir-deriv:, {fnd_directional_deriv:.8f} (finite difference), "
-        f"{adj_directional_deriv:.8f} (adjoint), {rel_err:.6f} (error)"
-    )
+    return obj_val[0]
+
+
+if __name__ == "__main__":
+    algorithm = nlopt.LD_LBFGS
+
+    # Lower and upper bounds for layer thicknesses.
+    lower_bound = MIN_LAYER_UM * np.ones(NUM_LAYERS)
+    upper_bound = MAX_LAYER_UM * np.ones(NUM_LAYERS)
+
+    solver = nlopt.opt(algorithm, NUM_LAYERS)
+    solver.set_lower_bounds(lower_bound)
+    solver.set_upper_bounds(upper_bound)
+    solver.set_min_objective(nlopt_obj_func)
+    solver.set_ftol_abs(0.001)
+    solver.set_xtol_abs(1 / RESOLUTION_UM)
+    solver.set_maxeval(20)
+
+    norm_flux = input_flux()
+    opt = multilayer_stack(norm_flux)
+
+    layer_thickness_um = 0.2 * np.ones(NUM_LAYERS)
+    optimal_layer_thickness_um = solver.optimize(layer_thickness_um)
+    optimal_obj_val = solver.last_optimum_value()
+    result = solver.last_optimize_result()
+
+    print(f"optimal_obj_val:, {optimal_obj_val}")
+    print(f"optimal_layer_thickness_um:, {optimal_layer_thickness_um}")
+    print(f"result:, {result}")
