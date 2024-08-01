@@ -1193,19 +1193,19 @@ if __name__ == "__main__":
 Shape Optimization of a Multilayer Stack
 ----------------------------------------
 
-We extend the demonstration of the shape derivative from the previous tutorial to perform a shape optimization of a multilayer stack over a broad bandwidth. The 1D design problem involves finding the layer thicknesses for a fixed number of layers (9) which minimize the largest transmittance through the stack at two wavelengths: $\lambda_1$ = 0.95 μm and $\lambda_2$ = 1.05 μm. However, rather than use the transmittance as the objective function, we use the field decay via the integral of the fields in the stack ($\int |E_x|^2$). This provides more information to the optimizer which generally produces better results. For reference, the analytic solution at a *single* wavelength of $\lambda$ = 1.0 μm is a quarter-wavelength stack with thicknesses $\lambda / (4 n_1)$ = 0.25 and $\lambda / (4 n_2)$ = 0.1923.
+We extend the demonstration of the shape derivative from the previous tutorial to perform shape optimization of a multilayer stack over a broad bandwidth. The 1D design problem involves finding the layer thicknesses for a fixed number of layers (9) which minimize the largest transmittance through the stack at two wavelengths: $\lambda_1$ = 0.95 μm and $\lambda_2$ = 1.05 μm. However, rather than use the transmittance (or reflectance, if maximizing) as the objective function, we use the field decay via the integral of the fields in the stack ($\int |E_x|^2$). This provides more information to the optimizer which generally produces better results. For reference, the analytic solution at a *single* wavelength of $\lambda$ = 1.0 μm is a [quarter-wavelength stack](https://en.wikipedia.org/wiki/Distributed_Bragg_reflector) with layer thicknesses $\lambda / (4 n_1)$ = 0.25 and $\lambda / (4 n_2)$ = 0.1923.
 
-(For lots of layers and a single wavelength, you can easily get a non-quarter-wave structure with very low transmission, and once you get to that point the gradients will be almost zero so probably it will converge very slowly towards a quarter-wave solution because the optimizer is generally very slow to try to reduce transmission from 1e-3 to 1e-6, for example.)
+(For lots of layers and a single wavelength, the optimizer can easily find a non-quarter-wavelength structure with very low transmission, and once it gets to that point the gradients will be almost zero so probably it will converge very slowly towards a quarter-wavelength solution because the optimizer is generally very slow to try to reduce transmittance from 1e-3 to 1e-6, for example.)
 
-The stack consists of alternating materials of refractive index $n_1$ = 1.0 and $n_2$ = 1.3. The layers are arranged as $n_2$, $n_1$, $n_2$, $n_1$, ..., $n_2$. The thickness of all layers is constrained to be in the range of 0.1 μm to 0.5 μm. The thickness constraint is trivial to implement in this case because it applies directly to a geometric feature rather than to the density weights.
+The stack consists of two materials of alternating refractive index $n_1$ = 1.0 and $n_2$ = 1.3. The layers are arranged as $n_2$, $n_1$, $n_2$, $n_1$, ..., $n_2$. The thickness of all layers is constrained to be in the range of 0.1 to 0.5 μm. The thickness constraint is trivial to implement in this case because it applies directly to a geometric feature rather than to the density weights.
 
-The worst-case optimization is implemented using the [epigraph formulation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems). A plot of the objective function vs. iteration number for the two wavelengths is shown below. Also included in this plot is the epigraph variable. The initial layer thicknesses are chosen randomly. The optimizer seems to converge to a local optima within ~25 iterations. In this case, the optimizer ran for thirty iterations before reaching the threshold tolerance for the objective value. Since these are 1D simulations, the runtime for each design iteration is generally fast (about ten seconds using two cores of Intel Xeon i7-7700K CPU @ 4.20GHz).
+The worst-case optimization is implemented using the [epigraph formulation](https://nlopt.readthedocs.io/en/latest/NLopt_Introduction/#equivalent-formulations-of-optimization-problems) and the Method of Moving Asymptotes (MMA) algorithm. A plot of the objective function vs. iteration number for the two wavelengths is shown below. Also included in this plot is the epigraph variable. The initial layer thicknesses are chosen randomly. The optimizer seems to converge to a local optima within ~25 iterations. In this case, the optimizer ran for the maximum number of iterations (50). The nine layer thicknesses (μm) of the optimal design are: 0.1664, 0.2452, 0.1399, 0.2719, 0.1786, 0.3060, 0.4952, 0.1688, 0.2306. Since these are 1D simulations, the runtime for each design iteration is generally fast (about ten seconds using two cores of Intel Xeon i7-7700K CPU @ 4.20GHz).
 
-The plot shows that the optimizer which uses the Method of Moving Asymptotes (MMA) algorithm takes some steps that make things *worse* during the early iterations. This is a common phenomenon in many algorithms — initially, the optimizer takes steps that are too large and then has to backtrack. After a few iterations, the algorithm has more information about a "good" step size.
+The plot shows that the optimizer takes some steps that make things *worse* during the early iterations. This is a common phenomenon in many algorithms — initially, the optimizer takes steps that are too large and then has to backtrack. After a few iterations, the algorithm has more information about a "good" step size.
 
 ![](../images/multilayer_opt_obj_func_history.png#center)
 
-A plot of the $|E_x|^2$ fields in the stack (design region) for the optimal design is shown below. The plot shows that while the DFT fields for each of the two wavelengths are decaying through the stack, the transmittance values are quite different: T($\lambda$ = 0.95 μm) = 0.3551 vs.  T($\lambda$ = 1.05 μm) = 0.8098. This result is consistent with the plot of the objective function vs. iteration number which shows that, because of the minimax setup, the stack is being optimized for $\lambda$ = 0.95 μm and *not* $\lambda$ = 1.05 μm. We observed this trend for various local optima. This seems to suggest that the optimizer targeting a single wavelength of a broad bandwdith design problem may be a general feature for this class of optimization problem. Also, the magnitude of $|E_x|^2$ at the right edge of the stack is clearly larger for $\lambda$ = 1.05 μm than $\lambda$ = 0.95 μm. This is again consistent with the transmittance being larger for $\lambda$ = 1.05 than for $\lambda$ = 0.95 μm.
+A plot of the $|E_x|^2$ fields in the stack (design region) for the optimal design is shown below. The plot shows that while the DFT fields for each of the two wavelengths are decaying through the stack, the transmittance values are quite different: T($\lambda$ = 0.95 μm) = 0.3140 vs. T($\lambda$ = 1.05 μm) = 0.7353. This result is consistent with the plot of the objective function vs. iteration number which shows that, because of the minimax setup, the stack is being optimized for $\lambda$ = 0.95 μm and *not* $\lambda$ = 1.05 μm. We observed this trend for various local optima. This seems to suggest that optimizing one of several wavelengths may be a general feature for this particular class of problem. Also, the magnitude of $|E_x|^2$ at the right edge of the stack is larger for $\lambda$ = 1.05 μm than $\lambda$ = 0.95 μm. This is consistent with the transmittance being larger for $\lambda$ = 1.05 than for $\lambda$ = 0.95 μm.
 
 ![](../images/broadband_field_decay_in_multilayer_stack.png#center)
 
@@ -1520,14 +1520,14 @@ if __name__ == "__main__":
     lower_bound = np.insert(lower_bound, 0, 0)
     upper_bound = np.insert(upper_bound, 0, np.inf)
 
-    tolerance_epigraph = [1e-3] * num_wavelengths
+    epigraph_tolerance = [1e-3] * num_wavelengths
 
     solver = nlopt.opt(nlopt.LD_MMA, NUM_LAYERS + 1)
     solver.set_lower_bounds(lower_bound)
     solver.set_upper_bounds(upper_bound)
     solver.set_min_objective(obj_func)
     solver.set_maxeval(MAX_OPT_ITERATIONS)
-    solver.add_inequality_mconstraint(epigraph_constraint, tolerance_epigraph)
+    solver.add_inequality_mconstraint(epigraph_constraint, epigraph_tolerance)
     solver.set_ftol_rel(1e-3)
 
     obj_func_history = []
