@@ -202,7 +202,7 @@ def multilayer_stack() -> mpa.OptimizationProblem:
 
     obj_args = [
         mpa.FourierFields(
-            sim, volume=matgrid_region.volume, component=mp.Ex, yee_grid=False
+            sim, volume=matgrid_region.volume, component=mp.Ex, yee_grid=True
         )
     ]
 
@@ -319,7 +319,7 @@ if __name__ == "__main__":
 
     # Insert bounds for the epigraph variable.
     lower_bound = np.insert(lower_bound, 0, 0)
-    upper_bound = np.insert(upper_bound, 0, +np.inf)
+    upper_bound = np.insert(upper_bound, 0, np.inf)
 
     tolerance_epigraph = [1e-3] * num_wavelengths
 
