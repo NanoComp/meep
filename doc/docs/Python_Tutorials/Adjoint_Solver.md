@@ -199,9 +199,7 @@ minimum feature size is evident.
 ![](../images/mode_converter_worst_case_refl_tran.png#center)
 
 The script is
-[python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py). The
-runtime of this script using three Intel Xeon 2.0 GHz processors is
-approximately 14 hours.
+[python/examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/tree/master/python/examples/adjoint_optimization/mode_converter.py). The runtime of this script using three cores of an Intel Xeon at 2.0 GHz is approximately 14 hours.
 
 ```py
 from typing import List, NamedTuple, Tuple
@@ -236,11 +234,10 @@ SILICON_DIOXIDE = mp.Medium(index=1.5)
 cell_um = mp.Vector3(
     PML_UM + WAVEGUIDE_UM.x + DESIGN_REGION_UM.x + WAVEGUIDE_UM.x + PML_UM,
     PML_UM + PADDING_UM + DESIGN_REGION_UM.y + PADDING_UM + PML_UM,
-    0
+    0,
 )
 filter_radius_um = mpa.get_conic_radius_from_eta_e(
-    MIN_LENGTH_UM,
-    SIGMOID_THRESHOLD_EROSION
+    MIN_LENGTH_UM, SIGMOID_THRESHOLD_EROSION
 )
 frequency_min = 1 / WAVELENGTH_MAX_UM
 frequency_max = 1 / WAVELENGTH_MIN_UM
@@ -248,6 +245,7 @@ frequency_center = 0.5 * (frequency_min + frequency_max)
 frequency_width = frequency_max - frequency_min
 pml_layers = [mp.PML(thickness=PML_UM)]
 frequencies = [1 / wavelength_um for wavelength_um in DESIGN_WAVELENGTHS_UM]
+num_wavelengths = len(DESIGN_WAVELENGTHS_UM)
 src_pt = mp.Vector3(-0.5 * cell_um.x + PML_UM, 0, 0)
 refl_pt = mp.Vector3(-0.5 * cell_um.x + PML_UM + 0.5 * WAVEGUIDE_UM.x)
 tran_pt = mp.Vector3(0.5 * cell_um.x - PML_UM - 0.5 * WAVEGUIDE_UM.x)
@@ -284,21 +282,19 @@ def border_masks() -> Tuple[np.ndarray, np.ndarray]:
         indexing="ij",
     )
 
-    left_waveguide_port = (
-        (xy_grid_x <= -DESIGN_REGION_UM.x / 2 + filter_radius_um) &
-        (np.abs(xy_grid_y) <= WAVEGUIDE_UM.y / 2)
+    left_waveguide_port = (xy_grid_x <= -DESIGN_REGION_UM.x / 2 + filter_radius_um) & (
+        np.abs(xy_grid_y) <= WAVEGUIDE_UM.y / 2
     )
-    right_waveguide_port = (
-        (xy_grid_x >= DESIGN_REGION_UM.x / 2 - filter_radius_um) &
-        (np.abs(xy_grid_y) <= WAVEGUIDE_UM.y / 2)
+    right_waveguide_port = (xy_grid_x >= DESIGN_REGION_UM.x / 2 - filter_radius_um) & (
+        np.abs(xy_grid_y) <= WAVEGUIDE_UM.y / 2
     )
     silicon_mask = left_waveguide_port | right_waveguide_port
 
     border_mask = (
-        (xy_grid_x <= -DESIGN_REGION_UM.x / 2 + filter_radius_um) |
-        (xy_grid_x >= DESIGN_REGION_UM.x / 2 - filter_radius_um) |
-        (xy_grid_y <= -DESIGN_REGION_UM.y / 2 + filter_radius_um) |
-        (xy_grid_y >= DESIGN_REGION_UM.y / 2 - filter_radius_um)
+        (xy_grid_x <= -DESIGN_REGION_UM.x / 2 + filter_radius_um)
+        | (xy_grid_x >= DESIGN_REGION_UM.x / 2 - filter_radius_um)
+        | (xy_grid_y <= -DESIGN_REGION_UM.y / 2 + filter_radius_um)
+        | (xy_grid_y >= DESIGN_REGION_UM.y / 2 - filter_radius_um)
     )
     silicon_dioxide_mask = border_mask.copy()
     silicon_dioxide_mask[silicon_mask] = False
@@ -306,10 +302,8 @@ def border_masks() -> Tuple[np.ndarray, np.ndarray]:
     return silicon_mask, silicon_dioxide_mask
 
 
-def filter_projection(
-        weights: np.ndarray,
-        sigmoid_threshold: float,
-        sigmoid_bias: float
+def filter_and_project(
+    weights: np.ndarray, sigmoid_threshold: float, sigmoid_bias: float
 ) -> np.ndarray:
     """A differentiable function to filter and project the design weights.
 
@@ -383,7 +377,7 @@ def epigraph_constraint(
     """Constraint function for the epigraph formulation.
 
     Args:
-      result: the result of the function evaluation, modified in place.
+      result: evaluation of this constraint function, modified in place.
       epigraph_and_weights: 1D array containing the epigraph variable (first
         element) and design weights (remaining elements).
       gradient: the Jacobian matrix with dimensions (1 + NX_DESIGN_GRID *
@@ -397,10 +391,8 @@ def epigraph_constraint(
 
     obj_val, grad = opt(
         [
-            filter_projection(
-                weights,
-                sigmoid_threshold,
-                0 if use_epsavg else sigmoid_bias
+            filter_and_project(
+                weights, sigmoid_threshold, 0 if use_epsavg else sigmoid_bias
             )
         ]
     )
@@ -412,14 +404,13 @@ def epigraph_constraint(
 
     grad_reflectance = grad[0]
     grad_transmittance = grad[1]
-    nfrq = len(frequencies)
-    grad = np.zeros((NX_DESIGN_GRID * NY_DESIGN_GRID, 2 * nfrq))
-    grad[:, :nfrq] = grad_reflectance
-    grad[:, nfrq:] = grad_transmittance
+    grad = np.zeros((NX_DESIGN_GRID * NY_DESIGN_GRID, 2 * num_wavelengths))
+    grad[:, :num_wavelengths] = grad_reflectance
+    grad[:, num_wavelengths:] = grad_transmittance
 
-    # backpropagate the gradients through filter and projection function
-    for k in range(2 * nfrq):
-        grad[:, k] = tensor_jacobian_product(filter_projection, 0)(
+    # Backpropagate the gradients through the filter and project function.
+    for k in range(2 * num_wavelengths):
+        grad[:, k] = tensor_jacobian_product(filter_and_project, 0)(
             weights,
             sigmoid_threshold,
             sigmoid_bias,
@@ -437,22 +428,23 @@ def epigraph_constraint(
 
     print(
         f"iteration:, {cur_iter[0]:3d}, sigmoid_bias: {sigmoid_bias:2d}, "
-        f"epigraph: {epigraph:.5f}, obj. func.: {obj_val_merged_str}"
+        f"epigraph: {epigraph:.5f}, obj. func.: {obj_val_merged_str}, "
+        f"epigraph constraint: {str_from_list(result)}"
     )
 
     cur_iter[0] = cur_iter[0] + 1
 
 
 def line_width_and_spacing_constraint(
-        result: np.ndarray,
-        epigraph_and_weights: np.ndarray,
-        gradient: np.ndarray,
-        sigmoid_bias: float
+    result: np.ndarray,
+    epigraph_and_weights: np.ndarray,
+    gradient: np.ndarray,
+    sigmoid_bias: float,
 ) -> float:
-    """Constraint function for the minimum linewidth.
+    """Constraint function for the minimum line width and spacing.
 
     Args:
-      result: the result of the function evaluation modified in place.
+      result: evaluation of this constraint function, modified in place.
       epigraph_and_weights: 1D array containing epigraph variable (first
         element) and design weights (remaining elements).
       gradient: the Jacobian matrix, modified in place.
@@ -476,9 +468,7 @@ def line_width_and_spacing_constraint(
     )
 
     threshold_func = lambda a: mpa.tanh_projection(
-        a,
-        sigmoid_bias,
-        SIGMOID_THRESHOLD_INTRINSIC
+        a, sigmoid_bias, SIGMOID_THRESHOLD_INTRINSIC
     )
 
     # hyper parameter (constant factor and exponent)
@@ -515,8 +505,8 @@ def straight_waveguide() -> (np.ndarray, NamedTuple):
     during the optimization.
 
     Returns:
-      A 2-tuple consisting of a 1d array of DFT fields and DFT fields object
-      returned by `meep.get_flux_data`.
+      A 2-tuple consisting of (1) a 1D array of DFT fields and (2) the DFT
+      fields object returned by `meep.get_flux_data`.
     """
     sources = [
         mp.EigenModeSource(
@@ -597,10 +587,7 @@ def mode_converter_optimization(
 
     matgrid_region = mpa.DesignRegion(
         matgrid,
-        volume=mp.Volume(
-            center=mp.Vector3(),
-            size=DESIGN_REGION_UM
-        ),
+        volume=mp.Volume(center=mp.Vector3(), size=DESIGN_REGION_UM),
     )
 
     matgrid_geometry = [
@@ -688,7 +675,7 @@ if __name__ == "__main__":
 
     num_weights = NX_DESIGN_GRID * NY_DESIGN_GRID
 
-    # Initial design weights.
+    # Initial design weights (arbitrary constant value).
     epigraph_and_weights = np.ones((num_weights,)) * 0.5
     epigraph_and_weights[silicon_mask.flatten()] = 1.0
     epigraph_and_weights[silicon_dioxide_mask.flatten()] = 0.0
@@ -710,14 +697,16 @@ if __name__ == "__main__":
     epivar_history = []
     cur_iter = [0]
 
-    sigmoid_bias_threshold = 64  # threshold beta above which to use subpixel smoothing
-    sigmoid_biases =  [8, 16, 32, 64, 128, 256]
+    # Threshold beta above which to use subpixel smoothing.
+    sigmoid_bias_threshold = 64
+
+    sigmoid_biases = [8, 16, 32, 64, 128, 256]
     max_evals = [80, 80, 100, 120, 120, 100]
-    tolerance_epigraph = np.array([1e-4] * 2 * len(frequencies))  # R, 1-T
+    epigraph_tolerance = np.array([1e-4] * 2 * num_wavelengths)  # R, 1-T
     tolerance_width_and_spacing = np.array([1e-8] * 2)  # line width, line spacing
 
     for sigmoid_bias, max_eval in zip(sigmoid_biases, max_evals):
-        solver = nlopt.opt(nlopt.LD_MMA, num_weights + 1)
+        solver = nlopt.opt(nlopt.LD_CCSAQ, num_weights + 1)
         solver.set_lower_bounds(weights_lower_bound)
         solver.set_upper_bounds(weights_upper_bound)
         solver.set_min_objective(obj_func)
@@ -732,7 +721,7 @@ if __name__ == "__main__":
                 sigmoid_bias,
                 False if sigmoid_bias < sigmoid_bias_threshold else True,
             ),
-            tolerance_epigraph,
+            epigraph_tolerance,
         )
         solver.set_param("verbosity", 1)
 
@@ -749,9 +738,8 @@ if __name__ == "__main__":
             sigmoid_bias,
         )
 
-        # Apply the minimum linewidth constraint
-        # only in the final epoch to an initial
-        # binary design from the previous epoch.
+        # Apply the constraint for the minimum line width and spacing only in
+        # the final epoch to an initial binary design from the previous epoch.
         if sigmoid_bias == sigmoid_biases[-1]:
             line_width_and_spacing = np.zeros(2)
             grad_line_width_and_spacing = np.zeros((2, num_weights + 1))
@@ -759,7 +747,7 @@ if __name__ == "__main__":
                 line_width_and_spacing,
                 epigraph_and_weights,
                 grad_line_width_and_spacing,
-                sigmoid_bias
+                sigmoid_bias,
             )
             solver.add_inequality_mconstraint(
                 lambda result_, epigraph_and_weights_, grad_: line_width_and_spacing_constraint(
@@ -771,14 +759,13 @@ if __name__ == "__main__":
                 tolerance_width_and_spacing,
             )
 
-        # Execute a single forward run before the start of each
-        # epoch and manually set the initial epigraph variable to
-        # slightly larger than the largest value of the objective
-        # function over the six wavelengths and the lengthscale
-        # constraint (final epoch only).
+        # Execute a single forward run before the start of each epoch and
+        # manually set the initial epigraph variable to slightly larger than
+        # the largest value of the objective function over the six wavelengths
+        # and the lengthscale constraint (final epoch only).
         epigraph_initial = opt(
             [
-                filter_projection(
+                filter_and_project(
                     epigraph_and_weights[1:],
                     SIGMOID_THRESHOLD_INTRINSIC,
                     sigmoid_bias if sigmoid_bias < sigmoid_bias_threshold else 0,
@@ -787,34 +774,30 @@ if __name__ == "__main__":
             need_gradient=False,
         )
         epigraph_initial = np.concatenate(
-            (
-                epigraph_initial[0][0],
-                epigraph_initial[0][1]
-            )
+            (epigraph_initial[0][0], epigraph_initial[0][1])
         )
-        epigraph_initial_str = str_from_list(epigraph_initial)
 
-        epigraph_and_weights[0] = np.amax(epigraph_initial)
+        epigraph_and_weights[0] = np.max(epigraph_initial)
+        fraction_max_epigraph = 0.05
         if sigmoid_bias == sigmoid_biases[-1]:
-            epigraph_and_weights[0] = 1.05 * max(
-                epigraph_and_weights[0],
-                linewidth_constraint_val
+            epigraph_and_weights[0] = (1 + fraction_max_epigraph) * max(
+                epigraph_and_weights[0], linewidth_constraint_val
             )
         print(
-            f"epigraph-calibration:, {sigmoid_bias}, {epigraph_initial_str}, "
-            f"{epigraph_and_weights[0]}"
+            f"epigraph-calibration:, {sigmoid_bias}, "
+            f"{str_from_list(epigraph_initial)}, {epigraph_and_weights[0]}"
         )
 
         epigraph_and_weights[:] = solver.optimize(epigraph_and_weights)
 
-        optimal_design_weights = filter_projection(
+        optimal_design_weights = filter_and_project(
             epigraph_and_weights[1:],
             SIGMOID_THRESHOLD_INTRINSIC,
             sigmoid_bias,
         ).reshape(NX_DESIGN_GRID, NY_DESIGN_GRID)
 
-        # Save the unmapped weights and a bitmap image
-        # of the design weights at the end of each epoch.
+        # Save the unmapped weights and a bitmap image of the design weights
+        # at the end of each epoch.
         fig, ax = plt.subplots()
         ax.imshow(
             optimal_design_weights,
@@ -831,38 +814,34 @@ if __name__ == "__main__":
             # Save the final (unmapped) design as a 2D array in CSV format
             np.savetxt(
                 f"unmapped_design_weights_beta{sigmoid_bias}.csv",
-                epigraph_and_weights[1:].reshape(
-                    NX_DESIGN_GRID,
-                    NY_DESIGN_GRID
-                ),
+                epigraph_and_weights[1:].reshape(NX_DESIGN_GRID, NY_DESIGN_GRID),
                 fmt="%4.2f",
                 delimiter=",",
             )
 
-    # Save important optimization parameters and output as
-    # separate fields for post processing.
-    with open("optimal_design.npz", "wb") as datafile:
-        np.savez(
-            datafile,
-            RESOLUTION_UM=RESOLUTION_UM,
-            DESIGN_WAVELENGTHS_UM=DESIGN_WAVELENGTHS_UM,
-            WAVEGUIDE_UM=WAVEGUIDE_UM,
-            PADDING_UM=PADDING_UM,
-            PML_UM=PML_UM,
-            DESIGN_REGION_UM=DESIGN_REGION_UM,
-            DESIGN_REGION_RESOLUTION_UM=DESIGN_REGION_RESOLUTION_UM,
-            NX_DESIGN_GRID=NX_DESIGN_GRID,
-            NY_DESIGN_GRID=NY_DESIGN_GRID,
-            MIN_LENGTH_UM=MIN_LENGTH_UM,
-            sigmoid_biases=sigmoid_biases,
-            max_eval=max_eval,
-            objfunc_history=objfunc_history,
-            epivar_history=epivar_history,
-            epigraph_variable=epigraph_and_weights[0],
-            unmapped_design_weights=epigraph_and_weights[1:],
-            optimal_design_weights=optimal_design_weights,
-        )
+    # Save important optimization parameters and output for post processing.
+    np.savez(
+        "optimal_design.npz",
+        RESOLUTION_UM=RESOLUTION_UM,
+        DESIGN_WAVELENGTHS_UM=DESIGN_WAVELENGTHS_UM,
+        WAVEGUIDE_UM=WAVEGUIDE_UM,
+        PADDING_UM=PADDING_UM,
+        PML_UM=PML_UM,
+        DESIGN_REGION_UM=DESIGN_REGION_UM,
+        DESIGN_REGION_RESOLUTION_UM=DESIGN_REGION_RESOLUTION_UM,
+        NX_DESIGN_GRID=NX_DESIGN_GRID,
+        NY_DESIGN_GRID=NY_DESIGN_GRID,
+        MIN_LENGTH_UM=MIN_LENGTH_UM,
+        sigmoid_biases=sigmoid_biases,
+        max_eval=max_eval,
+        objfunc_history=objfunc_history,
+        epivar_history=epivar_history,
+        epigraph_variable=epigraph_and_weights[0],
+        unmapped_design_weights=epigraph_and_weights[1:],
+        optimal_design_weights=optimal_design_weights,
+    )
 ```
+
 
 Derivatives with Respect to Shape Parameters
 --------------------------------------------
