@@ -3,7 +3,7 @@ h5py
 jax
 jaxlib
 matplotlib
-numpy<2
+numpy<3
 parameterized
 pytest
 scipy
