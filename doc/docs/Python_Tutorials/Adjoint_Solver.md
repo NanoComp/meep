@@ -1199,7 +1199,7 @@ The stack consists of two materials of alternating refractive index $n_A$ = 1.3 
 
 ![](../images/multilayer_stack_shape_opt.png#center)
 
-A reference design to compare our results against is a [quarter-wavelength stack](https://en.wikipedia.org/wiki/Distributed_Bragg_reflector). The mean frequency of $\lambda_1$ and $\lambda_2$ is $\lambda \approx$ 1.0 μm for which the quarter-wavelength layer thicknesses are approximately $\lambda / (4 n_A)$ = 0.19 μm and $\lambda / (4 n_B)$ = 0.25 μm. These values are used to specify upper and lower bounds for the layer thicknesses. This is important given the non-convex nature of this particular design problem.
+A reference design to compare our results against is a [quarter-wavelength stack](https://en.wikipedia.org/wiki/Distributed_Bragg_reflector). The mean wavelength of $\lambda_1$ and $\lambda_2$ is $\lambda = 1.0 μm for which the quarter-wavelength layer thicknesses are $\lambda / (4 n_A)$ = 0.19 μm and $\lambda / (4 n_B)$ = 0.25 μm. These values are used to specify upper and lower bounds for the layer thicknesses. This is important given the non-convex nature of this particular design problem.
 
 (For several layers and a single wavelength, the optimizer can easily find a non-quarter-wavelength structure with very low transmission, and once it gets to that point the gradients will be almost zero so probably it will converge very slowly towards a quarter-wavelength solution because the optimizer is generally very slow to try to reduce transmittance from 1e-3 to 1e-6, for example.)
 
