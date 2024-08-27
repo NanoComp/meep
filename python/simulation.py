@@ -4996,14 +4996,13 @@ def _combine_step_funcs(*step_funcs):
 
 def _eval_step_func(sim, func, todo):
     num_args = get_num_args(func)
+    name_args = func.__code__.co_varnames
+    self_count = int("self" in name_args)
 
-    if num_args != 1 and num_args != 2:
-        raise ValueError(f"Step function '{func.__name__}'' requires 1 or 2 arguments")
-    elif num_args == 1:
-        if todo == "step":
-            func(sim)
-    elif num_args == 2:
-        func(sim, todo)
+    if num_args not in {1 + self_count, 2 + self_count}:
+        raise ValueError(f"Step function '{func.__name__}' requires 1 or 2 arguments")
+
+    func(sim, todo) if num_args == 2 + self_count else func(sim)
 
 
 def _when_true_funcs(cond, *step_funcs):
