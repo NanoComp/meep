@@ -99,12 +99,14 @@ def get_num_args(func):
         else func.__code__.co_argcount
     )
 
+
 def get_name_args(func):
     return (
         ("sim", "todo")
         if isinstance(func, Harminv) or isinstance(func, PadeDFT)
         else func.__code__.co_varnames[: func.__code__.co_argcount]
     )
+
 
 def vec(*args):
     try:
