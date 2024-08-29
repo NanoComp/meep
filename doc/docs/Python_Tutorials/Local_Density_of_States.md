@@ -10,7 +10,7 @@ $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}
 
 where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole assuming linear materials. In FDTD, computing the LDOS is straightforward: excite a point dipole source and accumulate the Fourier transforms of the field at a given point in space to obtain the entire LDOS spectrum in a single calculation. This is implemented in the `dft_ldos` feature which is the subject of this tutorial.
 
-Note: Computing the LDOS using this formula is only valid for *lossless* media (i.e., $\varepsilon$ is purely real). The formula yields a finite result in the limit of infinite resolution. This is not the case for lossy media (i.e., complex $\varepsilon$) as the LDOS diverges with resolution because the dipole consumes an infinite amount of energy (not physically possible). Unfortunately, computing the LDOS in lossy media involves more than just classical electromagnetism. The LDOS feature is therefore currently limited to only lossless media.
+Note: Computing the LDOS using this formula is only valid for *lossless* media (i.e., $\varepsilon$ is purely real). The formula yields a finite result in the limit of infinite resolution. This is not the case for lossy media (i.e., complex $\varepsilon$) as the LDOS diverges with resolution because, in the continuum limit, the dipole's near fields expend an infinite amount of energy.   A physical dipole-like source (e.g. spontaneous emission by an atom) expends a finite amount of energy, of course, but it is regularized by atomic-scale effects that are not included in classical electromagnetism. Therefore, we do not recommend using the LDOS feature within a lossy medium.
 
 [TOC]
 
