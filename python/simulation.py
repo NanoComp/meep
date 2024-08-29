@@ -99,6 +99,12 @@ def get_num_args(func):
         else func.__code__.co_argcount
     )
 
+def get_name_args(func):
+    return (
+        ("sim", "todo")
+        if isinstance(func, Harminv) or isinstance(func, PadeDFT)
+        else func.__code__.co_varnames[: func.__code__.co_argcount]
+    )
 
 def vec(*args):
     try:
@@ -4996,7 +5002,7 @@ def _combine_step_funcs(*step_funcs):
 
 def _eval_step_func(sim, func, todo):
     num_args = get_num_args(func)
-    name_args = func.__code__.co_varnames
+    name_args = get_name_args(func)
     self_count = int("self" in name_args)
 
     if num_args not in {1 + self_count, 2 + self_count}:
