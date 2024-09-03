@@ -97,7 +97,7 @@ def get_num_args(func):
     return (
         2
         if isinstance(func, Harminv) or isinstance(func, PadeDFT)
-        else func.__code__.co_argcount - 1 # first argument is "self", passed implicitly for bound methods
+        else func.__code__.co_argcount - 1 # first argument is "self"
         if inspect.ismethod(func)
         else func.__code__.co_argcount
     )
