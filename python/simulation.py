@@ -3,6 +3,7 @@ A collection of objects and helper routines for setting up the simulation.
 """
 
 import functools
+import inspect
 import math
 import numbers
 import os
@@ -96,15 +97,9 @@ def get_num_args(func):
     return (
         2
         if isinstance(func, Harminv) or isinstance(func, PadeDFT)
+        else func.__code__.co_argcount - 1
+        if inspect.ismethod(func)
         else func.__code__.co_argcount
-    )
-
-
-def get_name_args(func):
-    return (
-        ("sim", "todo")
-        if isinstance(func, Harminv) or isinstance(func, PadeDFT)
-        else func.__code__.co_varnames[: func.__code__.co_argcount]
     )
 
 
@@ -5004,16 +4999,14 @@ def _combine_step_funcs(*step_funcs):
 
 def _eval_step_func(sim, func, todo):
     num_args = get_num_args(func)
-    name_args = get_name_args(func)
-    self_count = int("self" in name_args)
 
-    if num_args not in {1 + self_count, 2 + self_count}:
-        raise ValueError(f"Step function '{func.__name__}' requires 1 or 2 arguments")
-    elif num_args == 2 + self_count:
-        func(sim, todo)
-    elif num_args == 1 + self_count:
+    if num_args != 1 and num_args != 2:
+        raise ValueError(f"Step function '{func.__name__}'' requires 1 or 2 arguments")
+    elif num_args == 1:
         if todo == "step":
             func(sim)
+    elif num_args == 2:
+        func(sim, todo)
 
 
 def _when_true_funcs(cond, *step_funcs):
