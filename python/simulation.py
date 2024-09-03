@@ -5009,8 +5009,11 @@ def _eval_step_func(sim, func, todo):
 
     if num_args not in {1 + self_count, 2 + self_count}:
         raise ValueError(f"Step function '{func.__name__}' requires 1 or 2 arguments")
-
-    func(sim, todo) if num_args == 2 + self_count else func(sim)
+    elif num_args == 2 + self_count:
+        func(sim, todo)
+    elif num_args == 1 + self_count:
+        if todo == "step":
+            func(sim)
 
 
 def _when_true_funcs(cond, *step_funcs):
