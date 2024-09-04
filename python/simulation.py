@@ -94,13 +94,12 @@ def fix_dft_args(args, i):
 
 
 def get_num_args(func):
-    return (
-        2
-        if isinstance(func, Harminv) or isinstance(func, PadeDFT)
-        else func.__code__.co_argcount - 1  # first argument is "self"
-        if inspect.ismethod(func)
-        else func.__code__.co_argcount
-    )
+    if isinstance(func, Harminv) or isinstance(func, PadeDFT):
+        return 2
+    elif inspect.ismethod(func):
+        return func.__code__.co_argcount - 1 # remove 'self' from count
+    else:
+        return func.__code__.co_argcount
 
 
 def vec(*args):
