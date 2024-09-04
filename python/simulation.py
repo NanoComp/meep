@@ -97,7 +97,7 @@ def get_num_args(func):
     if isinstance(func, Harminv) or isinstance(func, PadeDFT):
         return 2
     elif inspect.ismethod(func):
-        return func.__code__.co_argcount - 1 # remove 'self' from count
+        return func.__code__.co_argcount - 1  # remove 'self' from count
     else:
         return func.__code__.co_argcount
 
