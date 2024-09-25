@@ -107,6 +107,7 @@ void material_gc(material_type m) {
   m->medium_2.H_susceptibilities.clear();
 }
 
+
 void material_free(material_type m) {
   if (!m) return;
 
@@ -119,11 +120,17 @@ void material_free(material_type m) {
 
   // NOTE: We do not delete the user_data field here since it is an opaque/void
   // object so will assume that the caller keeps track of its lifetime.
-  delete[] m->epsilon_data;
-  m->epsilon_data = NULL;
+  
+  //MPI_Win_free(&md->epsilon_adress);
+  //MPI_Win_free(&md->weights_adress);
 
-  delete[] m->weights;
-  m->weights = NULL;
+  // delete[] m->epsilon_data;
+  //m->epsilon_data = NULL;
+  //delete[] m->epsilon_adress;
+
+  // delete[] m->weights;
+  //m->weights = NULL;
+  //delete[] m->weights_adress;
   delete m;
 }
 
