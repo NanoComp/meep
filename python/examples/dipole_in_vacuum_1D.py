@@ -13,9 +13,11 @@ Current = Enum("Current", "Jx Jy Kx Ky")
 
 RESOLUTION_UM = 25
 WAVELENGTH_UM = 1.0
-NUM_K = 100
+NUM_K = 40
 NUM_POLAR = 50
-NUM_AZIMUTHAL = 200
+NUM_AZIMUTHAL = 50
+PML_UM = 1.0
+AIR_UM = 10.0
 DEBUG_OUTPUT = False
 
 frequency = 1 / WAVELENGTH_UM
@@ -24,21 +26,19 @@ frequency = 1 / WAVELENGTH_UM
 def dipole_in_vacuum(
     dipole_component: Current, kx: float, ky: float
 ) -> Tuple[complex, complex, complex, complex]:
+    """                                                                                               
+    Returns the near fields of a dipole in vacuum.                                                    
+                                                                                                      
+    Args:                                                                                             
+        dipole_component: the component of the dipole.                                                
+        kx, ky: the wavevector components.                                                            
+                                                                                                      
+    Returns:                                                                                          
+        The surface-tangential electric and magnetic near fields as a 4-tuple.                        
     """
-    Returns the near fields of a dipole in vacuum.
-
-    Args:
-        dipole_component: the component of the dipole.
-        kx, ky: the wavevector components.
-
-    Returns:
-        The surface-tangential electric and magnetic near fields as a 4-tuple.
-    """
-    pml_um = 1.0
-    air_um = 50.0
-    size_z_um = pml_um + air_um + pml_um
+    size_z_um = PML_UM + AIR_UM + PML_UM
     cell_size = mp.Vector3(0, 0, size_z_um)
-    pml_layers = [mp.PML(thickness=pml_um)]
+    pml_layers = [mp.PML(thickness=PML_UM)]
 
     if dipole_component.name == "Jx":
         src_cmpt = mp.Ex
@@ -51,9 +51,9 @@ def dipole_in_vacuum(
 
     sources = [
         mp.Source(
-            src=mp.GaussianSource(frequency, fwidth=0.1 * frequency),
+            src=mp.GaussianSource(frequency, fwidth=0.05 * frequency),
             component=src_cmpt,
-            center=mp.Vector3(0, 0, -0.5 * air_um),
+            center=mp.Vector3(0, 0, -0.5 * AIR_UM),
         )
     ]
 
@@ -64,7 +64,6 @@ def dipole_in_vacuum(
         sources=sources,
         boundary_layers=pml_layers,
         k_point=mp.Vector3(kx, ky, 0),
-        dimensions=3
     )
 
     dft_fields = sim.add_dft_fields(
@@ -72,13 +71,13 @@ def dipole_in_vacuum(
         frequency,
         0,
         1,
-        center=mp.Vector3(0, 0, 0.5 * air_um),
+        center=mp.Vector3(0, 0, 0.5 * AIR_UM),
         size=mp.Vector3()
     )
 
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(
-            10, src_cmpt, mp.Vector3(0, 0, 0.5423), 1e-6
+            10, src_cmpt, mp.Vector3(0, 0, 0.5 * AIR_UM), 1e-6
         )
     )
 
@@ -93,13 +92,13 @@ def dipole_in_vacuum(
 def equivalent_currents(
     ex_dft: complex, ey_dft: complex, hx_dft: complex, hy_dft: complex
 ) -> Tuple[Tuple[complex, complex], Tuple[complex, complex]]:
-    """Computes the equivalent electric and magnetic currents on a surface.
-
-    Args:
-        ex_dft, ey_dft, hx_dft, hy_dft: the surface tangential DFT fields.
-
-    Returns:
-        A 2-tuple of the electric and magnetic sheet currents in x and y.
+    """Computes the equivalent electric and magnetic currents on a surface.                           
+                                                                                                      
+    Args:                                                                                             
+        ex_dft, ey_dft, hx_dft, hy_dft: the surface tangential DFT fields.                            
+                                                                                                      
+    Returns:                                                                                          
+        A 2-tuple of the electric and magnetic sheet currents in x and y.                             
     """
 
     electric_current = (-hy_dft, hx_dft)
@@ -111,38 +110,35 @@ def equivalent_currents(
 def farfield_amplitudes(
     kx: float,
     kz: float,
-    rx: float,
-    rz: float,
     current_amplitude: complex,
     current_component: Current,
 ) -> Tuple[complex, complex, complex]:
-    """Computes the S- or P-polarized far-field amplitudes from a sheet current.
-
-    Assumes ky=0 such that wavevector is in xz plane.
-
-    Args:
-        kx, kz: wavevector of the outgoing planewave in the x,z direction. Units of 2π.
-        rx, rz: x,z coordinate of a point on the surface of a hemicircle.
-        current_amplitude: amplitude of the sheet current.
-        current_component: component of the sheet current.
-
-    Returns:
-        A 3-tuple of the electric and magnetic far fields.
+    """Computes the S- or P-polarized far-field amplitudes from a sheet current.                      
+                                                                                                      
+    Assumes ky=0 such that wavevector is in xz plane.                                                 
+                                                                                                      
+    Args:                                                                                             
+        kx, kz: wavevector of the outgoing planewave in the x,z direction. Units of 2π.               
+        current_amplitude: amplitude of the sheet current.                                            
+        current_component: component of the sheet current.                                            
+                                                                                                      
+    Returns:                                                                                          
+        A 3-tuple of the electric and magnetic far fields.                                            
     """
     if current_component.name == "Jx":
-        # Jx --> (Ex, Hy, Ez) [P pol.]
+        # Jx --> (Ex, Hy, Ez) [P pol.]                                                                
         ex0 = -kz * current_amplitude / (2 * frequency)
         hy0 = frequency * ex0 / kz
     elif current_component.name == "Jy":
-        # Jy --> (Hx, Ey, Hz) [S pol.]
+        # Jy --> (Hx, Ey, Hz) [S pol.]                                                                
         ey0 = -frequency * current_amplitude / (2 * kz)
         hx0 = -kz * ey0 / frequency
     elif current_component.name == "Kx":
-        # Kx --> (Hx, Ey, Hz) [S pol.]
+        # Kx --> (Hx, Ey, Hz) [S pol.]                                                                
         hx0 = kz * current_amplitude / (2 * frequency)
         ey0 = -frequency * hx0 / kz
     elif current_component.name == "Ky":
-        # Ky --> (Ex, Hy, Ez) [P pol.]
+        # Ky --> (Ex, Hy, Ez) [P pol.]                                                                
         hy0 = frequency * current_amplitude / (2 * kz)
         ex0 = kz * hy0 / frequency
 
@@ -155,14 +151,14 @@ def farfield_amplitudes(
 
 
 def spherical_to_cartesian(polar_rad, azimuthal_rad) -> Tuple[float, float, float]:
-    """Converts a far point in spherical to Cartesian coordinates.
-
-    Args:
-        polar_rad: polar angle of the point.
-        azimuthal_rad: azimuthal angle of the point.
-
-    Returns:
-        The x,y,z coordinates of the far point as a 3-tuple.
+    """Converts a far point in spherical to Cartesian coordinates.                                    
+                                                                                                      
+    Args:                                                                                             
+        polar_rad: polar angle of the point.                                                          
+        azimuthal_rad: azimuthal angle of the point.                                                  
+                                                                                                      
+    Returns:                                                                                          
+        The x,y,z coordinates of the far point as a 3-tuple.                                          
     """
     x = np.sin(polar_rad) * np.cos(azimuthal_rad)
     y = np.sin(polar_rad) * np.sin(azimuthal_rad)
@@ -177,27 +173,26 @@ if __name__ == "__main__":
     kxs = np.linspace(-frequency, frequency, NUM_K)
     kys = np.linspace(-frequency, frequency, NUM_K)
 
-    # Far fields are defined on the surface of a hemisphere.
-    polar_rad = np.linspace(0, 0.5 * np.pi, NUM_POLAR)
+    # Far fields are defined on the surface of a hemisphere.                                          
+    polar_rad = np.linspace(
+        0,
+        0.5 * math.pi,
+        NUM_POLAR
+    )
     azimuthal_rad = np.linspace(0, 2 * np.pi, NUM_AZIMUTHAL)
     delta_azimuthal_rad = 2 * np.pi / (NUM_AZIMUTHAL - 1)
 
     current_components = [Current.Jx, Current.Jy, Current.Kx, Current.Ky]
     farfield_components = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
 
-    total_farfields = {}
-    for component in farfield_components:
-        total_farfields[component] = np.zeros(
-            (NUM_POLAR, NUM_AZIMUTHAL),
-            dtype=np.complex128
-        )
+    poynting_flux = np.zeros((NUM_POLAR, NUM_AZIMUTHAL))
 
-    # Brillouin zone integration over 2D grid of (kx, ky).
+    # Brillouin-zone integration over 2D grid of (kx, ky).                                            
     for kx in kxs:
         for ky in kys:
 
-            # Skip wavevectors which are outside the light cone.
-            if np.sqrt(kx**2 + ky**2) >= (0.95 * frequency):
+            # Skip wavevectors which are outside the light cone.                                      
+            if np.sqrt(kx**2 + ky**2) >= (0.945 * frequency):
                 continue
 
             kz = (frequency**2 - kx**2 - ky**2) ** 0.5
@@ -213,7 +208,7 @@ if __name__ == "__main__":
                 print(f"hx_dft:, {hx_dft}")
                 print(f"hy_dft:, {hy_dft}")
 
-            # Rotation angle around z axis to force ky=0. 0 radians is +x.
+            # Rotation angle around z axis to force ky=0. 0 radians is +x.                            
             rotation_rad = -math.atan2(ky, kx)
 
             if DEBUG_OUTPUT:
@@ -255,8 +250,8 @@ if __name__ == "__main__":
                 magnetic_current_rotated[1],
             ]
 
-            # Obtain the far fields over a hemisphere given a sheet current
-            # with linear in-plane polarization.
+            # Obtain the far fields over a hemisphere given a sheet current                           
+            # with linear in-plane polarization.                                                      
 
             farfields = {}
             for component in farfield_components:
@@ -265,37 +260,29 @@ if __name__ == "__main__":
                     dtype=np.complex128
                 )
 
-            for i, polar in enumerate(polar_rad):
-                for j, azimuthal in enumerate(azimuthal_rad):
-                    rx, ry, rz = spherical_to_cartesian(polar, azimuthal)
-                    r_rotated = rotation_matrix @ np.transpose(np.array([rx, ry]))
-                    # Note: r_rotated[1] (ry) is not used because k_rotated[1]=0 (ky).
-                    phase = np.exp(1j * 2 * np.pi * (k_rotated[0] * r_rotated[0] + kz * rz))
+            for i in range(NUM_POLAR):
+                for j in range(NUM_AZIMUTHAL):
 
-                    # Obtain the farfields for each type of sheet current
-                    # and keep a running sum.
+                    # Obtain the farfields for each type of sheet current                             
+                    # and keep a running sum.                                                         
                     for current_component, current_amplitude in zip(
                         current_components, current_amplitudes
                     ):
                         if abs(current_amplitude) == 0:
                             continue
 
-                        farfield_amplitudes_pol = farfield_amplitudes(
+                        farfield_pol = farfield_amplitudes(
                             k_rotated[0],
                             kz,
-                            r_rotated[0],
-                            rz,
                             current_amplitude,
                             current_component,
                         )
-
-                        farfield_pol = np.array(farfield_amplitudes_pol) * phase
 
                         if (
                             current_component.name == "Jx" or
                             current_component.name == "Ky"
                         ):
-                            # P polarization
+                            # P polarization                                                          
                             farfields["Ex"][i, j] += farfield_pol[0]
                             farfields["Hy"][i, j] += farfield_pol[1]
                             farfields["Ez"][i, j] += farfield_pol[2]
@@ -303,7 +290,7 @@ if __name__ == "__main__":
                             current_component.name == "Jy" or
                             current_component.name == "Kx"
                         ):
-                            # S polarization
+                            # S polarization                                                          
                             farfields["Hx"][i, j] += farfield_pol[0]
                             farfields["Ey"][i, j] += farfield_pol[1]
                             farfields["Hz"][i, j] += farfield_pol[2]
@@ -313,42 +300,58 @@ if __name__ == "__main__":
 
             for i in range(NUM_POLAR):
                 for j in range(NUM_AZIMUTHAL):
-                    total_farfields["Ex"][i, j] += (
+                    ex_rotated = (
                         inverse_rotation_matrix[0, 0] * farfields["Ex"][i, j] +
                         inverse_rotation_matrix[0, 1] * farfields["Ey"][i, j]
                     )
-                    total_farfields["Ey"][i, j] += (
+                    ey_rotated = (
                         inverse_rotation_matrix[1, 0] * farfields["Ex"][i, j] +
                         inverse_rotation_matrix[1, 1] * farfields["Ey"][i, j]
                     )
-                    total_farfields["Ez"][i, j] += (
-                        farfields["Ez"][i, j]
-                    )
 
-                    total_farfields["Hx"][i, j] += (
+                    hx_rotated = (
                         inverse_rotation_matrix[0, 0] * farfields["Hx"][i, j] +
                         inverse_rotation_matrix[0, 1] * farfields["Hy"][i, j]
                     )
-                    total_farfields["Hy"][i, j] += (
+                    hy_rotated = (
                         inverse_rotation_matrix[1, 0] * farfields["Hx"][i, j] +
                         inverse_rotation_matrix[1, 1] * farfields["Hy"][i, j]
                     )
-                    total_farfields["Hz"][i, j] += (
-                        farfields["Hz"][i, j]
+
+                    flux_x = np.real(
+                        np.conj(ey_rotated) * farfields["Hz"][i, j] -
+                        np.conj(farfields["Ez"][i, j]) * hy_rotated
                     )
+
+                    flux_y = np.real(
+                        np.conj(farfields["Ez"][i, j]) * hx_rotated -
+                        np.conj(ex_rotated) * farfields["Hz"][i, j]
+                    )
+
+                    flux_z = np.real(
+                        np.conj(ex_rotated) * hy_rotated -
+                        np.conj(ey_rotated) * hx_rotated
+                    )
+
+                    rx, ry, rz = spherical_to_cartesian(polar_rad[i], azimuthal_rad[j])
+                    poynting_flux[i, j] += rx * flux_x + ry * flux_y + rz * flux_z
+
 
     if mp.am_master():
         np.savez(
             "dipole_farfields.npz",
-            **total_farfields,
             RESOLUTION_UM=RESOLUTION_UM,
             WAVELENGTH_UM=WAVELENGTH_UM,
-            FARFIELD_RADIUS_UM=FARFIELD_RADIUS_UM,
+            NUM_K=NUM_K,
             NUM_POLAR=NUM_POLAR,
             NUM_AZIMUTHAL=NUM_AZIMUTHAL,
+            PML_UM=PML_UM,
+            AIR_UM=AIR_UM,
             polar_rad=polar_rad,
             azimuthal_rad=azimuthal_rad,
             kxs=kxs,
             kys=kys,
-            dipole_component=dipole_component
+            dipole_component=dipole_component,
+            poynting_flux=poynting_flux
         )
+
