@@ -44,7 +44,7 @@ def plot_radiation_pattern(dipole_pol: int, radial_flux: np.ndarray):
 
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
     ax.plot(polar_rad, normalized_radial_flux, "b-", label="Meep")
-    ax.plot(polar_rad, dipole_radial_flux, "r-", label=dipole_radial_flux_label)
+    ax.plot(polar_rad, dipole_radial_flux, "r--", label=dipole_radial_flux_label)
     ax.legend()
     ax.set_theta_direction(-1)
     ax.set_theta_offset(0.5 * math.pi)

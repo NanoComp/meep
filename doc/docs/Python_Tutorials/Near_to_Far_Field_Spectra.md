@@ -189,7 +189,6 @@ plt.show()
 
 ![](../images/Source_radiation_pattern.png#center)
 
-
 ### Antenna above a Perfect Electric Conductor Ground Plane
 
 As a second example, we compute the radiation pattern of an antenna positioned a given height $h$ above a perfect-electric conductor (PEC) ground plane. Depending on the wavelength and height of the antenna, self-interference effects due to reflections from the ground plane will produce well-defined lobes in the radiation pattern. The challenge in setting up this calculation is that because the ground plane is infinitely extended, it is not possible to enclose the antenna by a near-field surface. A non-closed near-field surface unfortunately gives rise to truncation errors which is described in more detail in the [section below](#truncation-errors-from-a-non-closed-near-field-surface).
@@ -1702,3 +1701,14 @@ In this example, to demonstrate agreement between the far fields and DFT fields,
 When these two conditions are not met as in the example below involving a small `dpad` and large `d2`, the error from the finite truncation and numerical dispersion can be large and therefore result in a significant mismatch between the far fields computed using the near-to-far field transformation versus the actual DFT fields at the same location.
 
 ![Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity_mismatch.png#center)
+
+Radiation Pattern of an Antenna in Cylindrical Coordinates
+----------------------------------------------------------
+
+In an earlier section, we showed how to compute the [radiation pattern of an antennna](#radiation-pattern-of-an-antenna) using 2D Cartesian coordinates. The same calculation can also be performed using cylindrical coordinates.
+
+The simulation scripts are in [examples/dipole_in_vacuum_cyl_axisymmetric.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_cyl_axisymmetric.py) and [examples/dipole_in_vacuum_cyl_nonaxisymmetric.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_cyl_nonaxisymmetric.py).
+
+![](../images/radiation_pattern_axisymmetric_dipole.png#center)
+
+![](../images/radiation_pattern_nonaxisymmetric_dipole.png#center)
