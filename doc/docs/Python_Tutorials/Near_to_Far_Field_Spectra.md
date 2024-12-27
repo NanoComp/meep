@@ -189,6 +189,7 @@ plt.show()
 
 ![](../images/Source_radiation_pattern.png#center)
 
+
 ### Antenna above a Perfect Electric Conductor Ground Plane
 
 As a second example, we compute the radiation pattern of an antenna positioned a given height $h$ above a perfect-electric conductor (PEC) ground plane. Depending on the wavelength and height of the antenna, self-interference effects due to reflections from the ground plane will produce well-defined lobes in the radiation pattern. The challenge in setting up this calculation is that because the ground plane is infinitely extended, it is not possible to enclose the antenna by a near-field surface. A non-closed near-field surface unfortunately gives rise to truncation errors which is described in more detail in the [section below](#truncation-errors-from-a-non-closed-near-field-surface).
@@ -1705,13 +1706,13 @@ When these two conditions are not met as in the example below involving a small 
 Radiation Pattern of an Antenna in Cylindrical Coordinates
 ----------------------------------------------------------
 
-In an earlier section, we showed how to compute the [radiation pattern of an antennna](#radiation-pattern-of-an-antenna) with **linear** polarization using 2D Cartesian coordinates. The same calculation can also be performed using [cylindrical coordinates](Exploiting_Symmetry.md#cylindrical-symmetry). We will demonstrate this for two cases in which the dipole is (1) axisymmetric (i.e., at $r = 0$) or (2) nonaxisymmetric (at $r > 0$).
+In an earlier section, we showed how to compute the [radiation pattern of an antennna](#radiation-pattern-of-an-antenna) in vacuum with **linear** polarization using 2D Cartesian coordinates. The same calculation can also be performed using [cylindrical coordinates](Exploiting_Symmetry.md#cylindrical-symmetry). We will demonstrate this for two cases in which the dipole is (1) axisymmetric (i.e., at $r = 0$) or (2) nonaxisymmetric (i.e., at $r > 0$). In this example, the radiation pattern is computed for $\phi = 0$ (i.e., the $rz$ or $xz$ plane).
 
-For (1), an $E_z$ dipole is positioned exactly at $r = 0$ with $m = 0$. This involves a single simulation. An $E_x$ dipole at $r = 0$, however, involves the superposition of two left- and right-circularly polarized dipoles as described in [Tutorial/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). This involves two simulations.
+For (1), an $E_z$ dipole is positioned exactly at $r = 0$ with $m = 0$. This involves a single simulation. An $E_x$ dipole at $r = 0$, however, involves the superposition of left- and right-circularly polarized dipoles as described in [Tutorial/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). This involves *two* simulations. Note that computation of the radiation pattern of an $E_x$ dipole at $r = 0$ is different from the [computation of its extraction efficiency](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) which involves a *single* $E_r$ source with either $m = +1$ or $m = -1$. This is because in the latter a circularly polarized source emits the same power as a linearly polarized source.
 
-For (2), an $E_x$ dipole positioned anywhere at $r > 0$ requires a Fourier-series expansion of the fields from an $E_r$ ring current source with azimuthal dependence $\exp(im\phi)$.
+For (2), an $E_x$ (or equivalently an $E_r$) dipole positioned at $r > 0$ requires a [Fourier-series expansion of the fields](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) from an $E_r$ "ring" current source with azimuthal dependence $\exp(im\phi)$. The $\pm m$ fields are computed separately (even though they are complex conjugates) and combined as part of the calculation of the total fields of the expansion.
 
-The figures below show the radiation pattern for each of these cases compared with the analytic result. The simulation and analytic results show good agreement.
+The figures show the radiation pattern for each of these cases obtained using the scripts. The simulation and analytic results show good agreement.
 
 The simulation scripts are in [examples/dipole_in_vacuum_cyl_axisymmetric.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_cyl_axisymmetric.py) and [examples/dipole_in_vacuum_cyl_nonaxisymmetric.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_cyl_nonaxisymmetric.py).
 
