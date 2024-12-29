@@ -26,21 +26,29 @@ frequency = 1 / WAVELENGTH_UM
 polar_rad = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
 
 
-def plot_radiation_pattern(radial_flux: np.ndarray):
+def plot_radiation_pattern(dipole_pol: str, radial_flux: np.ndarray):
     """Plots the radiation pattern in polar coordinates.
 
     The angles increase clockwise with zero in the +z direction (the "pole")
     and π/2 in the +r direction (the "equator").
 
     Args:
+        dipole_pol: the dipole polarization.
         radial_flux: the radial flux in polar coordinates.
     """
     normalized_radial_flux = radial_flux / np.max(radial_flux)
-    dipole_radial_flux = np.square(np.cos(polar_rad))
+    if dipole_pol == "x":
+        dipole_radial_flux = np.square(np.cos(polar_rad))
+        dipole_radial_flux_label = r"$\cos^2θ$"
+        dipole_name = "$E_x$"
+    else:
+        dipole_radial_flux = np.ones(NUM_FARFIELD_PTS)
+        dipole_radial_flux_label = "constant (1.0)"
+        dipole_name = "$E_y$"
 
     fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
     ax.plot(polar_rad, normalized_radial_flux, "b-", label="Meep")
-    ax.plot(polar_rad, dipole_radial_flux, "r--", label=r"$\cos^2θ$")
+    ax.plot(polar_rad, dipole_radial_flux, "r--", label=dipole_radial_flux_label)
     ax.legend()
     ax.set_theta_direction(-1)
     ax.set_theta_offset(0.5 * math.pi)
@@ -50,7 +58,9 @@ def plot_radiation_pattern(radial_flux: np.ndarray):
     ax.grid(True)
     ax.set_rlabel_position(22)
     ax.set_ylabel("radial flux (a.u.)")
-    ax.set_title("radiation pattern of a nonaxisymmetric $E_x$ dipole")
+    ax.set_title(
+        "radiation pattern (φ = 0) of a nonaxisymmetric " f"{dipole_name} dipole"
+    )
 
     if mp.am_master():
         fig.savefig(
@@ -78,8 +88,12 @@ def radiation_pattern(e_field: np.ndarray, h_field: np.ndarray) -> np.ndarray:
         [0, π/2] rad. 0 radians is the +z direction (the "pole") and π/2 is
         the +r direction (the "equator").
     """
-    flux_x = np.real(e_field[:, 1] * h_field[:, 2] - e_field[:, 2] * h_field[:, 1])
-    flux_z = np.real(e_field[:, 0] * h_field[:, 1] - e_field[:, 1] * h_field[:, 0])
+    flux_x = np.real(
+        e_field[:, 1] * np.conj(h_field[:, 2]) - e_field[:, 2] * np.conj(h_field[:, 1])
+    )
+    flux_z = np.real(
+        e_field[:, 0] * np.conj(h_field[:, 1]) - e_field[:, 1] * np.conj(h_field[:, 0])
+    )
     flux_r = np.sqrt(np.square(flux_x) + np.square(flux_z))
 
     return flux_r
@@ -111,16 +125,19 @@ def get_farfields(
                 FARFIELD_RADIUS_UM * math.cos(polar_rad[n]),
             ),
         )
-        e_field[n, :] = [np.conj(far_field[j]) for j in range(3)]
+        e_field[n, :] = [far_field[j] for j in range(3)]
         h_field[n, :] = [far_field[j + 3] for j in range(3)]
 
     return e_field, h_field
 
 
-def dipole_in_vacuum(dipole_pos_r: mp.Vector3, m: int) -> Tuple[np.ndarray, np.ndarray]:
+def dipole_in_vacuum(
+    dipole_pol: str, dipole_pos_r: mp.Vector3, m: int
+) -> Tuple[np.ndarray, np.ndarray]:
     """Computes the far fields of a nonaxisymmetric point source.
 
     Args:
+        dipole_pol: the dipole polarization.
         dipole_pos_r: the radial position of the dipole.
         m: angular φ dependence of the fields exp(imφ).
 
@@ -133,10 +150,12 @@ def dipole_in_vacuum(dipole_pos_r: mp.Vector3, m: int) -> Tuple[np.ndarray, np.n
 
     boundary_layers = [mp.PML(thickness=PML_UM)]
 
+    src_cmpt = mp.Er if dipole_pol == "x" else mp.Ep
+
     sources = [
         mp.Source(
             src=mp.GaussianSource(frequency, fwidth=0.1 * frequency),
-            component=mp.Er,
+            component=src_cmpt,
             center=mp.Vector3(dipole_pos_r, 0, 0),
         )
     ]
@@ -168,7 +187,7 @@ def dipole_in_vacuum(dipole_pos_r: mp.Vector3, m: int) -> Tuple[np.ndarray, np.n
 
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(
-            20.0, mp.Er, mp.Vector3(dipole_pos_r, 0, 0), 1e-6
+            20.0, src_cmpt, mp.Vector3(dipole_pos_r, 0, 0), 1e-6
         )
     )
 
@@ -209,9 +228,18 @@ def flux_from_farfields(e_field: np.ndarray, h_field: np.ndarray) -> float:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "dipole_pol",
+        type=str,
+        choices=["x", "y"],
+        help="polarization of the electric dipole (x or y)",
+    )
+    parser.add_argument(
         "dipole_pos_r", type=float, help="radial position of the dipole"
     )
     args = parser.parse_args()
+
+    if args.dipole_pos_r == 0:
+        raise ValueError(f"dipole_pos_r must be nonzero.")
 
     # Fourier series expansion of the fields from a ring current source
     # used to generate a point dipole localized in the azimuthal direction.
@@ -221,15 +249,16 @@ if __name__ == "__main__":
     flux_max = 0
     m = 0
     while True:
-        e_field, h_field = dipole_in_vacuum(args.dipole_pos_r, m)
+        e_field, h_field = dipole_in_vacuum(args.dipole_pol, args.dipole_pos_r, m)
 
-        if m == 0:
-            e_field_total += e_field
-            h_field_total += h_field
+        if args.dipole_pol == "x":
+            e_field_total[:, 0] += e_field[:, 0] * (1 if m == 0 else 2)
+            h_field_total[:, 1] += h_field[:, 1] * (1 if m == 0 else 2)
+            e_field_total[:, 2] += e_field[:, 2] * (1 if m == 0 else 2)
         else:
-            e_field_total[:, 0] += 2 * e_field[:, 0]
-            h_field_total[:, 1] += 2 * h_field[:, 1]
-            e_field_total[:, 2] += 2 * e_field[:, 2]
+            h_field_total[:, 0] += h_field[:, 0] * (1 if m == 0 else 2)
+            e_field_total[:, 1] += e_field[:, 1] * (1 if m == 0 else 2)
+            h_field_total[:, 2] += h_field[:, 2] * (1 if m == 0 else 2)
 
         flux = flux_from_farfields(e_field, h_field)
         if flux > flux_max:
@@ -244,7 +273,7 @@ if __name__ == "__main__":
 
     dipole_radiation_pattern = radiation_pattern(e_field_total, h_field_total)
     dipole_radiation_pattern_scaled = dipole_radiation_pattern * FARFIELD_RADIUS_UM**2
-    plot_radiation_pattern(dipole_radiation_pattern_scaled)
+    plot_radiation_pattern(args.dipole_pol, dipole_radiation_pattern_scaled)
 
     if mp.am_master():
         np.savez(
@@ -254,6 +283,7 @@ if __name__ == "__main__":
             POWER_DECAY_THRESHOLD=POWER_DECAY_THRESHOLD,
             RESOLUTION_UM=RESOLUTION_UM,
             WAVELENGTH_UM=WAVELENGTH_UM,
+            dipole_pol=args.dipole_pol,
             dipole_pos_r=args.dipole_pos_r,
             dipole_radiation_pattern=dipole_radiation_pattern,
             e_field_total=e_field_total,
