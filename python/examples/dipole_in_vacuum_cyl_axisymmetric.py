@@ -6,6 +6,7 @@ https://meep.readthedocs.io/en/latest/Python_Tutorials/Near_to_Far_Field_Spectra
 """
 
 import argparse
+import cmath
 import math
 from typing import Tuple
 
@@ -19,8 +20,8 @@ WAVELENGTH_UM = 1.0
 PML_UM = 1.0
 FARFIELD_RADIUS_UM = 1e6 * WAVELENGTH_UM
 NUM_FARFIELD_PTS = 50
+AZIMUTHAL_RAD = 0
 POWER_DECAY_THRESHOLD = 1e-4
-DEBUG_OUTPUT = False
 
 frequency = 1 / WAVELENGTH_UM
 polar_rad = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
@@ -103,7 +104,7 @@ def radiation_pattern(e_field: np.ndarray, h_field: np.ndarray) -> np.ndarray:
 def get_farfields(
     sim: mp.Simulation, n2f_mon: mp.DftNear2Far
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Computes the far fields from the near fields.
+    """Computes the far fields from the near fields for φ = 0 (rz plane).
 
     Args:
         sim: a `Simulation` object.
@@ -111,9 +112,10 @@ def get_farfields(
 
     Returns:
         The electric (Er, Ep, Ez) and magnetic (Hr, Hp, Hz) far fields. One row
-        with six columns for the fields for each point on the circumference of
-        a quarter circle with angular range of [0, π/2] rad. 0 radians is the
-        +z direction (the "pole") and π/2 is the +r direction (the "equator").
+        for each point on the circumference of a quarter circle with angular
+        range of [0, π/2] rad. Each row has six columns for the fields.
+        0 radians is the +z direction (the "pole") and π/2 is the +r direction
+        (the "equator").
     """
     e_field = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
     h_field = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
@@ -209,12 +211,6 @@ def dipole_in_vacuum(dipole_pol: str, m: int) -> Tuple[np.ndarray, np.ndarray]:
         )
     )
 
-    if DEBUG_OUTPUT:
-        fig, ax = plt.subplots()
-        sim.plot2D(ax=ax, show_monitors=True)
-        if mp.am_master():
-            fig.savefig("dipole_in_vacuum_cyl_layout.png", dpi=150, bbox_inches="tight")
-
     e_field, h_field = get_farfields(sim, nearfields_monitor)
 
     return e_field, h_field
@@ -258,15 +254,15 @@ if __name__ == "__main__":
 
     if args.dipole_pol == "x":
         # An x-polarized dipole can be formed from the superposition
-        # of two left- and right-circularly polarized dipoles.
+        # of left- and right-circularly polarized dipoles.
 
         e_field, h_field = dipole_in_vacuum("x", +1)
-        e_field_total += 0.5 * e_field
-        h_field_total += 0.5 * h_field
+        e_field_total += 0.5 * e_field * cmath.exp(1j * AZIMUTHAL_RAD)
+        h_field_total += 0.5 * h_field * cmath.exp(1j * AZIMUTHAL_RAD)
 
         e_field, h_field = dipole_in_vacuum("x", -1)
-        e_field_total += 0.5 * e_field
-        h_field_total += 0.5 * h_field
+        e_field_total += 0.5 * e_field * cmath.exp(-1j * AZIMUTHAL_RAD)
+        h_field_total += 0.5 * h_field * cmath.exp(-1j * AZIMUTHAL_RAD)
 
     else:
         e_field, h_field = dipole_in_vacuum("z", 0)
@@ -280,6 +276,7 @@ if __name__ == "__main__":
     if mp.am_master():
         np.savez(
             "dipole_farfields_axisymmetric.npz",
+            AZIMUTHAL_RAD=AZIMUTHAL_RAD,
             FARFIELD_RADIUS_UM=FARFIELD_RADIUS_UM,
             PML_UM=PML_UM,
             POWER_DECAY_THRESHOLD=POWER_DECAY_THRESHOLD,
