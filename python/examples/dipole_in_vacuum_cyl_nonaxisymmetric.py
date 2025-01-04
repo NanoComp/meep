@@ -59,9 +59,7 @@ def plot_radiation_pattern(dipole_pol: str, radial_flux: np.ndarray):
     ax.grid(True)
     ax.set_rlabel_position(22)
     ax.set_ylabel("radial flux (a.u.)")
-    ax.set_title(
-        "radiation pattern (φ = 0) of a nonaxisymmetric " f"{dipole_name} dipole"
-    )
+    ax.set_title("radiation pattern (φ = 0) of a nonaxisymmetric {dipole_name} dipole")
 
     if mp.am_master():
         fig.savefig(
@@ -135,7 +133,7 @@ def get_farfields(
 
 def dipole_in_vacuum(
     dipole_pol: str, dipole_pos_r: mp.Vector3, m: int
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Computes the far fields of a nonaxisymmetric point source.
 
     Args:
@@ -144,7 +142,8 @@ def dipole_in_vacuum(
         m: angular φ dependence of the fields exp(imφ).
 
     Returns:
-        A 2-tuple containing the electric and magnetic far fields as 1D arrays.
+        A 4-tuple containing the electric and magnetic far fields at positive
+        and negative frequencies, respectively, as 1D arrays.
     """
     sr = 2.0
     sz = 4.0
@@ -159,7 +158,12 @@ def dipole_in_vacuum(
             src=mp.GaussianSource(frequency, fwidth=0.1 * frequency),
             component=src_cmpt,
             center=mp.Vector3(dipole_pos_r, 0, 0),
-        )
+        ),
+        mp.Source(
+            src=mp.GaussianSource(-frequency, fwidth=0.1 * frequency),
+            component=src_cmpt,
+            center=mp.Vector3(dipole_pos_r, 0, 0),
+        ),
     ]
 
     sim = mp.Simulation(
@@ -172,8 +176,23 @@ def dipole_in_vacuum(
         force_complex_fields=True,
     )
 
-    nearfields_monitor = sim.add_near2far(
+    nearfields_monitor_plus = sim.add_near2far(
         frequency,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * sr, 0, 0.5 * sz), size=mp.Vector3(sr, 0, 0)
+        ),
+        mp.FluxRegion(center=mp.Vector3(sr, 0, 0), size=mp.Vector3(0, 0, sz)),
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * sr, 0, -0.5 * sz),
+            size=mp.Vector3(sr, 0, 0),
+            weight=-1.0,
+        ),
+    )
+
+    nearfields_monitor_minus = sim.add_near2far(
+        -frequency,
         0,
         1,
         mp.FluxRegion(
@@ -193,9 +212,10 @@ def dipole_in_vacuum(
         )
     )
 
-    e_field, h_field = get_farfields(sim, nearfields_monitor)
+    e_field_plus, h_field_plus = get_farfields(sim, nearfields_monitor_plus)
+    e_field_minus, h_field_minus = get_farfields(sim, nearfields_monitor_minus)
 
-    return e_field, h_field
+    return e_field_plus, h_field_plus, e_field_minus, h_field_minus
 
 
 def flux_from_farfields(e_field: np.ndarray, h_field: np.ndarray) -> float:
@@ -245,16 +265,17 @@ if __name__ == "__main__":
     flux_max = 0
     m = 0
     while True:
-        e_field, h_field = dipole_in_vacuum(args.dipole_pol, args.dipole_pos_r, m)
-        e_field_total += e_field * cmath.exp(1j * m * AZIMUTHAL_RAD)
-        h_field_total += h_field * cmath.exp(1j * m * AZIMUTHAL_RAD)
+        (e_field_plus, h_field_plus, e_field_minus, h_field_minus) = dipole_in_vacuum(
+            args.dipole_pol, args.dipole_pos_r, m
+        )
+        e_field_total += e_field_plus * cmath.exp(1j * m * AZIMUTHAL_RAD)
+        h_field_total += h_field_plus * cmath.exp(1j * m * AZIMUTHAL_RAD)
 
         if m > 0:
-            e_field, h_field = dipole_in_vacuum(args.dipole_pol, args.dipole_pos_r, -m)
-            e_field_total += e_field * cmath.exp(-1j * m * AZIMUTHAL_RAD)
-            h_field_total += h_field * cmath.exp(-1j * m * AZIMUTHAL_RAD)
+            e_field_total += np.conj(e_field_minus) * cmath.exp(-1j * m * AZIMUTHAL_RAD)
+            h_field_total += np.conj(h_field_minus) * cmath.exp(-1j * m * AZIMUTHAL_RAD)
 
-        flux = flux_from_farfields(e_field, h_field)
+        flux = flux_from_farfields(e_field_plus, h_field_plus)
         if flux > flux_max:
             flux_max = flux
         power_decay = flux / flux_max

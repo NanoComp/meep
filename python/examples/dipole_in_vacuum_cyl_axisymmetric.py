@@ -60,9 +60,7 @@ def plot_radiation_pattern(dipole_pol: str, radial_flux: np.ndarray):
     ax.grid(True)
     ax.set_rlabel_position(22)
     ax.set_ylabel("radial flux (a.u.)")
-    ax.set_title(
-        "radiation pattern (φ = 0) of an axisymmetric " f"{dipole_name} dipole"
-    )
+    ax.set_title("radiation pattern (φ = 0) of an axisymmetric {dipole_name} dipole")
 
     if mp.am_master():
         fig.savefig(
