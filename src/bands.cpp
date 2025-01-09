@@ -134,7 +134,7 @@ int do_harminv(complex<double> *data, int n, double dt, double fmin, double fmax
       harminv_get_amplitude(&aa, hd, fsort[i]);
       double amp = abs(aa);
       if (f >= fmin && f <= fmax && abs(harminv_get_Q(hd, fsort[i])) > Q_thresh &&
-          err < err_thresh && err < rel_err_thresh * min_err && amp > amp_thresh &&
+          err <= err_thresh && err <= rel_err_thresh * min_err && amp > amp_thresh &&
           amp > rel_amp_thresh * max_amp) {
         fsort[j++] = fsort[i];
       }
