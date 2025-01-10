@@ -2,7 +2,7 @@
 # Near to Far Field Spectra
 ---
 
-The [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature in Cartesian (2D/3D) and [cylindrical](../Cylindrical_Coordinates.md) coordinates is demonstrated using six different examples. Generally, there are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in *free space* in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the "far" fields at any desired points with the option to save the far fields to an HDF5 file.
+The [near-to-far field transformation](../Python_User_Interface.md#near-to-far-field-spectra) feature in Cartesian (2D/3D) and [cylindrical](Cylindrical_Coordinates.md) coordinates is demonstrated using six different examples. Generally, there are three steps involved in this type of calculation. First, the "near" surface(s) is defined as a set of surfaces capturing *all* outgoing radiation in *free space* in the desired direction(s). Second, the simulation is run using a pulsed source (or alternatively, a CW source via the [frequency-domain solver](../Python_User_Interface.md#frequency-domain-solver)) to allow Meep to accumulate the DFT fields on the near surface(s). Third, Meep computes the "far" fields at any desired points with the option to save the far fields to an HDF5 file.
 
 [TOC]
 
@@ -1702,3 +1702,325 @@ In this example, to demonstrate agreement between the far fields and DFT fields,
 When these two conditions are not met as in the example below involving a small `dpad` and large `d2`, the error from the finite truncation and numerical dispersion can be large and therefore result in a significant mismatch between the far fields computed using the near-to-far field transformation versus the actual DFT fields at the same location.
 
 ![Comparison of the far fields from the near-to-far field transformation dominated by errors and the DFT fields at the same location for a holey-waveguide cavity.](../images/farfields_vs_DFTfields_holeycavity_mismatch.png#center)
+
+Radiation Pattern of an Antenna in Cylindrical Coordinates
+----------------------------------------------------------
+
+Earlier we showed how to compute the [radiation pattern of an antenna with linear polarization in vacuum](#radiation-pattern-of-an-antenna) using a simulation in 2D Cartesian coordinates. The same calculation can also be performed using [cylindrical coordinates](../Exploiting_Symmetry.md#cylindrical-symmetry). We will compute the radiation pattern for two different cases in which the dipole is (1) on-axis (i.e., at $r = 0$) or (2) off-axis (i.e., at $r > 0$). The radiation pattern is validated using the analytic result from antenna theory in vacuum—of course, in a homogeneous medium, the on- and off-axis cases are equivalent to observers at infinity.
+
+In this example, the radiation pattern is computed for $\phi = 0$ (i.e., the $rz$ or $xz$ plane). Note that the radiation pattern for an $\hat{x}$ or $\hat{y}$ polarized dipole is *nonaxisymmetric* even if it is on-axis. This means that the radiation pattern depends on the choice of $\phi$. (This is different than the computation of the [extraction efficiency for off-axis dipoles](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) which involves an integration over $\phi$ resulting in a radiation pattern that is axisymmetric.)
+
+For on-axis (1), there are two dipole configurations: $E_x$ and $E_z$. An $E_z$ dipole is positioned at $r = 0$ with $m = 0$. This involves a single simulation. An $E_x$ dipole at $r = 0$, however, involves the superposition of left- and right-circularly polarized dipoles ($E_r \pm iE_\phi$) as described in [Tutorial/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). This requires *two* simulations at $m = \pm 1$ (although it is possible to combine these into a single $m=+1$ simulation at $\pm \omega$ frequencies as described below). The computation of the radiation pattern of an $E_x$ dipole at $r = 0$ is different from the [computation of its extraction efficiency](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) which involves a *single* $E_r$ source with either $m = +1$ or $m = -1$. This is because extraction efficiency involves integration over $\phi$, in which case the $m = \pm 1$ cross terms cancel and you simply get identical integrated powers from $m = \pm 1$.
+
+For off-axis (2), an $E_x$ (or equivalently an $E_r$) dipole positioned at $r > 0$ requires a [Fourier-series expansion of the fields](Cylindrical_Coordinates.md#nonaxisymmetric-dipole-sources) from an $E_r$ "ring" current source with azimuthal dependence $e^{im\phi}$. As an optimization, our Fourier-series expansion involves only nonnegative $m$ values because the $-m$ fields can be obtained directly from the $+m$ fields using the relation $\vec{E}_{m}(r, z)e^{im\phi-i\omega t} = \left[\vec{E}_{-m}(r, z)e^{-im\phi+i\omega t} \right]^*$. There is a similar relation for $\vec{H}_{m}$. This involves taking the $\vec{E}_{m}$ fields at $-\omega$ (not $+\omega$!) and conjugating them to get the $\vec{E}_{-m}$ fields at $+\omega$. Implementing this in a simulation involves two aspects: (1) two sources with frequencies $+\omega$ and $-\omega$ and (2) two DFT field monitors at $+\omega$ and $-\omega$. (1) is necessary because it ensures the source current $\mathcal{J}$ is purely real and therefore does not change under a complex conjugation. We will compute the radiation pattern using this approach for $E_x$ and $E_y$ dipoles at $r = 0.1$ μm.
+
+The radiation pattern for each case is shown below. The simulation results agree with the analytic formulas. The simulation scripts are in [examples/dipole_in_vacuum_cyl_on_axis.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_cyl_on_axis.py) and [examples/dipole_in_vacuum_cyl_off_axis.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_cyl_off_axis.py).
+
+![](../images/dipole_radiation_pattern_on_axis.png#center)
+
+![](../images/dipole_radiation_pattern_off_axis.png#center)
+
+```py
+import argparse
+import cmath
+import math
+from typing import Tuple
+
+import matplotlib.pyplot as plt
+import meep as mp
+import numpy as np
+
+
+RESOLUTION_UM = 50
+WAVELENGTH_UM = 1.0
+PML_UM = 1.0
+FARFIELD_RADIUS_UM = 1e6 * WAVELENGTH_UM
+NUM_FARFIELD_PTS = 50
+AZIMUTHAL_RAD = 0
+POWER_DECAY_THRESHOLD = 1e-4
+
+frequency = 1 / WAVELENGTH_UM
+polar_rad = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
+
+
+def plot_radiation_pattern(dipole_pol: str, radial_flux: np.ndarray):
+    """Plots the radiation pattern in polar coordinates.
+
+    The angles increase clockwise with zero in the +z direction (the "pole")
+    and π/2 in the +r direction (the "equator").
+
+    Args:
+        dipole_pol: the dipole polarization.
+        radial_flux: the radial flux in polar coordinates.
+    """
+    normalized_radial_flux = radial_flux / np.max(radial_flux)
+    if dipole_pol == "x":
+        dipole_radial_flux = np.square(np.cos(polar_rad))
+        dipole_radial_flux_label = r"$\cos^2θ$"
+        dipole_name = "$E_x$"
+    else:
+        dipole_radial_flux = np.ones(NUM_FARFIELD_PTS)
+        dipole_radial_flux_label = "constant (1.0)"
+        dipole_name = "$E_y$"
+
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
+    ax.plot(polar_rad, normalized_radial_flux, "b-", label="Meep")
+    ax.plot(polar_rad, dipole_radial_flux, "r--", label=dipole_radial_flux_label)
+    ax.legend()
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(0.5 * math.pi)
+    ax.set_thetalim(0, 0.5 * math.pi)
+    ax.set_rmax(1)
+    ax.set_rticks([0, 0.5, 1])
+    ax.grid(True)
+    ax.set_rlabel_position(22)
+    ax.set_ylabel("radial flux (a.u.)")
+    ax.set_title(f"radiation pattern (φ = 0) of an off-axis {dipole_name} dipole")
+
+    if mp.am_master():
+        fig.savefig(
+            "dipole_radiation_pattern_off_axis.png",
+            dpi=150,
+            bbox_inches="tight",
+        )
+
+    relative_error = np.linalg.norm(
+        normalized_radial_flux - dipole_radial_flux
+    ) / np.linalg.norm(dipole_radial_flux)
+    print(f"relative error in radiation pattern:, {relative_error}")
+
+
+def radiation_pattern(e_field: np.ndarray, h_field: np.ndarray) -> np.ndarray:
+    """Computes the radiation pattern from the far fields.
+
+    Args:
+        e_field, h_field: the electric (Er, Ep, Ez) and magnetic (Hr, Hp, Hz)
+          far fields, respectively.
+
+    Returns:
+        The radial Poynting flux as a 1D array. One element for each point on
+        the circumference of a quarter circle with angular range of
+        [0, π/2] rad. 0 radians is the +z direction (the "pole") and π/2 is
+        the +r direction (the "equator").
+    """
+    flux_x = np.real(
+        e_field[:, 1] * np.conj(h_field[:, 2]) - e_field[:, 2] * np.conj(h_field[:, 1])
+    )
+    flux_z = np.real(
+        e_field[:, 0] * np.conj(h_field[:, 1]) - e_field[:, 1] * np.conj(h_field[:, 0])
+    )
+    flux_r = np.sqrt(np.square(flux_x) + np.square(flux_z))
+
+    return flux_r
+
+
+def get_farfields(
+    sim: mp.Simulation, n2f_mon: mp.DftNear2Far
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Computes the far fields from the near fields for φ = 0 (rz plane).
+
+    Args:
+        sim: a `Simulation` object.
+        n2f_mon: a `DftNear2Far` object returned by `Simulation.add_near2far`.
+
+    Returns:
+        The electric (Er, Ep, Ez) and magnetic (Hr, Hp, Hz) far fields. One row
+        for each point on the circumference of a quarter circle with angular
+        range of [0, π/2] rad. Each row has six columns for the fields.
+        0 radians is the +z direction (the "pole") and π/2 is the +r direction
+        (the "equator").
+    """
+    e_field = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
+    h_field = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
+    for n in range(NUM_FARFIELD_PTS):
+        far_field = sim.get_farfield(
+            n2f_mon,
+            mp.Vector3(
+                FARFIELD_RADIUS_UM * math.sin(polar_rad[n]),
+                0,
+                FARFIELD_RADIUS_UM * math.cos(polar_rad[n]),
+            ),
+        )
+        e_field[n, :] = [far_field[j] for j in range(3)]
+        h_field[n, :] = [far_field[j + 3] for j in range(3)]
+
+    return e_field, h_field
+
+
+def dipole_in_vacuum(
+    dipole_pol: str, dipole_pos_r: mp.Vector3, m: int
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Computes the far fields of an off-axis point source.
+
+    Args:
+        dipole_pol: the dipole polarization.
+        dipole_pos_r: the radial position of the dipole.
+        m: angular φ dependence of the fields exp(imφ).
+
+    Returns:
+        A 4-tuple containing the electric and magnetic far fields at positive
+        and negative frequencies, respectively, as 1D arrays.
+    """
+    sr = 2.0
+    sz = 4.0
+    cell_size = mp.Vector3(sr + PML_UM, 0, sz + 2 * PML_UM)
+
+    boundary_layers = [mp.PML(thickness=PML_UM)]
+
+    src_cmpt = mp.Er if dipole_pol == "x" else mp.Ep
+
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(frequency, fwidth=0.1 * frequency),
+            component=src_cmpt,
+            center=mp.Vector3(dipole_pos_r, 0, 0),
+        ),
+        mp.Source(
+            src=mp.GaussianSource(-frequency, fwidth=0.1 * frequency),
+            component=src_cmpt,
+            center=mp.Vector3(dipole_pos_r, 0, 0),
+        ),
+    ]
+
+    sim = mp.Simulation(
+        resolution=RESOLUTION_UM,
+        cell_size=cell_size,
+        dimensions=mp.CYLINDRICAL,
+        m=m,
+        boundary_layers=boundary_layers,
+        sources=sources,
+        force_complex_fields=True,
+    )
+
+    nearfields_monitor_plus = sim.add_near2far(
+        frequency,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * sr, 0, 0.5 * sz), size=mp.Vector3(sr, 0, 0)
+        ),
+        mp.FluxRegion(center=mp.Vector3(sr, 0, 0), size=mp.Vector3(0, 0, sz)),
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * sr, 0, -0.5 * sz),
+            size=mp.Vector3(sr, 0, 0),
+            weight=-1.0,
+        ),
+    )
+
+    nearfields_monitor_minus = sim.add_near2far(
+        -frequency,
+        0,
+        1,
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * sr, 0, 0.5 * sz), size=mp.Vector3(sr, 0, 0)
+        ),
+        mp.FluxRegion(center=mp.Vector3(sr, 0, 0), size=mp.Vector3(0, 0, sz)),
+        mp.FluxRegion(
+            center=mp.Vector3(0.5 * sr, 0, -0.5 * sz),
+            size=mp.Vector3(sr, 0, 0),
+            weight=-1.0,
+        ),
+    )
+
+    sim.run(
+        until_after_sources=mp.stop_when_fields_decayed(
+            20.0, src_cmpt, mp.Vector3(dipole_pos_r, 0, 0), 1e-6
+        )
+    )
+
+    e_field_plus, h_field_plus = get_farfields(sim, nearfields_monitor_plus)
+    e_field_minus, h_field_minus = get_farfields(sim, nearfields_monitor_minus)
+
+    return e_field_plus, h_field_plus, e_field_minus, h_field_minus
+
+
+def flux_from_farfields(e_field: np.ndarray, h_field: np.ndarray) -> float:
+    """Computes the flux from the far fields.
+
+    Args:
+        e_field, h_field: the electric (Er, Ep, Ez) and magnetic (Hr, Hp, Hz)
+          far fields, respectively.
+
+    Returns:
+        The Poynting flux obtained from the far fields.
+    """
+    dphi = 2 * math.pi
+    dtheta = 0.5 * math.pi / (NUM_FARFIELD_PTS - 1)
+    dipole_radiation_pattern = radiation_pattern(e_field, h_field)
+    flux = (
+        np.sum(dipole_radiation_pattern * np.sin(polar_rad))
+        * FARFIELD_RADIUS_UM**2
+        * dtheta
+        * dphi
+    )
+
+    return flux
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "dipole_pol",
+        type=str,
+        choices=["x", "y"],
+        help="polarization of the electric dipole (x or y)",
+    )
+    parser.add_argument(
+        "dipole_pos_r", type=float, help="radial position of the dipole"
+    )
+    args = parser.parse_args()
+
+    if args.dipole_pos_r == 0:
+        raise ValueError(f"dipole_pos_r must be nonzero.")
+
+    # Fourier series expansion of the fields from a ring current source
+    # used to generate a point dipole localized in the azimuthal direction.
+
+    e_field_total = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
+    h_field_total = np.zeros((NUM_FARFIELD_PTS, 3), dtype=np.complex128)
+    flux_max = 0
+    m = 0
+    while True:
+        (e_field_plus, h_field_plus, e_field_minus, h_field_minus) = dipole_in_vacuum(
+            args.dipole_pol, args.dipole_pos_r, m
+        )
+        e_field_total += e_field_plus * cmath.exp(1j * m * AZIMUTHAL_RAD)
+        h_field_total += h_field_plus * cmath.exp(1j * m * AZIMUTHAL_RAD)
+
+        if m > 0:
+            e_field_total += np.conj(e_field_minus) * cmath.exp(-1j * m * AZIMUTHAL_RAD)
+            h_field_total += np.conj(h_field_minus) * cmath.exp(-1j * m * AZIMUTHAL_RAD)
+
+        flux = flux_from_farfields(e_field_plus, h_field_plus)
+        if flux > flux_max:
+            flux_max = flux
+        power_decay = flux / flux_max
+        print(f"power_decay:, {m}, {flux}, {flux_max}, {power_decay}")
+
+        if m > 0 and power_decay < POWER_DECAY_THRESHOLD:
+            break
+        else:
+            m += 1
+
+    dipole_radiation_pattern = radiation_pattern(e_field_total, h_field_total)
+    dipole_radiation_pattern_scaled = dipole_radiation_pattern * FARFIELD_RADIUS_UM**2
+    plot_radiation_pattern(args.dipole_pol, dipole_radiation_pattern_scaled)
+
+    if mp.am_master():
+        np.savez(
+            "dipole_farfields_off_axis.npz",
+            AZIMUTHAL_RAD=AZIMUTHAL_RAD,
+            FARFIELD_RADIUS_UM=FARFIELD_RADIUS_UM,
+            PML_UM=PML_UM,
+            POWER_DECAY_THRESHOLD=POWER_DECAY_THRESHOLD,
+            RESOLUTION_UM=RESOLUTION_UM,
+            WAVELENGTH_UM=WAVELENGTH_UM,
+            dipole_pol=args.dipole_pol,
+            dipole_pos_r=args.dipole_pos_r,
+            dipole_radiation_pattern=dipole_radiation_pattern,
+            e_field_total=e_field_total,
+            h_field_total=h_field_total,
+            m=m,
+            polar_rad=polar_rad,
+        )
+```
