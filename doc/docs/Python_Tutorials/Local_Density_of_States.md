@@ -10,6 +10,8 @@ $$\operatorname{LDOS}_{\ell}(\vec{x}_0,\omega)=-\frac{2}{\pi}\varepsilon(\vec{x}
 
 where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the power exerted by a unit-amplitude dipole assuming linear materials. In FDTD, computing the LDOS is straightforward: excite a point dipole source and accumulate the Fourier transforms of the field at a given point in space to obtain the entire LDOS spectrum in a single calculation. This is implemented in the `dft_ldos` feature which is the subject of this tutorial.
 
+Note: computing the LDOS using this formula is only valid for *lossless* media (i.e., $\varepsilon$ and $\mu$ are purely real). The formula yields a finite result in the limit of infinite resolution. This is not the case for lossy media (i.e., complex $\varepsilon$), in which the LDOS diverges with resolution: in the continuum limit, the dipole's near fields dissipate an infinite amount of energy.   A physical dipole-like source (e.g. spontaneous emission by an atom) expends a finite amount of energy, of course, but it is regularized by atomic-scale effects that are not included in classical electromagnetism.  (Some authors have proposed artifical regularizations, e.g. by surrounding the dipole with a small box of vacuum, or computing the outward Poynting flux through a small box, but in both cases the result diverges as the box size decreases, so there is no physically meaningful result.)  Therefore, we do not recommend using the LDOS feature within a lossy medium.
+
 [TOC]
 
 Planar Cavity with Lossless Metallic Walls
@@ -335,7 +337,7 @@ Note: because of a [bug](https://github.com/NanoComp/meep/issues/2704) for an $E
 
 ![](../images/dipole_extraction_eff_cyl.png#center)
 
-The total emitted power obtained from the LDOS terms of the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V = \Delta r \times \Delta z \times 2 \pi r$. Meep implements an $r = 0$ source at $r = 0.5 \Delta r$, corresponding to the smallest-$r$ $E_r$ Yee grid point. This means that for a source at $r = 0$, $\Delta V = \pi / resolution^3$ since $\Delta r = \Delta z = 1 / resolution$. In 3D, $\Delta V = \Delta x \times \Delta y \times \Delta z = 1 / resolution^3$ for every voxel in the cell.
+The total emitted power obtained from the LDOS terms of the formula above must be multiplied by $\Delta V$, the volume of the voxel. In cylindrical coordinates, $\Delta V = \Delta r \times \Delta z \times 2 \pi r$. Meep implements an $r = 0$ source at $r = 0.5 \Delta r$, corresponding to the smallest-$r$ $E_r$ Yee grid point. This means that for a source at $r = 0$, $\Delta V = \pi /$`resolution`$^3$ since $\Delta r = \Delta z = 1 /$`resolution`. In 3D, $\Delta V = \Delta x \times \Delta y \times \Delta z = 1 /$`resolution`$^3$ for every voxel in the cell.
 
 As shown in the figure below, the results from the two coordinate systems have good agreement.
 

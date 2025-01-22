@@ -953,12 +953,35 @@ def plot2D(
     field_parameters: Optional[dict] = None,
     colorbar_parameters: Optional[dict] = None,
     frequency: Optional[float] = None,
-    plot_eps_flag: bool = True,
-    plot_sources_flag: bool = True,
-    plot_monitors_flag: bool = True,
-    plot_boundaries_flag: bool = True,
+    show_epsilon: bool = True,
+    show_sources: bool = True,
+    show_monitors: bool = True,
+    show_boundary_layers: bool = True,
     nb: bool = False,
+    **kwargs
 ) -> Axes:
+
+    plot_eps_flag = kwargs.get("plot_eps_flag")
+    if plot_eps_flag:
+        warnings.warn("plot_eps_flag is deprecated. Use show_epsilon instead.")
+        show_epsilon = plot_eps_flag
+
+    plot_sources_flag = kwargs.get("plot_sources_flag")
+    if plot_sources_flag:
+        warnings.warn("plot_sources_flag is deprecated. " "Use show_sources instead.")
+        show_sources = plot_sources_flag
+
+    plot_monitors_flag = kwargs.get("plot_monitors_flag")
+    if plot_monitors_flag:
+        warnings.warn("plot_monitors_flag is deprecated. Use show_monitors " "instead.")
+        show_monitors = plot_monitors_flag
+
+    plot_boundaries_flag = kwargs.get("plot_boundaries_flag")
+    if plot_boundaries_flag:
+        warnings.warn(
+            "plot_boundaries_flag is deprecated. Use " "show_boundary_layers instead."
+        )
+        show_boundary_layers = plot_monitors_flag
 
     # Ensure a figure axis exists
     if ax is None and mp.am_master():
@@ -980,7 +1003,7 @@ def plot2D(
             )
 
     # Plot geometry
-    if plot_eps_flag:
+    if show_epsilon:
         ax = plot_eps(
             sim,
             ax,
@@ -992,7 +1015,7 @@ def plot2D(
         )
 
     # Plot boundaries
-    if plot_boundaries_flag:
+    if show_boundary_layers:
         ax = plot_boundaries(
             sim,
             ax,
@@ -1001,7 +1024,7 @@ def plot2D(
         )
 
     # Plot sources
-    if plot_sources_flag:
+    if show_sources:
         ax = plot_sources(
             sim,
             ax,
@@ -1011,7 +1034,7 @@ def plot2D(
         )
 
     # Plot monitors
-    if plot_monitors_flag:
+    if show_monitors:
         ax = plot_monitors(
             sim,
             ax,

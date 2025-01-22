@@ -3,6 +3,7 @@ A collection of objects and helper routines for setting up the simulation.
 """
 
 import functools
+import inspect
 import math
 import numbers
 import os
@@ -93,11 +94,12 @@ def fix_dft_args(args, i):
 
 
 def get_num_args(func):
-    return (
-        2
-        if isinstance(func, Harminv) or isinstance(func, PadeDFT)
-        else func.__code__.co_argcount
-    )
+    if isinstance(func, Harminv) or isinstance(func, PadeDFT):
+        return 2
+    elif inspect.ismethod(func):
+        return func.__code__.co_argcount - 1  # remove 'self' from count
+    else:
+        return func.__code__.co_argcount
 
 
 def vec(*args):
@@ -4757,10 +4759,10 @@ class Simulation:
         field_parameters: Optional[dict] = None,
         colorbar_parameters: Optional[dict] = None,
         frequency: Optional[float] = None,
-        plot_eps_flag: bool = True,
-        plot_sources_flag: bool = True,
-        plot_monitors_flag: bool = True,
-        plot_boundaries_flag: bool = True,
+        show_epsilon: bool = True,
+        show_sources: bool = True,
+        show_monitors: bool = True,
+        show_boundary_layers: bool = True,
         nb: bool = False,
         **kwargs,
     ) -> None:
@@ -4886,10 +4888,10 @@ class Simulation:
             field_parameters=field_parameters,
             colorbar_parameters=colorbar_parameters,
             frequency=frequency,
-            plot_eps_flag=plot_eps_flag,
-            plot_sources_flag=plot_sources_flag,
-            plot_monitors_flag=plot_monitors_flag,
-            plot_boundaries_flag=plot_boundaries_flag,
+            show_epsilon=show_epsilon,
+            show_sources=show_sources,
+            show_monitors=show_monitors,
+            show_boundary_layers=show_boundary_layers,
             nb=nb,
             **kwargs,
         )

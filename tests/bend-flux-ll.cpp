@@ -183,7 +183,7 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms, volume &vsrc, 
 /***************************************************************/
 /***************************************************************/
 void bend_flux(bool no_bend, char *GDSIIFile, bool use_prisms) {
-  vec v0;
+  vec v0 = zero_vec(D2);
   volume vsrc(v0), vrefl(v0), vtrans(v0);
   structure the_structure =
       GDSIIFile ? create_structure_from_GDSII(GDSIIFile, no_bend, vsrc, vrefl, vtrans)
