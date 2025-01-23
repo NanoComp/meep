@@ -708,7 +708,7 @@ def tanh_projection(x: np.ndarray, beta: float, eta: float) -> np.ndarray:
 
 
 def smoothed_projection(
-    x_smoothed: ArrayLikeType,
+    rho_filtered: ArrayLikeType,
     beta: float,
     eta: float,
     resolution: float,
@@ -740,7 +740,8 @@ def smoothed_projection(
     center. To ensure this, we need to account for the different possibilities.
 
     Args:
-        x: The (2D) input design parameters.
+        rho_filtered: The (2D) input design parameters (already filered e.g.
+            with a conic filter).
         beta: The thresholding parameter in the range [0, inf]. Determines the
             degree of binarization of the output.
         eta: The threshold point in the range [0, 1].
@@ -757,24 +758,26 @@ def smoothed_projection(
         >>> filter_radius = get_conic_radius_from_eta_e(lengthscale, eta_e)
         >>> Nx = onp.round(Lx * resolution) + 1
         >>> Ny = onp.round(Ly * resolution) + 1
-        >>> A = onp.random.rand(Nx, Ny)
+        >>> rho = onp.random.rand(Nx, Ny)
         >>> beta = npa.inf
-        >>> A_smoothed = conic_filter(A, filter_radius, Lx, Ly, resolution)
-        >>> A_projected = smoothed_projection(A_smoothed, beta, eta_i, resolution)
+        >>> rho_filtered = conic_filter(rho, filter_radius, Lx, Ly, resolution)
+        >>> rho_projected = smoothed_projection(rho_filtered, beta, eta_i, resolution)
     """
     # Note that currently, the underlying assumption is that the smoothing
     # kernel is a circle, which means dx = dy.
     dx = dy = 1 / resolution
-    pixel_radius = dx / 2
+    R_smoothing = 0.55 * dx
 
-    x_projected = tanh_projection(x_smoothed, beta=beta, eta=eta)
+    rho_projected = tanh_projection(rho_filtered, beta=beta, eta=eta)
 
     # Compute the spatial gradient (using finite differences) of the *filtered*
     # field, which will always be smooth and is the key to our approach. This
     # gradient essentially represents the normal direction pointing the the
     # nearest inteface.
-    x_grad = npa.gradient(x_smoothed)
-    x_grad_helper = (x_grad[0] / dx) ** 2 + (x_grad[1] / dy) ** 2
+    rho_filtered_grad = npa.gradient(rho_filtered)
+    rho_filtered_grad_helper = (rho_filtered_grad[0] / dx) ** 2 + (
+        rho_filtered_grad[1] / dy
+    ) ** 2
 
     # Note that a uniform field (norm=0) is problematic, because it creates
     # divide by zero issues and makes backpropagation difficult, so we sanitize
@@ -782,18 +785,20 @@ def smoothed_projection(
     # need smoothings doesn't actually matter, since all our computations our
     # purely element-wise (no spatial locality) and those pixels will instead
     # rely on the standard projection. So just use 1, since it's well behaved.
-    nonzero_norm = npa.abs(x_grad_helper) > 0
+    nonzero_norm = npa.abs(rho_filtered_grad_helper) > 0
 
-    x_grad_norm = npa.sqrt(npa.where(nonzero_norm, x_grad_helper, 1))
-    x_grad_norm_eff = npa.where(nonzero_norm, x_grad_norm, 1)
+    rho_filtered_grad_norm = npa.sqrt(
+        npa.where(nonzero_norm, rho_filtered_grad_helper, 1)
+    )
+    rho_filtered_grad_norm_eff = npa.where(nonzero_norm, rho_filtered_grad_norm, 1)
 
     # The distance for the center of the pixel to the nearest interface
-    d = (eta - x_smoothed) / x_grad_norm_eff
+    d = (eta - rho_filtered) / rho_filtered_grad_norm_eff
 
     # Only need smoothing if an interface lies within the voxel. Since d is
     # actually an "effective" d by this point, we need to ignore values that may
     # have been sanitized earlier on.
-    needs_smoothing = nonzero_norm & (npa.abs(d) <= pixel_radius)
+    needs_smoothing = nonzero_norm & (npa.abs(d) < R_smoothing)
 
     # The fill factor is used to perform simple, first-order subpixel smoothing.
     # We use the (2D) analytic expression that comes when assuming the smoothing
@@ -802,61 +807,33 @@ def smoothed_projection(
     # trick to avoid the Nans in the backward trace. This is a common problem
     # with array-based AD tracers, apparently. See here:
     # https://github.com/google/jax/issues/1052#issuecomment-5140833520
-
-    arccos_term = pixel_radius**2 * npa.arccos(
-        npa.where(
-            needs_smoothing,
-            d / pixel_radius,
-            0.0,
-        )
+    d_R = d / R_smoothing
+    F = npa.where(
+        needs_smoothing, 0.5 - 15 / 16 * d_R + 5 / 8 * d_R**3 - 3 / 16 * d_R**5, 1.0
     )
-
-    sqrt_term = d * npa.sqrt(
-        npa.where(
-            needs_smoothing,
-            pixel_radius**2 - d**2,
-            1,
-        )
-    )
-
-    fill_factor = npa.where(
-        needs_smoothing,
-        (1 / (npa.pi * pixel_radius**2)) * (arccos_term - sqrt_term),
-        1,
+    # F(-d)
+    F_minus = npa.where(
+        needs_smoothing, 0.5 + 15 / 16 * d_R - 5 / 8 * d_R**3 + 3 / 16 * d_R**5, 1.0
     )
 
     # Determine the upper and lower bounds of materials in the current pixel (before projection).
-    x_minus = x_smoothed - x_grad_norm * pixel_radius
-    x_plus = x_smoothed + x_grad_norm * pixel_radius
-
-    # Create an "effective" set of materials that will ensure everything is
-    # piecewise differentiable, even if an interface moves out of a pixel, or
-    # through the pixel center.
-    x_minus_eff_pert = (x_smoothed * d + x_minus * (pixel_radius - d)) / pixel_radius
-    x_minus_eff = npa.where(
-        (d > 0),
-        x_minus_eff_pert,
-        x_minus,
-    )
-    x_plus_eff_pert = (-x_smoothed * d + x_plus * (pixel_radius + d)) / pixel_radius
-    x_plus_eff = npa.where(
-        (d > 0),
-        x_plus,
-        x_plus_eff_pert,
+    rho_filtered_minus = rho_filtered - R_smoothing * rho_filtered_grad_norm_eff * F
+    rho_filtered_plus = (
+        rho_filtered + R_smoothing * rho_filtered_grad_norm_eff * F_minus
     )
 
     # Finally, we project the extents of our range.
-    x_plus_eff_projected = tanh_projection(x_plus_eff, beta=beta, eta=eta)
-    x_minus_eff_projected = tanh_projection(x_minus_eff, beta=beta, eta=eta)
+    rho_minus_eff_projected = tanh_projection(rho_filtered_minus, beta=beta, eta=eta)
+    rho_plus_eff_projected = tanh_projection(rho_filtered_plus, beta=beta, eta=eta)
 
     # Only apply smoothing to interfaces
-    x_projected_smoothed = (1 - fill_factor) * x_minus_eff_projected + (
-        fill_factor
-    ) * x_plus_eff_projected
+    rho_projected_smoothed = (
+        1 - F
+    ) * rho_minus_eff_projected + F * rho_plus_eff_projected
     return npa.where(
         needs_smoothing,
-        x_projected_smoothed,
-        x_projected,
+        rho_projected_smoothed,
+        rho_projected,
     )
 
 
