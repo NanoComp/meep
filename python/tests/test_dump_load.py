@@ -153,8 +153,8 @@ class TestLoadDump(ApproxComparisonTestCase):
         boundary_layers = [mp.Absorber(0.2)]
         k_point = mp.Vector3(0.4, -1.3, 0.7)
 
-        if mp.with_mpi():
-            chunk_layout = mp.BinaryPartition(data=[(mp.X, 0), 0, 1])
+        if mp.count_processors() == 2:
+            chunk_layout = mp.BinaryPartition(data=[(mp.Z, 0), 0, 1])
         else:
             chunk_layout = None
 
