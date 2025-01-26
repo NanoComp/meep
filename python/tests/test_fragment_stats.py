@@ -680,34 +680,34 @@ class TestPMLToVolList(unittest.TestCase):
 @unittest.skipIf(mp.count_processors() != 2, "MPI specific test")
 class TestChunkCommunicationArea(unittest.TestCase):
     def test_2d_periodic(self):
-        sim = make_sim(mp.Vector3(10, 6), 10, [mp.PML(1)], 2, k_point=mp.Vector3(1, 1))
+        sim = make_sim(mp.Vector3(10, 6), 25, [mp.PML(1)], 2, k_point=mp.Vector3(1, 1))
         max_comm = sim.get_max_chunk_communication_area()
         avg_comm = sim.get_avg_chunk_communication_area()
-        self.assertEqual(max_comm, 220)
-        self.assertEqual(avg_comm, 220)
+        self.assertEqual(max_comm, 550)
+        self.assertEqual(avg_comm, 550)
 
     def test_3d_periodic(self):
         sim = make_sim(
-            mp.Vector3(10, 8, 6), 10, [mp.PML(1)], 3, k_point=mp.Vector3(1, 1, 1)
+            mp.Vector3(10, 8, 6), 25, [mp.PML(1)], 3, k_point=mp.Vector3(1, 1, 1)
         )
         max_comm = sim.get_max_chunk_communication_area()
         avg_comm = sim.get_avg_chunk_communication_area()
-        self.assertEqual(max_comm, 2360)
-        self.assertEqual(avg_comm, 2360)
+        self.assertEqual(max_comm, 5900)
+        self.assertEqual(avg_comm, 5900)
 
     def test_2d(self):
-        sim = make_sim(mp.Vector3(10, 6), 10, [mp.PML(1)], 2)
+        sim = make_sim(mp.Vector3(10, 6), 25, [mp.PML(1)], 2)
         max_comm = sim.get_max_chunk_communication_area()
         avg_comm = sim.get_avg_chunk_communication_area()
-        self.assertEqual(max_comm, 60)
-        self.assertEqual(avg_comm, 60)
+        self.assertEqual(max_comm, 150)
+        self.assertEqual(avg_comm, 150)
 
     def test_3d(self):
-        sim = make_sim(mp.Vector3(10, 8, 6), 10, [mp.PML(1)], 3)
+        sim = make_sim(mp.Vector3(10, 8, 6), 25, [mp.PML(1)], 3)
         max_comm = sim.get_max_chunk_communication_area()
         avg_comm = sim.get_avg_chunk_communication_area()
-        self.assertEqual(max_comm, 480)
-        self.assertEqual(avg_comm, 480)
+        self.assertEqual(max_comm, 1200)
+        self.assertEqual(avg_comm, 1200)
 
 
 if __name__ == "__main__":

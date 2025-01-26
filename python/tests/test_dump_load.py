@@ -135,7 +135,7 @@ class TestLoadDump(ApproxComparisonTestCase):
     ):
         from meep.materials import aSi
 
-        resolution = 15
+        resolution = 20
         cell = mp.Vector3(2.3, 2.1, 2.7)
         sources = mp.Source(
             src=mp.GaussianSource(2.5, fwidth=0.1), center=mp.Vector3(), component=mp.Hy
