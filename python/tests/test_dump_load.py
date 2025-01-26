@@ -135,7 +135,7 @@ class TestLoadDump(ApproxComparisonTestCase):
     ):
         from meep.materials import aSi
 
-        resolution = 20
+        resolution = 15
         cell = mp.Vector3(2.3, 2.1, 2.7)
         sources = mp.Source(
             src=mp.GaussianSource(2.5, fwidth=0.1), center=mp.Vector3(), component=mp.Hy
@@ -154,7 +154,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         k_point = mp.Vector3(0.4, -1.3, 0.7)
 
         if mp.with_mpi():
-            chunk_layout = mp.BinaryPartition(data=[(mp.Z, 0), 0, 1])
+            chunk_layout = mp.BinaryPartition(data=[(mp.X, 0), 0, 1])
         else:
             chunk_layout = None
 
