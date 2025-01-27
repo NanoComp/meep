@@ -153,6 +153,11 @@ class TestLoadDump(ApproxComparisonTestCase):
         boundary_layers = [mp.Absorber(0.2)]
         k_point = mp.Vector3(0.4, -1.3, 0.7)
 
+        if mp.count_processors() == 2:
+            chunk_layout = mp.BinaryPartition(data=[(mp.Z, 0), 0, 1])
+        else:
+            chunk_layout = None
+
         sim1 = mp.Simulation(
             resolution=resolution,
             cell_size=cell,
@@ -161,6 +166,7 @@ class TestLoadDump(ApproxComparisonTestCase):
             boundary_layers=boundary_layers,
             default_material=default_material,
             sources=[sources],
+            chunk_layout=chunk_layout,
         )
 
         sample_point = mp.Vector3(0.73, -0.33, 0.61)
@@ -188,6 +194,9 @@ class TestLoadDump(ApproxComparisonTestCase):
             chunk_layout = dump_chunk_fname
         if chunk_sim:
             chunk_layout = sim1
+
+        if chunk_layout is None and mp.count_processors() == 2:
+            chunk_layout = mp.BinaryPartition(data=[(mp.Z, 0), 0, 1])
 
         sim = mp.Simulation(
             resolution=resolution,

@@ -24,12 +24,18 @@ def make_dft_vecs(
 
 
 def make_sim(cell, res, pml, dims, create_gv=True, k_point=False):
+    if mp.count_processors() == 2:
+        chunk_layout = mp.BinaryPartition(data=[(mp.X, 0), 0, 1])
+    else:
+        chunk_layout = None
+
     sim = mp.Simulation(
         cell_size=cell,
         resolution=res,
         boundary_layers=pml,
         dimensions=dims,
         k_point=k_point,
+        chunk_layout=chunk_layout,
     )
     if create_gv:
         sim._create_grid_volume(False)
