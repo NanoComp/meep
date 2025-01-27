@@ -195,6 +195,9 @@ class TestLoadDump(ApproxComparisonTestCase):
         if chunk_sim:
             chunk_layout = sim1
 
+        if chunk_layout is None and mp.count_processors() == 2:
+            chunk_layout = mp.BinaryPartition(data=[(mp.Z, 0), 0, 1])
+
         sim = mp.Simulation(
             resolution=resolution,
             cell_size=cell,
