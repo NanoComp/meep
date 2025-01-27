@@ -24,7 +24,7 @@ def make_dft_vecs(
 
 
 def make_sim(cell, res, pml, dims, create_gv=True, k_point=False):
-    if mp.count_processors() == 2 and dims == 3:
+    if mp.count_processors() == 2:
         chunk_layout = mp.BinaryPartition(data=[(mp.X, 0), 0, 1])
     else:
         chunk_layout = None
