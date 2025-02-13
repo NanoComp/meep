@@ -389,7 +389,7 @@ A schematic of the simulation layout is shown below. The flux and near-field mon
 
 ![](../images/disc_radiation_layout.png#center)
 
-Obtaining the radiation pattern $P(\theta)$ of the disc involves computing the radial (or "outgoing") flux from the far fields along the circumference of a quarter circle with angular range of $[0, \pi/2]$. Note that the radiation pattern $P(\theta)$ of circularly polarized fields is independent of $\phi$. The radius $r$ of the far-field circle needs to be sufficiently large ($\gg \lambda$) to ensure accurate results but is otherwise arbitrary. The total flux is then computed by integrating $P(\theta)$ over the surface of a hemisphere with radius $r$ in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
+Obtaining the radiation pattern $P(\theta)$ of the disc involves computing the radial (or "outgoing") flux from the far fields along the circumference of a quarter circle with angular range of $[0, \pi/2]$. Note that the radiation pattern $P(\theta)$ for fields $\sim e^{im\phi}$ (for any $m$) is independent of $\phi$. The radius $r$ of the far-field circle needs to be sufficiently large ($\gg \lambda$) to ensure accurate results but is otherwise arbitrary. The total flux is then computed by integrating $P(\theta)$ over the surface of a hemisphere with radius $r$ in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system):
 
 $$P_{total} = \int_0^{2\pi} \int_0^{\frac{\pi}{2}} P(\theta) r^2 \sin(\theta) d\theta d\phi = 2 \pi r^2 \sum_{n=0}^{N-1} P(\theta_n) \sin(\theta_n) \Delta \theta$$
 
