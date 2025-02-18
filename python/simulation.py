@@ -49,7 +49,7 @@ except ImportError:
 
 from matplotlib.axes import Axes
 
-verbosity = Verbosity(mp.cvar, "meep", 1)
+verbosity = Verbosity(mp.cvar, "meep", int(os.getenv("MEEP_VERBOSITY_LEVEL", 1)))
 
 mp.setup()
 
