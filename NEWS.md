@@ -1,5 +1,21 @@
 # Meep Release Notes
 
+## Meep 1.30.0
+
+3/27/2025
+
+* Improvements to smoothed projection function of adjoint solver ([#2970]).
+
+* Bug fix in Harminv wrapper ([#2959]).
+
+* Bug fix in vec initialization of C++ unit test ([#2955]).
+
+* Improvements to step function of Python interface ([#2895]).
+
+* Rename flags in plot2D ([#2885]).
+
+* Various improvements and additional documentation ([#2792], [#2862], [#2874], [#2878], [#2883], [#2894], [#2949], [#2950], [#2951], [#2965], [#2978]).
+
 ## Meep 1.29.0
 
 5/30/2024
