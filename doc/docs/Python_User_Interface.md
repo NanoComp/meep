@@ -165,7 +165,7 @@ Python. `Vector3` is a `meep` class.
   to pick some characteristic lengthscale of your problem and set that length to 1.
   See also [Units](Introduction.md#units-in-meep). Required argument (no default).
 
-+ **`default_material` [`Medium` class ]** — Holds the default material that is
++ **`default_material` [ `Medium` class ]** — Holds the default material that is
   used for points not in any object of the geometry list. Defaults to `air` (ε=1).
   This can also be a NumPy array that defines a dielectric function much like
   `epsilon_input_file` below (see below). If you want to use a material function
@@ -179,7 +179,7 @@ Python. `Vector3` is a `meep` class.
   returns the dielectric constant at that point. See also [Material
   Function](#medium). Defaults to `None`.
 
-+ **`epsilon_input_file` [`string`]** — If this string is not empty (the default),
++ **`epsilon_input_file` [ `string` ]** — If this string is not empty (the default),
   then it should be the name of an HDF5 file whose first/only dataset defines a
   scalar, real-valued, frequency-independent dielectric function over some
   discrete grid. Alternatively, the dataset name can be specified explicitly if
@@ -192,7 +192,7 @@ Python. `Vector3` is a `meep` class.
   `default_material`, whereas other properties (μ, susceptibilities,
   nonlinearities, etc.) of `default_material` are still used.
 
-+ **`dimensions` [`integer`]** — Explicitly specifies the dimensionality of the
++ **`dimensions` [ `integer` ]** — Explicitly specifies the dimensionality of the
   simulation, if the value is less than 3. If the value is 3 (the default), then
   the dimensions are automatically reduced to 2 if possible when `cell_size` in
   the $z$ direction is `0`. If `dimensions` is the special value of `CYLINDRICAL`,
@@ -201,11 +201,11 @@ Python. `Vector3` is a `meep` class.
   must be along the $z$ direction and only $E_x$ and $H_y$ field components are
   permitted. If `dimensions` is 2, then the cell must be in the $xy$ plane.
 
-+ **`m` [`number`]** — For `CYLINDRICAL` simulations, specifies that the angular
++ **`m` [ `number` ]** — For `CYLINDRICAL` simulations, specifies that the angular
   $\phi$ dependence of the fields is of the form $e^{im\phi}$ (default is `m=0`).
   If the simulation cell includes the origin $r=0$, then `m` must be an integer.
 
-+ **`accurate_fields_near_cylorigin` [`boolean`]** — For `CYLINDRICAL` simulations
++ **`accurate_fields_near_cylorigin` [ `boolean` ]** — For `CYLINDRICAL` simulations
   with |*m*| &gt; 1, compute more accurate fields near the origin $r=0$ at the
   expense of requiring a smaller Courant factor. Empirically, when this option is
   set to `True`, a Courant factor of roughly $\min[0.5, 1 / (|m| + 0.5)]$ or
@@ -214,10 +214,10 @@ Python. `Vector3` is a `meep` class.
   usually ensures stability with the default Courant factor of 0.5, at the expense
   of slowing convergence of the fields near $r=0$.
 
-+ **`resolution` [`number`]** — Specifies the computational grid resolution in
++ **`resolution` [ `number` ]** — Specifies the computational grid resolution in
   pixels per distance unit. Required argument. No default.
 
-+ **`k_point` [`False` or `Vector3`]** — If `False` (the default), then the
++ **`k_point` [ `False` or `Vector3` ]** — If `False` (the default), then the
   boundaries are perfect metallic (zero electric field). If a `Vector3`, then the
   boundaries are Bloch-periodic: the fields at one side are
   $\exp(i\mathbf{k}\cdot\mathbf{R})$ times the fields at the other side, separated
@@ -227,7 +227,7 @@ Python. `Vector3` is a `meep` class.
   equivalent to taking MPB's `k_points` through its function
   `reciprocal->cartesian`.
 
-+ **`kz_2d` [`"complex"`, `"real/imag"`, or `"3d"`]** — A 2d cell (i.e.,
++ **`kz_2d` [ `"complex"`, `"real/imag"`, or `"3d"` ]** — A 2d cell (i.e.,
   `dimensions=2`) combined with a `k_point` that has a *non-zero* component in $z$
   would normally result in a 3d simulation with complex fields. However, by
   default (`kz_2d="complex"`), Meep will use a 2d computational cell in which
@@ -240,12 +240,12 @@ Python. `Vector3` is a `meep` class.
   this option requires some care to use. See [2d Cell with Out-of-Plane
   Wavevector](2d_Cell_Special_kz.md).
 
-+ **`ensure_periodicity` [`boolean`]** — If `True` (the default) *and* if the
++ **`ensure_periodicity` [ `boolean` ]** — If `True` (the default) *and* if the
   boundary conditions are periodic (`k_point` is not `False`), then the geometric
   objects are automatically repeated periodically according to the lattice vectors
   which define the size of the cell.
 
-+ **`eps_averaging` [`boolean`]** — If `True` (the default), then [subpixel
++ **`eps_averaging` [ `boolean` ]** — If `True` (the default), then [subpixel
   averaging](Subpixel_Smoothing.md) is used when initializing the dielectric
   function. For simulations involving a [material function](#medium),
   `eps_averaging` is `False` (the default) and must be
@@ -259,13 +259,13 @@ Python. `Vector3` is a `meep` class.
   effects and irregular
   convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
 
-+ **`force_complex_fields` [`boolean`]** — By default, Meep runs its simulations
++ **`force_complex_fields` [ `boolean` ]** — By default, Meep runs its simulations
   with purely real fields whenever possible. It uses complex fields which require
   twice the memory and computation if the `k_point` is non-zero or if `m` is
   non-zero. However, by setting `force_complex_fields` to `True`, Meep will always
   use complex fields.
 
-+ **`force_all_components` [`boolean`]** — By default, in a 2d simulation Meep
++ **`force_all_components` [ `boolean` ]** — By default, in a 2d simulation Meep
   uses only the field components that might excited by your current sources:
   either the in-plane $(E_x,E_y,H_z)$ or out-of-plane $(H_x,H_y,E_z)$ polarization,
   depending on the source.  (Both polarizations are excited if you use multiple source
@@ -275,12 +275,12 @@ Python. `Vector3` is a `meep` class.
   simulate all fields, even those that remain zero throughout the simulation, by
   setting `force_all_components` to `True`.
 
-+ **`filename_prefix` [`string`]** — A string prepended to all output filenames
++ **`filename_prefix` [ `string` ]** — A string prepended to all output filenames
   (e.g., for HDF5 files). If `None` (the default), then Meep constructs a default
   prefix based on the current Python filename ".py" replaced by "-" (e.g. `foo.py`
   uses a `"foo-"` prefix). You can get this prefix by calling `get_filename_prefix`.
 
-+ **`Courant` [`number`]** — Specify the
++ **`Courant` [ `number` ]** — Specify the
   [Courant factor](https://en.wikipedia.org/wiki/Courant%E2%80%93Friedrichs%E2%80%93Lewy_condition)
   $S$ which relates the time step size to the spatial discretization: $cΔ t = SΔ x$.
   Default is 0.5. For numerical stability, the Courant factor must be *at
@@ -288,26 +288,26 @@ Python. `Vector3` is a `meep` class.
   the minimum refractive index (usually 1), and in practice $S$ should be slightly
   smaller.
 
-+ **`loop_tile_base_db`, `loop_tile_base_eh` [`number`]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
++ **`loop_tile_base_db`, `loop_tile_base_eh` [ `number` ]** — To improve the [memory locality](https://en.wikipedia.org/wiki/Locality_of_reference)
   of the field updates, Meep has an experimental feature to "tile" the loops over the Yee grid
   voxels. The splitting of the update loops for step-curl and update-eh into tiles or subdomains
   involves a recursive-bisection method in which the base case for the number of voxels is
   specified using these two parameters, respectively. The default value is 0 or no tiling;
   a typical nonzero value to try would be 10000.
 
-+ **`output_volume` [`Volume` class ]** — Specifies the default region of space
++ **`output_volume` [ `Volume` class ]** — Specifies the default region of space
   that is output by the HDF5 output functions (below); see also the `Volume` class
   which manages `meep::volume*` objects. Default is `None`, which means that the
   whole cell is output. Normally, you should use the `in_volume(...)` function to
   modify the output volume instead of setting `output_volume` directly.
 
-+ **`output_single_precision` [`boolean`]** — Meep performs its computations in
++ **`output_single_precision` [ `boolean` ]** — Meep performs its computations in
   [double-precision floating point](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays),
   and by default its output HDF5 files are in the same format. However, by setting
   this variable to `True` (default is `False`) you can instead output in single
   precision which saves a factor of two in space.
 
-+ **`progress_interval` [`number`]** — Time interval (seconds) after which Meep
++ **`progress_interval` [ `number` ]** — Time interval (seconds) after which Meep
   prints a progress message. Default is 4 seconds.
 
 + **`extra_materials` [ list of `Medium` class ]** — By default, Meep turns off
@@ -323,7 +323,7 @@ Python. `Vector3` is a `meep` class.
   that are specified by geometric objects. You should list any materials other
   than scalar dielectrics that are returned by `material_function` here.
 
-+ **`chunk_layout` [`string` or `Simulation` instance or `BinaryPartition` class]** —
++ **`chunk_layout` [ `string` or `Simulation` instance or `BinaryPartition` class ]** —
   This will cause the `Simulation` to use the chunk layout described by either
   (1) an `.h5` file (created using `Simulation.dump_chunk_layout`), (2) another
   `Simulation` instance, or (3) a [`BinaryPartition`](#binarypartition) class object.
@@ -333,21 +333,21 @@ Python. `Vector3` is a `meep` class.
 The following require a bit more understanding of the inner workings of Meep to
 use. See also [SWIG Wrappers](#swig-wrappers).
 
-+ **`structure` [`meep::structure*`]** — Pointer to the current structure being
++ **`structure` [ `meep::structure*` ]** — Pointer to the current structure being
   simulated; initialized by `_init_structure` which is called automatically by
   `init_sim()` which is called automatically by any of the [run
   functions](#run-functions). The structure initialization is handled by the
   `Simulation` class, and most users will not need to call `_init_structure`.
 
-+ **`fields` [`meep::fields*`]** — Pointer to the current fields being simulated;
++ **`fields` [ `meep::fields*` ]** — Pointer to the current fields being simulated;
   initialized by `init_sim()` which is called automatically by any of the [run
   functions](#run-functions).
 
-+ **`num_chunks` [`integer`]** — Minimum number of "chunks" (subregions) to divide
++ **`num_chunks` [ `integer` ]** — Minimum number of "chunks" (subregions) to divide
   the structure/fields into. Overrides the default value determined by
   the number of processors, PML layers, etcetera. Mainly useful for debugging.
 
-+ **`split_chunks_evenly` [`boolean`]** — When `True` (the default), the work per
++ **`split_chunks_evenly` [ `boolean` ]** — When `True` (the default), the work per
   [chunk](Chunks_and_Symmetry.md) is not taken into account when splitting chunks
   up for multiple processors. The cell is simply split up into equal chunks (with
   the exception of PML regions, which must be on their own chunk). When `False`,
@@ -1401,14 +1401,14 @@ Given a structure, Meep can decompose the Fourier-transformed fields into a supe
 
 ```python
 def get_eigenmode_coefficients(self,
-                               flux,
-                               bands,
-                               eig_parity=mp.NO_PARITY,
-                               eig_vol=None,
-                               eig_resolution=0,
-                               eig_tolerance=1e-12,
-                               kpoint_func=None,
-                               direction=mp.AUTOMATIC):
+                               flux: meep.simulation.DftFlux,
+                               bands: Union[List[int], meep.simulation.DiffractedPlanewave],
+                               eig_parity: int = meep.NO_PARITY,
+                               eig_vol: meep.simulation.Volume = None,
+                               eig_resolution: float = 0,
+                               eig_tolerance: float = 1e-12,
+                               kpoint_func: Callable[[float, int], float] = None,
+                               direction: int = meep.AUTOMATIC):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -1432,7 +1432,7 @@ following fields:
 </div>
 
 
-The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about symmetries that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenModeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue $\omega$; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
+The flux object should be created using `add_mode_monitor`.  (You could also use `add_flux`, but with `add_flux` you need to be more careful about `symmetries` that bisect the flux plane: the `add_flux` object should only be used with `get_eigenmode_coefficients` for modes of the same symmetry, e.g. constrained via `eig_parity`.  On the other hand, the performance of `add_flux` planes benefits more from symmetry.) `eig_vol` is the volume passed to [MPB](https://mpb.readthedocs.io) for the eigenmode calculation (based on interpolating the discretized materials from the Yee grid); in most cases this will simply be the volume over which the frequency-domain fields are tabulated, which is the default (i.e. `flux.where`). `eig_parity` should be one of [`mp.NO_PARITY` (default), `mp.EVEN_Z`, `mp.ODD_Z`, `mp.EVEN_Y`, `mp.ODD_Y`]. It is the parity (= polarization in 2d) of the mode to calculate, assuming the structure has $z$ and/or $y$ mirror symmetry *in the source region*, just as for `EigenModeSource` above. If the structure has both $y$ and $z$ mirror symmetry, you can combine more than one of these, e.g. `EVEN_Z+ODD_Y`. Default is `NO_PARITY`, in which case MPB computes all of the bands which will still be even or odd if the structure has mirror symmetry, of course. This is especially useful in 2d simulations to restrict yourself to a desired polarization. `eig_resolution` is the spatial resolution to use in MPB for the eigenmode calculations. This defaults to twice the Meep `resolution` in which case the structure is linearly interpolated from the Meep pixels. `eig_tolerance` is the tolerance to use in the MPB eigensolver. MPB terminates when the eigenvalues stop changing to less than this fractional tolerance. Defaults to `1e-12`.  (Note that this is the tolerance for the frequency eigenvalue $\omega$; the tolerance for the mode profile is effectively the square root of this.) For examples, see [Tutorial/Mode Decomposition](Python_Tutorials/Mode_Decomposition.md).
 
 Technically, MPB computes $\omega_n(\mathbf{k})$ and then inverts it with Newton's method to find the wavevector $\mathbf{k}$ normal to `eig_vol` and mode for a given frequency; in rare cases (primarily waveguides with *nonmonotonic* dispersion relations, which doesn't usually happen in simple dielectric waveguides), MPB may need you to supply an initial "guess" for $\mathbf{k}$ in order for this Newton iteration to converge.  You can supply this initial guess with `kpoint_func`, which is a function `kpoint_func(f, n)` that supplies a rough initial guess for the $\mathbf{k}$ of band number $n$ at frequency $f=\omega/2\pi$. (By default, the $\mathbf{k}$ components in the plane of the `eig_vol` region are zero.  However, if this region spans the *entire* cell in some directions, and the cell has Bloch-periodic boundary conditions via the `k_point` parameter, then the mode's $\mathbf{k}$ components in those directions will match `k_point` so that the mode satisfies the Meep boundary conditions, regardless of `kpoint_func`.) If `direction` is set to `mp.NO_DIRECTION`, then `kpoint_func` is not only the initial guess and the search direction of the $\mathbf{k}$ vectors, but is also taken to be the direction of the waveguide, allowing you to [detect modes in oblique waveguides](Python_Tutorials/Eigenmode_Source.md#oblique-waveguides) (not perpendicular to the flux plane).
 
@@ -2120,7 +2120,7 @@ where the $|\hat{p}(\omega)|^2$ normalization is necessary for obtaining the pow
 
 ### Near-to-Far-Field Spectra
 
-Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Python_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d, 3d, or cylindrical region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume) — this is an exact mathematical transformation (up to numerical errors) that produces the correct fields (including phase, polarization, diffraction, etc.) at any point (not necessarily "far" away) outside the enclosed "near" region. Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
+Meep can compute a near-to-far-field transformation in the frequency domain as described in [Tutorial/Near-to-Far Field Spectra](Python_Tutorials/Near_to_Far_Field_Spectra.md): given the fields on a "near" bounding surface inside the cell, it can compute the fields arbitrarily far away using an analytical transformation, assuming that the "near" surface and the "far" region lie in a single homogeneous non-periodic 2d, 3d, or cylindrical region. That is, in a simulation *surrounded by PML* that absorbs outgoing waves, the near-to-far-field feature can compute the fields outside the cell as if the outgoing waves had not been absorbed (i.e. in the fictitious infinite open volume). Moreover, this operation is performed on the Fourier-transformed fields: like the flux and force spectra above, you specify a set of desired frequencies, Meep accumulates the Fourier transforms, and then Meep computes the fields at *each frequency* for the desired far-field points.
 
 This is based on the principle of equivalence: given the Fourier-transformed tangential fields on the "near" surface, Meep computes equivalent currents and convolves them with the analytical Green's functions in order to compute the fields at any desired point in the "far" region. For details, see Section 4.2.1 ("The Principle of Equivalence") in [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source Conditions") of the book [Advances in FDTD Computational Electrodynamics: Photonics and Nanotechnology](https://www.amazon.com/Advances-FDTD-Computational-Electrodynamics-Nanotechnology/dp/1608071707). Since the "far" fields are computed using the full Green's functions, they should be able to be computed *anywhere* outside of the near-field surface monitor. The only limiting factor should be discretization errors but for any given distance, the "far" fields should converge to the actual DFT fields at that location with resolution (assuming the distance separation is >> resolution).
 
@@ -2770,6 +2770,7 @@ def plot2D(self,
            output_plane: Optional[meep.simulation.Volume] = None,
            fields: Optional = None,
            labels: bool = False,
+           label_geometry: bool = True,
            eps_parameters: Optional[dict] = None,
            boundary_parameters: Optional[dict] = None,
            source_parameters: Optional[dict] = None,
@@ -2777,10 +2778,10 @@ def plot2D(self,
            field_parameters: Optional[dict] = None,
            colorbar_parameters: Optional[dict] = None,
            frequency: Optional[float] = None,
-           plot_eps_flag: bool = True,
-           plot_sources_flag: bool = True,
-           plot_monitors_flag: bool = True,
-           plot_boundaries_flag: bool = True,
+           show_epsilon: bool = True,
+           show_sources: bool = True,
+           show_monitors: bool = True,
+           show_boundary_layers: bool = True,
            nb: bool = False,
            **kwargs):
 ```
@@ -2824,6 +2825,8 @@ to be called on all processes, but only generates a plot on the master process.
   no fields are superimposed.
 * `labels`: if `True`, then labels will appear over each of the simulation
   elements. Defaults to `False`.
+* `label_geometry`: if `True`, then labels will appear over each of the geometry
+  elements. Defaults to `True`.
 * `eps_parameters`: a `dict` of optional plotting parameters that override the
   default parameters for the geometry.
     - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
@@ -2872,7 +2875,7 @@ to be called on all processes, but only generates a plot on the master process.
     - `interpolation='spline36'`: interpolation function used to upsample field pixels
     - `cmap='RdBu'`: color map for field pixels
     - `alpha=0.6`: transparency of fields
-    - `post_process=np.real`: post processing function to apply to fields (must be
+    - `post_process=numpy.real`: post processing function to apply to fields (must be
       a function object)
     - `colorbar=False`: whether to add a colorbar to the plot's parent Figure based on field values.
 * `colorbar_parameters`:  a `dict` of optional plotting parameters that override the default parameters for
@@ -3924,6 +3927,7 @@ or `numpy.complex128` depending on the [floating-point precision of the fields](
 </div>
 
 
+Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), internally the DFT fields are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d. Additionally, `get_array` interpolates all fields to the center of the Yee cell. In summary, the output of `get_array` and `get_dft_array` is always centered on the Yee cell.
 
 #### Array Metadata
 
@@ -3948,7 +3952,7 @@ returned by `get_array` or `get_dft_array` for the spatial region defined by `vo
 or `center`/`size`. In both cases, the return value is a tuple `(x,y,z,w)`, where:
 
 + `x,y,z` are 1d NumPy arrays storing the $x,y,z$ coordinates of the points in the
-  grid slice
+  grid slice. Cylindrical coordinates is not supported.
 + `w` is a NumPy array of the same dimensions as the array returned by
   `get_array`/`get_dft_array`, whose entries are the weights in a cubature rule
   for integrating over the spatial region (with the points in the cubature rule
@@ -4486,72 +4490,72 @@ objects that are subclasses of type `Susceptibility`.
 
 ```python
 def __init__(self,
-             epsilon_diag=Vector3<1.0, 1.0, 1.0>,
-             epsilon_offdiag=Vector3<0.0, 0.0, 0.0>,
-             mu_diag=Vector3<1.0, 1.0, 1.0>,
-             mu_offdiag=Vector3<0.0, 0.0, 0.0>,
-             E_susceptibilities=None,
-             H_susceptibilities=None,
-             E_chi2_diag=Vector3<0.0, 0.0, 0.0>,
-             E_chi3_diag=Vector3<0.0, 0.0, 0.0>,
-             H_chi2_diag=Vector3<0.0, 0.0, 0.0>,
-             H_chi3_diag=Vector3<0.0, 0.0, 0.0>,
-             D_conductivity_diag=Vector3<0.0, 0.0, 0.0>,
-             D_conductivity_offdiag=Vector3<0.0, 0.0, 0.0>,
-             B_conductivity_diag=Vector3<0.0, 0.0, 0.0>,
-             B_conductivity_offdiag=Vector3<0.0, 0.0, 0.0>,
-             epsilon=None,
-             index=None,
-             mu=None,
-             chi2=None,
-             chi3=None,
-             D_conductivity=None,
-             B_conductivity=None,
-             E_chi2=None,
-             E_chi3=None,
-             H_chi2=None,
-             H_chi3=None,
-             valid_freq_range=FreqRange(min=-1e+20, max=1e+20)):
+             epsilon_diag: 'Vector3' = Vector3<1.0, 1.0, 1.0>,
+             epsilon_offdiag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             mu_diag: 'Vector3' = Vector3<1.0, 1.0, 1.0>,
+             mu_offdiag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             E_susceptibilities: 'Optional[List[Susceptibility]]' = None,
+             H_susceptibilities: 'Optional[List[Susceptibility]]' = None,
+             E_chi2_diag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             E_chi3_diag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             H_chi2_diag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             H_chi3_diag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             D_conductivity_diag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             D_conductivity_offdiag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             B_conductivity_diag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             B_conductivity_offdiag: 'Vector3' = Vector3<0.0, 0.0, 0.0>,
+             epsilon: 'Optional[float]' = None,
+             index: 'Optional[float]' = None,
+             mu: 'Optional[float]' = None,
+             chi2: 'Optional[float]' = None,
+             chi3: 'Optional[float]' = None,
+             D_conductivity: 'Optional[float]' = None,
+             B_conductivity: 'Optional[float]' = None,
+             E_chi2: 'Optional[float]' = None,
+             E_chi3: 'Optional[float]' = None,
+             H_chi2: 'Optional[float]' = None,
+             H_chi3: 'Optional[float]' = None,
+             valid_freq_range: 'NamedTuple' = FreqRange(min=-1e+20, max=1e+20)):
 ```
 
 <div class="method_docstring" markdown="1">
 
 Creates a `Medium` object.
 
-+ **`epsilon` [`number`]** The frequency-independent isotropic relative
++ **`epsilon` [ `number` ]** The frequency-independent isotropic relative
   permittivity or dielectric constant. Default is 1. You can also use `index=n` as
   a synonym for `epsilon=n*n`; note that this is not really the refractive index
-  if you also specify μ, since the true index is $\sqrt{\mu\varepsilon}$. Using
+  if you also specify $\mu$, since the true index is $\sqrt{\mu\varepsilon}$. Using
   `epsilon=ep` is actually a synonym for `epsilon_diag=mp.Vector3(ep, ep, ep)`.
 
-+ **`epsilon_diag` and `epsilon_offdiag` [`Vector3`]** — These properties allow
++ **`epsilon_diag` and `epsilon_offdiag` [ `Vector3` ]** — These properties allow
   you to specify ε as an arbitrary real-symmetric tensor by giving the diagonal
   and offdiagonal parts. Specifying `epsilon_diag=Vector3(a, b, c)` and/or
-  `epsilon_offdiag=Vector3(u, v, w)` corresponds to a relative permittivity ε
+  `epsilon_offdiag=Vector3(u, v, w)` corresponds to a relative permittivity $\varepsilon$
   tensor \begin{pmatrix} a & u & v \\ u & b & w \\ v & w & c \end{pmatrix}
   Default is the identity matrix ($a = b = c = 1$ and $u = v = w = 0$).
 
-+ **`mu` [`number`]** — The frequency-independent isotropic relative permeability
-  μ. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=mp.Vector3(pm,
++ **`mu` [ `number` ]** — The frequency-independent isotropic relative permeability
+  $\mu$. Default is 1. Using `mu=pm` is actually a synonym for `mu_diag=mp.Vector3(pm,
   pm, pm)`.
 
-+ **`mu_diag` and `mu_offdiag` [`Vector3`]** — These properties allow you to
-  specify μ as an arbitrary real-symmetric tensor by giving the diagonal and
-  offdiagonal parts exactly as for ε above. Default is the identity matrix.
++ **`mu_diag` and `mu_offdiag` [ `Vector3` ]** — These properties allow you to
+  specify $\mu$ as an arbitrary real-symmetric tensor by giving the diagonal and
+  offdiagonal parts exactly as for $\varepsilon$ above. Default is the identity matrix.
 
-+ **`D_conductivity` [`number`]** — The frequency-independent electric
++ **`D_conductivity` [ `number` ]** — The frequency-independent electric
   conductivity $\sigma_D$. Default is 0. You can also specify a diagonal
   anisotropic conductivity tensor by using the property `D_conductivity_diag`
   which takes a `Vector3` to give the $\sigma_D$ tensor diagonal. See also
   [Conductivity](Materials.md#conductivity-and-complex).
 
-+ **`B_conductivity` [`number`]** — The frequency-independent magnetic
++ **`B_conductivity` [ `number` ]** — The frequency-independent magnetic
   conductivity $\sigma_B$. Default is 0. You can also specify a diagonal
   anisotropic conductivity tensor by using the property `B_conductivity_diag`
   which takes a `Vector3` to give the $\sigma_B$ tensor diagonal. See also
   [Conductivity](Materials.md#conductivity-and-complex).
 
-+ **`chi2` [`number`]** — The nonlinear electric
++ **`chi2` [ `number` ]** — The nonlinear electric
   [Pockels](https://en.wikipedia.org/wiki/Pockels_effect) susceptibility
   $\chi^{(2)}$ (quadratic nonlinearity). Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
   This is equivalent to setting `E_chi2`; alternatively, an analogous magnetic
@@ -4559,7 +4563,7 @@ Creates a `Medium` object.
   but *diagonal* anisotropic polarizations of the form $\chi_i^{(2)} E_i^2$ can
   be specified with `E_chi2_diag` (which defaults to `[E_chi2,E_chi2,E_chi2]`).
 
-+ **`chi3` [`number`]** — The nonlinear electric
++ **`chi3` [ `number` ]** — The nonlinear electric
   [Kerr](https://en.wikipedia.org/wiki/Kerr_effect) susceptibility $\chi^{(3)}$
   (cubic nonlinearity). Default is 0. See also [Nonlinearity](Materials.md#nonlinearity).
   This is equivalent to setting `E_chi3`; alternatively, an analogous magnetic nonlinearity
@@ -4568,12 +4572,12 @@ Creates a `Medium` object.
   `E_chi3_diag` (which defaults to `[E_chi3,E_chi3,E_chi3]`).
 
 + **`E_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
-  susceptibilities (see below) added to the dielectric constant ε in order to
+  susceptibilities (see below) added to the dielectric constant $\varepsilon$ in order to
   model material dispersion. Defaults to none (empty list). See also [Material
   Dispersion](Materials.md#material-dispersion).
 
 + **`H_susceptibilities` [ list of `Susceptibility` class ]** — List of dispersive
-  susceptibilities (see below) added to the permeability μ in order to model
+  susceptibilities (see below) added to the permeability $\mu$ in order to model
   material dispersion. Defaults to none (empty list). See also [Material
   Dispersion](Materials.md#material-dispersion).
 
@@ -4687,15 +4691,15 @@ argument of the [`Simulation`](#Simulation) constructor (similar to a [material 
 
 ```python
 def __init__(self,
-             grid_size: Union[meep.geom.Vector3, Tuple[float, ...]],
-             medium1: meep.geom.Medium,
-             medium2: meep.geom.Medium,
-             weights: numpy.ndarray = None,
-             grid_type: str = 'U_DEFAULT',
-             do_averaging: bool = False,
-             beta: float = 0,
-             eta: float = 0.5,
-             damping: float = 0):
+             grid_size: 'Union[Vector3, Tuple[float, ...]]',
+             medium1: 'meep.geom.Medium',
+             medium2: 'meep.geom.Medium',
+             weights: 'numpy.ndarray' = None,
+             grid_type: 'str' = 'U_DEFAULT',
+             do_averaging: 'bool' = False,
+             beta: 'float' = 0,
+             eta: 'float' = 0.5,
+             damping: 'float' = 0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4763,7 +4767,7 @@ allow you to combine any material grids that overlap in space with no intervenin
 <div class="class_members" markdown="1">
 
 ```python
-def update_weights(self, x: numpy.ndarray):
+def update_weights(self, x: 'numpy.ndarray'):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5316,9 +5320,9 @@ v1 == v2
 
 ```python
 def __init__(self,
-             x: float = 0.0,
-             y: float = 0.0,
-             z: float = 0.0):
+             x: 'float' = 0.0,
+             y: 'float' = 0.0,
+             z: 'float' = 0.0):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -5656,7 +5660,8 @@ geometry = [mp.Prism(vertices, height=1.5, center=mp.Vector3(), material=cSi)]
 def __init__(self,
              material=Medium(),
              center=Vector3<0.0, 0.0, 0.0>,
-             epsilon_func=None):
+             epsilon_func=None,
+             label=None):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -6185,11 +6190,11 @@ def __init__(self,
 
 Construct a `Symmetry`.
 
-+ **`direction` [`direction` constant ]** — The direction of the symmetry (the
++ **`direction` [ `direction` constant ]** — The direction of the symmetry (the
   normal to a mirror plane or the axis for a rotational symmetry). e.g. `X`, `Y`,
   or `Z` (only Cartesian/grid directions are allowed). No default value.
 
-+ **`phase` [`complex`]** — An additional phase to multiply the fields by when
++ **`phase` [ `complex` ]** — An additional phase to multiply the fields by when
   operating the symmetry on them. Default is +1, e.g. a phase of -1 for a mirror
   plane corresponds to an *odd* mirror. Technically, you are essentially
   specifying the representation of the symmetry group that your fields and sources
@@ -6303,26 +6308,26 @@ def __init__(self,
              side: int = -1,
              R_asymptotic: float = 1e-15,
              mean_stretch: float = 1.0,
-             pml_profile: Callable[[float], float] = lambda u: u * u,
+             pml_profile: Callable[[float], float] = lambda u: u * u):
 ```
 
 <div class="method_docstring" markdown="1">
 
-+ **`thickness` [`number`]** — The spatial thickness of the PML layer which
++ **`thickness` [ `number` ]** — The spatial thickness of the PML layer which
   extends from the boundary towards the *inside* of the cell. The thinner it is,
   the more numerical reflections become a problem. No default value.
 
-+ **`direction` [`direction` constant ]** — Specify the direction of the
++ **`direction` [ `direction` constant ]** — Specify the direction of the
   boundaries to put the PML layers next to. e.g. if `X`, then specifies PML on the
   $\pm x$ boundaries (depending on the value of `side`, below). Default is the
   special value `ALL`, which puts PML layers on the boundaries in all directions.
 
-+ **`side` [`side` constant ]** — Specify which side, `Low` or `High` of the
++ **`side` [ `side` constant ]** — Specify which side, `Low` or `High` of the
   boundary or boundaries to put PML on. e.g. if side is `Low` and direction is
   `meep.X`, then a PML layer is added to the $-x$ boundary. Default is the special
   value `meep.ALL`, which puts PML layers on both sides.
 
-+ **`R_asymptotic` [`number`]** — The asymptotic reflection in the limit of
++ **`R_asymptotic` [ `number` ]** — The asymptotic reflection in the limit of
   infinite resolution or infinite PML thickness, for reflections from air (an
   upper bound for other media with index &gt; 1). For a finite resolution or
   thickness, the reflection will be *much larger*, due to the discretization of
@@ -6331,7 +6336,7 @@ def __init__(self,
   within the PML are attenuated sufficiently, but making `R_asymptotic` too small
   will increase the numerical reflection due to discretization.
 
-+ **`pml_profile` [`function`]** — By default, Meep turns on the PML conductivity
++ **`pml_profile` [ `function` ]** — By default, Meep turns on the PML conductivity
   quadratically within the PML layer &mdash; one doesn't want to turn it on
   suddenly, because that exacerbates reflections due to the discretization. More
   generally, with `pml_profile` one can specify an arbitrary PML "profile"
@@ -6488,7 +6493,7 @@ Construct a `Source`.
   `amp_func_file` above, but instead of interpolating into an HDF5 file,
   interpolates into a complex NumPy array. The array should be three dimensions.
   For a 2d simulation, just pass 1 for the third dimension, e.g., `arr =
-  np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
+  numpy.zeros((N, M, 1), dtype=numpy.complex128)`. Defaults to `None`.
 
 As described in Section 4.2 ("Incident Fields and Equivalent Currents") in
 [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source
@@ -6601,6 +6606,7 @@ def __init__(self,
              volume=None,
              eig_lattice_size=None,
              eig_lattice_center=None,
+             eig_vol=None,
              component=mp.ALL_COMPONENTS,
              direction=mp.AUTOMATIC,
              eig_band=1,
@@ -6691,7 +6697,7 @@ Construct an `EigenModeSource`.
   optional `eig_lattice_size` and `eig_lattice_center`, which define a volume
   (which must enclose `size` and `center`) that is used for the unit cell in MPB
   with the dielectric function ε taken from the corresponding region in the Meep
-  simulation.
+  simulation. Alternatively, a volume object `eig_vol` can be specified.
 
 </div>
 
@@ -7069,22 +7075,22 @@ def __init__(self,
 
 Construct a `FluxRegion` object.
 
-+ **`center` [`Vector3`]** — The center of the flux region (no default).
++ **`center` [ `Vector3` ]** — The center of the flux region (no default).
 
-+ **`size` [`Vector3`]** — The size of the flux region along each of the coordinate
++ **`size` [ `Vector3` ]** — The size of the flux region along each of the coordinate
   axes. Default is `(0,0,0)`; a single point.
 
-+ **`direction` [`direction` constant ]** — The direction in which to compute the
++ **`direction` [ `direction` constant ]** — The direction in which to compute the
   flux (e.g. `mp.X`, `mp.Y`, etcetera). Default is `AUTOMATIC`, in which the
   direction is determined by taking the normal direction if the flux region is a
   plane (or a line, in 2d). If the normal direction is ambiguous (e.g. for a point
   or volume), then you *must* specify the `direction` explicitly (not doing so
   will lead to an error).
 
-+ **`weight` [`complex`]** — A weight factor to multiply the flux by when it is
++ **`weight` [ `complex` ]** — A weight factor to multiply the flux by when it is
   computed. Default is 1.0.
 
-+ **`volume` [`Volume`]** — A `meep.Volume` can be used to specify the flux region
++ **`volume` [ `Volume` ]** — A `meep.Volume` can be used to specify the flux region
   instead of a `center` and a `size`.
 
 </div>
@@ -7106,12 +7112,12 @@ class EnergyRegion(FluxRegion):
 A region (volume, plane, line, or point) in which to compute the integral of the
 energy density of the Fourier-transformed fields. Its properties are:
 
-+ **`center` [`Vector3`]** — The center of the energy region (no default).
++ **`center` [ `Vector3` ]** — The center of the energy region (no default).
 
-+ **`size` [`Vector3`]** — The size of the energy region along each of the coordinate
++ **`size` [ `Vector3` ]** — The size of the energy region along each of the coordinate
   axes. Default is (0,0,0): a single point.
 
-+ **`weight` [`complex`]** — A weight factor to multiply the energy density by when it
++ **`weight` [ `complex` ]** — A weight factor to multiply the energy density by when it
   is computed. Default is 1.0.
 
 </div>
@@ -7145,7 +7151,7 @@ stress tensor of the Fourier-transformed fields. Its properties are:
 + **`weight` [ `complex` ]** — A weight factor to multiply the force by when it is
   computed. Default is 1.0.
 
-+ **`volume` [`Volume`]** — A `meep.Volume` can be used to specify the force region
++ **`volume` [ `Volume` ]** — A `meep.Volume` can be used to specify the force region
   instead of a `center` and a `size`.
 
 In most circumstances, you should define a set of `ForceRegion`s whose union is a
@@ -7599,7 +7605,7 @@ frequency response at the specified point.
 
 + **`c` [ `component` constant ]** — The field component to use for extrapolation.
   No default.
-+ **`vol` [ `Volume` class ]** — The volume over which to accumulate the fields
++ **`vol` [ `Volume` ]** — The volume over which to accumulate the fields
   (may be 0d, 1d, 2d, or 3d). No default.
 + **`center` [ `Vector3` class ]** — Alternative method for specifying volume, using a center point
 + **`size` [ `Vector3` class ]** — Alternative method for specifying volume, using a size vector
