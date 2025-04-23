@@ -358,6 +358,7 @@ use. See also [SWIG Wrappers](#swig-wrappers).
 
 </div>
 
+
 <a id="Simulation.run"></a>
 
 <div class="class_members" markdown="1">
@@ -4766,7 +4767,7 @@ allow you to combine any material grids that overlap in space with no intervenin
 <div class="class_members" markdown="1">
 
 ```python
-def update_weights(self, x: 'np.ndarray'):
+def update_weights(self, x: 'numpy.ndarray'):
 ```
 
 <div class="method_docstring" markdown="1">
