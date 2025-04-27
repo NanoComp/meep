@@ -85,6 +85,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_oblique_source.py         \
     $(TEST_DIR)/test_pml_cyl.py                \
     $(TEST_DIR)/test_physical.py               \
+    $(TEST_DIR)/test_planewave_1D.py           \
     $(TEST_DIR)/test_prism.py                  \
     $(TEST_DIR)/test_pw_source.py              \
     $(TEST_DIR)/test_refl_angular.py           \
