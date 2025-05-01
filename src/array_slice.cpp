@@ -567,10 +567,6 @@ realnum *collapse_array(realnum *array, int *rank, size_t dims[3], direction dir
                           reduced_dirs, reduced_stride);
 
   if (full_rank == 0) return array;
-  if (reduced_rank == 0) {
-    *rank = 0;
-    return array; // return array as is for singleton use case
-  }
   if (reduced_rank == full_rank) return array; // nothing to collapse
 
   /*--------------------------------------------------------------*/
