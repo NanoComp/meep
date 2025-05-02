@@ -28,11 +28,16 @@ class TestPlanewave1D(unittest.TestCase):
 
         Args:
             resolution_um: resolution of the grid (number of pixels per um).
-            polar_rad: polar angle of the incident planewave. 0 is +x axis.
-            azimuth_rad: azimuth angle of the incident planewave. 0 is +z axis.
+            polar_rad: polar angle of the incident planewave in [0, π/2].
+                0 is +z axis.
+            azimuth_rad: azimuth angle of the incident planewave in [0, 2π].
+                Rotation around the z axis. 0 is +x axis.
             cell_dim: dimension of the cell (1 or 3).
             yee_grid: whether the DFT fields are on a centered or Yee grid.
         """
+        if polar_rad > 0.5 * np.pi:
+            raise ValueError("polar_rad must be less than π/2.")
+
         print(
             f"Testing planewaves in vacuum using {cell_dim}D simulation and "
             f"{'yee' if yee_grid else 'centered'} grid..."
@@ -46,9 +51,9 @@ class TestPlanewave1D(unittest.TestCase):
 
         wavelength_um = 1.0
         frequency = 1 / wavelength_um
-        kx = frequency * np.sin(azimuth_rad) * np.cos(azimuth_rad)
-        ky = frequency * np.sin(azimuth_rad) * np.sin(azimuth_rad)
-        kz = frequency * np.cos(azimuth_rad)
+        kx = frequency * np.sin(polar_rad) * np.cos(azimuth_rad)
+        ky = frequency * np.sin(polar_rad) * np.sin(azimuth_rad)
+        kz = frequency * np.cos(polar_rad)
 
         if cell_dim == 1 and polar_rad != 0 and azimuth_rad != 0:
             raise ValueError("An oblique planewave cannot be simulated in 1D.")
@@ -145,11 +150,18 @@ class TestPlanewave1D(unittest.TestCase):
         print("PASSED.")
 
     def test_planewave_1D(self):
-        self.planewave_in_vacuum(400.0, 0.0, 0.0, 1, False)
-        self.planewave_in_vacuum(200.0, 0.0, 0.0, 3, False)
+        # Case 1: normal incidence with k = (0, 0, kz).
+        polar_rad = 0
+        azimuth_rad = 0
+        self.planewave_in_vacuum(400.0, polar_rad, azimuth_rad, 1, False)
+        self.planewave_in_vacuum(200.0, polar_rad, azimuth_rad, 3, False)
+        self.planewave_in_vacuum(400.0, polar_rad, azimuth_rad, 1, True)
+        self.planewave_in_vacuum(200.0, polar_rad, azimuth_rad, 3, True)
 
-        self.planewave_in_vacuum(400.0, 0.0, 0.0, 1, True)
-        self.planewave_in_vacuum(200.0, 0.0, 0.0, 3, True)
+        # Case 2: oblique incidence with k = (kx, ky, kz).
+        polar_rad = np.deg2rad(10.3)
+        azimuth_rad = np.deg2rad(35.7)
+        self.planewave_in_vacuum(200.0, polar_rad, azimuth_rad, 3, True)
 
 
 if __name__ == "__main__":
