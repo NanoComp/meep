@@ -1,5 +1,11 @@
 # Meep Release Notes
 
+## Meep 1.30.1
+
+5/8/2025
+
+* Bug fix in DFT fields of a single point ([#3010]).
+
 ## Meep 1.30.0
 
 3/27/2025
