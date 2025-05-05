@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Dict, Tuple
 import math
 
+import matplotlib.pyplot as plt
 import meep as mp
 import numpy as np
 
@@ -19,7 +20,7 @@ DEBUG_OUTPUT = True
 frequency = 1 / WAVELENGTH_UM
 
 
-def dipole_in_vacuum(
+def planewave_in_vacuum(
     dipole_component: Current, kx: float, ky: float
 ) -> Tuple[complex, complex, complex, complex]:
     """
@@ -32,11 +33,11 @@ def dipole_in_vacuum(
     Returns:
         The surface-tangential electric and magnetic near fields as a 4-tuple.
     """
-    pml_um = 1.0
+    pml_um = 2.0
     air_um = 10.0
     size_z_um = pml_um + air_um + pml_um
     cell_size = mp.Vector3(0, 0, size_z_um)
-    pml_layers = [mp.PML(thickness=pml_um)]
+    pml_layers = [mp.PML(thickness=pml_um, direction=mp.Z)]
 
     if dipole_component.name == "Jx":
         src_cmpt = mp.Ex
@@ -126,23 +127,25 @@ def field_amplitudes_from_sheet_current(
     if current_component.name == "Jx":
         # Jx --> (Ex, Hy, Ez) [P pol.]
         ex0 = kz * current_amplitude / (2 * frequency)
+        hy0 = frequency * ex0 / kz
     elif current_component.name == "Jy":
         # Jy --> (Hx, Ey, Hz) [S pol.]
-        ey0 = -frequency * current_amplitude / (2 * kz)
+        ey0 = frequency * current_amplitude / (2 * kz)
+        hx0 = -kz * ey0 / frequency
     elif current_component.name == "Kx":
         # Kx --> (Hx, Ey, Hz) [S pol.]
-        ey0 = -current_amplitude / 2
+        hx0 = kz * current_amplitude / (2 * frequency)
+        ey0 = -frequency * hx0 / kz
     elif current_component.name == "Ky":
         # Ky --> (Ex, Hy, Ez) [P pol.]
-        ex0 = current_amplitude / 2
+        hy0 = -frequency * current_amplitude / (2 * kz)
+        ex0 = kz * hy0 / frequency
 
     if current_component.name == "Jx" or current_component.name == "Ky":
-        hy0 = kz * ex0 / frequency
         ez0 = -kx * hy0 / frequency
         return (ex0, hy0, ez0)
     elif current_component.name == "Jy" or current_component.name == "Kx":
-        hx0 = -kz * ey0 / frequency
-        hz0 = kx * ey0 / frequency
+        hz0 = -kx * ey0 / frequency
         return (hx0, ey0, hz0)
 
 
@@ -179,7 +182,7 @@ def farfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
 
     kz = (frequency**2 - kx**2 - ky**2) ** 0.5
 
-    ex_dft, ey_dft, hx_dft, hy_dft = dipole_in_vacuum(dipole_component, kx, ky)
+    ex_dft, ey_dft, hx_dft, hy_dft = planewave_in_vacuum(dipole_component, kx, ky)
 
     # Rotation angle around z axis to force ky=0. 0 radians is +x.
     rotation_rad = -math.atan2(ky, kx)
@@ -243,18 +246,12 @@ def farfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
 
         farfield_pol = np.array(farfield_amplitudes_pol)
 
-        if (
-            current_component.name == "Jx" or
-            current_component.name == "Ky"
-        ):
+        if current_component.name == "Jx" or current_component.name == "Ky":
             # P polarization
             farfields["Ex"] += farfield_pol[0]
             farfields["Hy"] += farfield_pol[1]
             farfields["Ez"] += farfield_pol[2]
-        elif (
-            current_component.name == "Jy" or
-            current_component.name == "Kx"
-        ):
+        elif current_component.name == "Jy" or current_component.name == "Kx":
             # S polarization
             farfields["Hx"] += farfield_pol[0]
             farfields["Ey"] += farfield_pol[1]
@@ -267,28 +264,24 @@ def farfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
     inverse_rotation_matrix = np.transpose(rotation_matrix)
 
     rotated_farfields["Ex"] = (
-        inverse_rotation_matrix[0, 0] * farfields["Ex"] +
-        inverse_rotation_matrix[0, 1] * farfields["Ey"]
+        inverse_rotation_matrix[0, 0] * farfields["Ex"]
+        + inverse_rotation_matrix[0, 1] * farfields["Ey"]
     )
     rotated_farfields["Ey"] = (
-        inverse_rotation_matrix[1, 0] * farfields["Ex"] +
-        inverse_rotation_matrix[1, 1] * farfields["Ey"]
+        inverse_rotation_matrix[1, 0] * farfields["Ex"]
+        + inverse_rotation_matrix[1, 1] * farfields["Ey"]
     )
-    rotated_farfields["Ez"] = (
-        farfields["Ez"]
-    )
+    rotated_farfields["Ez"] = farfields["Ez"]
 
     rotated_farfields["Hx"] = (
-        inverse_rotation_matrix[0, 0] * farfields["Hx"] +
-        inverse_rotation_matrix[0, 1] * farfields["Hy"]
+        inverse_rotation_matrix[0, 0] * farfields["Hx"]
+        + inverse_rotation_matrix[0, 1] * farfields["Hy"]
     )
     rotated_farfields["Hy"] = (
-        inverse_rotation_matrix[1, 0] * farfields["Hx"] +
-        inverse_rotation_matrix[1, 1] * farfields["Hy"]
+        inverse_rotation_matrix[1, 0] * farfields["Hx"]
+        + inverse_rotation_matrix[1, 1] * farfields["Hy"]
     )
-    rotated_farfields["Hz"] = (
-        farfields["Hz"]
-    )
+    rotated_farfields["Hz"] = farfields["Hz"]
 
     return rotated_farfields
 
@@ -300,7 +293,7 @@ if __name__ == "__main__":
     radial_flux = np.zeros((NUM_POLAR, NUM_AZIMUTHAL))
 
     for i in range(NUM_POLAR):
-        for j in [0]: # range(NUM_AZIMUTHAL):
+        for j in [0]:  # range(NUM_AZIMUTHAL):
             kx, ky, kz = spherical_to_cartesian(polar_rad[i], azimuthal_rad[j])
             kx *= frequency
             ky *= frequency
@@ -320,16 +313,16 @@ if __name__ == "__main__":
 
             # (Ex, Hy, Ez) are nonzero
             flux_x = np.real(
-                np.conj(farfields["Ey"]) * farfields["Hz"] -
-                np.conj(farfields["Ez"]) * farfields["Hy"]
+                np.conj(farfields["Ey"]) * farfields["Hz"]
+                - np.conj(farfields["Ez"]) * farfields["Hy"]
             )
             flux_y = np.real(
-                np.conj(farfields["Ez"]) * farfields["Hx"] -
-                np.conj(farfields["Ex"]) * farfields["Hz"]
+                np.conj(farfields["Ez"]) * farfields["Hx"]
+                - np.conj(farfields["Ex"]) * farfields["Hz"]
             )
             flux_z = np.real(
-                np.conj(farfields["Ex"]) * farfields["Hy"] -
-                np.conj(farfields["Ey"]) * farfields["Hx"]
+                np.conj(farfields["Ex"]) * farfields["Hy"]
+                - np.conj(farfields["Ey"]) * farfields["Hx"]
             )
 
             if DEBUG_OUTPUT:
@@ -339,7 +332,6 @@ if __name__ == "__main__":
                 )
 
             rx, ry, rz = spherical_to_cartesian(polar_rad[i], azimuthal_rad[j])
-
             radial_flux[i, j] = rx * flux_x + ry * flux_y + rz * flux_z
 
             if DEBUG_OUTPUT:
@@ -347,7 +339,6 @@ if __name__ == "__main__":
                     f"radial_flux:, {math.degrees(polar_rad[i]):2.2f}°, "
                     f"({rx:.6f}, {ry:.6f}, {rz:.6f}), {radial_flux[i, j]:.6g}"
                 )
-
 
     if mp.am_master():
         np.savez(
@@ -358,5 +349,27 @@ if __name__ == "__main__":
             NUM_AZIMUTHAL=NUM_AZIMUTHAL,
             polar_rad=polar_rad,
             azimuthal_rad=azimuthal_rad,
-            radial_flux=radial_flux
+            radial_flux=radial_flux,
         )
+
+    radiation_pattern = radial_flux[:, 0] / np.max(radial_flux[:, 0])
+
+    # in plot of radiation pattern, omit polar angles with zero radial flux
+    max_idx = np.argmin(radial_flux[:, 0])
+    polar_rad = polar_rad[:max_idx]
+    radiation_pattern = radiation_pattern[:max_idx]
+
+    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
+    ax.plot(polar_rad, radiation_pattern, "b-", label="Meep")
+    ax.plot(polar_rad, np.cos(polar_rad) ** 2, "r--", label="cos$^2$(θ)")
+    ax.plot(polar_rad, np.cos(polar_rad) ** 4, "g--", label="cos$^4$(θ)")
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(0.5 * math.pi)
+    ax.set_thetalim(0, 0.5 * math.pi)
+    ax.set_rmax(1)
+    ax.set_rticks([0, 0.5, 1])
+    ax.grid(True)
+    ax.set_rlabel_position(22)
+    ax.legend()
+    ax.set_title(r"radiation pattern for J$_x$ current source and $\phi = 0$")
+    fig.savefig("radiation_pattern_1D.png", dpi=150, bbox_inches="tight")
