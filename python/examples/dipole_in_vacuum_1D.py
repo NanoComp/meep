@@ -58,7 +58,6 @@ def planewave_in_vacuum(
 
     sim = mp.Simulation(
         resolution=RESOLUTION_UM,
-        force_complex_fields=True,
         cell_size=cell_size,
         sources=sources,
         boundary_layers=pml_layers,
@@ -76,7 +75,7 @@ def planewave_in_vacuum(
 
     sim.run(
         until_after_sources=mp.stop_when_fields_decayed(
-            15, src_cmpt, mp.Vector3(0, 0, 0.5423), 1e-6
+            25, src_cmpt, mp.Vector3(0, 0, 0.5 * air_um), 1e-6
         )
     )
 
@@ -130,7 +129,7 @@ def field_amplitudes_from_sheet_current(
         hy0 = frequency * ex0 / kz
     elif current_component.name == "Jy":
         # Jy --> (Hx, Ey, Hz) [S pol.]
-        ey0 = frequency * current_amplitude / (2 * kz)
+        ey0 = -frequency * current_amplitude / (2 * kz)
         hx0 = -kz * ey0 / frequency
     elif current_component.name == "Kx":
         # Kx --> (Hx, Ey, Hz) [S pol.]
@@ -145,7 +144,7 @@ def field_amplitudes_from_sheet_current(
         ez0 = -kx * hy0 / frequency
         return (ex0, hy0, ez0)
     elif current_component.name == "Jy" or current_component.name == "Kx":
-        hz0 = -kx * ey0 / frequency
+        hz0 = kx * ey0 / frequency
         return (hx0, ey0, hz0)
 
 
@@ -166,19 +165,19 @@ def spherical_to_cartesian(polar_rad, azimuthal_rad) -> Tuple[float, float, floa
     return (x, y, z)
 
 
-def farfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
-    """Computes the farfields from a linearly polarized dipole in vacuum.
+def nearfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
+    """Computes the near fields of a linearly polarized planewave in vacuum.
 
     Args:
         kx, ky: in-plane wavevector components.
 
     Returns:
-        A dictionary with the six field components as keys and their farfields
+        A dictionary with the six field components as keys and their nearfields
         as values.
     """
     dipole_component = Current.Jx
     current_components = [Current.Jx, Current.Jy, Current.Kx, Current.Ky]
-    farfield_components = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
+    nearfield_components = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
 
     kz = (frequency**2 - kx**2 - ky**2) ** 0.5
 
@@ -223,13 +222,12 @@ def farfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
         magnetic_current_rotated[1],
     ]
 
-    # Obtain the far fields at a single point on the quarter circle (φ = 0)
-    # given a sheet current with linear in-plane polarization.
-    # Note: the phase is omitted because it is a constant (ωR).
+    # Obtain the near fields of a sheet current with linear in-plane
+    # polarization. The phase is omitted because it is a constant (ωR).
 
-    farfields = {}
-    for component in farfield_components:
-        farfields[component] = 0
+    nearfields = {}
+    for component in nearfield_components:
+        nearfields[component] = 0
 
     for current_component, current_amplitude in zip(
         current_components, current_amplitudes
@@ -237,57 +235,55 @@ def farfields_at_k_point(kx: float, ky: float) -> Dict[str, complex]:
         if abs(current_amplitude) == 0:
             continue
 
-        farfield_amplitudes_pol = field_amplitudes_from_sheet_current(
+        field_amplitude = field_amplitudes_from_sheet_current(
             k_rotated[0],
             kz,
             current_amplitude,
             current_component,
         )
 
-        farfield_pol = np.array(farfield_amplitudes_pol)
-
         if current_component.name == "Jx" or current_component.name == "Ky":
             # P polarization
-            farfields["Ex"] += farfield_pol[0]
-            farfields["Hy"] += farfield_pol[1]
-            farfields["Ez"] += farfield_pol[2]
+            nearfields["Ex"] += field_amplitude[0]
+            nearfields["Hy"] += field_amplitude[1]
+            nearfields["Ez"] += field_amplitude[2]
         elif current_component.name == "Jy" or current_component.name == "Kx":
             # S polarization
-            farfields["Hx"] += farfield_pol[0]
-            farfields["Ey"] += farfield_pol[1]
-            farfields["Hz"] += farfield_pol[2]
+            nearfields["Hx"] += field_amplitude[0]
+            nearfields["Ey"] += field_amplitude[1]
+            nearfields["Hz"] += field_amplitude[2]
 
-    rotated_farfields = {}
-    for component in farfield_components:
-        rotated_farfields[component] = 0
+    rotated_nearfields = {}
+    for component in nearfield_components:
+        rotated_nearfields[component] = 0
 
     inverse_rotation_matrix = np.transpose(rotation_matrix)
 
-    rotated_farfields["Ex"] = (
-        inverse_rotation_matrix[0, 0] * farfields["Ex"]
-        + inverse_rotation_matrix[0, 1] * farfields["Ey"]
+    rotated_nearfields["Ex"] = (
+        inverse_rotation_matrix[0, 0] * nearfields["Ex"]
+        + inverse_rotation_matrix[0, 1] * nearfields["Ey"]
     )
-    rotated_farfields["Ey"] = (
-        inverse_rotation_matrix[1, 0] * farfields["Ex"]
-        + inverse_rotation_matrix[1, 1] * farfields["Ey"]
+    rotated_nearfields["Ey"] = (
+        inverse_rotation_matrix[1, 0] * nearfields["Ex"]
+        + inverse_rotation_matrix[1, 1] * nearfields["Ey"]
     )
-    rotated_farfields["Ez"] = farfields["Ez"]
+    rotated_nearfields["Ez"] = nearfields["Ez"]
 
-    rotated_farfields["Hx"] = (
-        inverse_rotation_matrix[0, 0] * farfields["Hx"]
-        + inverse_rotation_matrix[0, 1] * farfields["Hy"]
+    rotated_nearfields["Hx"] = (
+        inverse_rotation_matrix[0, 0] * nearfields["Hx"]
+        + inverse_rotation_matrix[0, 1] * nearfields["Hy"]
     )
-    rotated_farfields["Hy"] = (
-        inverse_rotation_matrix[1, 0] * farfields["Hx"]
-        + inverse_rotation_matrix[1, 1] * farfields["Hy"]
+    rotated_nearfields["Hy"] = (
+        inverse_rotation_matrix[1, 0] * nearfields["Hx"]
+        + inverse_rotation_matrix[1, 1] * nearfields["Hy"]
     )
-    rotated_farfields["Hz"] = farfields["Hz"]
+    rotated_nearfields["Hz"] = nearfields["Hz"]
 
-    return rotated_farfields
+    return rotated_nearfields
 
 
 if __name__ == "__main__":
-    # Far fields are defined on the surface of a hemisphere.
+    # Radial flux is defined on the surface of a hemisphere.
     polar_rad = np.linspace(0, 0.5 * np.pi, NUM_POLAR)
     azimuthal_rad = np.linspace(0, 2 * np.pi, NUM_AZIMUTHAL)
     radial_flux = np.zeros((NUM_POLAR, NUM_AZIMUTHAL))
@@ -309,32 +305,29 @@ if __name__ == "__main__":
                     )
                 continue
 
-            farfields = farfields_at_k_point(kx, ky)
+            nearfields = nearfields_at_k_point(kx, ky)
 
-            # (Ex, Hy, Ez) are nonzero
             flux_x = np.real(
-                np.conj(farfields["Ey"]) * farfields["Hz"]
-                - np.conj(farfields["Ez"]) * farfields["Hy"]
+                np.conj(nearfields["Ey"]) * nearfields["Hz"]
+                - np.conj(nearfields["Ez"]) * nearfields["Hy"]
             )
             flux_y = np.real(
-                np.conj(farfields["Ez"]) * farfields["Hx"]
-                - np.conj(farfields["Ex"]) * farfields["Hz"]
+                np.conj(nearfields["Ez"]) * nearfields["Hx"]
+                - np.conj(nearfields["Ex"]) * nearfields["Hz"]
             )
             flux_z = np.real(
-                np.conj(farfields["Ex"]) * farfields["Hy"]
-                - np.conj(farfields["Ey"]) * farfields["Hx"]
+                np.conj(nearfields["Ex"]) * nearfields["Hy"]
+                - np.conj(nearfields["Ey"]) * nearfields["Hx"]
             )
+
+            rx, ry, rz = spherical_to_cartesian(polar_rad[i], azimuthal_rad[j])
+            radial_flux[i, j] = rx * flux_x + ry * flux_y + rz * flux_z
 
             if DEBUG_OUTPUT:
                 print(
                     f"directional_flux:, {math.degrees(polar_rad[i]):2.2f}°, "
                     f"{flux_x:.6g}, {flux_y:.6g}, {flux_z:.6g}"
                 )
-
-            rx, ry, rz = spherical_to_cartesian(polar_rad[i], azimuthal_rad[j])
-            radial_flux[i, j] = rx * flux_x + ry * flux_y + rz * flux_z
-
-            if DEBUG_OUTPUT:
                 print(
                     f"radial_flux:, {math.degrees(polar_rad[i]):2.2f}°, "
                     f"({rx:.6f}, {ry:.6f}, {rz:.6f}), {radial_flux[i, j]:.6g}"
