@@ -1250,3 +1250,4 @@ Meep 1.0.1
 [#2965]: https://github.com/NanoComp/meep/issues/2965
 [#2970]: https://github.com/NanoComp/meep/issues/2970
 [#2978]: https://github.com/NanoComp/meep/issues/2978
+[#3010]: https://github.com/NanoComp/meep/issues/3010
