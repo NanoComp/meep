@@ -4,7 +4,7 @@
 
 5/8/2025
 
-* Bug fix in DFT fields of a single point ([#3010]).
+* Bug fix in DFT fields at a single point (zero-dimensional volume), where they were only first-order accurate and had the wrong weight ([#3010]).
 
 ## Meep 1.30.0
 
