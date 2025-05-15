@@ -2,7 +2,7 @@
 
 ## Meep 1.30.1
 
-5/8/2025
+5/15/2025
 
 * Bug fix in DFT fields at a single point (zero-dimensional volume), where they were only first-order accurate and had the wrong weight ([#3010]).
 
