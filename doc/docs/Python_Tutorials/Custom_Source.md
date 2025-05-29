@@ -601,3 +601,19 @@ There are four items to note in this script. (1) Since the exact equivalence bet
 A plot of the results from the forward and backward simulations is shown below. There is good agreeement across the entire frequency bandwidth. However, there is a significant difference in computational efficiency: the forward calculation had a runtime which was more than three times that of the backward calculation.
 
 ![](../images/stochastic_emitter_forward_vs_backward_flux_spectrum.png#center)
+
+
+Dipole Emission of a Multilayer Stack
+-------------------------------------
+
+Modeling the emission of an LED consisting of a multilayer stack of planar layers involves computing the radiation pattern of a linearly polarized dipole in the active region consisting of multiple quantum wells. The computation of the radiation pattern of a dipole in vacuum was demonstrated previously in [Tutorial/Radiation Pattern of an Antenna in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna-in-cylindrical-coordinates). However, because this approach involves a [finite truncation](Near_to_Far_Field_Spectra.md#truncation-errors-from-a-non-closed-near-field-surface) of the cylindrical (2D) cell in the radial direction, obtaining accurate results typically requires making the cell as well as the bounding box of DFT near-field monitors enclosing the dipole large thereby unnecessarily increasing the size of the computation. A more efficient approach would be to use a 1D simulation.
+
+The simulation script is in [examples/dipole_in_1D_vacuum_1D.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_1D.py). The auxiliary plotting routines used to generate the images below is in [examples/plot_radiation_pattern_dipole.py](https://github.com/NanoComp/meep/blob/master/python/examples/plot_radiation_pattern_dipole.py)
+
+![](../images/dipole_radiation_pattern_3D_ex.png#center)
+
+![](../images/dipole_radiation_pattern_3D_ey.png#center)
+
+![](../images/dipole_radiation_pattern_phi0_ex.png#center)
+
+![](../images/dipole_radiation_pattern_phi0_ey.png#center)
