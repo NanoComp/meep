@@ -19,9 +19,7 @@ FIELD_DECAY_THRESHOLD = 1e-6
 frequency = 1 / WAVELENGTH_UM
 
 
-def planewave_in_vacuum(
-    dipole_pol: str, kx: float, ky: float, kz: float
-) -> Tuple[float, float, float]:
+def planewave_in_vacuum(dipole_pol: str, kx: float, ky: float, kz: float) -> float:
     """
     Returns the Poynting flux of a linearly polarized planewave in vacuum.
 
@@ -30,7 +28,7 @@ def planewave_in_vacuum(
         kx, ky, kz: the wavevector components of the planewave.
 
     Returns:
-        The Poynting flux in x, y, z as a 3-tuple.
+        The Poynting flux in z.
     """
     pml_um = 1.0
     air_um = 10.0
@@ -51,7 +49,6 @@ def planewave_in_vacuum(
             component=src_cmpt,
             center=src_pt,
             size=mp.Vector3(),
-            amplitude=kz / frequency,
         )
     ]
 
@@ -64,20 +61,6 @@ def planewave_in_vacuum(
     )
 
     mon_pt = mp.Vector3(0, 0, 0.5 * air_um)
-    dft_flux_x = sim.add_flux(
-        frequency,
-        0,
-        1,
-        mp.FluxRegion(center=mon_pt, size=mp.Vector3(), direction=mp.X),
-    )
-
-    dft_flux_y = sim.add_flux(
-        frequency,
-        0,
-        1,
-        mp.FluxRegion(center=mon_pt, size=mp.Vector3(), direction=mp.Y),
-    )
-
     dft_flux_z = sim.add_flux(
         frequency,
         0,
@@ -91,11 +74,9 @@ def planewave_in_vacuum(
         )
     )
 
-    flux_x = mp.get_fluxes(dft_flux_x)[0]
-    flux_y = mp.get_fluxes(dft_flux_y)[0]
     flux_z = mp.get_fluxes(dft_flux_z)[0]
 
-    return flux_x, flux_y, flux_z
+    return flux_z
 
 
 def spherical_to_cartesian(polar_rad, azimuth_rad) -> Tuple[float, float, float]:
@@ -142,8 +123,8 @@ if __name__ == "__main__":
             if np.sqrt(kx**2 + ky**2) > (0.95 * frequency):
                 continue
 
-            flux_x, flux_y, flux_z = planewave_in_vacuum(args.dipole_pol, kx, ky, kz)
-            radial_flux[i, j] = rx * flux_x + ry * flux_y + rz * flux_z
+            flux_z = planewave_in_vacuum(args.dipole_pol, kx, ky, kz)
+            radial_flux[i, j] = rz * flux_z
 
     if mp.am_master():
         np.savez(
