@@ -603,10 +603,24 @@ A plot of the results from the forward and backward simulations is shown below. 
 ![](../images/stochastic_emitter_forward_vs_backward_flux_spectrum.png#center)
 
 
-Dipole Emission of a Multilayer Stack
--------------------------------------
+Dipole Emission of a Light Emitting Diode as a Multilayer Stack
+---------------------------------------------------------------
 
-Modeling the emission of an LED consisting of a multilayer stack of planar layers involves computing the radiation pattern of a linearly polarized dipole in the active region consisting of multiple quantum wells. The computation of the radiation pattern of a dipole in vacuum was demonstrated previously in [Tutorial/Radiation Pattern of an Antenna in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna-in-cylindrical-coordinates). However, because this approach involves a [finite truncation](Near_to_Far_Field_Spectra.md#truncation-errors-from-a-non-closed-near-field-surface) of the cylindrical (2D) cell in the radial direction, obtaining accurate results typically requires making the cell as well as the bounding box of DFT near-field monitors enclosing the dipole large thereby unnecessarily increasing the size of the computation. A more efficient approach would be to use a 1D simulation.
+Modeling the emission of an LED consisting of a multilayer stack of planar layers involves computing the radiation pattern of a linearly polarized (typically in-plane) dipole in the quantum well (QW). (In practice, the LED active region often consists of multiple quantum wells which are each modeled as incoherent dipole sources as described in [Stochastic Dipole Emission in Light Emitting Diodes](#stochastic-dipole-emission-in-light-emitting-diodes).) The computation of the radiation pattern of a dipole in vacuum was demonstrated in [Tutorial/Radiation Pattern of an Antenna in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-an-antenna-in-cylindrical-coordinates). However, this approach involves a [finite truncation](Near_to_Far_Field_Spectra.md#truncation-errors-from-a-non-closed-near-field-surface) of the cylindrical (2D) cell in the radial ($r$) direction which produces discretization (i.e. non-physical) artifacts. Obtaining accurate results using this approach typically requires increasing the size of the cell in $r$ as well as the bounding box of DFT near-field monitors enclosing the dipole at $r = 0$ which increases the size of the computation. A more efficient approach would be to use a 1D simulation.
+
+A point source in a 1D simulation (with discretization along $z$ and Bloch-periodic boundaries in $x$ and $y$) generates a planewave. A dipole can be modeled by combining the response from a series of planewaves using Brillouin-zone integration via the Fourier transform of the Dirac delta function:
+
+$$\delta(x, y) = \frac{1}{2\pi}\int\int e^{i(k_xx + k_yy)}dk_xdk_y$$.
+
+The Fourier coeffcients of a Dirac delta function are a constant (1.0). This integral is calculated over a finite number of planewaves with in-plane wavevector $k_\parallel = (k_x, k_y)$ which are inside the light cone: $|k_\parallel| < n_s\omega$ where $n_s$ is the refractive index of the source medium and $\omega$ is the frequency. (Note that $c = 1$ per convention in Meep.) The wavevector of the radiating planewave is $\vec{k} = (k_x, k_y, k_z)$ where $k_z = \sqrt{(n_e\omega)^2 - k_x^2 - k_y^2}$ where $n_e$ is the refractive index of the emission region.
+
+In this example, we validate this 1D approach by computing the radiation pattern of a dipole in vacuum ($n_s = n_e = 1$) and comparing with the analytic result from antenna theory. The calculation involves computing the radial flux along the surface of a hemisphere defined in spherical coordinates by $(\theta, \phi)$ where $\theta \in [0, \pi/2]$ and $\phi \in [0, 2\pi]$. (Note: because of symmetry, the radiation pattern can be obtained using a reduced subset of $\phi \in [0, \pi/2]$.) Each grid point on the hemisphere involves a 1D simulation with Bloch-periodic boundaries: $(k_x, k_y, k_z) = (\sin(\theta)\cos(\phi), \sin(\theta)\sin(\phi), \cos(\theta))$.
+
+The 1D cell is truncated with PML in the $z$ direction. One limitation of this approach is that the set of wavevectors used in the Brillouin-zone integration must be restricted to lie within the *interior* of the light cone (i.e., at some distance away from the light line). This is because planewaves with wavevectors near the light line ($|k_\parallel| \approx n\omega$) propagate at glancing angles to the PML (i.e. along the $x$ or $y$ directions) and are therefore [not absorbed](https://meep.readthedocs.io/en/latest/FAQ/#why-are-the-fields-not-being-absorbed-by-the-pml). In this example, the set of wavevectors is restricted to within 95% of the light line. This is not a major limitation in practice because the radiation in the direction to the parallel to the surface of the LED cannot be easily measured using a goniometer.
+
+Another feature of the calculation to note is the radial Poynting flux which is computed as $P_r = \hat{r} \cdot \vec{P}$ where $\hat{r} = (\sin(\theta)\cos(\phi), \sin(\theta)\sin(\phi), \cos(\theta))$ and $\vec{P} = (P_x, P_y, P_z)$. By Poynting's theorem, the total flux in the 1D simulation is $P_z$ (i.e. $P_x$ and $P_y$ are ignored) which means $P_r = \cos(\theta) P_z$. The 1D simulation therefore involves a single flux detector for $P_z$ in the emission region.
+
+The figures below show the radiation pattern mapped from the 3D hemispherical surface over $(\theta, \phi)$ to a 2D surface over $(x, y)$ for two dipole orientations ($x$ and $y$). A polar plot of the radiation pattern at $\phi = 0$ is also shown. The Meep result shows good agreement with the expected analytic result.
 
 The simulation script is in [examples/dipole_in_1D_vacuum_1D.py](https://github.com/NanoComp/meep/blob/master/python/examples/dipole_in_vacuum_1D.py). The auxiliary plotting routines used to generate the images below is in [examples/plot_radiation_pattern_dipole.py](https://github.com/NanoComp/meep/blob/master/python/examples/plot_radiation_pattern_dipole.py)
 
@@ -617,3 +631,20 @@ The simulation script is in [examples/dipole_in_1D_vacuum_1D.py](https://github.
 ![](../images/dipole_radiation_pattern_phi0_ex.png#center)
 
 ![](../images/dipole_radiation_pattern_phi0_ey.png#center)
+
+As a final note, computing the [extraction efficiency of an LED](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) (not covered in this tutorial) requires the calculation of the total power emitted by the dipole. This can be done in the 1D approach outlined in this tutorial using the local density of states (LDoS) by summing the power from each planewave in the Brillouin-zone integration obtained using:
+
+```py
+    sim.run(
+        mp.dft_ldos(frequency, 0, 1),
+        until_after_sources=mp.stop_when_fields_decayed(
+            25, src_cmpt, mon_pt, FIELD_DECAY_THRESHOLD
+        )
+    )
+
+    delta_length = 1 / RESOLUTION_UM
+    flux_planewave = (
+        -np.real(sim.ldos_Fdata[0] * np.conj(sim.ldos_Jdata[0])) *
+        delta_length
+    )
+```
