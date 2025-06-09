@@ -114,12 +114,14 @@ if __name__ == "__main__":
     for i in range(NUM_POLAR):
         for j in range(NUM_AZIMUTH):
             rx, ry, rz = spherical_to_cartesian(polar_rad[i], azimuth_rad[j])
+            # Specify the components of the wavevector of the outgoing
+            # planewave in vacuum.
             kx = frequency * rx
             ky = frequency * ry
             kz = frequency * rz
 
             # Skip wavevectors which are close to the light cone
-            # due to poor absorption by PML.
+            # due to poor absorption by PML (i.e. glancing-angle waves).
             if np.sqrt(kx**2 + ky**2) > (0.95 * frequency):
                 continue
 
