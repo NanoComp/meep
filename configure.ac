@@ -576,7 +576,7 @@ else
     if test $have_python = yes; then
 
       AC_MSG_CHECKING([for Python include directory])
-      pinc=`echo "import distutils.sysconfig; print (distutils.sysconfig.get_python_inc())" | $PYTHON - 2>/dev/null`
+      pinc=`echo "import sysconfig; print(sysconfig.get_path('include'))" | $PYTHON - 2>/dev/null`
       AC_MSG_RESULT([${pinc:-unknown}])
       test -n "$pinc" && PYTHON_INCLUDES="-I$pinc"
       save_CPPFLAGS=$CPPFLAGS
