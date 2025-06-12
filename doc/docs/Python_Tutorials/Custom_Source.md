@@ -632,7 +632,7 @@ The simulation script is in [examples/dipole_in_1D_vacuum_1D.py](https://github.
 
 ![](../images/dipole_radiation_pattern_phi0_ey.png#center)
 
-As a final note, computing the [extraction efficiency of an LED](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) (not covered in this tutorial) requires the calculation of the total power emitted by the dipole. This can be done in the 1D approach outlined in this tutorial using the local density of states (LDoS) by summing the power from each point source (i.e. planewave) in the Brillouin-zone integration obtained using:
+As a final note, computing the [extraction efficiency of an LED](Local_Density_of_States.md#extraction-efficiency-of-a-light-emitting-diode-led) (not covered in this tutorial) requires the calculation of the total power emitted by the dipole. This can be done in the 1D approach outlined in this tutorial using the local density of states (LDOS) by summing the power from each point source (i.e. planewave) in the Brillouin-zone integration obtained using:
 
 ```py
     sim.run(
