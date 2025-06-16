@@ -34,7 +34,7 @@ Next, we create a Conda environment for PyMeep (serial version) to isolate it fr
 conda create -n mp -c conda-forge pymeep
 ```
 
-This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation. The tutorial examples require additional packages including Scipy, Matplotlib, and Autograd which must be installed separately.
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation. The tutorial examples require three additional packages which are not included as part of PyMeep and must be installed separately: (1) [autograd](https://anaconda.org/conda-forge/autograd), (2) [ffmpeg](https://anaconda.org/conda-forge/ffmpeg), and (3) [h5utils](https://anaconda.org/conda-forge/h5utils).
 
 Next, we need to activate the environment before we can start using it.
 
