@@ -18,7 +18,7 @@ Conda Packages
 
 ### Official Releases
 
-The **recommended** way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. The [precompiled binaries](https://anaconda.org/conda-forge/pymeep) run as *fast or faster* than the typical build from source, are simple to install, can be upgraded easily, and take advantage of newer compilers and dependencies than those available in typical systems (e.g., [gcc](https://en.wikipedia.org/wiki/GNU_Compiler_Collection) 7.3.0 vs. Ubuntu 16.04's 5.4; a gap of nearly three years of advances in compiler optimization). Obviously, building from source can still provide advantages if you have access to special hardware or performance libraries that require specific compiler flags (e.g., [icc](https://en.wikipedia.org/wiki/Intel_C%2B%2B_Compiler)); building from source is also required if you are interested in working on the Meep [source code](https://github.com/NanoComp/meep), are performing system-wide installations on a server, or are using systems unsupported by Conda (e.g., supercomputers with Cray MPI).
+The **recommended** way to install PyMeep is using the [Conda](https://conda.io/docs/) package manager. The [precompiled binaries](https://anaconda.org/conda-forge/pymeep) run as *fast or faster* than the typical build from source, are simple to install, can be upgraded easily, and take advantage of newer compilers and dependencies than those available in typical systems. Obviously, building from source can still provide advantages if you have access to special hardware or performance libraries that require specific compiler flags (e.g., [icc](https://en.wikipedia.org/wiki/Intel_C%2B%2B_Compiler)); building from source is also required if you are interested in working on the Meep [source code](https://github.com/NanoComp/meep), are performing system-wide installations on a server, or are using systems unsupported by Conda (e.g., supercomputers with Cray MPI).
 
 Binary packages for serial and parallel PyMeep on Linux and macOS (x86 and ARM) are currently available (64 bit architectures only), and are [updated with each new Meep release](https://github.com/conda-forge/pymeep-feedstock). Note: the Conda packages will *not* work on native [Windows](#installation-on-windows) (unless you install the Ubuntu terminal app) and do *not* include the Scheme interface which must be [built from source](Build_From_Source.md). The easiest way to get started is to install [Miniconda](https://conda.io/miniconda.html), which comes with everything necessary to create Python environments with Conda. For example, to install Miniconda with Python 3 on Linux:
 
@@ -34,7 +34,7 @@ Next, we create a Conda environment for PyMeep (serial version) to isolate it fr
 conda create -n mp -c conda-forge pymeep
 ```
 
-This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation. The tutorial examples involves additional packages including scipy, matplotlib, and autograd which must be installed separately.
+This creates an environment called "mp" (you can name this anything you like) with PyMeep and all its dependencies. This will default to the version of Python in your Miniconda installation. The tutorial examples require additional packages including Scipy, Matplotlib, and Autograd which must be installed separately.
 
 Next, we need to activate the environment before we can start using it.
 
