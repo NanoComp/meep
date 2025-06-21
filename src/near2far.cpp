@@ -553,6 +553,25 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
   return F;
 }
 
+double *dft_near2far::flux() {
+  const size_t Nfreq = freq.size();
+  double *fl = new double[Nfreq];
+  for (size_t i = 0; i < Nfreq; ++i)
+    fl[i] = 0;
+
+  std::complex<realnum> *Edft = 0, *Hdft = 0;
+  for (dft_chunk *f = F; f; f = f->next_in_dft->next_in_dft) {
+    Edft = f->dft;
+    Hdft = f->next_in_dft->dft;
+    for (size_t k = 0; k < f->N; ++k)
+      for (size_t i = 0; i < Nfreq; ++i)
+        fl[i] += real(Edft[k * Nfreq + i] * conj(Hdft[k * Nfreq + i]));
+  }
+  double *fl_sum = new double[Nfreq];
+  sum_to_all(fl, fl_sum, int(Nfreq));
+  return fl_sum;
+}
+
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
 dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
