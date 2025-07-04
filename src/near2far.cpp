@@ -290,12 +290,14 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
      repeatedly double N until convergence to tol is achieved, re-using previous points. */
   const int N0 = 16 + int(4 * abs(m));
   double dphi = 2.0 / N0; // factor of 2*pi*r is already included in add_dft weight
+  double sumabs = 0;      // integral of L1-norm of integrand
   for (int N = N0; N <= 65536; N *= 2) {
     std::complex<double> EH_sum[6];
     dphi *= 0.5; // delta phi is halved because N doubles
     double dphi2pi = dphi * 2 * pi;
     for (int j = 0; j < 6; ++j)
       EH_sum[j] = EH[j] * 0.5; // re-use previous quadrature points (with halved dphi)
+    sumabs *= 0.5;             // re-use previous quadrature (with halved dphi)
     /* N-point quadrature points i = 0..N-1.  After the first iteration (N==N0), we
        only need to sum over odd i, since the even i were summed for the previous N. */
     for (int i = (N > N0); i < N; i += 1 + (N > N0)) {
@@ -306,31 +308,40 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
         the direction of the source current in the xy plane as well */
       if (d == Z) { // source currents in z direction don't rotate
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, c0, f0_exp_imphi);
-        for (int j = 0; j < 6; ++j)
+        for (int j = 0; j < 6; ++j) {
           EH_sum[j] += EH_phi[j];
+          sumabs += abs(EH_phi[j]);
+        }
       }
       else if (d == R) { // r_hat = c x_hat + s y_hat
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi * c);
-        for (int j = 0; j < 6; ++j)
+        for (int j = 0; j < 6; ++j) {
           EH_sum[j] += EH_phi[j];
+          sumabs += abs(EH_phi[j]);
+        }
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cy, f0_exp_imphi * s);
-        for (int j = 0; j < 6; ++j)
+        for (int j = 0; j < 6; ++j) {
           EH_sum[j] += EH_phi[j];
+          sumabs += abs(EH_phi[j]);
+        }
       }
       else { // (d == P):  phi_hat = c y_hat - s x_hat
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cx, f0_exp_imphi * (-s));
-        for (int j = 0; j < 6; ++j)
+        for (int j = 0; j < 6; ++j) {
           EH_sum[j] += EH_phi[j];
+          sumabs += abs(EH_phi[j]);
+        }
         green3d(EH_phi, x_3d, freq, eps, mu, x0_phi, cy, f0_exp_imphi * c);
-        for (int j = 0; j < 6; ++j)
+        for (int j = 0; j < 6; ++j) {
           EH_sum[j] += EH_phi[j];
+          sumabs += abs(EH_phi[j]);
+        }
       }
     }
     // accumulate the new and old sums and check how much the integral has changed in L1 norm
-    double sumdiff = 0, sumabs = 0;
+    double sumdiff = 0;
     for (int j = 0; j < 6; ++j) {
       sumdiff += abs(EH[j] - EH_sum[j]);
-      sumabs += abs(EH_sum[j]);
       EH[j] = EH_sum[j];
     }
     if (sumdiff <= sumabs * tol) break; // doubling N changed sum by less than tol
