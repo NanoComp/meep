@@ -329,12 +329,12 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
 }
 
 // Wrapper around meep::dft_near2far::farfield
-PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
+PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v, double greencyl_tol) {
     // Return value: New reference
     Py_ssize_t len = f->freq.size() * 6;
     PyObject *res = PyList_New(len);
 
-    std::complex<double> *ff_arr = f->farfield(v);
+    std::complex<double> *ff_arr = f->farfield(v, greencyl_tol);
 
     for (Py_ssize_t i = 0; i < len; i++) {
         PyList_SetItem(res, i, PyComplex_FromDoubles(ff_arr[i].real(), ff_arr[i].imag()));
@@ -347,13 +347,13 @@ PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v) {
 
 // Wrapper around meep::dft_near2far::get_farfields_array
 PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where,
-                               double resolution) {
+                               double resolution, double greencyl_tol) {
     // Return value: New reference
     size_t dims[4] = {1, 1, 1, 1};
     int rank = 0;
     size_t N = 1;
 
-    double *EH = n2f->get_farfields_array(where, rank, dims, N, resolution);
+    double *EH = n2f->get_farfields_array(where, rank, dims, N, resolution, greencyl_tol);
 
     if (!EH) return PyArray_SimpleNew(0, 0, NPY_CDOUBLE);
 
@@ -662,8 +662,8 @@ PyObject *py_do_harminv(PyObject *vals, double dt, double f_min, double f_max, i
                      double spectral_density, double Q_thresh, double rel_err_thresh,
                      double err_thresh, double rel_amp_thresh, double amp_thresh);
 
-PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v);
-PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where, double resolution);
+PyObject *_get_farfield(meep::dft_near2far *f, const meep::vec & v, double greencyl_tol);
+PyObject *_get_farfields_array(meep::dft_near2far *n2f, const meep::volume &where, double resolution, double greencyl_tol);
 PyObject *_dft_ldos_ldos(meep::dft_ldos *f);
 PyObject *_dft_ldos_F(meep::dft_ldos *f);
 PyObject *_dft_ldos_J(meep::dft_ldos *f);
