@@ -1359,17 +1359,17 @@ public:
   dft_near2far(const dft_near2far &f);
 
   /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
-  std::complex<double> *farfield(const vec &x);
+  std::complex<double> *farfield(const vec &x, double greencyl_tol = 1e-3);
 
   /* like farfield, but requires F to be Nfreq*6 preallocated array, and
      does *not* perform the reduction over processes...an MPI allreduce
      summation by the caller is required to get the final result ... used
      by other output routine to efficiently get far field on a grid of pts */
-  void farfield_lowlevel(std::complex<double> *F, const vec &x);
+  void farfield_lowlevel(std::complex<double> *F, const vec &x, double greencyl_tol = 1e-3);
 
   /* Return a newly allocated array with all far fields */
   double *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                              double resolution);
+                              double resolution, double greencyl_tol = 1e-3);
 
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix, const volume &where,
@@ -1399,7 +1399,8 @@ public:
   double periodic_k[2], period[2];
 
   std::vector<sourcedata> near_sourcedata(const vec &x_0, double *farpt_list, size_t nfar_pts,
-                                          const std::complex<double> *dJ);
+                                          const std::complex<double> *dJ,
+                                          double greencyl_tol = 1e-3);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum

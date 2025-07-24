@@ -3211,7 +3211,7 @@ class Simulation:
         self.load_energy(fname, energy)
         energy.scale_dfts(-1.0)
 
-    def get_farfield(self, near2far, x):
+    def get_farfield(self, near2far, x, greencyl_tol: float = 1e-3):
         """
         Given a `Vector3` point `x` which can lie anywhere outside the near-field surface,
         including outside the cell and a `near2far` object, returns the computed
@@ -3224,6 +3224,7 @@ class Simulation:
         return mp._get_farfield(
             near2far.swigobj,
             py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical),
+            greencyl_tol,
         )
 
     def get_farfields(
@@ -3233,6 +3234,7 @@ class Simulation:
         where: Volume = None,
         center: Vector3Type = None,
         size: Vector3Type = None,
+        greencyl_tol: float = 1e-3,
     ):
         """
         Like `output_farfields` but returns a dictionary of NumPy arrays instead of
@@ -3249,7 +3251,9 @@ class Simulation:
             self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
         self.fields.am_now_working_on(mp.GetFarfieldsTime)
-        result = mp._get_farfields_array(near2far.swigobj, vol, resolution)
+        result = mp._get_farfields_array(
+            near2far.swigobj, vol, resolution, greencyl_tol
+        )
         self.fields.finished_working()
         res_ex = complexarray(result[0], result[1])
         res_ey = complexarray(result[2], result[3])

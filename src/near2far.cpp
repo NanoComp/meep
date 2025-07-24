@@ -348,7 +348,7 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   }
 }
 
-void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
+void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, double greencyl_tol) {
   if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
     meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x.dim == D2 ? green2d : green3d;
@@ -384,7 +384,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
             std::complex<double> cphase = std::polar(1.0, phase);
             if (x.dim == Dcyl)
               greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m,
-                       1e-3);
+                       greencyl_tol);
             else
               green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j)
@@ -397,11 +397,11 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x) {
   }
 }
 
-std::complex<double> *dft_near2far::farfield(const vec &x) {
+std::complex<double> *dft_near2far::farfield(const vec &x, double greencyl_tol) {
   std::complex<double> *EH, *EH_local;
   const size_t Nfreq = freq.size();
   EH_local = new std::complex<double>[6 * Nfreq];
-  farfield_lowlevel(EH_local, x);
+  farfield_lowlevel(EH_local, x, greencyl_tol);
   EH = new std::complex<double>[6 * Nfreq];
   sum_to_all(EH_local, EH, 6 * Nfreq);
   delete[] EH_local;
@@ -409,7 +409,7 @@ std::complex<double> *dft_near2far::farfield(const vec &x) {
 }
 
 double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                                          double resolution) {
+                                          double resolution, double greencyl_tol) {
   /* compute output grid size etc. */
   double dx[3] = {0, 0, 0};
   direction dirs[3] = {X, Y, Z};
@@ -457,7 +457,7 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
           start = t;
           last_point = this_point;
         }
-        farfield_lowlevel(EH1, x);
+        farfield_lowlevel(EH1, x, greencyl_tol);
         if (verbosity > 1) all_wait(); // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
         for (size_t i = 0; i < Nfreq; ++i)
@@ -655,7 +655,8 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
 // Modified from farfield_lowlevel
 std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, double *farpt_list,
                                                              size_t nfar_pts,
-                                                             const std::complex<double> *dJ) {
+                                                             const std::complex<double> *dJ,
+                                                             double greencyl_tol) {
   if (x_0.dim != D3 && x_0.dim != D2 && x_0.dim != Dcyl)
     meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
   greenfunc green = x_0.dim == D2 ? green2d : green3d;
@@ -697,7 +698,7 @@ std::vector<struct sourcedata> dft_near2far::near_sourcedata(const vec &x_0, dou
             for (size_t ipt = 0; ipt < nfar_pts; ++ipt) {
               vec x = vec(farpt_list[3 * ipt], farpt_list[3 * ipt + 1], farpt_list[3 * ipt + 2]);
               if (x_0.dim == Dcyl)
-                greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, 1e-3);
+                greencyl(EH6, x, freq[i], eps, mu, xs, c0, w, f->fc->m, greencyl_tol);
               else
                 green(EH6, x, freq[i], eps, mu, xs, c0, w);
               for (int j = 0; j < 6; ++j)
