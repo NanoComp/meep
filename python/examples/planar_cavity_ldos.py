@@ -1,103 +1,104 @@
-# Computes the Purcell enhancement factor of a parallel dipole in a planar
+# Computes the Purcell enhancement factor of an in-plane dipole in a planar
 # dielectric cavity with lossless metallic walls. The result is computed in
-# cylindrical and 3D coordinates and compared with the analytic theory from:
+# cylindrical and 3D coordinates and compared with the analytic result from:
 # I. Abram et al., IEEE J. Quantum Electronics, Vol. 34, pp. 71-76 (1998).
-import matplotlib
+
+# tutorial reference:
+# https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#planar-cavity-with-lossless-metallic-walls
+
+from typing import Optional
+
+import matplotlib.pyplot as plt
+import meep as mp
 import numpy as np
 
-import meep as mp
 
-matplotlib.use("agg")
-import matplotlib.pyplot as plt
+# Note: Meep may round the cell dimensions to an integer number of pixels which
+# could modify the cavity structure.
+RESOLUTION_UM = 70
 
-# important note:
-# Meep may round the cell dimensions to an integer number
-# of pixels which could modify the cavity structure.
-resolution = 70  # pixels/μm
+PML_UM = 0.5
+BULK_UM = 6.0
+N_CAVITY = 2.4
+WAVELENGTH_UM = 1.0
+FIELD_DECAY_TOL = 1e-6
+FIELD_DECAY_PERIOD = 20
 
-
-dpml = 0.5  # thickness of PML
-L = 6.0  # length of non-PML region
-n = 2.4  # refractive index of surrounding medium
-wvl = 1.0  # wavelength (in vacuum)
-
-fcen = 1 / wvl
+frequency = 1 / WAVELENGTH_UM
 
 
-def bulk_ldos_cyl():
-    sr = L + dpml
-    sz = L + 2 * dpml
-    cell_size = mp.Vector3(sr, 0, sz)
+def ldos_cyl(cavity_um: Optional[float] = None) -> float:
+    """Computes the LDOS of a dipole in a cavity or bulk media in cyl. coords.
 
-    pml_layers = [mp.PML(dpml)]
+    Args:
+        cavity_um: thickness of the cavity. If None, bulk media is used.
+
+    Returns:
+        The LDOS of the dipole.
+    """
+    if cavity_um is None:
+        cell_z_um = BULK_UM + 2 * PML_UM
+        pml_layers = [mp.PML(thickness=PML_UM)]
+    else:
+        cell_z_um = cavity_um
+        pml_layers = [mp.PML(thickness=PML_UM, direction=mp.R)]
+
+    cell_r_um = BULK_UM + PML_UM
+    cell_size = mp.Vector3(cell_r_um, 0, cell_z_um)
 
     sources = [
         mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=0.2 * fcen),
+            src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
             component=mp.Er,
             center=mp.Vector3(),
         )
     ]
 
     sim = mp.Simulation(
-        resolution=resolution,
+        resolution=RESOLUTION_UM,
         cell_size=cell_size,
         boundary_layers=pml_layers,
         sources=sources,
         dimensions=mp.CYLINDRICAL,
         m=-1,
-        default_material=mp.Medium(index=n),
+        default_material=mp.Medium(index=N_CAVITY),
     )
 
     sim.run(
-        mp.dft_ldos(fcen, 0, 1),
-        until_after_sources=mp.stop_when_fields_decayed(20, mp.Er, mp.Vector3(), 1e-6),
+        mp.dft_ldos(frequency, 0, 1),
+        until_after_sources=mp.stop_when_fields_decayed(
+            FIELD_DECAY_PERIOD, mp.Er, mp.Vector3(), FIELD_DECAY_TOL
+        ),
     )
 
     return sim.ldos_data[0]
 
 
-def cavity_ldos_cyl(sz):
-    sr = L + dpml
-    cell_size = mp.Vector3(sr, 0, sz)
+def ldos_3d(cavity_um: Optional[float] = None) -> float:
+    """Computes the LDOS of a dipole in a cavity or bulk media in 3D coords.
 
-    pml_layers = [mp.PML(dpml, direction=mp.R)]
+    Args:
+        cavity_um: thickness of the cavity. If None, bulk media is used.
 
-    sources = [
-        mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=0.2 * fcen),
-            component=mp.Er,
-            center=mp.Vector3(),
-        )
-    ]
+    Returns:
+        The LDOS of the dipole.
+    """
+    if cavity_um is None:
+        size_z_um = BULK_UM + 2 * PML_UM
+        pml_layers = [mp.PML(thickness=PML_UM)]
+    else:
+        size_z_um = cavity_um
+        pml_layers = [
+            mp.PML(thickness=PML_UM, direction=mp.X),
+            mp.PML(thickness=PML_UM, direction=mp.Y),
+        ]
 
-    sim = mp.Simulation(
-        resolution=resolution,
-        cell_size=cell_size,
-        boundary_layers=pml_layers,
-        sources=sources,
-        dimensions=mp.CYLINDRICAL,
-        m=-1,
-        default_material=mp.Medium(index=n),
-    )
-
-    sim.run(
-        mp.dft_ldos(fcen, 0, 1),
-        until_after_sources=mp.stop_when_fields_decayed(20, mp.Er, mp.Vector3(), 1e-6),
-    )
-
-    return sim.ldos_data[0]
-
-
-def bulk_ldos_3D():
-    s = L + 2 * dpml
-    cell_size = mp.Vector3(s, s, s)
-
-    pml_layers = [mp.PML(dpml)]
+    size_xy_um = BULK_UM + 2 * PML_UM
+    cell_size = mp.Vector3(size_xy_um, size_xy_um, size_z_um)
 
     sources = [
         mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=0.2 * fcen),
+            src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
             component=mp.Ex,
             center=mp.Vector3(),
         )
@@ -110,102 +111,67 @@ def bulk_ldos_3D():
     ]
 
     sim = mp.Simulation(
-        resolution=resolution,
+        resolution=RESOLUTION_UM,
         cell_size=cell_size,
         boundary_layers=pml_layers,
         sources=sources,
         symmetries=symmetries,
-        default_material=mp.Medium(index=n),
+        default_material=mp.Medium(index=N_CAVITY),
     )
 
     sim.run(
-        mp.dft_ldos(fcen, 0, 1),
-        until_after_sources=mp.stop_when_fields_decayed(20, mp.Ex, mp.Vector3(), 1e-6),
-    )
-
-    return sim.ldos_data[0]
-
-
-def cavity_ldos_3D(sz):
-    sxy = L + 2 * dpml
-    cell_size = mp.Vector3(sxy, sxy, sz)
-
-    boundary_layers = [mp.PML(dpml, direction=mp.X), mp.PML(dpml, direction=mp.Y)]
-
-    sources = [
-        mp.Source(
-            src=mp.GaussianSource(fcen, fwidth=0.2 * fcen),
-            component=mp.Ex,
-            center=mp.Vector3(),
-        )
-    ]
-
-    symmetries = [
-        mp.Mirror(direction=mp.X, phase=-1),
-        mp.Mirror(direction=mp.Y),
-        mp.Mirror(direction=mp.Z),
-    ]
-
-    sim = mp.Simulation(
-        resolution=resolution,
-        cell_size=cell_size,
-        boundary_layers=boundary_layers,
-        sources=sources,
-        symmetries=symmetries,
-        default_material=mp.Medium(index=n),
-    )
-
-    sim.run(
-        mp.dft_ldos(fcen, 0, 1),
-        until_after_sources=mp.stop_when_fields_decayed(20, mp.Ex, mp.Vector3(), 1e-6),
+        mp.dft_ldos(frequency, 0, 1),
+        until_after_sources=mp.stop_when_fields_decayed(
+            FIELD_DECAY_PERIOD, mp.Ex, mp.Vector3(), FIELD_DECAY_TOL
+        ),
     )
 
     return sim.ldos_data[0]
 
 
 if __name__ == "__main__":
-    ldos_bulk_cyl = bulk_ldos_cyl()
-    ldos_bulk_3D = bulk_ldos_3D()
+    ldos_bulk_cyl = ldos_cyl()
+    ldos_bulk_3d = ldos_3d()
 
-    # units of wavelength in medium
-    cavity_thickness = np.arange(0.50, 2.55, 0.05)
+    cavity_um = np.arange(0.50, 2.55, 0.05)
 
-    gap = cavity_thickness * wvl / n
+    num_cavity_um = cavity_um.shape[0]
 
-    ldos_cavity_cyl = np.zeros(len(cavity_thickness))
-    ldos_cavity_3D = np.zeros(len(cavity_thickness))
-    for idx, g in enumerate(gap):
-        ldos_cavity_cyl[idx] = cavity_ldos_cyl(g)
-        ldos_cavity_3D[idx] = cavity_ldos_3D(g)
-        print(
-            "purcell-enh:, {:.3f}, "
-            "{:.6f} (cyl.), {:.6f} (3D)".format(
-                cavity_thickness[idx],
-                ldos_cavity_cyl[idx] / ldos_bulk_cyl,
-                ldos_cavity_3D[idx] / ldos_bulk_3D,
-            )
-        )
+    vacuum_cavity_um = cavity_um * WAVELENGTH_UM / N_CAVITY
+
+    ldos_cavity_cyl = np.zeros(num_cavity_um)
+    ldos_cavity_3d = np.zeros(num_cavity_um)
+
+    for j in range(num_cavity_um):
+        ldos_cavity_cyl[j] = ldos_cyl(cavity_um[j])
+        ldos_cavity_3d[j] = ldos_3d(cavity_um[j])
+        purcell_cyl = ldos_cavity_cyl[j] / ldos_bulk_cyl
+        purcell_3d = ldos_cavity_3d[j] / ldos_bulk_3d
+        print(f"purcell:, {cavity_um[j]:.3f}, {purcell_cyl:.6f}, {purcell_3d:.6f}")
 
     # Purcell enhancement factor (relative to bulk medium)
-    pe_meep_cyl = ldos_cavity_cyl / ldos_bulk_cyl
-    pe_meep_3D = ldos_cavity_3D / ldos_bulk_3D
+    purcell_meep_cyl = ldos_cavity_cyl / ldos_bulk_cyl
+    purcell_meep_3d = ldos_cavity_3d / ldos_bulk_3d
 
-    # equation 7 of reference
-    pe_theory = 3 * np.fix(cavity_thickness + 0.5) / (4 * cavity_thickness) + (
-        4 * np.power(np.fix(cavity_thickness + 0.5), 3) - np.fix(cavity_thickness + 0.5)
-    ) / (16 * np.power(cavity_thickness, 3))
+    # Equation 7 of 1998 reference.
+    purcell_theory = 3 * np.fix(cavity_um + 0.5) / (4 * cavity_um) + (
+        4 * np.power(np.fix(cavity_um + 0.5), 3) - np.fix(cavity_um + 0.5)
+    ) / (16 * np.power(cavity_um, 3))
 
     if mp.am_master():
-        plt.plot(cavity_thickness, pe_meep_3D, "b-", label="Meep (3D)")
-        plt.plot(cavity_thickness, pe_meep_cyl, "r-", label="Meep (cylin.)")
-        plt.plot(cavity_thickness, pe_theory, "g-", label="theory")
-        plt.plot(cavity_thickness, np.ones(len(cavity_thickness)), "k--")
-        plt.xlabel(r"cavity thickness, $nL/\lambda$")
-        plt.ylabel("Purcell enhancement factor")
-        plt.title(
-            "planar point dipole at λ=1.0 μm in a planar cavity\n"
+        fig, ax = plt.subplots()
+        ax.plot(cavity_um, purcell_meep_3d, "b-", label="Meep (3d)")
+        ax.plot(cavity_um, purcell_meep_cyl, "r-", label="Meep (cylin.)")
+        ax.plot(cavity_um, purcell_theory, "g-", label="theory")
+        ax.plot(cavity_um, np.ones(len(cavity_um)), "k--")
+        ax.set_xlabel("cavity thickness (in media)")
+        ax.set_ylabel("Purcell enhancement factor")
+        ax.set_title(
+            "in-plane dipole at λ=1.0 μm in a planar cavity\n"
             "with n=2.4 and lossless metallic walls"
         )
-        plt.axis([0.5, 2.5, 0.4, 3.1])
-        plt.legend()
-        plt.savefig("cavity_purcell_factor_vs_thickness.png", bbox_inches="tight")
+        ax.axis([0.5, 2.5, 0.4, 3.1])
+        ax.legend()
+        fig.savefig(
+            "cavity_purcell_factor_vs_thickness.png", dpi=150, bbox_inches="tight"
+        )
