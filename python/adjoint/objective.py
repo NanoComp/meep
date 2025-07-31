@@ -443,6 +443,7 @@ class Near2FarFields(ObjectiveQuantity):
         nperiods: Optional[int] = 1,
         decimation_factor: Optional[int] = 0,
         norm_near_fields: Optional[NearToFarData] = None,
+        greencyl_tol: float = 1e-3,
     ):
         """Initialize an instance of differentiable Fourier fields instance.
 
@@ -470,6 +471,7 @@ class Near2FarFields(ObjectiveQuantity):
         self.decimation_factor = decimation_factor
         self.norm_near_fields = norm_near_fields
         self.nperiods = nperiods
+        self.greencyl_tol = greencyl_tol
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -501,7 +503,7 @@ class Near2FarFields(ObjectiveQuantity):
         )
 
         all_nearsrcdata = self._monitor.swigobj.near_sourcedata(
-            far_pt_vec, farpt_list, self._nfar_pts, dJ
+            far_pt_vec, farpt_list, self._nfar_pts, dJ, self.greencyl_tol
         )
         for near_data in all_nearsrcdata:
             cur_comp = near_data.near_fd_comp
