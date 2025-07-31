@@ -546,6 +546,21 @@ double *dft_flux::flux() {
   return Fsum;
 }
 
+std::vector<std::complex<double> > dft_flux::complexflux() {
+  const size_t Nfreq = freq.size();
+  std::vector<std::complex<double> > F(Nfreq);
+  for (size_t i = 0; i < Nfreq; ++i)
+    F[i] = 0.0;
+  for (dft_chunk *curE = E, *curH = H; curE && curH;
+       curE = curE->next_in_dft, curH = curH->next_in_dft)
+    for (size_t k = 0; k < curE->N; ++k)
+      for (size_t i = 0; i < Nfreq; ++i)
+        F[i] += curE->dft[k * Nfreq + i] * conj(curH->dft[k * Nfreq + i]);
+  std::vector<std::complex<double> > Fsum(Nfreq);
+  sum_to_all(&F[0], &Fsum[0], int(Nfreq));
+  return Fsum;
+}
+
 void dft_flux::save_hdf5(h5file *file, const char *dprefix) {
   save_dft_hdf5(E, cE, file, dprefix);
   file->prevent_deadlock(); // hackery
