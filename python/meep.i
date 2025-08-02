@@ -943,6 +943,14 @@ void _get_gradient(PyObject *grad, double scalegrad,
     delete[] $1;
 }
 
+%typemap(out) std::vector<std::complex<double>> complexflux {
+    size_t size = $1.size();
+    $result = PyList_New(size);
+    for(size_t i = 0; i < size; i++) {
+        PyList_SetItem($result, i, PyComplex_FromDoubles(real($1[i]), imag($1[i])));
+    }
+}
+
 // Typemap suite for dft_force
 
 %typemap(out) double* force {

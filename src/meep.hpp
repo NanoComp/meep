@@ -1244,6 +1244,7 @@ public:
   dft_flux(const dft_flux &f);
 
   double *flux();
+  std::vector<std::complex<double> > complexflux();
 
   void save_hdf5(h5file *file, const char *dprefix = 0);
   void load_hdf5(h5file *file, const char *dprefix = 0);

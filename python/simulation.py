@@ -699,6 +699,10 @@ class DftFlux(DftObj):
         return self.swigobj_attr("flux")
 
     @property
+    def complexflux(self):
+        return self.swigobj_attr("complexflux")
+
+    @property
     def E(self):
         return self.swigobj_attr("E")
 
