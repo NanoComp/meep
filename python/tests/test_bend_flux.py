@@ -2,6 +2,7 @@ import os
 import unittest
 
 import numpy as np
+from numpy.testing import assert_array_equal
 from utils import ApproxComparisonTestCase
 
 import meep as mp
@@ -209,6 +210,10 @@ class TestBendFlux(ApproxComparisonTestCase):
         tol = 1e-3
         self.assertClose(np.array(expected), np.array(res[:20]), epsilon=tol)
         self.assertClose(np.array(expected), np.array(res_decimated[:20]), epsilon=tol)
+
+        trans_flux_real = np.array(self.trans.flux())
+        trans_flux_complex = np.array(self.trans.complexflux())
+        assert_array_equal(trans_flux_real, np.real(trans_flux_complex))
 
     def test_bend_flux(self):
         self.run_bend_flux(False)
