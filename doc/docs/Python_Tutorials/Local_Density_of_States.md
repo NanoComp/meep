@@ -27,9 +27,9 @@ In 3D, each simulation uses three [mirror symmetries](../Exploiting_Symmetry.md#
 
 In cylindrical coordinates, the dipole is polarized in the $r$ direction. Setting up a linearly polarized source in cylindrical coordinates is demonstrated in [Tutorial/Cylindrical Coordinates/Scattering Cross Section of a Finite Dielectric Cylinder](Cylindrical_Coordinates.md#scattering-cross-section-of-a-finite-dielectric-cylinder). However, all that is necessary in this example which involves a single point dipole rather than a planewave is one simulation involving an $E_r$ source at $r=0$ with $m=-1$. This is actually a circularly polarized source but this is sufficient because the $m=+1$ simulation produces an identical result to the $m=-1$ simulation. It is therefore not necessary to perform two separate simulations for $m=\pm 1$ in order to average the results from the left- and right-circularly polarized sources.
 
-One important parameter when setting up this calculation is the grid resolution.
+One important parameter when setting up this calculation is the grid resolution. In this example, the length of the cavity is used to specify the length of the computational cell in $z$. However, it is important to note that Meep will *round the cell size to the nearest pixel*. This means there will likely be a small discrepancy between the intended cavity length and the value used by Meep. Demonstrating consistent agreement between the simulated and analytic Purcell enhancement for a range of cavity lengths may therefore require using a fine grid resolution.
 
-A key feature of the LDOS in this geometry is that it experiences discontinuities, called  [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity), any time the cavity thickness/λ passes through the cutoff for a waveguide mode, which occurs for cavity-thickness/λ values of 0.5, 1.5, 2.5, etc.   (Mathematically, Van Hove singularities depend strongly on the dimensionality — it is a discontinuity in this case because the waves are propagating along two dimensions, i.e. each cutoff is a minimum in the 2d dispersion relation $\omega(k_x,k_y)$.)  This discontinuity also means that the LDOS *exactly at* the cutoff thickness/λ is ill-defined and convergence with discretization can be problematic at this point.  (In consequence, the LDOS *exactly* at the Van Hove discontinuity can behave erratically with resolution, and should be viewed with caution.)
+A key feature of the LDOS in this geometry is that it experiences discontinuities, called [Van Hove singularities](https://en.wikipedia.org/wiki/Van_Hove_singularity), any time the cavity thickness/λ passes through the cutoff for a waveguide mode, which occurs for cavity-thickness/λ values of 0.5, 1.5, 2.5, etc. (Mathematically, Van Hove singularities depend strongly on the dimensionality — it is a discontinuity in this case because the waves are propagating along two dimensions, i.e. each cutoff is a minimum in the 2d dispersion relation $\omega(k_x,k_y)$.)  This discontinuity also means that the LDOS *exactly at* the cutoff thickness/λ is ill-defined and convergence with discretization can be problematic at this point.  (In consequence, the LDOS *exactly* at the Van Hove discontinuity can behave erratically with resolution, and should be viewed with caution.)
 
 As shown in the plot below, the results from Meep for both coordinate systems agree well with the analytic theory over the entire range of values of the cavity thickness.
 
@@ -49,7 +49,7 @@ import numpy as np
 
 # Note: Meep may round the cell dimensions to an integer number of pixels which
 # could modify the cavity structure.
-RESOLUTION_UM = 70
+RESOLUTION_UM = 71
 
 PML_UM = 0.5
 BULK_UM = 6.0
@@ -80,11 +80,16 @@ def ldos_cyl(cavity_um: Optional[float] = None) -> float:
     cell_r_um = BULK_UM + PML_UM
     cell_size = mp.Vector3(cell_r_um, 0, cell_z_um)
 
+    # An Er source at r = 0 and m=±1 needs to be slightly offset.
+    # https://github.com/NanoComp/meep/issues/2704
+    dipole_rpos_um = 1.5 / RESOLUTION_UM
+
+    src_pt = mp.Vector3(dipole_rpos_um, 0, 0)
     sources = [
         mp.Source(
             src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
             component=mp.Er,
-            center=mp.Vector3(),
+            center=src_pt,
         )
     ]
 
@@ -101,7 +106,7 @@ def ldos_cyl(cavity_um: Optional[float] = None) -> float:
     sim.run(
         mp.dft_ldos(frequency, 0, 1),
         until_after_sources=mp.stop_when_fields_decayed(
-            FIELD_DECAY_PERIOD, mp.Er, mp.Vector3(), FIELD_DECAY_TOL
+            FIELD_DECAY_PERIOD, mp.Er, src_pt, FIELD_DECAY_TOL
         ),
     )
 
@@ -124,7 +129,7 @@ def ldos_3d(cavity_um: Optional[float] = None) -> float:
         size_z_um = cavity_um
         pml_layers = [
             mp.PML(thickness=PML_UM, direction=mp.X),
-            mp.PML(thickness=PML_UM, direction=mp.Y)
+            mp.PML(thickness=PML_UM, direction=mp.Y),
         ]
 
     size_xy_um = BULK_UM + 2 * PML_UM
@@ -168,33 +173,27 @@ if __name__ == "__main__":
     ldos_bulk_3d = ldos_3d()
 
     cavity_um = np.arange(0.50, 2.55, 0.05)
-
-    num_cavity_um = cavity_um.shape[0]
-
     vacuum_cavity_um = cavity_um * WAVELENGTH_UM / N_CAVITY
 
+    num_cavity_um = cavity_um.shape[0]
     ldos_cavity_cyl = np.zeros(num_cavity_um)
     ldos_cavity_3d = np.zeros(num_cavity_um)
 
     for j in range(num_cavity_um):
-        ldos_cavity_cyl[j] = ldos_cyl(cavity_um[j])
-        ldos_cavity_3d[j] = ldos_3d(cavity_um[j])
+        ldos_cavity_cyl[j] = ldos_cyl(vacuum_cavity_um[j])
+        ldos_cavity_3d[j] = ldos_3d(vacuum_cavity_um[j])
         purcell_cyl = ldos_cavity_cyl[j] / ldos_bulk_cyl
         purcell_3d = ldos_cavity_3d[j] / ldos_bulk_3d
-        print(
-            f"purcell:, {cavity_um[j]:.3f}, {purcell_cyl:.6f}, {purcell_3d:.6f}"
-        )
+        print(f"purcell:, {cavity_um[j]:.3f}, {purcell_cyl:.6f}, {purcell_3d:.6f}")
 
     # Purcell enhancement factor (relative to bulk medium)
     purcell_meep_cyl = ldos_cavity_cyl / ldos_bulk_cyl
     purcell_meep_3d = ldos_cavity_3d / ldos_bulk_3d
 
     # Equation 7 of 1998 reference.
-    purcell_theory = (
-        3 * np.fix(cavity_um + 0.5) / (4 * cavity_um) +
-        (4 * np.power(np.fix(cavity_um + 0.5), 3) - np.fix(cavity_um + 0.5) ) /
-        (16 * np.power(cavity_um, 3))
-    )
+    purcell_theory = 3 * np.fix(cavity_um + 0.5) / (4 * cavity_um) + (
+        4 * np.power(np.fix(cavity_um + 0.5), 3) - np.fix(cavity_um + 0.5)
+    ) / (16 * np.power(cavity_um, 3))
 
     if mp.am_master():
         fig, ax = plt.subplots()
