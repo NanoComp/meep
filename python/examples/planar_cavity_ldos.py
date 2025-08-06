@@ -15,7 +15,7 @@ import numpy as np
 
 # Note: Meep may round the cell dimensions to an integer number of pixels which
 # could modify the cavity structure.
-RESOLUTION_UM = 70
+RESOLUTION_UM = 71
 
 PML_UM = 0.5
 BULK_UM = 6.0
@@ -46,11 +46,16 @@ def ldos_cyl(cavity_um: Optional[float] = None) -> float:
     cell_r_um = BULK_UM + PML_UM
     cell_size = mp.Vector3(cell_r_um, 0, cell_z_um)
 
+    # An Er source at r = 0 and m=±1 needs to be slightly offset.
+    # https://github.com/NanoComp/meep/issues/2704
+    dipole_rpos_um = 1.5 / RESOLUTION_UM
+
+    src_pt = mp.Vector3(dipole_rpos_um, 0, 0)
     sources = [
         mp.Source(
             src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
             component=mp.Er,
-            center=mp.Vector3(),
+            center=src_pt,
         )
     ]
 
@@ -67,7 +72,7 @@ def ldos_cyl(cavity_um: Optional[float] = None) -> float:
     sim.run(
         mp.dft_ldos(frequency, 0, 1),
         until_after_sources=mp.stop_when_fields_decayed(
-            FIELD_DECAY_PERIOD, mp.Er, mp.Vector3(), FIELD_DECAY_TOL
+            FIELD_DECAY_PERIOD, mp.Er, src_pt, FIELD_DECAY_TOL
         ),
     )
 
@@ -134,17 +139,15 @@ if __name__ == "__main__":
     ldos_bulk_3d = ldos_3d()
 
     cavity_um = np.arange(0.50, 2.55, 0.05)
-
-    num_cavity_um = cavity_um.shape[0]
-
     vacuum_cavity_um = cavity_um * WAVELENGTH_UM / N_CAVITY
 
+    num_cavity_um = cavity_um.shape[0]
     ldos_cavity_cyl = np.zeros(num_cavity_um)
     ldos_cavity_3d = np.zeros(num_cavity_um)
 
     for j in range(num_cavity_um):
-        ldos_cavity_cyl[j] = ldos_cyl(cavity_um[j])
-        ldos_cavity_3d[j] = ldos_3d(cavity_um[j])
+        ldos_cavity_cyl[j] = ldos_cyl(vacuum_cavity_um[j])
+        ldos_cavity_3d[j] = ldos_3d(vacuum_cavity_um[j])
         purcell_cyl = ldos_cavity_cyl[j] / ldos_bulk_cyl
         purcell_3d = ldos_cavity_3d[j] / ldos_bulk_3d
         print(f"purcell:, {cavity_um[j]:.3f}, {purcell_cyl:.6f}, {purcell_3d:.6f}")
