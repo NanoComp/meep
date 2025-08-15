@@ -1399,8 +1399,7 @@ public:
   double periodic_k[2], period[2];
 
   std::vector<sourcedata> near_sourcedata(const vec &x_0, double *farpt_list, size_t nfar_pts,
-                                          const std::complex<double> *dJ,
-                                          double greencyl_tol = 1e-3);
+                                          const std::complex<double> *dJ, double greencyl_tol);
 };
 
 /* Class to compute local-density-of-states spectra: the power spectrum
