@@ -1,5 +1,19 @@
 # Meep Release Notes
 
+## Meep 1.31.0
+
+8/15/2025
+
+* Improved performance for near-to-far transformations in cylindrical coordinates ([#3047]).
+
+* Experimental (undocumented) new parameter `greencyl_tol` for `get_farfields` and `Near2FarFields`
+  in cylindrical coordinates ([#3064]).
+
+* Experimental (undocumented) new method `complexflux()` for `dft_flux` objects, similar to `flux()`
+  but returning the complex Poynting flux (whose imaginary part is reactive power) ([#3069]).
+
+* Fix compatibility with python 3.12 ([#3028]).
+
 ## Meep 1.30.1
 
 5/15/2025
@@ -1251,3 +1265,7 @@ Meep 1.0.1
 [#2970]: https://github.com/NanoComp/meep/issues/2970
 [#2978]: https://github.com/NanoComp/meep/issues/2978
 [#3010]: https://github.com/NanoComp/meep/issues/3010
+[#3028]: https://github.com/NanoComp/meep/issues/3028
+[#3047]: https://github.com/NanoComp/meep/issues/3047
+[#3064]: https://github.com/NanoComp/meep/issues/3064
+[#3069]: https://github.com/NanoComp/meep/issues/3069
