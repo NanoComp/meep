@@ -60,7 +60,7 @@ def plot_radiation_pattern(dipole_pol: str, radial_flux: np.ndarray):
     ax.grid(True)
     ax.set_rlabel_position(22)
     ax.set_ylabel("radial flux (a.u.)")
-    ax.set_title("radiation pattern (φ = 0) of an on-axis {dipole_name} dipole")
+    ax.set_title(f"radiation pattern (φ = 0) of an on-axis {dipole_name} dipole")
 
     if mp.am_master():
         fig.savefig(
@@ -214,29 +214,6 @@ def dipole_in_vacuum(dipole_pol: str, m: int) -> Tuple[np.ndarray, np.ndarray]:
     return e_field, h_field
 
 
-def flux_from_farfields(e_field: np.ndarray, h_field: np.ndarray) -> float:
-    """Computes the flux from the far fields.
-
-    Args:
-        e_field, h_field: the electric (Er, Ep, Ez) and magnetic (Hr, Hp, Hz)
-          far fields, respectively.
-
-    Returns:
-        The Poynting flux obtained from the far fields.
-    """
-    dphi = 2 * math.pi
-    dtheta = 0.5 * math.pi / (NUM_FARFIELD_PTS - 1)
-    dipole_radiation_pattern = radiation_pattern(e_field, h_field)
-    flux = (
-        np.sum(dipole_radiation_pattern * np.sin(polar_rad))
-        * FARFIELD_RADIUS_UM**2
-        * dtheta
-        * dphi
-    )
-
-    return flux
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -261,7 +238,6 @@ if __name__ == "__main__":
         e_field, h_field = dipole_in_vacuum("x", -1)
         e_field_total += 0.5 * e_field * cmath.exp(-1j * AZIMUTHAL_RAD)
         h_field_total += 0.5 * h_field * cmath.exp(-1j * AZIMUTHAL_RAD)
-
     else:
         e_field, h_field = dipole_in_vacuum("z", 0)
         e_field_total += e_field
