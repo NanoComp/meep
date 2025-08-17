@@ -790,16 +790,24 @@ class DftNear2Far(DftObj):
         return self.swigobj_attr("mu")
 
     def flux(
-        self, direction: int = None, where: Volume = None, resolution: float = None
+        self,
+        direction: int = None,
+        where: Volume = None,
+        resolution: float = None,
+        greencyl_tol: float = 1e-3,
     ):
-        """
+        r"""
         Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid
         points / distance unit), compute the far fields in `where` (which may lie
         *outside* the cell) in a grid with the given resolution (which may differ from the
         FDTD solution) and return its Poynting flux in `direction` as a list. The dataset
-        is a 1d array of `nfreq` dimensions.
+        is a 1d array of `nfreq` dimensions. For simulations in cylindrical coordinates,
+        `greencyl_tol` specifies the tolerance of the azimuthal ($\phi$) integral in the
+        calculation of the far fields.
         """
-        return self.swigobj_attr("flux")(direction, where.swigobj, resolution)
+        return self.swigobj_attr("flux")(
+            direction, where.swigobj, resolution, greencyl_tol
+        )
 
     @property
     def freq(self):
@@ -3282,6 +3290,7 @@ class Simulation:
         where: Volume = None,
         center: Vector3Type = None,
         size: Vector3Type = None,
+        greencyl_tol: float = 1e-3,
     ):
         """
         Given an HDF5 file name `fname` (does *not* include the `.h5` suffix), a `Volume`
@@ -3293,13 +3302,17 @@ class Simulation:
         Fourier-transformed $\\mathbf{E}$ and $\\mathbf{H}$ fields on this grid. Each dataset
         is an $n_x \\times n_y \\times n_z \\times nfreq$ 4d array of $space \\times frequency$
         although dimensions that are equal to one are omitted. The volume can optionally be
-        specified via `center` and `size`.
+        specified via `center` and `size`. For simulations in cylindrical coordinates,
+        `greencyl_tol` specifies the tolerance of the azimuthal ($\\phi$) integral in the
+        calculation of the far fields.
         """
         if self.fields is None:
             self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
         self.fields.am_now_working_on(mp.GetFarfieldsTime)
-        near2far.save_farfields(fname, self.get_filename_prefix(), vol, resolution)
+        near2far.save_farfields(
+            fname, self.get_filename_prefix(), vol, resolution, greencyl_tol
+        )
         self.fields.finished_working()
 
     def load_near2far(self, fname, near2far):
