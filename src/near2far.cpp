@@ -514,8 +514,7 @@ void dft_near2far::save_farfields(const char *fname, const char *prefix, const v
   delete[] EH;
 }
 
-double *dft_near2far::flux(direction df, const volume &where, double resolution,
-                           double greencyl_tol) {
+double *dft_near2far::flux(direction df, const volume &where, double resolution) {
   if (coordinate_mismatch(where.dim, df) || where.dim == Dcyl)
     meep::abort("cannot get flux for near2far: co-ordinate mismatch");
 
@@ -523,7 +522,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution,
   int rank = 0;
   size_t N = 1;
 
-  double *EH = get_farfields_array(where, rank, dims, N, resolution, greencyl_tol);
+  double *EH = get_farfields_array(where, rank, dims, N, resolution);
 
   const size_t Nfreq = freq.size();
   double *F = new double[Nfreq];

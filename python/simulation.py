@@ -790,24 +790,16 @@ class DftNear2Far(DftObj):
         return self.swigobj_attr("mu")
 
     def flux(
-        self,
-        direction: int = None,
-        where: Volume = None,
-        resolution: float = None,
-        greencyl_tol: float = 1e-3,
+        self, direction: int = None, where: Volume = None, resolution: float = None
     ):
-        r"""
+        """
         Given a `Volume` `where` (may be 0d, 1d, 2d, or 3d) and a `resolution` (in grid
         points / distance unit), compute the far fields in `where` (which may lie
         *outside* the cell) in a grid with the given resolution (which may differ from the
         FDTD solution) and return its Poynting flux in `direction` as a list. The dataset
-        is a 1d array of `nfreq` dimensions. For simulations in cylindrical coordinates,
-        `greencyl_tol` specifies the tolerance of the azimuthal ($\phi$) integral in the
-        calculation of the far fields.
+        is a 1d array of `nfreq` dimensions.
         """
-        return self.swigobj_attr("flux")(
-            direction, where.swigobj, resolution, greencyl_tol
-        )
+        return self.swigobj_attr("flux")(direction, where.swigobj, resolution)
 
     @property
     def freq(self):
