@@ -483,12 +483,12 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
 }
 
 void dft_near2far::save_farfields(const char *fname, const char *prefix, const volume &where,
-                                  double resolution) {
+                                  double resolution, double greencyl_tol) {
   size_t dims[4] = {1, 1, 1, 1};
   int rank = 0;
   size_t N = 1;
 
-  double *EH = get_farfields_array(where, rank, dims, N, resolution);
+  double *EH = get_farfields_array(where, rank, dims, N, resolution, greencyl_tol);
   if (!EH) return; /* nothing to output */
 
   const size_t Nfreq = freq.size();

@@ -1373,8 +1373,8 @@ public:
                               double resolution, double greencyl_tol = 1e-3);
 
   /* output far fields on a grid to an HDF5 file */
-  void save_farfields(const char *fname, const char *prefix, const volume &where,
-                      double resolution);
+  void save_farfields(const char *fname, const char *prefix, const volume &where, double resolution,
+                      double greencyl_tol = 1e-3);
 
   /* output Poynting flux of far fields */
   double *flux(direction df, const volume &where, double resolution);
