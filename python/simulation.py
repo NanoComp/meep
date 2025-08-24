@@ -3223,7 +3223,8 @@ class Simulation:
         of fields $(E_x^1,E_y^1,E_z^1,H_x^1,H_y^1,H_z^1,E_x^2,E_y^2,E_z^2,H_x^2,H_y^2,H_z^2,...)$
         in Cartesian coordinates and
         $(E_r^1,E_\\phi^1,E_z^1,H_r^1,H_\\phi^1,H_z^1,E_r^2,E_\\phi^2,E_z^2,H_r^2,H_\\phi^2,H_z^2,...)$
-        in cylindrical coordinates for the frequencies 1,2,...,`nfreq`.
+        in cylindrical coordinates for the frequencies 1,2,...,`nfreq`. `greencyl_tol` specifies the
+        convergence tolerance of the azimuthal ($\\phi$) integral in the calculation of the far field.
         """
         return mp._get_farfield(
             near2far.swigobj,
@@ -3240,7 +3241,7 @@ class Simulation:
         size: Vector3Type = None,
         greencyl_tol: float = 1e-3,
     ):
-        """
+        r"""
         Like `output_farfields` but returns a dictionary of NumPy arrays instead of
         writing to a file. The dictionary keys are `Ex`, `Ey`, `Ez`, `Hx`, `Hy`, `Hz`.
         Each array has the same shape as described in `output_farfields`.
@@ -3249,7 +3250,9 @@ class Simulation:
         of the fields, and hence cannot be directly compared to time-domain fields. In
         practice, it is easiest to use the far fields in computations where overall
         scaling (units) cancel out or are irrelevant, e.g. to compute the fraction of the
-        far fields in one region vs. another region.
+        far fields in one region vs. another region. `greencyl_tol` specifies the
+        convergence tolerance of the azimuthal ($\phi$) integral in the calculation
+        of the far field.
         """
         if self.fields is None:
             self.init_sim()

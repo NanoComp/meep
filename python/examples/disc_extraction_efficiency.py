@@ -20,6 +20,7 @@ DISC_THICKNESS_UM = 0.7 * WAVELENGTH_UM / N_DISC
 NUM_FARFIELD_PTS = 200
 FARFIELD_RADIUS_UM = 1e6 * WAVELENGTH_UM
 NUM_DIPOLES = 11
+GREENCYL_TOL = 1e-6
 
 farfield_angles = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
 
@@ -105,6 +106,7 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
                 0,
                 FARFIELD_RADIUS_UM * math.cos(farfield_angles[n]),
             ),
+            GREENCYL_TOL,
         )
         e_field[n, :] = [far_field[j] for j in range(3)]
         h_field[n, :] = [far_field[j + 3] for j in range(3)]
