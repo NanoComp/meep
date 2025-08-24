@@ -22,6 +22,7 @@ FARFIELD_RADIUS_UM = 1e6 * WAVELENGTH_UM
 NUM_FARFIELD_PTS = 50
 AZIMUTHAL_RAD = 0
 POWER_DECAY_THRESHOLD = 1e-4
+GREENCYL_TOL = 1e-6
 
 frequency = 1 / WAVELENGTH_UM
 polar_rad = np.linspace(0, 0.5 * math.pi, NUM_FARFIELD_PTS)
@@ -125,6 +126,7 @@ def get_farfields(
                 0,
                 FARFIELD_RADIUS_UM * math.cos(polar_rad[n]),
             ),
+            GREENCYL_TOL,
         )
         e_field[n, :] = [far_field[j] for j in range(3)]
         h_field[n, :] = [far_field[j + 3] for j in range(3)]
