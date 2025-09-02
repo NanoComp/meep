@@ -5,7 +5,7 @@ transforms.
 """
 
 import sys
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from autograd import numpy as npa
@@ -712,6 +712,9 @@ def smoothed_projection(
     beta: float,
     eta: float,
     resolution: float,
+    resolution_simulation: Optional[float] = None,
+    erosion_dilation: float = 0.0,
+
 ):
     """Project using subpixel smoothing, which allows for β→∞.
 
@@ -747,6 +750,10 @@ def smoothed_projection(
         eta: The threshold point in the range [0, 1].
         resolution: resolution of the design grid (not the Meep grid
             resolution).
+        resolution_simulation: resolution of the meep grid.
+        erosion_dilation: erosion (negative) or dilation (positive) transform to
+            apply to the final projected design in "meep units"; The resolution
+            scaling is applied automatically.
     Returns:
         The projected and smoothed output.
 
@@ -763,6 +770,9 @@ def smoothed_projection(
         >>> rho_filtered = conic_filter(rho, filter_radius, Lx, Ly, resolution)
         >>> rho_projected = smoothed_projection(rho_filtered, beta, eta_i, resolution)
     """
+    if resolution_simulation is None:
+        resolution_simulation = resolution
+    
     # Note that currently, the underlying assumption is that the smoothing
     # kernel is a circle, which means dx = dy.
     dx = dy = 1 / resolution
@@ -795,10 +805,13 @@ def smoothed_projection(
     # The distance for the center of the pixel to the nearest interface
     d = (eta - rho_filtered) / rho_filtered_grad_norm_eff
 
+    # Account for an erosion or dilation
+    d = npa.maximum(0, d)
+
     # Only need smoothing if an interface lies within the voxel. Since d is
     # actually an "effective" d by this point, we need to ignore values that may
     # have been sanitized earlier on.
-    needs_smoothing = nonzero_norm & (npa.abs(d) < R_smoothing)
+    needs_smoothing = nonzero_norm & (npa.abs(d + erosion_dilation) < R_smoothing)
 
     # The fill factor is used to perform simple, first-order subpixel smoothing.
     # We use the (2D) analytic expression that comes when assuming the smoothing
