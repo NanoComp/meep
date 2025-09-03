@@ -806,12 +806,12 @@ def smoothed_projection(
     d = (eta - rho_filtered) / rho_filtered_grad_norm_eff
 
     # Account for an erosion or dilation
-    d = npa.maximum(0, d)
+    d = d + erosion_dilation
 
     # Only need smoothing if an interface lies within the voxel. Since d is
     # actually an "effective" d by this point, we need to ignore values that may
     # have been sanitized earlier on.
-    needs_smoothing = nonzero_norm & (npa.abs(d + erosion_dilation) < R_smoothing)
+    needs_smoothing = nonzero_norm & (npa.abs(d) < R_smoothing)
 
     # The fill factor is used to perform simple, first-order subpixel smoothing.
     # We use the (2D) analytic expression that comes when assuming the smoothing
