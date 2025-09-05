@@ -778,8 +778,6 @@ def smoothed_projection(
     dx = dy = 1 / resolution
     R_smoothing = 0.55 * dx
 
-    rho_projected = tanh_projection(rho_filtered, beta=beta, eta=eta)
-
     # Compute the spatial gradient (using finite differences) of the *filtered*
     # field, which will always be smooth and is the key to our approach. This
     # gradient essentially represents the normal direction pointing the the
@@ -802,11 +800,13 @@ def smoothed_projection(
     )
     rho_filtered_grad_norm_eff = npa.where(nonzero_norm, rho_filtered_grad_norm, 1)
 
+    # Account for an erosion or dilation
+    rho_filtered = rho_filtered - erosion_dilation * npa.where(nonzero_norm, rho_filtered_grad_norm, 0)
+    
+    rho_projected = tanh_projection(rho_filtered, beta=beta, eta=eta)
+
     # The distance for the center of the pixel to the nearest interface
     d = (eta - rho_filtered) / rho_filtered_grad_norm_eff
-
-    # Account for an erosion or dilation
-    d = d + erosion_dilation
 
     # Only need smoothing if an interface lies within the voxel. Since d is
     # actually an "effective" d by this point, we need to ignore values that may
