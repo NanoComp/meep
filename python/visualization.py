@@ -719,6 +719,7 @@ def get_boundary_volumes(
     else:
         raise ValueError("Invalid boundary type")
 
+
 def plot_boundaries(
     sim: Simulation,
     ax: Axes,
@@ -762,7 +763,9 @@ def plot_boundaries(
                     sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical
                 ):
                     continue
-                vol = get_boundary_volumes(sim, boundary.thickness, boundary.direction, side)
+                vol = get_boundary_volumes(
+                    sim, boundary.thickness, boundary.direction, side
+                )
                 ax = plot_volume(
                     sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
                 )
@@ -1062,12 +1065,29 @@ def plot2D(
         sleep(0.05)
     return ax
 
+
 # colors for styling appearance of boxes in `plot3D`
-SOURCE_COLOR_3D: tuple[float, float, float, float] = (234/255, 32/255, 39/255, 1.0) # red
-MONITOR_COLOR_3D: tuple[float, float, float, float] = (55/255, 66/255, 250/255, 1.0) # blue
-BOUNDARY_COLOR_3D: tuple[float, float, float, float] = (8/255, 203/255, 0/255, .2) # transparent green
-CELL_COLOR_3D: tuple[float, float, float, float] = (.75, .75, .75, .1) # gray
-CELL_EDGE_COLOR_3D: tuple[float, float, float, float] = (.75, .75, .75, 1) # transparent gray
+SOURCE_COLOR_3D: tuple[float, float, float, float] = (  # red
+    234 / 255,
+    32 / 255,
+    39 / 255,
+    1.0,
+)
+MONITOR_COLOR_3D: tuple[float, float, float, float] = (  # blue
+    55 / 255,
+    66 / 255,
+    250 / 255,
+    1.0,
+)
+BOUNDARY_COLOR_3D: tuple[float, float, float, float] = (  # transparent green
+    8 / 255,
+    203 / 255,
+    0 / 255,
+    0.1,
+)
+CELL_COLOR_3D = None
+CELL_EDGE_COLOR_3D: tuple[float, float, float, float] = (0.75, 0.75, 0.75, 1)  # gray
+
 
 def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
     from vispy.scene.visuals import Box, Mesh
@@ -1146,9 +1166,11 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
     for source in sim.sources:
         size = tuple(source.size)
         source_box = Box(
-            size[0], size[2], size[1], # vispy input is x-, z-, y-size
+            size[0],
+            size[2],
+            size[1],  # vispy input is x-, z-, y-size
             color=SOURCE_COLOR_3D,
-            edge_color = (0,0,0,1),
+            edge_color=(0, 0, 0, 1),
         )
         center = list(source.center)
         source_box.transform = transforms.MatrixTransform()
@@ -1162,9 +1184,11 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
         for reg in mon.regions:
             size = list(reg.size)
             monitor_box = Box(
-                size[0], size[2], size[1], # vispy input is x-, z-, y-size
+                size[0],
+                size[2],
+                size[1],  # vispy input is x-, z-, y-size
                 color=MONITOR_COLOR_3D,
-                edge_color = (0,0,0,1),
+                edge_color=(0, 0, 0, 1),
             )
             center = list(reg.center)
             monitor_box.transform = transforms.MatrixTransform()
@@ -1178,28 +1202,39 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
 
     # Build boundary regions
     import itertools
+
     for boundary in sim.boundary_layers:
-        if boundary.direction == mp.ALL and side == mp.ALL: # same boundary everywhere
+        if boundary.direction == mp.ALL and side == mp.ALL:  # same boundary everywhere
             for permutation in itertools.product([mp.X, mp.Y, mp.Z], [mp.Low, mp.High]):
                 vol = get_boundary_volumes(sim, boundary.thickness, *permutation)
-                box = _build_3d_pml(vol.size, vol.center + sim.cell_size/2)
+                box = _build_3d_pml(vol.size, vol.center + sim.cell_size / 2)
                 view.add(box)
-        elif boundary.side == mp.ALL: # same boundary on both sides
+        elif boundary.side == mp.ALL:  # same boundary on both sides
             for side in [mp.Low, mp.High]:
-                vol = get_boundary_volumes(sim, boundary.thickness, boundary.direction, side)
-                box = _build_3d_pml(vol.size, vol.center + sim.cell_size/2)
-                view.add(box)               
-        else: # boundary on just one side
-            vol = get_boundary_volumes(sim, boundary.thickness, boundary.direction, boundary.side)
-            box = _build_3d_pml(vol.size, vol.center + sim.cell_size/2)
+                vol = get_boundary_volumes(
+                    sim, boundary.thickness, boundary.direction, side
+                )
+                box = _build_3d_pml(vol.size, vol.center + sim.cell_size / 2)
+                view.add(box)
+        else:  # boundary on just one side
+            vol = get_boundary_volumes(
+                sim, boundary.thickness, boundary.direction, boundary.side
+            )
+            box = _build_3d_pml(vol.size, vol.center + sim.cell_size / 2)
             view.add(box)
-    
+
     # Add simulation cell volume
-    box = Box(sim.cell_size.x, sim.cell_size.z, sim.cell_size.y,
-        color=CELL_COLOR_3D, edge_color=CELL_EDGE_COLOR_3D,
+    box = Box(
+        sim.cell_size.x,
+        sim.cell_size.z,
+        sim.cell_size.y,
+        color=CELL_COLOR_3D,
+        edge_color=CELL_EDGE_COLOR_3D,
     )
     box.transform = transforms.MatrixTransform()
-    box.transform.translate((sim.cell_size.x/2, sim.cell_size.y/2, sim.cell_size.z/2))
+    box.transform.translate(
+        (sim.cell_size.x / 2, sim.cell_size.y / 2, sim.cell_size.z / 2)
+    )
     view.add(box)
 
     # Camera options
@@ -1222,12 +1257,17 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
 
     canvas.show(run=True)
 
+
 def _build_3d_pml(width: Vector3, translate: Vector3):
     from vispy.scene.visuals import Box
     from vispy.scene import transforms
 
-    box = Box(width.x, width.z, width.y, # vispy input is x-, z-, y-size
-        color = BOUNDARY_COLOR_3D, edge_color = (0,0,0,1),
+    box = Box(
+        width.x,
+        width.z,
+        width.y,  # vispy input is x-, z-, y-size
+        color=BOUNDARY_COLOR_3D,
+        edge_color=(0, 0, 0, 1),
     )
     box.transform = transforms.MatrixTransform()
     box.transform.translate(tuple(translate))
