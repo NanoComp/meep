@@ -662,6 +662,63 @@ def plot_eps(
         return ax
 
 
+def get_boundary_volumes(
+    sim: Simulation,
+    thickness: float,
+    direction: float,
+    side,
+) -> Volume:
+    xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
+        sim.geometry_center, sim.cell_size, sim.is_cylindrical
+    )
+
+    if direction == mp.X and side == mp.Low:
+        return Volume(
+            center=Vector3(
+                xmin + 0.5 * thickness, sim.geometry_center.y, sim.geometry_center.z
+            ),
+            size=Vector3(thickness, sim.cell_size.y, sim.cell_size.z),
+        )
+    elif (direction == mp.X and side == mp.High) or direction == mp.R:
+        return Volume(
+            center=Vector3(
+                xmax - 0.5 * thickness, sim.geometry_center.y, sim.geometry_center.z
+            ),
+            size=Vector3(thickness, sim.cell_size.y, sim.cell_size.z),
+        )
+    elif direction == mp.Y and side == mp.Low:
+        return Volume(
+            center=Vector3(
+                sim.geometry_center.x, ymin + 0.5 * thickness, sim.geometry_center.z
+            ),
+            size=Vector3(sim.cell_size.x, thickness, sim.cell_size.z),
+        )
+    elif direction == mp.Y and side == mp.High:
+        return Volume(
+            center=Vector3(
+                sim.geometry_center.x, ymax - 0.5 * thickness, sim.geometry_center.z
+            ),
+            size=Vector3(sim.cell_size.x, thickness, sim.cell_size.z),
+        )
+    elif direction == mp.Z and side == mp.Low:
+        xcen = sim.geometry_center.x
+        if sim.is_cylindrical:
+            xcen += 0.5 * sim.cell_size.x
+        return Volume(
+            center=Vector3(xcen, sim.geometry_center.y, zmin + 0.5 * thickness),
+            size=Vector3(sim.cell_size.x, sim.cell_size.y, thickness),
+        )
+    elif direction == mp.Z and side == mp.High:
+        xcen = sim.geometry_center.x
+        if sim.is_cylindrical:
+            xcen += 0.5 * sim.cell_size.x
+        return Volume(
+            center=Vector3(xcen, sim.geometry_center.y, zmax - 0.5 * thickness),
+            size=Vector3(sim.cell_size.x, sim.cell_size.y, thickness),
+        )
+    else:
+        raise ValueError("Invalid boundary type")
+
 def plot_boundaries(
     sim: Simulation,
     ax: Axes,
@@ -673,60 +730,6 @@ def plot_boundaries(
         boundary_parameters = default_boundary_parameters
     else:
         boundary_parameters = dict(default_boundary_parameters, **boundary_parameters)
-
-    def get_boundary_volumes(thickness: float, direction: float, side) -> Volume:
-        thickness = boundary.thickness
-
-        xmin, xmax, ymin, ymax, zmin, zmax = box_vertices(
-            sim.geometry_center, sim.cell_size, sim.is_cylindrical
-        )
-
-        if direction == mp.X and side == mp.Low:
-            return Volume(
-                center=Vector3(
-                    xmin + 0.5 * thickness, sim.geometry_center.y, sim.geometry_center.z
-                ),
-                size=Vector3(thickness, sim.cell_size.y, sim.cell_size.z),
-            )
-        elif (direction == mp.X and side == mp.High) or direction == mp.R:
-            return Volume(
-                center=Vector3(
-                    xmax - 0.5 * thickness, sim.geometry_center.y, sim.geometry_center.z
-                ),
-                size=Vector3(thickness, sim.cell_size.y, sim.cell_size.z),
-            )
-        elif direction == mp.Y and side == mp.Low:
-            return Volume(
-                center=Vector3(
-                    sim.geometry_center.x, ymin + 0.5 * thickness, sim.geometry_center.z
-                ),
-                size=Vector3(sim.cell_size.x, thickness, sim.cell_size.z),
-            )
-        elif direction == mp.Y and side == mp.High:
-            return Volume(
-                center=Vector3(
-                    sim.geometry_center.x, ymax - 0.5 * thickness, sim.geometry_center.z
-                ),
-                size=Vector3(sim.cell_size.x, thickness, sim.cell_size.z),
-            )
-        elif direction == mp.Z and side == mp.Low:
-            xcen = sim.geometry_center.x
-            if sim.is_cylindrical:
-                xcen += 0.5 * sim.cell_size.x
-            return Volume(
-                center=Vector3(xcen, sim.geometry_center.y, zmin + 0.5 * thickness),
-                size=Vector3(sim.cell_size.x, sim.cell_size.y, thickness),
-            )
-        elif direction == mp.Z and side == mp.High:
-            xcen = sim.geometry_center.x
-            if sim.is_cylindrical:
-                xcen += 0.5 * sim.cell_size.x
-            return Volume(
-                center=Vector3(xcen, sim.geometry_center.y, zmax - 0.5 * thickness),
-                size=Vector3(sim.cell_size.x, sim.cell_size.y, thickness),
-            )
-        else:
-            raise ValueError("Invalid boundary type")
 
     import itertools
 
@@ -748,7 +751,7 @@ def plot_boundaries(
                     sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical
                 ):
                     continue
-                vol = get_boundary_volumes(boundary.thickness, *permutation)
+                vol = get_boundary_volumes(sim, boundary.thickness, *permutation)
                 ax = plot_volume(
                     sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
                 )
@@ -759,7 +762,7 @@ def plot_boundaries(
                     sim.dimensions == mp.CYLINDRICAL or sim.is_cylindrical
                 ):
                     continue
-                vol = get_boundary_volumes(boundary.thickness, boundary.direction, side)
+                vol = get_boundary_volumes(sim, boundary.thickness, boundary.direction, side)
                 ax = plot_volume(
                     sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
                 )
@@ -770,7 +773,7 @@ def plot_boundaries(
             ):
                 continue
             vol = get_boundary_volumes(
-                boundary.thickness, boundary.direction, boundary.side
+                sim, boundary.thickness, boundary.direction, boundary.side
             )
             ax = plot_volume(
                 sim, ax, vol, output_plane, plotting_parameters=boundary_parameters
@@ -1059,6 +1062,12 @@ def plot2D(
         sleep(0.05)
     return ax
 
+# colors for styling appearance of boxes in `plot3D`
+SOURCE_COLOR_3D: tuple[float, float, float, float] = (234/255, 32/255, 39/255, 1.0) # red
+MONITOR_COLOR_3D: tuple[float, float, float, float] = (55/255, 66/255, 250/255, 1.0) # blue
+BOUNDARY_COLOR_3D: tuple[float, float, float, float] = (8/255, 203/255, 0/255, .2) # transparent green
+CELL_COLOR_3D: tuple[float, float, float, float] = (.75, .75, .75, .1) # gray
+CELL_EDGE_COLOR_3D: tuple[float, float, float, float] = (.75, .75, .75, 1) # transparent gray
 
 def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
     from vispy.scene.visuals import Box, Mesh
@@ -1134,14 +1143,12 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
         view.add(mesh)
 
     # Build source
-    thickness = (
-        sim.boundary_layers[0].thickness if not len(sim.boundary_layers) < 1 else 0
-    )
     for source in sim.sources:
         size = tuple(source.size)
         source_box = Box(
-            *size,
-            color=(1, 0, 0, 1),  # red
+            size[0], size[2], size[1], # vispy input is x-, z-, y-size
+            color=SOURCE_COLOR_3D,
+            edge_color = (0,0,0,1),
         )
         center = list(source.center)
         source_box.transform = transforms.MatrixTransform()
@@ -1155,8 +1162,9 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
         for reg in mon.regions:
             size = list(reg.size)
             monitor_box = Box(
-                *size,
-                color=(0, 0, 1, 1),  # blue
+                size[0], size[2], size[1], # vispy input is x-, z-, y-size
+                color=MONITOR_COLOR_3D,
+                edge_color = (0,0,0,1),
             )
             center = list(reg.center)
             monitor_box.transform = transforms.MatrixTransform()
@@ -1168,27 +1176,31 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
             monitor_box.transform.translate(tuple(sim.geometry_center))
             view.add(monitor_box)
 
-    # Build boundaries
-    for box_center_top in [
-        np.add(mesh_midpoint, (0, 0, sim_size[2] / 2 - thickness / 2)),
-        np.subtract(mesh_midpoint, (0, 0, sim_size[2] / 2 - thickness / 2)),
-    ]:
-        box = _build_3d_pml(sim_size[0], sim_size[1], thickness, box_center_top)
-        view.add(box)
-
-    for box_center_right in [
-        np.add(mesh_midpoint, (sim_size[0] / 2 - thickness / 2, 0, 0)),
-        np.subtract(mesh_midpoint, (sim_size[0] / 2 - thickness / 2, 0, 0)),
-    ]:
-        box = _build_3d_pml(thickness, sim_size[1], sim_size[2], box_center_right)
-        view.add(box)
-
-    for box_center_front in [
-        np.add(mesh_midpoint, (0, sim_size[1] / 2 - thickness / 2, 0)),
-        np.subtract(mesh_midpoint, (0, sim_size[1] / 2 - thickness / 2, 0)),
-    ]:
-        box = _build_3d_pml(sim_size[0], thickness, sim_size[2], box_center_front)
-        view.add(box)
+    # Build boundary regions
+    import itertools
+    for boundary in sim.boundary_layers:
+        if boundary.direction == mp.ALL and side == mp.ALL: # same boundary everywhere
+            for permutation in itertools.product([mp.X, mp.Y, mp.Z], [mp.Low, mp.High]):
+                vol = get_boundary_volumes(sim, boundary.thickness, *permutation)
+                box = _build_3d_pml(vol.size, vol.center + sim.cell_size/2)
+                view.add(box)
+        elif boundary.side == mp.ALL: # same boundary on both sides
+            for side in [mp.Low, mp.High]:
+                vol = get_boundary_volumes(sim, boundary.thickness, boundary.direction, side)
+                box = _build_3d_pml(vol.size, vol.center + sim.cell_size/2)
+                view.add(box)               
+        else: # boundary on just one side
+            vol = get_boundary_volumes(sim, boundary.thickness, boundary.direction, boundary.side)
+            box = _build_3d_pml(vol.size, vol.center + sim.cell_size/2)
+            view.add(box)
+    
+    # Add simulation cell volume
+    box = Box(sim.cell_size.x, sim.cell_size.z, sim.cell_size.y,
+        color=CELL_COLOR_3D, edge_color=CELL_EDGE_COLOR_3D,
+    )
+    box.transform = transforms.MatrixTransform()
+    box.transform.translate((sim.cell_size.x/2, sim.cell_size.y/2, sim.cell_size.z/2))
+    view.add(box)
 
     # Camera options
     view.camera.center = mesh_midpoint
@@ -1210,24 +1222,15 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
 
     canvas.show(run=True)
 
-
-def _build_3d_pml(x: float, y: float, thickness: float, translate: tuple):
+def _build_3d_pml(width: Vector3, translate: Vector3):
     from vispy.scene.visuals import Box
     from vispy.scene import transforms
-    from vispy.visuals.filters import WireframeFilter
 
-    box = Box(
-        x,
-        y,
-        thickness,
-        color=(0, 1, 0, 0.2),  # green but transparent
-        # color=None,
+    box = Box(width.x, width.z, width.y, # vispy input is x-, z-, y-size
+        color = BOUNDARY_COLOR_3D, edge_color = (0,0,0,1),
     )
     box.transform = transforms.MatrixTransform()
-    box.transform.rotate(90, (1, 0, 0))
-    box.transform.translate(translate)
-    wireframe_filter = WireframeFilter(width=2)
-    box.mesh.attach(wireframe_filter)
+    box.transform.translate(tuple(translate))
 
     return box
 
