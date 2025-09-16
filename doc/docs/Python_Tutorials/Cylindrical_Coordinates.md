@@ -879,7 +879,7 @@ Two features of this method may provide a significant speedup compared to an ide
 
 ![](../images/cyl_nonaxisymmetric_source_flux_vs_m.png#center)
 
-Note: in a simulation with `m = 0`, the real and imaginary parts of the fields are decoupled. As a runtime optimization, Meep simulates only the *real* part of the fields for this case which roughly halves the number of floating-point operations during timestepping. However, using purely real fields effectively *halves* the current source. Combining the results of the different $m$-simulations correctly using the Fourier-series expansion of the fields requires either setting `force_complex_fields=True` or multiplying the power from the `m = 0` run by four. This tutorial uses the former approach since the cost for using complex fields for only a single run among many is usually insignificant.
+Note: in a simulation with $m = 0$, the real and imaginary parts of the fields are decoupled. As a runtime optimization, Meep simulates only the *real* part of the fields for this case which roughly halves the number of floating-point operations during timestepping. However, using purely real fields effectively *halves* the current source. Combining the results of the different $m$-simulations correctly using the Fourier-series expansion of the fields requires either setting `force_complex_fields=True` or multiplying the power from the `m = 0` run by four. This tutorial uses the former approach since the cost for using complex fields for only a single run among many is usually insignificant.
 
 As a demonstration, we compute the [extraction efficiency of an LED](https://meep.readthedocs.io/en/latest/Python_Tutorials/Local_Density_of_States/#extraction-efficiency-of-a-light-emitting-diode-led) from a point dipole at $r = 0$ and three different locations at $r > 0$. The test involves verifying that the extraction efficiency is independent of the dipole location. The results are compared to an [identical calculation in 3d](https://github.com/NanoComp/meep/blob/1fe38999997f1825054fc978e473327c77169671/python/examples/extraction_eff_ldos.py#L100-L187) for which the extraction efficiency is 0.333718.
 
@@ -908,9 +908,7 @@ However, if you want to compute the extraction efficiency within an angular cone
 
 1. For each simulation in the Fourier-series expansion ($m = 0, 1, ..., M$), compute the far fields $\vec{E}_m$, $\vec{H}_m$ for the desired $\theta$ points in the $rz$ ($\phi = 0$) plane, at an "infinite" radius (i.e., $R \gg \lambda$) using a near-to-far field transformation.
 2. Obtain the powers $P(\theta)$ from these far fields by summing: $P(\theta) = \int_{0}^{2\pi} \left[ P_{m=0}(\theta) + 2\sum_{m=1}^{M} P_m(\theta)  \right] d\phi =  2\pi \Re\left[ \left[\vec{E}_{m=0}(\theta) \times \vec{H}^*_{m=0}(\theta)\right]\cdot\hat{r} + 2\sum_{m=1}^M \left[\vec{E}_{m}(\theta) \times \vec{H}^*_{m}(\theta)\right]\cdot\hat{r} \right]$.
-3. Compute the extraction efficiency within an angular cone $\left[ \int_0^\theta P(\theta') \sin(\theta') d\theta' \right] / \left[ \int_0^{\pi/2} P(\theta') \sin(\theta') d\theta' \right]$ by some discretized integral, e.g. a [trapezoidal rule](https://en.wikipedia.org/wiki/Trapezoidal_rule).
-
-For a demonstration, see [Tutorial/Cylindrical Coordinates/Radiation Pattern of a Disc in Cylindrical Coordinates](Near_to_Far_Field_Spectra.md#radiation-pattern-of-a-disc-in-cylindrical-coordinates).
+3. Compute the radiated power within an angular cone $\int_0^\theta P(\theta') \sin(\theta') d\theta'$ by some discretized integral, e.g. a [trapezoidal rule](https://en.wikipedia.org/wiki/Trapezoidal_rule). The extraction efficiency involves dividing this quantity by the total power emitted by the dipole.
 
 The simulation script is in [examples/point_dipole_cyl.py](https://github.com/NanoComp/meep/blob/master/python/examples/point_dipole_cyl.py).
 
