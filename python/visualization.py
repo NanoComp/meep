@@ -1204,7 +1204,9 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
     import itertools
 
     for boundary in sim.boundary_layers:
-        if boundary.direction == mp.ALL and boundary.side == mp.ALL:  # same boundary everywhere
+        if (
+            boundary.direction == mp.ALL and boundary.side == mp.ALL
+        ):  # same boundary everywhere
             for permutation in itertools.product([mp.X, mp.Y, mp.Z], [mp.Low, mp.High]):
                 vol = get_boundary_volumes(sim, boundary.thickness, *permutation)
                 box = _build_3d_pml(vol.size, vol.center + sim.cell_size / 2)
