@@ -1676,17 +1676,9 @@ class Animate2D:
         # ready for jupyter notebook embedding.
         # modified from matplotlib/animation.py code.
 
-        # Only works with Python3 and matplotlib > 3.1.0
-        from distutils.version import LooseVersion
         import matplotlib
 
-        if LooseVersion(matplotlib.__version__) < LooseVersion("3.1.0"):
-            print("-------------------------------")
-            print(
-                "Warning: JSHTML output is not supported with your current matplotlib build. Consider upgrading to 3.1.0+"
-            )
-            print("-------------------------------")
-            return
+        # Only works with Python3 and matplotlib > 3.1.0:
         if mp.am_master():
             from uuid import uuid4
             from matplotlib._animation_data import (
