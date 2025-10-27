@@ -19,7 +19,6 @@ The simulation script is in [examples/antenna-radiation.py](https://github.com/N
 
 ```py
 import math
-from typing import Tuple
 
 import matplotlib.pyplot as plt
 import meep as mp
@@ -76,7 +75,7 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
     return flux_r
 
 
-def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, np.ndarray]:
+def antenna_radiation_pattern(dipole_polarization: int) -> np.ndarray:
     """Returns the radiation pattern of a dipole antenna.
 
     Args:
@@ -88,7 +87,7 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
     if dipole_polarization not in (mp.Ex, mp.Ey, mp.Ez):
         raise ValueError("dipole_polarization must be Ex, Ey, or Ez.")
 
-    cell_um = 5.0
+    cell_um = 4.0
     sxy = PML_UM + cell_um + PML_UM
     cell_size = mp.Vector3(sxy, sxy, 0)
     boundary_layers = [mp.PML(PML_UM)]
@@ -138,15 +137,11 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
         frequency,
         0,
         1,
-        mp.FluxRegion(
-            center=mp.Vector3(0, 0.5 * cell_um), size=mp.Vector3(cell_um, 0)
-        ),
+        mp.FluxRegion(center=mp.Vector3(0, 0.5 * cell_um), size=mp.Vector3(cell_um, 0)),
         mp.FluxRegion(
             center=mp.Vector3(0, -0.5 * cell_um), size=mp.Vector3(cell_um, 0), weight=-1
         ),
-        mp.FluxRegion(
-            center=mp.Vector3(0.5 * cell_um, 0), size=mp.Vector3(0, cell_um)
-        ),
+        mp.FluxRegion(center=mp.Vector3(0.5 * cell_um, 0), size=mp.Vector3(0, cell_um)),
         mp.FluxRegion(
             center=mp.Vector3(-0.5 * cell_um, 0), size=mp.Vector3(0, cell_um), weight=-1
         ),
@@ -161,7 +156,7 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
             mp.Y,
             mp.Volume(
                 center=mp.Vector3(0, FARFIELD_RADIUS_UM, 0),
-                size=mp.Vector3(2 * FARFIELD_RADIUS_UM, 0, mp.inf)
+                size=mp.Vector3(2 * FARFIELD_RADIUS_UM, 0, mp.inf),
             ),
             FARFIELD_RESOLUTION_UM,
         )[0]
@@ -169,7 +164,7 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
             mp.Y,
             mp.Volume(
                 center=mp.Vector3(0, -FARFIELD_RADIUS_UM, 0),
-                size=mp.Vector3(2 * FARFIELD_RADIUS_UM, 0, mp.inf)
+                size=mp.Vector3(2 * FARFIELD_RADIUS_UM, 0, mp.inf),
             ),
             FARFIELD_RESOLUTION_UM,
         )[0]
@@ -177,7 +172,7 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
             mp.X,
             mp.Volume(
                 center=mp.Vector3(FARFIELD_RADIUS_UM, 0, 0),
-                size=mp.Vector3(0, 2 * FARFIELD_RADIUS_UM, mp.inf)
+                size=mp.Vector3(0, 2 * FARFIELD_RADIUS_UM, mp.inf),
             ),
             FARFIELD_RESOLUTION_UM,
         )[0]
@@ -185,55 +180,61 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
             mp.X,
             mp.Volume(
                 center=mp.Vector3(-FARFIELD_RADIUS_UM, 0, 0),
-                size=mp.Vector3(0, 2 * FARFIELD_RADIUS_UM, mp.inf)
+                size=mp.Vector3(0, 2 * FARFIELD_RADIUS_UM, mp.inf),
             ),
             FARFIELD_RESOLUTION_UM,
         )[0]
     )
 
     radial_flux = radiation_pattern(sim, nearfield_box)
+    flux_radiation_pattern = np.trapz(radial_flux * FARFIELD_RADIUS_UM, x=polar_rad)
 
-    return flux_near, flux_far, radial_flux
+    print(
+        f"flux:, {mp.component_name(dipole_polarization)} (dipole), "
+        f"{flux_near:.6f} (near), {flux_far:.6f} (far), "
+        f"{flux_radiation_pattern:.6f} (radiation pattern)"
+    )
+
+    return radial_flux
 
 
 if __name__ == "__main__":
-    dipole_polarization = mp.Ex
-    flux_near, flux_far, radial_flux = antenna_radiation_pattern(
-        dipole_polarization
+    fig, ax = plt.subplots(
+        subplot_kw={"projection": "polar"},
+        figsize=(18, 6),
+        ncols=3
     )
 
-    flux_radiation_pattern = np.trapz(
-        radial_flux * FARFIELD_RADIUS_UM,
-        x=polar_rad
-    )
+    for i, dipole_polarization in enumerate([mp.Ex, mp.Ey, mp.Ez]):
+        radial_flux = antenna_radiation_pattern(dipole_polarization)
 
-    print(
-        f"flux:, {flux_near:.6f}, {flux_far:.6f}, "
-        f"{flux_radiation_pattern:.6f}"
-    )
+        # Analytic formulas for the radiation pattern of an electric dipole
+        # in vacuum. From Section 4.2 "Infinitesimal Dipole"
+        # of Antenna Theory: Analysis and Design, 4th Edition (2016) by C. Balanis.
+        if dipole_polarization == mp.Ex:
+            flux_theory = np.sin(polar_rad) ** 2
+        elif dipole_polarization == mp.Ey:
+            flux_theory = np.cos(polar_rad) ** 2
+        elif dipole_polarization == mp.Ez:
+            flux_theory = np.ones((NUM_POLAR,))
 
-    # Analytic formulas for the radiation pattern as the Poynting vector
-    # of an electric dipole in vacuum. From Section 4.2 "Infinitesimal Dipole"
-    # of Antenna Theory: Analysis and Design, 4th Edition (2016) by C. Balanis.
-    if dipole_polarization == mp.Ex:
-        flux_theory = np.sin(polar_rad) ** 2
-    elif dipole_polarization == mp.Ey:
-        flux_theory = np.cos(polar_rad) ** 2
-    elif dipole_polarization == mp.Ez:
-        flux_theory = np.ones((NUM_POLAR,))
+        ax[i].plot(polar_rad, radial_flux / max(radial_flux), "b-", label="Meep")
+        ax[i].plot(polar_rad, flux_theory, "r--", label="theory")
+        ax[i].set_rmax(1)
+        ax[i].set_rticks([0, 0.5, 1])
+        ax[i].grid(True)
+        ax[i].set_rlabel_position(22)
+        ax[i].set_title(
+            "$\mathcal{J}$"
+            f'$_{{{mp.direction_name(mp.component_direction(dipole_polarization))}}}$'
+            " dipole"
+        )
+        ax[i].legend(loc="upper right")
 
-    fig, ax = plt.subplots(subplot_kw={"projection": "polar"}, figsize=(6, 6))
-    ax.plot(polar_rad, radial_flux / max(radial_flux), "b-", label="Meep")
-    ax.plot(polar_rad, flux_theory, "r--", label="theory")
-    ax.set_rmax(1)
-    ax.set_rticks([0, 0.5, 1])
-    ax.grid(True)
-    ax.set_rlabel_position(22)
-    ax.legend()
-
+    fig.subplots_adjust(wspace=0.2)
     if mp.am_master():
         fig.savefig(
-            f"radiation_pattern_{mp.component_name(dipole_polarization)}.png",
+            f"antenna_radiation_pattern.png",
             dpi=150,
             bbox_inches="tight",
         )
