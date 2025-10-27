@@ -80,7 +80,7 @@ def antenna_radiation_pattern(dipole_polarization: int) -> Tuple[float, float, n
     """Returns the radiation pattern of a dipole antenna.
 
     Args:
-        dipole_polarization: polarization of the dipole antenna (Ez or Hz).
+        dipole_polarization: polarization of the dipole antenna (Ex, Ey, or Ez).
 
     Returns:
         The radiation pattern as a 1D array.
