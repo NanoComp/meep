@@ -79,8 +79,8 @@ comms_sequence optimize_comms_operations(const std::vector<comms_operation> &ope
 void fields::set_boundary(boundary_side b, direction d, boundary_condition cond) {
   if (boundaries[b][d] != cond) {
     boundaries[b][d] = cond;
-    // The boundary condition on the opposite side must be the same.
-    if (boundaries[1 - b][d] != cond) boundaries[1 - b][d] = cond;
+    // If it's periodic, the boundary condition on the opposite side must be the same.
+    if (cond == Periodic || boundaries[1 - b][d] == Periodic) boundaries[1 - b][d] = cond;
     // we don't need to call sync_chunk_connections() since set_boundary()
     // should always be called on every process
     chunk_connections_valid = false;
