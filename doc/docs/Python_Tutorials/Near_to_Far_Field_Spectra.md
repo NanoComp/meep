@@ -265,6 +265,8 @@ We can validate the radiation pattern computed by Meep using analytic theory. Th
 
 The simulation script is in [examples/antenna_pec_ground_plane.py](https://github.com/NanoComp/meep/blob/master/python/examples/antenna_pec_ground_plane.py).
 
+An alternative approach to computing the radiation pattern of a line antenna using a 2D simulation is a 1D simulation with Brillouin-zone integration. The general procedure is described in [Tutorial/Dipole Emission of a Light Emitting Diode as a Multilayer Stack](https://meep.readthedocs.io/en/latest/Python_Tutorials/Custom_Source/#dipole-emission-of-a-light-emitting-diode-as-a-multilayer-stack). In this example, we compute the radiation pattern for a dipole with $E_y$ polarization for $\phi = 0$ ($xz$ plane) using a 1D cell along the $z$ direction. The Brillouin-zone integration only involves the $k_x$ wavevector component (since the line antenna is oriented along $y$). The results are nearly identical to the 2D simulation and in agreement with the analytic theory. The simulation script is in [examples/antenna_pec_ground_plane_1D.py](https://github.com/NanoComp/meep/blob/master/python/examples/antenna_pec_ground_plane_1D.py).
+
 
 ![](../images/antenna_pec_ground_plane.png#center)
 
