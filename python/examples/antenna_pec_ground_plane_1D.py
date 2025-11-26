@@ -26,15 +26,15 @@ FIELD_DECAY_PERIOD = 25
 frequency = 1 / WAVELENGTH_UM
 
 
-def planewave_ground_plane(kx: float, ky: float, kz: float) -> float:
+def planewave_above_ground_plane(kx: float, ky: float, kz: float) -> float:
     """
-    Returns the radiated flux of a linearly polarized planewave above ground plane.
+    Returns the flux from a linearly polarized planewave above a ground plane.
 
     Args:
         kx, ky, kz: the wavevector components of the planewave.
 
     Returns:
-        The Poynting flux in z.
+        The radiated flux in z.
     """
     size_z_um = BULK_UM + PML_UM
     pml_layers = [mp.PML(thickness=PML_UM, direction=mp.Z, side=mp.High)]
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         if kx > (0.95 * N_BACKGROUND * frequency):
             continue
 
-        flux_z = planewave_ground_plane(kx, ky, kz)
+        flux_z = planewave_above_ground_plane(kx, ky, kz)
         radial_flux_meep[i] = np.cos(polar_rad[i]) * flux_z
 
     # The radiation pattern of a two-element antenna
@@ -131,7 +131,7 @@ if __name__ == "__main__":
     # radial flux which is then used for normalization of the radiation pattern.
     polar_rad_max = math.acos(9 * math.pi / (2 * k_free_space * ANTENNA_HEIGHT_UM))
     kx, ky, kz = planewave_wavevector(polar_rad_max)
-    flux_z = planewave_ground_plane(kx, ky, kz)
+    flux_z = planewave_above_ground_plane(kx, ky, kz)
     radial_flux_meep_max = np.cos(polar_rad_max) * flux_z
 
     radial_flux_meep = radial_flux_meep / radial_flux_meep_max
