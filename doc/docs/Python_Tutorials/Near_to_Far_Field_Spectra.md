@@ -280,8 +280,9 @@ import meep as mp
 import numpy as np
 
 
-RESOLUTION_UM = 200
-PML_UM = 1.0
+RESOLUTION_UM = 100
+PML_UM = 0.5
+BULK_UM = 6.0
 N_BACKGROUND = 1.2
 ANTENNA_HEIGHT_UM = 1.25
 WAVELENGTH_UM = 0.65
@@ -331,14 +332,11 @@ def radiation_pattern(sim: mp.Simulation, n2f_mon: mp.DftNear2Far) -> np.ndarray
     return flux_r
 
 
-def antenna_radiation_pattern(
-        dipole_polarization: int, free_space: bool
-) -> np.ndarray:
-    """Returns the radiation pattern of an antenna.
+def antenna_above_ground_plane(dipole_polarization: int) -> np.ndarray:
+    """Returns the radiation pattern of an antenna above a ground plane.
 
     Args:
         dipole_polarization: polarization of the dipole antenna (Ez or Hz).
-        free_space: whether to use free space or PEC ground plane.
 
     Returns:
         The radiation pattern as a 1D array.
@@ -346,57 +344,37 @@ def antenna_radiation_pattern(
     if dipole_polarization not in (mp.Ez, mp.Hz):
         raise ValueError("dipole_polarization must be either Ez or Hz")
 
-    cell_um = 8.0
-    sxy = PML_UM + cell_um + PML_UM
+    sxy = PML_UM + BULK_UM + PML_UM
     cell_size = mp.Vector3(sxy, sxy, 0)
     boundary_layers = [mp.PML(PML_UM)]
 
-    if free_space:
-        sources = [
-            mp.Source(
-                src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
-                center=mp.Vector3(),
-                component=dipole_polarization,
-            )
-        ]
+    # The near-to-far field transformation feature can only be applied
+    # to structures which can be fully enclosed. It cannot be applied to
+    # the ground plane which extends to infinity. As a workaround, we use
+    # two antennas of opposite sign surrounded by a single near2far box
+    # which encloses both antennas. We then use an odd mirror symmetry to
+    # divide the computational cell in half which is effectively
+    # equivalent to a PEC boundary condition on one side.
+    # Note: This setup means that the radiation pattern can only
+    # be measured in the top half above the dipole antenna.
+    sources = [
+        mp.Source(
+            src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
+            component=dipole_polarization,
+            center=mp.Vector3(0, ANTENNA_HEIGHT_UM),
+        ),
+        mp.Source(
+            src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
+            component=dipole_polarization,
+            center=mp.Vector3(0, -ANTENNA_HEIGHT_UM),
+            amplitude=-1.0 if dipole_polarization == mp.Ez else +1.0,
+        ),
+    ]
 
-        if dipole_polarization == mp.Hz:
-            symmetries = [mp.Mirror(mp.X, phase=-1), mp.Mirror(mp.Y, phase=-1)]
-        else:
-            symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y)]
-
-        layout_filename = "free_space_layout"
-
+    if dipole_polarization == mp.Hz:
+        symmetries = [mp.Mirror(mp.X, phase=-1), mp.Mirror(mp.Y)]
     else:
-        # The near-to-far field transformation feature can only be applied
-        # to structures which can be fully enclosed. It cannot be applied to
-        # the ground plane which extends to infinity. As a workaround, we use
-        # two antennas of opposite sign surrounded by a single near2far box
-        # which encloses both antennas. We then use an odd mirror symmetry to
-        # divide the computational cell in half which is effectively
-        # equivalent to a PEC boundary condition on one side.
-        # Note: This setup means that the radiation pattern can only
-        # be measured in the top half above the dipole antenna.
-        sources = [
-            mp.Source(
-                src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
-                component=dipole_polarization,
-                center=mp.Vector3(0, ANTENNA_HEIGHT_UM),
-            ),
-            mp.Source(
-                src=mp.GaussianSource(frequency, fwidth=0.2 * frequency),
-                component=dipole_polarization,
-                center=mp.Vector3(0, -ANTENNA_HEIGHT_UM),
-                amplitude=-1.0 if dipole_polarization == mp.Ez else +1.0,
-            ),
-        ]
-
-        if dipole_polarization == mp.Hz:
-            symmetries = [mp.Mirror(mp.X, phase=-1), mp.Mirror(mp.Y)]
-        else:
-            symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y, phase=-1)]
-
-        layout_filename = "ground_plane_layout"
+        symmetries = [mp.Mirror(mp.X), mp.Mirror(mp.Y, phase=-1)]
 
     sim = mp.Simulation(
         resolution=RESOLUTION_UM,
@@ -412,22 +390,16 @@ def antenna_radiation_pattern(
         0,
         1,
         mp.Near2FarRegion(
-            center=mp.Vector3(0, 0.5 * cell_um),
-            size=mp.Vector3(cell_um, 0)
+            center=mp.Vector3(0, 0.5 * BULK_UM), size=mp.Vector3(BULK_UM, 0)
         ),
         mp.Near2FarRegion(
-            center=mp.Vector3(0, -0.5 * cell_um),
-            size=mp.Vector3(cell_um, 0),
-            weight=-1
+            center=mp.Vector3(0, -0.5 * BULK_UM), size=mp.Vector3(BULK_UM, 0), weight=-1
         ),
         mp.Near2FarRegion(
-            center=mp.Vector3(0.5 * cell_um, 0),
-            size=mp.Vector3(0, cell_um)
+            center=mp.Vector3(0.5 * BULK_UM, 0), size=mp.Vector3(0, BULK_UM)
         ),
         mp.Near2FarRegion(
-            center=mp.Vector3(-0.5 * cell_um, 0),
-            size=mp.Vector3(0, cell_um),
-            weight=-1
+            center=mp.Vector3(-0.5 * BULK_UM, 0), size=mp.Vector3(0, BULK_UM), weight=-1
         ),
     )
 
@@ -435,7 +407,7 @@ def antenna_radiation_pattern(
     sim.plot2D(ax=ax)
     if mp.am_master():
         fig.savefig(
-            layout_filename + ".png",
+            "antenna_above_ground_plane_layout.png",
             dpi=150,
             bbox_inches="tight"
         )
@@ -447,8 +419,9 @@ def antenna_radiation_pattern(
 
 if __name__ == "__main__":
     dipole_polarization = mp.Ez
-    radial_flux_free_space = antenna_radiation_pattern(dipole_polarization, True)
-    radial_flux_ground_plane = antenna_radiation_pattern(dipole_polarization, False)
+    radial_flux_meep = antenna_above_ground_plane(dipole_polarization)
+    # Normalize radiation pattern to lie in range [0, 1].
+    radial_flux_meep = radial_flux_meep / np.max(radial_flux_meep)
 
     # The radiation pattern of a two-element antenna
     # array is equivalent to the radiation pattern of
@@ -457,27 +430,18 @@ if __name__ == "__main__":
     # Antenna Theory: Analysis and Design, Fourth Edition
     # (2016) by C.A. Balanis.
     k_free_space = 2 * math.pi / (WAVELENGTH_UM / N_BACKGROUND)
-    radial_flux_analytic = np.zeros(NUM_POLAR)
-    for i in range(NUM_POLAR):
-        radial_flux_analytic[i] = (
-            radial_flux_free_space[i]
-            * 2
-            * math.sin(k_free_space * ANTENNA_HEIGHT_UM * math.cos(polar_rad[i]))
-        )
-
-    radial_flux_ground_plane_norm = radial_flux_ground_plane / np.max(radial_flux_ground_plane)
-    radial_flux_analytic_norm = (radial_flux_analytic / max(radial_flux_analytic)) ** 2
-    rel_err = (
-        np.linalg.norm(
-            radial_flux_ground_plane_norm - radial_flux_analytic_norm
-        )
-        / np.linalg.norm(radial_flux_analytic_norm)
+    radial_flux_analytic = (
+        np.sin(k_free_space * ANTENNA_HEIGHT_UM * np.cos(polar_rad)) ** 2
     )
+
+    rel_err = np.linalg.norm(
+        radial_flux_meep - radial_flux_analytic
+    ) / np.linalg.norm(radial_flux_analytic)
     print(f"error:, {rel_err:.6f}")
 
     fig, ax = plt.subplots()
-    ax.plot(np.degrees(polar_rad), radial_flux_ground_plane_norm, "b-", label="Meep")
-    ax.plot(np.degrees(polar_rad), radial_flux_analytic_norm, "r-", label="theory")
+    ax.plot(np.degrees(polar_rad), radial_flux_meep, "b-", label="Meep")
+    ax.plot(np.degrees(polar_rad), radial_flux_analytic, "r-", label="theory")
     ax.set_xlabel("angle (degrees)")
     ax.set_ylabel("radiation pattern")
     ax.set_title(
@@ -489,7 +453,9 @@ if __name__ == "__main__":
     ax.legend()
     if mp.am_master():
         fig.savefig(
-            "antenna_radiation_pattern.png", dpi=150, bbox_inches="tight"
+            "antenna_above_ground_plane_radiation_pattern.png",
+            dpi=150,
+            bbox_inches="tight"
         )
 ```
 
