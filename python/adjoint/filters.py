@@ -73,18 +73,17 @@ def _quarter_to_full_kernel(arr: np.ndarray, pad_to: np.ndarray) -> np.ndarray:
 
 
 def _edge_pad(arr: np.ndarray, pad: np.ndarray) -> np.ndarray:
-    """Zero-pads the edges of an array.
+    """Border-pads the edges of an array.
 
     Used to preprocess the design weights prior to convolution with the filter.
 
     Args:
-        arr: 2d array representing the nonnegative coordinates of a
-            filter kernel with C4v symmetry.
+        arr: 2d array whose borders contain the values to use for padding
         pad: 2x2 array of integers indicating the size
-            of the zero-padded array.
+            of the borders to pad the array with.
 
     Returns:
-        A 2d array with zero padding.
+        A 2d array with border padding.
     """
     # fill sides
     left = npa.tile(arr[0, :], (pad[0][0], 1))
@@ -124,7 +123,7 @@ def convolve_design_weights_and_kernel(
 
     Uses a 2d FFT to perform the convolution operation. This approach is
     typically faster than a direct calculation. It also preserves the shape
-    of the input and output arrays. The arrays are zero-padded prior to the
+    of the input and output arrays. The arrays are border-padded prior to the
     FFT to prevent unwanted effects from the edges.
 
     Args:
@@ -164,7 +163,7 @@ def convolve_design_weights_and_kernel(
 
         npadx = 0 if 0 in periodic_axes else sx
         npady = 0 if 1 in periodic_axes else sy
-        x = _edge_pad(
+        x = (
             x, ((npadx, npadx), (npady, npady))
         )  # pad only in nonperiodic directions
         h = _quarter_to_full_kernel(
