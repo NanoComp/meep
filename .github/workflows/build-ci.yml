@@ -38,7 +38,7 @@ jobs:
         sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
 
     - name: Checkout libctl repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: NanoComp/libctl
         path: libctl-src
@@ -47,7 +47,7 @@ jobs:
       run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
 
     - name: Checkout harminv repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: NanoComp/harminv
         path: harminv-src
@@ -56,7 +56,7 @@ jobs:
       run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
 
     - name: Checkout MPB repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: NanoComp/mpb
         path: mpb-src
@@ -65,7 +65,7 @@ jobs:
       run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
 
     - name: Checkout libGDSII repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: HomerReid/libGDSII
         path: libGDSII-src
@@ -101,7 +101,7 @@ jobs:
       run: sudo apt-get -y install libopenmpi-dev mpi-default-bin openmpi-bin libhdf5-openmpi-dev libaec-dev
 
     - name: Checkout Meep repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Set up Python (version ${{ matrix.python-version }})
       uses: actions/setup-python@v6
