@@ -76,6 +76,9 @@ def _edge_pad(arr: np.ndarray, pad: np.ndarray) -> np.ndarray:
     """Border-pads the edges of an array.
 
     Used to preprocess the design weights prior to convolution with the filter.
+    Border padding an image will set the value of each padded pixel equal to
+    the value of the nearest pixel in the image. Used to implement feature-
+    preserving convolution filters that prevent unwanted edge effects.
 
     Args:
         arr: 2d array whose borders contain the values to use for padding
@@ -123,8 +126,8 @@ def convolve_design_weights_and_kernel(
 
     Uses a 2d FFT to perform the convolution operation. This approach is
     typically faster than a direct calculation. It also preserves the shape
-    of the input and output arrays. The arrays are border-padded prior to the
-    FFT to prevent unwanted effects from the edges.
+    of the input and output arrays. The design weights are border-padded
+    prior to the FFT to preserve features on the edges of the design region.
 
     Args:
         x: 2d design weights.
