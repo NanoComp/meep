@@ -166,7 +166,7 @@ def convolve_design_weights_and_kernel(
 
         npadx = 0 if 0 in periodic_axes else sx
         npady = 0 if 1 in periodic_axes else sy
-        x = (
+        x = _edge_pad(
             x, ((npadx, npadx), (npady, npady))
         )  # pad only in nonperiodic directions
         h = _quarter_to_full_kernel(
