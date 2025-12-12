@@ -230,14 +230,12 @@ def flux_from_farfields(e_field: np.ndarray, h_field: np.ndarray) -> float:
     Returns:
         The Poynting flux obtained from the far fields.
     """
-    dphi = 2 * math.pi
-    dtheta = 0.5 * math.pi / (NUM_FARFIELD_PTS - 1)
     dipole_radiation_pattern = radiation_pattern(e_field, h_field)
     flux = (
-        np.sum(dipole_radiation_pattern * np.sin(polar_rad))
+        2
+        * math.pi
         * FARFIELD_RADIUS_UM**2
-        * dtheta
-        * dphi
+        * np.trapezoid(dipole_radiation_pattern * np.sin(polar_rad), polar_rad)
     )
 
     return flux
