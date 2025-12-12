@@ -239,14 +239,11 @@ def disc_radiated_flux(disc_um: float, source_zpos: float) -> Tuple[float, float
     plot_radiation_pattern_polar(radial_flux_scaled)
     plot_radiation_pattern_3d(radial_flux_scaled)
 
-    delta_polar = 0.5 * math.pi / (NUM_POLAR - 1)
-    delta_azimuth = 2 * math.pi
     flux_far = (
-        np.sum(radial_flux * np.sin(polar_rad))
-        * FARFIELD_RADIUS_UM
-        * FARFIELD_RADIUS_UM
-        * delta_polar
-        * delta_azimuth
+        2
+        * math.pi
+        * FARFIELD_RADIUS_UM**2
+        * np.trapezoid(radial_flux * np.sin(polar_rad), polar_rad)
     )
 
     return flux_near, flux_far

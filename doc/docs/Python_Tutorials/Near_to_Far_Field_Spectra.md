@@ -483,7 +483,7 @@ A plot of the radiation pattern in polar coordinates and 3D is shown below. Note
 The total flux computed using the near and far fields is shown to be in close agreement with a relative error of ~7%.
 
 ```
-total_flux:, 643.65058 (near), 597.77009 (far), 7.13% (error)
+total_flux:, 643.65058 (near), 595.80239 (far), 7.43% (error)
 ```
 
 The error decreases with increasing (1) grid resolution, (2) runtime, and (3) number of angular grid points. However, this only applies to a *closed* near-field surface which is not the case in this example. This is because the ground plane, which extends to infinity, contains $H_r$ and $H_\phi$ fields on its surface which are not zero (unlike the $E_r$ and $E_\phi$ fields). These magnetic fields produce equivalent currents which radiate into the far field. The PML in the $r$ direction does not mitigate this effect.
@@ -725,14 +725,9 @@ def disc_radiated_flux(
     plot_radiation_pattern_polar(radial_flux_scaled)
     plot_radiation_pattern_3d(radial_flux_scaled)
 
-    delta_polar = 0.5 * math.pi / (NUM_POLAR - 1)
-    delta_azimuth = 2 * math.pi
     flux_far = (
-        np.sum(radial_flux * np.sin(polar_rad)) *
-        FARFIELD_RADIUS_UM *
-        FARFIELD_RADIUS_UM *
-        delta_polar *
-        delta_azimuth
+        2 * math.pi * FARFIELD_RADIUS_UM**2
+        * np.trapezoid(radial_flux * np.sin(polar_rad), polar_rad)
     )
 
     return flux_near, flux_far
@@ -902,14 +897,9 @@ def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
     Args:
       radial_flux: radial flux of the far fields at each angle.
     """
-    dphi = 2 * math.pi
-    dtheta = farfield_angles[1] - farfield_angles[0]
-
     total_flux = (
-        np.sum(radial_flux * np.sin(farfield_angles))
-        * FARFIELD_RADIUS_UM**2
-        * dtheta
-        * dphi
+        2 * math.pi * FARFIELD_RADIUS_UM**2
+        * np.trapezoid(radial_flux * np.sin(farfield_angles), farfield_angles)
     )
 
     return total_flux
@@ -2041,14 +2031,10 @@ def flux_from_farfields(e_field: np.ndarray, h_field: np.ndarray) -> float:
     Returns:
         The Poynting flux obtained from the far fields.
     """
-    dphi = 2 * math.pi
-    dtheta = 0.5 * math.pi / (NUM_FARFIELD_PTS - 1)
     dipole_radiation_pattern = radiation_pattern(e_field, h_field)
     flux = (
-        np.sum(dipole_radiation_pattern * np.sin(polar_rad))
-        * FARFIELD_RADIUS_UM**2
-        * dtheta
-        * dphi
+        2 * math.pi * FARFIELD_RADIUS_UM**2
+        * np.trapezoid(dipole_radiation_pattern * np.sin(polar_rad), polar_rad)
     )
 
     return flux

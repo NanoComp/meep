@@ -131,14 +131,11 @@ def radiation_pattern_flux(radial_flux: np.ndarray) -> float:
     Args:
       radial_flux: radial flux of the far fields at each angle.
     """
-    dphi = 2 * math.pi
-    dtheta = farfield_angles[1] - farfield_angles[0]
-
     total_flux = (
-        np.sum(radial_flux * np.sin(farfield_angles))
+        2
+        * math.pi
         * FARFIELD_RADIUS_UM**2
-        * dtheta
-        * dphi
+        * np.trapezoid(radial_flux * np.sin(farfield_angles), farfield_angles)
     )
 
     return total_flux
