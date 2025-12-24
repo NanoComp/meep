@@ -124,7 +124,10 @@ class Source:
 
         self.src = src
         self.component = component
-        self.amplitude = complex(amplitude)
+        if isinstance(amplitude, np.ndarray) and amplitude.ndim == 1:
+            self.amplitude = complex(amplitude.item())
+        else:
+            self.amplitude = complex(amplitude)
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
