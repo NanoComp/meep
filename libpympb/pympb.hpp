@@ -131,9 +131,9 @@ struct mode_solver {
   void get_epsilon_tensor(int c1, int c2, int imag, int inv);
   void get_material_pt(meep_geom::material_type &material, vector3 p);
   void material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
-                      symmetric_matrix *epsmu_inv, bool eps = true);
-  int mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3], mpb_real d1,
-                   mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3]);
+                      symmetric_matrix *epsmu_inv, bool epsflag = true);
+  int mean_epsmu(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3], mpb_real d1,
+                 mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3], bool epsflag);
 
   void randomize_fields();
   void init_epsilon(geometric_object_list *geometry_in);
@@ -218,7 +218,6 @@ private:
   int kpoint_index;
   scalar_complex *curfield;
   char curfield_type;
-  bool eps;
 
   double compute_field_energy_internal(mpb_real comp_sum[6]);
   void clear_geometry_list();
