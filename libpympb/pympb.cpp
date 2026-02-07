@@ -111,7 +111,7 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
   // p = shift_to_unit_cell(p);
 
   ms->get_material_pt(mat, p);
-  ms->material_epsmu(mat, eps, eps_inv, eps);
+  ms->material_epsmu(mat, eps, eps_inv, ms->eps);
 }
 
 static int mean_epsilon_func(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
