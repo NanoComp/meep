@@ -129,7 +129,15 @@ static int mean_epsilon_func(symmetric_matrix *meps, symmetric_matrix *meps_inv,
                              const mpb_real r[3], void *edata) {
 
   mode_solver *ms = static_cast<mode_solver *>(edata);
-  return ms->mean_epsilon(meps, meps_inv, n, d1, d2, d3, tol, r);
+  return ms->mean_epsmu(meps, meps_inv, n, d1, d2, d3, tol, r, true);
+}
+
+static int mean_mu_func(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
+                        mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol, const mpb_real r[3],
+                        void *edata) {
+
+  mode_solver *ms = static_cast<mode_solver *>(edata);
+  return ms->mean_epsmu(meps, meps_inv, n, d1, d2, d3, tol, r, false);
 }
 
 /****** utils ******/
@@ -246,7 +254,7 @@ mode_solver::mode_solver(int num_bands, double resolution[3], lattice lat, doubl
       last_parity(-2), iterations(0), eigensolver_flops(flops), geometry_list{},
       geometry_tree(NULL), vol(0), R{}, G{}, mdata(NULL), mtdata(NULL), curfield_band(0), H{},
       Hblock{}, muinvH{}, W{}, freqs(num_bands), verbose(verbose), deterministic(deterministic),
-      kpoint_index(0), curfield(NULL), curfield_type('-'), eps(true) {
+      kpoint_index(0), curfield(NULL), curfield_type('-') {
 
   // See geom-ctl-io-defaults.c in libctl
   geometry_lattice = lat;
@@ -277,9 +285,9 @@ mode_solver::~mode_solver() {
   if (muinvH.data != H.data) { destroy_evectmatrix(muinvH); }
 }
 
-int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
-                              mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
-                              const mpb_real r[3]) {
+int mode_solver::mean_epsmu(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
+                            mpb_real d1, mpb_real d2, mpb_real d3, mpb_real tol,
+                            const mpb_real r[3], bool epsflag) {
 
   const geometric_object *o1 = 0;
   const geometric_object *o2 = 0;
@@ -404,7 +412,7 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
     return 0; /* arbitrary material functions are non-analyzable */
   }
 
-  material_epsmu(mat1, meps, meps_inv, eps);
+  material_epsmu(mat1, meps, meps_inv, epsflag);
 
   /* check for trivial case of only one object/material */
   if (id1 == id2 || meep_geom::material_type_equal(mat1, mat2)) {
@@ -442,7 +450,7 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
     symmetric_matrix eps2, epsinv2;
     symmetric_matrix eps1, delta;
     double Rot[3][3], norm, n0, n1, n2;
-    material_epsmu(mat2, &eps2, &epsinv2, eps);
+    material_epsmu(mat2, &eps2, &epsinv2, epsflag);
     eps1 = *meps;
 
     /* make Cartesian orthonormal frame relative to interface */
@@ -551,7 +559,7 @@ int mode_solver::mean_epsilon(symmetric_matrix *meps, symmetric_matrix *meps_inv
 }
 
 void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_matrix *epsmu,
-                                 symmetric_matrix *epsmu_inv, bool eps) {
+                                 symmetric_matrix *epsmu_inv, bool epsflag) {
 
   meep_geom::material_data *md = material;
 
@@ -562,7 +570,7 @@ void mode_solver::material_epsmu(meep_geom::material_type material, symmetric_ma
   }
 #endif
 
-  if (eps) {
+  if (epsflag) {
     switch (md->which_subclass) {
       case meep_geom::material_data::MEDIUM:
       case meep_geom::material_data::MATERIAL_FILE:
@@ -947,9 +955,7 @@ void mode_solver::reset_epsilon(geometric_object_list *geometry) {
 
   if (has_mu(geometry)) {
     if (mpb_verbosity > 0) meep::master_printf("Initializing mu function...\n");
-    eps = false;
-    set_maxwell_mu(mdata, mesh, R, G, mu_function, mean_epsilon_func, static_cast<void *>(this));
-    eps = true;
+    set_maxwell_mu(mdata, mesh, R, G, mu_function, mean_mu_func, static_cast<void *>(this));
   }
 }
 
