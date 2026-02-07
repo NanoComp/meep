@@ -94,9 +94,8 @@ int mpb_comm;
 
 const double inf = 1.0e20;
 
-// This is the function passed to `set_maxwell_dielectric`
-static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv,
-                                const mpb_real r[3], void *epsilon_data) {
+static void epsmu_function(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                           void *epsilon_data, bool epsflag) {
 
   mode_solver *ms = static_cast<mode_solver *>(epsilon_data);
   meep_geom::material_type mat;
@@ -111,7 +110,18 @@ static void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv
   // p = shift_to_unit_cell(p);
 
   ms->get_material_pt(mat, p);
-  ms->material_epsmu(mat, eps, eps_inv, ms->eps);
+  ms->material_epsmu(mat, eps, eps_inv, epsflag);
+}
+
+// This is the function passed to `set_maxwell_dielectric`
+void dielectric_function(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                         void *epsilon_data) {
+  epsmu_function(eps, eps_inv, r, epsilon_data, true);
+}
+// This is the function passed to `set_maxwell_mu`
+void mu_function(symmetric_matrix *eps, symmetric_matrix *eps_inv, const mpb_real r[3],
+                 void *epsilon_data) {
+  epsmu_function(eps, eps_inv, r, epsilon_data, false);
 }
 
 static int mean_epsilon_func(symmetric_matrix *meps, symmetric_matrix *meps_inv, mpb_real n[3],
@@ -938,8 +948,7 @@ void mode_solver::reset_epsilon(geometric_object_list *geometry) {
   if (has_mu(geometry)) {
     if (mpb_verbosity > 0) meep::master_printf("Initializing mu function...\n");
     eps = false;
-    set_maxwell_mu(mdata, mesh, R, G, dielectric_function, mean_epsilon_func,
-                   static_cast<void *>(this));
+    set_maxwell_mu(mdata, mesh, R, G, mu_function, mean_epsilon_func, static_cast<void *>(this));
     eps = true;
   }
 }
