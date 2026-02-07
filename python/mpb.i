@@ -20,6 +20,9 @@
 %{
 #define SWIG_FILE_WITH_INIT
 
+/* this #define from Python's structmember.h, used by swig, conflicts with meep.hpp */
+#undef READONLY
+
 #include "pympb.hpp"
 #include "meepgeom.hpp"
 

@@ -40,6 +40,9 @@
  */
 #define SWIG_PYTHON_THREAD_SCOPED_BLOCK   SWIG_PYTHON_THREAD_BEGIN_BLOCK
 
+/* this #define from Python's structmember.h, used by swig, conflicts with meep.hpp */
+#undef READONLY
+
 #include <complex>
 #include <string>
 
