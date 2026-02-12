@@ -233,6 +233,9 @@ def disc_radiated_flux(disc_um: float, source_zpos: float) -> Tuple[float, float
     )
 
     flux_near = mp.get_fluxes(flux_mon)[0]
+    flux_near_n2f = mp.get_fluxes(n2f_mon)[0]
+
+    print(f"flux:, {flux_near}, {flux_near_n2f}")
 
     radial_flux = radiation_pattern(sim, n2f_mon)
     radial_flux_scaled = FARFIELD_RADIUS_UM * FARFIELD_RADIUS_UM * radial_flux
