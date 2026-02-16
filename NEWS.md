@@ -1,5 +1,23 @@
 # Meep Release Notes
 
+## Meep 1.32.0
+
+2/19/2026
+
+* Bug fix in `plot3D` involving orientation of sources and monitors ([#3088]).
+
+* Bug fix in `save_farfields` of C++ class `dft_near2far` for cylindrical coordinates ([#3081]).
+
+* Bug fix in `visualization.py` involving compatibility with Python 3.12 ([#3093]).
+
+* Bug fix in `set_boundary` of `fields` class ([#3110]).
+
+* Bug fix in Python API for MPB involving permeability ([#3144]).
+
+* Bug fix in SWIG interface ([#3145]).
+
+* Various improvements and additional documentation ([#3084], [#3085], [#3094], [#3108], [#3123]).
+
 ## Meep 1.31.0
 
 8/15/2025
