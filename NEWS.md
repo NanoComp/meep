@@ -2,7 +2,7 @@
 
 ## Meep 1.32.0
 
-2/19/2026
+2/20/2026
 
 * Bug fix in `plot3D` involving orientation of sources and monitors ([#3088]).
 
