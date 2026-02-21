@@ -115,7 +115,7 @@ TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
 # the low-level interface between python codes and the libmeep C++ library
 ######################################################################
 BUILT_SOURCES = meep-python.cxx __init__.py meep.py
-EXTRA_DIST = $(BUILT_SOURCES) meep.i meep-python.hpp typemap_utils.cpp materials.py examples tests
+EXTRA_DIST = $(BUILT_SOURCES) meep.i meep-python.hpp typemap_utils.cpp shared_memory.hpp materials.py examples tests
 CLEANFILES = .coverage
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)
 
