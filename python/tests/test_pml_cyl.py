@@ -103,7 +103,7 @@ class TestPMLCylindrical(unittest.TestCase):
             ),
         )
 
-        sim.run(until_after_sources=50.94)
+        sim.run(until_after_sources=100.94)
 
         prev_flux = [
             mp.get_fluxes(flux_plus_z)[0],
