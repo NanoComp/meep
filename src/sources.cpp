@@ -272,6 +272,22 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     vec rel_loc = loc - data->center;
     amps_array[idx_vol] = IVEC_LOOP_WEIGHT(s0, s1, e0, e1, 1) * amp * data->A(rel_loc);
 
+    // In cylindrical coordinates with the grid starting at r=0, for field
+    // components whose first grid point is at r=Δr/2 (not r=0) due to Yee
+    // grid staggering, a point source at r < Δr/2 loses amplitude to a
+    // non-existent grid point at r < 0 (which is skipped by the owns()
+    // check above). Compensate for this lost amplitude by restoring the
+    // interpolation weight to 1.0. (See issue #2704.)
+    if (fc->gv.dim == Dcyl && fc->gv.origin_r() == 0.0 &&
+        fc->gv.iyee_shift(c).in_direction(R) == 1 && iloc.in_direction(R) == 1) {
+      double r_src = data->center.in_direction(R);
+      double dr = inva;
+      if (r_src >= 0 && r_src < 0.5 * dr) {
+        double w_actual = 0.5 + r_src / dr;
+        if (w_actual > 0) amps_array[idx_vol] /= w_actual;
+      }
+    }
+
     // check for invalid sources at r=0 in cylindrical coordinates
     if (fc->gv.dim == Dcyl && loc.r() == 0 && amps_array[idx_vol] != 0.0) {
       if (fc->m == 0) {

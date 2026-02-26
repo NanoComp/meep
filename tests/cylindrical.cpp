@@ -288,12 +288,56 @@ int test_pattern(double eps(const vec &), int splitting) {
   return 1;
 }
 
+// Test that an Er source at r=0 with m=±1 produces the same fields as
+// an Er source at r=Δr/2 (the first Er grid point). This verifies the
+// fix for issue #2704 where the interpolation weight was incorrectly
+// halved at the r=0 boundary.
+int test_er_source_at_r0(double eps(const vec &)) {
+  double a = 10.0;
+  double ttot = 3.0;
+
+  grid_volume gv = volcyl(1.5, 0.8, a);
+  structure s(gv, eps);
+
+  double dr = 1.0 / a;
+
+  for (int m = -1; m <= 1; m += 2) {
+    master_printf("Testing Er source at r=0 vs. r=dr/2 with m=%d...\n", m);
+
+    fields f(&s, m);
+    fields f1(&s, m);
+
+    f.add_point_source(Er, 0.8, 0.6, 0.0, 4.0, veccyl(0.0, 0.4));
+    f1.add_point_source(Er, 0.8, 0.6, 0.0, 4.0, veccyl(0.5 * dr, 0.4));
+
+    while (f.time() < ttot) {
+      f.step();
+      f1.step();
+      if (!compare_point(f, f1, veccyl(0.5, 0.4))) return 0;
+      if (!compare_point(f, f1, veccyl(0.3, 0.2))) return 0;
+      if (!compare_point(f, f1, veccyl(1.0, 0.6))) return 0;
+    }
+
+    if (!compare(f.field_energy(), f1.field_energy(), "total energy")) return 0;
+    if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                 f1.electric_energy_in_box(gv.surroundings()), "electric energy"))
+      return 0;
+    if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                 f1.magnetic_energy_in_box(gv.surroundings()), "magnetic energy"))
+      return 0;
+  }
+
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
   master_printf("Testing cylindrical coords under different splittings...\n");
 
   if (!test_r_equals_zero(one)) meep::abort("error in test_r_equals_zero");
+
+  if (!test_er_source_at_r0(one)) meep::abort("error in test_er_source_at r0\n");
 
   for (int s = 2; s < 6; s++)
     if (!test_pattern(one, s)) meep::abort("error in test_pattern\n");
