@@ -223,6 +223,32 @@ int test_pml_splitting(double eps(const vec &), int splitting) {
   return 1;
 }
 
+// Test that a 3D simulation with a 1D cell (zero size in X and Y)
+// and Bloch-periodic boundaries does not crash. This exercises the
+// boundary connection logic where the connect_phase classification
+// must be consistent between the counting pass and the connection
+// setup pass, regardless of the realnum precision. (See issue #2916.)
+int test_1d_cell_bloch() {
+  double a = 52.0;
+  double pml_um = 1.0;
+  double air_um = 10.0;
+  double size_z = pml_um + air_um + pml_um;
+
+  grid_volume gv = vol3d(0, 0, size_z, a);
+  gv.center_origin();
+  structure s(gv, one, pml(pml_um));
+
+  master_printf("Testing 1D cell with Bloch boundaries...\n");
+  fields f(&s);
+  f.use_bloch(vec(-0.2, -0.2, 0.0));
+  f.add_point_source(Ex, 1.0, 0.1, 0.0, 4.0, vec(0, 0, 0));
+
+  while (f.time() < 5.0)
+    f.step();
+
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
@@ -238,6 +264,8 @@ int main(int argc, char **argv) {
 
   for (int s = 2; s < 4; s++)
     if (!test_pml_splitting(one, s)) meep::abort("error in test_pml_splitting vacuum\n");
+
+  if (!test_1d_cell_bloch()) meep::abort("error in test_1d_cell_bloch\n");
 
   return 0;
 }

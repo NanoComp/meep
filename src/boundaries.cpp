@@ -491,9 +491,9 @@ void fields::connect_the_chunks() {
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
                     B_redundant[5 * j + c - Bx])) {
                 const connect_phase ip =
-                    thephase == static_cast<realnum>(1.0)
+                    thephase_double == 1.0
                         ? CONNECT_COPY
-                        : (thephase == static_cast<realnum>(-1.0) ? CONNECT_NEGATE : CONNECT_PHASE);
+                        : (thephase_double == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
                 const ptrdiff_t m = chunks[j]->gv.index(c, here);
 
                 {
