@@ -91,11 +91,15 @@ void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b = 0; b < 2; b++)
     set_boundary(boundary_side(b), d, Periodic);
-  if (real(kk) * gv.num_direction(d) == 0.5 * a) // check b.z. edge exactly
-    eikna[d] = -exp(-imag(kk) * ((2 * pi / a) * gv.num_direction(d)));
+  // Use user_volume (full cell) size, not gv (symmetry-reduced cell) size,
+  // because ilattice_vector and locate_point_in_user_volume translate by
+  // the full cell period. Using gv here would give the wrong Bloch phase
+  // when the cell is halved by mirror symmetries. (See issue #132.)
+  if (real(kk) * user_volume.num_direction(d) == 0.5 * a) // check b.z. edge exactly
+    eikna[d] = -exp(-imag(kk) * ((2 * pi / a) * user_volume.num_direction(d)));
   else {
     const complex<double> I = complex<double>(0.0, 1.0);
-    eikna[d] = exp(I * kk * ((2 * pi / a) * gv.num_direction(d)));
+    eikna[d] = exp(I * kk * ((2 * pi / a) * user_volume.num_direction(d)));
   }
   coskna[d] = real(eikna[d]);
   sinkna[d] = imag(eikna[d]);
