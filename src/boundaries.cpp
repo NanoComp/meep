@@ -350,6 +350,21 @@ bool fields_chunk::needs_W_notowned(component c) {
   return false;
 }
 
+/* approximate comparisons of phases to 1 or -1.   exp(ix) * exp(-ix) is not exactly 1
+   due to roundoff errors, but we want to treat it equal for the purpose of determining
+   the boundary conditions, because we have optimized b.c.'s for phase +1 and -1, and
+   roundoff errors on the order of 1e-13 are not significant relative to the truncation
+   errors in meep anyway.  (the alternative would be to accumulate symmetry phases more
+   accurately by adding exponents rather than multiplying). */
+static bool phase_isclose(std::complex<double> thephase, double realphase) {
+  return fabs(thephase.imag()) < 1e-13 && fabs(thephase.real() - realphase) < 1e-13;
+}
+static connect_phase connect_phase_from_phase(std::complex<double> thephase) {
+  return phase_isclose(thephase, 1.0)    ? CONNECT_COPY
+         : phase_isclose(thephase, -1.0) ? CONNECT_NEGATE
+                                         : CONNECT_PHASE;
+}
+
 void fields::connect_the_chunks() {
   /* For some of the chunks, H==B, and we definitely don't need to
      send B between two such chunks.   We'll still send B when
@@ -405,9 +420,7 @@ void fields::connect_the_chunks() {
               if ((chunks[i]->is_mine() || chunks[j]->is_mine()) && chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
                     B_redundant[5 * j + c - Bx])) {
-                const connect_phase ip = thephase == 1.0
-                                             ? CONNECT_COPY
-                                             : (thephase == -1.0 ? CONNECT_NEGATE : CONNECT_PHASE);
+                const connect_phase ip = connect_phase_from_phase(thephase);
                 comm_sizes[{type(c), ip, pair_j_to_i}] += num_reals_per_voxel;
 
                 if (needs_W_notowned[corig]) {
@@ -468,9 +481,9 @@ void fields::connect_the_chunks() {
           IVEC_LOOP_ILOC(vi, here);
           component c = corig;
           // We're looking at a border element...
-          std::complex<double> thephase_double;
-          if (locate_component_point(&c, &here, &thephase_double) && !on_metal_boundary(here)) {
-            std::complex<realnum> thephase(thephase_double.real(), thephase_double.imag());
+          std::complex<double> thephase;
+          if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here)) {
+            std::complex<realnum> thephase(thephase.real(), thephase.imag());
             for (int j = 0; j < num_chunks; j++) {
               const std::pair<int, int> pair_j_to_i{j, i};
               const bool i_is_mine = chunks[i]->is_mine();
@@ -494,10 +507,7 @@ void fields::connect_the_chunks() {
               if (chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
                     B_redundant[5 * j + c - Bx])) {
-                const connect_phase ip =
-                    thephase == static_cast<realnum>(1.0)
-                        ? CONNECT_COPY
-                        : (thephase == static_cast<realnum>(-1.0) ? CONNECT_NEGATE : CONNECT_PHASE);
+                const connect_phase ip = connect_phase_from_phase(thephase);
                 const ptrdiff_t m = chunks[j]->gv.index(c, here);
 
                 {
