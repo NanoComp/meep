@@ -353,7 +353,7 @@ bool fields_chunk::needs_W_notowned(component c) {
    errors in meep anyway.  (the alternative would be to accumulate symmetry phases more
    accurately by adding exponents rather than multiplying). */
 static bool phase_isclose(std::complex<double> thephase, double realphase) {
-  return fabs(thephase.imag()) < 1e-13 && fabs(thephase.imag() - realphase) < 1e-13;
+  return fabs(thephase.imag()) < 1e-13 && fabs(thephase.real() - realphase) < 1e-13;
 }
 static connect_phase connect_phase_from_phase(std::complex<double> thephase) {
   return phase_isclose(thephase, 1.0)    ? CONNECT_COPY
