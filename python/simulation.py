@@ -3399,8 +3399,9 @@ class Simulation:
     def _add_force(self, freq, forces, decimation_factor):
         if self.fields is None:
             self.init_sim()
+        use_symmetry = not self.symmetries
         return self._add_fluxish_stuff(
-            self.fields.add_dft_force, freq, forces, decimation_factor
+            self.fields.add_dft_force, freq, forces, decimation_factor, use_symmetry
         )
 
     def display_forces(self, *forces):

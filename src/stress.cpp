@@ -151,10 +151,10 @@ void dft_force::scale_dfts(complex<double> scale) {
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
 dft_force fields::add_dft_force(const volume_list *where_, const double *freq, size_t Nfreq,
-                                int decimation_factor) {
+                                int decimation_factor, bool use_symmetry) {
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
 
-  volume_list *where = S.reduce(where_);
+  volume_list *where = use_symmetry ? S.reduce(where_) : new volume_list(where_);
   volume_list *where_save = where;
   volume everywhere = where->v;
 

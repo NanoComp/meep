@@ -2163,15 +2163,16 @@ public:
 
   // stress.cpp
   dft_force add_dft_force(const volume_list *where, double freq_min, double freq_max, int Nfreq,
-                          int decimation_factor = 0) {
-    return add_dft_force(where, linspace(freq_min, freq_max, Nfreq), decimation_factor);
+                          int decimation_factor = 0, bool use_symmetry = true) {
+    return add_dft_force(where, linspace(freq_min, freq_max, Nfreq), decimation_factor,
+                         use_symmetry);
   }
   dft_force add_dft_force(const volume_list *where, const std::vector<double> &freq,
-                          int decimation_factor = 0) {
-    return add_dft_force(where, freq.data(), freq.size(), decimation_factor);
+                          int decimation_factor = 0, bool use_symmetry = true) {
+    return add_dft_force(where, freq.data(), freq.size(), decimation_factor, use_symmetry);
   }
   dft_force add_dft_force(const volume_list *where, const double *freq, size_t Nfreq,
-                          int decimation_factor = 0);
+                          int decimation_factor = 0, bool use_symmetry = true);
 
   // near2far.cpp
   dft_near2far add_dft_near2far(const volume_list *where, double freq_min, double freq_max,
