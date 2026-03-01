@@ -417,12 +417,12 @@ class Volume:
         size: Vector3Type = Vector3(),
         dims: int = 2,
         is_cylindrical: bool = False,
-        vertices: List[Vector3Type] = [],
+        vertices: Optional[List[Vector3Type]] = None,
     ):
         """
         Construct a Volume.
         """
-        if len(vertices) == 0:
+        if not vertices:
             self.center = Vector3(*center)
             self.size = Vector3(*size)
         else:
