@@ -479,7 +479,6 @@ void fields::connect_the_chunks() {
           // We're looking at a border element...
           std::complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here)) {
-            std::complex<realnum> thephase(thephase.real(), thephase.imag());
             for (int j = 0; j < num_chunks; j++) {
               const std::pair<int, int> pair_j_to_i{j, i};
               const bool i_is_mine = chunks[i]->is_mine();
