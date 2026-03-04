@@ -1883,18 +1883,18 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
             print('\n**\n** failed to load python MPI module (mpi4py)\n**', e, '\n**\n')
             pass
         else:
-            # this variable reference is needed for lazy initialization of MPI
-            comm = MPI.COMM_WORLD
-            if am_master():
-                Procs=comm.Get_size()
-                (Major,Minor)=MPI.Get_version();
-                print('Using MPI version {}.{}, {} processes'.format(Major, Minor, Procs));
-
-            if not am_master():
-                import os
+            import os
+            if not am_master() and os.getenv("MEEP_MPI_SILENCE_WORKERS", "true").lower() in ("true", "1"):
                 import sys
                 saved_stdout = sys.stdout
                 sys.stdout = open(os.devnull, 'w')
+
+            # this variable reference is needed for lazy initialization of MPI
+            comm = MPI.COMM_WORLD
+            Procs = comm.Get_size()
+            Major, Minor = MPI.Get_version()
+            if verbosity.meep > 0:
+                print('Using MPI version {}.{}, {} processes'.format(Major, Minor, Procs))
 
     vacuum = Medium(epsilon=1)
     air = Medium(epsilon=1)
