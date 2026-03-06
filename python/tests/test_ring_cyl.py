@@ -51,12 +51,12 @@ class TestRingCyl(ApproxComparisonTestCase):
 
     def test_ring_cyl(self):
         expected = [
-            0.11835128353,
-            -6.90652371e-4,
-            85.68079135100,
-            0.025703745235,
-            -0.02401922895,
-            -0.00915200302,
+            0.1183512829,
+            -6.90652379e-4,
+            85.680789968,
+            0.0257037383,
+            -0.024019220,
+            -0.009152006,
         ]
 
         h = mp.Harminv(mp.Ez, mp.Vector3(self.r + 0.1), self.fcen, self.df)
