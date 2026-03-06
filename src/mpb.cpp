@@ -92,9 +92,19 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
     cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
     cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
     cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
-    cache[6 * i + 3] = real(f->get_chi1inv(Ex, Y, p, frequency, false));
-    cache[6 * i + 4] = real(f->get_chi1inv(Ex, Z, p, frequency, false));
-    cache[6 * i + 5] = real(f->get_chi1inv(Ey, Z, p, frequency, false));
+    // Off-diagonal components: average from both relevant Yee grids.
+    // Each off-diagonal chi1inv component (e.g., chi1inv_xy) can be
+    // queried from either grid that stores it (Ex or Ey). On the Yee grid,
+    // these are at different spatial positions. Averaging values from both
+    // grids produces an estimate that is consistent with both corresponding
+    // diagonal values, preventing a non-positive-definite eps_inv tensor
+    // near curved material boundaries (e.g., Cylinders).
+    cache[6 * i + 3] = 0.5 * real(f->get_chi1inv(Ex, Y, p, frequency, false) +
+                                  f->get_chi1inv(Ey, X, p, frequency, false));
+    cache[6 * i + 4] = 0.5 * real(f->get_chi1inv(Ex, Z, p, frequency, false) +
+                                  f->get_chi1inv(Ez, X, p, frequency, false));
+    cache[6 * i + 5] = 0.5 * real(f->get_chi1inv(Ey, Z, p, frequency, false) +
+                                  f->get_chi1inv(Ez, Y, p, frequency, false));
 
     // return a dummy value epsilon = 1 while we are building up the cache
     eps->m00 = eps->m11 = eps->m22 = eps_inv->m00 = eps_inv->m11 = eps_inv->m22 = 1;

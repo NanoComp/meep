@@ -266,10 +266,8 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
   if (is_mine()) {
     if (frequency == 0)
       return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
-    // ----------------------------------------------------------------- //
-    // ---- Step 1: Get instantaneous chi1 tensor ----------------------
-    // ----------------------------------------------------------------- //
 
+    // Determine field type and component list for tensor assembly
     int my_stuff = E_stuff;
     component comp_list[3];
     if (is_electric(c)) {
@@ -296,6 +294,25 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
       comp_list[2] = Bz;
       my_stuff = B_stuff;
     }
+
+    // The full tensor assembly path below uses the same flat array index `idx`
+    // (computed for component `c`) to access chi1inv for all three components.
+    // On the Yee grid, each component is stored at a different spatial position,
+    // so using `c`'s index for other components accesses the wrong grid point.
+    // This is only needed for frequency-dependent materials (susceptibilities or
+    // conductivity). For non-dispersive materials, skip the tensor path and
+    // return the value directly — the result is exact and avoids the index error.
+    bool needs_tensor_path = (chiP[my_stuff] != NULL);
+    for (int com_it = 0; com_it < 3 && !needs_tensor_path; com_it++)
+      for (int dir_int = 0; dir_int < 3 && !needs_tensor_path; dir_int++)
+        if (conductivity[comp_list[com_it]][dir_int]) needs_tensor_path = true;
+
+    if (!needs_tensor_path)
+      return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
+
+    // ----------------------------------------------------------------- //
+    // ---- Step 1: Get instantaneous chi1 tensor ----------------------
+    // ----------------------------------------------------------------- //
 
     std::complex<double> chi1_inv_tensor[9] = {
         std::complex<double>(1, 0), std::complex<double>(0, 0), std::complex<double>(0, 0),
