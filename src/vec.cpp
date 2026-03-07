@@ -1429,7 +1429,7 @@ volume_list *symmetry::reduce(const volume_list *gl) const {
       }
     }
     if (sn == multiplicity() && g->weight != 0.0) { // no match, add to glnew
-      volume_list *gn = new volume_list(g->v, g->c, g->weight, glnew);
+      volume_list *gn = new volume_list(g->v, g->c, g->weight, glnew, g->cc);
       glnew = gn;
     }
   }
