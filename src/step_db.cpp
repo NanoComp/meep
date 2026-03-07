@@ -199,13 +199,6 @@ bool fields_chunk::step_db(field_type ft) {
         const realnum the_m =
             2 * m * (1 - 2 * cmp) * (1 - 2 * (ft == B_stuff)) * (1 - 2 * (d_c == R)) * Courant;
 
-        // Precompute reciprocal-r table (rinv only varies with R loop dimension)
-        const int is_r = is.in_direction(R);
-        const int nr_loop = (gv.big_corner().in_direction(R) - is_r) / 2 + 1;
-        realnum *rinv_arr = new realnum[nr_loop];
-        for (int ir = 0; ir < nr_loop; ++ir)
-          rinv_arr[ir] = the_m / (is_r + 2 * ir);
-
         // 8 special cases of the same loop (sigh):
         if (siginv) { // PML in f update
           KSTRIDE_DEF(dsig, k, is, gv);
@@ -214,7 +207,7 @@ bool fields_chunk::step_db(field_type ft) {
             if (cndinv) // PML + fu + conductivity
               //////////////////// MOST GENERAL CASE //////////////////////
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 DEF_k;
                 DEF_ku;
                 realnum df, dfcnd = rinv * g[i] * cndinv[i];
@@ -225,7 +218,7 @@ bool fields_chunk::step_db(field_type ft) {
             /////////////////////////////////////////////////////////////
             else // PML + fu - conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 DEF_k;
                 DEF_ku;
                 realnum df, dfcnd = rinv * g[i];
@@ -236,7 +229,7 @@ bool fields_chunk::step_db(field_type ft) {
           else {        // PML - fu
             if (cndinv) // PML - fu + conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 DEF_k;
                 realnum dfcnd = rinv * g[i] * cndinv[i];
                 fcnd[i] += dfcnd;
@@ -244,7 +237,7 @@ bool fields_chunk::step_db(field_type ft) {
               }
             else // PML - fu - conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 DEF_k;
                 realnum dfcnd = rinv * g[i];
                 the_f[i] += dfcnd * siginv[k];
@@ -256,7 +249,7 @@ bool fields_chunk::step_db(field_type ft) {
             KSTRIDE_DEF(dsigu, ku, is, gv);
             if (cndinv) // no PML + fu + conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 DEF_ku;
                 realnum df = rinv * g[i] * cndinv[i];
                 fu[i] += df;
@@ -264,7 +257,7 @@ bool fields_chunk::step_db(field_type ft) {
               }
             else // no PML + fu - conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 DEF_ku;
                 realnum df = rinv * g[i];
                 fu[i] += df;
@@ -274,17 +267,16 @@ bool fields_chunk::step_db(field_type ft) {
           else {        // no PML - fu
             if (cndinv) // no PML - fu + conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 the_f[i] += rinv * g[i] * cndinv[i];
               }
             else // no PML - fu - conductivity
               PLOOP_OVER_VOL_OWNED0(gv, cc, i) {
-                realnum rinv = rinv_arr[loop_i2];
+                realnum rinv = the_m / (loop_is2 + 2 * loop_i2);
                 the_f[i] += rinv * g[i];
               }
           }
         }
-        delete[] rinv_arr;
       }
     }
 
