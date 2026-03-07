@@ -1345,7 +1345,7 @@ int symmetry::transform(int c, int n) const {
 }
 
 complex<double> symmetry::phase_shift(component c, int n) const {
-  if (c == Dielectric || c == Permeability) return 1.0;
+  if (c == Dielectric || c == Permeability || c == NO_COMPONENT) return 1.0;
   complex<double> phase = transform(component_direction(c), n).phase;
   // flip tells us if we need to flip the sign.  For vectors (E), it is
   // just this simple:
@@ -1424,7 +1424,7 @@ volume_list *symmetry::reduce(const volume_list *gl) const {
       for (gn = glnew; gn; gn = gn->next)
         if (gn->c == cS && gn->v.round_float() == gS.round_float()) break;
       if (gn) { // found a match
-        gn->weight += g->weight * phase_shift(g->c, sn);
+        gn->weight += g->weight * phase_shift(g->c, sn) * conj(phase_shift(g->cc, sn));
         break;
       }
     }
