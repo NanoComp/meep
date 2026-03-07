@@ -354,6 +354,70 @@ class TestModeCoeffs(unittest.TestCase):
             abs(res_fwd.alpha[0, 0, 1]) ** 2, abs(res_bwd.alpha[0, 0, 0]) ** 2, places=2
         )
 
+    def test_eigenmode_source_with_cylinders(self):
+        """Test that an EigenModeSource works with Cylinder geometry objects.
+
+        Regression test for a bug where the eps_inv tensor assembled by
+        meep_mpb_eps was non-positive-definite near curved (Cylinder)
+        material boundaries due to Yee grid staggering: off-diagonal
+        chi1inv components were queried from only one grid, producing
+        values inconsistent with diagonal components from the other grid.
+        """
+        resolution = 50
+        dpml = 1
+
+        eps = 13
+        w = 1.2
+        r = 0.36
+        N = 11
+
+        sx = N
+        sy = 10
+        cell_size = mp.Vector3(sx, sy)
+
+        geometry = [
+            mp.Block(
+                center=mp.Vector3(),
+                size=mp.Vector3(mp.inf, w, mp.inf),
+                material=mp.Medium(epsilon=eps),
+            )
+        ]
+        for n in range(N):
+            geometry.append(
+                mp.Cylinder(
+                    radius=r,
+                    center=mp.Vector3(-0.5 * sx + 0.5 + n),
+                    height=mp.inf,
+                    material=mp.air,
+                ),
+            )
+
+        fsrc = 0.9 * 0.20025
+        sources = [
+            mp.EigenModeSource(
+                src=mp.GaussianSource(fsrc, fwidth=0.1),
+                center=mp.Vector3(0, 0),
+                size=mp.Vector3(1, sy - 2 * dpml),
+                direction=mp.X,
+                eig_parity=mp.ODD_Y + mp.EVEN_Z,
+                eig_kpoint=mp.Vector3(0.4),
+                eig_band=1,
+                eig_match_freq=True,
+            )
+        ]
+
+        sim = mp.Simulation(
+            cell_size=cell_size,
+            resolution=resolution,
+            boundary_layers=[mp.PML(thickness=dpml)],
+            sources=sources,
+            geometry=geometry,
+            symmetries=[mp.Mirror(mp.Y, phase=-1)],
+        )
+
+        # This previously raised "invalid dielectric function for MPB"
+        sim.init_sim()
+
 
 if __name__ == "__main__":
     unittest.main()

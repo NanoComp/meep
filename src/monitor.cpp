@@ -297,6 +297,13 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
       my_stuff = B_stuff;
     }
 
+    // The full tensor assembly path below uses the same flat array index `idx`
+    // (computed for component `c`) to access chi1inv for all three components.
+    // On the Yee grid, each component is stored at a different spatial position,
+    // so using `c`'s index for other components accesses the wrong grid point.
+    // For frequency-dependent materials (susceptibilities or conductivity),
+    // this introduces a first-order error.
+
     std::complex<double> chi1_inv_tensor[9] = {
         std::complex<double>(1, 0), std::complex<double>(0, 0), std::complex<double>(0, 0),
         std::complex<double>(0, 0), std::complex<double>(1, 0), std::complex<double>(0, 0),
