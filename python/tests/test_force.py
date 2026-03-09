@@ -92,7 +92,7 @@ class TestForce(unittest.TestCase):
             sources=[self.sources],
         )
 
-        force_nosym = sim_nosym.add_force(self.fcen, 0, 1, self.fr)
+        force_nosym = sim_nosym.add_force(self.fcen, 0, 1, *self.fr_box)
         sim_nosym.run(
             until_after_sources=mp.stop_when_fields_decayed(
                 50, mp.Ez, mp.Vector3(), 1e-6
