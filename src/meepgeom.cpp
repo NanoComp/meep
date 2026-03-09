@@ -658,11 +658,15 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   int length = g.num_items;
   geometry.num_items = length;
   geometry.items = new geometric_object[length];
+  has_user_materials = false;
   for (int i = 0; i < length; i++) {
     geometric_object_copy(&g.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();
     static_cast<material_data *>(geometry.items[i].material)
         ->copy_from(*(material_data *)(g.items[i].material));
+    if (static_cast<material_data *>(g.items[i].material)->which_subclass ==
+        material_data::MATERIAL_USER)
+      has_user_materials = true;
   }
 
   extra_materials = mlist;
@@ -713,6 +717,7 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
   int length = geps1.geometry.num_items;
   geometry.num_items = length;
   geometry.items = new geometric_object[length];
+  has_user_materials = geps1.has_user_materials;
   for (int i = 0; i < length; i++) {
     geometric_object_copy(&geps1.geometry.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();

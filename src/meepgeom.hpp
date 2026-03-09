@@ -207,6 +207,11 @@ public:
   virtual void eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                                double tol, int maxeval);
 
+  // Thread-safe for standard C++ geometry (no Python callbacks).
+  // Only unsafe when MATERIAL_USER materials are present.
+  virtual bool is_thread_safe() const { return !has_user_materials; }
+  bool has_user_materials;
+
   void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix, const meep::volume &v,
                           double tol, int maxeval, bool &fallback);
 
