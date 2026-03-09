@@ -25,28 +25,29 @@ class TestForce(unittest.TestCase):
             mp.ForceRegion(
                 direction=mp.X,
                 center=mp.Vector3(1.0, 0, 0),
-	        size=mp.Vector3(0, 2.0, 0),
-                weight=1.0
+                size=mp.Vector3(0, 2.0, 0),
+                weight=1.0,
             ),
             mp.ForceRegion(
                 direction=mp.X,
-	        center=mp.Vector3(-1.0, 0, 0),
-	        size=mp.Vector3(0, 2.0, 0),
-                weight=-1.0
+                center=mp.Vector3(-1.0, 0, 0),
+                size=mp.Vector3(0, 2.0, 0),
+                weight=-1.0,
             ),
             mp.ForceRegion(
                 direction=mp.Y,
                 center=mp.Vector3(0, 1.0, 0),
                 size=mp.Vector3(2.0, 0, 0),
-                weight=1.0
+                weight=1.0,
             ),
             mp.ForceRegion(
-		direction=mp.Y,
+                direction=mp.Y,
                 center=mp.Vector3(0, -1.0, 0),
                 size=mp.Vector3(2.0, 0, 0),
-                weight=-1.0
+                weight=-1.0,
             ),
         ]
+
     def test_force(self):
         """Test force calculations using a golden master."""
 
