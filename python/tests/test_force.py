@@ -106,7 +106,7 @@ class TestForce(unittest.TestCase):
             cell_size=self.cell,
             boundary_layers=[self.pml_layers],
             sources=[self.sources],
-            symmetries=[mp.Mirror(mp.Y)],
+            symmetries=[mp.Mirror(mp.X), mp.Mirror(mp.Y)],
         )
 
         force_sym = sim_sym.add_force(self.fcen, 0, 1, *self.fr_box)
