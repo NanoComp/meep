@@ -109,7 +109,7 @@ class TestForce(unittest.TestCase):
             symmetries=[mp.Mirror(mp.Y)],
         )
 
-        force_sym = sim_sym.add_force(self.fcen, 0, 1, self.fr)
+        force_sym = sim_sym.add_force(self.fcen, 0, 1, *self.fr_box)
         sim_sym.run(
             until_after_sources=mp.stop_when_fields_decayed(
                 50, mp.Ez, mp.Vector3(), 1e-6
