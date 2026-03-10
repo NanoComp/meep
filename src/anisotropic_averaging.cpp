@@ -252,8 +252,8 @@ breakout:
   if (medium.is_thread_safe()) {
     bool trivial0 = true, trivial1 = true, trivial2 = true;
     PLOOP_OVER_IVECS_C(gv, gv.little_corner() + gv.iyee_shift(c),
-                        gv.big_corner() + gv.iyee_shift(c), i,
-                        "omp parallel for collapse(3) reduction(&&:trivial0,trivial1,trivial2)") {
+                       gv.big_corner() + gv.iyee_shift(c), i,
+                       "omp parallel for collapse(3) reduction(&&:trivial0,trivial1,trivial2)") {
       double chi1invrow[3], chi1invrow_offdiag[3];
       IVEC_LOOP_ILOC(gv, here);
       medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
@@ -275,7 +275,8 @@ breakout:
     trivial[0] = trivial0;
     trivial[1] = trivial1;
     trivial[2] = trivial2;
-  } else {
+  }
+  else {
     // Serial path for non-thread-safe material functions (Python callbacks)
     LOOP_OVER_VOL(gv, c, i) {
       double chi1invrow[3], chi1invrow_offdiag[3];
