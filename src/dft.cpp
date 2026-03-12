@@ -144,6 +144,7 @@ dft_chunk::~dft_chunk() {
 }
 
 void dft_flux::remove() {
+  invalidate_eigenmode_cache();
   while (E) {
     dft_chunk *nxt = E->next_in_dft;
     delete E;
@@ -499,7 +500,7 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
                    double fmin, double fmax, int Nf, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
     : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
-      use_symmetry(use_symmetry_) {
+      use_symmetry(use_symmetry_), eigenmode_cache(NULL) {
   freq = meep::linspace(fmin, fmax, Nf);
 }
 
@@ -507,7 +508,7 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
                    const std::vector<double> &freq_, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
     : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
-      use_symmetry(use_symmetry_) {
+      use_symmetry(use_symmetry_), eigenmode_cache(NULL) {
   freq = freq_;
 }
 
@@ -515,7 +516,7 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
                    const double *freq_, size_t Nfreq, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
     : freq(Nfreq), E(E_), H(H_), cE(cE_), cH(cH_), where(where_),
-      normal_direction(normal_direction_), use_symmetry(use_symmetry_) {
+      normal_direction(normal_direction_), use_symmetry(use_symmetry_), eigenmode_cache(NULL) {
   for (size_t i = 0; i < Nfreq; ++i)
     freq[i] = freq_[i];
 }
@@ -528,7 +529,10 @@ dft_flux::dft_flux(const dft_flux &f) : where(f.where) {
   cH = f.cH;
   normal_direction = f.normal_direction;
   use_symmetry = f.use_symmetry;
+  eigenmode_cache = NULL; // don't share cache across copies
 }
+
+dft_flux::~dft_flux() { invalidate_eigenmode_cache(); }
 
 double *dft_flux::flux() {
   const size_t Nfreq = freq.size();
