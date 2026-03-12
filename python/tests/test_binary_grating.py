@@ -389,7 +389,6 @@ class TestEigCoeffs(unittest.TestCase):
                 res2 = sim.get_eigenmode_coefficients(tran_flux, dp)
                 power1 = abs(res1.alpha[0, 0, 0]) ** 2
                 power2 = abs(res2.alpha[0, 0, 0]) ** 2
-                # Skip comparison when both values are negligible (noise).
                 if max(power1, power2) > 1e-20:
                     self.assertAlmostEqual(
                         power2 / power1,

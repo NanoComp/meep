@@ -332,7 +332,7 @@ void special_kz_phasefix(eigenmode_data *edata, bool phase_flip) {
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata, diffractedplanewave *dp, bool skip_phase_fix) {
+                            void **user_mdata, diffractedplanewave *dp) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -723,11 +723,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
   maxwell_compute_h_from_H(mdata, H, (scalar_complex *)cdata, band_num - 1, 1);
   /* choose deterministic phase, maximizing power in real part;
-     see fix_field_phase routine in MPB.
-     For DiffractedPlanewave mode decomposition we can skip this because
-     |alpha|^2 is phase-invariant: the mode-mode self-overlap normfac
-     cancels out any global phase factor. */
-  if (!skip_phase_fix) {
+     see fix_field_phase routine in MPB.*/
+  {
     int i, N = mdata->fft_output_size * 3;
     double sq_sum0 = 0, sq_sum1 = 0, maxabs = 0.0;
     double theta;
@@ -974,8 +971,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       am_now_working_on(MPBTime);
       void *mode_data =
           get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
-                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp,
-                        dp != NULL /* skip_phase_fix for DiffractedPlanewave */);
+                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
@@ -1039,7 +1035,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata, diffractedplanewave *dp, bool skip_phase_fix) {
+                            void **user_mdata, diffractedplanewave *dp) {
 
   (void)frequency;
   (void)d;
