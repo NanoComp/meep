@@ -246,37 +246,67 @@ breakout:
   double trivial_val[3] = {0, 0, 0};
   trivial_val[idiag] = 1.0;
   ivec shift1(unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1));
-  // TODO: make this loop thread-safe and change to PLOOP_OVER_VOL
-  // Note that we *cannot* make it thread-safe if `medium` is not thread-safe,
-  // e.g. if it calls back to Python.
-  LOOP_OVER_VOL(gv, c, i) {
-    double chi1invrow[3], chi1invrow_offdiag[3];
-    IVEC_LOOP_ILOC(gv, here);
-    medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
-    medium.eff_chi1inv_row(c, chi1invrow_offdiag, gv.dV(here - shift1, smoothing_diameter), tol,
-                           maxeval);
-    if (chi1inv[c][d0]) {
-      chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
-      trivial[0] = trivial[0] && (chi1inv[c][d0][i] == trivial_val[0]);
+  // Use OpenMP parallelization when the material function is thread-safe
+  // (i.e., pure C++ geometry, not a Python callback). The trivial[] flags
+  // need a reduction since each thread computes its local subset.
+  if (medium.is_thread_safe()) {
+    bool trivial0 = true, trivial1 = true, trivial2 = true;
+    PLOOP_OVER_IVECS_C(gv, gv.little_corner() + gv.iyee_shift(c),
+                       gv.big_corner() + gv.iyee_shift(c), i,
+                       "omp parallel for collapse(3) reduction(&&:trivial0,trivial1,trivial2)") {
+      double chi1invrow[3], chi1invrow_offdiag[3];
+      IVEC_LOOP_ILOC(gv, here);
+      medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
+      medium.eff_chi1inv_row(c, chi1invrow_offdiag, gv.dV(here - shift1, smoothing_diameter), tol,
+                             maxeval);
+      if (chi1inv[c][d0]) {
+        chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
+        trivial0 = trivial0 && (chi1inv[c][d0][i] == trivial_val[0]);
+      }
+      if (chi1inv[c][d1]) {
+        chi1inv[c][d1][i] = (d1 == dc) ? chi1invrow[1] : chi1invrow_offdiag[1];
+        trivial1 = trivial1 && (chi1inv[c][d1][i] == trivial_val[1]);
+      }
+      if (chi1inv[c][d2]) {
+        chi1inv[c][d2][i] = (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
+        trivial2 = trivial2 && (chi1inv[c][d2][i] == trivial_val[2]);
+      }
     }
-    if (chi1inv[c][d1]) {
-      chi1inv[c][d1][i] = (d1 == dc) ? chi1invrow[1] : chi1invrow_offdiag[1];
-      trivial[1] = trivial[1] && (chi1inv[c][d1][i] == trivial_val[1]);
-    }
-    if (chi1inv[c][d2]) {
-      chi1inv[c][d2][i] = (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
-      trivial[2] = trivial[2] && (chi1inv[c][d2][i] == trivial_val[2]);
-    }
+    trivial[0] = trivial0;
+    trivial[1] = trivial1;
+    trivial[2] = trivial2;
+  }
+  else {
+    // Serial path for non-thread-safe material functions (Python callbacks)
+    LOOP_OVER_VOL(gv, c, i) {
+      double chi1invrow[3], chi1invrow_offdiag[3];
+      IVEC_LOOP_ILOC(gv, here);
+      medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
+      medium.eff_chi1inv_row(c, chi1invrow_offdiag, gv.dV(here - shift1, smoothing_diameter), tol,
+                             maxeval);
+      if (chi1inv[c][d0]) {
+        chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
+        trivial[0] = trivial[0] && (chi1inv[c][d0][i] == trivial_val[0]);
+      }
+      if (chi1inv[c][d1]) {
+        chi1inv[c][d1][i] = (d1 == dc) ? chi1invrow[1] : chi1invrow_offdiag[1];
+        trivial[1] = trivial[1] && (chi1inv[c][d1][i] == trivial_val[1]);
+      }
+      if (chi1inv[c][d2]) {
+        chi1inv[c][d2][i] = (d2 == dc) ? chi1invrow[2] : chi1invrow_offdiag[2];
+        trivial[2] = trivial[2] && (chi1inv[c][d2][i] == trivial_val[2]);
+      }
 
-    if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
-        wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
-      master_printf("%s is %g%% done, %g s remaining\n",
-                    use_anisotropic_averaging ? "subpixel-averaging" : "grid initialization",
-                    ipixel * 100.0 / npixels,
-                    (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);
-      last_output_time = wall_time();
+      if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
+          wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
+        master_printf("%s is %g%% done, %g s remaining\n",
+                      use_anisotropic_averaging ? "subpixel-averaging" : "grid initialization",
+                      ipixel * 100.0 / npixels,
+                      (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);
+        last_output_time = wall_time();
+      }
+      ++ipixel;
     }
-    ++ipixel;
   }
   direction ds[3];
   ds[0] = d0;

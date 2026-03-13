@@ -523,6 +523,11 @@ public:
                                double tol = DEFAULT_SUBPIXEL_TOL,
                                int maxeval = DEFAULT_SUBPIXEL_MAXEVAL);
 
+  // Returns true if eff_chi1inv_row and chi1p1 are safe to call from
+  // multiple OpenMP threads. Override in subclasses that use Python
+  // callbacks or other non-thread-safe state. Default: false (serial).
+  virtual bool is_thread_safe() const { return false; }
+
   /* polarizability sigma function: return c'th row of tensor */
   virtual void sigma_row(component c, double sigrow[3], const vec &r) {
     (void)c;
