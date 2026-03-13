@@ -652,3 +652,26 @@ As a final note, computing the [extraction efficiency of an LED](Local_Density_o
         delta_length
     )
 ```
+
+Dipole Emission of a Cleaved Multilayer Stack
+---------------------------------------------
+
+The emission from a cleaved facet of a multilayer stack (relevant for [edge-emitting semiconductor lasers](https://www.optica-opn.org/home/articles/volume_30/february_2019/features/semiconductor_lasers_for_3-d_sensing/)) can be modeled using a 2D simulation via a Fourier-series expansion of line-current sources. A schematic of the device geometry and simulation layout is shown below. This example involves computing the extraction efficiency of a dipole (wavelength of 1 μm) within an active region ($n$ = 2.3) surrounded by cladding layers ($n$ = 1.5) and placed on a substrate ($n$ = 3.2).
+
+![](../images/edge_emitter_layout_2D.png#center)
+
+There are three important things to note regarding the setup of this calculation:
+
+- A 2D simulation (in $xy$) with out-of-plane wavevector ($k_z$) requires specifying the parameters [`kz_2d`](../2d_Cell_Special_kz.md) and `force_complex_fields` of the `Simulation` constructor to `"real/imag"` and `False`, respectively.
+- The Fourier-series expansion requires only *non-negative* wavevectors $k_z$ since the flux is the same for $\pm k_z$.
+- The criteria for truncating the Fourier series is determined by when the flux radiated by the line current (computed using the local density of states) has fallen below a given threshold (which needs to be small enough to ensure the results are converged).
+
+A plot of the flux radiated by the line current and into air versus $k_z$ is shown below for an $E_x$ dipole positioned 0.32 μm from the edge facet. When $k_z$ is sufficiently large, the flux radiated by the line current is negligible. The extraction efficiency computed from this data is 24.12%. This example involved 76 2D simulations.
+
+![](../images/edge_emitter_flux_vs_kz.png#center)
+
+The results of the 2D calculation can be validated using a 3D simulation. The table below shows the extraction efficiency computed using 2D and 3D simulations for three different dipole test cases at a resolution of 25 pixels/μm. The 2D and 3D results are in reasonable agreement.
+
+![](../images/edge_emitter_2D_vs_3D_table.png#center)
+
+The simulation script is [examples/edge_emitter_2D.py](https://github.com/NanoComp/meep/blob/master/python/examples/edge_emitter_2D.py). The script used for validating the results using a 3D simulation is [examples/edge_emitter_3D.py](https://github.com/NanoComp/meep/blob/master/python/examples/edge_emitter_3D.py).
