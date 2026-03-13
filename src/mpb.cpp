@@ -276,7 +276,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by MPB): */
-#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * 3])
+#define D(x, y, z) (data[(((x) * ny + (y)) * nz + (z)) * 3])
   complex<mpb_real> ret;
   ret = (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
@@ -1089,12 +1089,24 @@ void *fields::get_eigenmode_planewave(double frequency, direction d, const volum
   // H₀ = s * shat + p * phat
   complex<double> s_amp = dp->get_s();
   complex<double> p_amp = dp->get_p();
-  complex<double> H0[3], E0[3];
+  complex<double> H0[3];
   for (int i = 0; i < 3; ++i)
     H0[i] = s_amp * shat[i] + p_amp * phat[i];
 
-  // E₀ = -(k × H₀) / (ω * ε) from Maxwell's equations
-  cross3c(E0, kcart, H0);
+  // E₀ = -(k_eff × H₀) / (ω * ε) from Maxwell's equations, using the
+  // Yee-grid-corrected wavevector k_eff.  On the Yee grid the finite-
+  // difference curl replaces each k_i with  sin(π k_i / a) / (π / a),
+  // i.e. the "sinc" correction.  This makes the analytical mode fields
+  // consistent with the FDTD discretization and is critical for near-
+  // grazing modes where k_tangential approaches the Nyquist frequency.
+  const double pi = 0.5 * TWOPI;
+  double kcart_eff[3];
+  for (int i = 0; i < 3; ++i) {
+    double arg = pi * kcart[i] / a; // π k_i Δ  where Δ = 1/a
+    kcart_eff[i] = (fabs(arg) < 1e-20) ? kcart[i] : sin(arg) * a / pi;
+  }
+  complex<double> E0[3];
+  cross3c(E0, kcart_eff, H0);
   for (int i = 0; i < 3; ++i)
     E0[i] = -E0[i] / (frequency * eps);
 
@@ -1166,14 +1178,17 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 
   // Auto-detect homogeneous medium for DiffractedPlanewave: if the monitor
   // region has uniform epsilon/mu, bypass MPB entirely and compute the
-  // planewave fields analytically — this is equivalent to performing a DFT
-  // of the monitor fields at the analytically known planewave k-vectors.
-  bool use_analytical = false;
+  // planewave fields analytically using a sinc-corrected E-H relationship.
+  // Skip for 2D simulations with non-zero out-of-plane k (special_kz,
+  // including both beta!=0 "real/imag" mode and k[Z]!=0 "complex" mode)
+  // where the hybrid continuous/discrete curl makes the analytical E-H
+  // relationship insufficiently accurate.
+  bool try_analytical = false;
   double homo_eps = 0, homo_mu = 0;
-  if (dp) {
+  if (dp && !(v.dim == D2 && (beta != 0 || real(k[Z]) != 0))) {
     double check_freq = num_freqs > 0 ? flux.freq[0] : 1.0;
-    use_analytical = is_homogeneous_on_monitor(flux.where, check_freq, &homo_eps, &homo_mu);
-    if (use_analytical && verbosity > 0)
+    try_analytical = is_homogeneous_on_monitor(flux.where, check_freq, &homo_eps, &homo_mu);
+    if (try_analytical && verbosity > 0)
       master_printf("Homogeneous medium detected (eps=%g, mu=%g): using analytical planewave\n",
                     homo_eps, homo_mu);
   }
@@ -1181,7 +1196,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   vec kpoint(0.0, 0.0, 0.0); // default guess
 
   // get_eigenmode will create mdata only once and then reuse it on each iteration of the loop.
-  // Not used when use_analytical is true.
+  // Created lazily: only when the MPB path is actually used.
   maxwell_data *mdata = NULL;
 
   // loop over all bands and all frequencies
@@ -1192,16 +1207,21 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       /*--------------------------------------------------------------*/
       int band_num = bands ? bands[nb] : 1;
       double kdom[3];
-      void *mode_data;
+      void *mode_data = NULL;
+      bool used_analytical = false;
 
-      if (use_analytical) {
+      if (try_analytical) {
         vec cen = flux.where.center();
         double eps_f = real(get_eps(cen, flux.freq[nf]));
         double mu_f = real(get_mu(cen, flux.freq[nf]));
         mode_data =
             get_eigenmode_planewave(flux.freq[nf], d, flux.where, eig_vol, dp, eps_f, mu_f, kdom);
+        if (mode_data) used_analytical = true;
       }
-      else {
+
+      if (!mode_data && !used_analytical) {
+        // Use MPB path: either analytical was not attempted or returned
+        // evanescent (NULL).
         if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
         am_now_working_on(MPBTime);
         mode_data =
@@ -1218,7 +1238,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
         continue;
       }
 
-      if (!use_analytical && is_real && beta != 0)
+      if (!used_analytical && is_real && beta != 0)
         special_kz_phasefix((eigenmode_data *)mode_data, false /* phase_flip */);
 
       double vg = get_group_velocity(mode_data);
@@ -1227,7 +1247,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       if (kpoints) kpoints[nb * num_freqs + nf] = kfound;
       if (kdom_list) kdom_list[nb * num_freqs + nf] = vec(kdom[0], kdom[1], kdom[2]);
 
-      if (!use_analytical && match_frequency && nf + 1 < num_freqs && abs(kfound) > 0 &&
+      if (!used_analytical && match_frequency && nf + 1 < num_freqs && abs(kfound) > 0 &&
           ((kfound.x() == 0 && (kfound.y() == 0 || kfound.z() == 0)) ||
            (kfound.y() == 0 && kfound.z() == 0)))
         kpoint = kfound + kfound * ((flux.freq[nf + 1] - flux.freq[nf]) / (vg * abs(kfound)));
@@ -1251,7 +1271,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       destroy_eigenmode_data((void *)mode_data, false);
     }
   }
-  if (!use_analytical) destroy_maxwell_data(mdata);
+  if (mdata) destroy_maxwell_data(mdata);
 }
 
 /**************************************************************/
