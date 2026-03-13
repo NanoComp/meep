@@ -157,12 +157,15 @@ dft_force fields::add_dft_force(const volume_list *where, const double *freq, si
   // copy where_ and add cc (conjugate-component) info for symmetry reduction
   volume_list where_copy(where);
   for (volume_list *w = &where_copy; w; w = w->next) {
-    direction nd = normal_direction(where->v);
+    direction nd = normal_direction(w->v);
     if (nd == NO_DIRECTION) meep::abort("cannot determine dft_force normal");
     w->cc = direction_component(w->c, nd);
   }
 
   volume_list *where_reduced = S.reduce(&where_copy);
+  if (!where_reduced) // empty list
+    return dft_force(offdiag1, offdiag2, diag, freq, Nfreq, volume(v.center()));
+
   volume everywhere = where_reduced->v;
 
   for (volume_list *w = where_reduced; w; w = w->next) {
