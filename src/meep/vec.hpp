@@ -1232,10 +1232,11 @@ private:
 
 class volume_list {
 public:
-  volume_list(const volume &v, int c, std::complex<double> weight = 1.0, volume_list *next = 0)
-      : v(v), c(c), weight(weight), next(next) {}
+  volume_list(const volume &v, int c, std::complex<double> weight = 1.0, volume_list *next = 0,
+              int cc = NO_COMPONENT)
+      : v(v), c(c), cc(cc), weight(weight), next(next) {}
   ~volume_list() { delete next; }
-  volume_list(const volume_list *vl) : v(vl->v), c(vl->c), weight(vl->weight), next(0) {
+  volume_list(const volume_list *vl) : v(vl->v), c(vl->c), cc(vl->cc), weight(vl->weight), next(0) {
     volume_list *p = vl->next, *q = this;
     while (p) {
       q->next = new volume_list(*p);
@@ -1245,7 +1246,8 @@ public:
   }
 
   volume v;
-  int c; // component or derived component associated with v (e.g. for flux)
+  int c;  // component or derived component associated with v (e.g. for flux)
+  int cc; // conjugate component associated with v (e.g. for stress tensor)
   std::complex<double> weight;
   volume_list *next;
 };
