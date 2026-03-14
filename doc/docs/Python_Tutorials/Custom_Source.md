@@ -662,11 +662,11 @@ The emission from a cleaved facet of a multilayer stack (relevant for [edge-emit
 
 There are three important things to note regarding the setup of this calculation:
 
-- A 2D simulation (in $xy$) with out-of-plane wavevector ($k_z$) requires specifying the parameters [`kz_2d`](../2d_Cell_Special_kz.md) and `force_complex_fields` of the `Simulation` constructor to `"real/imag"` and `False`, respectively.
+- A 2D simulation (in $xy$) with out-of-plane wavevector ($k_z$) requires specifying the parameter [`kz_2d`](../2d_Cell_Special_kz.md) of the `Simulation` constructor to `"real/imag"` and using the default value for `force_complex_fields` of `False`. Alternatively, `kz_2d` can be set to "complex" (default value) or "3d" but this requires specifying `force_complex_fields` to `True` (which doubles the storage required for the fields).
 - The Fourier-series expansion requires only *non-negative* wavevectors $k_z$ since the flux is the same for $\pm k_z$.
-- The criteria for truncating the Fourier series is determined by when the flux radiated by the line current (computed using the local density of states) has fallen below a given threshold (which needs to be small enough to ensure the results are converged).
+- The criteria for truncating the Fourier series is determined by when the *total* power (computed using the local density of states) has fallen below a given threshold (which needs to be small enough to ensure the results are converged).
 
-A plot of the flux radiated by the line current and into air versus $k_z$ is shown below for an $E_x$ dipole positioned 0.32 μm from the edge facet. When $k_z$ is sufficiently large, the flux radiated by the line current is negligible. The extraction efficiency computed from this data is 24.12%. This example involved 76 2D simulations.
+A plot of the total and extracted power versus $k_z$ (in units of $\omega$) is shown below for an $E_x$ dipole positioned 0.32 μm from the edge facet. When $k_z > \omega$ (below the light line of air), the extracted power is essentially zero and coupling into guided substrate modes dominates. This is why the total power reaches a local minimum at $k_z = \omega$ and starts increasing, reaches a maximum, and eventually becomes negligible when $k_z$ is sufficiently large. The extraction efficiency computed from this data is 24.12%. This example involved 76 2D simulations.
 
 ![](../images/edge_emitter_flux_vs_kz.png#center)
 
