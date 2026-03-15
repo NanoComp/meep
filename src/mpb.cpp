@@ -269,7 +269,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by MPB): */
-#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * 3])
+#define D(x, y, z) (data[(((x) * ny + (y)) * nz + (z)) * 3])
   complex<mpb_real> ret;
   ret = (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
@@ -349,8 +349,8 @@ void special_kz_phasefix(eigenmode_data *edata, bool phase_flip) {
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata, diffractedplanewave *dp,
-                            bool *cache_dispersive, double *cache_frequency) {
+                            void **user_mdata, diffractedplanewave *dp, bool *cache_dispersive,
+                            double *cache_frequency) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -1007,8 +1007,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
                                         double *cscale, direction d, diffractedplanewave *dp,
-                                        void **eigenmode_cache,
-                                        bool *cache_dispersive, double *cache_frequency) {
+                                        void **eigenmode_cache, bool *cache_dispersive,
+                                        double *cache_frequency) {
   adjust_mpb_verbosity amv;
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
@@ -1032,10 +1032,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
       am_now_working_on(MPBTime);
-      void *mode_data =
-          get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
-                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp,
-                        cache_dispersive, cache_frequency);
+      void *mode_data = get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint,
+                                      match_frequency, parity, eig_resolution, eigensolver_tol,
+                                      kdom, (void **)&mdata, dp, cache_dispersive, cache_frequency);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;

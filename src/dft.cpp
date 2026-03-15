@@ -500,8 +500,8 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
                    double fmin, double fmax, int Nf, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
     : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
-      use_symmetry(use_symmetry_), eigenmode_cache(NULL),
-      eigenmode_cache_dispersive(false), eigenmode_cache_frequency(0) {
+      use_symmetry(use_symmetry_), eigenmode_cache(NULL), eigenmode_cache_dispersive(false),
+      eigenmode_cache_frequency(0) {
   freq = meep::linspace(fmin, fmax, Nf);
 }
 
@@ -509,8 +509,8 @@ dft_flux::dft_flux(const component cE_, const component cH_, dft_chunk *E_, dft_
                    const std::vector<double> &freq_, const volume &where_,
                    direction normal_direction_, bool use_symmetry_)
     : E(E_), H(H_), cE(cE_), cH(cH_), where(where_), normal_direction(normal_direction_),
-      use_symmetry(use_symmetry_), eigenmode_cache(NULL),
-      eigenmode_cache_dispersive(false), eigenmode_cache_frequency(0) {
+      use_symmetry(use_symmetry_), eigenmode_cache(NULL), eigenmode_cache_dispersive(false),
+      eigenmode_cache_frequency(0) {
   freq = freq_;
 }
 

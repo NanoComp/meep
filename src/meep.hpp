@@ -1272,8 +1272,8 @@ public:
   volume where;
   direction normal_direction;
   bool use_symmetry;
-  void *eigenmode_cache; // opaque pointer to cached maxwell_data (NULL if none)
-  bool eigenmode_cache_dispersive; // whether the cached medium is frequency-dependent
+  void *eigenmode_cache;            // opaque pointer to cached maxwell_data (NULL if none)
+  bool eigenmode_cache_dispersive;  // whether the cached medium is frequency-dependent
   double eigenmode_cache_frequency; // frequency at which the cache was built
 };
 
