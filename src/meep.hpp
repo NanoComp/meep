@@ -1273,6 +1273,8 @@ public:
   direction normal_direction;
   bool use_symmetry;
   void *eigenmode_cache; // opaque pointer to cached maxwell_data (NULL if none)
+  bool eigenmode_cache_dispersive; // whether the cached medium is frequency-dependent
+  double eigenmode_cache_frequency; // frequency at which the cache was built
 };
 
 // dft.cpp (normally created with fields::add_dft_energy)
@@ -1943,7 +1945,8 @@ public:
   void *get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, double *kdom = 0,
-                      void **user_mdata = 0, diffractedplanewave *dp = 0);
+                      void **user_mdata = 0, diffractedplanewave *dp = 0,
+                      bool *cache_dispersive = 0, double *cache_frequency = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
@@ -1956,7 +1959,8 @@ public:
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
                                   vec *kpoints, vec *kdom, double *cscale, direction d,
-                                  diffractedplanewave *dp = 0, void **eigenmode_cache = 0);
+                                  diffractedplanewave *dp = 0, void **eigenmode_cache = 0,
+                                  bool *cache_dispersive = 0, double *cache_frequency = 0);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,

@@ -534,7 +534,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 
     f->get_eigenmode_coefficients(*flux, eig_vol, bands, num_bands, parity, eig_resolution, eigensolver_tol,
                                   coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, cscale, d,
-                                  NULL, &flux->eigenmode_cache);
+                                  NULL, &flux->eigenmode_cache,
+                                  &flux->eigenmode_cache_dispersive, &flux->eigenmode_cache_frequency);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
@@ -552,7 +553,8 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
     meep::vec *kdom = new meep::vec[num_kpoints];
     f->get_eigenmode_coefficients(*flux, eig_vol, NULL, 1, parity, eig_resolution, eigensolver_tol,
                                   coeffs, vgrp, user_kpoint_func, user_kpoint_data, kpoints, kdom, cscale, d,
-                                  &dp, &flux->eigenmode_cache);
+                                  &dp, &flux->eigenmode_cache,
+                                  &flux->eigenmode_cache_dispersive, &flux->eigenmode_cache_frequency);
 
     kpoint_list res = {kpoints, num_kpoints, kdom, num_kpoints};
 
