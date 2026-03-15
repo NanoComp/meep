@@ -269,7 +269,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by MPB): */
-#define D(x, y, z) (data[(((x) * ny + (y)) * nz + (z)) * 3])
+#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * 3])
   complex<mpb_real> ret;
   ret = (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
