@@ -1638,7 +1638,7 @@ void grid_volume::init_subvolume(ivec is, ivec ie, component c) {
   for (int i = 0; i < 3; i++)
     num[i] = 0;
   LOOP_OVER_DIRECTIONS(dim, d) {
-    num[(int)d] = (ie - is).in_direction(d) / 2;
+    set_num_direction(d, (ie - is).in_direction(d) / 2);
     origin.set_direction(d, is.in_direction(d) - iyee_shift(c).in_direction(d));
   }
   num_changed();
