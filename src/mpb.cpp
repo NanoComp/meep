@@ -48,6 +48,10 @@ typedef struct {
   size_t ncache;  // allocated size of the cache
   size_t icache;  // current position in the cache
   bool use_cache; // whether we are using the cache
+
+  // Track whether any sampled point has frequency-dependent epsilon.
+  // Detected by comparing get_chi1inv(freq=0) vs get_chi1inv(freq=frequency).
+  bool found_dispersive;
 } meep_mpb_eps_data;
 
 static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_real n[3],
@@ -92,6 +96,19 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
     cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
     cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
     cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
+
+    // Detect dispersive materials: compare frequency-dependent vs DC epsilon.
+    // Only check diagonal components for efficiency.
+    if (!eps_data->found_dispersive && frequency != 0) {
+      const double tol = 1e-6;
+      double dc0 = real(f->get_chi1inv(Ex, X, p, 0, false));
+      double dc1 = real(f->get_chi1inv(Ey, Y, p, 0, false));
+      double dc2 = real(f->get_chi1inv(Ez, Z, p, 0, false));
+      if (fabs(cache[6 * i] - dc0) > tol * fabs(dc0) ||
+          fabs(cache[6 * i + 1] - dc1) > tol * fabs(dc1) ||
+          fabs(cache[6 * i + 2] - dc2) > tol * fabs(dc2))
+        eps_data->found_dispersive = true;
+    }
     // Off-diagonal components: average from both relevant Yee grids.
     // Each off-diagonal chi1inv component (e.g., chi1inv_xy) can be
     // queried from either grid that stores it (Ex or Ey). On the Yee grid,
@@ -332,7 +349,8 @@ void special_kz_phasefix(eigenmode_data *edata, bool phase_flip) {
 void *fields::get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                             int band_num, const vec &_kpoint, bool match_frequency, int parity,
                             double resolution, double eigensolver_tol, double *kdom,
-                            void **user_mdata, diffractedplanewave *dp) {
+                            void **user_mdata, diffractedplanewave *dp, bool *cache_dispersive,
+                            double *cache_frequency) {
   /*--------------------------------------------------------------*/
   /*- part 1: preliminary setup for calling MPB  -----------------*/
   /*--------------------------------------------------------------*/
@@ -455,6 +473,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     eps_data.f = this;
     eps_data.frequency = frequency;
     eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
+    eps_data.found_dispersive = false;
 
     // first, build up a cache of the local epsilon data
     // (while returning dummy values to MPB)
@@ -479,6 +498,12 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 
     free(eps_data.cache);
 
+    // Store dispersive flag and frequency for cache management
+    if (cache_dispersive) *cache_dispersive = eps_data.found_dispersive;
+    if (cache_frequency) *cache_frequency = frequency;
+    if (eps_data.found_dispersive && verbosity > 0)
+      master_printf("Dispersive medium detected on eigenmode monitor\n");
+
     if (user_mdata) *user_mdata = (void *)mdata;
   }
   else {
@@ -487,6 +512,43 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     N_start = mdata->N_start;
     local_N = mdata->local_N;
     alloc_N = mdata->alloc_N;
+
+    // If the cached medium is dispersive and frequency changed, re-populate epsilon
+    if (cache_dispersive && *cache_dispersive && cache_frequency &&
+        fabs(frequency - *cache_frequency) > 1e-10 * frequency) {
+      if (verbosity > 1)
+        master_printf("Re-populating epsilon grid for dispersive medium at freq=%g (was %g)\n",
+                      frequency, *cache_frequency);
+
+      meep_mpb_eps_data eps_data;
+      eps_data.s = s;
+      eps_data.o = o;
+      eps_data.dim = gv.dim;
+      eps_data.f = this;
+      eps_data.frequency = frequency;
+      eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
+      eps_data.found_dispersive = false;
+
+      eps_data.use_cache = false;
+      eps_data.icache = 0;
+      set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+
+      eps_data.ncache = eps_data.icache;
+      double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
+      am_now_working_on(MpiAllTime);
+      sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
+      finished_working();
+      free(eps_data.cache);
+      eps_data.cache = summed_cache;
+
+      eps_data.use_cache = true;
+      eps_data.icache = 0;
+      set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+      assert(eps_data.icache == eps_data.ncache);
+
+      free(eps_data.cache);
+      *cache_frequency = frequency;
+    }
   }
 
   if (check_maxwell_dielectric(mdata, 0)) meep::abort("invalid dielectric function for MPB");
@@ -822,6 +884,13 @@ void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
   delete edata;
 }
 
+void dft_flux::invalidate_eigenmode_cache() {
+  if (eigenmode_cache) {
+    destroy_maxwell_data((maxwell_data *)eigenmode_cache);
+    eigenmode_cache = NULL;
+  }
+}
+
 double get_group_velocity(void *vedata) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
   return edata->group_velocity;
@@ -937,7 +1006,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom_list,
-                                        double *cscale, direction d, diffractedplanewave *dp) {
+                                        double *cscale, direction d, diffractedplanewave *dp,
+                                        void **eigenmode_cache, bool *cache_dispersive,
+                                        double *cache_frequency) {
   adjust_mpb_verbosity amv;
   int num_freqs = flux.freq.size();
   bool match_frequency = true;
@@ -947,8 +1018,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
 
   vec kpoint(0.0, 0.0, 0.0); // default guess
 
-  // get_eigenmode will create mdata only once and then reuse it on each iteration of the loop
-  maxwell_data *mdata = NULL;
+  // If an external cache is provided, reuse the maxwell_data from it.
+  // Otherwise create a local one that will be destroyed at the end.
+  maxwell_data *mdata = eigenmode_cache ? (maxwell_data *)(*eigenmode_cache) : NULL;
 
   // loop over all bands and all frequencies
   for (int nb = 0; nb < num_bands; nb++) {
@@ -960,9 +1032,9 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       double kdom[3];
       if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
       am_now_working_on(MPBTime);
-      void *mode_data =
-          get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
-                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp);
+      void *mode_data = get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint,
+                                      match_frequency, parity, eig_resolution, eigensolver_tol,
+                                      kdom, (void **)&mdata, dp, cache_dispersive, cache_frequency);
       finished_working();
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
@@ -1010,7 +1082,13 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       destroy_eigenmode_data((void *)mode_data, false);
     }
   }
-  destroy_maxwell_data(mdata);
+
+  // If an external cache was provided, store mdata back for reuse.
+  // Otherwise destroy it (no external cache to persist to).
+  if (eigenmode_cache)
+    *eigenmode_cache = (void *)mdata;
+  else
+    destroy_maxwell_data(mdata);
 }
 
 /**************************************************************/
@@ -1065,7 +1143,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double eigensolver_tol, std::complex<double> *coeffs,
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
-                                        double *cscale, direction d, diffractedplanewave *dp) {
+                                        double *cscale, direction d, diffractedplanewave *dp,
+                                        void **eigenmode_cache) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -1082,8 +1161,11 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)cscale;
   (void)d;
   (void)dp;
+  (void)eigenmode_cache;
   meep::abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
+
+void dft_flux::invalidate_eigenmode_cache() { eigenmode_cache = NULL; }
 
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
   (void)vedata;
