@@ -662,7 +662,7 @@ The emission from a cleaved facet of a multilayer stack (relevant for [edge-emit
 
 There are three important things to note regarding the setup of this calculation:
 
-- A 2D simulation (in $xy$) with out-of-plane wavevector ($k_z$) requires specifying the parameter [`kz_2d`](../2d_Cell_Special_kz.md) of the `Simulation` constructor to `"real/imag"` and using the default value for `force_complex_fields` of `False`. Alternatively, `kz_2d` can be set to "complex" (default value) or "3d" but this requires specifying `force_complex_fields` to `True` (which doubles the storage required for the fields).
+- A 2D simulation (in $xy$) with out-of-plane wavevector ($k_z$) requires specifying the parameter [`kz_2d`](../2d_Cell_Special_kz.md) of the `Simulation` constructor to `"real/imag"` and using the default value for `force_complex_fields` of `False`. Alternatively, `kz_2d` can be set to "complex" (default value) or "3d" but this requires specifying `force_complex_fields` to `True` (to ensure that $k_z=0$ is handled consistently with $k_z \ne 0$, since the latter necessarily use complex fields).
 - The Fourier-series expansion requires only *non-negative* wavevectors $k_z$ since the flux is the same for $\pm k_z$.
 - The criteria for truncating the Fourier series is determined by when the *total* power (computed using the local density of states) has fallen below a given threshold (which needs to be small enough to ensure the results are converged).
 
