@@ -149,6 +149,10 @@ typedef struct eigenmode_data {
   int band_num;
   double frequency;
   double group_velocity;
+  // Analytical planewave fields (used when is_analytical is true, mdata is NULL)
+  bool is_analytical;
+  complex<double> E0[3]; // E-field polarization amplitude (Cartesian)
+  complex<double> H0[3]; // H-field polarization amplitude (Cartesian)
 } eigenmode_data;
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
@@ -166,7 +170,27 @@ static int pmod(int n, int modulus) {
 /*******************************************************************/
 complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
   eigenmode_data *edata = (eigenmode_data *)vedata;
-  if (!edata || !(edata->mdata)) meep::abort("%s:%i: internal error", __FILE__, __LINE__);
+  if (!edata) meep::abort("%s:%i: internal error", __FILE__, __LINE__);
+
+  // Fast path for analytical planewave in homogeneous medium: skip MPB interpolation
+  if (edata->is_analytical) {
+    complex<double> amplitude;
+    switch (c) {
+      case Ex: amplitude = edata->E0[0]; break;
+      case Ey: amplitude = edata->E0[1]; break;
+      case Ez: amplitude = edata->E0[2]; break;
+      case Hx: amplitude = edata->H0[0]; break;
+      case Hy: amplitude = edata->H0[1]; break;
+      case Hz: amplitude = edata->H0[2]; break;
+      default: meep::abort("invalid component in eigenmode_amplitude");
+    }
+    vec p0(p - edata->center);
+    double phase = 0;
+    LOOP_OVER_DIRECTIONS(p.dim, d) { phase += edata->Gk[d % 3] * p0.in_direction(d); }
+    return amplitude * edata->amp_func(p) * std::polar(1.0, TWOPI * phase);
+  }
+
+  if (!(edata->mdata)) meep::abort("%s:%i: internal error", __FILE__, __LINE__);
 
   int *n = edata->n;
   double *s = edata->s;
@@ -798,6 +822,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   edata->band_num = band_num;
   edata->frequency = frequency;
   edata->group_velocity = (double)vgrp;
+  edata->is_analytical = false;
 
   if (kdom) {
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
@@ -816,6 +841,10 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
 void destroy_eigenmode_data(void *vedata, bool destroy_mdata) {
   adjust_mpb_verbosity amv;
   eigenmode_data *edata = (eigenmode_data *)vedata;
+  if (edata->is_analytical) {
+    delete edata;
+    return;
+  }
   destroy_evectmatrix(edata->H);
   if (destroy_mdata) destroy_maxwell_data(edata->mdata);
   free(edata->fft_data_E);
@@ -914,6 +943,208 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
 }
 
 /***************************************************************/
+/* Analytical planewave eigenmode for homogeneous media.       */
+/* Bypasses MPB entirely by computing E and H fields directly  */
+/* from the dispersion relation and polarization vectors.      */
+/***************************************************************/
+static void cross3(double out[3], const double a[3], const double b[3]) {
+  out[0] = a[1] * b[2] - a[2] * b[1];
+  out[1] = a[2] * b[0] - a[0] * b[2];
+  out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+static void cross3c(complex<double> out[3], const double a[3], const complex<double> b[3]) {
+  out[0] = a[1] * b[2] - a[2] * b[1];
+  out[1] = a[2] * b[0] - a[0] * b[2];
+  out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+static double norm3(const double v[3]) { return sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]); }
+
+/* Check whether the medium is spatially homogeneous on the flux monitor plane
+   by sampling epsilon and mu at the center and edges. Returns true if all
+   samples match within a relative tolerance. */
+bool fields::is_homogeneous_on_monitor(const volume &where, double frequency, double *eps_out,
+                                       double *mu_out) const {
+  vec cen = where.center();
+  double eps_cen = real(get_eps(cen, frequency));
+  double mu_cen = real(get_mu(cen, frequency));
+  const double tol = 1e-4;
+
+  direction dirs[3] = {X, Y, Z};
+  for (int i = 0; i < 3; ++i) {
+    direction dd = dirs[i];
+    double extent = where.in_direction(dd);
+    if (extent == 0) continue;
+    double lo = where.in_direction_min(dd);
+    double hi = lo + extent;
+    for (int sign = -1; sign <= 1; sign += 2) {
+      vec sample = cen;
+      sample.set_direction(dd, sign > 0 ? hi : lo);
+      double eps_s = real(get_eps(sample, frequency));
+      double mu_s = real(get_mu(sample, frequency));
+      if (fabs(eps_s - eps_cen) > tol * fabs(eps_cen) || fabs(mu_s - mu_cen) > tol * fabs(mu_cen))
+        return false;
+    }
+  }
+  *eps_out = eps_cen;
+  *mu_out = mu_cen;
+  return true;
+}
+
+/* Create an eigenmode_data for a planewave in a homogeneous medium,
+   bypassing MPB entirely. Returns NULL for evanescent modes. */
+void *fields::get_eigenmode_planewave(double frequency, direction d, const volume &where,
+                                      const volume &eig_vol, diffractedplanewave *dp, double eps,
+                                      double mu, double *kdom) {
+  double nn = sqrt(eps * mu);
+  vec kpoint(0.0, 0.0, 0.0);
+  LOOP_OVER_DIRECTIONS(v.dim, dd) {
+    if (dd != d && eig_vol.in_direction(dd) == where.in_direction(dd))
+      if (boundaries[High][dd] == Periodic && boundaries[Low][dd] == Periodic)
+        kpoint.set_direction(dd, real(k[dd]));
+  }
+
+  // compute k_tangential + G for each periodic direction
+  double kcart[3] = {0, 0, 0};
+  double k2sum = 0;
+  int *g = dp->get_g();
+  LOOP_OVER_DIRECTIONS(v.dim, dd) {
+    if (eig_vol.in_direction(dd) != 0) {
+      double kt = kpoint.in_direction(dd) + g[dd - X] / eig_vol.in_direction(dd);
+      kcart[dd - X] = kt;
+      k2sum += kt * kt;
+    }
+  }
+
+  // handle special_kz for 2D with non-zero beta
+  if (((v.dim == D3) && (float(v.in_direction(Z)) == float(1 / a)) &&
+       (boundaries[High][Z] == Periodic && boundaries[Low][Z] == Periodic) && (real(k[Z]) != 0)) ||
+      ((v.dim == D2) && (real(k[Z]) != 0))) {
+    kcart[2] = real(k[Z]);
+    k2sum += kcart[2] * kcart[2];
+  }
+
+  // determine the normal direction
+  direction normal_dir = d;
+  if (normal_dir == NO_DIRECTION) {
+    if (eig_vol.in_direction(X) == 0)
+      normal_dir = X;
+    else if (eig_vol.in_direction(Y) == 0)
+      normal_dir = Y;
+    else
+      normal_dir = Z;
+  }
+
+  // compute k_perp from dispersion relation: k_perp = sqrt(n²ω² - k_parallel²)
+  double k_perp_sq = nn * nn * frequency * frequency - k2sum;
+  if (k_perp_sq < 0) {
+    if (verbosity > 0)
+      master_printf("WARNING: diffraction order for g=(%d,%d,%d) is evanescent (analytical)!\n",
+                    g[0], g[1], g[2]);
+    return NULL;
+  }
+  double k_perp = k_perp_sq > 0 ? sqrt(k_perp_sq) : 0;
+  kcart[normal_dir - X] = k_perp;
+
+  double k_mag = norm3(kcart);
+  if (k_mag == 0) {
+    if (verbosity > 0) master_printf("WARNING: zero wavevector in analytical planewave\n");
+    return NULL;
+  }
+  double khat[3] = {kcart[0] / k_mag, kcart[1] / k_mag, kcart[2] / k_mag};
+
+  // group velocity in the normal direction: dω/dk_n = k_n / (n² * ω)
+  double vg = k_perp / (nn * nn * frequency);
+
+  // compute polarization vectors following MPB's maxwell_set_planewave convention:
+  //   phat = normalize(khat × axis)  [p-polarization direction for H]
+  //   shat = khat × phat             [s-polarization direction for H]
+  double *axis = dp->get_axis();
+  double pvec[3];
+  cross3(pvec, khat, axis);
+  double plen = norm3(pvec);
+  if (plen < 1e-10) {
+    // axis is (nearly) parallel to k: choose an arbitrary perpendicular axis.
+    // This occurs e.g. for the 0th diffraction order at normal incidence.
+    double fallback[3];
+    if (fabs(khat[0]) < 0.9) {
+      fallback[0] = 1;
+      fallback[1] = 0;
+      fallback[2] = 0;
+    }
+    else {
+      fallback[0] = 0;
+      fallback[1] = 1;
+      fallback[2] = 0;
+    }
+    cross3(pvec, khat, fallback);
+    plen = norm3(pvec);
+  }
+  double phat[3] = {pvec[0] / plen, pvec[1] / plen, pvec[2] / plen};
+
+  double shat[3];
+  cross3(shat, khat, phat);
+
+  // H₀ = s * shat + p * phat
+  complex<double> s_amp = dp->get_s();
+  complex<double> p_amp = dp->get_p();
+  complex<double> H0[3];
+  for (int i = 0; i < 3; ++i)
+    H0[i] = s_amp * shat[i] + p_amp * phat[i];
+
+  // E₀ = -(k_eff × H₀) / (ω * ε) from Maxwell's equations, using the
+  // Yee-grid-corrected wavevector k_eff.  On the Yee grid the finite-
+  // difference curl replaces each k_i with  sin(π k_i / a) / (π / a),
+  // i.e. the "sinc" correction.  This makes the analytical mode fields
+  // consistent with the FDTD discretization and is critical for near-
+  // grazing modes where k_tangential approaches the Nyquist frequency.
+  const double pi = 0.5 * TWOPI;
+  double kcart_eff[3];
+  for (int i = 0; i < 3; ++i) {
+    double arg = pi * kcart[i] / a; // π k_i Δ  where Δ = 1/a
+    kcart_eff[i] = (fabs(arg) < 1e-20) ? kcart[i] : sin(arg) * a / pi;
+  }
+  complex<double> E0[3];
+  cross3c(E0, kcart_eff, H0);
+  for (int i = 0; i < 3; ++i)
+    E0[i] = -E0[i] / (frequency * eps);
+
+  eigenmode_data *edata = new eigenmode_data;
+  edata->mdata = NULL;
+  edata->fft_data_H = NULL;
+  edata->fft_data_E = NULL;
+  memset(&edata->H, 0, sizeof(evectmatrix));
+  edata->n[0] = edata->n[1] = edata->n[2] = 0;
+  edata->s[0] = edata->s[1] = edata->s[2] = 0;
+  edata->Gk[0] = kcart[0];
+  edata->Gk[1] = kcart[1];
+  edata->Gk[2] = kcart[2];
+  edata->center = eig_vol.center();
+  edata->amp_func = default_amp_func;
+  edata->band_num = 1;
+  edata->frequency = frequency;
+  edata->group_velocity = vg;
+  edata->is_analytical = true;
+  for (int i = 0; i < 3; ++i) {
+    edata->E0[i] = E0[i];
+    edata->H0[i] = H0[i];
+  }
+
+  if (kdom) {
+    kdom[0] = kcart[0];
+    kdom[1] = kcart[1];
+    kdom[2] = kcart[2];
+  }
+
+  if (verbosity > 1)
+    master_printf("analytical planewave: k=(%g,%g,%g), vgrp=%g, n=%g\n", kcart[0], kcart[1],
+                  kcart[2], vg, nn);
+
+  return (void *)edata;
+}
+
+/***************************************************************/
 /* get eigenmode coefficients for all frequencies in flux      */
 /* and all band indices in the caller-populated bands array.   */
 /*                                                             */
@@ -945,25 +1176,60 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
     meep::abort("flux regions for eigenmode projection with symmetry should be created by "
                 "add_mode_monitor()");
 
+  // Auto-detect homogeneous medium for DiffractedPlanewave: if the monitor
+  // region has uniform epsilon/mu, bypass MPB entirely and compute the
+  // planewave fields analytically using a sinc-corrected E-H relationship.
+  // Skip for 2D simulations with non-zero out-of-plane k (special_kz,
+  // including both beta!=0 "real/imag" mode and k[Z]!=0 "complex" mode)
+  // where the hybrid continuous/discrete curl makes the analytical E-H
+  // relationship insufficiently accurate.
+  bool try_analytical = false;
+  double homo_eps = 0, homo_mu = 0;
+  if (dp && !(v.dim == D2 && (beta != 0 || real(k[Z]) != 0))) {
+    double check_freq = num_freqs > 0 ? flux.freq[0] : 1.0;
+    try_analytical = is_homogeneous_on_monitor(flux.where, check_freq, &homo_eps, &homo_mu);
+    if (try_analytical && verbosity > 0)
+      master_printf("Homogeneous medium detected (eps=%g, mu=%g): using analytical planewave\n",
+                    homo_eps, homo_mu);
+  }
+
   vec kpoint(0.0, 0.0, 0.0); // default guess
 
-  // get_eigenmode will create mdata only once and then reuse it on each iteration of the loop
+  // get_eigenmode will create mdata only once and then reuse it on each iteration of the loop.
+  // Created lazily: only when the MPB path is actually used.
   maxwell_data *mdata = NULL;
 
   // loop over all bands and all frequencies
   for (int nb = 0; nb < num_bands; nb++) {
     for (int nf = 0; nf < num_freqs; nf++) {
       /*--------------------------------------------------------------*/
-      /*- call mpb to compute the eigenmode --------------------------*/
+      /*- compute the eigenmode (analytical or via MPB) --------------*/
       /*--------------------------------------------------------------*/
       int band_num = bands ? bands[nb] : 1;
       double kdom[3];
-      if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
-      am_now_working_on(MPBTime);
-      void *mode_data =
-          get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
-                        parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp);
-      finished_working();
+      void *mode_data = NULL;
+      bool used_analytical = false;
+
+      if (try_analytical) {
+        vec cen = flux.where.center();
+        double eps_f = real(get_eps(cen, flux.freq[nf]));
+        double mu_f = real(get_mu(cen, flux.freq[nf]));
+        mode_data =
+            get_eigenmode_planewave(flux.freq[nf], d, flux.where, eig_vol, dp, eps_f, mu_f, kdom);
+        if (mode_data) used_analytical = true;
+      }
+
+      if (!mode_data && !used_analytical) {
+        // Use MPB path: either analytical was not attempted or returned
+        // evanescent (NULL).
+        if (user_kpoint_func) kpoint = user_kpoint_func(flux.freq[nf], band_num, user_kpoint_data);
+        am_now_working_on(MPBTime);
+        mode_data =
+            get_eigenmode(flux.freq[nf], d, flux.where, eig_vol, band_num, kpoint, match_frequency,
+                          parity, eig_resolution, eigensolver_tol, kdom, (void **)&mdata, dp);
+        finished_working();
+      }
+
       if (!mode_data) { // mode not found, assume evanescent
         coeffs[2 * nb * num_freqs + 2 * nf] = coeffs[2 * nb * num_freqs + 2 * nf + 1] = 0;
         if (vgrp) vgrp[nb * num_freqs + nf] = 0;
@@ -972,7 +1238,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
         continue;
       }
 
-      if (is_real && beta != 0)
+      if (!used_analytical && is_real && beta != 0)
         special_kz_phasefix((eigenmode_data *)mode_data, false /* phase_flip */);
 
       double vg = get_group_velocity(mode_data);
@@ -981,24 +1247,19 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       if (kpoints) kpoints[nb * num_freqs + nf] = kfound;
       if (kdom_list) kdom_list[nb * num_freqs + nf] = vec(kdom[0], kdom[1], kdom[2]);
 
-      /* in the common case of k aligned along a cartesian direction, update
-         our k-point guess based on the current k point plus a correction from the group velocity */
-      if (match_frequency && nf + 1 < num_freqs && abs(kfound) > 0 &&
+      if (!used_analytical && match_frequency && nf + 1 < num_freqs && abs(kfound) > 0 &&
           ((kfound.x() == 0 && (kfound.y() == 0 || kfound.z() == 0)) ||
            (kfound.y() == 0 && kfound.z() == 0)))
         kpoint = kfound + kfound * ((flux.freq[nf + 1] - flux.freq[nf]) / (vg * abs(kfound)));
 
       /*--------------------------------------------------------------*/
-      /*--------------------------------------------------------------*/
+      /*- compute overlap integrals and extract coefficients ---------*/
       /*--------------------------------------------------------------*/
       complex<double> mode_flux[2], mode_mode[2];
       get_mode_flux_overlap(mode_data, flux, nf, mode_flux);
       get_mode_mode_overlap(mode_data, mode_data, flux, mode_mode);
       complex<double> cplus = 0.5 * (mode_flux[0] + mode_flux[1]);
       complex<double> cminus = 0.5 * (mode_flux[0] - mode_flux[1]);
-      /* MPB modes are normalized to unit power above, but we need to re-normalize here to have
-         unit power as integrated on Meep's Yee grid and not on MPB's grid.  Thus, normfac differs
-         from a constant factor only because of discretization effects. */
       complex<double> normfac = 0.5 * (mode_mode[0] + mode_mode[1]);
       if (normfac == 0.0) normfac = 1.0;
       double csc = sqrt((flux.use_symmetry ? S.multiplicity() : 1.0) / abs(normfac));
@@ -1010,7 +1271,7 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
       destroy_eigenmode_data((void *)mode_data, false);
     }
   }
-  destroy_maxwell_data(mdata);
+  if (mdata) destroy_maxwell_data(mdata);
 }
 
 /**************************************************************/
