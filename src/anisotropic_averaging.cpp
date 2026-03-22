@@ -257,8 +257,23 @@ breakout:
       double chi1invrow[3], chi1invrow_offdiag[3];
       IVEC_LOOP_ILOC(gv, here);
       medium.eff_chi1inv_row(c, chi1invrow, gv.dV(here, smoothing_diameter), tol, maxeval);
-      medium.eff_chi1inv_row(c, chi1invrow_offdiag, gv.dV(here - shift1, smoothing_diameter), tol,
-                             maxeval);
+      // Early-exit propagation: if the first call returned a trivial result
+      // (off-diagonal elements are zero, indicating uniform material), verify
+      // that the shifted volume is in the same uniform material by comparing
+      // chi1p1 at its center. If so, skip the expensive second eff_chi1inv_row
+      // call — the off-diagonal tensor elements would also be zero.
+      if (maxeval > 0 && chi1invrow[(idiag + 1) % 3] == 0.0 && chi1invrow[(idiag + 2) % 3] == 0.0) {
+        volume shifted_vol(gv.dV(here - shift1, smoothing_diameter));
+        if (medium.chi1p1(ft, shifted_vol.center()) == 1.0 / chi1invrow[idiag]) {
+          chi1invrow_offdiag[0] = chi1invrow_offdiag[1] = chi1invrow_offdiag[2] = 0.0;
+          chi1invrow_offdiag[idiag] = chi1invrow[idiag];
+        }
+        else { medium.eff_chi1inv_row(c, chi1invrow_offdiag, shifted_vol, tol, maxeval); }
+      }
+      else {
+        medium.eff_chi1inv_row(c, chi1invrow_offdiag, gv.dV(here - shift1, smoothing_diameter), tol,
+                               maxeval);
+      }
       if (chi1inv[c][d0]) {
         chi1inv[c][d0][i] = (d0 == dc) ? chi1invrow[0] : chi1invrow_offdiag[0];
         trivial0 = trivial0 && (chi1inv[c][d0][i] == trivial_val[0]);
