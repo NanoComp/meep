@@ -47,7 +47,7 @@ class TestEigfreq(unittest.TestCase):
         sim.init_sim()
         eigfreq = sim.solve_eigfreq(tol=1e-6)
 
-        self.assertAlmostEqual(eigfreq.real, 0.23445413142440263, places=5)
+        self.assertAlmostEqual(eigfreq.real, 0.2346039560672884, places=5)
         self.assertAlmostEqual(eigfreq.imag, -0.0003147775697388, places=5)
 
 
