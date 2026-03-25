@@ -147,7 +147,7 @@ jobs:
       run: |
         mkdir -p build &&
         pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-openmp &&
         popd
 
     - name: Run configure with coverage
