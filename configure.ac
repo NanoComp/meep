@@ -2,7 +2,7 @@
 
 AC_INIT([meep],[m4_esyscmd(./version.sh 1.33.0-beta)])
 AC_CONFIG_SRCDIR(src/step.cpp)
-AC_CONFIG_AUX([build-aux])
+AC_CONFIG_AUX_DIR([build-aux])
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
