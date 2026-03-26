@@ -76,7 +76,7 @@ if test "x$with_mpi" = "xyes"; then
   CXX=$MPICXX
 fi
 
-# Require C++17 support
+# Require C++11 support
 AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
 
 ##############################################################################
