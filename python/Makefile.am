@@ -270,7 +270,7 @@ endif
 all-local: meep
 
 check-adjoint:
-   $(MAKE) check TESTS="$(ADJOINT_TESTS) $(TESTS)"
+	$(MAKE) check TESTS="$(ADJOINT_TESTS) $(TESTS)"
 
 clean-local:
 	rm -rf meep __init__.py.bak
