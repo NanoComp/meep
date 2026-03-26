@@ -77,7 +77,7 @@ if test "x$with_mpi" = "xyes"; then
 fi
 
 # Require C++17 support
-AX_CXX_COMPILE_STDCXX([17], [], [mandatory])
+AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
 
 ##############################################################################
 # Compiler flags
@@ -113,8 +113,8 @@ for flg in $CXXFLAGS; do
 done
 AC_SUBST(ARCHFLAG)
 
-AC_ARG_ENABLE(openmp, [AS_HELP_STRING([--enable-openmp],[use OpenMP directives for parallelism])],
-              enable_openmp=$enableval, enable_openmp=no)
+AC_ARG_WITH(openmp, [AS_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])],
+            enable_openmp=$enableval, enable_openmp=no)
 if test x"$enable_openmp" = "xyes"; then
    AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
    AX_OPENMP([CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"], [AC_MSG_ERROR([don't know how to enable OpenMP])])
@@ -316,6 +316,31 @@ else
      AC_MSG_ERROR([guile-config is broken])])])
 fi
 AC_CHECK_HEADERS([libguile.h guile/gh.h])
+
+# Check how smob types work in this Guile version:
+
+AC_CHECK_FUNCS(scm_make_smob_type)
+AC_MSG_CHECKING([for SCM_SMOB_PREDICATE])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <guile/gh.h>
+#include <libguile/smob.h>]], [[int x; SCM_SMOB_PREDICATE(1,x);]])],[ok=yes],[ok=no])
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_SMOB_PREDICATE, 1, [define if we have SCM_SMOB_PREDICATE])
+fi
+AC_MSG_CHECKING([for SCM_SMOB_DATA])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <guile/gh.h>
+#include <libguile/smob.h>]], [[int x; SCM_SMOB_DATA(x);]])],[ok=yes],[ok=no])
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_SMOB_DATA, 1, [define if we have SCM_SMOB_DATA])
+fi
+AC_MSG_CHECKING([for SCM_NEWSMOB])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <guile/gh.h>
+#include <libguile/smob.h>]], [[int x; SCM_NEWSMOB(x,1,0);]])],[ok=yes],[ok=no])
+AC_MSG_RESULT($ok)
+if test $ok = yes; then
+	AC_DEFINE(HAVE_SCM_NEWSMOB, 1, [define if we have SCM_NEWSMOB])
+fi
 
 # Check how to activate Guile readline support:
 
