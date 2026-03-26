@@ -38,7 +38,7 @@ ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_adjoint_solver.py         \
     $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
-    $(TEST_DIR)/test_adjoint_jax.py            \
+    $(TEST_DIR)/test_adjoint_jax.py
 
 TESTS =                                        \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
