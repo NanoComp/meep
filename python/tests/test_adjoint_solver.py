@@ -1245,6 +1245,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 )
             print(f"PASSED: filter function = {selected_filter.__name__}")
 
+    @unittest.skipIf(mp.is_single_precision(), "double-precision specific test")
     def test_unfilter_design(self):
         """Verifies that the unfilter_design on a given structure
         finds initialization close to what it found previously."""
