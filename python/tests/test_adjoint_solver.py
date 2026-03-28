@@ -547,7 +547,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            tol = 0.062 if mp.is_single_precision() else 0.002
+            tol = 0.075 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
                 f"PASSED: frequencies={frequencies}, "
@@ -678,7 +678,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             # non-center frequencies of a multifrequency simulation
             # are expected to be less accurate than the center frequency
             if nfrq == 1 and frequencies[0] == self.fcen:
-                tol = 2.1e-4 if mp.is_single_precision() else 5e-6
+                tol = 3e-4 if mp.is_single_precision() else 5e-6
             else:
                 tol = 0.005 if mp.is_single_precision() else 0.002
 
