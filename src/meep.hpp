@@ -632,9 +632,10 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0) const;
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
-                                   double frequency = 0) const;
+  std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0,
+                                         bool *is_frequency_dependent = NULL) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
+                                   bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_inveps(component c, direction d, const ivec &iloc,
                                   double frequency = 0) const {
     return get_chi1inv(c, d, iloc, frequency);
@@ -883,9 +884,9 @@ public:
 
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_inveps(component c, direction d, const ivec &origloc,
                                   double frequency = 0) const {
     return get_chi1inv(c, d, origloc, frequency);
@@ -1541,8 +1542,8 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
-                                   double frequency = 0) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
+                                   bool *is_frequency_dependent = NULL) const;
   // Returns the vector of sources volumes for field type `ft`.
   const std::vector<src_vol> &get_sources(field_type ft) const { return sources[ft]; }
   // Adds a source volume of field type `ft` and takes ownership of `src`.
@@ -2197,7 +2198,7 @@ public:
                                 int decimation_factor = 0, int Nperiods = 1);
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_inveps(component c, direction d, const vec &loc,
                                   double frequency = 0) const {
     return get_chi1inv(c, d, loc, frequency);
@@ -2305,7 +2306,7 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
   std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp

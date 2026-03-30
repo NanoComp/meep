@@ -164,7 +164,7 @@ complex<double> fields_chunk::get_field(component c, const ivec &iloc) const {
 }
 
 complex<double> fields::get_chi1inv(component c, direction d, const ivec &origloc, double frequency,
-                                    bool parallel) const {
+                                    bool parallel, bool *is_frequency_dependent) const {
   ivec iloc = origloc;
   complex<double> aaack = 1.0;
   locate_point_in_user_volume(&iloc, &aaack);
@@ -173,7 +173,8 @@ complex<double> fields::get_chi1inv(component c, direction d, const ivec &origlo
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
         complex<double> val =
-            chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), frequency) *
+            chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), frequency,
+                                   is_frequency_dependent) *
             complex<double>(ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1,
                             0);
         return parallel ? sum_to_all(val) : val;
@@ -184,18 +185,18 @@ complex<double> fields::get_chi1inv(component c, direction d, const ivec &origlo
 }
 
 complex<double> fields_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
-                                          double frequency) const {
-  return s->get_chi1inv(c, d, iloc, frequency);
+                                          double frequency, bool *is_frequency_dependent) const {
+  return s->get_chi1inv(c, d, iloc, frequency, is_frequency_dependent);
 }
 
 complex<double> fields::get_chi1inv(component c, direction d, const vec &loc, double frequency,
-                                    bool parallel) const {
+                                    bool parallel, bool *is_frequency_dependent) const {
   ivec ilocs[8];
   double w[8];
   complex<double> res(0.0, 0.0);
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
-    res += w[argh] * get_chi1inv(c, d, ilocs[argh], frequency, false);
+    res += w[argh] * get_chi1inv(c, d, ilocs[argh], frequency, false, is_frequency_dependent);
   return parallel ? sum_to_all(res) : res;
 }
 
@@ -224,14 +225,16 @@ complex<double> fields::get_mu(const vec &loc, double frequency) const {
 }
 
 complex<double> structure::get_chi1inv(component c, direction d, const ivec &origloc,
-                                       double frequency, bool parallel) const {
+                                       double frequency, bool parallel,
+                                       bool *is_frequency_dependent) const {
   ivec iloc = origloc;
   for (int sn = 0; sn < S.multiplicity(); sn++)
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
         signed_direction ds = S.transform(d, sn);
         complex<double> val =
-            chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), frequency) *
+            chunks[i]->get_chi1inv(S.transform(c, sn), ds.d, S.transform(iloc, sn), frequency,
+                                   is_frequency_dependent) *
             complex<double>((ds.flipped ^ S.transform(component_direction(c), sn).flipped ? -1 : 1),
                             0);
         return parallel ? sum_to_all(val) : val;
@@ -261,9 +264,11 @@ void matrix_invert(std::complex<double> (&Vinv)[9], std::complex<double> (&V)[9]
 }
 
 complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int idx,
-                                                   double frequency) const {
+                                                   double frequency,
+                                                   bool *is_frequency_dependent) const {
   complex<double> res(0.0, 0.0);
   if (is_mine()) {
+    if (is_frequency_dependent) *is_frequency_dependent = false;
     if (frequency == 0)
       return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
     // ----------------------------------------------------------------- //
@@ -339,6 +344,7 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
         while (my_sus) {
           if (my_sus->sigma[cc][dd]) {
             double sigma = my_sus->sigma[cc][dd][idx];
+            if (sigma != 0 && is_frequency_dependent) *is_frequency_dependent = true;
             eps += my_sus->chi1(frequency, sigma);
           }
           my_sus = my_sus->next;
@@ -347,6 +353,7 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
         // Account for conductivity term
         if (conductivity[cc][dd]) {
           double conductivityCur = conductivity[cc][dd][idx];
+          if (conductivityCur != 0 && is_frequency_dependent) *is_frequency_dependent = true;
           eps = std::complex<double>(1.0, (conductivityCur / frequency)) * eps;
         }
         chi1_tensor[com_it + 3 * dir_int] = eps;
@@ -364,18 +371,18 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
 }
 
 complex<double> structure_chunk::get_chi1inv(component c, direction d, const ivec &iloc,
-                                             double frequency) const {
-  return get_chi1inv_at_pt(c, d, gv.index(c, iloc), frequency);
+                                             double frequency, bool *is_frequency_dependent) const {
+  return get_chi1inv_at_pt(c, d, gv.index(c, iloc), frequency, is_frequency_dependent);
 }
 
 complex<double> structure::get_chi1inv(component c, direction d, const vec &loc, double frequency,
-                                       bool parallel) const {
+                                       bool parallel, bool *is_frequency_dependent) const {
   ivec ilocs[8];
   double w[8];
   complex<double> res(0.0, 0.0);
   gv.interpolate(c, loc, ilocs, w);
   for (int argh = 0; argh < 8 && w[argh] != 0; argh++)
-    res += w[argh] * get_chi1inv(c, d, ilocs[argh], frequency, false);
+    res += w[argh] * get_chi1inv(c, d, ilocs[argh], frequency, false, is_frequency_dependent);
   return parallel ? sum_to_all(res) : res;
 }
 
