@@ -369,25 +369,16 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
         bool trivial0 = true, trivial1 = true, trivial2 = true;
         PLOOP_OVER_IVECS_C(
             gv, gv.little_corner() + gv.iyee_shift(c), gv.big_corner() + gv.iyee_shift(c), i,
-            "omp parallel for collapse(3) reduction(&&:trivial0,trivial1,trivial2)") {
+            "omp parallel for collapse(3) reduction(&:trivial0,trivial1,trivial2)") {
           double sigrow[3], sigrow_offdiag[3];
           IVEC_LOOP_LOC(gv, here);
           sigma.sigma_row(c, sigrow, here);
           sigma.sigma_row(c, sigrow_offdiag, here - shift1);
           sigrow[(idiag + 1) % 3] = sigrow_offdiag[(idiag + 1) % 3];
           sigrow[(idiag + 2) % 3] = sigrow_offdiag[(idiag + 2) % 3];
-          if (s0) {
-            s0[i] = sigrow[0];
-            trivial0 = trivial0 && (sigrow[0] == 0.);
-          }
-          if (s1) {
-            s1[i] = sigrow[1];
-            trivial1 = trivial1 && (sigrow[1] == 0.);
-          }
-          if (s2) {
-            s2[i] = sigrow[2];
-            trivial2 = trivial2 && (sigrow[2] == 0.);
-          }
+          if (s0) trivial0 &= (s0[i] = sigrow[0]) == 0.;
+          if (s1) trivial1 &= (s1[i] = sigrow[1]) == 0.;
+          if (s2) trivial2 &= (s2[i] = sigrow[2]) == 0.;
         }
         trivial[0] = trivial0;
         trivial[1] = trivial1;
