@@ -367,9 +367,9 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
       // need a reduction since each thread computes its local subset.
       if (sigma.is_thread_safe()) {
         bool trivial0 = true, trivial1 = true, trivial2 = true;
-        PLOOP_OVER_IVECS_C(
-            gv, gv.little_corner() + gv.iyee_shift(c), gv.big_corner() + gv.iyee_shift(c), i,
-            "omp parallel for collapse(3) reduction(&:trivial0,trivial1,trivial2)") {
+        PLOOP_OVER_IVECS_C(gv, gv.little_corner() + gv.iyee_shift(c),
+                           gv.big_corner() + gv.iyee_shift(c), i,
+                           "omp parallel for collapse(3) reduction(&:trivial0,trivial1,trivial2)") {
           double sigrow[3], sigrow_offdiag[3];
           IVEC_LOOP_LOC(gv, here);
           sigma.sigma_row(c, sigrow, here);
