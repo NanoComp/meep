@@ -143,7 +143,7 @@ jobs:
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
     - name: Run configure with OpenMP
-      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.9) && !(matrix.enable-mpi == true && matrix.python-version == 3.10) }}
+      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.9) && !(matrix.enable-mpi == true && matrix.python-version == 3.11) }}
       run: |
         mkdir -p build &&
         pushd build &&
@@ -155,7 +155,7 @@ jobs:
       run: ./configure --enable-maintainer-mode --with-coverage --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: Run configure with single-precision floating point and swig threads
-      if: ${{ matrix.enable-mpi == true && matrix.python-version == 3.10 }}
+      if: ${{ matrix.enable-mpi == true && matrix.python-version == 3.11 }}
       run: |
         mkdir -p build &&
         pushd build &&
