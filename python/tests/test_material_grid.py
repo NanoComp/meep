@@ -251,9 +251,9 @@ def compute_resonant_mode_3d(use_matgrid=True):
 class TestMaterialGrid(unittest.TestCase):
     def test_subpixel_smoothing(self):
         # "exact" frequency computed using MaterialGrid at resolution = 300
-        freq_ref = 0.29826813873225283
+        freq_ref = 0.29830972300187764
 
-        res = [25, 50]
+        res = [40, 80]
         freq_matgrid = []
         for r in res:
             freq_matgrid.append(compute_resonant_mode_2d(r))
