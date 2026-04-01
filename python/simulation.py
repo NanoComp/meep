@@ -4578,15 +4578,35 @@ class Simulation:
     def mean_time_spent_on(self, time_sink):
         """
         Return the mean time spent by all processes for a type of work `time_sink` which
-        can be one of the following integer constants: `0`: "time stepping", `1`: "connecting chunks",
-        `2`: "copying boundaries", `3`: "all-all communication", `4`: "1-1 communication",
-        `5`: "outputting fields", `6`: "Fourier transforming", `7`: "MPB mode solver",
-        `8`: "near-to-far-field transform", `9`: "updating B field", `10`: "updating H field",
-        `11`: "updating D field", `12`: "updating E field", `13`: "boundary stepping B",
-        `14`: "boundary stepping WH", `15`: "boundary stepping PH", `16`: "boundary stepping H",
-        `17`: "boundary stepping D", `18`: "boundary stepping WE", `19`: "boundary stepping PE",
-        `20`: "boundary stepping E", `21`: "everything else".
+        can be one of the following named constants:
+
+        + `mp.Connecting`: connecting chunks
+        + `mp.Stepping`: time stepping
+        + `mp.Boundaries`: copying boundaries
+        + `mp.MpiAllTime`: all-all communication
+        + `mp.MpiOneTime`: 1-1 communication
+        + `mp.FieldOutput`: outputting fields
+        + `mp.FourierTransforming`: Fourier transforming
+        + `mp.MPBTime`: MPB mode solver
+        + `mp.GetFarfieldsTime`: near-to-far-field transform
+        + `mp.FieldUpdateB`: updating B field
+        + `mp.FieldUpdateH`: updating H field
+        + `mp.FieldUpdateD`: updating D field
+        + `mp.FieldUpdateE`: updating E field
+        + `mp.BoundarySteppingB`: boundary stepping B
+        + `mp.BoundarySteppingWH`: boundary stepping WH
+        + `mp.BoundarySteppingPH`: boundary stepping PH
+        + `mp.BoundarySteppingH`: boundary stepping H
+        + `mp.BoundarySteppingD`: boundary stepping D
+        + `mp.BoundarySteppingWE`: boundary stepping WE
+        + `mp.BoundarySteppingPE`: boundary stepping PE
+        + `mp.BoundarySteppingE`: boundary stepping E
+        + `mp.Other`: everything else
         """
+        if self.fields is None:
+            raise RuntimeError(
+                "Simulation fields are not initialized. Call init_sim() or run() first."
+            )
         return self.fields.mean_time_spent_on(time_sink)
 
     def time_spent_on(self, time_sink):
@@ -4594,6 +4614,10 @@ class Simulation:
         Return a list of times spent by each process for a type of work `time_sink` which
         is the same as for `mean_time_spent_on`.
         """
+        if self.fields is None:
+            raise RuntimeError(
+                "Simulation fields are not initialized. Call init_sim() or run() first."
+            )
         return self.fields.time_spent_on(time_sink)
 
     def get_timing_data(self):

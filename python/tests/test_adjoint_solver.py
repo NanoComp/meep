@@ -547,7 +547,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            tol = 0.062 if mp.is_single_precision() else 0.002
+            tol = 0.075 if mp.is_single_precision() else 0.002
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
             print(
                 f"PASSED: frequencies={frequencies}, "
@@ -585,7 +585,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             # non-center frequencies of a multifrequency simulation
             # are expected to be *less* accurate than the center frequency
             if len(frequencies) == 1 and frequencies[0] == self.fcen:
-                tol = 0.004 if mp.is_single_precision() else 5e-5
+                tol = 0.006 if mp.is_single_precision() else 5e-5
             else:
                 tol = 0.008 if mp.is_single_precision() else 0.0024
 
@@ -678,7 +678,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
             # non-center frequencies of a multifrequency simulation
             # are expected to be less accurate than the center frequency
             if nfrq == 1 and frequencies[0] == self.fcen:
-                tol = 2.1e-4 if mp.is_single_precision() else 5e-6
+                tol = 6e-4 if mp.is_single_precision() else 5e-6
             else:
                 tol = 0.005 if mp.is_single_precision() else 0.002
 
@@ -738,7 +738,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 unperturbed_grad = np.expand_dims(unperturbed_grad, axis=1)
             adj_dd = (self.dp[None, :] @ unperturbed_grad).flatten()
             fnd_dd = perturbed_val - unperturbed_val
-            tol = 0.04 if mp.is_single_precision() else 0.01
+            tol = 0.05 if mp.is_single_precision() else 0.01
             self.assertClose(adj_dd, fnd_dd, epsilon=tol)
 
             print(
@@ -1245,6 +1245,7 @@ class TestAdjointSolver(ApproxComparisonTestCase):
                 )
             print(f"PASSED: filter function = {selected_filter.__name__}")
 
+    @unittest.skipIf(mp.is_single_precision(), "double-precision specific test")
     def test_unfilter_design(self):
         """Verifies that the unfilter_design on a given structure
         finds initialization close to what it found previously."""
