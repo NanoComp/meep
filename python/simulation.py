@@ -4580,28 +4580,28 @@ class Simulation:
         Return the mean time spent by all processes for a type of work `time_sink` which
         can be one of the following named constants:
 
-          `mp.Connecting`: connecting chunks
-          `mp.Stepping`: time stepping
-          `mp.Boundaries`: copying boundaries
-          `mp.MpiAllTime`: all-all communication
-          `mp.MpiOneTime`: 1-1 communication
-          `mp.FieldOutput`: outputting fields
-          `mp.FourierTransforming`: Fourier transforming
-          `mp.MPBTime`: MPB mode solver
-          `mp.GetFarfieldsTime`: near-to-far-field transform
-          `mp.FieldUpdateB`: updating B field
-          `mp.FieldUpdateH`: updating H field
-          `mp.FieldUpdateD`: updating D field
-          `mp.FieldUpdateE`: updating E field
-          `mp.BoundarySteppingB`: boundary stepping B
-          `mp.BoundarySteppingWH`: boundary stepping WH
-          `mp.BoundarySteppingPH`: boundary stepping PH
-          `mp.BoundarySteppingH`: boundary stepping H
-          `mp.BoundarySteppingD`: boundary stepping D
-          `mp.BoundarySteppingWE`: boundary stepping WE
-          `mp.BoundarySteppingPE`: boundary stepping PE
-          `mp.BoundarySteppingE`: boundary stepping E
-          `mp.Other`: everything else
+        + `mp.Connecting`: connecting chunks
+        + `mp.Stepping`: time stepping
+        + `mp.Boundaries`: copying boundaries
+        + `mp.MpiAllTime`: all-all communication
+        + `mp.MpiOneTime`: 1-1 communication
+        + `mp.FieldOutput`: outputting fields
+        + `mp.FourierTransforming`: Fourier transforming
+        + `mp.MPBTime`: MPB mode solver
+        + `mp.GetFarfieldsTime`: near-to-far-field transform
+        + `mp.FieldUpdateB`: updating B field
+        + `mp.FieldUpdateH`: updating H field
+        + `mp.FieldUpdateD`: updating D field
+        + `mp.FieldUpdateE`: updating E field
+        + `mp.BoundarySteppingB`: boundary stepping B
+        + `mp.BoundarySteppingWH`: boundary stepping WH
+        + `mp.BoundarySteppingPH`: boundary stepping PH
+        + `mp.BoundarySteppingH`: boundary stepping H
+        + `mp.BoundarySteppingD`: boundary stepping D
+        + `mp.BoundarySteppingWE`: boundary stepping WE
+        + `mp.BoundarySteppingPE`: boundary stepping PE
+        + `mp.BoundarySteppingE`: boundary stepping E
+        + `mp.Other`: everything else
         """
         if self.fields is None:
             raise RuntimeError(
