@@ -2372,7 +2372,7 @@ class Simulation:
         if self.structure is None:
             raise ValueError(
                 "Structure must be initialized before loading chunk layout from file '%s'"
-                % fname
+                % source
             )
 
         if isinstance(source, Simulation):
