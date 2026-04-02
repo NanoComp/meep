@@ -570,6 +570,7 @@ void fields::_require_component(component c, bool aniso2d) {
     // we will eventually call sync_chunk_connections(), in either require_component(c)
     // or require_components(), to synchronize this across processes:
     chunk_connections_valid = false;
+    changed_materials = true;
   }
 }
 
