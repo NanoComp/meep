@@ -1358,7 +1358,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
     double *total
 };
 
-// dJ, amp_arr, fpart_list typemapts are covered by %apply directives above
+// dJ, amp_arr, fpart_list typemaps are covered by %apply directives above
 
 %exception {
 #ifdef MEEP_SWIG_PYTHON_DEBUG
