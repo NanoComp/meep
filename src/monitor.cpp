@@ -268,7 +268,6 @@ complex<double> structure_chunk::get_chi1inv_at_pt(component c, direction d, int
                                                    bool *is_frequency_dependent) const {
   complex<double> res(0.0, 0.0);
   if (is_mine()) {
-    if (is_frequency_dependent) *is_frequency_dependent = false;
     if (frequency == 0)
       return chi1inv[c][d] ? chi1inv[c][d][idx] : (d == component_direction(c) ? 1.0 : 0);
     // ----------------------------------------------------------------- //
