@@ -1076,11 +1076,9 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* grid_vals {
     $1 = is_array($input);
 }
-
 %typemap(in, fragment="NumPy_Macros") std::complex<double>* grid_vals {
     $1 = (std::complex<double> *)array_data($input);
 }
-
 %apply std::complex<double>* grid_vals {
      std::complex<double>* eigfreq, std::complex<double>* coeffs,
      std::complex<complex>* dJ, std::complex<double>* amp_arr
@@ -1110,9 +1108,9 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %apply (int *IN_ARRAY1, int DIM1) {(int *bands, int num_bands)};
 
 
-// typemaps add_dft_fields
+// typemaps for add_dft_fields
 
-%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)};
+%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)}
 
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
