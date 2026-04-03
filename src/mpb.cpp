@@ -49,8 +49,7 @@ typedef struct {
   size_t icache;  // current position in the cache
   bool use_cache; // whether we are using the cache
 
-  // Track whether any sampled point has frequency-dependent epsilon.
-  // Detected by comparing get_chi1inv(freq=0) vs get_chi1inv(freq=frequency).
+  // Whether any sampled point has frequency-dependent epsilon.
   bool found_dispersive;
 } meep_mpb_eps_data;
 
@@ -93,22 +92,14 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
     const fields *f = eps_data->f;
 
     // call get_chi1inv with parallel=false to get only local epsilon data
-    cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false));
-    cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false));
-    cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false));
+    // Pass &is_freq_dep to detect dispersive materials directly from get_chi1inv,
+    // which knows whether frequency-dependent susceptibilities were evaluated.
+    bool is_freq_dep = false;
+    cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false, &is_freq_dep));
+    cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false, &is_freq_dep));
+    cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false, &is_freq_dep));
+    if (is_freq_dep) eps_data->found_dispersive = true;
 
-    // Detect dispersive materials: compare frequency-dependent vs DC epsilon.
-    // Only check diagonal components for efficiency.
-    if (!eps_data->found_dispersive && frequency != 0) {
-      const double tol = 1e-6;
-      double dc0 = real(f->get_chi1inv(Ex, X, p, 0, false));
-      double dc1 = real(f->get_chi1inv(Ey, Y, p, 0, false));
-      double dc2 = real(f->get_chi1inv(Ez, Z, p, 0, false));
-      if (fabs(cache[6 * i] - dc0) > tol * fabs(dc0) ||
-          fabs(cache[6 * i + 1] - dc1) > tol * fabs(dc1) ||
-          fabs(cache[6 * i + 2] - dc2) > tol * fabs(dc2))
-        eps_data->found_dispersive = true;
-    }
     // Off-diagonal components: average from both relevant Yee grids.
     // Each off-diagonal chi1inv component (e.g., chi1inv_xy) can be
     // queried from either grid that stores it (Ex or Ey). On the Yee grid,
