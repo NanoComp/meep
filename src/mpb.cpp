@@ -1137,7 +1137,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
                                         double *vgrp, kpoint_func user_kpoint_func,
                                         void *user_kpoint_data, vec *kpoints, vec *kdom,
                                         double *cscale, direction d, diffractedplanewave *dp,
-                                        void **eigenmode_cache) {
+                                        void **eigenmode_cache, bool *cache_dispersive,
+                                        double *cache_frequency) {
   (void)flux;
   (void)eig_vol;
   (void)bands;
@@ -1155,6 +1156,8 @@ void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, in
   (void)d;
   (void)dp;
   (void)eigenmode_cache;
+  (void)cache_dispersive;
+  (void)cache_frequency;
   meep::abort("Meep must be configured/compiled with MPB for get_eigenmode_coefficients");
 }
 
