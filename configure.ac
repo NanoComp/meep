@@ -114,8 +114,8 @@ done
 AC_SUBST(ARCHFLAG)
 
 AC_ARG_WITH(openmp, [AS_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])],
-            enable_openmp=$enableval, enable_openmp=no)
-if test x"$enable_openmp" = "xyes"; then
+            [], [with_openmp=no])
+if test x"$with_openmp" = "xyes"; then
    AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
    AX_OPENMP([CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"], [AC_MSG_ERROR([don't know how to enable OpenMP])])
 fi
@@ -258,7 +258,7 @@ if test "x$with_mpi" = "xyes"; then
    # always use 2 processes for 'make check'
    RUNCODE="$MPIRUN -np 2"
 fi
-if test x"$enable_openmp" = "xyes"; then
+if test x"$with_openmp" = "xyes"; then
    # use 2 openmp threads
    RUNCODE="env OMP_NUM_THREADS=2 $RUNCODE"
 fi
