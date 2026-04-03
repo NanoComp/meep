@@ -172,6 +172,7 @@ void fields::sync_chunk_connections() {
   am_now_working_on(MpiAllTime);
   chunk_connections_valid = and_to_all(chunk_connections_valid);
   finished_working();
+  changed_materials = false;
 }
 
 void fields::connect_chunks() {
