@@ -180,21 +180,6 @@ jobs:
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
-    - name: Generate coverage report
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
-      run: |
-        pushd python/ &&
-        coverage combine -a &&
-        coverage report -i &&
-        coverage xml -i &&
-        popd
-
-    - name: Upload coverage to Codecov
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
-      uses: codecov/codecov-action@v6
-      with:
-        files: ${{ github.workspace }}/python/coverage.xml
-
     - name: Archive C++ test logs
       if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
       uses: actions/upload-artifact@v7
