@@ -566,8 +566,7 @@ void fields::_require_component(component c, bool aniso2d) {
 
   if (need_to_reconnect) {
     figure_out_step_plan();
-    // we will eventually call sync_chunk_connections(), in either require_component(c)
-    // or require_components(), to synchronize this across processes:
+    // we will eventually call sync_chunk_connections() to synchronize this across processes:
     chunk_connections_valid = false;
   }
 
