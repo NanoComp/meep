@@ -480,6 +480,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     finished_working();
     free(eps_data.cache);
     eps_data.cache = summed_cache;
+    eps_data.found_dispersive = or_to_all(eps_data.found_dispersive);
 
     // finally, send MPB the real epsilon data using the synchronized cache
     eps_data.use_cache = true;
@@ -531,6 +532,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
       finished_working();
       free(eps_data.cache);
       eps_data.cache = summed_cache;
+      eps_data.found_dispersive = or_to_all(eps_data.found_dispersive);
 
       eps_data.use_cache = true;
       eps_data.icache = 0;
