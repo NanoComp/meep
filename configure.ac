@@ -2,6 +2,7 @@
 
 AC_INIT([meep],[m4_esyscmd(./version.sh 1.33.0-beta)])
 AC_CONFIG_SRCDIR(src/step.cpp)
+AC_CONFIG_AUX_DIR([build-aux])
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
@@ -73,34 +74,10 @@ AC_ARG_WITH(mpi, [AS_HELP_STRING([--with-mpi],[enable MPI parallelization])],
 if test "x$with_mpi" = "xyes"; then
   AX_MPI([],[AC_MSG_ERROR([could not find mpi library for --with-mpi])])
   CXX=$MPICXX
-
-  # Detect stupid MPICH problem with SEEK_SET conflicting between
-  # the mpi.h header file and the stdio.h header file in C++
-
-  AC_MSG_CHECKING([for extra flag needed to combine stdio.h and mpi.h])
-  for flag in none -DMPICH_IGNORE_CXX_SEEK unknown; do
-    if test "x$flag" = xunknown; then break; fi
-    save_CPPFLAGS=$CPPFLAGS
-    if test "x$flag" != xnone; then CPPFLAGS="$CPPFLAGS $flag"; fi
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
-#include <mpi.h>]], [[]])],[break],[])
-    CPPFLAGS=$save_CPPFLAGS
-  done
-  AC_MSG_RESULT($flag)
-  if test "x$flag" = xunknown; then
-    AC_MSG_CHECKING([if we can combine stdio.h and mpi.h by undef'ing SEEK_*])
-    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <stdio.h>
-#undef SEEK_SET
-#undef SEEK_END
-#undef SEEK_CUR
-#include <mpi.h>]], [[]])],[AC_MSG_RESULT(yes)
-          AC_DEFINE([NEED_UNDEF_SEEK_FOR_MPI], 1, [Define if mpi.h needs SEEK macros to be undefined])],[AC_MSG_RESULT(no)
-          AC_MSG_ERROR([can't include stdio.h and mpi.h in same file])])
-  fi
 fi
 
-# make sure we enable C++11 support if possible
-AX_CXX_COMPILE_STDCXX([11], [], [optional])
+# Require C++11 support
+AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
 
 ##############################################################################
 # Compiler flags
@@ -136,7 +113,8 @@ for flg in $CXXFLAGS; do
 done
 AC_SUBST(ARCHFLAG)
 
-AC_ARG_WITH(openmp, [AS_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])], enable_openmp=$enableval, with_openmp=no)
+AC_ARG_WITH(openmp, [AS_HELP_STRING([--with-openmp],[use OpenMP directives for parallelism])],
+            [], [with_openmp=no])
 if test x"$with_openmp" = "xyes"; then
    AC_DEFINE(HAVE_OPENMP,1,[Define to enable OpenMP])
    AX_OPENMP([CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"], [AC_MSG_ERROR([don't know how to enable OpenMP])])
@@ -149,6 +127,8 @@ LT_INIT
 
 AC_CHECK_LIB(m, sin)
 
+# FFTW3 is preferred; FFTW2 (dfftw/fftw) is also supported by Meep
+# (see src/monitor.cpp and src/casimir.cpp for FFTW2 code paths).
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
   [AC_CHECK_LIB(dfftw, fftw_create_plan, [],
     [AC_CHECK_LIB(fftw, fftw_create_plan, [],
@@ -158,6 +138,8 @@ AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
 
 AC_PROG_F77
 AC_F77_WRAPPERS
+# $with_blas and $with_lapack are set by AX_BLAS/AX_LAPACK (--with-blas,
+# --with-lapack).  When unset (the default), this block runs to detect them.
 if test "x$with_lapack" != xno -o "x$with_blas" != xno; then
    AX_BLAS
    AX_LAPACK
@@ -230,7 +212,6 @@ fi
 ##############################################################################
 # GNU Scientific Library
 
-AC_CHECK_LIB([m],[cos])
 AC_CHECK_LIB([gslcblas],[cblas_dgemm])
 AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
 	     [AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
