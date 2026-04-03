@@ -1081,7 +1081,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 }
 %apply std::complex<double>* grid_vals {
      std::complex<double>* eigfreq, std::complex<double>* coeffs,
-     std::complex<complex>* dJ, std::complex<double>* amp_arr
+     std::complex<double>* dJ, std::complex<double>* amp_arr
 };
 
 // typemaps for diffractedplanewave
