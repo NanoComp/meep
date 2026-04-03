@@ -32,8 +32,7 @@ public:
       PyObject *pyres = PyObject_CallFunctionObjArgs(func, py_t, NULL);
       Py_DECREF(py_t);
       if (!pyres) {
-        PyErr_PrintEx(0);
-        return 0.0;
+        abort_with_stack_trace();
       }
       double real = PyComplex_RealAsDouble(pyres);
       double imag = PyComplex_ImagAsDouble(pyres);
