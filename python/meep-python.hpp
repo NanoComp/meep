@@ -31,9 +31,7 @@ public:
       PyObject *py_t = PyFloat_FromDouble(time);
       PyObject *pyres = PyObject_CallFunctionObjArgs(func, py_t, NULL);
       Py_DECREF(py_t);
-      if (!pyres) {
-        abort_with_stack_trace();
-      }
+      if (!pyret) { abort_with_stack_trace(); }
       double real = PyComplex_RealAsDouble(pyres);
       double imag = PyComplex_ImagAsDouble(pyres);
       std::complex<double> ret(real, imag);
