@@ -362,16 +362,41 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
       realnum *s1 = newsus->sigma[c][d1];
       realnum *s2 = newsus->sigma[c][d2];
       vec shift1(gv[unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1)]);
-      LOOP_OVER_VOL(gv, c, i) {
-        double sigrow[3], sigrow_offdiag[3];
-        IVEC_LOOP_LOC(gv, here);
-        sigma.sigma_row(c, sigrow, here);
-        sigma.sigma_row(c, sigrow_offdiag, here - shift1);
-        sigrow[(idiag + 1) % 3] = sigrow_offdiag[(idiag + 1) % 3];
-        sigrow[(idiag + 2) % 3] = sigrow_offdiag[(idiag + 2) % 3];
-        if (s0 && (s0[i] = sigrow[0]) != 0.) trivial[0] = false;
-        if (s1 && (s1[i] = sigrow[1]) != 0.) trivial[1] = false;
-        if (s2 && (s2[i] = sigrow[2]) != 0.) trivial[2] = false;
+      // Use OpenMP parallelization when the material function is thread-safe
+      // (i.e., pure C++ geometry, not a Python callback). The trivial[] flags
+      // need a reduction since each thread computes its local subset.
+      if (sigma.is_thread_safe()) {
+        bool trivial0 = true, trivial1 = true, trivial2 = true;
+        PLOOP_OVER_IVECS_C(gv, gv.little_corner() + gv.iyee_shift(c),
+                           gv.big_corner() + gv.iyee_shift(c), i,
+                           "omp parallel for collapse(3) reduction(&:trivial0,trivial1,trivial2)") {
+          double sigrow[3], sigrow_offdiag[3];
+          IVEC_LOOP_LOC(gv, here);
+          sigma.sigma_row(c, sigrow, here);
+          sigma.sigma_row(c, sigrow_offdiag, here - shift1);
+          sigrow[(idiag + 1) % 3] = sigrow_offdiag[(idiag + 1) % 3];
+          sigrow[(idiag + 2) % 3] = sigrow_offdiag[(idiag + 2) % 3];
+          if (s0) trivial0 &= (s0[i] = sigrow[0]) == 0.;
+          if (s1) trivial1 &= (s1[i] = sigrow[1]) == 0.;
+          if (s2) trivial2 &= (s2[i] = sigrow[2]) == 0.;
+        }
+        trivial[0] = trivial0;
+        trivial[1] = trivial1;
+        trivial[2] = trivial2;
+      }
+      else {
+        // Serial path for non-thread-safe material functions (Python callbacks)
+        LOOP_OVER_VOL(gv, c, i) {
+          double sigrow[3], sigrow_offdiag[3];
+          IVEC_LOOP_LOC(gv, here);
+          sigma.sigma_row(c, sigrow, here);
+          sigma.sigma_row(c, sigrow_offdiag, here - shift1);
+          sigrow[(idiag + 1) % 3] = sigrow_offdiag[(idiag + 1) % 3];
+          sigrow[(idiag + 2) % 3] = sigrow_offdiag[(idiag + 2) % 3];
+          if (s0 && (s0[i] = sigrow[0]) != 0.) trivial[0] = false;
+          if (s1 && (s1[i] = sigrow[1]) != 0.) trivial[1] = false;
+          if (s2 && (s2[i] = sigrow[2]) != 0.) trivial[2] = false;
+        }
       }
 
       direction ds[3];
