@@ -1084,7 +1084,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %apply std::complex<double>* grid_vals {
      std::complex<double>* eigfreq, std::complex<double>* coeffs,
      std::complex<complex>* dJ, std::complex<double>* amp_arr
-}
+};
 
 // typemaps for diffractedplanewave
 
@@ -1112,7 +1112,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 
 // typemaps add_dft_fields
 
-%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)}
+%apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)};
 
 %typecheck(SWIG_TYPECHECK_POINTER) const volume where {
     int py_material = PyObject_IsInstance($input, py_volume_object());
