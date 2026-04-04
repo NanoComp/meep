@@ -186,11 +186,12 @@ jobs:
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
-    - name: Run make and make check
+    - name: Run make, install, and make check
       if: ${{ !matrix.use-distcheck }}
       run: |
         pushd build &&
         make -j $(nproc) &&
+        make install &&
         make ${MKCHECKFLAGS} check &&
         popd
 
