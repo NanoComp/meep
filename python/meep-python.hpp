@@ -31,7 +31,10 @@ public:
       PyObject *py_t = PyFloat_FromDouble(time);
       PyObject *pyres = PyObject_CallFunctionObjArgs(func, py_t, NULL);
       Py_DECREF(py_t);
-      if (!pyret) { abort_with_stack_trace(); }
+      if (!pyres) {
+        PyErr_PrintEx(0);
+        meep::abort("Error in typemaps");
+      }
       double real = PyComplex_RealAsDouble(pyres);
       double imag = PyComplex_ImagAsDouble(pyres);
       std::complex<double> ret(real, imag);
