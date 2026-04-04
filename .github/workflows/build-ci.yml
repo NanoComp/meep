@@ -180,7 +180,7 @@ jobs:
         popd
 
     - name: Run make distcheck
-      if: $${{ matrix.use-distcheck }}
+      if: ${{ matrix.use-distcheck }}
       run: |
         pushd build &&
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
@@ -195,28 +195,28 @@ jobs:
         popd
 
     - name: Archive C++ test logs (distcheck)
-      if: $${{ failure() && matrix.use-distcheck }}
+      if: ${{ failure() && matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
         name: cpp-tests-${{ matrix.name }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
 
     - name: Archive Python test logs (distcheck)
-      if: $${{ failure() && matrix.use-distcheck }}
+      if: ${{ failure() && matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
         name: python-tests-${{ matrix.name }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log
 
     - name: Archive C++ test logs (make check)
-      if: $${{ failure() && !matrix.use-distcheck }}
+      if: ${{ failure() && !matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
         name: cpp-tests-${{ matrix.name }}-log
         path: ${{ github.workspace }}/build/tests/test-suite.log
 
     - name: Archive Python test logs (make check)
-      if: $${{ failure() && !matrix.use-distcheck }}
+      if: ${{ failure() && !matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
         name: python-tests-${{ matrix.name }}-log
