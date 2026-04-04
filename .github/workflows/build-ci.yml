@@ -163,21 +163,23 @@ jobs:
         MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
-    - name: Run configure with OpenMP
-      if: ${{ !matrix.enable-single }}
+    - name: Run configure with OpenMP (out-of-source for distcheck)
+      if: ${{ matrix.use-distcheck }}
       run: |
         mkdir -p build &&
         pushd build &&
         ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
         popd
 
+    - name: Run configure with OpenMP (in-source for make check)
+      if: ${{ !matrix.use-distcheck && !matrix.enable-single }}
+      run: |
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
+
     - name: Run configure with single-precision floating point and swig threads
       if: ${{ matrix.enable-single }}
       run: |
-        mkdir -p build &&
-        pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads &&
-        popd
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads &&
 
     - name: Run make distcheck
       if: ${{ matrix.use-distcheck }}
@@ -186,14 +188,11 @@ jobs:
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
-    - name: Run make, install, and make check
+    - name: Run make and make check
       if: ${{ !matrix.use-distcheck }}
       run: |
-        pushd build &&
         make -j $(nproc) &&
-        make install &&
-        make ${MKCHECKFLAGS} check &&
-        popd
+        make ${MKCHECKFLAGS} check
 
     - name: Archive C++ test logs (distcheck)
       if: ${{ failure() && matrix.use-distcheck }}
@@ -214,11 +213,11 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: cpp-tests-${{ matrix.name }}-log
-        path: ${{ github.workspace }}/build/tests/test-suite.log
+        path: ${{ github.workspace }}/tests/test-suite.log
 
     - name: Archive Python test logs (make check)
       if: ${{ failure() && !matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
         name: python-tests-${{ matrix.name }}-log
-        path: ${{ github.workspace }}/build/python/test-suite.log
+        path: ${{ github.workspace }}/python/test-suite.log
