@@ -1924,10 +1924,7 @@ public:
   bool is_aniso2d();
   void require_source_components();
   void _require_component(component c, bool aniso2d);
-  void require_component(component c) {
-    _require_component(c, is_aniso2d());
-    sync_chunk_connections();
-  }
+  void require_component(component c) { _require_component(c, is_aniso2d()); }
   void add_srcdata(struct sourcedata cur_data, src_time *src, size_t n,
                    std::complex<double> *amp_arr, bool needs_boundary_fix);
   void register_src_time(src_time *src);
