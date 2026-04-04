@@ -4487,6 +4487,7 @@ class Simulation:
         """
         self.fields = None
         self.structure = None
+        self.geps = None
         self.dft_objects = []
         self.num_chunks = self._num_chunks_original
         self.chunk_layout = self._chunk_layout_original
