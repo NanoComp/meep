@@ -128,10 +128,6 @@ jobs:
     - name: Install nlopt
       run: pip install nlopt
 
-    - name: Install coverage
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
-      run: pip install coverage
-
     - name: Install mpi4py
       if: ${{ matrix.enable-mpi && steps.cache.outputs.cache-hit != true }}
       run: pip install mpi4py
@@ -143,16 +139,12 @@ jobs:
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
     - name: Run configure with OpenMP
-      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.9) && !(matrix.enable-mpi == true && matrix.python-version == 3.11) }}
+      if: ${{ !(matrix.enable-mpi == true && matrix.python-version == 3.11) }}
       run: |
         mkdir -p build &&
         pushd build &&
         ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
         popd
-
-    - name: Run configure with coverage
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
-      run: ./configure --enable-maintainer-mode --with-coverage --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: Run configure with single-precision floating point and swig threads
       if: ${{ matrix.enable-mpi == true && matrix.python-version == 3.11 }}
@@ -162,33 +154,21 @@ jobs:
         ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads &&
         popd
 
-    - name: Run make
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
-      run: make ${MKCHECKFLAGS}
-
-    - name: Run make check
-      if: ${{ matrix.enable-mpi == false && matrix.python-version == 3.9 }}
-      run: |
-        pushd python/ &&
-        { make ${MKCHECKFLAGS} check || cat test-suite.log; } &&
-        popd
-
     - name: Run make distcheck
-      if: ${{ !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
       run: |
         pushd build &&
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
     - name: Archive C++ test logs
-      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
+      if: failure()
       uses: actions/upload-artifact@v7
       with:
         name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
 
     - name: Archive Python test logs
-      if: ${{ failure() && !(matrix.enable-mpi == false && matrix.python-version == 3.9) }}
+      if: failure()
       uses: actions/upload-artifact@v7
       with:
         name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
