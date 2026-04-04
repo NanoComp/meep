@@ -238,7 +238,12 @@ static int pyv3_to_v3(PyObject *po, vector3 *v) {
   PyObject *py_y = PyObject_GetAttrString(po, "y");
   PyObject *py_z = PyObject_GetAttrString(po, "z");
 
-  if (!py_x || !py_y || !py_z) { abort_with_stack_trace(); }
+  if (!py_x || !py_y || !py_z) {
+    Py_XDECREF(py_x);
+    Py_XDECREF(py_y);
+    Py_XDECREF(py_z);
+    return 0;
+  }
 
   double x = PyFloat_AsDouble(py_x);
   double y = PyFloat_AsDouble(py_y);
@@ -261,7 +266,12 @@ static int pyv3_to_cv3(PyObject *po, cvector3 *v) {
   PyObject *py_y = PyObject_GetAttrString(po, "y");
   PyObject *py_z = PyObject_GetAttrString(po, "z");
 
-  if (!py_x || !py_y || !py_z) { abort_with_stack_trace(); }
+  if (!py_x || !py_y || !py_z) {
+    Py_XDECREF(py_x);
+    Py_XDECREF(py_y);
+    Py_XDECREF(py_z);
+    return 0;
+  }
 
   std::complex<double> x =
       std::complex<double>(PyComplex_RealAsDouble(py_x), PyComplex_ImagAsDouble(py_x));
@@ -302,7 +312,7 @@ static int get_attr_v3(PyObject *py_obj, vector3 *v, const char *name) {
   int rval = 1;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) { abort_with_stack_trace(); }
+  if (!py_attr) { return 0; }
 
   if (!pyv3_to_v3(py_attr, v)) { rval = 0; }
 
@@ -316,7 +326,7 @@ static int get_attr_v3_cmplx(PyObject *py_obj, cvector3 *v, const char *name) {
   int rval = 1;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) { abort_with_stack_trace(); }
+  if (!py_attr) { return 0; }
 
   if (!pyv3_to_cv3(py_attr, v)) { rval = 0; }
 
@@ -329,7 +339,7 @@ static int get_attr_dbl(PyObject *py_obj, double *result, const char *name) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) { abort_with_stack_trace(); }
+  if (!py_attr) { return 0; }
 
   *result = PyFloat_AsDouble(py_attr);
   Py_XDECREF(py_attr);
@@ -341,7 +351,7 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   PyObject *py_attr = PyObject_GetAttrString(py_obj, name);
 
-  if (!py_attr) { abort_with_stack_trace(); }
+  if (!py_attr) { return 0; }
 
   *result = PyInteger_AsLong(py_attr);
   Py_XDECREF(py_attr);
@@ -354,7 +364,7 @@ static int get_attr_material(PyObject *po, material_type *m) {
   int rval = 1;
   PyObject *py_material = PyObject_GetAttrString(po, "material");
 
-  if (!py_material) { abort_with_stack_trace(); }
+  if (!py_material) { return 0; }
 
   if (!pymaterial_to_material(py_material, m)) { rval = 0; }
 
@@ -470,7 +480,10 @@ static int py_susceptibility_to_susceptibility(PyObject *po, susceptibility_stru
 
 static int py_list_to_susceptibility_list(PyObject *po, susceptibility_list *sl) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
-  if (!PyList_Check(po)) { abort_with_stack_trace(); }
+  if (!PyList_Check(po)) {
+    PyErr_SetString(PyExc_TypeError, "Expected a list of susceptibilities");
+    return 0;
+  }
 
   int length = PyList_Size(po);
   sl->resize(length);
@@ -499,29 +512,44 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
     case 1: md->material_grid_kinds = material_data::U_PROD; break;
     case 2: md->material_grid_kinds = material_data::U_MEAN; break;
     case 3: md->material_grid_kinds = material_data::U_DEFAULT; break;
-    default: meep::abort("Invalid material grid enumeration code: %d.\n", (int)gt_enum);
+    default:
+      PyErr_Format(PyExc_ValueError, "Invalid material grid enumeration code: %d", (int)gt_enum);
+      return 0;
   }
 
   // initialize grid size
-  if (!get_attr_v3(po, &md->grid_size, "grid_size")) {
-    meep::abort("MaterialGrid grid_size failed to init.");
-  }
+  if (!get_attr_v3(po, &md->grid_size, "grid_size")) { return 0; }
 
   // initialize user specified materials
   PyObject *po_medium1 = PyObject_GetAttrString(po, "medium1");
   if (!pymedium_to_medium(po_medium1, &md->medium_1)) {
-    meep::abort("MaterialGrid medium1 failed to init.");
+    Py_XDECREF(po_medium1);
+    return 0;
   }
   PyObject *po_medium2 = PyObject_GetAttrString(po, "medium2");
   if (!pymedium_to_medium(po_medium2, &md->medium_2)) {
-    meep::abort("MaterialGrid medium2 failed to init.");
+    Py_XDECREF(po_medium2);
+    Py_DECREF(po_medium1);
+    return 0;
   }
 
   // Initialize weights
   PyObject *po_dp = PyObject_GetAttrString(po, "weights");
   PyArrayObject *pao = (PyArrayObject *)po_dp;
-  if (!PyArray_Check(pao)) { meep::abort("MaterialGrid weights failed to init."); }
-  if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array weights must be C-style contiguous."); }
+  if (!PyArray_Check(pao)) {
+    PyErr_SetString(PyExc_TypeError, "MaterialGrid weights must be a numpy array");
+    Py_XDECREF(po_dp);
+    Py_DECREF(po_medium1);
+    Py_DECREF(po_medium2);
+    return 0;
+  }
+  if (!PyArray_ISCARRAY(pao)) {
+    PyErr_SetString(PyExc_ValueError, "Numpy array weights must be C-style contiguous");
+    Py_DECREF(po_dp);
+    Py_DECREF(po_medium1);
+    Py_DECREF(po_medium2);
+    return 0;
+  }
   md->weights = new double[PyArray_SIZE(pao)];
   memcpy(md->weights, (double *)PyArray_DATA(pao), PyArray_SIZE(pao) * sizeof(double));
 
@@ -604,7 +632,10 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
   else if (PyArray_Check(po)) {
     PyArrayObject *pao = (PyArrayObject *)po;
 
-    if (!PyArray_ISCARRAY(pao)) { meep::abort("Numpy array must be C-style contiguous."); }
+    if (!PyArray_ISCARRAY(pao)) {
+      PyErr_SetString(PyExc_ValueError, "Numpy array must be C-style contiguous");
+      return 0;
+    }
     md = new material_data();
     md->which_subclass = material_data::MATERIAL_FILE;
     md->epsilon_dims[0] = md->epsilon_dims[1] = md->epsilon_dims[2] = 1;
@@ -618,7 +649,11 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     master_printf("read in %zdx%zdx%zd numpy array for epsilon\n", md->epsilon_dims[0],
                   md->epsilon_dims[1], md->epsilon_dims[2]);
   }
-  else { meep::abort("Expected a Medium, a Material Grid, a function, or a filename"); }
+  else {
+    PyErr_SetString(PyExc_TypeError,
+                    "Expected a Medium, a Material Grid, a function, or a filename");
+    return 0;
+  }
 
   *mt = md;
 
@@ -967,9 +1002,13 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
 
   PyObject *py_vert_list = PyObject_GetAttrString(py_prism, "vertices");
 
-  if (!py_vert_list) { abort_with_stack_trace(); }
+  if (!py_vert_list) { return 0; }
 
-  if (!PyList_Check(py_vert_list)) { meep::abort("Expected Prism.vertices to be a list\n"); }
+  if (!PyList_Check(py_vert_list)) {
+    PyErr_SetString(PyExc_TypeError, "Expected Prism.vertices to be a list");
+    Py_DECREF(py_vert_list);
+    return 0;
+  }
 
   int num_vertices = PyList_Size(py_vert_list);
   vector3 *vertices = new vector3[num_vertices];
@@ -1012,7 +1051,7 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   else if (go_type == "Ellipsoid") { success = pyellipsoid_to_ellipsoid(po, o); }
   else if (go_type == "Prism") { success = pyprism_to_prism(po, o); }
   else {
-    meep::abort("Error: %s is not a valid GeometricObject type\n", go_type.c_str());
+    PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type", go_type.c_str());
     return 0;
   }
 
@@ -1022,7 +1061,10 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
 
 static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
-  if (!PyList_Check(po)) { meep::abort("Expected a list"); }
+  if (!PyList_Check(po)) {
+    PyErr_SetString(PyExc_TypeError, "Expected a list of geometric objects");
+    return 0;
+  }
 
   int length = PyList_Size(po);
 

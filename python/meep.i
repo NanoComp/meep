@@ -140,9 +140,10 @@ static double py_callback_wrap(const meep::vec &v) {
     SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_callback, pyv, NULL);
-    double ret = PyFloat_AsDouble(pyret);
     Py_DECREF(pyv);
-    Py_XDECREF(pyret);
+    if (!pyret) { abort_with_stack_trace(); }
+    double ret = PyFloat_AsDouble(pyret);
+    Py_DECREF(pyret);
     return ret;
 }
 
@@ -150,10 +151,11 @@ static std::complex<double> py_amp_func_wrap(const meep::vec &v) {
     SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *pyv = vec2py(v);
     PyObject *pyret = PyObject_CallFunctionObjArgs(py_amp_func, pyv, NULL);
+    Py_DECREF(pyv);
+    if (!pyret) { abort_with_stack_trace(); }
     double real = PyComplex_RealAsDouble(pyret);
     double imag = PyComplex_ImagAsDouble(pyret);
     std::complex<double> ret(real, imag);
-    Py_DECREF(pyv);
     Py_DECREF(pyret);
     return ret;
 }
@@ -264,7 +266,8 @@ static int pyabsorber_to_absorber(PyObject *py_absorber, meep_geom::absorber *a)
     PyObject *py_pml_profile_func = PyObject_GetAttrString(py_absorber, "pml_profile");
 
     if (!py_pml_profile_func) {
-      meep::abort("Class attribute 'pml_profile' is None\n");
+         PyErr_SetString(PyExc_AttributeError, "Class attribute 'pml_profile' is None");
+         return 0;
     }
 
     a->pml_profile_data = py_pml_profile_func;
@@ -451,13 +454,21 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
     size_t dims[3];
     std::complex<meep::realnum> *dft_arr = f->get_dft_array(dft, c, num_freq, &rank, dims);
 
+    int npy_type = sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE;
+
     if (dft_arr == NULL) { // this can happen e.g. if component c vanishes by symmetry
-      std::complex<double> d[1] = {std::complex<double>(0,0)};
-      return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, d);
+         PyObject *py_arr = PyArray_SimpleNew(0, 0, npy_type);
+         std::complex<meep::realnum> zero(0, 0);
+         memcpy(PyArray_DATA((PyArrayObject*)py_arr), &zero, sizeof(std::complex<meep::realnum>));
+         return py_arr;
     }
 
-    if (rank == 0) // singleton results
-      return PyArray_SimpleNewFromData(0, 0, sizeof(meep::realnum) == sizeof(float) ? NPY_CFLOAT : NPY_CDOUBLE, dft_arr);
+    if (rank == 0) { // singleton results
+         PyObject *py_arr = PyArray_SimpleNew(0, 0, npy_type);
+         memcpy(PyArray_DATA((PyArrayObject*)py_arr), dft_arr, sizeof(std::complex<meep::realnum>));
+         delete[] dft_arr;
+         return py_arr;
+    }
 
     size_t length = 1;
     npy_intp *arr_dims = new npy_intp[rank];
@@ -996,7 +1007,8 @@ void _get_gradient(PyObject *grad, double scalegrad,
 // For some reason SWIG needs the namespaced version too
 %apply material_type { meep_geom::material_type };
 
-// Typemap suite for get_array_metadata
+// Typemap for numpy array passed as double* (used by get_array_metadata,
+// get_epsilon_grid, get_eigenmode_coefficients, near2far, etc.)
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
     $1 = is_array($input);
@@ -1004,24 +1016,10 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %typemap(in, fragment="NumPy_Macros") double* xtics {
     $1 = (double *)array_data($input);
 }
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* ytics {
-    $1 = (double *)array_data($input);
-}
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* ztics {
-    $1 = (double *)array_data($input);
-}
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* weights {
-    $1 = is_array($input);
-}
-%typemap(in, fragment="NumPy_Macros") double* weights {
-    $1 = (double *)array_data($input);
-}
+%apply double* xtics {
+     double* ytics, double* ztics, double* weights,
+     double* vgrp, double* cscale, double* farpt_list
+};
 
 // Typemap suite for array_slice
 
@@ -1065,12 +1063,6 @@ void _get_gradient(PyObject *grad, double scalegrad,
     $1 = static_cast<meep::derived_component>(PyInteger_AsLong($input));
 }
 
-
-%typemap(freearg) std::complex<double> (*)(const meep::vec &) {
-    Py_XDECREF(py_amp_func);
-    py_amp_func = NULL;
-}
-
 %typecheck(SWIG_TYPECHECK_POINTER) PyObject *min_max_loc {
     $1 = PyList_Check($input);
 }
@@ -1078,49 +1070,19 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %apply int INPLACE_ARRAY1[ANY] { int [3] };
 %apply double INPLACE_ARRAY1[ANY] { double [3] };
 
-// typemaps for meep_geom::get_epsilon_grid
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* xtics {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* xtics {
-    $1 = (double *)array_data($input);
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ytics {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* ytics {
-    $1 = (double *)array_data($input);
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* ztics {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* ztics {
-    $1 = (double *)array_data($input);
-}
+// Typemap for numpy array passed as std::complex<double>* (used by
+// get_epsilon_grid, solve_cw, get_eigenmode_coefficients, adjoint, etc.)
 
 %typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* grid_vals {
     $1 = is_array($input);
 }
-
 %typemap(in, fragment="NumPy_Macros") std::complex<double>* grid_vals {
     $1 = (std::complex<double> *)array_data($input);
 }
-
-// typemap for solve_cw:
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* eigfreq {
-    $1 = is_array($input);
-}
-
-%typemap(in) std::complex<double>* eigfreq {
-    $1 = (std::complex<double> *)array_data($input);
-}
+%apply std::complex<double>* grid_vals {
+     std::complex<double>* eigfreq, std::complex<double>* coeffs,
+     std::complex<double>* dJ, std::complex<double>* amp_arr
+};
 
 // typemaps for diffractedplanewave
 
@@ -1142,42 +1104,11 @@ void _get_gradient(PyObject *grad, double scalegrad,
      $1 = (std::complex<double> *)array_data($input);
 }
 
-//--------------------------------------------------
-// typemaps needed for get_eigenmode_coefficients
-//--------------------------------------------------
+// typemap for get_eigenmode_coefficients bands array
 %apply (int *IN_ARRAY1, int DIM1) {(int *bands, int num_bands)};
 
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") std::complex<double>* coeffs {
-    $1 = is_array($input);
-}
 
-%typemap(in, fragment="NumPy_Macros") std::complex<double>* coeffs {
-    $1 = (std::complex<double> *)array_data($input);
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* vgrp {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* vgrp {
-    $1 = (double *)array_data($input);
-}
-
-%typecheck(SWIG_TYPECHECK_POINTER, fragment="NumPy_Fragments") double* cscale {
-    $1 = is_array($input);
-}
-
-%typemap(in, fragment="NumPy_Macros") double* cscale {
-    $1 = (double *)array_data($input);
-}
-
-//--------------------------------------------------
-// end typemaps for get_eigenmode_coefficients
-//--------------------------------------------------
-
-//--------------------------------------------------
-// typemaps needed for add_dft_fields
-//--------------------------------------------------
+// typemaps for add_dft_fields
 
 %apply (const double* IN_ARRAY1, size_t DIM1) {(const double* freq, size_t Nfreq)}
 
@@ -1405,7 +1336,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 // Typemap suite for kpoint_func
 
 %typecheck(SWIG_TYPECHECK_POINTER) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
-    $1 = PyFunction_Check($input) || $input == Py_None;
+    $1 = PyCallable_Check($input) || $input == Py_None;
 }
 
 %typemap(in) (meep::kpoint_func user_kpoint_func, void *user_kpoint_data) {
@@ -1425,17 +1356,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
     double *total
 };
 
-%typemap(in) std::complex<double>* dJ {
-    $1 = (std::complex<double> *)array_data($input);
-}
-
-%typemap(in) std::complex<double>* amp_arr {
-    $1 = (std::complex<double> *)array_data($input);
-}
-
-%typemap(in) double* farpt_list {
-    $1 = (double *)array_data($input);
-}
+// dJ, amp_arr, fpart_list typemaps are covered by %apply directives above
 
 %exception {
 #ifdef MEEP_SWIG_PYTHON_DEBUG
@@ -1522,10 +1443,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %ignore material_gc;
 %ignore material_type_equal;
 %ignore is_variable;
-%ignore is_variable;
 %ignore is_file;
-%ignore is_file;
-%ignore is_medium;
 %ignore is_medium;
 %ignore is_metal;
 %ignore meep::all_in_or_out;
