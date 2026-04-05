@@ -24,7 +24,7 @@ jobs:
             debug-options: "-gmlt"
           - name-suffix: "TSAN"
             sanitizer: "thread"
-            configure-options: "CC=clang CXX=clang++ LD=clang++ --with-openmp"
+            configure-options: "CC=clang CXX=clang++ LD=clang++"
             debug-options: "-gmlt"
 
     steps:
@@ -58,8 +58,8 @@ jobs:
         ./configure \
           --with-hdf5 --without-mpi --without-python --without-scheme \
           --enable-shared --enable-maintainer-mode \
-          CXXFLAGS="-fsanitize=${{ matrix.sanitizer }} ${{ matrix.debug-options }}" \
-          LDFLAGS="-fsanitize=${{ matrix.sanitizer }}" \
+          CXXFLAGS="-fsanitize=${{ matrix.sanitizer }} -shared-libasan ${{ matrix.debug-options }}" \
+          LDFLAGS="-fsanitize=${{ matrix.sanitizer }} -shared-libasan" \
           ${{ matrix.configure-options }}
     - name: make
       run: make -j$(nproc)
