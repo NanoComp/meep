@@ -16,24 +16,39 @@ jobs:
         include:
           - name-suffix: "ASAN"
             sanitizer: "address"
-            configure-options: ""
-            debug-options: "-g1"
-          # - name-suffix: "MSAN"
-          #   sanitizer: "memory"
-          #   configure-options: "CC=clang CXX=clang++ LD=clang++"
-          #   debug-options: "-gmlt"
+            configure-options: "CC=clang CXX=clang++ LD=clang++"
+            debug-options: "-gmlt"
           - name-suffix: "UBSAN"
             sanitizer: "undefined"
             configure-options: "CC=clang CXX=clang++ LD=clang++"
             debug-options: "-gmlt"
+          - name-suffix: "TSAN"
+            sanitizer: "thread"
+            configure-options: "CC=clang CXX=clang++ LD=clang++ --with-openmp"
+            debug-options: "-gmlt"
 
     steps:
+    - name: Cache apt packages
+      uses: actions/cache@v5
+      id: apt-cache
+      with:
+        path: ~/apt-cache
+        key: apt-san-${{ runner.os }}-${{ hashFiles('.github/workflows/build-san.yml') }}
+
+    - name: Restore cached apt sources
+      if: steps.apt-cache.outputs.cache-hit == 'true'
+      run: sudo dpkg -i ~/apt-cache/*.deb 2>/dev/null || true
+
     - name: Install Dependencies
+      if: steps.apt-cache.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update -y
         sudo apt-get install -y autoconf automake clang libaec-dev libctl-dev \
           libfftw3-dev libgdsii-dev libgsl-dev libharminv-dev libhdf5-dev \
           libtool mpb mpb-dev
+        mkdir -p ~/apt-cache
+        cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
+
     - name: Check out repository
       uses: actions/checkout@v6
     - name: Autoreconf
