@@ -185,7 +185,7 @@ jobs:
       if: ${{ matrix.use-distcheck }}
       run: |
         pushd build &&
-        make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
+        OMP_NUM_THREADS=2 make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp" &&
         popd
 
     - name: Run make and make check
