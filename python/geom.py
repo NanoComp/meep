@@ -1343,6 +1343,173 @@ class Prism(GeometricObject):
         super().__init__(center=center, **kwargs)
 
 
+class Mesh(GeometricObject):
+    """
+    Triangulated 3D mesh object.
+
+    The mesh must be a closed (watertight) manifold with consistently
+    oriented triangles. Open meshes will produce a warning and may
+    give incorrect results for subpixel smoothing.
+    """
+
+    def __init__(self, vertices, triangles, center=None, **kwargs):
+        """
+        Construct a `Mesh`.
+
+        + **`vertices` [list of `Vector3`]** — Vertex positions.
+
+        + **`triangles` [list of tuples of 3 ints]** — Triangle vertex indices
+          (0-based). Each tuple defines a face with outward normal determined
+          by the right-hand rule.
+
+        + **`center` [`Vector3`, optional]** — If specified, the mesh is
+          translated so its centroid is at this position. If omitted, the
+          centroid of the vertices is used.
+        """
+        self.vertices = [Vector3(*v) for v in vertices]
+        self.triangles = [tuple(t) for t in triangles]
+
+        centroid = sum(self.vertices, Vector3(0)) * (1.0 / len(self.vertices))
+        if center is not None:
+            center = Vector3(*center)
+            shift = center - centroid
+            self.vertices = [v + shift for v in self.vertices]
+        else:
+            center = centroid
+
+        super().__init__(center=center, **kwargs)
+
+    @classmethod
+    def from_stl(cls, filename, material=None, center=None, scale=1.0):
+        """Load mesh from STL file (binary or ASCII)."""
+        vertices, triangles = _parse_stl(filename, scale)
+        kwargs = {}
+        if material is not None:
+            kwargs["material"] = material
+        return cls(vertices=vertices, triangles=triangles,
+                   center=center, **kwargs)
+
+    @classmethod
+    def from_obj(cls, filename, material=None, center=None, scale=1.0):
+        """Load mesh from Wavefront OBJ file."""
+        vertices, triangles = _parse_obj(filename, scale)
+        kwargs = {}
+        if material is not None:
+            kwargs["material"] = material
+        return cls(vertices=vertices, triangles=triangles,
+                   center=center, **kwargs)
+
+
+def _parse_stl(filename, scale=1.0):
+    """Parse an STL file (binary or ASCII) and return (vertices, triangles).
+
+    STL stores per-face vertices without sharing, so vertex welding is
+    performed to build a shared vertex array and triangle index array.
+    """
+    import struct
+
+    with open(filename, "rb") as f:
+        header = f.read(80)
+        data = f.read()
+
+    # Try binary format first
+    is_binary = True
+    try:
+        num_tris = struct.unpack("<I", data[:4])[0]
+        expected_size = num_tris * 50 + 4
+        if len(data) != expected_size:
+            is_binary = False
+    except struct.error:
+        is_binary = False
+
+    raw_verts = []
+    if is_binary:
+        offset = 4
+        for _ in range(num_tris):
+            # Skip normal (12 bytes), read 3 vertices (36 bytes), skip attr (2 bytes)
+            offset += 12  # normal
+            for _ in range(3):
+                x, y, z = struct.unpack("<fff", data[offset : offset + 12])
+                raw_verts.append((x * scale, y * scale, z * scale))
+                offset += 12
+            offset += 2  # attribute byte count
+    else:
+        # ASCII format
+        text = (header + data).decode("ascii", errors="ignore")
+        import re
+
+        for m in re.finditer(
+            r"vertex\s+([-+eE.\d]+)\s+([-+eE.\d]+)\s+([-+eE.\d]+)", text
+        ):
+            x, y, z = float(m.group(1)), float(m.group(2)), float(m.group(3))
+            raw_verts.append((x * scale, y * scale, z * scale))
+
+    # Vertex welding: merge vertices within tolerance using a spatial hash
+    tol = 1e-8
+    inv_tol = 1.0 / tol if tol > 0 else 1e8
+    vertex_map = {}
+    vertices = []
+    triangles = []
+
+    def _quantize(v):
+        return (
+            int(round(v[0] * inv_tol)),
+            int(round(v[1] * inv_tol)),
+            int(round(v[2] * inv_tol)),
+        )
+
+    for i in range(0, len(raw_verts), 3):
+        tri = []
+        for j in range(3):
+            v = raw_verts[i + j]
+            key = _quantize(v)
+            if key not in vertex_map:
+                vertex_map[key] = len(vertices)
+                vertices.append(Vector3(v[0], v[1], v[2]))
+            tri.append(vertex_map[key])
+        triangles.append(tuple(tri))
+
+    return vertices, triangles
+
+
+def _parse_obj(filename, scale=1.0):
+    """Parse a Wavefront OBJ file and return (vertices, triangles).
+
+    Quad faces are automatically triangulated. OBJ is 1-indexed;
+    indices are converted to 0-indexed.
+    """
+    vertices = []
+    triangles = []
+
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split()
+            if parts[0] == "v" and len(parts) >= 4:
+                x, y, z = float(parts[1]), float(parts[2]), float(parts[3])
+                vertices.append(Vector3(x * scale, y * scale, z * scale))
+            elif parts[0] == "f":
+                # OBJ face indices may include texture/normal refs: v/vt/vn
+                face_indices = []
+                for p in parts[1:]:
+                    idx = int(p.split("/")[0])
+                    # OBJ is 1-indexed; handle negative indices
+                    if idx < 0:
+                        idx = len(vertices) + idx
+                    else:
+                        idx -= 1
+                    face_indices.append(idx)
+                # Triangulate (fan triangulation for convex polygons)
+                for i in range(1, len(face_indices) - 1):
+                    triangles.append(
+                        (face_indices[0], face_indices[i], face_indices[i + 1])
+                    )
+
+    return vertices, triangles
+
+
 class Matrix:
     """
     The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
