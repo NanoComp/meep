@@ -1386,8 +1386,7 @@ class Mesh(GeometricObject):
         kwargs = {}
         if material is not None:
             kwargs["material"] = material
-        return cls(vertices=vertices, triangles=triangles,
-                   center=center, **kwargs)
+        return cls(vertices=vertices, triangles=triangles, center=center, **kwargs)
 
     @classmethod
     def from_obj(cls, filename, material=None, center=None, scale=1.0):
@@ -1396,8 +1395,7 @@ class Mesh(GeometricObject):
         kwargs = {}
         if material is not None:
             kwargs["material"] = material
-        return cls(vertices=vertices, triangles=triangles,
-                   center=center, **kwargs)
+        return cls(vertices=vertices, triangles=triangles, center=center, **kwargs)
 
 
 def _parse_stl(filename, scale=1.0):
@@ -1481,7 +1479,7 @@ def _parse_obj(filename, scale=1.0):
     vertices = []
     triangles = []
 
-    with open(filename, "r") as f:
+    with open(filename) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
