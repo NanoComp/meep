@@ -34,13 +34,15 @@ else
   WVG_SRC_TEST =
 endif
 
-TESTS =                                        \
-    $(TEST_DIR)/test_3rd_harm_1d.py            \
-    $(TEST_DIR)/test_absorber_1d.py            \
+ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_adjoint_solver.py         \
     $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
-    $(TEST_DIR)/test_adjoint_jax.py            \
+    $(TEST_DIR)/test_adjoint_jax.py
+
+TESTS =                                        \
+    $(TEST_DIR)/test_3rd_harm_1d.py            \
+    $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
@@ -266,6 +268,9 @@ if WITH_MPB
 endif
 
 all-local: meep
+
+check-adjoint:
+	$(MAKE) check TESTS="$(ADJOINT_TESTS) $(TESTS)"
 
 clean-local:
 	rm -rf meep __init__.py.bak
