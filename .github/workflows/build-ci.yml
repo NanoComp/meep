@@ -9,14 +9,28 @@ on:
 
 jobs:
   build:
-    name: "Test Python ${{ matrix.python-version }} with MPI (${{ matrix.enable-mpi }})"
+    name: "${{ matrix.name }}"
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, '3.11']
-        enable-mpi: [false, true]
+        include:
+          - name: "serial double-precision"
+            python-version: '3.11'
+            enable-mpi: false
+            enable-single: false
+            use-distcheck: true
+          - name: "MPI double-precision"
+            python-version: '3.11'
+            enable-mpi: true
+            enable-single: false
+            use-distcheck: false
+          - name: "MPI single-precision"
+            python-version: '3.11'
+            enable-mpi: true
+            enable-single: true
+            use-distcheck: false
 
     steps:
     - name: Define common environment variables
@@ -43,17 +57,11 @@ jobs:
         repository: NanoComp/libctl
         path: libctl-src
 
-    - name: Build and install libctl
-      run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
-
     - name: Checkout harminv repository
       uses: actions/checkout@v6
       with:
         repository: NanoComp/harminv
         path: harminv-src
-
-    - name: Build and install harminv
-      run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
 
     - name: Checkout MPB repository
       uses: actions/checkout@v6
@@ -61,16 +69,33 @@ jobs:
         repository: NanoComp/mpb
         path: mpb-src
 
-    - name: Build and install MPB
-      run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
-
     - name: Checkout libGDSII repository
       uses: actions/checkout@v6
       with:
         repository: HomerReid/libGDSII
         path: libGDSII-src
 
+    - name: Cache dependency builds
+      uses: actions/cache@v5
+      id: deps-cache
+      with:
+        path: ~/local
+        key: deps-${{ runner.os }}-${{ hashFiles('.github/workflows/build-ci.yml') }}
+
+    - name: Build and install libctl
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Build and install harminv
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Build and install MPB
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
+
     - name: Build and install libGDSII
+      if: steps.deps-cache.outputs.cache-hit != 'true'
       run: cd libGDSII-src && sh autogen.sh --prefix=${HOME}/local && make install
 
     - name: Define environment variables for serial build
@@ -138,38 +163,61 @@ jobs:
         MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
         echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
 
-    - name: Run configure with OpenMP
-      if: ${{ !(matrix.enable-mpi == true && matrix.python-version == 3.11) }}
+    - name: Run configure with OpenMP (out-of-source for distcheck)
+      if: ${{ matrix.use-distcheck }}
       run: |
         mkdir -p build &&
         pushd build &&
         ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
         popd
 
-    - name: Run configure with single-precision floating point and swig threads
-      if: ${{ matrix.enable-mpi == true && matrix.python-version == 3.11 }}
+    - name: Run configure (in-source for make check)
+      if: ${{ !matrix.use-distcheck && !matrix.enable-single }}
       run: |
-        mkdir -p build &&
-        pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads &&
-        popd
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+
+    - name: Run configure with single-precision floating point and swig threads
+      if: ${{ matrix.enable-single }}
+      run: |
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads
 
     - name: Run make distcheck
+      if: ${{ matrix.use-distcheck }}
       run: |
         pushd build &&
         make ${MKCHECKFLAGS} distcheck DISTCHECK_CONFIGURE_FLAGS="--with-libctl=${HOME}/local/share/libctl ${MPICONF}" &&
         popd
 
-    - name: Archive C++ test logs
-      if: failure()
+    - name: Run make and make check
+      if: ${{ !matrix.use-distcheck }}
+      run: |
+        make -j $(nproc) &&
+        make ${MKCHECKFLAGS} check
+
+    - name: Archive C++ test logs (distcheck)
+      if: ${{ failure() && matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
-        name: cpp-tests-mpi-${{ matrix.enable-mpi }}-log
+        name: cpp-tests-${{ matrix.name }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/tests/test-suite.log
 
-    - name: Archive Python test logs
-      if: failure()
+    - name: Archive Python test logs (distcheck)
+      if: ${{ failure() && matrix.use-distcheck }}
       uses: actions/upload-artifact@v7
       with:
-        name: py${{ matrix.python-version }}-tests-mpi-${{ matrix.enable-mpi }}-log
+        name: python-tests-${{ matrix.name }}-log
         path: ${{ github.workspace }}/build/meep-${{ env.MEEP_VERSION }}/_build/sub/python/test-suite.log
+
+    - name: Archive C++ test logs (make check)
+      if: ${{ failure() && !matrix.use-distcheck }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: cpp-tests-${{ matrix.name }}-log
+        path: ${{ github.workspace }}/tests/test-suite.log
+
+    - name: Archive Python test logs (make check)
+      if: ${{ failure() && !matrix.use-distcheck }}
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-tests-${{ matrix.name }}-log
+        path: ${{ github.workspace }}/python/test-suite.log
