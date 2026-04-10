@@ -2077,15 +2077,20 @@ class Simulation:
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False
-            if self.chunk_layout
-            and not isinstance(self.chunk_layout, mp.BinaryPartition)
-            else True,
+            (
+                False
+                if self.chunk_layout
+                and not isinstance(self.chunk_layout, mp.BinaryPartition)
+                else True
+            ),
             None,
             True if self._output_stats is not None else False,
-            self.chunk_layout
-            if self.chunk_layout and isinstance(self.chunk_layout, mp.BinaryPartition)
-            else None,
+            (
+                self.chunk_layout
+                if self.chunk_layout
+                and isinstance(self.chunk_layout, mp.BinaryPartition)
+                else None
+            ),
         )
         self.geps = mp._set_materials(
             self.structure,
@@ -2897,17 +2902,21 @@ class Simulation:
         pts = [s.center for s in self.sources]
 
         src_freqs_min = min(
-            s.src.frequency - 1 / s.src.width / 2
-            if isinstance(s.src, mp.GaussianSource)
-            else mp.inf
+            (
+                s.src.frequency - 1 / s.src.width / 2
+                if isinstance(s.src, mp.GaussianSource)
+                else mp.inf
+            )
             for s in self.sources
         )
         fmin = max(0, src_freqs_min)
 
         fmax = max(
-            s.src.frequency + 1 / s.src.width / 2
-            if isinstance(s.src, mp.GaussianSource)
-            else 0
+            (
+                s.src.frequency + 1 / s.src.width / 2
+                if isinstance(s.src, mp.GaussianSource)
+                else 0
+            )
             for s in self.sources
         )
 

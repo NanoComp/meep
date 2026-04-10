@@ -637,9 +637,10 @@ public:
   void remove_susceptibilities();
 
   // monitor.cpp
-  std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0) const;
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
-                                   double frequency = 0) const;
+  std::complex<double> get_chi1inv_at_pt(component, direction, int idx, double frequency = 0,
+                                         bool *is_frequency_dependent = NULL) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
+                                   bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_inveps(component c, direction d, const ivec &iloc,
                                   double frequency = 0) const {
     return get_chi1inv(c, d, iloc, frequency);
@@ -888,9 +889,9 @@ public:
 
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const ivec &origloc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_inveps(component c, direction d, const ivec &origloc,
                                   double frequency = 0) const {
     return get_chi1inv(c, d, origloc, frequency);
@@ -1247,6 +1248,7 @@ public:
            const double *freq_, size_t Nfreq, const volume &where_, direction normal_direction_,
            bool use_symmetry_);
   dft_flux(const dft_flux &f);
+  ~dft_flux();
 
   double *flux();
   std::vector<std::complex<double> > complexflux();
@@ -1266,12 +1268,19 @@ public:
 
   void remove();
 
+  // Cached MPB maxwell_data for reuse across get_eigenmode_coefficients calls.
+  // Avoids redundant epsilon grid computation when extracting many diffraction orders.
+  void invalidate_eigenmode_cache();
+
   std::vector<double> freq;
   dft_chunk *E, *H;
   component cE, cH;
   volume where;
   direction normal_direction;
   bool use_symmetry;
+  void *eigenmode_cache;            // opaque pointer to cached maxwell_data (NULL if none)
+  bool eigenmode_cache_dispersive;  // whether the cached medium is frequency-dependent
+  double eigenmode_cache_frequency; // frequency at which the cache was built
 };
 
 // dft.cpp (normally created with fields::add_dft_energy)
@@ -1538,8 +1547,8 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component, const ivec &) const;
 
-  std::complex<double> get_chi1inv(component, direction, const ivec &iloc,
-                                   double frequency = 0) const;
+  std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
+                                   bool *is_frequency_dependent = NULL) const;
   // Returns the vector of sources volumes for field type `ft`.
   const std::vector<src_vol> &get_sources(field_type ft) const { return sources[ft]; }
   // Adds a source volume of field type `ft` and takes ownership of `src`.
@@ -1942,7 +1951,8 @@ public:
   void *get_eigenmode(double frequency, direction d, const volume where, const volume eig_vol,
                       int band_num, const vec &kpoint, bool match_frequency, int parity,
                       double resolution, double eigensolver_tol, double *kdom = 0,
-                      void **user_mdata = 0, diffractedplanewave *dp = 0);
+                      void **user_mdata = 0, diffractedplanewave *dp = 0,
+                      bool *cache_dispersive = 0, double *cache_frequency = 0);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
@@ -1955,7 +1965,8 @@ public:
                                   std::complex<double> *coeffs, double *vgrp,
                                   kpoint_func user_kpoint_func, void *user_kpoint_data,
                                   vec *kpoints, vec *kdom, double *cscale, direction d,
-                                  diffractedplanewave *dp = 0);
+                                  diffractedplanewave *dp = 0, void **eigenmode_cache = 0,
+                                  bool *cache_dispersive = 0, double *cache_frequency = 0);
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,
@@ -2192,7 +2203,7 @@ public:
                                 int decimation_factor = 0, int Nperiods = 1);
   // monitor.cpp
   std::complex<double> get_chi1inv(component, direction, const vec &loc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   std::complex<double> get_inveps(component c, direction d, const vec &loc,
                                   double frequency = 0) const {
     return get_chi1inv(c, d, loc, frequency);
@@ -2300,7 +2311,7 @@ public:
   // monitor.cpp
   std::complex<double> get_field(component c, const ivec &iloc, bool parallel = true) const;
   std::complex<double> get_chi1inv(component, direction, const ivec &iloc, double frequency = 0,
-                                   bool parallel = true) const;
+                                   bool parallel = true, bool *is_frequency_dependent = NULL) const;
   // boundaries.cpp
   bool locate_component_point(component *, ivec *, std::complex<double> *) const;
   // time.cpp
