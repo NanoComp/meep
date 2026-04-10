@@ -94,11 +94,9 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
     // call get_chi1inv with parallel=false to get only local epsilon data
     // Pass &is_freq_dep to detect dispersive materials directly from get_chi1inv,
     // which knows whether frequency-dependent susceptibilities were evaluated.
-    bool is_freq_dep = false;
-    cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false, &is_freq_dep));
-    cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false, &is_freq_dep));
-    cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false, &is_freq_dep));
-    if (is_freq_dep) eps_data->found_dispersive = true;
+    cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false, &eps_data->found_dispersive));
+    cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false, &eps_data->found_dispersive));
+    cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false, &eps_data->found_dispersive));
 
     // Off-diagonal components: average from both relevant Yee grids.
     // Each off-diagonal chi1inv component (e.g., chi1inv_xy) can be
