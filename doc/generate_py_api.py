@@ -62,6 +62,7 @@ import inspect
 import io
 import itertools
 import os
+import re
 import sys
 import textwrap
 
@@ -80,14 +81,6 @@ DESTDOC = os.path.join(HERE, "docs/Python_User_Interface.md")
 # can be excluded by using 'Classname.method_name'
 EXCLUDES = [""]
 
-
-# ast.Constant was added in Python 3.6, and ast.NameConstant is deprecated
-# starting in Python 3.8, so use Constant if it exists, otherwise fall back to
-# NameConstant.
-try:
-    Constant = ast.Constant
-except AttributeError:
-    Constant = ast.NameConstant
 
 # ----------------------------------------------------------------------------
 
@@ -161,17 +154,29 @@ class FunctionItem(Item):
             # This happens when there is no source for some function/class (like NamedTuples)
             pass
 
-        # Fall back to using just the inspect module's info
-        param_str = str(self.sig)
+        # Fall back to using just the inspect module's info.
+        # Strip 'self' and type annotations for cleaner documentation.
+        parameters = [p for p in self.sig.parameters.values() if p.name != "self"]
+
+        def _param_str_no_annotation(p):
+            """Format a parameter without its type annotation."""
+            if p.default is inspect.Parameter.empty:
+                if p.kind == inspect.Parameter.VAR_POSITIONAL:
+                    return f"*{p.name}"
+                elif p.kind == inspect.Parameter.VAR_KEYWORD:
+                    return f"**{p.name}"
+                return p.name
+            else:
+                return f"{p.name}={p.default!r}"
+
+        parts = [_param_str_no_annotation(p) for p in parameters]
+        param_str = "({})".format(", ".join(parts))
 
         # Wrap and indent the parameters if the line is too long
         if len(param_str) > 50:
-            parameters = list(self.sig.parameters.values())
             params = []
-            for idx, param in enumerate(parameters):
-                params.append(
-                    "(" + str(param) if idx == 0 else " " * indent + str(param)
-                )
+            for idx, param in enumerate(parts):
+                params.append("(" + part if idx == 0 else " " * indent + part)
             param_str = ",\n".join(params)
             param_str += ")"
         return param_str
@@ -181,8 +186,6 @@ class FunctionItem(Item):
         # the text for default values.
         def parse_name(node):
             assert isinstance(node, ast.arg)
-            if node.annotation != None:
-                raise ValueError("Annotations are not currently supported")
             return node.arg
 
         source = inspect.getsource(self.obj)
@@ -196,10 +199,14 @@ class FunctionItem(Item):
         # Get the param name and defaults together into a list of tuples
         args = reversed(func.args.args)
         defaults = reversed(func.args.defaults)
-        iter = itertools.zip_longest(args, defaults, fillvalue=None)
+        pairs = itertools.zip_longest(args, defaults, fillvalue=None)
         parameters = [
-            (parse_name(name), default) for name, default in reversed(list(iter))
+            (parse_name(name), default) for name, default in reversed(list(pairs))
         ]
+
+        # Strip 'self' parameter (not meaningful in documentation)
+        if parameters and parameters[0][0] == "self":
+            parameters = parameters[1:]
 
         # Convert each of the parameters (name, ast.node) to valid Python parameter
         # code, like what would have been in the actual source code.
@@ -214,18 +221,26 @@ class FunctionItem(Item):
         # Check for vararg (like *foo) and kwarg (like **bar) parameters
         if func.args.vararg is not None:
             transformed.append(f"*{func.args.vararg.arg}")
+
+        # Handle keyword-only arguments (between *args and **kwargs)
+        if func.args.kwonlyargs:
+            kw_defaults = func.args.kw_defaults
+            for arg, default in zip(func.args.kwonlyargs, kw_defaults):
+                name = parse_name(arg)
+                if default is None:
+                    transformed.append(name)
+                else:
+                    val = self.transform_node(name, default)
+                    transformed.append(f"{name}={val}")
+
         if func.args.kwarg is not None:
             transformed.append(f"**{func.args.kwarg.arg}")
 
         return transformed
 
     def transform_node(self, name, node):
-        if isinstance(node, (ast.Str, ast.Bytes)):
-            default = repr(node.s)
-        elif isinstance(node, ast.Num):
-            default = repr(node.n)
-        elif isinstance(node, Constant):
-            default = node.value
+        if isinstance(node, ast.Constant):
+            default = repr(node.value)
         elif isinstance(node, ast.Name):
             default = node.id
         elif isinstance(node, ast.Attribute):
@@ -280,7 +295,6 @@ class FunctionItem(Item):
     def create_markdown(self):
         # pull relevant attributes into local variables
         function_name = self.name
-        function_name_escaped = function_name.replace("_", "\\_")
         docstring = self.docstring if self.docstring else ""
         parameters = self.get_parameters(len(function_name) + 1)
         docstring, other_signatures = self.check_other_signatures(docstring)
@@ -307,7 +321,6 @@ class MethodItem(FunctionItem):
         # pull relevant attributes into local variables
         class_name = self.klass.name
         method_name = self.method_name
-        method_name_escaped = method_name.replace("_", "\\_")
         docstring = self.docstring if self.docstring else ""
         parameters = self.get_parameters(4 + len(method_name) + 1)
         docstring, other_signatures = self.check_other_signatures(docstring)
@@ -379,8 +392,8 @@ class ClassItem(Item):
             for item in methods:
                 if only_with_docstrings and not item.docstring:
                     continue
-                if not check_excluded(item.name) and not check_excluded(
-                    f"{self.name}.{item.name}"
+                if not check_excluded(item.method_name) and not check_excluded(
+                    item.name
                 ):
                     doc = item.create_markdown()
                     method_docs.append(doc)
@@ -396,8 +409,10 @@ class ClassItem(Item):
 def check_excluded(name):
     if name in EXCLUDES:
         return True
-    if name.startswith("_") and not (name.startswith("__") and name.endswith("__")):
-        # It's probably meant to be private
+    # For dotted names like "ClassName.__repr__", check the last component
+    short_name = name.rsplit(".", 1)[-1]
+    if short_name.startswith("_") and short_name != "__init__":
+        # Exclude private names and dunder methods (except __init__)
         return True
     return False
 
@@ -407,7 +422,7 @@ def load_module(module):
     Inspect the module and return a list of documentable items in the module.
     """
     items = []
-    members = inspect.getmembers(meep)
+    members = inspect.getmembers(module)
 
     for name, member in members:
         if inspect.isclass(member):
@@ -452,6 +467,11 @@ def update_api_document(doc_items):
         tag = f"@@ {name} @@"
         if tag in srcdoc:
             srcdoc = srcdoc.replace(tag, doc)
+
+    # warn about any unsubstituted tags
+    remaining = re.findall(r"@@\s*[\w.\[\]-]+\s*@@", srcdoc)
+    for tag in remaining:
+        print(f"Warning: unsubstituted tag {tag}")
 
     # write results
     with open(DESTDOC, "w") as f:
