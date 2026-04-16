@@ -404,10 +404,13 @@ bool fields_chunk::step_db(field_type ft) {
           if (ft == D_stuff)
             for (int r = 0; r <= gv.nr() && r < rmax; r++) {
               const int ir = r * (nz + 1);
+              if (f[Dr][cmp]) ZERO_Z(f[Dr][cmp] + ir);
               ZERO_Z(f[Dp][cmp] + ir);
               ZERO_Z(f[Dz][cmp] + ir);
+              if (f_cond[Dr][cmp]) ZERO_Z(f_cond[Dr][cmp] + ir);
               if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp] + ir);
               if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp] + ir);
+              if (f_u[Dr][cmp]) ZERO_Z(f_u[Dr][cmp] + ir);
               if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp] + ir);
               if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp] + ir);
             }
@@ -415,8 +418,14 @@ bool fields_chunk::step_db(field_type ft) {
             for (int r = 0; r <= gv.nr() && r < rmax; r++) {
               const int ir = r * (nz + 1);
               ZERO_Z(f[Br][cmp] + ir);
+              if (f[Bp][cmp]) ZERO_Z(f[Bp][cmp] + ir);
+              if (f[Bz][cmp]) ZERO_Z(f[Bz][cmp] + ir);
               if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp] + ir);
+              if (f_cond[Bp][cmp]) ZERO_Z(f_cond[Bp][cmp] + ir);
+              if (f_cond[Bz][cmp]) ZERO_Z(f_cond[Bz][cmp] + ir);
               if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp] + ir);
+              if (f_u[Bp][cmp]) ZERO_Z(f_u[Bp][cmp] + ir);
+              if (f_u[Bz][cmp]) ZERO_Z(f_u[Bz][cmp] + ir);
             }
         }
         else {
@@ -427,17 +436,26 @@ bool fields_chunk::step_db(field_type ft) {
              1/(|m|+0.5) is purely empirical (no theory yet), and I'm not
              sure how universal it is.  Makes higher m's more expensive. */
           if (ft == D_stuff) {
+            if (f[Dr][cmp]) ZERO_Z(f[Dr][cmp]);
             ZERO_Z(f[Dp][cmp]);
             ZERO_Z(f[Dz][cmp]);
+            if (f_cond[Dr][cmp]) ZERO_Z(f_cond[Dr][cmp]);
             if (f_cond[Dp][cmp]) ZERO_Z(f_cond[Dp][cmp]);
             if (f_cond[Dz][cmp]) ZERO_Z(f_cond[Dz][cmp]);
+            if (f_u[Dr][cmp]) ZERO_Z(f_u[Dr][cmp]);
             if (f_u[Dp][cmp]) ZERO_Z(f_u[Dp][cmp]);
             if (f_u[Dz][cmp]) ZERO_Z(f_u[Dz][cmp]);
           }
           else {
             ZERO_Z(f[Br][cmp]);
+            if (f[Bp][cmp]) ZERO_Z(f[Bp][cmp]);
+            if (f[Bz][cmp]) ZERO_Z(f[Bz][cmp]);
             if (f_cond[Br][cmp]) ZERO_Z(f_cond[Br][cmp]);
+            if (f_cond[Bp][cmp]) ZERO_Z(f_cond[Bp][cmp]);
+            if (f_cond[Bz][cmp]) ZERO_Z(f_cond[Bz][cmp]);
             if (f_u[Br][cmp]) ZERO_Z(f_u[Br][cmp]);
+            if (f_u[Bp][cmp]) ZERO_Z(f_u[Bp][cmp]);
+            if (f_u[Bz][cmp]) ZERO_Z(f_u[Bz][cmp]);
           }
         }
       }
