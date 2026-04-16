@@ -6,6 +6,8 @@
 
 * Performance optimization for time stepping in cylindrical coordinates ([#3158]).
 
+* Performance optimization for repeated eigenmode solves ([#3167]).
+
 * Multithreading support for epsilon initialization ([#3166], [#3171]).
 
 * Bug fix when combining Bloch-periodic boundaries and mirror symmetries ([#3155]).
