@@ -375,6 +375,29 @@ class TestEigCoeffs(unittest.TestCase):
         self.assertAlmostEqual(Tsum, Tflux, places=2)
         self.assertAlmostEqual(Rsum + Tsum, 1.00, places=2)
 
+        # Verify eigenmode_cache produces identical results on repeated calls.
+        # The first call creates the cache; the second call reuses it.
+        for nm in range(nm_t):
+            for S_pol in [False, True]:
+                dp = mp.DiffractedPlanewave(
+                    [0, nm, 0],
+                    mp.Vector3(1, 0, 0),
+                    1 if S_pol else 0,
+                    0 if S_pol else 1,
+                )
+                res1 = sim.get_eigenmode_coefficients(tran_flux, dp)
+                res2 = sim.get_eigenmode_coefficients(tran_flux, dp)
+                power1 = abs(res1.alpha[0, 0, 0]) ** 2
+                power2 = abs(res2.alpha[0, 0, 0]) ** 2
+                if max(power1, power2) > 1e-20:
+                    self.assertAlmostEqual(
+                        power2 / power1,
+                        1.0,
+                        places=5,
+                        msg=f"eigenmode_cache mismatch for order {nm}, "
+                        f"{'S' if S_pol else 'P'}-pol",
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()
