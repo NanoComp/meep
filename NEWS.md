@@ -1,5 +1,27 @@
 # Meep Release Notes
 
+## Meep 1.33.0
+
+4/16/2026
+
+* Performance optimization for time stepping in cylindrical coordinates ([#3158]).
+
+* Multithreading support for epsilon initialization ([#3166], [#3171]).
+
+* Bug fix when combining mirror symmetries and Bloch-periodic boundaries ([#3155]).
+
+* Bug fix when combining Bloch-periodic boundaries and single-precision floating point ([#3157]).
+
+* Bug fix in interpolation of epsilon grid from Meep to MPB ([#3163]).
+
+* Bug fix when combining dft_force and mirror symmetry ([#3161]).
+
+* Bug fix in grid_volume::init_subvolume in cylindrical coordinates ([#3174]).
+
+* Bug fix in Simulation.load_chunk_layout ([#3189]).
+
+* Various improvements and additional documentation ([#3159], [#3169], [#3179], [#3185], [#3187], [#3190], [#3195], [#3193], [#3199]).
+
 ## Meep 1.32.0
 
 2/20/2026
