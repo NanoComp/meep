@@ -130,14 +130,15 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
 // Factored out to avoid duplicating this two-pass sequence for both initial
 // creation and dispersive-frequency updates of the cached maxwell_data.
 // Returns true if any sampled point has frequency-dependent (dispersive) epsilon.
-static bool populate_maxwell_dielectric(maxwell_data *mdata, int mesh_size[3], mpb_real R[3][3],
-                                        mpb_real G[3][3], const double *s, const double *o,
-                                        ndim dim, const fields *f, double frequency) {
+bool fields::populate_maxwell_dielectric(void *mdata_, int mesh_size[3], double R[3][3],
+                                         double G[3][3], const double *s, const double *o,
+                                         double frequency) {
+  maxwell_data *mdata = (maxwell_data *)mdata_;
   meep_mpb_eps_data eps_data;
   eps_data.s = s;
   eps_data.o = o;
-  eps_data.dim = dim;
-  eps_data.f = f;
+  eps_data.dim = gv.dim;
+  eps_data.f = this;
   eps_data.frequency = frequency;
   eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
   eps_data.found_dispersive = false;
@@ -499,8 +500,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, band_num, band_num);
     if (local_N != n[0] * n[1] * n[2]) meep::abort("MPI version of MPB library is not supported");
 
-    bool found_dispersive =
-        populate_maxwell_dielectric(mdata, mesh_size, R, G, s, o, gv.dim, this, frequency);
+    bool found_dispersive = populate_maxwell_dielectric(mdata, mesh_size, R, G, s, o, frequency);
 
     if (cache_dispersive) *cache_dispersive = found_dispersive;
     if (cache_frequency) *cache_frequency = frequency;
@@ -523,8 +523,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
         master_printf("Re-populating epsilon grid for dispersive medium at freq=%g (was %g)\n",
                       frequency, *cache_frequency);
 
-      *cache_dispersive =
-          populate_maxwell_dielectric(mdata, mesh_size, R, G, s, o, gv.dim, this, frequency);
+      *cache_dispersive = populate_maxwell_dielectric(mdata, mesh_size, R, G, s, o, frequency);
       *cache_frequency = frequency;
     }
   }

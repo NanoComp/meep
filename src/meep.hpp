@@ -1948,6 +1948,8 @@ public:
                       double resolution, double eigensolver_tol, double *kdom = 0,
                       void **user_mdata = 0, diffractedplanewave *dp = 0,
                       bool *cache_dispersive = 0, double *cache_frequency = 0);
+  bool populate_maxwell_dielectric(void *mdata, int mesh_size[3], double R[3][3], double G[3][3],
+                                   const double *s, const double *o, double frequency);
 
   void add_eigenmode_source(component c, const src_time &src, direction d, const volume &where,
                             const volume &eig_vol, int band_num, const vec &kpoint,
