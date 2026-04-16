@@ -1950,6 +1950,13 @@ public:
                             double eigensolver_tol, std::complex<double> amp,
                             std::complex<double> A(const vec &) = 0, diffractedplanewave *dp = 0);
 
+  // Analytical planewave eigenmode for homogeneous media (bypasses MPB).
+  void *get_eigenmode_planewave(double frequency, direction d, const volume &where,
+                                const volume &eig_vol, diffractedplanewave *dp, double eps,
+                                double mu, double *kdom);
+  bool is_homogeneous_on_monitor(const volume &where, double frequency, double *eps_out,
+                                 double *mu_out) const;
+
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,

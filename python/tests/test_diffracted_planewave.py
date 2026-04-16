@@ -139,7 +139,10 @@ class TestDiffractedPlanewave(unittest.TestCase):
             )
 
             self.assertAlmostEqual(vg_ref, vg_dp, places=4)
-            self.assertAlmostEqual(tran_ref, tran_dp, places=4)
+            # places=3 because the analytical planewave (used automatically
+            # for homogeneous monitors) and band-number MPB use different
+            # grids, causing small differences for near-grazing orders.
+            self.assertAlmostEqual(tran_ref, tran_dp, places=3)
             if theta == 0:
                 self.assertAlmostEqual(abs(kdom_ref.x), kdom_dp.x, places=5)
                 self.assertAlmostEqual(abs(kdom_ref.y), kdom_dp.y, places=5)
