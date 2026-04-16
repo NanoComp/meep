@@ -95,8 +95,10 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
     // Pass &is_freq_dep to detect dispersive materials directly from get_chi1inv,
     // which knows whether frequency-dependent susceptibilities were evaluated.
     cache[6 * i] = real(f->get_chi1inv(Ex, X, p, frequency, false, &eps_data->found_dispersive));
-    cache[6 * i + 1] = real(f->get_chi1inv(Ey, Y, p, frequency, false, &eps_data->found_dispersive));
-    cache[6 * i + 2] = real(f->get_chi1inv(Ez, Z, p, frequency, false, &eps_data->found_dispersive));
+    cache[6 * i + 1] =
+        real(f->get_chi1inv(Ey, Y, p, frequency, false, &eps_data->found_dispersive));
+    cache[6 * i + 2] =
+        real(f->get_chi1inv(Ez, Z, p, frequency, false, &eps_data->found_dispersive));
 
     // Off-diagonal components: average from both relevant Yee grids.
     // Each off-diagonal chi1inv component (e.g., chi1inv_xy) can be
@@ -121,6 +123,48 @@ static int meep_mpb_eps(symmetric_matrix *eps, symmetric_matrix *eps_inv, mpb_re
   eps_data->icache += 1; // next call will use the subsequent cache element
 
   return 1; // tells MPB not to do its own subpixel averaging
+}
+
+// Populate the MPB dielectric grid by sampling epsilon from the Meep fields,
+// synchronizing across MPI ranks, and passing the result to MPB.
+// Factored out to avoid duplicating this two-pass sequence for both initial
+// creation and dispersive-frequency updates of the cached maxwell_data.
+// Returns true if any sampled point has frequency-dependent (dispersive) epsilon.
+static bool populate_maxwell_dielectric(maxwell_data *mdata, int mesh_size[3], mpb_real R[3][3],
+                                        mpb_real G[3][3], const double *s, const double *o,
+                                        ndim dim, const fields *f, double frequency) {
+  meep_mpb_eps_data eps_data;
+  eps_data.s = s;
+  eps_data.o = o;
+  eps_data.dim = dim;
+  eps_data.f = f;
+  eps_data.frequency = frequency;
+  eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
+  eps_data.found_dispersive = false;
+
+  // First pass: build local cache (returns dummy values to MPB)
+  eps_data.use_cache = false;
+  eps_data.icache = 0;
+  set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+
+  // Synchronize cached epsilon data across MPI ranks
+  eps_data.ncache = eps_data.icache;
+  double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
+  am_now_working_on(MpiAllTime);
+  sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
+  finished_working();
+  free(eps_data.cache);
+  eps_data.cache = summed_cache;
+  eps_data.found_dispersive = or_to_all(eps_data.found_dispersive);
+
+  // Second pass: send synchronized epsilon to MPB
+  eps_data.use_cache = true;
+  eps_data.icache = 0;
+  set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
+  assert(eps_data.icache == eps_data.ncache);
+
+  free(eps_data.cache);
+  return eps_data.found_dispersive;
 }
 
 /**************************************************************/
@@ -258,7 +302,7 @@ complex<double> eigenmode_amplitude(void *vedata, const vec &p, component c) {
 
   /* define a macro to give us data(x,y,z) on the grid,
      in row-major order (the order used by MPB): */
-#define D(x, y, z) (data[(((x)*ny + (y)) * nz + (z)) * 3])
+#define D(x, y, z) (data[(((x) * ny + (y)) * nz + (z)) * 3])
   complex<mpb_real> ret;
   ret = (((D(x, y, z) * (1.0 - dx) + D(x2, y, z) * dx) * (1.0 - dy) +
           (D(x, y2, z) * (1.0 - dx) + D(x2, y2, z) * dx) * dy) *
@@ -455,43 +499,12 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
     mdata = create_maxwell_data(n[0], n[1], n[2], &local_N, &N_start, &alloc_N, band_num, band_num);
     if (local_N != n[0] * n[1] * n[2]) meep::abort("MPI version of MPB library is not supported");
 
-    meep_mpb_eps_data eps_data;
-    eps_data.s = s;
-    eps_data.o = o;
-    eps_data.dim = gv.dim;
-    eps_data.f = this;
-    eps_data.frequency = frequency;
-    eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
-    eps_data.found_dispersive = false;
+    bool found_dispersive =
+        populate_maxwell_dielectric(mdata, mesh_size, R, G, s, o, gv.dim, this, frequency);
 
-    // first, build up a cache of the local epsilon data
-    // (while returning dummy values to MPB)
-    eps_data.use_cache = false;
-    eps_data.icache = 0;
-    set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
-
-    // then, synchronize the data
-    eps_data.ncache = eps_data.icache; // actual amount of cached data
-    double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
-    am_now_working_on(MpiAllTime);
-    sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
-    finished_working();
-    free(eps_data.cache);
-    eps_data.cache = summed_cache;
-    eps_data.found_dispersive = or_to_all(eps_data.found_dispersive);
-
-    // finally, send MPB the real epsilon data using the synchronized cache
-    eps_data.use_cache = true;
-    eps_data.icache = 0;
-    set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
-    assert(eps_data.icache == eps_data.ncache);
-
-    free(eps_data.cache);
-
-    // Store dispersive flag and frequency for cache management
-    if (cache_dispersive) *cache_dispersive = eps_data.found_dispersive;
+    if (cache_dispersive) *cache_dispersive = found_dispersive;
     if (cache_frequency) *cache_frequency = frequency;
-    if (eps_data.found_dispersive && verbosity > 0)
+    if (found_dispersive && verbosity > 0)
       master_printf("Dispersive medium detected on eigenmode monitor\n");
 
     if (user_mdata) *user_mdata = (void *)mdata;
@@ -510,34 +523,8 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
         master_printf("Re-populating epsilon grid for dispersive medium at freq=%g (was %g)\n",
                       frequency, *cache_frequency);
 
-      meep_mpb_eps_data eps_data;
-      eps_data.s = s;
-      eps_data.o = o;
-      eps_data.dim = gv.dim;
-      eps_data.f = this;
-      eps_data.frequency = frequency;
-      eps_data.cache = (double *)malloc(sizeof(double) * 6 * (eps_data.ncache = 512));
-      eps_data.found_dispersive = false;
-
-      eps_data.use_cache = false;
-      eps_data.icache = 0;
-      set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
-
-      eps_data.ncache = eps_data.icache;
-      double *summed_cache = (double *)malloc(sizeof(double) * 6 * eps_data.ncache);
-      am_now_working_on(MpiAllTime);
-      sum_to_all(eps_data.cache, summed_cache, eps_data.ncache * 6);
-      finished_working();
-      free(eps_data.cache);
-      eps_data.cache = summed_cache;
-      eps_data.found_dispersive = or_to_all(eps_data.found_dispersive);
-
-      eps_data.use_cache = true;
-      eps_data.icache = 0;
-      set_maxwell_dielectric(mdata, mesh_size, R, G, NULL, meep_mpb_eps, &eps_data);
-      assert(eps_data.icache == eps_data.ncache);
-
-      free(eps_data.cache);
+      *cache_dispersive =
+          populate_maxwell_dielectric(mdata, mesh_size, R, G, s, o, gv.dim, this, frequency);
       *cache_frequency = frequency;
     }
   }
