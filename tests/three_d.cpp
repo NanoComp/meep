@@ -249,6 +249,24 @@ int test_1d_cell_bloch() {
   return 1;
 }
 
+// Test that the PML auxiliary fields are allocated at the same time
+// as the fields from the source. (See #3188.)
+int test_pml_auxiliary_field_allocation() {
+  double a = 10.0;
+
+  grid_volume gv = vol3d(1.5, 1.0, 1.2, a);
+  gv.center_origin();
+  structure s(gv, one, pml(0.2));
+
+  master_printf("Testing PML auxiliary fields allocation...\n");
+  fields f(&s);
+  f.step();
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.751, 0.5, 0.601));
+  f.step();
+
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
@@ -266,6 +284,9 @@ int main(int argc, char **argv) {
     if (!test_pml_splitting(one, s)) meep::abort("error in test_pml_splitting vacuum\n");
 
   if (!test_1d_cell_bloch()) meep::abort("error in test_1d_cell_bloch\n");
+
+  if (!test_pml_auxiliary_field_allocation())
+    meep::abort("error in test_pml_auxiliary_field_allocation\n");
 
   return 0;
 }
