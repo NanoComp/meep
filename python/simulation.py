@@ -4932,6 +4932,13 @@ class Simulation:
             scale_factor: float, camera zoom factor
             azimuth: float, azimuthal angle in degrees
             elevation: float, elevation angle in degrees
+            eps_parameters: Parameters to plot epsilon:
+                frequency: for materials with a [frequency-dependent
+                            permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
+                            frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+                            plot. Defaults to 0.
+                resolution: the resolution of the $\\varepsilon$ grid. Defaults to the
+                            `resolution` of the `Simulation` object.
         """
         import meep.visualization as vis
 
