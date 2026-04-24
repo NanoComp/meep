@@ -1130,7 +1130,7 @@ def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "s
     unique = np.unique((eps_data)).tolist()
 
     # Remove background material
-    unique.remove(np.round((np.asarray(sim.default_material.epsilon_diag)), 2)[0])
+    unique.remove(np.round(np.asarray(sim.default_material.epsilon_diag), 2)[0])
 
     mesh_midpoint = (sim_size[0] / 2, sim_size[1] / 2, sim_size[2] / 2)
 
