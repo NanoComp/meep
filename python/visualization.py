@@ -1089,7 +1089,7 @@ CELL_COLOR_3D = None
 CELL_EDGE_COLOR_3D: tuple[float, float, float, float] = (0.75, 0.75, 0.75, 1)  # gray
 
 
-def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
+def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
     from vispy.scene.visuals import Box, Mesh
     from vispy.scene import SceneCanvas, transforms
 
@@ -1112,7 +1112,14 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
         sim_center, sim_size, sim.is_cylindrical
     )
 
-    grid_resolution = sim.resolution
+    # Get eps parameters or use default
+    eps_parameters = kwargs.get("eps_parameters")
+    if eps_parameters:
+        grid_resolution = eps_parameters.get("resolution", sim.resolution)
+        frequency = eps_parameters.get("frequency", 0)
+    else:
+        grid_resolution = sim.resolution
+        frequency = 0
 
     Nx = int((xmax - xmin) * grid_resolution + 1)
     Ny = int((ymax - ymin) * grid_resolution + 1)
@@ -1123,12 +1130,13 @@ def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwar
     ztics = np.linspace(zmin, zmax, Nz)
 
     # Get eps for geometry
-    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics)), 2)
 
-    unique = np.unique(np.abs(eps_data)).tolist()
+    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, frequency)), 2)
+
+    unique = np.unique((eps_data)).tolist()
 
     # Remove background material
-    unique.remove(np.round(np.abs(np.asarray(sim.default_material.epsilon_diag)), 2)[0])
+    unique.remove(np.round((np.asarray(sim.default_material.epsilon_diag)), 2)[0])
 
     mesh_midpoint = (sim_size[0] / 2, sim_size[1] / 2, sim_size[2] / 2)
 
