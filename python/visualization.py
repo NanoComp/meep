@@ -1089,7 +1089,7 @@ CELL_COLOR_3D = None
 CELL_EDGE_COLOR_3D: tuple[float, float, float, float] = (0.75, 0.75, 0.75, 1)  # gray
 
 
-def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
+def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "sim.png", eps_frequency: float = 0, resolution: float | None = None, **kwargs):
     from vispy.scene.visuals import Box, Mesh
     from vispy.scene import SceneCanvas, transforms
 
@@ -1113,13 +1113,7 @@ def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "s
     )
 
     # Get eps parameters or use default
-    eps_parameters = kwargs.get("eps_parameters")
-    if eps_parameters:
-        grid_resolution = eps_parameters.get("resolution", sim.resolution)
-        frequency = eps_parameters.get("frequency", 0)
-    else:
-        grid_resolution = sim.resolution
-        frequency = 0
+    grid_resolution = resolution or sim.resolution
 
     Nx = int((xmax - xmin) * grid_resolution + 1)
     Ny = int((ymax - ymin) * grid_resolution + 1)
@@ -1131,7 +1125,7 @@ def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "s
 
     # Get eps for geometry
 
-    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, frequency)), 2)
+    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eos_frequency)), 2)
 
     unique = np.unique((eps_data)).tolist()
 
