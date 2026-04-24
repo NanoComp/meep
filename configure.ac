@@ -481,6 +481,7 @@ if test "x$have_gdsii" = xmaybe; then
     AC_MSG_RESULT($have_gdsii_getlayers)
   fi
 fi
+AM_CONDITIONAL(WITH_LIBGDSII, test "x$ac_cv_lib_GDSII_libGDSIIExists" = "xyes")
 
 ##############################################################################
 # The following function is used only for debugging.  Note that
