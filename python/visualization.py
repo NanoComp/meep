@@ -1125,7 +1125,7 @@ def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "s
 
     # Get eps for geometry
 
-    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eos_frequency)), 2)
+    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_frequency)), 2)
 
     unique = np.unique((eps_data)).tolist()
 
