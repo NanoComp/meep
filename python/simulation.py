@@ -4918,7 +4918,7 @@ class Simulation:
         return vis.plot_fields(self, **kwargs)
 
     def plot3D(
-        self, save_to_image: bool = False, image_name: str = "sim.png", **kwargs
+        self, save_to_image: bool = False, image_name: str = "sim.png", eps_frequency: float = 0., resolution: float | None = None, **kwargs
     ):
         """
         Uses vispy to render a 3D scene of the simulation object. The simulation object must be 3D.
@@ -4932,17 +4932,16 @@ class Simulation:
             scale_factor: float, camera zoom factor
             azimuth: float, azimuthal angle in degrees
             elevation: float, elevation angle in degrees
-            eps_parameters: Parameters to plot epsilon:
-                frequency: for materials with a [frequency-dependent
-                            permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
-                            frequency $f$ (in Meep units) of the real part of the permittivity to use in the
-                            plot. Defaults to 0.
-                resolution: the resolution of the $\\varepsilon$ grid. Defaults to the
-                            `resolution` of the `Simulation` object.
+            eps_frequency: for materials with a [frequency-dependent
+                        permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
+                        frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+                        plot. Defaults to 0.
+            resolution: the resolution used for plotting. Defaults to the
+                        `resolution` of the `Simulation` object.
         """
         import meep.visualization as vis
 
-        return vis.plot3D(self, save_to_image, image_name, **kwargs)
+        return vis.plot3D(self, save_to_image, image_name, eps_frequency, resolution, **kwargs)
 
     def visualize_chunks(self):
         """
