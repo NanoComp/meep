@@ -22,7 +22,7 @@
 
 * Bug fix in Simulation.load_chunk_layout ([#3189]).
 
-* Various improvements and additional documentation ([#3159], [#3169], [#3179], [#3185], [#3187], [#3190], [#3193], [#3195], [#3199]).
+* Various improvements and additional documentation ([#3159], [#3169], [#3179], [#3185], [#3187], [#3188], [#3190], [#3193], [#3195], [#3199]).
 
 ## Meep 1.32.0
 
