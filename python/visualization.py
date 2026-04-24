@@ -1127,7 +1127,7 @@ def plot3D(sim: mp.Simulation, save_to_image: bool = False, image_name: str = "s
 
     eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_frequency)), 2)
 
-    unique = np.unique((eps_data)).tolist()
+    unique = np.unique(eps_data).tolist()
 
     # Remove background material
     unique.remove(np.round(np.asarray(sim.default_material.epsilon_diag), 2)[0])
