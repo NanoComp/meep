@@ -238,10 +238,11 @@ class TestPrism(unittest.TestCase):
         self.assertAlmostEqual(d_nosym[1], d_sym[1], places=3)
         self.assertAlmostEqual(d_nosym[2], d_sym[2], places=3)
 
-        print("Testing Non-Convex Prism from GDSII file...")
-        d = self.spiral_gds()
-        d_ref = 455.01744881372224
-        self.assertAlmostEqual(d, d_ref, places=5)
+        if mp.with_libGDSII():
+            print("Testing Non-Convex Prism from GDSII file...")
+            d = self.spiral_gds()
+            d_ref = 455.01744881372224
+            self.assertAlmostEqual(d, d_ref, places=5)
 
     def test_prism(self):
         print("Testing Non-Convex Prism #3 using marching squares algorithm...")
