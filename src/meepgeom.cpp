@@ -658,7 +658,8 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   int length = g.num_items;
   geometry.num_items = length;
   geometry.items = new geometric_object[length];
-  has_user_materials = false;
+  has_user_materials = default_material && ((material_type)default_material)->which_subclass ==
+                                               material_data::MATERIAL_USER;
   for (int i = 0; i < length; i++) {
     geometric_object_copy(&g.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();
