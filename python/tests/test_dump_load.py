@@ -120,7 +120,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         self._load_dump_structure_2d()
 
     @unittest.skipIf(
-        not mp.with_mpi() or mp.count_processors < 2,
+        not mp.with_mpi() or mp.count_processors() < 2,
         "MPI specific test (requires mpirun with more than 1 process)",
     )
     def test_load_dump_structure_sharded_2d(self):
@@ -230,7 +230,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         self._load_dump_structure_3d()
 
     @unittest.skipIf(
-        not mp.with_mpi() or mp.count_processors < 2,
+        not mp.with_mpi() or mp.count_processors() < 2,
         "MPI specific test (requires mpirun with more than 1 process)",
     )
     def test_load_dump_structure_sharded_3d(self):
@@ -355,7 +355,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         self._load_dump_fields_2d()
 
     @unittest.skipIf(
-        not mp.with_mpi() or mp.count_processors < 2,
+        not mp.with_mpi() or mp.count_processors() < 2,
         "MPI specific test (requires mpirun with more than 1 process)",
     )
     def test_load_dump_fields_sharded_2d(self):
@@ -478,7 +478,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         self._load_dump_fields_3d()
 
     @unittest.skipIf(
-        not mp.with_mpi() or mp.count_processors < 2,
+        not mp.with_mpi() or mp.count_processors() < 2,
         "MPI specific test (requires mpirun with more than 1 process)",
     )
     def test_load_dump_fields_sharded_3d(self):
