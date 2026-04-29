@@ -219,9 +219,12 @@ class TestSimulation(unittest.TestCase):
             **kwargs,
         )
 
-    @unittest.skipIf(not mp.with_mpi(), "MPI specific test")
+    @unittest.skipIf(
+        not mp.with_mpi() or mp.count_processors() < 2,
+        "MPI specific test (requires mpirun with more than 1 process)",
+    )
     def test_mpi(self):
-        self.assertGreater(mp.comm.Get_size(), 1)
+        self.assertGreater(mp.count_processors(), 1)
 
     def test_use_output_directory_default(self):
         sim = self.init_simple_simulation()

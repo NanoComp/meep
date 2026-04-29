@@ -910,6 +910,115 @@ double nonlinear_ex(const grid_volume &gv, double eps(const vec &)) {
   return 1;
 }
 
+// Test mirror symmetry with Bloch-periodic boundaries at the zone edge.
+// This exercises the bug fix from issue #132: eikna[d] must be computed
+// using user_volume (full cell) size, not gv (symmetry-reduced cell) size.
+// Mirror(Y) halves gv in Y, and a non-zero k_y at the Brillouin zone edge
+// (k_y = a/(2*num_y)) means eikna[Y] should be -1. Without the fix,
+// eikna[Y] is computed using the halved cell and gives the wrong phase.
+int test_periodic_mirror_zone_edge(double eps(const vec &)) {
+  double a = 8.0;
+  double ttot = 5.0;
+
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(Y, gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
+  master_printf("Testing mirror symmetry with Bloch-periodic zone-edge k...\n");
+
+  fields f(&s);
+  fields f1(&s1);
+  // k_y at Brillouin zone edge = a/(2*num_y) = 8/(2*8) = 0.5.
+  // This is compatible with Mirror(Y) (fields are anti-periodic in Y).
+  // Mirror(Y) halves gv in Y, so gv.num_direction(Y) != user_volume.num_direction(Y),
+  // and the old buggy code would compute eikna[Y] using the halved cell.
+  f.use_bloch(vec(0.0, 0.5));
+  f1.use_bloch(vec(0.0, 0.5));
+
+  // Ez is even under Mirror(Y); source at mirror plane center.
+  f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.5));
+  f1.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, vec(0.401, 0.5));
+  check_unequal_layout(f, f1);
+  double field_energy_check_time = 1.0;
+  while (f.round_time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.951, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.01, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46, 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2, 0.2))) return 0;
+    if (f.round_time() >= field_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()), "electric energy"))
+        return 0;
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()), "magnetic energy"))
+        return 0;
+      if (!compare(f.field_energy(), f1.field_energy(), "   total energy")) return 0;
+    }
+  }
+  return 1;
+}
+
+// Test two mirror symmetries (X and Y) with Bloch-periodic boundaries at the zone edge.
+// With Mirror(X) + Mirror(Y), gv is halved in both directions.
+// k_x at the zone edge triggers the eikna bug in the X direction.
+int test_periodic_twomirrors(double eps(const vec &)) {
+  double a = 8.0;
+  double ttot = 5.0;
+
+  const grid_volume gv = voltwo(1.0, 1.0, a);
+  the_center = gv.center();
+  const symmetry S = mirror(X, gv) + mirror(Y, gv);
+  structure s(gv, eps, no_pml(), S);
+  structure s1(gv, eps);
+  master_printf("Testing two mirror symmetries with Bloch-periodic at the zone-edge k...\n");
+
+  fields f(&s);
+  fields f1(&s1);
+  // k_x at zone edge = a/(2*num_x) = 0.5, k_y = 0
+  // Both are compatible with mirror symmetries (k_x at zone edge for Mirror(X),
+  // k_y = 0 for Mirror(Y)).
+  f.use_bloch(vec(0.5, 0.0));
+  f1.use_bloch(vec(0.5, 0.0));
+
+  // Ez sources symmetric under both Mirror(X) and Mirror(Y)
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.5), -1.5);
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.25, 0.25));
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.25, 0.75));
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75, 0.25));
+  f.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75, 0.75));
+
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.5, 0.5), -1.5);
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.25, 0.25));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.25, 0.75));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75, 0.25));
+  f1.add_point_source(Ez, 0.7, 2.5, 0.0, 4.0, vec(0.75, 0.75));
+
+  check_unequal_layout(f, f1);
+  double field_energy_check_time = 1.0;
+  while (f.round_time() < ttot) {
+    f.step();
+    f1.step();
+    if (!compare_point(f, f1, vec(0.01, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.21, 0.5))) return 0;
+    if (!compare_point(f, f1, vec(0.46, 0.33))) return 0;
+    if (!compare_point(f, f1, vec(0.2, 0.2))) return 0;
+    if (f.round_time() >= field_energy_check_time) {
+      if (!compare(f.electric_energy_in_box(gv.surroundings()),
+                   f1.electric_energy_in_box(gv.surroundings()), "electric energy"))
+        return 0;
+      if (!compare(f.magnetic_energy_in_box(gv.surroundings()),
+                   f1.magnetic_energy_in_box(gv.surroundings()), "magnetic energy"))
+        return 0;
+      if (!compare(f.field_energy(), f1.field_energy(), "   total energy")) return 0;
+    }
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
   initialize mpi(argc, argv);
   verbosity = 0;
@@ -926,6 +1035,14 @@ int main(int argc, char **argv) {
   if (!test_yperiodic_ymirror(rods_2d)) meep::abort("error in test_yperiodic_ymirror rods2d\n");
 
   if (!pml_twomirrors(one)) meep::abort("error in pml_twomirrors vacuum\n");
+
+  if (!test_periodic_mirror_zone_edge(one))
+    meep::abort("error in test_periodic_mirror_zone_edge vacuum");
+  if (!test_periodic_mirror_zone_edge(rods_2d))
+    meep::abort("error in test_periodic_mirror_zone_edge rods_2d");
+
+  if (!test_periodic_twomirrors(one)) meep::abort("error in test_periodic_twomirrors vacuum");
+  if (!test_periodic_twomirrors(rods_2d)) meep::abort("error in test_periodic_twomirrors rods_2d");
 
   if (!test_origin_shift()) meep::abort("error in test_origin_shift\n");
 

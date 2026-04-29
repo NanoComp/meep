@@ -164,11 +164,14 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     PyObject *py_p = v3_to_pyv3(&p);
 
     PyObject *result = PyObject_CallFunctionObjArgs(py_func, py_energy, py_epsilon, py_p, NULL);
-    mpb_real res = PyFloat_AsDouble(result);
 
     Py_DECREF(py_energy);
     Py_DECREF(py_epsilon);
     Py_DECREF(py_p);
+
+    if (!result) { abort_with_stack_trace(); }
+
+    mpb_real res = PyFloat_AsDouble(result);
     Py_DECREF(result);
 
     return res;
@@ -183,13 +186,15 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
 
      PyObject *result = PyObject_CallFunctionObjArgs(py_func, py_F, py_epsilon, py_p, NULL);
 
-     cnumber res;
-     res.re = PyComplex_RealAsDouble(result);
-     res.im = PyComplex_ImagAsDouble(result);
-
      Py_DECREF(py_F);
      Py_DECREF(py_epsilon);
      Py_DECREF(py_p);
+
+     if (!result) { abort_with_stack_trace(); }
+
+     cnumber res;
+     res.re = PyComplex_RealAsDouble(result);
+     res.im = PyComplex_ImagAsDouble(result);
      Py_DECREF(result);
 
      return res;

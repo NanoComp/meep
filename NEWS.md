@@ -1,5 +1,29 @@
 # Meep Release Notes
 
+## Meep 1.33.0
+
+4/25/2026
+
+* Performance optimization for time stepping in cylindrical coordinates ([#3158]).
+
+* Performance optimization for repeated eigenmode solves ([#3167]).
+
+* Multithreading support for epsilon initialization ([#3166], [#3171]).
+
+* Bug fix when combining Bloch-periodic boundaries and mirror symmetries ([#3155]).
+
+* Bug fix when combining Bloch-periodic boundaries and single-precision floating point ([#3157]).
+
+* Bug fix in interpolation of epsilon grid from Meep to MPB ([#3163]).
+
+* Bug fix when combining dft_force and mirror symmetry ([#3161]).
+
+* Bug fix in grid_volume::init_subvolume in cylindrical coordinates ([#3174]).
+
+* Bug fix in Simulation.load_chunk_layout ([#3189]).
+
+* Various improvements and additional documentation ([#3159], [#3169], [#3179], [#3185], [#3187], [#3188], [#3190], [#3193], [#3195], [#3199]).
+
 ## Meep 1.32.0
 
 2/20/2026
@@ -1298,3 +1322,23 @@ Meep 1.0.1
 [#3123]: https://github.com/NanoComp/meep/issues/3123
 [#3144]: https://github.com/NanoComp/meep/issues/3144
 [#3145]: https://github.com/NanoComp/meep/issues/3145
+[#3155]: https://github.com/NanoComp/meep/issues/3155
+[#3157]: https://github.com/NanoComp/meep/issues/3157
+[#3158]: https://github.com/NanoComp/meep/issues/3158
+[#3159]: https://github.com/NanoComp/meep/issues/3159
+[#3161]: https://github.com/NanoComp/meep/issues/3161
+[#3163]: https://github.com/NanoComp/meep/issues/3163
+[#3166]: https://github.com/NanoComp/meep/issues/3166
+[#3167]: https://github.com/NanoComp/meep/issues/3167
+[#3169]: https://github.com/NanoComp/meep/issues/3169
+[#3171]: https://github.com/NanoComp/meep/issues/3171
+[#3174]: https://github.com/NanoComp/meep/issues/3174
+[#3179]: https://github.com/NanoComp/meep/issues/3179
+[#3185]: https://github.com/NanoComp/meep/issues/3185
+[#3187]: https://github.com/NanoComp/meep/issues/3187
+[#3188]: https://github.com/NanoComp/meep/issues/3188
+[#3189]: https://github.com/NanoComp/meep/issues/3189
+[#3190]: https://github.com/NanoComp/meep/issues/3190
+[#3193]: https://github.com/NanoComp/meep/issues/3193
+[#3195]: https://github.com/NanoComp/meep/issues/3195
+[#3199]: https://github.com/NanoComp/meep/issues/3199

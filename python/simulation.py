@@ -417,12 +417,12 @@ class Volume:
         size: Vector3Type = Vector3(),
         dims: int = 2,
         is_cylindrical: bool = False,
-        vertices: List[Vector3Type] = [],
+        vertices: Optional[List[Vector3Type]] = None,
     ):
         """
         Construct a Volume.
         """
-        if len(vertices) == 0:
+        if not vertices:
             self.center = Vector3(*center)
             self.size = Vector3(*size)
         else:
@@ -2077,15 +2077,20 @@ class Simulation:
             absorbers,
             self.extra_materials,
             self.split_chunks_evenly,
-            False
-            if self.chunk_layout
-            and not isinstance(self.chunk_layout, mp.BinaryPartition)
-            else True,
+            (
+                False
+                if self.chunk_layout
+                and not isinstance(self.chunk_layout, mp.BinaryPartition)
+                else True
+            ),
             None,
             True if self._output_stats is not None else False,
-            self.chunk_layout
-            if self.chunk_layout and isinstance(self.chunk_layout, mp.BinaryPartition)
-            else None,
+            (
+                self.chunk_layout
+                if self.chunk_layout
+                and isinstance(self.chunk_layout, mp.BinaryPartition)
+                else None
+            ),
         )
         self.geps = mp._set_materials(
             self.structure,
@@ -2372,7 +2377,7 @@ class Simulation:
         if self.structure is None:
             raise ValueError(
                 "Structure must be initialized before loading chunk layout from file '%s'"
-                % fname
+                % source
             )
 
         if isinstance(source, Simulation):
@@ -2897,17 +2902,21 @@ class Simulation:
         pts = [s.center for s in self.sources]
 
         src_freqs_min = min(
-            s.src.frequency - 1 / s.src.width / 2
-            if isinstance(s.src, mp.GaussianSource)
-            else mp.inf
+            (
+                s.src.frequency - 1 / s.src.width / 2
+                if isinstance(s.src, mp.GaussianSource)
+                else mp.inf
+            )
             for s in self.sources
         )
         fmin = max(0, src_freqs_min)
 
         fmax = max(
-            s.src.frequency + 1 / s.src.width / 2
-            if isinstance(s.src, mp.GaussianSource)
-            else 0
+            (
+                s.src.frequency + 1 / s.src.width / 2
+                if isinstance(s.src, mp.GaussianSource)
+                else 0
+            )
             for s in self.sources
         )
 
@@ -4487,6 +4496,7 @@ class Simulation:
         """
         self.fields = None
         self.structure = None
+        self.geps = None
         self.dft_objects = []
         self.num_chunks = self._num_chunks_original
         self.chunk_layout = self._chunk_layout_original
@@ -4578,15 +4588,35 @@ class Simulation:
     def mean_time_spent_on(self, time_sink):
         """
         Return the mean time spent by all processes for a type of work `time_sink` which
-        can be one of the following integer constants: `0`: "time stepping", `1`: "connecting chunks",
-        `2`: "copying boundaries", `3`: "all-all communication", `4`: "1-1 communication",
-        `5`: "outputting fields", `6`: "Fourier transforming", `7`: "MPB mode solver",
-        `8`: "near-to-far-field transform", `9`: "updating B field", `10`: "updating H field",
-        `11`: "updating D field", `12`: "updating E field", `13`: "boundary stepping B",
-        `14`: "boundary stepping WH", `15`: "boundary stepping PH", `16`: "boundary stepping H",
-        `17`: "boundary stepping D", `18`: "boundary stepping WE", `19`: "boundary stepping PE",
-        `20`: "boundary stepping E", `21`: "everything else".
+        can be one of the following named constants:
+
+        + `mp.Connecting`: connecting chunks
+        + `mp.Stepping`: time stepping
+        + `mp.Boundaries`: copying boundaries
+        + `mp.MpiAllTime`: all-all communication
+        + `mp.MpiOneTime`: 1-1 communication
+        + `mp.FieldOutput`: outputting fields
+        + `mp.FourierTransforming`: Fourier transforming
+        + `mp.MPBTime`: MPB mode solver
+        + `mp.GetFarfieldsTime`: near-to-far-field transform
+        + `mp.FieldUpdateB`: updating B field
+        + `mp.FieldUpdateH`: updating H field
+        + `mp.FieldUpdateD`: updating D field
+        + `mp.FieldUpdateE`: updating E field
+        + `mp.BoundarySteppingB`: boundary stepping B
+        + `mp.BoundarySteppingWH`: boundary stepping WH
+        + `mp.BoundarySteppingPH`: boundary stepping PH
+        + `mp.BoundarySteppingH`: boundary stepping H
+        + `mp.BoundarySteppingD`: boundary stepping D
+        + `mp.BoundarySteppingWE`: boundary stepping WE
+        + `mp.BoundarySteppingPE`: boundary stepping PE
+        + `mp.BoundarySteppingE`: boundary stepping E
+        + `mp.Other`: everything else
         """
+        if self.fields is None:
+            raise RuntimeError(
+                "Simulation fields are not initialized. Call init_sim() or run() first."
+            )
         return self.fields.mean_time_spent_on(time_sink)
 
     def time_spent_on(self, time_sink):
@@ -4594,6 +4624,10 @@ class Simulation:
         Return a list of times spent by each process for a type of work `time_sink` which
         is the same as for `mean_time_spent_on`.
         """
+        if self.fields is None:
+            raise RuntimeError(
+                "Simulation fields are not initialized. Call init_sim() or run() first."
+            )
         return self.fields.time_spent_on(time_sink)
 
     def get_timing_data(self):

@@ -49,7 +49,7 @@ Specify particular boundary in the positive `High` (e.g., +`X`) or negative `Low
 
 **`component` constants**
 —
-Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hy`, `Hp`, `Hz`, `Bx`, `By`, `Bz`, `By`, `Bp`, `Bz`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, ε, μ, respectively.
+Specify a particular field or other component. One of `Ex`, `Ey`, `Ez`, `Er`, `Ep`, `Hx`, `Hy`, `Hz`, `Hr`, `Hp`, `Bx`, `By`, `Bz`, `Br`, `Bp`, `Dx`, `Dy`, `Dz`, `Dr`, `Dp`, `Dielectric`, `Permeability`, for $E_x$, $E_y$, $E_z$, $E_r$, $E_\phi$, $H_x$, $H_y$, $H_z$, $H_r$, $H_\phi$, $B_x$, $B_y$, $B_z$, $B_r$, $B_\phi$, $D_x$, $D_y$, $D_z$, $D_r$, $D_\phi$, ε, μ, respectively.
 
 **`derived_component` constants**
 —
@@ -874,7 +874,6 @@ The following classes are available directly via the `meep` package.
 
 @@ Verbosity @@
 @@ Verbosity.__init__ @@
-@@ Verbosity.__call__ @@
 @@ Verbosity.add_verbosity_var @@
 @@ Verbosity.get @@
 @@ Verbosity.set @@
@@ -886,99 +885,60 @@ Miscellaneous Functions Reference
 
 @@ interpolate @@
 
-#### Flux functions
+#### Flux Function
 
-@@ get_flux_freqs @@
-
-@@ get_fluxes @@
-
-@@ scale_flux_fields @@
-
-@@ get_eigenmode_freqs @@
-
+- [`get_flux_freqs`](#get_flux_freqs)
+- [`get_fluxes`](#get_fluxes)
+- [`scale_flux_fields`](#scale_flux_fields)
+- [`get_eigenmode_freqs`](#get_eigenmode_freqs)
 
 #### Energy Functions
 
-@@ get_energy_freqs @@
-@@ get_electric_energy @@
-@@ get_magnetic_energy @@
-@@ get_total_energy @@
-
+- [`get_energy_freqs`](#get_energy_freqs)
+- [`get_electric_energy`](#get_electric_energy)
+- [`get_magnetic_energy`](#get_magnetic_energy)
+- [`get_total_energy`](#get_total_energy)
 
 #### Force Functions
 
-@@ get_force_freqs @@
-@@ get_forces @@
-
+- [`get_force_freqs`](#get_force_freqs)
+- [`get_forces`](#get_forces)
 
 #### LDOS Functions
 
-@@ Ldos @@
-@@ get_ldos_freqs @@
-@@ dft_ldos @@
-
+- [`Ldos`](#Ldos)
+- [`get_ldos_freqs`](#get_ldos_freqs)
+- [`dft_ldos`](#dft_ldos)
 
 #### Near2Far Functions
 
-@@ get_near2far_freqs @@
-@@ scale_near2far_fields @@
-
+- [`get_near2far_freqs`](#get_near2far_freqs)
+- [`scale_near2far_fields`](#scale_near2far_fields)
 
 #### GDSII Functions
 
-@@ GDSII_layers @@
-@@ GDSII_prisms @@
-@@ GDSII_vol @@
-
+- [`GDSII_layers`](#GDSII_layers)
+- [`GDSII_prism`](#GDSII_prisms)
+- [`GDSII_vol`](#GDSII_vol)
 
 #### Run and Step Functions
 
-@@ stop_when_fields_decayed @@
-@@ stop_after_walltime @@
-@@ stop_on_interrupt @@
-
+- [`stop_when_fields_decayed`](#stop_when_fields_decayed)
+- [`stop_when_energy_decayed`](#stop_when_energy_decayed)
+- [`stop_when_dft_decayed`](#stop_when_dft_decayed)
+- [`stop_after_walltime`](#stop_after_walltime)
+- [`stop_on_intercept`](#stop_on_intercept)
 
 #### Output Functions
 
-@@ output_epsilon @@
-@@ output_mu @@
-@@ output_poynting @@
-@@ output_hpwr @@
-@@ output_dpwr @@
-@@ output_tot_pwr @@
-@@ output_png @@
+- [`output_epsilon`](#output_epsilon), [`output_mu`](#output_mu), [`output_poynting`](#output_poynting), [`output_hpwr`](#output_hpwr), [`output_dpwr`](#output_dpwr), [`output_tot_pwr`](#output_tot_pwr), [`output_png`](#output_png)
 
-@@ output_hfield @@
-@@ output_hfield_x @@
-@@ output_hfield_y @@
-@@ output_hfield_z @@
-@@ output_hfield_r @@
-@@ output_hfield_p @@
+- **H-field:** [`output_hfield`](#output_hfield), [`output_hfield_x`](#output_hfield_x), [`output_hfield_y`](#output_hfield_y), [`output_hfield_z`](#output_hfield_z), [`output_hfield_r`](#output_hfield_r), [`output_hfield_p`](#output_hfield_p)
 
-@@ output_bfield @@
-@@ output_bfield_x @@
-@@ output_bfield_y @@
-@@ output_bfield_z @@
-@@ output_bfield_r @@
-@@ output_bfield_p @@
+- **B-field:** [`output_bfield`](#output_bfield), [`output_bfield_x`](#output_bfield_x), [`output_bfield_y`](#output_bfield_y), [`output_bfield_z`](#output_bfield_z), [`output_bfield_r`](#output_bfield_r), [`output_bfield_p`](#output_bfield_p)
 
-@@ output_efield @@
-@@ output_efield_x @@
-@@ output_efield_y @@
-@@ output_efield_z @@
-@@ output_efield_r @@
-@@ output_efield_p @@
+- **E-field:** [`output_efield`](#output_efield), [`output_efield_x`](#output_efield_x), [`output_efield_y`](#output_efield_y), [`output_efield_z`](#output_efield_z), [`output_efield_r`](#output_efield_r), [`output_efield_p`](#output_efield_p)
 
-@@ output_dfield @@
-@@ output_dfield_x @@
-@@ output_dfield_y @@
-@@ output_dfield_z @@
-@@ output_dfield_r @@
-@@ output_dfield_p @@
+- **D-field:** [`output_dfield`](#output_dfield), [`output_dfield_x`](#output_dfield_x), [`output_dfield_y`](#output_dfield_y), [`output_dfield_z`](#output_dfield_z), [`output_dfield_r`](#output_dfield_r), [`output_dfield_p`](#output_dfield_p)
 
-@@ output_sfield @@
-@@ output_sfield_x @@
-@@ output_sfield_y @@
-@@ output_sfield_z @@
-@@ output_sfield_r @@
-@@ output_sfield_p @@
+- **Poynting flux:** [`output_sfield`](#output_sfield), [`output_sfield_x`](#output_sfield_x), [`output_sfield_y`](#output_sfield_y), [`output_sfield_z`](#output_sfield_z), [`output_sfield_r`](#output_sfield_r), [`output_sfield_p`](#output_sfield_p)
