@@ -40,6 +40,11 @@ void fields::step() {
     restore_magnetic_fields();
   }
 
+  // If a backend is installed and chooses to handle this step, hand off
+  // the entire timestep to it.  Backends that cannot handle the current
+  // configuration may return false to fall through to the CPU path.
+  if (meep_backend.step && meep_backend.step(this)) return;
+
   am_now_working_on(Stepping);
 
   if (!t) {
