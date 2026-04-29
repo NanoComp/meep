@@ -143,6 +143,13 @@ complex<double> fields::get_field(component c, const vec &loc, bool parallel) co
 }
 
 complex<double> fields::get_field(component c, const ivec &origloc, bool parallel) const {
+  /* This is the chunk-iterating leaf of the get_field overload set; every
+   * other overload eventually funnels through here.  If a backend is
+   * steering this sim, sync the host arrays first.  The sync mutates the
+   * backend's internal cache state but not the logical field values, so
+   * the const_cast is a logical-const operation. */
+  sync_host_if_needed(const_cast<fields *>(this));
+
   ivec iloc = origloc;
   complex<double> kphase = 1.0;
   locate_point_in_user_volume(&iloc, &kphase);

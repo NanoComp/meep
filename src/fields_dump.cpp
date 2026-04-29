@@ -110,6 +110,10 @@ void fields::dump(const char *filename, bool single_parallel_file) {
     printf("creating fields output file \"%s\" (%d)...\n", filename, single_parallel_file);
   }
 
+  /* Make sure host arrays match the backend's shadow state before we
+   * serialize them.  No-op when no backend is loaded. */
+  sync_host_if_needed(this);
+
   h5file file(filename, h5file::WRITE, single_parallel_file, !single_parallel_file);
 
   // Write out the current time 't'
@@ -275,6 +279,10 @@ void fields::load(const char *filename, bool single_parallel_file) {
       load_dft_hdf5(chunks[i]->dft_chunks, dataname, &file, 0, single_parallel_file);
     }
   }
+
+  /* Push the freshly-loaded host arrays back into the backend's shadow
+   * storage so the next step sees them.  No-op when no backend is loaded. */
+  if (backend_is_active(this) && meep_backend.sync_from_host) meep_backend.sync_from_host(this);
 }
 
 } // namespace meep

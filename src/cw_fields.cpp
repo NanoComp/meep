@@ -146,6 +146,13 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
   int tsave = t; // save time (gets incremented by iterations)
   int iters;
 
+  /* The CW solver runs CG iterations against the host-side `f[c][cmp]`
+   * arrays directly.  If a backend is steering this sim, pull its shadow
+   * state back to host now; the step dispatch in step.cpp also sees
+   * doing_solve_cw=true and skips the backend so iterations stay on the
+   * host.  We push the converged solution back to the backend at the end. */
+  sync_host_if_needed(this);
+
   set_solve_cw_omega(2 * pi * frequency);
 
   step(); // step once to make sure everything is allocated
@@ -247,6 +254,10 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
 
   unset_solve_cw_omega();
   update_dfts();
+
+  /* Push the converged host-side solution back into the backend's shadow
+   * storage before normal time-stepping resumes.  No-op without a backend. */
+  if (backend_is_active(this) && meep_backend.sync_from_host) meep_backend.sync_from_host(this);
 
   return !ierr;
 }

@@ -43,7 +43,9 @@ void fields::step() {
   // If a backend is installed and chooses to handle this step, hand off
   // the entire timestep to it.  Backends that cannot handle the current
   // configuration may return false to fall through to the CPU path.
-  if (meep_backend.step && meep_backend.step(this)) return;
+  // The CW solver runs on the host arrays, so suppress the backend hook
+  // while doing_solve_cw is true.
+  if (!doing_solve_cw && meep_backend.step && meep_backend.step(this)) return;
 
   am_now_working_on(Stepping);
 
