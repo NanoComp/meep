@@ -30,7 +30,6 @@
 #include "meep/vec.hpp"
 #include "meep/mympi.hpp"
 #include "meep/meep-config.h"
-#include "meep/backend_hooks.hpp"
 
 namespace meep {
 
@@ -1775,6 +1774,11 @@ public:
   /* Opaque per-sim slot owned by an external backend (see
    * meep/backend_hooks.hpp).  Default null. */
   void *backend_state = nullptr;
+
+  /* When true, the backend's `step` hook is bypassed and the in-tree
+   * CPU step path runs instead.  Used by the CW solver, which iterates
+   * directly against host arrays. */
+  bool backend_suspended = false;
 
   // fields.cpp methods:
   fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,

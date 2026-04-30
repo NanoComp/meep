@@ -20,6 +20,7 @@
 #include <math.h>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 #include "config.h"

@@ -21,6 +21,7 @@
 #include <climits>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 /* This file contains a generic function for looping over all of the

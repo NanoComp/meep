@@ -23,6 +23,7 @@
 #include <complex>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 using namespace std;

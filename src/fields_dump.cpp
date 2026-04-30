@@ -26,6 +26,7 @@
 #include <cassert>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 namespace meep {
@@ -282,7 +283,7 @@ void fields::load(const char *filename, bool single_parallel_file) {
 
   /* Push the freshly-loaded host arrays back into the backend's shadow
    * storage so the next step sees them.  No-op when no backend is loaded. */
-  if (backend_is_active(this) && meep_backend.sync_from_host) meep_backend.sync_from_host(this);
+  if (meep_backend.sync_from_host) meep_backend.sync_from_host(this);
 }
 
 } // namespace meep

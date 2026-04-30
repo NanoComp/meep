@@ -22,12 +22,10 @@
  * CUDA, ROCm, or vectorized-CPU implementation) may install at load time
  * to redirect hot paths through its own implementation.
  *
- * The table is intentionally a flat C ABI so it can be written from a
- * separately-built shared library loaded via LD_PRELOAD or dlopen.  All
- * entries default to null; null means "fall through to the in-tree CPU
- * implementation", and every call site is written so that a null hook is
- * a no-op.  As a result, a stock build of meep with no backend loaded
- * behaves bit-identically to one without these hooks.
+ * All entries default to null; null means "fall through to the in-tree
+ * CPU implementation", and every call site is written so that a null
+ * hook is a no-op.  As a result, a stock build of meep with no backend
+ * loaded behaves bit-identically to one without these hooks.
  *
  * State management.  Backends store per-fields state in
  * `fields::backend_state` and per-chunk state in
@@ -35,26 +33,24 @@
  * Upstream meep never inspects these; backends are responsible for
  * allocating them in `init` and freeing them in `cleanup`.
  *
- * Extending the hook table.  Adding a new function pointer at the end
- * of `backend_hooks` is forward-compatible: the global table is
- * zero-initialized so unset entries simply read as null.  Reordering or
- * removing fields breaks ABI for already-built backends.
+ * Suspension.  A backend can be suspended for a single `fields` object
+ * by setting `fields::backend_suspended = true`.  The step hook will
+ * not fire while suspended; the in-tree CPU step path runs instead.
+ * Used by the CW solver, which iterates against host arrays directly.
  */
 
 #ifndef MEEP_BACKEND_HOOKS_H
 #define MEEP_BACKEND_HOOKS_H
 
-namespace meep {
+#include "meep.hpp" /* fields, fields_chunk, realnum, component */
 
-class fields;
-class fields_chunk;
+namespace meep {
 
 struct backend_hooks {
   /* Per-sim lifecycle.  `init` is called once after a `fields` object's
    * structure is built and chunks are connected; `cleanup` is called
    * once before the `fields` object is destroyed.  Backends typically
-   * use these to allocate/free per-sim shadow state (e.g. device
-   * buffers, communicator handles) and stash a pointer in
+   * allocate/free per-sim shadow state here and stash a pointer in
    * `fields::backend_state`. */
   void (*init)(fields *f);
   void (*cleanup)(fields *f);
@@ -62,39 +58,45 @@ struct backend_hooks {
   /* Take one FDTD timestep on behalf of the caller.  Returning `true`
    * means the backend handled the step and the in-tree CPU step path
    * should be skipped.  Returning `false` (or leaving this null) falls
-   * through to the CPU step path.  Backends that cannot handle every
-   * configuration may return false selectively. */
+   * through to the CPU step path.  Skipped entirely while
+   * `fields::backend_suspended` is true. */
   bool (*step)(fields *f);
 
   /* Sync canonical host arrays with the backend's shadow storage.
    * `sync_to_host` brings the latest field values into the per-chunk
    * `f[c][cmp]` arrays so CPU code can read them; `sync_from_host`
    * pushes any host-side modifications back into shadow storage so the
-   * next step sees them.  Called by every CPU code path that reads or
-   * writes field data. */
+   * next step sees them.  Backends may treat either as a no-op when
+   * not active (e.g. before `init` has been called).  Called by every
+   * CPU code path that reads or writes field data. */
   void (*sync_to_host)(fields *f);
   void (*sync_from_host)(fields *f);
 
-  /* Predicates.  The backend owns the truth about its own state;
-   * upstream code never inspects backend_state directly. */
-  bool (*is_active)(const fields *f);     /* backend is steering this sim */
-  bool (*host_is_stale)(const fields *f); /* host arrays need a sync_to_host */
+  /* Fast single-point read.  Used on the LDOS / point-monitor hot path
+   * to fetch one field value without a full sync.  Backends that do not
+   * implement this should leave it null; callers fall back to a full
+   * `sync_to_host` followed by a direct array read. */
+  realnum (*read_point)(const fields *f, const fields_chunk *fc, component c, int cmp,
+                        ptrdiff_t idx);
+
+  /* Single predicate.  Returns true iff the host arrays do not reflect
+   * the backend's current state and `sync_to_host` should be called
+   * before reading them.  Returns false when no backend is active or
+   * when the backend's host arrays are already in sync. */
+  bool (*needs_host_sync)(const fields *f);
 };
 
 /* Single process-global hook table.  Default-initialized to all nulls.
- * Backends populate this once at library load time. */
+ * The plugin populates this at library load time. */
 extern backend_hooks meep_backend;
 
 /* Convenience used at every CPU readout site.  Inlined so it compiles
  * to a single null-pointer test (and nothing else) when no backend is
  * loaded. */
 inline void sync_host_if_needed(fields *f) {
-  if (meep_backend.host_is_stale && meep_backend.sync_to_host && meep_backend.host_is_stale(f))
+  if (meep_backend.needs_host_sync && meep_backend.sync_to_host &&
+      meep_backend.needs_host_sync(f))
     meep_backend.sync_to_host(f);
-}
-
-inline bool backend_is_active(const fields *f) {
-  return meep_backend.is_active && meep_backend.is_active(f);
 }
 
 } /* namespace meep */

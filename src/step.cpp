@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 #include "config.h"
@@ -44,8 +45,8 @@ void fields::step() {
   // the entire timestep to it.  Backends that cannot handle the current
   // configuration may return false to fall through to the CPU path.
   // Callers that need to suppress the backend (e.g. solve_cw, which
-  // runs on the host arrays) temporarily null out `meep_backend.step`.
-  if (meep_backend.step && meep_backend.step(this)) return;
+  // runs on the host arrays) set `backend_suspended = true`.
+  if (!backend_suspended && meep_backend.step && meep_backend.step(this)) return;
 
   am_now_working_on(Stepping);
 
