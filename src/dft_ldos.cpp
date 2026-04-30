@@ -122,8 +122,10 @@ void dft_ldos::update(fields &f) {
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr = use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
-            const realnum vi = use_backend_read ? meep_backend.read_point(&f, fc, c, 1, idx) : fi[idx];
+            const realnum vr =
+                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
+            const realnum vi =
+                use_backend_read ? meep_backend.read_point(&f, fc, c, 1, idx) : fi[idx];
             EJ += complex<double>(vr, vi) * conj(A);
             Jsum += abs(A);
           }
@@ -131,7 +133,8 @@ void dft_ldos::update(fields &f) {
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr = use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
+            const realnum vr =
+                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
             EJ += double(vr) * conj(A);
             Jsum += abs(A);
           }
@@ -145,8 +148,10 @@ void dft_ldos::update(fields &f) {
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr = use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
-            const realnum vi = use_backend_read ? meep_backend.read_point(&f, fc, c, 1, idx) : fi[idx];
+            const realnum vr =
+                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
+            const realnum vi =
+                use_backend_read ? meep_backend.read_point(&f, fc, c, 1, idx) : fi[idx];
             HJ += complex<double>(vr, vi) * conj(A);
             Jsum += abs(A);
           }
@@ -154,7 +159,8 @@ void dft_ldos::update(fields &f) {
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr = use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
+            const realnum vr =
+                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
             HJ += double(vr) * conj(A);
             Jsum += abs(A);
           }

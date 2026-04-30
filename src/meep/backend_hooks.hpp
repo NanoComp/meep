@@ -94,8 +94,7 @@ extern backend_hooks meep_backend;
  * to a single null-pointer test (and nothing else) when no backend is
  * loaded. */
 inline void sync_host_if_needed(fields *f) {
-  if (meep_backend.needs_host_sync && meep_backend.sync_to_host &&
-      meep_backend.needs_host_sync(f))
+  if (meep_backend.needs_host_sync && meep_backend.sync_to_host && meep_backend.needs_host_sync(f))
     meep_backend.sync_to_host(f);
 }
 
