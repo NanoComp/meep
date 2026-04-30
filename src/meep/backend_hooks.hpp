@@ -98,6 +98,17 @@ inline void sync_host_if_needed(fields *f) {
     meep_backend.sync_to_host(f);
 }
 
+/* Read a single cell of `fc->f[c][cmp]`.  If a backend has installed
+ * `read_point`, route through it (avoiding a full host sync); otherwise
+ * read the host array directly.  The caller is responsible for ensuring
+ * `fc->f[c][cmp]` is non-null and (when no read_point hook is installed)
+ * for calling `sync_host_if_needed` once before the loop.  Inlined to
+ * compile to a single load when no backend is loaded. */
+inline realnum read_field_at(const fields *f, const fields_chunk *fc, component c, int cmp,
+                             ptrdiff_t idx) {
+  return meep_backend.read_point ? meep_backend.read_point(f, fc, c, cmp, idx) : fc->f[c][cmp][idx];
+}
+
 } /* namespace meep */
 
 #endif /* MEEP_BACKEND_HOOKS_H */

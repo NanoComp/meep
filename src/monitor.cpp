@@ -145,13 +145,10 @@ complex<double> fields::get_field(component c, const vec &loc, bool parallel) co
 
 complex<double> fields::get_field(component c, const ivec &origloc, bool parallel) const {
   /* This is the chunk-iterating leaf of the get_field overload set; every
-   * other overload eventually funnels through here.  If a backend offers
-   * a fast point-read, use it to avoid the full sync_to_host that would
-   * otherwise be triggered for a single-cell query (mode analysis,
-   * harminv, point monitors).  Falls back to the host-array path when
-   * no read_point hook is installed. */
-  const bool use_backend_read = meep_backend.read_point != nullptr;
-  if (!use_backend_read) sync_host_if_needed(const_cast<fields *>(this));
+   * other overload eventually funnels through here.  If no fast point-read
+   * is available, fall back to a single up-front sync so direct array
+   * reads (via read_field_at) see fresh data. */
+  if (!meep_backend.read_point) sync_host_if_needed(const_cast<fields *>(this));
 
   ivec iloc = origloc;
   complex<double> kphase = 1.0;
@@ -162,12 +159,11 @@ complex<double> fields::get_field(component c, const ivec &origloc, bool paralle
         const component tc = S.transform(c, sn);
         const ivec tiloc = S.transform(iloc, sn);
         complex<double> val;
-        if (use_backend_read && chunks[i]->is_mine() && chunks[i]->f[tc][0]) {
+        if (chunks[i]->is_mine() && chunks[i]->f[tc][0]) {
           const ptrdiff_t idx = chunks[i]->gv.index(tc, tiloc);
-          const realnum vr = meep_backend.read_point(this, chunks[i], tc, 0, idx);
-          const realnum vi = chunks[i]->f[tc][1]
-                                 ? meep_backend.read_point(this, chunks[i], tc, 1, idx)
-                                 : realnum(0);
+          const realnum vr = read_field_at(this, chunks[i], tc, 0, idx);
+          const realnum vi =
+              chunks[i]->f[tc][1] ? read_field_at(this, chunks[i], tc, 1, idx) : realnum(0);
           val = complex<double>(vr, vi);
         }
         else { val = chunks[i]->get_field(tc, tiloc); }

@@ -105,11 +105,9 @@ void dft_ldos::update(fields &f) {
   // ...don't worry about the tiny inefficiency of recomputing this repeatedly
   Jsum = 0.0;
 
-  /* If a backend keeps fields on device, prefer the per-point read hook so
-   * we don't trigger a full-grid sync_to_host every step.  Falls back to
-   * direct-array reads when no read_point hook is installed. */
-  const bool use_backend_read = meep_backend.read_point != nullptr;
-  if (!use_backend_read) sync_host_if_needed(&f);
+  /* If no fast point-read is available, fall back to a single up-front
+   * sync so the direct array reads (via read_field_at) see fresh data. */
+  if (!meep_backend.read_point) sync_host_if_needed(&f);
 
   for (int ic = 0; ic < f.num_chunks; ic++)
     if (f.chunks[ic]->is_mine()) {
@@ -122,20 +120,16 @@ void dft_ldos::update(fields &f) {
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr =
-                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
-            const realnum vi =
-                use_backend_read ? meep_backend.read_point(&f, fc, c, 1, idx) : fi[idx];
-            EJ += complex<double>(vr, vi) * conj(A);
+            EJ += complex<double>(read_field_at(&f, fc, c, 0, idx),
+                                  read_field_at(&f, fc, c, 1, idx)) *
+                  conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // E is purely real
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr =
-                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
-            EJ += double(vr) * conj(A);
+            EJ += double(read_field_at(&f, fc, c, 0, idx)) * conj(A);
             Jsum += abs(A);
           }
         }
@@ -148,20 +142,16 @@ void dft_ldos::update(fields &f) {
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr =
-                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
-            const realnum vi =
-                use_backend_read ? meep_backend.read_point(&f, fc, c, 1, idx) : fi[idx];
-            HJ += complex<double>(vr, vi) * conj(A);
+            HJ += complex<double>(read_field_at(&f, fc, c, 0, idx),
+                                  read_field_at(&f, fc, c, 1, idx)) *
+                  conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // H is purely real
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            const realnum vr =
-                use_backend_read ? meep_backend.read_point(&f, fc, c, 0, idx) : fr[idx];
-            HJ += double(vr) * conj(A);
+            HJ += double(read_field_at(&f, fc, c, 0, idx)) * conj(A);
             Jsum += abs(A);
           }
         }
