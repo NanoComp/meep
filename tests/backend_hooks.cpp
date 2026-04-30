@@ -105,9 +105,8 @@ int main(int argc, char **argv) {
 
   /* 3. Numerical results must be bit-identical. */
   if (baseline_energy != hooked_energy) {
-    master_printf(
-        "backend_hooks: FAIL baseline_energy=%.17g hooked_energy=%.17g (diff=%g)\n",
-        baseline_energy, hooked_energy, baseline_energy - hooked_energy);
+    master_printf("backend_hooks: FAIL baseline_energy=%.17g hooked_energy=%.17g (diff=%g)\n",
+                  baseline_energy, hooked_energy, baseline_energy - hooked_energy);
     return 1;
   }
 
@@ -136,8 +135,7 @@ int main(int argc, char **argv) {
   }
   /* needs_host_sync should be queried at least once per readout site. */
   if (counts.needs_host_sync < 1) {
-    master_printf("backend_hooks: FAIL needs_host_sync=%d expected >= 1\n",
-                  counts.needs_host_sync);
+    master_printf("backend_hooks: FAIL needs_host_sync=%d expected >= 1\n", counts.needs_host_sync);
     return 1;
   }
 
