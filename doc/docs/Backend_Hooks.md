@@ -145,6 +145,22 @@ LD_PRELOAD=libmy_backend.so python -c "import meep; ..."
 
 See `tests/backend_hooks.cpp` in the meep source for a complete working example used as a CI guard.
 
+## MPI
+
+The hook table is process-global. Each MPI rank has its own `meep_backend` and calls hooks against its own `fields` object. The backend is responsible for any cross-rank coordination (NCCL, MPI, `sum_to_all`, etc.) — meep never synchronizes hook invocations across ranks.
+
+A few implicit contracts that backends running under MPI must respect:
+
+1. **`step` return value must be collective.** Every rank's `meep_backend.step(this)` must return the same `bool`. If one rank returns `true` (skip CPU path) and another returns `false`, the latter will execute `step_boundaries` -- which calls `MPI_Sendrecv` -- while the former will not, deadlocking the run. A backend that handles some configurations but not others must agree on that decision across ranks before returning, or just always return `true` once installed.
+
+2. **`backend_suspended` must be set/cleared collectively.** Same reason: if some ranks are suspended and others aren't, the next `step()` call diverges. In practice this is fine for `solve_cw` because the CW solver itself is collective.
+
+3. **`init` and `cleanup` run in collective contexts.** `fields::fields()` and `fields::~fields()` are collective in meep, so any MPI/NCCL collective the backend wants to do during setup or teardown (e.g., `MPI_Comm_split`, `ncclCommInitAll`) is safe to perform there.
+
+4. **`read_point` is local-only.** The in-tree call sites only invoke it when `chunks[i]->is_mine()` is true, so the backend only has to serve points it owns. Cross-rank queries fall back to the existing `chunks[i]->get_field()` path, which returns 0 on remote ranks and gets reduced via `sum_to_all` outside the loop.
+
+`sync_to_host` and `sync_from_host` are per-rank: each rank syncs its own chunks. They don't need to be collective unless the backend specifically wants them to be.
+
 ## ABI notes
 
 There is no formal ABI versioning on the hook table. Backends should be pinned to a specific meep version (typically by submodule or distro package). Adding a new function pointer at the end of `backend_hooks` is forward-compatible with already-built backends because the global is zero-initialized; reordering or removing fields breaks ABI.
