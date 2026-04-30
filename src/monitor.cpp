@@ -145,11 +145,13 @@ complex<double> fields::get_field(component c, const vec &loc, bool parallel) co
 
 complex<double> fields::get_field(component c, const ivec &origloc, bool parallel) const {
   /* This is the chunk-iterating leaf of the get_field overload set; every
-   * other overload eventually funnels through here.  If a backend is
-   * steering this sim, sync the host arrays first.  The sync mutates the
-   * backend's internal cache state but not the logical field values, so
-   * the const_cast is a logical-const operation. */
-  sync_host_if_needed(const_cast<fields *>(this));
+   * other overload eventually funnels through here.  If a backend offers
+   * a fast point-read, use it to avoid the full sync_to_host that would
+   * otherwise be triggered for a single-cell query (mode analysis,
+   * harminv, point monitors).  Falls back to the host-array path when
+   * no read_point hook is installed. */
+  const bool use_backend_read = meep_backend.read_point != nullptr;
+  if (!use_backend_read) sync_host_if_needed(const_cast<fields *>(this));
 
   ivec iloc = origloc;
   complex<double> kphase = 1.0;
@@ -157,8 +159,19 @@ complex<double> fields::get_field(component c, const ivec &origloc, bool paralle
   for (int sn = 0; sn < S.multiplicity(); sn++)
     for (int i = 0; i < num_chunks; i++)
       if (chunks[i]->gv.owns(S.transform(iloc, sn))) {
-        complex<double> val = S.phase_shift(c, sn) * kphase *
-                              chunks[i]->get_field(S.transform(c, sn), S.transform(iloc, sn));
+        const component tc = S.transform(c, sn);
+        const ivec tiloc = S.transform(iloc, sn);
+        complex<double> val;
+        if (use_backend_read && chunks[i]->is_mine() && chunks[i]->f[tc][0]) {
+          const ptrdiff_t idx = chunks[i]->gv.index(tc, tiloc);
+          const realnum vr = meep_backend.read_point(this, chunks[i], tc, 0, idx);
+          const realnum vi = chunks[i]->f[tc][1]
+                                 ? meep_backend.read_point(this, chunks[i], tc, 1, idx)
+                                 : realnum(0);
+          val = complex<double>(vr, vi);
+        }
+        else { val = chunks[i]->get_field(tc, tiloc); }
+        val *= S.phase_shift(c, sn) * kphase;
         return parallel ? sum_to_all(val) : val;
       }
   return 0.0;
