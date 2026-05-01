@@ -12,11 +12,6 @@ endif # WITH_MPI
 
 if WITH_MPB
   MPBPYTEST=$(TEST_DIR)/test_mpb.py
-else
-  MPBPYTEST=
-endif # WITH_MPB
-
-if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/test_binary_grating.py
   DIFFRACTED_PLANEWAVE_TEST = $(TEST_DIR)/test_diffracted_planewave.py
   DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/test_dispersive_eigenmode.py
@@ -25,6 +20,7 @@ if WITH_MPB
   MODE_DECOMPOSITION_TEST = $(TEST_DIR)/test_mode_decomposition.py
   WVG_SRC_TEST = $(TEST_DIR)/test_wvg_src.py
 else
+  MPBPYTEST =
   BINARY_GRATING_TEST =
   DIFFRACTED_PLANEWAVE_TEST =
   DISPERSIVE_EIGENMODE_TEST =
@@ -56,8 +52,8 @@ TESTS =                                        \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \
-    ${DIFFRACTED_PLANEWAVE_TEST}               \
-    ${DISPERSIVE_EIGENMODE_TEST}               \
+    $(DIFFRACTED_PLANEWAVE_TEST)               \
+    $(DISPERSIVE_EIGENMODE_TEST)               \
     $(TEST_DIR)/test_divide_mpi_processes.py   \
     $(TEST_DIR)/test_dump_load.py              \
     $(TEST_DIR)/test_eigfreq.py                \
@@ -231,7 +227,6 @@ HL_IFACE =                  \
     $(srcdir)/materials.py  \
     $(srcdir)/verbosity_mgr.py
 
-
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
 adjointdir = $(pkgpythondir)/adjoint
@@ -246,12 +241,6 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py
 
-######################################################################
-# finally, specification of what gets installed in the meep python
-# module directory of the python site-packages installation
-# Q: Why is this not redundant since e.g. the HL_IFACE files should
-#    already be installed by virtue of being in pkgpython_PYTHON
-######################################################################
 PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
 
 meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
