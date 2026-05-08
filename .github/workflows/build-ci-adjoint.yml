@@ -1,0 +1,116 @@
+name: run adjoint tests
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: 0 22 * * 0 # run at 10 PM UTC every Sunday
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: "serial double-precision adjoint tests"
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Define common environment variables
+      run: |
+        echo "CPPFLAGS=-I${HOME}/local/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L${HOME}/local/lib" >> $GITHUB_ENV
+        echo "HDF5_BASE_CPPFLAGS=-I/usr/include/hdf5" >> $GITHUB_ENV
+        echo "HDF5_BASE_LDFLAGS=-L/usr/lib/x86_64-linux-gnu/hdf5" >> $GITHUB_ENV
+        echo "GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io" >> $GITHUB_ENV
+    - run: |
+        echo "CPPFLAGS=${HDF5_BASE_CPPFLAGS}/serial ${CPPFLAGS}" >> $GITHUB_ENV
+        echo "LDFLAGS=${HDF5_BASE_LDFLAGS}/serial ${LDFLAGS}" >> $GITHUB_ENV
+
+    - name: Install pre-compiled dependencies
+      run: |
+        sudo apt-get -y update
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig libhdf5-serial-dev
+
+    - name: Checkout libctl repository
+      uses: actions/checkout@v6
+      with:
+        repository: NanoComp/libctl
+        path: libctl-src
+
+    - name: Checkout harminv repository
+      uses: actions/checkout@v6
+      with:
+        repository: NanoComp/harminv
+        path: harminv-src
+
+    - name: Checkout MPB repository
+      uses: actions/checkout@v6
+      with:
+        repository: NanoComp/mpb
+        path: mpb-src
+
+    - name: Cache dependency builds
+      uses: actions/cache@v5
+      id: deps-cache
+      with:
+        path: ~/local
+        key: deps-adjoint-${{ runner.os }}-${{ hashFiles('.github/workflows/build-ci-adjoint.yml') }}
+
+    - name: Build and install libctl
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Build and install harminv
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j $(nproc) && make install
+
+    - name: Build and install MPB
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
+
+    - name: Checkout Meep repository
+      uses: actions/checkout@v6
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        python -m pip install --upgrade pip wheel
+        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+    - name: pip cache
+      uses: actions/cache@v5
+      id: cache
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-py3.11-adjoint-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-py3.11-adjoint-pip-
+
+    - name: Install Python dependencies
+      run: pip install -r python/requirements.txt
+
+    - name: Install nlopt
+      run: pip install nlopt
+
+    - name: Run autoreconf
+      run: |
+        autoreconf --verbose --install --symlink --force
+
+    - name: Run configure
+      run: |
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl --without-mpi
+
+    - name: Build meep
+      run: make -j $(nprocs)
+
+    - name: Run adjoint tests
+      run: make -C python check-adjoint
+
+    - name: Archive Python test logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-adjoint-tests-log
+        path: ${{ github.workspace }}/python/test-suite.log
