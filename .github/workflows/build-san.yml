@@ -31,12 +31,11 @@ jobs:
         path: ~/apt-cache
         key: apt-san-${{ runner.os }}-${{ hashFiles('.github/workflows/build-san.yml') }}
 
-    - name: Restore cached apt sources
+    - name: Restore cached apt packages
       if: steps.apt-cache.outputs.cache-hit == 'true'
-      run: sudo dpkg -i ~/apt-cache/*.deb 2>/dev/null || true
+      run: sudo cp ~/apt-cache/*.deb /var/cache/apt/archives/ 2>/dev/null || true
 
     - name: Install Dependencies
-      if: steps.apt-cache.outputs.cache-hit != 'true'
       run: |
         sudo apt-get update -y
         sudo apt-get install -y autoconf automake clang libaec-dev libctl-dev \
