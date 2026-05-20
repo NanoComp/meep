@@ -746,6 +746,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   if (eigval < 0) { // no mode found
     destroy_evectmatrix(H);
     if (!user_mdata) destroy_maxwell_data(mdata);
+    finished_working();
     return NULL;
   }
   if (!am_master()) update_maxwell_data_k(mdata, k, G[0], G[1], G[2]);
