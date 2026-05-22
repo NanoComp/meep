@@ -123,10 +123,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/src               \
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
+SWIG_WARN_FLAGS = -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers
+
 _meep_la_SOURCES = meep-python.cxx
 _meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-_meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+_meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
+_meep_la_CXXFLAGS = -O1
 
 pkgpyexec_LTLIBRARIES = _meep.la
 
@@ -144,7 +147,8 @@ if WITH_MPB
   _mpb_la_SOURCES = mpb-python.cxx
   _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
   _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-  _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+  _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
+  _mpb_la_CXXFLAGS = -O1
 
 install-data-hook:
 	mv $(DESTDIR)$(pkgpythondir)/mpb/mpb.py $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
@@ -179,12 +183,12 @@ SWIG_MEEP_FLAGS = -threads
 endif # MEEP_SWIG_PYTHON_THREADS
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
-	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
+	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -O -fastproxy -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
 mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp $(top_srcdir)/src/meepgeom.hpp $(top_srcdir)/src/material_data.hpp $(top_srcdir)/src/material_data.cpp
-	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/mpb.i
+	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -O -fastproxy -python -o $@ $(srcdir)/mpb.i
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
 endif # WITH_MPB
