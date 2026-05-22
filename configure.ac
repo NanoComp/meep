@@ -79,6 +79,21 @@ fi
 # Require C++11 support
 AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
 
+# Optional ccache support (speeds up rebuilds of SWIG-generated C++)
+AC_ARG_ENABLE(ccache,
+              [AS_HELP_STRING([--enable-ccache],[use ccache to speed up compilation (default: auto-detect)])],
+              enable_ccache=$enableval, enable_ccache=auto)
+if test "x$enable_ccache" != "xno"; then
+    AC_CHECK_PROG(CCACHE, ccache, ccache)
+    if test "x$CCACHE" != "x"; then
+        CC="ccache $CC"
+        CXX="ccache $CXX"
+        AC_MSG_NOTICE([using ccache for compilation])
+    elif test "x$enable_ccache" = "xyes"; then
+        AC_MSG_ERROR([ccache requested but not found])
+    fi
+fi
+
 ##############################################################################
 # Compiler flags
 
