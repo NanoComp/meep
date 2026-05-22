@@ -49,7 +49,7 @@ jobs:
     - name: Install pre-compiled dependencies
       run: |
         sudo apt-get -y update
-        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig
+        sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig ccache
 
     - name: Checkout libctl repository
       uses: actions/checkout@v6
