@@ -52,7 +52,7 @@ jobs:
       run: |
         ./configure \
           --with-hdf5 --without-mpi --without-python --without-scheme \
-          --enable-shared --enable-maintainer-mode \
+          --enable-shared --enable-maintainer-mode --enable-ccache \
           CXXFLAGS="-fsanitize=${{ matrix.sanitizer }} ${{ matrix.debug-options }}" \
           LDFLAGS="-fsanitize=${{ matrix.sanitizer }}" \
           ${{ matrix.configure-options }}

@@ -100,7 +100,7 @@ jobs:
 
     - name: Run configure
       run: |
-        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl --without-mpi
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl --without-mpi --enable-ccache
 
     - name: Build meep
       run: make -j $(nprocs)

@@ -168,18 +168,18 @@ jobs:
       run: |
         mkdir -p build &&
         pushd build &&
-        ../configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
+        ../configure --enable-maintainer-mode --prefix=${HOME}/local --enable-ccache --with-libctl=${HOME}/local/share/libctl ${MPICONF} --with-openmp &&
         popd
 
     - name: Run configure (in-source for make check)
       if: ${{ !matrix.use-distcheck && !matrix.enable-single }}
       run: |
-        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF}
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --enable-ccache --with-libctl=${HOME}/local/share/libctl ${MPICONF}
 
     - name: Run configure with single-precision floating point and swig threads
       if: ${{ matrix.enable-single }}
       run: |
-        ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads
+        ./configure --enable-maintainer-mode --prefix=${HOME}/local --enable-ccache --with-libctl=${HOME}/local/share/libctl ${MPICONF} --enable-single --enable-swig-python-threads
 
     - name: Run make distcheck
       if: ${{ matrix.use-distcheck }}
