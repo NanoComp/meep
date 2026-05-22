@@ -183,12 +183,12 @@ SWIG_MEEP_FLAGS = -threads
 endif # MEEP_SWIG_PYTHON_THREADS
 
 meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
-	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/meep.i
+	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
 MPB_SWIG_SRC = mpb.i
 mpb-python.cxx: $(MPB_SWIG_SRC) $(top_srcdir)/libpympb/pympb.hpp $(top_srcdir)/src/meepgeom.hpp $(top_srcdir)/src/material_data.hpp $(top_srcdir)/src/material_data.cpp
-	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -python -o $@ $(srcdir)/mpb.i
+	$(SWIG) -Wextra $(AM_CPPFLAGS) $(PYMPBINCLUDE) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/mpb.i
 mpb.py: mpb-python.cxx
 MPB_PY = mpb.py
 endif # WITH_MPB
