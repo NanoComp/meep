@@ -81,8 +81,8 @@ AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
 
 # Optional ccache support (speeds up rebuilds of SWIG-generated C++)
 AC_ARG_ENABLE(ccache,
-              [AS_HELP_STRING([--enable-ccache],[use ccache to speed up compilation (default: auto-detect)])],
-              enable_ccache=$enableval, enable_ccache=auto)
+              [AS_HELP_STRING([--enable-ccache],[use ccache to speed up compilation])],
+              enable_ccache=$enableval, enable_ccache=no)
 if test "x$enable_ccache" != "xno"; then
     AC_CHECK_PROG(CCACHE, ccache, ccache)
     if test "x$CCACHE" != "x"; then
