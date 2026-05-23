@@ -40,7 +40,7 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y autoconf automake clang libaec-dev libctl-dev \
           libfftw3-dev libgdsii-dev libgsl-dev libharminv-dev libhdf5-dev \
-          libtool mpb mpb-dev
+          libtool mpb mpb-dev ccache
         mkdir -p ~/apt-cache
         cp /var/cache/apt/archives/*.deb ~/apt-cache/ 2>/dev/null || true
 
