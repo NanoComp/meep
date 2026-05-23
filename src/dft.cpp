@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <assert.h>
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 using namespace std;
@@ -312,6 +313,9 @@ void dft_chunk::update_dft(double time) {
    (Collective operation.) */
 double fields::dft_norm() {
   am_now_working_on(Other);
+  /* Backends keep DFT accumulators on the device too — pull them back
+   * before reading.  No-op when no backend is loaded. */
+  sync_host_if_needed(this);
   double sum = 0.0;
   for (int i = 0; i < num_chunks; i++)
     if (chunks[i]->is_mine()) sum += chunks[i]->dft_norm2(gv);
