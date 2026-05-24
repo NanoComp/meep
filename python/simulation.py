@@ -5452,6 +5452,81 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
     return _stop
 
 
+def stop_when_flux_decayed(flux, tol=1e-11, minimum_run_time=0, maximum_run_time=None):
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
+    or `until_after_sources` parameter, that checks the DFT Poynting flux in the given
+    `flux` object (a `DftFlux` obtained from `Simulation.add_flux`) and stops the simulation
+    once the relative change in flux has decayed below `tol` for *all* frequencies in the
+    monitor.
+
+    The check interval is determined automatically from the frequency content of the flux
+    monitor. There are two optional parameters: a minimum run time `minimum_run_time`
+    (default: 0) or a maximum run time `maximum_run_time` (no default).
+
+    Args:
+        flux: a `DftFlux` object from `Simulation.add_flux(...)`.
+        tol: convergence tolerance (default: 1e-11).
+        minimum_run_time: minimum simulation time before stopping (default: 0).
+        maximum_run_time: maximum simulation time before stopping (default: None).
+    """
+    if flux is None:
+        raise ValueError("flux is required.")
+    if not isinstance(flux, DftFlux):
+        raise TypeError(
+            "flux must be a DftFlux object obtained from Simulation.add_flux(). "
+            f"Got {type(flux)}"
+        )
+
+    closure = {
+        "previous_fluxes": None,
+        "t0": 0,
+        "dt": 0,
+        "maxchange": None,
+    }
+
+    def _stop(sim):
+        if sim.fields.t == 0:
+            closure["dt"] = max(
+                1 / sim.fields.dft_maxfreq() / sim.fields.dt,
+                sim.fields.max_decimation(),
+            )
+
+        if maximum_run_time and sim.round_time() > maximum_run_time:
+            return True
+
+        if sim.fields.t <= closure["dt"] + closure["t0"]:
+            return False
+
+        current_fluxes = np.array(get_fluxes(flux))
+
+        if closure["previous_fluxes"] is None:
+            closure["previous_fluxes"] = current_fluxes
+            closure["maxchange"] = np.zeros_like(current_fluxes)
+            closure["t0"] = sim.fields.t
+            return False
+
+        change = np.abs(current_fluxes - closure["previous_fluxes"])
+        closure["maxchange"] = np.maximum(closure["maxchange"], change)
+        closure["previous_fluxes"] = current_fluxes
+        closure["t0"] = sim.fields.t
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            relative_change = np.where(
+                closure["maxchange"] > 0,
+                change / closure["maxchange"],
+                0.0,
+            )
+
+        if verbosity.meep > 1:
+            fmt = "flux decay(t = {0:0.2f}): {1:0.4e}"
+            print(fmt.format(sim.meep_time(), np.real(relative_change)))
+
+        return np.all(relative_change <= tol) and sim.round_time() >= minimum_run_time
+
+    return _stop
+
+
 def combine_step_funcs(*step_funcs):
     """
     Given zero or more step functions, return a new step function that on each step calls
