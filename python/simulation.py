@@ -3224,7 +3224,9 @@ class Simulation:
         self.load_energy(fname, energy)
         energy.scale_dfts(-1.0)
 
-    def get_farfield(self, near2far, x, greencyl_tol: float = 1e-3):
+    def get_farfield(
+        self, near2far, x, greencyl_tol: float = 1e-3, far_field_approx: bool = False
+    ):
         """
         Given a `Vector3` point `x` which can lie anywhere outside the near-field surface,
         including outside the cell and a `near2far` object, returns the computed
@@ -3234,11 +3236,16 @@ class Simulation:
         $(E_r^1,E_\\phi^1,E_z^1,H_r^1,H_\\phi^1,H_z^1,E_r^2,E_\\phi^2,E_z^2,H_r^2,H_\\phi^2,H_z^2,...)$
         in cylindrical coordinates for the frequencies 1,2,...,`nfreq`. `greencyl_tol` specifies the
         convergence tolerance of the azimuthal ($\\phi$) integral in the calculation of the far field.
+
+        If `far_field_approx` is `True`, uses a radiation-zone approximation that drops
+        1/r² and 1/r³ near-field terms. Only valid for 3D when |x| >> wavelength and
+        |x| >> near-field surface extent.
         """
         return mp._get_farfield(
             near2far.swigobj,
             py_v3_to_vec(self.dimensions, x, is_cylindrical=self.is_cylindrical),
             greencyl_tol,
+            far_field_approx,
         )
 
     def get_farfields(
@@ -3249,6 +3256,7 @@ class Simulation:
         center: Vector3Type = None,
         size: Vector3Type = None,
         greencyl_tol: float = 1e-3,
+        far_field_approx: bool = False,
     ):
         r"""
         Like `output_farfields` but returns a dictionary of NumPy arrays instead of
@@ -3262,13 +3270,17 @@ class Simulation:
         far fields in one region vs. another region. `greencyl_tol` specifies the
         convergence tolerance of the azimuthal ($\phi$) integral in the calculation
         of the far field.
+
+        If `far_field_approx` is `True`, uses a radiation-zone approximation that drops
+        1/r² and 1/r³ near-field terms. Only valid for 3D when the far-field distance
+        is much larger than the wavelength and the near-field surface extent.
         """
         if self.fields is None:
             self.init_sim()
         vol = self._volume_from_kwargs(where, center, size)
         self.fields.am_now_working_on(mp.GetFarfieldsTime)
         result = mp._get_farfields_array(
-            near2far.swigobj, vol, resolution, greencyl_tol
+            near2far.swigobj, vol, resolution, greencyl_tol, far_field_approx
         )
         self.fields.finished_working()
         res_ex = complexarray(result[0], result[1])

@@ -60,6 +60,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_dump_load.py              \
     $(TEST_DIR)/test_eigfreq.py                \
     $(TEST_DIR)/test_faraday_rotation.py       \
+    $(TEST_DIR)/test_farfield_approx.py        \
     $(TEST_DIR)/test_field_functions.py        \
     $(TEST_DIR)/test_force.py                  \
     $(TEST_DIR)/test_fragment_stats.py         \
