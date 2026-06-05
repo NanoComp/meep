@@ -5272,7 +5272,9 @@ def to_appended(fname, *step_funcs):
     return _to_appended
 
 
-def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None, sample_interval=1):
+def stop_when_fields_decayed(
+    dt=None, c=None, pt=None, decay_by=None, sample_interval=1
+):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
     or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
