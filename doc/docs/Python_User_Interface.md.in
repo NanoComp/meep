@@ -505,6 +505,7 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 @@ stop_when_fields_decayed @@
 @@ stop_when_energy_decayed @@
 @@ stop_when_dft_decayed @@
+@@ stop_when_flux_decayed @@
 @@ stop_after_walltime @@
 @@ stop_on_interrupt @@
 
@@ -926,6 +927,7 @@ Miscellaneous Functions Reference
 - [`stop_when_fields_decayed`](#stop_when_fields_decayed)
 - [`stop_when_energy_decayed`](#stop_when_energy_decayed)
 - [`stop_when_dft_decayed`](#stop_when_dft_decayed)
+- [`stop_when_flux_decayed`](#stop_when_flux_decayed)
 - [`stop_after_walltime`](#stop_after_walltime)
 - [`stop_on_intercept`](#stop_on_intercept)
 
