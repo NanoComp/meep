@@ -5272,7 +5272,9 @@ def to_appended(fname, *step_funcs):
     return _to_appended
 
 
-def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
+def stop_when_fields_decayed(
+    dt=None, c=None, pt=None, decay_by=None, sampling_interval=1
+):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
     or `until_after_sources` parameter, that examines the component `c` (e.g. `meep.Ex`, etc.)
@@ -5281,6 +5283,14 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     keeps incrementing the run time by `dt` (in Meep units) and checks the maximum value
     over that time period &mdash; in this way, it won't be fooled just because the field
     happens to go through zero at some instant.
+
+    The optional `sampling_interval` (a positive integer, default `1`) is the number of
+    timesteps between successive field samples. The default of `1` samples the field at
+    `pt` on every timestep (the historical behavior). Setting it larger than `1` reduces
+    the number of (potentially expensive, especially for MPI runs) `get_field_point` calls
+    by only sampling once every `sampling_interval` timesteps; the maximum is still tracked
+    over each `dt` window, so as long as there are several samples per optical period this
+    does not significantly affect the termination criterion.
 
     Note that, if you make `decay_by` very small, you may need to increase the `cutoff`
     property of your source(s), to decrease the amplitude of the small high-frequency
@@ -5291,6 +5301,9 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     if (dt is None) or (c is None) or (pt is None) or (decay_by is None):
         raise ValueError("dt, c, pt, and decay_by are all required.")
 
+    if (not isinstance(sampling_interval, numbers.Integral)) or (sampling_interval < 1):
+        raise ValueError("sampling_interval must be a positive integer.")
+
     closure = {
         "max_abs": 0,
         "cur_max": 0,
@@ -5298,8 +5311,9 @@ def stop_when_fields_decayed(dt=None, c=None, pt=None, decay_by=None):
     }
 
     def _stop(sim):
-        fabs = abs(sim.get_field_point(c, pt)) * abs(sim.get_field_point(c, pt))
-        closure["cur_max"] = max(closure["cur_max"], fabs)
+        if sim.fields.t % sampling_interval == 0:
+            fabs = abs(sim.get_field_point(c, pt)) ** 2
+            closure["cur_max"] = max(closure["cur_max"], fabs)
 
         if sim.round_time() <= dt + closure["t0"]:
             return False
