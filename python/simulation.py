@@ -5273,7 +5273,7 @@ def to_appended(fname, *step_funcs):
 
 
 def stop_when_fields_decayed(
-    dt=None, c=None, pt=None, decay_by=None, sample_interval=1
+    dt=None, c=None, pt=None, decay_by=None, sampling_interval=1
 ):
     """
     Return a `condition` function, suitable for passing to `Simulation.run` as the `until`
@@ -5284,11 +5284,11 @@ def stop_when_fields_decayed(
     over that time period &mdash; in this way, it won't be fooled just because the field
     happens to go through zero at some instant.
 
-    The optional `sample_interval` (a positive integer, default `1`) is the number of
+    The optional `sampling_interval` (a positive integer, default `1`) is the number of
     timesteps between successive field samples. The default of `1` samples the field at
     `pt` on every timestep (the historical behavior). Setting it larger than `1` reduces
     the number of (potentially expensive, especially for MPI runs) `get_field_point` calls
-    by only sampling once every `sample_interval` timesteps; the maximum is still tracked
+    by only sampling once every `sampling_interval` timesteps; the maximum is still tracked
     over each `dt` window, so as long as there are several samples per optical period this
     does not significantly affect the termination criterion.
 
@@ -5301,8 +5301,8 @@ def stop_when_fields_decayed(
     if (dt is None) or (c is None) or (pt is None) or (decay_by is None):
         raise ValueError("dt, c, pt, and decay_by are all required.")
 
-    if (not isinstance(sample_interval, numbers.Integral)) or (sample_interval < 1):
-        raise ValueError("sample_interval must be a positive integer.")
+    if (not isinstance(sampling_interval, numbers.Integral)) or (sampling_interval < 1):
+        raise ValueError("sampling_interval must be a positive integer.")
 
     closure = {
         "max_abs": 0,
@@ -5311,7 +5311,7 @@ def stop_when_fields_decayed(
     }
 
     def _stop(sim):
-        if sim.fields.t % sample_interval == 0:
+        if sim.fields.t % sampling_interval == 0:
             fabs = abs(sim.get_field_point(c, pt)) ** 2
             closure["cur_max"] = max(closure["cur_max"], fabs)
 
