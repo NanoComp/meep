@@ -178,7 +178,7 @@ static void green3d_farfield(std::complex<double> *EH, double xhat_x, double xha
     EH[5] = hf * tz;
   }
   else
-    meep::abort("unrecognized soruce type in green3d_farfield");
+    meep::abort("unrecognized source type in green3d_farfield");
 }
 
 /* Given the field f0 correponding to current-source component c0 at
@@ -587,9 +587,9 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
   bool use_fft = far_field_approx && where.dim == D3 && periodic_n[0] == 0 && periodic_n[1] == 0;
 
   struct chunk_fft {
-    direction normal_d, d1, d2;
-    double face_pos, origin1, origin2, spacing1, spacing2;
-    int n1, n2, nf1, nf2;
+    direction normal_d, d[2];
+    double face_pos, origin[2], spacing[2];
+    int n[2], nf[2];
     component c0;
     std::vector<std::complex<double> > fft_data;
   };
@@ -597,7 +597,6 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
 
   if (use_fft) {
     const int oversample = 4;
-    direction all_d[3] = {meep::X, meep::Y, meep::Z};
 
     for (dft_chunk *f = F; f; f = f->next_in_dft) {
       chunk_fft cf;
@@ -606,79 +605,53 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
       vec rshift(f->shift * (0.5 * inva));
 
       cf.normal_d = NO_DIRECTION;
-      cf.d1 = cf.d2 = NO_DIRECTION;
-      cf.n1 = cf.n2 = 1;
+      for (int i = 0; i < 2; i++) {
+        cf.d[i] = NO_DIRECTION;
+        cf.n[i] = 1;
+      }
       int trans_idx = 0;
       for (int di = 0; di < 3; di++) {
-        direction d = all_d[di];
+        direction d = direction(X + di);
         int nd = (f->ie.in_direction(d) - f->is.in_direction(d)) / 2 + 1;
         if (nd <= 1)
           cf.normal_d = d;
         else {
-          if (trans_idx == 0) {
-            cf.d1 = d;
-            cf.n1 = nd;
-          }
-          else {
-            cf.d2 = d;
-            cf.n2 = nd;
-          }
+          cf.d[trans_idx] = d;
+          cf.n[trans_idx] = nd;
           trans_idx++;
         }
       }
-      if (cf.normal_d == NO_DIRECTION || cf.d1 == NO_DIRECTION) {
+      if (cf.normal_d == NO_DIRECTION || cf.d[0] == NO_DIRECTION) {
         use_fft = false;
         break;
       }
-      if (cf.d2 == NO_DIRECTION) {
-        cf.d2 = cf.d1;
-        cf.n2 = 1;
+      if (cf.d[1] == NO_DIRECTION) {
+        cf.d[1] = cf.d[0];
+        cf.n[1] = 1;
       }
 
-      vec pos0(D3);
-      for (int di = 0; di < 3; di++)
-        pos0.set_direction(all_d[di], f->is.in_direction(all_d[di]) * 0.5 * inva);
-      pos0 = f->S.transform(pos0, f->sn) + rshift;
-
+      vec pos0 = f->S.transform(f->fc->gv[f->is], f->sn) + rshift;
       cf.face_pos = pos0.in_direction(cf.normal_d);
-      cf.origin1 = pos0.in_direction(cf.d1);
-      cf.origin2 = pos0.in_direction(cf.d2);
-
-      cf.spacing1 = inva;
-      if (cf.n1 > 1) {
-        vec pos1(D3);
-        for (int di = 0; di < 3; di++) {
-          double val = f->is.in_direction(all_d[di]) * 0.5 * inva;
-          if (all_d[di] == cf.d1) val += inva;
-          pos1.set_direction(all_d[di], val);
+      for (int i = 0; i < 2; i++) {
+        cf.origin[i] = pos0.in_direction(cf.d[i]);
+        cf.spacing[i] = inva;
+        if (cf.n[i] > 1) {
+          vec pos1 = f->S.transform(f->fc->gv[f->is + unit_ivec(D3, cf.d[i]) * 2], f->sn) + rshift;
+          cf.spacing[i] = pos1.in_direction(cf.d[i]) - cf.origin[i];
         }
-        pos1 = f->S.transform(pos1, f->sn) + rshift;
-        cf.spacing1 = pos1.in_direction(cf.d1) - cf.origin1;
-      }
-      cf.spacing2 = inva;
-      if (cf.n2 > 1) {
-        vec pos1(D3);
-        for (int di = 0; di < 3; di++) {
-          double val = f->is.in_direction(all_d[di]) * 0.5 * inva;
-          if (all_d[di] == cf.d2) val += inva;
-          pos1.set_direction(all_d[di], val);
-        }
-        pos1 = f->S.transform(pos1, f->sn) + rshift;
-        cf.spacing2 = pos1.in_direction(cf.d2) - cf.origin2;
+        cf.nf[i] = next_pow2(std::max(oversample * cf.n[i], 2));
       }
 
-      cf.nf1 = next_pow2(std::max(oversample * cf.n1, 2));
-      cf.nf2 = next_pow2(std::max(oversample * cf.n2, 2));
-      cf.fft_data.assign((size_t)cf.nf1 * cf.nf2 * Nfreq, 0.0);
+      cf.fft_data.assign((size_t)cf.nf[0] * cf.nf[1] * Nfreq, 0.0);
 
       for (size_t fi = 0; fi < Nfreq; fi++) {
-        std::complex<double> *arr = cf.fft_data.data() + fi * cf.nf1 * cf.nf2;
+        std::complex<double> *arr = cf.fft_data.data() + fi * cf.nf[0] * cf.nf[1];
         for (size_t idx_dft = 0; idx_dft < (size_t)f->N; idx_dft++) {
-          int i1 = idx_dft / cf.n2;
-          int i2 = idx_dft % cf.n2;
-          arr[i1 * cf.nf2 + i2] = f->dft[Nfreq * idx_dft + fi];
+          int i1 = idx_dft / cf.n[1];
+          int i2 = idx_dft % cf.n[1];
+          arr[i1 * cf.nf[1] + i2] = f->dft[Nfreq * idx_dft + fi];
         }
-        fft2d_inplace(arr, cf.nf1, cf.nf2, -1);
+        fft2d_inplace(arr, cf.nf[0], cf.nf[1], -1);
       }
       cffts.push_back(std::move(cf));
     }
@@ -708,18 +681,18 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
         std::complex<double> EH1[6] = {};
         for (size_t ci = 0; ci < cffts.size(); ci++) {
           const chunk_fft &cf = cffts[ci];
-          double xh_d1 = xhat_component(xhat_x, xhat_y, xhat_z, cf.d1);
-          double xh_d2 = xhat_component(xhat_x, xhat_y, xhat_z, cf.d2);
+          double xh_d1 = xhat_component(xhat_x, xhat_y, xhat_z, cf.d[0]);
+          double xh_d2 = xhat_component(xhat_x, xhat_y, xhat_z, cf.d[1]);
           double xh_n = xhat_component(xhat_x, xhat_y, xhat_z, cf.normal_d);
 
-          double f1 = k * xh_d1 * cf.spacing1 * cf.nf1 / (2 * pi);
-          double f2 = k * xh_d2 * cf.spacing2 * cf.nf2 / (2 * pi);
+          double f1 = k * xh_d1 * cf.spacing[0] * cf.nf[0] / (2 * pi);
+          double f2 = k * xh_d2 * cf.spacing[1] * cf.nf[1] / (2 * pi);
 
-          const std::complex<double> *arr = cf.fft_data.data() + fi * cf.nf1 * cf.nf2;
-          std::complex<double> J_tilde = fft2d_interp(arr, cf.nf1, cf.nf2, f1, f2);
+          const std::complex<double> *arr = cf.fft_data.data() + fi * cf.nf[0] * cf.nf[1];
+          std::complex<double> J_tilde = fft2d_interp(arr, cf.nf[0], cf.nf[1], f1, f2);
 
           J_tilde *= std::polar(
-              1.0, -(k * xh_d1 * cf.origin1 + k * xh_d2 * cf.origin2 + k * xh_n * cf.face_pos));
+              1.0, -(k * xh_d1 * cf.origin[0] + k * xh_d2 * cf.origin[1] + k * xh_n * cf.face_pos));
 
           double px = 0, py = 0, pz = 0;
           direction d = component_direction(cf.c0);
