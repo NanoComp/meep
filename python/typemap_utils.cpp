@@ -1038,6 +1038,63 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
   ;
 }
 
+static int pymesh_to_mesh(PyObject *py_mesh, geometric_object *o) {
+  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
+  material_type material;
+  vector3 center;
+
+  if (!get_attr_material(py_mesh, &material) || !get_attr_v3(py_mesh, &center, "center")) {
+    return 0;
+  }
+
+  PyObject *py_verts = PyObject_GetAttrString(py_mesh, "vertices");
+  if (!py_verts || !PyList_Check(py_verts)) {
+    meep::abort("Expected Mesh.vertices to be a list\n");
+    return 0;
+  }
+
+  int num_vertices = PyList_Size(py_verts);
+  vector3 *vertices = new vector3[num_vertices];
+  for (Py_ssize_t i = 0; i < num_vertices; ++i) {
+    if (!pyv3_to_v3(PyList_GetItem(py_verts, i), &vertices[i])) {
+      delete[] vertices;
+      Py_DECREF(py_verts);
+      return 0;
+    }
+  }
+  Py_DECREF(py_verts);
+
+  PyObject *py_tris = PyObject_GetAttrString(py_mesh, "triangles");
+  if (!py_tris || !PyList_Check(py_tris)) {
+    delete[] vertices;
+    meep::abort("Expected Mesh.triangles to be a list\n");
+    return 0;
+  }
+
+  int num_triangles = PyList_Size(py_tris);
+  int *triangles = new int[3 * num_triangles];
+  for (Py_ssize_t i = 0; i < num_triangles; ++i) {
+    PyObject *tri = PyList_GetItem(py_tris, i);
+    if (!PyTuple_Check(tri) || PyTuple_Size(tri) != 3) {
+      delete[] vertices;
+      delete[] triangles;
+      Py_DECREF(py_tris);
+      meep::abort("Each triangle must be a tuple of 3 integers\n");
+      return 0;
+    }
+    for (int j = 0; j < 3; ++j)
+      triangles[3 * i + j] = (int)PyLong_AsLong(PyTuple_GetItem(tri, j));
+  }
+  Py_DECREF(py_tris);
+
+  *o = make_mesh_with_center(material, center, vertices, num_vertices, triangles, num_triangles);
+
+  delete[] vertices;
+  delete[] triangles;
+
+  return 1;
+}
+
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   int success = 0;
@@ -1050,6 +1107,7 @@ static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
   else if (go_type == "Block") { success = pyblock_to_block(po, o); }
   else if (go_type == "Ellipsoid") { success = pyellipsoid_to_ellipsoid(po, o); }
   else if (go_type == "Prism") { success = pyprism_to_prism(po, o); }
+  else if (go_type == "Mesh") { success = pymesh_to_mesh(po, o); }
   else {
     PyErr_Format(PyExc_TypeError, "Error: %s is not a valid GeometricObject type", go_type.c_str());
     return 0;
