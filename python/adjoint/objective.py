@@ -4,7 +4,7 @@ used in topology optimization.
 """
 import abc
 from collections import namedtuple
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 import numpy as np
 from meep.simulation import py_v3_to_vec, FluxData, NearToFarData
@@ -161,7 +161,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self,
         sim: mp.Simulation,
         volume: mp.Volume,
-        mode: int,
+        mode: Union[int, mp.DiffractedPlanewave],
         forward: Optional[bool] = True,
         kpoint_func: Optional[Callable] = None,
         kpoint_func_overlap_idx: Optional[int] = 0,
@@ -175,7 +175,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         Args:
           sim: the Meep simulation object of the problem.
           volume: the volume over which the eigenmode coefficient is calculated.
-          mode: the eigenmode number.
+          mode: the eigenmode number or `mp.DiffractedPlanewave` class object.
           forward: whether the forward or backward mode coefficient is returned
               as the result of the evaluation. Default is True.
           kpoint_func: an optional k-point function to use when evaluating the
@@ -236,16 +236,34 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         da_dE = 0.5 * self._cscale
         scale = self._adj_src_scale()
 
-        if self.kpoint_func:
-            eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
+        if isinstance(self.mode, int):
+            if self.kpoint_func:
+                eig_kpoint = -1 * self.kpoint_func(time_src.frequency, self.mode)
+            else:
+                center_frequency = 0.5 * (
+                    np.min(self.frequencies) + np.max(self.frequencies)
+                )
+                direction = mp.Vector3(
+                    *(
+                        np.eye(3)[self._monitor.normal_direction]
+                        * np.abs(center_frequency)
+                    )
+                )
+                eig_kpoint = -1 * direction if self.forward else direction
+
+        elif isinstance(self.mode, mp.DiffractedPlanewave):
+            new_dp = mp.DiffractedPlanewave(
+                [-1 * gg for gg in self.mode.g] if self.forward else self.mode.g,
+                self.mode.axis,
+                self.mode.s,
+                self.mode.p,
+            )
+
         else:
-            center_frequency = 0.5 * (
-                np.min(self.frequencies) + np.max(self.frequencies)
+            raise TypeError(
+                "mode property of EigenModeCoefficient must be either an"
+                "integer or DiffractedPlaneWave class object."
             )
-            direction = mp.Vector3(
-                *(np.eye(3)[self._monitor.normal_direction] * np.abs(center_frequency))
-            )
-            eig_kpoint = -1 * direction if self.forward else direction
 
         if self._frequencies.size == 1:
             amp = da_dE * dJ * scale
@@ -259,17 +277,31 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 self.sim.fields.dt,
             )
             amp = 1
-        source = mp.EigenModeSource(
-            src,
-            eig_band=self.mode,
-            direction=mp.NO_DIRECTION,
-            eig_kpoint=eig_kpoint,
-            amplitude=amp,
-            eig_match_freq=True,
-            size=self.volume.size,
-            center=self.volume.center,
-            **self.eigenmode_kwargs,
-        )
+
+        if isinstance(self.mode, int):
+            source = mp.EigenModeSource(
+                src,
+                eig_band=self.mode,
+                direction=mp.NO_DIRECTION,
+                eig_kpoint=eig_kpoint,
+                amplitude=amp,
+                eig_match_freq=True,
+                size=self.volume.size,
+                center=self.volume.center,
+                **self.eigenmode_kwargs,
+            )
+
+        else:
+            source = mp.EigenModeSource(
+                src,
+                eig_band=new_dp,
+                amplitude=amp,
+                eig_match_freq=True,
+                size=self.volume.size,
+                center=self.volume.center,
+                **self.eigenmode_kwargs,
+            )
+
         return [source]
 
     def __call__(self):
@@ -279,25 +311,44 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             1D array of eigenmode coefficients for each frequency in
             self.frequencies.
         """
-        if self.kpoint_func:
-            kpoint_func = self.kpoint_func
-            overlap_idx = self.kpoint_func_overlap_idx
-        else:
-            center_frequency = 0.5 * (
-                np.min(self.frequencies) + np.max(self.frequencies)
+        if isinstance(self.mode, int):
+            if self.kpoint_func:
+                kpoint_func = self.kpoint_func
+                overlap_idx = self.kpoint_func_overlap_idx
+            else:
+                center_frequency = 0.5 * (
+                    np.min(self.frequencies) + np.max(self.frequencies)
+                )
+                kpoint = mp.Vector3(
+                    *(
+                        np.eye(3)[self._monitor.normal_direction]
+                        * np.abs(center_frequency)
+                    )
+                )
+                kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
+                overlap_idx = 0
+            ob = self.sim.get_eigenmode_coefficients(
+                self._monitor,
+                [self.mode],
+                direction=mp.NO_DIRECTION,
+                kpoint_func=kpoint_func,
+                **self.eigenmode_kwargs,
             )
-            kpoint = mp.Vector3(
-                *(np.eye(3)[self._monitor.normal_direction] * np.abs(center_frequency))
-            )
-            kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
+
+        elif isinstance(self.mode, mp.DiffractedPlanewave):
             overlap_idx = 0
-        ob = self.sim.get_eigenmode_coefficients(
-            self._monitor,
-            [self.mode],
-            direction=mp.NO_DIRECTION,
-            kpoint_func=kpoint_func,
-            **self.eigenmode_kwargs,
-        )
+            new_dp = mp.DiffractedPlanewave(
+                self.mode.g if self.forward else [-1 * gg for gg in self.mode.g],
+                self.mode.axis,
+                self.mode.s,
+                self.mode.p,
+            )
+            ob = self.sim.get_eigenmode_coefficients(
+                self._monitor,
+                new_dp,
+                **self.eigenmode_kwargs,
+            )
+
         overlaps = ob.alpha.squeeze(axis=0)
         assert overlaps.ndim == 2
         self._eval = overlaps[:, overlap_idx]
