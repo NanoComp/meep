@@ -496,6 +496,7 @@ static bool sigma_not_psd(const susceptibility *sus, const grid_volume &gv, fiel
       }
     }
   }
+  return false;
 }
 
 void structure::add_susceptibility(material_function &sigma, field_type ft,
