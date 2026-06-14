@@ -474,6 +474,30 @@ void structure::add_susceptibility(double sigma(const vec &), field_type ft,
   add_susceptibility(sig, ft, sus);
 }
 
+/* Heuristic check for a non-positive-semidefinite (non-passive) anisotropic
+   susceptibility tensor: an off-diagonal sigma_ab with sigma_ab^2 > sigma_aa *
+   sigma_bb makes the local 2x2 tensor have a negative eigenvalue, which is
+   non-physical and drives instabilities.  We only test pixels where both
+   diagonal entries are nonzero, so material-boundary pixels (where one diagonal
+   has tapered to zero — a discretization effect handled by the update_P guard)
+   are skipped to avoid false positives. */
+static bool sigma_not_psd(const susceptibility *sus, const grid_volume &gv, field_type ft) {
+  FOR_FT_COMPONENTS(ft, ca) {
+    const realnum *saa = sus->sigma[ca][component_direction(ca)];
+    if (!saa) continue;
+    FOR_FT_COMPONENTS(ft, cb) {
+      if (cb == ca) continue;
+      const realnum *sbb = sus->sigma[cb][component_direction(cb)];
+      const realnum *sab = sus->sigma[ca][component_direction(cb)];
+      if (!sbb || !sab) continue;
+      LOOP_OVER_VOL(gv, ca, idx) {
+        const realnum a = saa[idx], b = sbb[idx], o = sab[idx];
+        if (a > 0 && b > 0 && o * o > a * b * (1 + 1e-6)) return true;
+      }
+    }
+  }
+}
+
 void structure::add_susceptibility(material_function &sigma, field_type ft,
                                    const susceptibility &sus) {
   changing_chunks();
@@ -504,6 +528,20 @@ void structure::add_susceptibility(material_function &sigma, field_type ft,
       newsus->trivial_sigma[c][d] = trivial_sigma_sync[c][d];
     }
   }
+
+  /* Warn if the user supplied a non-positive-semidefinite (non-passive)
+     anisotropic sigma tensor, which is non-physical and can make the
+     simulation diverge.  (This is distinct from the boundary instability that
+     the update_P guard handles; here the bulk tensor itself is bad.) */
+  bool local_bad = false;
+  for (int i = 0; i < num_chunks; i++)
+    if (chunks[i]->is_mine() && chunks[i]->chiP[ft])
+      local_bad = local_bad || sigma_not_psd(chunks[i]->chiP[ft], chunks[i]->gv, ft);
+  if (or_to_all(local_bad))
+    master_printf("Warning: an anisotropic susceptibility sigma tensor is not "
+                  "positive-semidefinite (an off-diagonal sigma exceeds "
+                  "sqrt(diagonal product)); this medium is non-passive and may "
+                  "cause the simulation to diverge.\n");
 }
 
 void structure::use_pml(direction d, boundary_side b, double dx) {

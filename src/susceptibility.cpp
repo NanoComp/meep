@@ -226,26 +226,30 @@ void lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
         }
         if (s1 && s2) { // 3x3 anisotropic
           PLOOP_OVER_VOL_OWNED(gv, c, i) {
-            // s[i] != 0 check is a bit of a hack to work around
-            // some instabilities that occur near the boundaries
-            // of materials; see PR #666
-            if (s[i] != 0) {
-              realnum pcur = p[i];
-              p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
-                                  omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is) +
-                                                 OFFDIAG(s2, w2, is2, is)));
-              pp[i] = pcur;
-            }
+            // The s[i] != 0 mask works around instabilities near material
+            // boundaries (see PR #666). sigma is static in time, so the
+            // predicate is the same every step; apply it branchlessly so the
+            // loop still vectorizes. Where s[i] == 0, p[i] and pp[i] are left
+            // unchanged, exactly as the original guarded update did.
+            const realnum mask = (s[i] != 0) ? 1 : 0;
+            const realnum pcur = p[i];
+            const realnum pnew =
+                gamma1inv *
+                (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
+                 omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is) + OFFDIAG(s2, w2, is2, is)));
+            p[i] = mask * pnew + (1 - mask) * pcur;
+            pp[i] = mask * pcur + (1 - mask) * pp[i];
           }
         }
         else if (s1) { // 2x2 anisotropic
           PLOOP_OVER_VOL_OWNED(gv, c, i) {
-            if (s[i] != 0) { // see above
-              realnum pcur = p[i];
-              p[i] = gamma1inv * (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
-                                  omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is)));
-              pp[i] = pcur;
-            }
+            const realnum mask = (s[i] != 0) ? 1 : 0; // see above
+            const realnum pcur = p[i];
+            const realnum pnew =
+                gamma1inv * (pcur * (2 - omega0dtsqr_denom) - gamma1 * pp[i] +
+                             omega0dtsqr * (s[i] * w[i] + OFFDIAG(s1, w1, is1, is)));
+            p[i] = mask * pnew + (1 - mask) * pcur;
+            pp[i] = mask * pcur + (1 - mask) * pp[i];
           }
         }
         else { // isotropic
