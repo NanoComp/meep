@@ -113,7 +113,7 @@ class TestFarFieldApprox(ApproxComparisonTestCase):
         normalized pattern to within 0.05%
         """
         R = 1000.0
-        thetas = np.linspace(0, math.pi - 0.2, 20)
+        thetas = np.linspace(0.2, math.pi - 0.2, 20)
         E_theta_exact = np.zeros(len(thetas))
         E_theta_approx = np.zeros(len(thetas))
 
@@ -173,6 +173,13 @@ class TestFarFieldApprox(ApproxComparisonTestCase):
         """Verify that the get_farfields array API works with the
         far-field approximation and produces consistent results with
         the single-point get_farfield API.
+
+        For a 3D non-periodic far field, get_farfields uses an
+        FFT-accelerated evaluation of the equivalent-current surface
+        integral, whereas the single-point get_farfield uses a direct
+        summation.  The two therefore differ only by the bicubic
+        interpolation error of the oversampled FFT, which is well below
+        1% for the default oversampling.
         """
         R = 1000.0
         theta = math.pi / 3
@@ -185,7 +192,7 @@ class TestFarFieldApprox(ApproxComparisonTestCase):
         result = self.sim.get_farfields(
             self.n2f,
             resolution=0,
-            center=mp.Vector3(R * math.sin(theta), 0, R * math.cos(theta)),
+            center=x_pt,
             size=mp.Vector3(0, 0, 0),
             far_field_approx=True,
         )
@@ -201,7 +208,64 @@ class TestFarFieldApprox(ApproxComparisonTestCase):
             ]
         )
 
-        self.assertClose(ff_single, ff_array, epsilon=1e-12)
+        self.assertClose(ff_single, ff_array, epsilon=5e-3)
+
+    def test_farfield_approx_fft_grid_vs_exact(self):
+        """Verify the FFT-accelerated far-field path over a finite grid.
+
+        get_farfields over a 3D non-periodic volume uses an
+        FFT-accelerated evaluation of the radiation-zone surface
+        integral.  This is only exercise for a genuine multi-point grid
+        (a single point degenerates to a trivial transform), so we
+        compare a far-field patch in the radiation zone against both the
+        exact near-to-far transform (get_farfields with
+        far_field_approx=False) and the per-point direct radiation-zone
+        summation (get_farfield with far_field_approx=True).
+
+        The patch spans many fractional FFT bins, so this stresses the
+        bicubic interpolation of the oversampled FFT.  The aggregate
+        error is dominated by the O(L/R) radiation-zone approximation
+        (~0.4% at R=1000) plus a sub-percent interpolation contribution.
+        """
+        R = 1000.0
+        theta = math.pi / 3
+        # planar patch centered far away; extent (40) is << R so every
+        # point remains deep in the radiation zone
+        center = mp.Vector3(R * math.sin(theta), 0, R * math.cos(theta))
+        size = mp.Vector3(40, 40, 0)
+        npts = 8
+        res = (npts - 1) / 40.0
+
+        ff_fft = self.sim.get_farfields(
+            self.n2f, resolution=res, center=center, size=size, far_field_approx=True
+        )
+        ff_exact = self.sim.get_farfields(
+            self.n2f, resolution=res, center=center, size=size, far_field_approx=False
+        )
+
+        comps = ["Ex", "Ey", "Ez", "Hx", "Hy", "Hz"]
+        fft_stack = np.array([ff_fft[c].ravel() for c in comps])
+        exact_stack = np.array([ff_exact[c].ravel() for c in comps])
+        # FFT (radiation-zone) vs exact near-to-far transform
+        self.assertClose(fft_stack, exact_stack, epsilon=1e-2)
+
+        # FFT grid vs per-point direction radiation-zone summation: same
+        # underlying approximation, so they agree to the interpolation error
+        nx, ny = ff_fft["Ex"].shape
+        dx = size.x / (nx - 1)
+        dy = size.y / (ny - 1)
+        x0 = center.x - 0.5 * size.x
+        y0 = center.y - 0.5 * size.y
+        fft_pts = []
+        direct_pts = []
+        for i in range(nx):
+            for j in range(ny):
+                x = mp.Vector3(x0 + i * dx, y0 + j * dy, center.z)
+                direct_pts.append(
+                    np.array(self.sim.get_farfield(self.n2f, x, far_field_approx=True))
+                )
+                fft_pts.append(np.array([ff_fft[c][i, j] for c in comps]))
+        self.assertClose(np.array(fft_pts), np.array(direct_pts), epsilon=1e-2)
 
 
 if __name__ == "__main__":

@@ -451,17 +451,39 @@ static void fft2d_inplace(std::complex<double> *data, int n1, int n2, int sign) 
   }
 }
 
+// 1d cubic-convolution (Catmull-Rom) interpolation between p1 and p2, with p0,p3
+// the neighboring samples and t the fractional position in [0,1].
+static std::complex<double> catmull_rom(const std::complex<double> &p0,
+                                        const std::complex<double> &p1,
+                                        const std::complex<double> &p2,
+                                        const std::complex<double> &p3, double t) {
+  return 0.5 * ((2.0 * p1) + (-p0 + p2) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * (t * t) +
+                (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * (t * t * t));
+}
+
+// Bicubic interpolation of the (periodic) 2d DFT array at fractional frequency
+// (f1,f2).  Bicubic error scales as O((1/oversample)^4), vs O((1/oversample)^2)
+// for bilinear, so the oversampled FFT can be evaluated off-grid much more
+// accurately at the same oversampling.
 static std::complex<double> fft2d_interp(const std::complex<double> *data, int n1, int n2,
                                          double f1, double f2) {
   f1 = fmod(f1, (double)n1);
   if (f1 < 0) f1 += n1;
   f2 = fmod(f2, (double)n2);
   if (f2 < 0) f2 += n2;
-  int i0 = (int)floor(f1), i1 = (i0 + 1) % n1;
-  int j0 = (int)floor(f2), j1 = (j0 + 1) % n2;
-  double w1 = f1 - floor(f1), w2 = f2 - floor(f2);
-  return data[i0 * n2 + j0] * (1 - w1) * (1 - w2) + data[i1 * n2 + j0] * w1 * (1 - w2) +
-         data[i0 * n2 + j1] * (1 - w1) * w2 + data[i1 * n2 + j1] * w1 * w2;
+  int i0 = (int)floor(f1), j0 = (int)floor(f2);
+  double t1 = f1 - i0, t2 = f2 - j0;
+  std::complex<double> col[4];
+  for (int di = -1; di <= 2; ++di) {
+    int ii = ((i0 + di) % n1 + n1) % n1;
+    const std::complex<double> *row = data + ii * n2;
+    int j_1 = ((j0 - 1) % n2 + n2) % n2;
+    int j_0 = j0 % n2;
+    int j_p1 = (j0 + 1) % n2;
+    int j_p2 = (j0 + 2) % n2;
+    col[di + 1] = catmull_rom(row[j_1], row[j_0], row[j_p1], row[j_p2], t2);
+  }
+  return catmull_rom(col[0], col[1], col[2], col[3], t1);
 }
 
 static double xhat_component(double xhat_x, double xhat_y, double xhat_z, direction d) {
@@ -596,64 +618,127 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
   std::vector<chunk_fft> cffts;
 
   if (use_fft) {
-    const int oversample = 4;
+    const int oversample = 8;
 
-    for (dft_chunk *f = F; f; f = f->next_in_dft) {
-      chunk_fft cf;
-      cf.c0 = component(f->vc);
+    for (dft_chunk *f = F; f && use_fft; f = f->next_in_dft) {
       double inva = f->fc->gv.inva;
       vec rshift(f->shift * (0.5 * inva));
+      component c0 = component(f->vc);
 
-      cf.normal_d = NO_DIRECTION;
-      for (int i = 0; i < 2; i++) {
-        cf.d[i] = NO_DIRECTION;
-        cf.n[i] = 1;
-      }
-      int trans_idx = 0;
+      /* number of grid points along each Cartesian direction */
+      int nd[3];
       for (int di = 0; di < 3; di++) {
         direction d = direction(X + di);
-        int nd = (f->ie.in_direction(d) - f->is.in_direction(d)) / 2 + 1;
-        if (nd <= 1)
-          cf.normal_d = d;
+        nd[di] = (f->ie.in_direction(d) - f->is.in_direction(d)) / 2 + 1;
+      }
+
+      /* The near-field surface normal is the thinnest direction.  Note that a
+         near2far DFT chunk is generally 2 grid points thick along its normal,
+         because the tangential field component is offset by half a pixel on the
+         Yee grid.  We therefore cannot assume the normal has a single layer;
+         instead we treat the two remaining (in-plane) directions as transverse
+         and handle each normal layer as a separate planar "slice" (a current
+         sheet at its own normal coordinate, summed in the output loop below). */
+      int ni = 0;
+      for (int di = 1; di < 3; di++)
+        if (nd[di] < nd[ni]) ni = di;
+      direction normal_d = direction(X + ni);
+      direction d[2] = {NO_DIRECTION, NO_DIRECTION};
+      int n[2] = {1, 1};
+      for (int di = 0; di < 3; di++) {
+        if (di == ni) continue;
+        if (d[0] == NO_DIRECTION) {
+          d[0] = direction(X + di);
+          n[0] = nd[di];
+        }
         else {
-          cf.d[trans_idx] = d;
-          cf.n[trans_idx] = nd;
-          trans_idx++;
+          d[1] = direction(X + di);
+          n[1] = nd[di];
         }
       }
-      if (cf.normal_d == NO_DIRECTION || cf.d[0] == NO_DIRECTION) {
+
+      /* A near2far chunk is a full rectangular box, so slicing over the normal
+         (the thinnest direction) and FFT-ing the two transverse directions is
+         exact for any chunk shape, including thin edge slivers shared between
+         adjacent faces (e.g. a component tangential to two perpendicular
+         surfaces).  The only requirement for efficiency is that the normal be
+         thin; near2far surfaces are planar so this is always 1 or 2 layers.
+         Fall back to the exact direct summation only for the (unexpected) case
+         of a thick chunk, where slicing would not be faster. */
+      int n_normal = nd[ni];
+      if (n_normal > 8) {
         use_fft = false;
         break;
       }
-      if (cf.d[1] == NO_DIRECTION) {
-        cf.d[1] = cf.d[0];
-        cf.n[1] = 1;
-      }
 
+      /* transverse origin (position of the is-corner) after symmetry transform */
       vec pos0 = f->S.transform(f->fc->gv[f->is], f->sn) + rshift;
-      cf.face_pos = pos0.in_direction(cf.normal_d);
+      double origin[2] = {pos0.in_direction(d[0]), pos0.in_direction(d[1])};
+
+      /* transverse grid spacings (signed) after symmetry transform */
+      double spacing[2] = {inva, inva};
       for (int i = 0; i < 2; i++) {
-        cf.origin[i] = pos0.in_direction(cf.d[i]);
-        cf.spacing[i] = inva;
-        if (cf.n[i] > 1) {
-          vec pos1 = f->S.transform(f->fc->gv[f->is + unit_ivec(D3, cf.d[i]) * 2], f->sn) + rshift;
-          cf.spacing[i] = pos1.in_direction(cf.d[i]) - cf.origin[i];
+        vec pos1(D3);
+        for (int di = 0; di < 3; di++) {
+          double val = f->is.in_direction(direction(X + di)) * 0.5 * inva;
+          if (direction(X + di) == d[i]) val += inva;
+          pos1.set_direction(direction(X + di), val);
         }
-        cf.nf[i] = next_pow2(std::max(oversample * cf.n[i], 2));
+        pos1 = f->S.transform(pos1, f->sn) + rshift;
+        spacing[i] = pos1.in_direction(d[i]) - origin[i];
       }
 
-      cf.fft_data.assign((size_t)cf.nf[0] * cf.nf[1] * Nfreq, 0.0);
+      int nf[2] = {next_pow2(std::max(oversample * n[0], 2)),
+                   next_pow2(std::max(oversample * n[1], 2))};
 
-      for (size_t fi = 0; fi < Nfreq; fi++) {
-        std::complex<double> *arr = cf.fft_data.data() + fi * cf.nf[0] * cf.nf[1];
-        for (size_t idx_dft = 0; idx_dft < (size_t)f->N; idx_dft++) {
-          int i1 = idx_dft / cf.n[1];
-          int i2 = idx_dft % cf.n[1];
-          arr[i1 * cf.nf[1] + i2] = f->dft[Nfreq * idx_dft + fi];
+      /* one planar FFT per normal layer (slice) */
+      std::vector<chunk_fft> slices(n_normal);
+      for (int s = 0; s < n_normal; s++) {
+        chunk_fft &cf = slices[s];
+        cf.c0 = c0;
+        cf.normal_d = normal_d;
+        for (int i = 0; i < 2; i++) {
+          cf.d[i] = d[i];
+          cf.n[i] = n[i];
+          cf.nf[i] = nf[i];
+          cf.origin[i] = origin[i];
+          cf.spacing[i] = spacing[i];
         }
-        fft2d_inplace(arr, cf.nf[0], cf.nf[1], -1);
+
+        /* normal coordinate of this slice after symmetry transform */
+        vec posN(D3);
+        for (int di = 0; di < 3; di++) {
+          double val = f->is.in_direction(direction(X + di)) * 0.5 * inva;
+          if (direction(X + di) == normal_d) val += s * inva;
+          posN.set_direction(direction(X + di), val);
+        }
+        posN = f->S.transform(posN, f->sn) + rshift;
+        cf.face_pos = posN.in_direction(normal_d);
+
+        cf.fft_data.assign((size_t)nf[0] * nf[1] * Nfreq, 0.0);
       }
-      cffts.push_back(std::move(cf));
+
+      /* Scatter the chunk's DFT data into the per-slice transverse arrays using
+         the actual grid indices, so the mapping is independent of the
+         LOOP_OVER_IVECS iteration order. */
+      size_t idx_dft = 0;
+      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+        IVEC_LOOP_ILOC(f->fc->gv, iloc);
+        int s = (iloc.in_direction(normal_d) - f->is.in_direction(normal_d)) / 2;
+        int i[2] = {(iloc.in_direction(d[0]) - f->is.in_direction(d[0])) / 2,
+                    (iloc.in_direction(d[1]) - f->is.in_direction(d[1])) / 2};
+        std::complex<double> *base = slices[s].fft_data.data();
+        for (size_t fi = 0; fi < Nfreq; fi++)
+          base[fi * nf[0] * nf[1] + i[0] * nf[1] + i[1]] = f->dft[Nfreq * idx_dft + fi];
+        idx_dft++;
+      }
+
+      /* forward FFT each slice/frequency and store */
+      for (int s = 0; s < n_normal; s++) {
+        for (size_t fi = 0; fi < Nfreq; fi++)
+          fft2d_inplace(slices[s].fft_data.data() + fi * nf[0] * nf[1], nf[0], nf[1], -1);
+        cffts.push_back(std::move(slices[s]));
+      }
     }
   }
 
