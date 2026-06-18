@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS=-I m4
 
-SUBDIRS = src tests
+SUBDIRS = src
 
 if WITH_LIBCTL
 if WITH_SCHEME
@@ -16,6 +16,10 @@ endif
 endif
   SUBDIRS += python
 endif
+
+# tests go last: they only depend on src/libmeep.la, so placing them
+# after libpympb/python lets those directories start sooner with make -j
+SUBDIRS += tests
 
 EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh
 

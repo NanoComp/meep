@@ -12,11 +12,6 @@ endif # WITH_MPI
 
 if WITH_MPB
   MPBPYTEST=$(TEST_DIR)/test_mpb.py
-else
-  MPBPYTEST=
-endif # WITH_MPB
-
-if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/test_binary_grating.py
   DIFFRACTED_PLANEWAVE_TEST = $(TEST_DIR)/test_diffracted_planewave.py
   DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/test_dispersive_eigenmode.py
@@ -25,6 +20,7 @@ if WITH_MPB
   MODE_DECOMPOSITION_TEST = $(TEST_DIR)/test_mode_decomposition.py
   WVG_SRC_TEST = $(TEST_DIR)/test_wvg_src.py
 else
+  MPBPYTEST =
   BINARY_GRATING_TEST =
   DIFFRACTED_PLANEWAVE_TEST =
   DISPERSIVE_EIGENMODE_TEST =
@@ -34,13 +30,15 @@ else
   WVG_SRC_TEST =
 endif
 
-TESTS =                                        \
-    $(TEST_DIR)/test_3rd_harm_1d.py            \
-    $(TEST_DIR)/test_absorber_1d.py            \
+ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_adjoint_solver.py         \
     $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
-    $(TEST_DIR)/test_adjoint_jax.py            \
+    $(TEST_DIR)/test_adjoint_jax.py
+
+TESTS =                                        \
+    $(TEST_DIR)/test_3rd_harm_1d.py            \
+    $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
@@ -56,8 +54,8 @@ TESTS =                                        \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \
-    ${DIFFRACTED_PLANEWAVE_TEST}               \
-    ${DISPERSIVE_EIGENMODE_TEST}               \
+    $(DIFFRACTED_PLANEWAVE_TEST)               \
+    $(DISPERSIVE_EIGENMODE_TEST)               \
     $(TEST_DIR)/test_divide_mpi_processes.py   \
     $(TEST_DIR)/test_dump_load.py              \
     $(TEST_DIR)/test_eigfreq.py                \
@@ -95,6 +93,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_simulation.py             \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
+    $(TEST_DIR)/test_stop_when_flux_decayed.py \
     $(TEST_DIR)/test_timing_measurements.py    \
     $(TEST_DIR)/test_user_defined_material.py  \
     $(TEST_DIR)/test_verbosity_mgr.py          \
@@ -125,10 +124,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/src               \
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
+SWIG_WARN_FLAGS = -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-initializers
+
 _meep_la_SOURCES = meep-python.cxx
 _meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
 _meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-_meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+_meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
+_meep_la_CXXFLAGS = -O1
 
 pkgpyexec_LTLIBRARIES = _meep.la
 
@@ -146,7 +148,8 @@ if WITH_MPB
   _mpb_la_SOURCES = mpb-python.cxx
   _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
   _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
-  _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS)
+  _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
+  _mpb_la_CXXFLAGS = -O1
 
 install-data-hook:
 	mv $(DESTDIR)$(pkgpythondir)/mpb/mpb.py $(DESTDIR)$(pkgpythondir)/mpb/__init__.py
@@ -231,7 +234,6 @@ HL_IFACE =                  \
     $(srcdir)/materials.py  \
     $(srcdir)/verbosity_mgr.py
 
-
 pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
 adjointdir = $(pkgpythondir)/adjoint
@@ -246,12 +248,6 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py
 
-######################################################################
-# finally, specification of what gets installed in the meep python
-# module directory of the python site-packages installation
-# Q: Why is this not redundant since e.g. the HL_IFACE files should
-#    already be installed by virtue of being in pkgpython_PYTHON
-######################################################################
 PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
 
 meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
@@ -266,6 +262,9 @@ if WITH_MPB
 endif
 
 all-local: meep
+
+check-adjoint:
+	$(MAKE) check TESTS="$(ADJOINT_TESTS)"
 
 clean-local:
 	rm -rf meep __init__.py.bak

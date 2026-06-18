@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([meep],[m4_esyscmd(./version.sh 1.33.0-beta)])
+AC_INIT([meep],[m4_esyscmd(./version.sh 1.34.0-beta)])
 AC_CONFIG_SRCDIR(src/step.cpp)
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -8,7 +8,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 # not the same as the "public" version number.  (Don't worry about this
 # except for public releases.) Note that any change to a C++ class
 # definition (in the .hpp file) generally breaks binary compatibility.
-SHARED_VERSION_INFO="36:0:1" # CURRENT:REVISION:AGE
+SHARED_VERSION_INFO="37:0:0" # CURRENT:REVISION:AGE
 
 AM_INIT_AUTOMAKE([foreign color-tests parallel-tests silent-rules 1.11])
 AM_SILENT_RULES(yes)
@@ -78,6 +78,21 @@ fi
 
 # Require C++11 support
 AX_CXX_COMPILE_STDCXX([11], [], [mandatory])
+
+# Optional ccache support (speeds up rebuilds of SWIG-generated C++)
+AC_ARG_ENABLE(ccache,
+              [AS_HELP_STRING([--enable-ccache],[use ccache to speed up compilation])],
+              enable_ccache=$enableval, enable_ccache=no)
+if test "x$enable_ccache" != "xno"; then
+    AC_CHECK_PROG(CCACHE, ccache, ccache)
+    if test "x$CCACHE" != "x"; then
+        CC="ccache $CC"
+        CXX="ccache $CXX"
+        AC_MSG_NOTICE([using ccache for compilation])
+    elif test "x$enable_ccache" = "xyes"; then
+        AC_MSG_ERROR([ccache requested but not found])
+    fi
+fi
 
 ##############################################################################
 # Compiler flags
@@ -481,6 +496,7 @@ if test "x$have_gdsii" = xmaybe; then
     AC_MSG_RESULT($have_gdsii_getlayers)
   fi
 fi
+AM_CONDITIONAL(WITH_LIBGDSII, test "x$ac_cv_lib_GDSII_libGDSIIExists" = "xyes")
 
 ##############################################################################
 # The following function is used only for debugging.  Note that

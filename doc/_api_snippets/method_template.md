@@ -1,4 +1,6 @@
 
+---
+
 <a id="{class_name}.{method_name}"></a>
 
 <div class="class_members" markdown="1">

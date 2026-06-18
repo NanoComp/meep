@@ -525,7 +525,6 @@ void fields::require_source_components() {
   bool aniso2d = is_aniso2d();
   for (int c = 0; c < NUM_FIELD_COMPONENTS; ++c)
     if (allneeded[c]) _require_component(component(c), aniso2d);
-  sync_chunk_connections();
 }
 
 // check if we are in 2d but anisotropy couples xy with z
@@ -567,10 +566,11 @@ void fields::_require_component(component c, bool aniso2d) {
 
   if (need_to_reconnect) {
     figure_out_step_plan();
-    // we will eventually call sync_chunk_connections(), in either require_component(c)
-    // or require_components(), to synchronize this across processes:
+    // we will eventually call sync_chunk_connections() to synchronize this across processes:
     chunk_connections_valid = false;
   }
+
+  changed_materials = true; // triggers sync_chunk_connections() in step_boundaries()
 }
 
 void fields_chunk::add_source(field_type ft, src_vol &&src) {
