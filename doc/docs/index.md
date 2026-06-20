@@ -1,21 +1,22 @@
 
-![](images/Meep-banner.png#center)
+![Meep banner](images/Meep-banner.png#center)
 
 
- **Meep** is a free and open-source software package for [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) simulation via the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method spanning a broad range of applications.
+ **Meep** is a free and open-source software package for simulating [electromagnetics](https://en.wikipedia.org/wiki/Electromagnetism) across a broad range of applications using the [finite-difference time-domain](https://en.wikipedia.org/wiki/Finite-difference_time-domain_method) (**FDTD**) method.
 
-**Key Features**
+Key Features
+------------
 
 -   **Free and open-source software** under the [GNU GPL](https://en.wikipedia.org/wiki/GNU_General_Public_License).
--   Complete **scriptability** via [Python](Python_Tutorials/Basics), [Scheme](Scheme_Tutorials/Basics), or [C++](C++_Tutorial) APIs.
+-   Complete **scriptability** via [Python](Python_Tutorials/Basics.md), [Scheme](Scheme_Tutorials/Basics.md), or [C++](C++_Tutorial.md) APIs.
 -   Simulation in **1d, 2d, 3d**, and **[cylindrical](Exploiting_Symmetry.md#cylindrical-symmetry)** coordinates.
--   Distributed memory [parallelism](Parallel_Meep) on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
+-   Distributed memory [parallelism](Parallel_Meep.md) on any system supporting [MPI](https://en.wikipedia.org/wiki/MPI).
 -   Portable to any Unix-like operating system such as [Linux](https://en.wikipedia.org/wiki/Linux), [macOS](https://en.wikipedia.org/wiki/macOS), and [FreeBSD](https://en.wikipedia.org/wiki/FreeBSD).
 -   **Precompiled binary packages** of official releases via [Conda](Installation.md#conda-packages).
--   Variety of arbitrary [material](Materials) types: **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, **saturable** gain/absorption, and **gyrotropic** media (magneto-optical effects).
--   [Materials library](Materials#materials-library) containing predefined broadband, complex refractive indices.
--   [Perfectly matched layer](Perfectly_Matched_Layer/) (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
--   Exploitation of [symmetries](Exploiting_Symmetry) to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
+-   Variety of arbitrary [material](Materials.md) types: **anisotropic** electric permittivity ε and magnetic permeability μ, along with **dispersive** ε(ω) and μ(ω) including loss/gain, **nonlinear** (Kerr & Pockels) dielectric and magnetic materials, electric/magnetic **conductivities** σ, **saturable** gain/absorption, and **gyrotropic** media (magneto-optical effects).
+-   [Materials library](Materials.md#materials-library) containing predefined broadband, complex refractive indices.
+-   [Perfectly matched layer](Perfectly_Matched_Layer.md) (**PML**) absorbing boundaries as well as **Bloch-periodic** and perfect-conductor boundary conditions.
+-   Exploitation of [symmetries](Exploiting_Symmetry.md) to reduce the computation size, including even/odd mirror planes and 90°/180° rotations.
 -   [Subpixel smoothing](Subpixel_Smoothing.md) for improving accuracy and shape optimization.
 -   [Custom current sources](Python_Tutorials/Custom_Source.md) with arbitrary time and spatial profile as well as a [mode launcher](Python_Tutorials/Eigenmode_Source.md) for waveguides and planewaves, and [Gaussian beams](Python_User_Interface.md#gaussianbeam3dsource).
 -   [Frequency-domain solver](Python_User_Interface.md#frequency-domain-solver) for finding the response to a [continuous-wave](https://en.wikipedia.org/wiki/Continuous_wave) (CW) source as well as a [frequency-domain eigensolver](Python_User_Interface.md#frequency-domain-eigensolver) for finding resonant modes.
@@ -64,8 +65,3 @@ Acknowledgements
 ----------------
 
 The Meep project is maintained by the developer community on [GitHub](https://github.com/NanoComp/meep). [Acknowledgements](Acknowledgements.md) provides a complete listing of the project contributors.
-
-Support and Feedback
----------------------
-
-If you have questions or problems regarding Meep, you are encouraged to query the [mailing list](https://www.mail-archive.com/meep-discuss@ab-initio.mit.edu/).
