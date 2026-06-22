@@ -298,5 +298,5 @@ we considered. This code (plus a simple hand-written `Makefile`)
 lives in the `doc/docs/Developer_Codes` subdirectory of the meep source
 distribution.
 
-+ [`WriteChunkInfo.cpp`](/Developer_Codes/WriteChunkInfo.cpp)
-+ [`Makefile.manual`](/Developer_Codes/Makefile.manual)
++ [`WriteChunkInfo.cpp`](Developer_Codes/WriteChunkInfo.cpp)
++ [`Makefile.manual`](Developer_Codes/Makefile.manual)
