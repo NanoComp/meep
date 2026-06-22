@@ -10,7 +10,7 @@ Meep uses a [second-order accurate finite-difference scheme](https://en.wikipedi
 
 However, subpixel smoothing has five limitations:
 
-1. It only applies to frequency-independent, lossless dielectrics (i.e., silicon at $\lambda=1.55$ μm); dispersive materials are [not supported](FAQ.md#can-subpixel-averaging-be-applied-to-dispersive-materials). For materials with a complex-refractive index, the imaginary part is simply ignored. For materials with a frequency-dependent $\varepsilon$, only $\varepsilon_\infty$ (i.e., the infinite frequency or instantaneous response) is used. Anisotropic materials are supported.
+1. It only applies to frequency-independent, lossless dielectrics (i.e., silicon at $\lambda=1.55$ μm); dispersive materials are not supported. For materials with a complex-refractive index, the imaginary part is simply ignored. For materials with a frequency-dependent $\varepsilon$, only $\varepsilon_\infty$ (i.e., the infinite frequency or instantaneous response) is used. Anisotropic materials are supported.
 
 2. It can be efficiently applied to [`GeometricObject`](Python_User_Interface.md#geometricobject)s (i.e. `Block`, `Prism`, `Sphere`, etc.) which are based on a [level-set function](https://en.wikipedia.org/wiki/Level-set_method) but [*not* to a user-defined `material function`](FAQ.md#can-subpixel-averaging-be-applied-to-a-user-defined-material-function) which is [disabled by default](#enabling-averaging-for-material-function).
 
@@ -152,7 +152,7 @@ What about Dispersive Materials?
 
 Meep only does [subpixel averaging](Subpixel_Smoothing.md) of the *instantaneous* (i.e., infinite frequency) part of $\varepsilon$ and $\mu$. The dispersive part is not averaged at all (i.e., any frequency dependence of $\varepsilon$ and $\mu$ is ignored). This means that any discontinuous interfaces between dispersive materials will dominate the error, and you will probably get only first-order convergence, the same as if you do no subpixel averaging at all. Unfortunately, applying anisotropic subpixel smoothing to dispersive materials would result in a material with higher-degree frequency dependence, greatly complicating the implementation in the time domain.
 
-It is possible that the subpixel averaging may still improve the constant factor in the convergence if not the asymptotic convergence rate, if you also have a lot of interfaces between non-dispersive materials or if the dispersion is small (i.e., if $\varepsilon$ is close to $\varepsilon_{\infty}$ over your bandwidth). On the other hand, if the dispersion is large and most of your interfaces are between large-dispersion materials, then subpixel averaging may not help at all and you might as well turn it off (which may improve [stability](#why-are-the-fields-blowing-up-in-my-simulation)). Generally, the subpixel averaging will not degrade accuracy though it will affect performance. See [Issue \#1064](https://github.com/NanoComp/meep/issues/1064).
+It is possible that the subpixel averaging may still improve the constant factor in the convergence if not the asymptotic convergence rate, if you also have a lot of interfaces between non-dispersive materials or if the dispersion is small (i.e., if $\varepsilon$ is close to $\varepsilon_{\infty}$ over your bandwidth). On the other hand, if the dispersion is large and most of your interfaces are between large-dispersion materials, then subpixel averaging may not help at all and you might as well turn it off (which may improve [stability](FAQ.md#why-are-the-fields-blowing-up-in-my-simulation)). Generally, the subpixel averaging will not degrade accuracy though it will affect performance. See [Issue \#1064](https://github.com/NanoComp/meep/issues/1064).
 
 What Happens When Subpixel Smoothing is Disabled?
 -------------------------------------------------
@@ -168,7 +168,7 @@ As a demonstration of this effect, consider a ring resonator (inner radius: 2 μ
 
 1. two overlapping [`Cylinder`](Python_User_Interface.md#cylinder) objects (anisotropic subpixel smoothing).
 2. two overlapping [`Prism`](Python_User_Interface.md#prism) objects (anisotropic subpixel smoothing).
-3. [material function](Python_User_Interface.md#material-function) (no smoothing).
+3. [material function](Python_User_Interface.md#medium) (no smoothing).
 4. pixel grid via [`epsilon_input_file`](Python_User_Interface.md#the-simulation-class) (bilinear interpolation onto Yee grid).
 5. pixel grid via `epsilon_input_file` (no smoothing).
 

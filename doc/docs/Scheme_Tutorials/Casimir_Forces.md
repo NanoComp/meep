@@ -383,7 +383,7 @@ $$\epsilon (\xi) = \epsilon_f + \frac{C \xi_0^2}{\omega_0^2 - \xi^2 - i\sigma \x
 
 So the new dispersion is a Lorentzian, but with an additional loss term. This is the correct material to define in Meep.
 
-It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Tutorial/Material Dispersion](Material_Dispersion). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use).
+It is easy to define a dispersive material in Meep (discussed further in [Materials](../Materials.md), with examples in [Tutorial/Material Dispersion](Material_Dispersion.md). Here is how we go about it (further material examples are defined in [materials.scm](http://ab-initio.mit.edu/~mccauley/casimir-examples/materials.scm), and [rods-plates.ctl](http://ab-initio.mit.edu/~mccauley/casimir-examples/rods-plates.ctl) demonstrates their use).
 
 ```scm
  (define length-scale 1e-6) ;length scale - units of 1 micron

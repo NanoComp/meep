@@ -23,7 +23,7 @@ See also [holey-wvg-cavity.ctl](https://github.com/NanoComp/meep/blob/master/sch
 Transmission Spectrum
 ---------------------
 
-To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that the periodicity is 1 which is a typical choice for photonic crystals.
+To calculate the transmission spectrum, much as in the bend example in [Tutorial/Basics](Basics.md), we'll measure the flux spectrum at one end of the waveguide from a source at the other end, normalized by the flux from a case with no holes in the waveguide. First, we'll define some parameters of our structure as in the figure above. Note that we'll choose units so that the periodicity is 1 which is a typical choice for photonic crystals.
 
 ```scm
 (define-param eps 13)         ; dielectric constant of waveguide
@@ -109,7 +109,7 @@ Finally, we need to tell Meep to [compute the flux spectrum](../Introduction.md#
                     (center (- (* 0.5 sx) dpml 0.5) 0) (size 0 (* w 2)))))
 ```
 
-Now, we can run the simulation, using `run-sources+` to run until the sources have finished, plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics), we'll use `stop-when-fields-decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
+Now, we can run the simulation, using `run-sources+` to run until the sources have finished, plus some additional time to allow the fields to propagate through the structure. As in [Tutorial/Basics](Basics.md), we'll use `stop-when-fields-decayed` to increment the time in steps of 50 time units (about 13 periods) until $|E_y|^2$ has decayed by at least 1/1000 at the transmission-flux plane.
 
 ```scm
 (run-sources+ (stop-when-fields-decayed
@@ -123,7 +123,7 @@ Now, we can run the simulation, using `run-sources+` to run until the sources ha
 (display-fluxes trans) ; print out the flux spectrum
 ```
 
-Note that we've outputted ε at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics). Now, we launch the simulation:
+Note that we've outputted ε at the beginning &mdash; this is always a good idea, to make sure the structure is what you think it is! We have also outputted the $H_z$ field in a $y=0$ slice, every 0.4 time units (about ten times per period) while the source is on, to a single file with time as the second dimension, just as in [Tutorial/Basics](Basics.md). Now, we launch the simulation:
 
 ```sh
 unix% meep holey-wvg-cavity.ctl | tee holey-wvg-cavity.out
