@@ -2538,7 +2538,7 @@ Scale the Fourier-transformed fields in `near2far` by the complex number `s`. e.
 </div>
 
 
-And this [`DftNear2Far`](#DftNear2Far) method:
+And this [`DftNear2Far`](#DftNear2Far.flux) method:
 
 
 ---
@@ -4777,7 +4777,7 @@ optics](http://math.mit.edu/~stevenj/18.369/coordinate-transform.pdf) for an
 arbitrary curvilinear coordinate transformation with Jacobian matrix M. The
 absolute value of the determinant is to prevent inadvertent construction of
 left-handed materials, which are [problematic in nondispersive
-media](FAQ.md#why-does-my-simulation-diverge-if-0).
+media](FAQ.md#why-does-my-simulation-diverge-if-the-permittivity-is-less-than-0).
 
 </div>
 
@@ -5377,7 +5377,7 @@ def __init__(bias=Vector3<0.0, 0.0, 0.0>,
 + **`bias` [`Vector3`]** — Vector specifying the orientation of the gyrotropic
   response. Unlike the similarly-named `bias` parameter for the [gyrotropic
   Lorentzian/Drude
-  susceptibilities](#gyrotropiclorentziansusceptibility-or-gyrotropicdrudesusceptibility),
+  susceptibilities](#gyrotropiclorentziansusceptibility),
   the magnitude is ignored; instead, the relevant precession frequencies are
   determined by the `sigma` and `frequency` parameters.
 
@@ -6861,7 +6861,7 @@ Construct a `ContinuousSource`.
   tanh function the source turns on. Default is 3.0. A larger value means that the
   source turns on more gradually at the beginning. For a detailed explanation
   of the effects of `width` and `slowness` on the time profile of the source,
-  see [here](FAQ.md##why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
+  see [here](FAQ.md#why-doesnt-the-continuous-wave-cw-source-produce-an-exact-single-frequency-response).
 
 + **`is_integrated` [`boolean`]** — If `True`, the source is the integral of the
   current (the [dipole
@@ -7412,7 +7412,7 @@ class Harminv(object):
 
 <div class="class_docstring" markdown="1">
 
-Harminv is implemented as a class with a [`__call__`](#Harminv.__call__) method,
+Harminv is implemented as a class with a [`__call__`](#harminv-step-function) method,
 which allows it to be used as a step function that collects field data from a given
 point and runs [Harminv](https://github.com/NanoComp/harminv) on that data to extract
 the frequencies, decay rates, and other information.
@@ -7502,7 +7502,7 @@ class PadeDFT(object):
 
 <div class="class_docstring" markdown="1">
 
-Padé approximant based spectral extrapolation is implemented as a class with a [`__call__`](#PadeDFT.__call__) method,
+Padé approximant based spectral extrapolation is implemented as a class with a [`__call__`](#padedft-step-function) method,
 which allows it to be used as a step function that collects field data from a given
 point and runs [Padé](https://docs.scipy.org/doc/scipy/reference/generated/scipy.interpolate.pade.html)
 on that data to extract an analytic rational function which approximates the frequency response.
@@ -7820,7 +7820,6 @@ original list.
 
 - [`get_flux_freqs`](#get_flux_freqs)
 - [`get_fluxes`](#get_fluxes)
-- [`scale_flux_fields`](#scale_flux_fields)
 - [`get_eigenmode_freqs`](#get_eigenmode_freqs)
 
 #### Energy Functions
@@ -7858,7 +7857,7 @@ original list.
 - [`stop_when_energy_decayed`](#stop_when_energy_decayed)
 - [`stop_when_dft_decayed`](#stop_when_dft_decayed)
 - [`stop_after_walltime`](#stop_after_walltime)
-- [`stop_on_intercept`](#stop_on_intercept)
+- [`stop_on_interrupt`](#stop_on_interrupt)
 
 #### Output Functions
 
