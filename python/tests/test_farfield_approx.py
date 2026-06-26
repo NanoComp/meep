@@ -171,7 +171,7 @@ class TestFarFieldApprox(ApproxComparisonTestCase):
 
     def test_farfield_approx_get_farfields_array(self):
         """Verify that the get_farfields array API works with the
-        far-field approximation and produces consistent results with
+        far-field approximation and produces results consistent with
         the single-point get_farfield API.
 
         For a 3D non-periodic far field, get_farfields uses an
@@ -215,7 +215,7 @@ class TestFarFieldApprox(ApproxComparisonTestCase):
 
         get_farfields over a 3D non-periodic volume uses an
         FFT-accelerated evaluation of the radiation-zone surface
-        integral.  This is only exercise for a genuine multi-point grid
+        integral.  This is only exercised for a genuine multi-point grid
         (a single point degenerates to a trivial transform), so we
         compare a far-field patch in the radiation zone against both the
         exact near-to-far transform (get_farfields with
