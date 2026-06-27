@@ -45,16 +45,40 @@ In fact, this equation $\hat{A}\Psi=\Xi$ is precisely the linear system of equat
 Maxwell Eigenproblems
 ---------------------
 
-The eigenvalue problem is simply $$\hat{M}(\omega)\psi=0\Longleftrightarrow\hat{A}(\omega)\Psi=0$$ i.e. to find a (complex resonant) frequency $\omega$ for which $\hat{M}$ is singular, and a corresponding eigenvector $\psi$ in the nullspace of $\hat{M}(\omega)$. If we have *non-dispersive* materials, those where $1+\hat{\chi}$ is *independent* of $\omega$, then this is a linear generalized eigenproblem $$\hat{C}\psi=-i\omega(1+\hat{\chi})\psi$$ or equivalently a linear eigenproblem $$i(1+\hat{\chi})^{-1}\hat{C}\psi=\omega\psi\Longleftrightarrow i\hat{C}(1+\hat{\chi})^{-1}\Psi=\omega\Psi.$$ For lossless transparent materials, i.e. real $\hat{\chi}>-1$, these problems are Hermitian under an inner product weighted by $1+\hat{\chi}$ (for $\psi$) or $(1+\hat{\chi})^{-1}$ (for $\Psi$), which leads to real $\omega$. More generally, for *dispersive* ($\omega$-dependent) materials, $\hat{M}(\omega)\psi=0$ or $\hat{A}(\omega)\Psi=0$ is a "*nonlinear* eigenvalue problem."
+The eigenvalue problem is simply
+
+$$\hat{M}(\omega)\psi=0\Longleftrightarrow\hat{A}(\omega)\Psi=0$$
+
+i.e. to find a (complex resonant) frequency $\omega$ for which $\hat{M}$ is singular, and a corresponding eigenvector $\psi$ in the nullspace of $\hat{M}(\omega)$. If we have *non-dispersive* materials, those where $1+\hat{\chi}$ is *independent* of $\omega$, then this is a linear generalized eigenproblem
+
+$$\hat{C}\psi=-i\omega(1+\hat{\chi})\psi$$
+
+or equivalently a linear eigenproblem
+
+$$i(1+\hat{\chi})^{-1}\hat{C}\psi=\omega\psi\Longleftrightarrow i\hat{C}(1+\hat{\chi})^{-1}\Psi=\omega\Psi.$$
+
+For lossless transparent materials, i.e. real $\hat{\chi}>-1$, these problems are Hermitian under an inner product weighted by $1+\hat{\chi}$ (for $\psi$) or $(1+\hat{\chi})^{-1}$ (for $\Psi$), which leads to real $\omega$. More generally, for *dispersive* ($\omega$-dependent) materials, $\hat{M}(\omega)\psi=0$ or $\hat{A}(\omega)\Psi=0$ is a "*nonlinear* eigenvalue problem."
 
 Iterative Eigenvalue Algorithms
 -------------------------------
 
 There are many algorithms for linear and nonlinear eigenvalue problems, but let us focus on the case where we have a **good initial guess** $\omega_{0}$ for the desired eigenvalue $\omega$. That is suppose we want the *closest eigenvalue* to $\omega_{0}$, and that there is a single eigenvalue *much closer* to $\omega_{0}$ than any other eigenvalue. (In a time-domain solver like Meep, we get good estimates for many eigenvalues simultaneously by signal processing analyses of the response to a short pulse input.)
 
-In fact, suppose that $|\omega-\omega_{0}|\ll\omega_{0}$ is so small that we can approximate $\hat{\chi}(\omega_{0})\approx\hat{\chi}(\omega)$, allowing us to *neglect material dispersion* when computing $\omega$. In this case, we can use the standard [shift-and-invert power method](https://en.wikipedia.org/wiki/Inverse_iteration) to repeatedly solve $$\left[i(1-\hat{\chi})^{-1}\hat{C}-\omega_{0}\right]\psi_{n+1}=\psi_{n}\Longleftrightarrow\hat{M}(\omega_{0})\psi_{n+1}=-i(1+\hat{\chi})\psi_{n}\Longleftrightarrow\hat{A}(\omega_{0})\Psi_{n+1}=-i\Psi_{n}$$ with some arbitrary $\psi_{0}$ (e.g. random or a point source). This is, in fact, just a Maxwell solve, where the "current source" is $$\xi=-i(1+\hat{\chi})\psi_{n}=-i\Psi_{n},$$ i.e. the $\mathbf{D}$ and $\mathbf{B}$ fields of the previous solve. The $-i$ factor is essentially irrelevant, since we can scale eigenfunctions arbitrarily, and in fact one ordinarily wants to renormalize $\Psi_{n}\to\Psi_{n}/\Vert\Psi_{n}\Vert$ on each power iteration to prevent the iterations $\Psi_{n}$ from blowing up (or decaying to zero).
+In fact, suppose that $|\omega-\omega_{0}|\ll\omega_{0}$ is so small that we can approximate $\hat{\chi}(\omega_{0})\approx\hat{\chi}(\omega)$, allowing us to *neglect material dispersion* when computing $\omega$. In this case, we can use the standard [shift-and-invert power method](https://en.wikipedia.org/wiki/Inverse_iteration) to repeatedly solve
 
-Equivalently, we are solving the shifted eigenproblem $$\hat{A}(\omega_{0})\Psi=-i(\omega-\omega_{0})\Psi$$ whose eigenvalue is $-i(\omega-\omega_{0})$ instead of $\omega$.
+$$\left[i(1-\hat{\chi})^{-1}\hat{C}-\omega_{0}\right]\psi_{n+1}=\psi_{n}\Longleftrightarrow\hat{M}(\omega_{0})\psi_{n+1}=-i(1+\hat{\chi})\psi_{n}\Longleftrightarrow\hat{A}(\omega_{0})\Psi_{n+1}=-i\Psi_{n}$$
+
+with some arbitrary $\psi_{0}$ (e.g. random or a point source). This is, in fact, just a Maxwell solve, where the "current source" is
+
+$$\xi=-i(1+\hat{\chi})\psi_{n}=-i\Psi_{n},$$
+
+i.e. the $\mathbf{D}$ and $\mathbf{B}$ fields of the previous solve. The $-i$ factor is essentially irrelevant, since we can scale eigenfunctions arbitrarily, and in fact one ordinarily wants to renormalize $\Psi_{n}\to\Psi_{n}/\Vert\Psi_{n}\Vert$ on each power iteration to prevent the iterations $\Psi_{n}$ from blowing up (or decaying to zero).
+
+Equivalently, we are solving the shifted eigenproblem
+
+$$\hat{A}(\omega_{0})\Psi=-i(\omega-\omega_{0})\Psi$$
+
+whose eigenvalue is $-i(\omega-\omega_{0})$ instead of $\omega$.
 
 Estimating the Eigenvalue
 -------------------------
@@ -70,9 +94,19 @@ In the case of lossless media (Hermitian positive-definite $1+\hat{\chi}$) with 
 Correcting for Time Discretization
 ----------------------------------
 
-Meep does not compute $\frac{\partial}{\partial t}$ exactly, of course—it uses a finite-difference approximation $\hat{D}$: $$\left.\frac{\partial\Phi}{\partial t}\right|_{\Delta t/2}\approx\hat{D}\Phi=\frac{\Phi(\Delta t)-\Phi(0)}{\Delta t}.$$ So, whereas a time-harmonic field $\Phi(t)=e^{-i\omega t}\Phi(0)$ would have $\frac{\partial\Phi}{\partial t}=-i\omega\Phi$, we instead have $$\hat{D}\Phi=\underbrace{\frac{e^{-i\omega\Delta t}-1}{\Delta t}}_{-i\hat{\omega}}\Phi.$$ Note that $-i\hat{\omega}=-i\omega+O(\Delta t)$, so that the two agree for $\Delta t\to0$.
+Meep does not compute $\frac{\partial}{\partial t}$ exactly, of course — it uses a finite-difference approximation $\hat{D}$:
 
-In all of the analyses above, we simply replace $\omega$ with $\hat{\omega}$ (for $\omega$, $\omega_{0}$, and $\omega_{n}$), and everything carries through in the same way. At the end of an eigenvalue calculation, we compute $\omega$ from $\hat{\omega}$ using the formula $$\omega=\frac{\log(1-i\hat{\omega}\Delta t)}{-i\Delta t}.$$
+$$\left.\frac{\partial\Phi}{\partial t}\right|_{\Delta t/2}\approx\hat{D}\Phi=\frac{\Phi(\Delta t)-\Phi(0)}{\Delta t}.$$
+
+So, whereas a time-harmonic field $\Phi(t)=e^{-i\omega t}\Phi(0)$ would have $\frac{\partial\Phi}{\partial t}=-i\omega\Phi$, we instead have
+
+$$\hat{D}\Phi=\underbrace{\frac{e^{-i\omega\Delta t}-1}{\Delta t}}_{-i\hat{\omega}}\Phi.$$
+
+Note that $-i\hat{\omega}=-i\omega+O(\Delta t)$, so that the two agree for $\Delta t\to0$.
+
+In all of the analyses above, we simply replace $\omega$ with $\hat{\omega}$ (for $\omega$, $\omega_{0}$, and $\omega_{n}$), and everything carries through in the same way. At the end of an eigenvalue calculation, we compute $\omega$ from $\hat{\omega}$ using the formula
+
+$$\omega=\frac{\log(1-i\hat{\omega}\Delta t)}{-i\Delta t}.$$
 
 Further Improvements
 --------------------

@@ -610,7 +610,7 @@ Modeling the emission of an LED consisting of a multilayer stack of planar layer
 
 A point source in a 1D simulation (with discretization along $z$ and Bloch-periodic boundaries in $x$ and $y$) generates a planewave. A dipole can be modeled by combining the response from a series of planewaves using Brillouin-zone integration via the Fourier transform of the Dirac delta function:
 
-$$\delta(x, y) = \frac{1}{2\pi}\int\int e^{i(k_xx + k_yy)}dk_xdk_y$$.
+$$\delta(x, y) = \frac{1}{2\pi}\int\int e^{i(k_xx + k_yy)}dk_xdk_y$$
 
 That is, the Fourier coefficients of a Dirac delta function are a constant (1.0).  This integral is calculated in principle over the entire $(k_x, k_y)$ plane: for each $(k_x, k_y)$, one computes the resulting electromagnetic fields, which are planewaves, evaluated at any desired point in space, and then one integrates over $(k_x, k_y)$ to obtain the total field.  The wavevector of the radiating planewave from each $(k_x,k_y)$ Fourier component of the source at a frequency $\omega$ is $\vec{k} = (k_x, k_y, k_z)$ where $k_z = \sqrt{(n_e\omega)^2 - k_x^2 - k_y^2}$ and $n_e$ is the refractive index of the emission region (usually air or a substrate).  (Note that $c = 1$ per convention in Meep.)   However, this computation is greatly simplified when we are only interested in the far field, and in particular when we want to compute the radiation pattern in the limit where the distance $\to \infty$.  There are three key simplifications:
 
