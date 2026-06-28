@@ -22,45 +22,14 @@
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
-#include "config.h"
-#if defined(HAVE_LIBFFTW3)
-#include <fftw3.h>
-#elif defined(HAVE_LIBDFFTW)
-#include <dfftw.h>
-#elif defined(HAVE_LIBFFTW)
-#include <fftw.h>
-#endif
-#if defined(HAVE_LIBFFTW3) || defined(HAVE_LIBFFTW) || defined(HAVE_LIBDFFTW)
-#define HAVE_SOME_FFTW 1
-#else
-#define HAVE_SOME_FFTW 0
-#endif
-
-/* Below are the monitor point routines. */
+/* Below are the field point routines. */
 
 using namespace std;
 
 namespace meep {
 
-monitor_point::monitor_point() { next = NULL; }
-
-monitor_point::~monitor_point() {
-  if (next) delete next;
-}
-
 inline complex<double> getcm(const realnum *const f[2], size_t i) {
   return complex<double>(f[0][i], f[1][i]);
-}
-
-void fields::get_point(monitor_point *pt, const vec &loc) const {
-  if (pt == NULL) meep::abort("Error:  get_point passed a null pointer!\n");
-  for (int i = 0; i < 10; i++)
-    pt->f[i] = 0.0;
-  pt->loc = loc;
-  pt->t = time();
-  FOR_COMPONENTS(c) {
-    if (gv.has_field(c)) pt->f[c] = get_field(c, loc);
-  }
 }
 
 complex<double> fields::get_field(int c, const vec &loc, bool parallel) const {
@@ -407,139 +376,6 @@ complex<double> structure::get_mu(const vec &loc, double frequency) const {
     }
   }
   return complex<double>(nc, 0) / sum_to_all(tr);
-}
-
-monitor_point *fields::get_new_point(const vec &loc, monitor_point *the_list) const {
-  monitor_point *p = new monitor_point();
-  get_point(p, loc);
-  p->next = the_list;
-  return p;
-}
-
-complex<double> monitor_point::get_component(component w) { return f[w]; }
-
-double monitor_point::poynting_in_direction(direction d) {
-  direction d1 = cycle_direction(loc.dim, d, 1);
-  direction d2 = cycle_direction(loc.dim, d, 2);
-
-  // below Ex and Hx are used just to say that we want electric or magnetic component
-  complex<double> E1 = get_component(direction_component(Ex, d1));
-  complex<double> E2 = get_component(direction_component(Ex, d2));
-  complex<double> H1 = get_component(direction_component(Hx, d1));
-  complex<double> H2 = get_component(direction_component(Hx, d2));
-
-  return (real(E1) * real(H2) - real(E2) * real(H1)) + (imag(E1) * imag(H2) - imag(E2) * imag(H1));
-}
-
-double monitor_point::poynting_in_direction(vec dir) {
-  if (dir.dim != loc.dim) meep::abort("poynting_in_direction: dir.dim != loc.dim\n");
-  dir = dir / abs(dir);
-  double result = 0.0;
-  LOOP_OVER_DIRECTIONS(dir.dim, d) { result += dir.in_direction(d) * poynting_in_direction(d); }
-  return result;
-}
-
-void monitor_point::fourier_transform(component w, complex<double> **a, complex<double> **f,
-                                      int *numout, double fmin, double fmax, int maxbands) {
-  int n = 1;
-  monitor_point *p = next;
-  double tmax = t, tmin = t;
-  while (p) {
-    n++;
-    if (p->t > tmax) tmax = p->t;
-    if (p->t < tmin) tmin = p->t;
-    p = p->next;
-  }
-  p = this;
-  complex<double> *d = new complex<double>[n];
-  for (int i = 0; i < n; i++, p = p->next) {
-    d[i] = p->get_component(w);
-  }
-  if (fmin > 0.0) { // Get rid of any static fields_chunk!
-    complex<double> mean = 0.0;
-    for (int i = 0; i < n; i++)
-      mean += d[i];
-    mean /= n;
-    for (int i = 0; i < n; i++)
-      d[i] -= mean;
-  }
-#if HAVE_SOME_FFTW
-  if ((fmin > 0.0 || fmax > 0.0) && maxbands > 0) {
-#else
-  if ((fmin <= 0.0 && fmax <= 0.0) || maxbands <= 0) {
-    maxbands = n;
-    fmin = 0;
-    fmax = (n - 1) * (1.0 / (tmax - tmin));
-  }
-#endif
-    *a = new complex<double>[maxbands];
-    *f = new complex<double>[maxbands];
-    *numout = maxbands;
-    delete[] d;
-    for (int i = 0; i < maxbands; i++) {
-      double df = (maxbands == 1) ? 0.0 : (fmax - fmin) / (maxbands - 1);
-      (*f)[i] = fmin + i * df;
-      (*a)[i] = 0.0;
-      p = this;
-      while (p) {
-        double inside = 2 * pi * real((*f)[i]) * p->t;
-        (*a)[i] += p->get_component(w) * complex<double>(cos(inside), sin(inside));
-        p = p->next;
-      }
-      (*a)[i] /= (tmax - tmin);
-    }
-#if HAVE_SOME_FFTW
-  }
-  else {
-    *numout = n;
-    *a = new complex<double>[n];
-    *f = d;
-    fftw_complex *in = (fftw_complex *)d, *out = (fftw_complex *)*a;
-    fftw_plan p;
-#ifdef HAVE_LIBFFTW3
-    p = fftw_plan_dft_1d(n, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_execute(p);
-    fftw_destroy_plan(p);
-#else
-    p = fftw_create_plan(n, FFTW_FORWARD, FFTW_ESTIMATE);
-    fftw_one(p, in, out);
-    fftw_destroy_plan(p);
-#endif
-    for (int i = 0; i < n; i++) {
-      (*f)[i] = i * (1.0 / (tmax - tmin));
-      if (real((*f)[i]) > 0.5 * n / (tmax - tmin)) (*f)[i] -= n / (tmax - tmin);
-      (*a)[i] *= (tmax - tmin) / n;
-    }
-  }
-#endif
-}
-
-void monitor_point::harminv(component w, complex<double> **a, complex<double> **f, int *numout,
-                            double fmin, double fmax, int maxbands) {
-  int n = 1;
-  monitor_point *p = next;
-  double tmax = t, tmin = t;
-  while (p) {
-    n++;
-    if (p->t > tmax) tmax = p->t;
-    if (p->t < tmin) tmin = p->t;
-    p = p->next;
-  }
-  p = this;
-  complex<double> *d = new complex<double>[n];
-  for (int i = 0; i < n; i++, p = p->next) {
-    d[i] = p->get_component(w);
-  }
-  *a = new complex<double>[n];
-  double *f_re = new double[n];
-  double *f_im = new double[n];
-  *numout = do_harminv(d, n, (tmax - tmin) / (n - 1), fmin, fmax, maxbands, *a, f_re, f_im, NULL);
-  *f = new complex<double>[*numout];
-  for (int i = 0; i < *numout; i++)
-    (*f)[i] = complex<double>(f_re[i], f_im[i]);
-  delete[] f_re;
-  delete[] f_im;
-  delete[] d;
 }
 
 } // namespace meep

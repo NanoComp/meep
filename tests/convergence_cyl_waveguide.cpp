@@ -50,11 +50,9 @@ void test_convergence_without_averaging() {
     int t_harminv_max = 2500; // try increasing this in case of failure
     std::vector<complex<double> > mon_data(t_harminv_max);
     int t = 0;
-    monitor_point mp;
     while (t < t_harminv_max) {
       f.step();
-      f.get_point(&mp, veccyl(0.2, 0.0));
-      mon_data[t] = mp.get_component(Er);
+      mon_data[t] = f.get_field(Er, veccyl(0.2, 0.0));
       t++;
     }
     const int maxbands = 10;
@@ -119,11 +117,9 @@ void test_convergence_with_averaging() {
     int t_harminv_max = 2500; // try increasing this in case of failure
     std::vector<complex<double> > mon_data(t_harminv_max);
     int t = 0;
-    monitor_point mp;
     while (t < t_harminv_max) {
       f.step();
-      f.get_point(&mp, veccyl(0.2, 0.0));
-      mon_data[t] = mp.get_component(Er);
+      mon_data[t] = f.get_field(Er, veccyl(0.2, 0.0));
       t++;
     }
     const int maxbands = 10;

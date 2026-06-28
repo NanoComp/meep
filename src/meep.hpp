@@ -1097,36 +1097,6 @@ private:
   double start_time, end_time, fwidth;
 };
 
-class monitor_point {
-public:
-  monitor_point();
-  ~monitor_point();
-  vec loc;
-  double t;
-  std::complex<double> f[NUM_FIELD_COMPONENTS];
-  monitor_point *next;
-
-  std::complex<double> get_component(component);
-  double poynting_in_direction(direction d);
-  double poynting_in_direction(vec direction_v);
-
-  // When called with only its first four arguments, fourier_transform
-  // performs an FFT on its monitor points, putting the frequencies in f
-  // and the amplitudes in a.  Yes, the frequencies are trivial and
-  // redundant, but this saves you the risk of making a mistake in
-  // converting your units.  Note also, that in this case f is always a
-  // real number, although it's stored in a complex.
-  //
-  // Note that in either case, fourier_transform assumes that the monitor
-  // points are all equally spaced in time.
-  void fourier_transform(component w, std::complex<double> **a, std::complex<double> **f,
-                         int *numout, double fmin = 0.0, double fmax = 0.0, int maxbands = 100);
-  // harminv works much like fourier_transform, except that it is not yet
-  // implemented.
-  void harminv(component w, std::complex<double> **a, std::complex<double> **f, int *numout,
-               double fmin, double fmax, int maxbands);
-};
-
 // dft.cpp
 // this should normally only be created with fields::add_dft
 class dft_chunk {
@@ -2209,8 +2179,6 @@ public:
   }
   std::complex<double> get_eps(const vec &loc, double frequency = 0) const;
   std::complex<double> get_mu(const vec &loc, double frequency = 0) const;
-  void get_point(monitor_point *p, const vec &) const;
-  monitor_point *get_new_point(const vec &, monitor_point *p = NULL) const;
 
   std::complex<double> get_field(int c, const vec &loc, bool parallel = true) const;
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;

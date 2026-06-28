@@ -37,13 +37,10 @@ int compare(double a, double b, const char *n, double eps = 4e-15) {
 
 int compare_point(fields &f1, fields &f2, const vec &p, double eps = 4e-8) {
   if (sizeof(realnum) == sizeof(float)) eps = sqrt(eps);
-  monitor_point m1, m_test;
-  f1.get_point(&m_test, p);
-  f2.get_point(&m1, p);
   for (int i = 0; i < 10; i++) {
     component c = (component)i;
     if (f1.gv.has_field(c)) {
-      complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
+      complex<double> v1 = f1.get_field(c, p), v2 = f2.get_field(c, p);
       if (abs(v1 - v2) > eps * abs(v2) && abs(v2) > eps * 100) {
         master_printf("%s differs:  %g %g out of %g %g\n", component_name(c), real(v2 - v1),
                       imag(v2 - v1), real(v2), imag(v2));
@@ -165,31 +162,30 @@ int test_r_equals_zero(double eps(const vec &)) {
     f.add_point_source(Ez, 0.8, 0.6, 0.0, 4.0, veccyl(0.401, 0.301), 1.0);
     while (f.time() < ttot)
       f.step();
-    monitor_point p;
-    f.get_point(&p, veccyl(0.0, 0.5));
-    if (!issmall(p.get_component(Ez)) && (m & 1)) {
+    const vec p = veccyl(0.0, 0.5);
+    if (!issmall(f.get_field(Ez, p)) && (m & 1)) {
       master_printf("Got non-zero Ez with m == %d\n", m);
       return 0;
     }
-    if (!issmall(p.get_component(Hz)) && (m & 1)) {
+    if (!issmall(f.get_field(Hz, p)) && (m & 1)) {
       master_printf("Got non-zero Hz with m == %d\n", m);
       return 0;
     }
-    if (!issmall(p.get_component(Er)) && !(m & 1)) {
+    if (!issmall(f.get_field(Er, p)) && !(m & 1)) {
       master_printf("Got non-zero Er with m == %d\n", m);
       return 0;
     }
-    if (!issmall(p.get_component(Ep)) && !(m & 1)) {
+    if (!issmall(f.get_field(Ep, p)) && !(m & 1)) {
       master_printf("Got non-zero Ep with m == %d\n", m);
       return 0;
     }
-    if (!issmall(p.get_component(Hr)) && !(m & 1)) {
+    if (!issmall(f.get_field(Hr, p)) && !(m & 1)) {
       master_printf("Got non-zero Hr with m == %d\n", m);
       return 0;
     }
-    if (!issmall(p.get_component(Hp)) && !(m & 1)) {
-      master_printf("Got non-zero Hp of %g %g with m == %d\n", real(p.get_component(Hp)),
-                    imag(p.get_component(Hp)), m);
+    if (!issmall(f.get_field(Hp, p)) && !(m & 1)) {
+      master_printf("Got non-zero Hp of %g %g with m == %d\n", real(f.get_field(Hp, p)),
+                    imag(f.get_field(Hp, p)), m);
       return 0;
     }
   }
