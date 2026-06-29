@@ -143,7 +143,7 @@ LT_INIT
 AC_CHECK_LIB(m, sin)
 
 # FFTW3 is preferred; FFTW2 (dfftw/fftw) is also supported by Meep
-# (see src/monitor.cpp and src/casimir.cpp for FFTW2 code paths).
+# (see src/casimir.cpp for FFTW2 code paths).
 AC_CHECK_LIB(fftw3, fftw_plan_dft_1d, [],
   [AC_CHECK_LIB(dfftw, fftw_create_plan, [],
     [AC_CHECK_LIB(fftw, fftw_create_plan, [],
