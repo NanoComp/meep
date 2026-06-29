@@ -1401,8 +1401,10 @@ class Mesh(GeometricObject):
 def _parse_stl(filename, scale=1.0):
     """Parse an STL file (binary or ASCII) and return (vertices, triangles).
 
-    STL stores per-face vertices without sharing, so vertex welding is
-    performed to build a shared vertex array and triangle index array.
+    STL stores per-face vertices without sharing. Bit-identical vertices are
+    welded (exact-equality, zero tolerance) to recover a shared vertex array
+    and triangle index array; vertices that are only approximately equal are
+    left distinct.
     """
     import struct
 
@@ -1442,29 +1444,18 @@ def _parse_stl(filename, scale=1.0):
             x, y, z = float(m.group(1)), float(m.group(2)), float(m.group(3))
             raw_verts.append((x * scale, y * scale, z * scale))
 
-    # Vertex welding: merge vertices within tolerance using a spatial hash
-    tol = 1e-8
-    inv_tol = 1.0 / tol if tol > 0 else 1e8
+    # Vertex welding with zero tolerance: merge only bit-identical vertices.
     vertex_map = {}
     vertices = []
     triangles = []
-
-    def _quantize(v):
-        return (
-            int(round(v[0] * inv_tol)),
-            int(round(v[1] * inv_tol)),
-            int(round(v[2] * inv_tol)),
-        )
-
     for i in range(0, len(raw_verts), 3):
         tri = []
         for j in range(3):
             v = raw_verts[i + j]
-            key = _quantize(v)
-            if key not in vertex_map:
-                vertex_map[key] = len(vertices)
+            if v not in vertex_map:
+                vertex_map[v] = len(vertices)
                 vertices.append(Vector3(v[0], v[1], v[2]))
-            tri.append(vertex_map[key])
+            tri.append(vertex_map[v])
         triangles.append(tuple(tri))
 
     return vertices, triangles
