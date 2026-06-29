@@ -754,7 +754,7 @@ Au_visible = mp.Medium(
 # ------------------------------------------------------------------
 ## WARNING: unstable; field divergence may occur
 
-# silver (Au)
+# silver (Ag)
 # fit to E.D. Palik, Handbook of Optical Constants, Academic Press (1985)
 
 Ag_visible_frq0 = 1 / (0.142050162130618 * um_scale)
