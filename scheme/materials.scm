@@ -761,7 +761,7 @@
 ;------------------------------------------------------------------
 ;; UNSTABLE: field divergence may occur
 
-; silver (Au)
+; silver (Ag)
 ; fit to E.D. Palik, Handbook of Optical Constants, Academic Press, 1985
 
 (define Ag-visible-frq0 (/ (* 0.142050162130618 um-scale)))
