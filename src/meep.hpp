@@ -1373,18 +1373,24 @@ public:
                const double periodic_k_[2], const double period_[2]);
   dft_near2far(const dft_near2far &f);
 
-  /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x */
-  std::complex<double> *farfield(const vec &x, double greencyl_tol = 1e-3);
+  /* return an array (Ex,Ey,Ez,Hx,Hy,Hz) x Nfreq of the far fields at x.
+     If far_field_approx is true, uses the far-field (radiation-zone) approximation
+     which drops 1/r^2 and 1/r^3 near-field terms and is only valid when
+     |x| >> wavelength and |x| >> near-field surface extent. 3D only. */
+  std::complex<double> *farfield(const vec &x, double greencyl_tol = 1e-3,
+                                 bool far_field_approx = false);
 
   /* like farfield, but requires F to be Nfreq*6 preallocated array, and
      does *not* perform the reduction over processes...an MPI allreduce
      summation by the caller is required to get the final result ... used
      by other output routine to efficiently get far field on a grid of pts */
-  void farfield_lowlevel(std::complex<double> *F, const vec &x, double greencyl_tol = 1e-3);
+  void farfield_lowlevel(std::complex<double> *F, const vec &x, double greencyl_tol = 1e-3,
+                         bool far_field_approx = false);
 
   /* Return a newly allocated array with all far fields */
   double *get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                              double resolution, double greencyl_tol = 1e-3);
+                              double resolution, double greencyl_tol = 1e-3,
+                              bool far_field_approx = false);
 
   /* output far fields on a grid to an HDF5 file */
   void save_farfields(const char *fname, const char *prefix, const volume &where, double resolution,
