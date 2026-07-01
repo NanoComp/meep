@@ -16,6 +16,7 @@
  */
 
 #include "meep_internals.hpp"
+#include "meep/backend_hooks.hpp"
 #include "bicgstab.hpp"
 
 using namespace std;
@@ -146,6 +147,14 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
   int tsave = t; // save time (gets incremented by iterations)
   int iters;
 
+  /* The CW solver runs CG iterations against the host-side `f[c][cmp]`
+   * arrays directly.  If a backend is steering this sim, pull its shadow
+   * state back to host now and suspend the step hook so `step()` calls
+   * inside the CG loop run on the host.  We unsuspend and push the
+   * converged solution back to the backend at the end. */
+  sync_host_if_needed(this);
+  backend_suspended = true;
+
   set_solve_cw_omega(2 * pi * frequency);
 
   step(); // step once to make sure everything is allocated
@@ -247,6 +256,12 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
 
   unset_solve_cw_omega();
   update_dfts();
+
+  /* Unsuspend and push the converged host-side solution back into the
+   * backend's shadow storage before normal time-stepping resumes.
+   * No-op without a backend. */
+  backend_suspended = false;
+  if (meep_backend.sync_from_host) meep_backend.sync_from_host(this);
 
   return !ierr;
 }
