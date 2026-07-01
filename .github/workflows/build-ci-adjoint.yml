@@ -30,19 +30,19 @@ jobs:
         sudo apt-get -y install autoconf automake libfftw3-dev libgsl-dev liblapack-dev guile-3.0-dev libpng-dev libtool swig libhdf5-serial-dev ccache
 
     - name: Checkout libctl repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: NanoComp/libctl
         path: libctl-src
 
     - name: Checkout harminv repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: NanoComp/harminv
         path: harminv-src
 
     - name: Checkout MPB repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: NanoComp/mpb
         path: mpb-src
@@ -67,7 +67,7 @@ jobs:
       run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
 
     - name: Checkout Meep repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Set up Python
       uses: actions/setup-python@v6
