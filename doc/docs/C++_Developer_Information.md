@@ -80,7 +80,6 @@ Beware that some of the interfaces in the source code and in the old manual are 
 
 In particular, you should probably avoid:
 
--   The `monitor_point` class. Just declare an array to store the fields you want, get them with `fields::get_field`, and analyze them with `do_harminv`. Or, to accumulate the DFT as you run, use the `dft_chunk` class via `fields::add_dft`.
 -   Slice and EPS output. This has been superseded by HDF5 output, which is much more flexible and efficient.
 
 ---

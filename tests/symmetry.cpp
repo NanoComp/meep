@@ -60,13 +60,10 @@ int compare(double a, double b, const char *n) {
 }
 
 int compare_point(fields &f1, fields &f2, const vec &p) {
-  monitor_point m1, m_test;
-  f1.get_point(&m_test, p);
-  f2.get_point(&m1, p);
   for (int i = 0; i < 10; i++) {
     component c = (component)i;
     if (f1.gv.has_field(c)) {
-      complex<double> v1 = m_test.get_component(c), v2 = m1.get_component(c);
+      complex<double> v1 = f1.get_field(c, p), v2 = f2.get_field(c, p);
       if (!compare(real(v1), real(v2), "real part") ||
           !compare(imag(v1), imag(v2), "imaginary part")) {
         master_printf("%s differs by %g%+gi from %g%+gi\n", component_name(c), real(v2 - v1),

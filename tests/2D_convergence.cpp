@@ -23,19 +23,19 @@ double holey_2d(const vec &xx) {
 
 double holey_shifted_2d(const vec &xx) { return holey_2d(xx + vec(pi * 0.01, 3 - pi) * 0.5); }
 
-double get_the_freq(monitor_point *p, component c) {
-  complex<double> *amp, *freqs;
-  int num;
-  p->harminv(c, &amp, &freqs, &num, 0.15, 0.20, 8);
+double get_the_freq(std::vector<complex<double> > &mon_data, double dt) {
+  const int maxbands = 8;
+  std::vector<complex<double> > amps(maxbands);
+  std::vector<double> freq_re(maxbands), freq_im(maxbands);
+  int num = do_harminv(mon_data.data(), int(mon_data.size()), dt, 0.15, 0.20, maxbands, amps.data(),
+                       freq_re.data(), freq_im.data(), NULL);
   if (!num) return 0.0;
-  double best_amp = abs(amp[0]), best_freq = fabs(real(freqs[0]));
+  double best_amp = abs(amps[0]), best_freq = fabs(freq_re[0]);
   for (int i = 1; i < num; i++)
-    if (abs(amp[i]) > best_amp && fabs(imag(freqs[i]) / real(freqs[i])) < 0.002) {
-      best_amp = abs(amp[i]);
-      best_freq = fabs(real(freqs[i]));
+    if (abs(amps[i]) > best_amp && fabs(freq_im[i] / freq_re[i]) < 0.002) {
+      best_amp = abs(amps[i]);
+      best_freq = fabs(freq_re[i]);
     }
-  delete[] freqs;
-  delete[] amp;
   return best_freq;
 }
 
@@ -54,13 +54,12 @@ double freq_at_resolution(double e(const vec &), double a, component c, double b
     f.step();
   const double fourier_timesteps = 3000.0;
   const double ttot = fourier_timesteps / a + f.time();
-  monitor_point *p = NULL;
+  std::vector<complex<double> > mon_data;
   while (f.time() <= ttot) {
     f.step();
-    p = f.get_new_point(vec(0.52, 0.97), p);
+    mon_data.push_back(f.get_field(c, vec(0.52, 0.97)));
   }
-  const double freq = get_the_freq(p, c);
-  delete p;
+  const double freq = get_the_freq(mon_data, f.dt);
   return freq;
 }
 

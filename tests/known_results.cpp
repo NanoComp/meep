@@ -57,9 +57,7 @@ double using_pml_ez(const grid_volume &gv, double eps(const vec &)) {
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(), complex<double>(0, -2 * pi * 0.2));
   while (f.round_time() < ttot)
     f.step();
-  monitor_point p;
-  f.get_point(&p, gv.center());
-  return real(p.get_component(Ez));
+  return real(f.get_field(Ez, gv.center()));
 }
 
 double x_periodic_y_pml(const grid_volume &gv, double eps(const vec &)) {
@@ -70,9 +68,7 @@ double x_periodic_y_pml(const grid_volume &gv, double eps(const vec &)) {
   f.use_bloch(X, 0.1);
   while (f.round_time() < ttot)
     f.step();
-  monitor_point p;
-  f.get_point(&p, gv.center());
-  return real(p.get_component(Ez));
+  return real(f.get_field(Ez, gv.center()));
 }
 
 double x_periodic(const grid_volume &gv, double eps(const vec &)) {
@@ -83,9 +79,7 @@ double x_periodic(const grid_volume &gv, double eps(const vec &)) {
   f.use_bloch(X, 0.1);
   while (f.round_time() < ttot)
     f.step();
-  monitor_point p;
-  f.get_point(&p, gv.center());
-  return real(p.get_component(Ez));
+  return real(f.get_field(Ez, gv.center()));
 }
 
 double periodic_ez(const grid_volume &gv, double eps(const vec &)) {
@@ -103,9 +97,7 @@ double periodic_ez(const grid_volume &gv, double eps(const vec &)) {
   f.use_bloch(k);
   while (f.round_time() < ttot)
     f.step();
-  monitor_point p;
-  f.get_point(&p, gv.center());
-  return real(p.get_component(Ez));
+  return real(f.get_field(Ez, gv.center()));
 }
 
 double metallic_ez(const grid_volume &gv, double eps(const vec &)) {
@@ -115,9 +107,7 @@ double metallic_ez(const grid_volume &gv, double eps(const vec &)) {
   f.add_point_source(Ez, 0.2, 3.0, 0.0, 2.0, gv.center(), complex<double>(0, -2 * pi * 0.2));
   while (f.round_time() < ttot)
     f.step();
-  monitor_point p;
-  f.get_point(&p, gv.center());
-  return real(p.get_component(Ez));
+  return real(f.get_field(Ez, gv.center()));
 }
 
 double sigma(const vec &) { return 7.63; }
@@ -130,9 +120,7 @@ double polariton_ex(const grid_volume &gv, double eps(const vec &)) {
   f.add_point_source(Ex, 0.2, 3.0, 0.0, 2.0, gv.center(), complex<double>(0, -2 * pi * 0.2));
   while (f.round_time() < ttot)
     f.step();
-  monitor_point p;
-  f.get_point(&p, gv.center());
-  return real(p.get_component(Ex));
+  return real(f.get_field(Ex, gv.center()));
 }
 
 double polariton_energy(const grid_volume &gv, double eps(const vec &)) {
