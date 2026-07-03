@@ -1409,9 +1409,7 @@ class Mesh(GeometricObject):
             if nparts > 1:
                 print(f"{filename}: file had {nparts} parts, merged into one")
         if not isinstance(loaded, trimesh.Trimesh):
-            raise ValueError(
-                f"{filename}: file does not contain a triangular mesh"
-            )
+            raise ValueError(f"{filename}: file does not contain a triangular mesh")
 
         if scale != 1.0:
             loaded.apply_scale(scale)
