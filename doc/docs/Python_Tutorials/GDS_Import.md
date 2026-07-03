@@ -260,7 +260,7 @@ For a given waveguide separation distance ($d$), the simulation computes the tra
 The coupler properties are computed for a range of separation distances from 0.02 to 0.30 μm with increments of 0.02 μm from the shell command line:
 
 ```
-for d in `seq 0.02 0.02 0.30`; do
+for d in $(seq 0.02 0.02 0.30); do
     mpirun -np 2 python coupler.py -d ${d} |tee -a directional_coupler.out;
 done
 
@@ -321,7 +321,7 @@ In the limit of infinite resolution, the discretization error is removed and the
 
 ### Importing a GDS Layer using a Tuple
 
-In the directional coupler example above, individual layers of the GDS file were referenced by a single layer number (i.e., 1, 2, 31, 32, etc.)) with an implicit data type of 0. However, there are certain GDS files in which a layer is referenced using a 2-tuple of a layer number *and* a data type (e.g., (37,4)). `gdstk` supports this natively: `Cell.get_polygons` accepts both a `layer` and a `datatype` argument. The example below uses the same helper functions defined at the top of this tutorial, passing the data type explicitly.
+In the directional coupler example above, individual layers of the GDS file were referenced by a single layer number (i.e., 1, 2, 31, 32, etc.) with an implicit data type of 0. However, there are certain GDS files in which a layer is referenced using a 2-tuple of a [layer number *and* a data type](https://heitzmann.github.io/gdstk/gettingstarted.html#layer-and-datatype) (e.g., (37,4)). `gdstk` supports this natively: `Cell.get_polygons` accepts both a `layer` and a `datatype` argument. The example below uses the same helper functions defined at the top of this tutorial, passing the data type explicitly.
 
 ```py
 import gdstk
