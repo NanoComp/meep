@@ -1039,6 +1039,15 @@ static int pyprism_to_prism(PyObject *py_prism, geometric_object *p) {
 }
 
 static int pymesh_to_mesh(PyObject *py_mesh, geometric_object *o) {
+#ifndef HAVE_MAKE_MESH_WITH_CENTER
+  (void)py_mesh;
+  (void)o;
+  PyErr_SetString(PyExc_NotImplementedError,
+                  "Mesh geometry requires libctl >= 4.7.0; this copy of Meep was "
+                  "built against an older libctl without make_mesh_with_center. "
+                  "Rebuild Meep against libctl >= 4.7.0 to use Mesh objects.");
+  return 0;
+#else
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
   material_type material;
   vector3 center;
@@ -1093,6 +1102,7 @@ static int pymesh_to_mesh(PyObject *py_mesh, geometric_object *o) {
   delete[] triangles;
 
   return 1;
+#endif // HAVE_MAKE_MESH_WITH_CENTER
 }
 
 static int py_gobj_to_gobj(PyObject *po, geometric_object *o) {
