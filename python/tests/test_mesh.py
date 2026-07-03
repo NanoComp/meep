@@ -64,13 +64,18 @@ def write_cube_stl(path):
 
 
 class TestMesh(unittest.TestCase):
-    def test_stl_import(self):
-        """STL import: correct vertex/face counts and closure."""
+    def test_from_file(self):
+        """Mesh.from_file: correct vertex/face counts and closure."""
+        try:
+            import trimesh  # noqa: F401
+        except ImportError:
+            self.skipTest("trimesh not installed")
         with tempfile.NamedTemporaryFile(suffix=".stl", delete=False) as f:
             stl_path = f.name
             write_cube_stl(stl_path)
         try:
-            mesh = mp.Mesh.from_stl(stl_path, material=mp.Medium(epsilon=12))
+            mesh = mp.Mesh.from_file(stl_path, material=mp.Medium(epsilon=12))
+            # process=True welds the STL's 36 per-face vertices down to 8.
             self.assertEqual(len(mesh.vertices), 8)
             self.assertEqual(len(mesh.triangles), 12)
         finally:
