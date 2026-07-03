@@ -300,26 +300,6 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
                                 double du = 1e-6);
 
-/***************************************************************/
-/* routines in GDSIIgeom.cc ************************************/
-/***************************************************************/
-bool with_libGDSII();
-meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile,
-                                          const char *Text, int Layer = -1, double zsize = 0.0);
-meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile, int Layer,
-                                          double zsize = 0.0);
-geometric_object_list get_GDSII_prisms(material_type material, const char *GDSIIFile,
-                                       int Layer = -1, double zmin = 0.0, double zmax = 0.0);
-geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text,
-                                 int Layer = -1, double zmin = 0.0, double zmax = 0.0);
-geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, int Layer,
-                                 double zmin = 0.0, double zmax = 0.0);
-meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer = -1,
-                              double zmin = 0.0, double zmax = 0.0);
-meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin = 0.0,
-                              double zmax = 0.0);
-std::vector<int> get_GDSII_layers(const char *GDSIIFile);
-
 }; // namespace meep_geom
 
 #endif // #ifndef MEEP_GEOM_H

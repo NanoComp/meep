@@ -6294,51 +6294,6 @@ def get_center_and_size(vol):
     return center, size
 
 
-def GDSII_layers(fname):
-    """
-    Returns a list of integer-valued layer indices for the layers present in
-    the specified GDSII file.
-
-    ```python
-    mp.GDSII_layers('python/examples/coupler.gds')
-    Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
-    ```
-    """
-    return list(mp.get_GDSII_layers(fname))
-
-
-def GDSII_vol(fname, layer, zmin, zmax):
-    """
-    Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with
-    `zmin` and `zmax` (default 0). This function is useful for creating a `FluxRegion`
-    from a GDSII file as follows:
-
-    ```python
-    fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
-    ```
-    """
-    meep_vol = mp.get_GDSII_volume(fname, layer, zmin, zmax)
-    dims = meep_vol.dim + 1
-    is_cyl = False
-
-    if dims == 4:
-        # cylindrical
-        dims = 2
-        is_cyl = True
-
-    center, size = get_center_and_size(meep_vol)
-
-    return Volume(center, size, dims, is_cyl)
-
-
-def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0):
-    """
-    Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number
-    `layer` of a GDSII file `fname` with `zmin` and `zmax` (default 0).
-    """
-    return mp.get_GDSII_prisms(material, fname, layer, zmin, zmax)
-
-
 def complexarray(re, im):
     z = im * 1j
     z += re

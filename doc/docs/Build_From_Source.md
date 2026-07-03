@@ -158,10 +158,6 @@ HDF5 supports parallel I/O under MPI which can be enabled by configuring it with
 
 **Note:** If you have a version of HDF5 compiled with MPI parallel I/O support, then you need to use the MPI compilers to link to it, even when you are compiling the serial version of Meep.  Just use `./configure CC=mpicc CXX=mpic++` or whatever your MPI compilers are when configuring.
 
-### libGDSII
-
-[libGDSII](https://github.com/HomerReid/libGDSII) is a library for reading [GDSII](https://en.wikipedia.org/wiki/GDSII) binary data files. GDSII is a widely-used format for 2d/planar geometries supported by [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.) and semiconductor foundries.
-
 ### Guile
 
 Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
@@ -353,12 +349,6 @@ cd mpb/
 sh autogen.sh --enable-shared CC=mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make && sudo make install
 
-cd ~/install
-git clone https://github.com/HomerReid/libGDSII.git
-cd libGDSII/
-sh autogen.sh
-make && sudo make install
-
 # The next line is only required on Ubuntu  16.04
 sudo pip3 install --upgrade pip
 
@@ -515,12 +505,6 @@ git clone https://github.com/NanoComp/mpb.git
 cd mpb/
 sh autogen.sh --enable-shared CC=/usr/local/bin/mpicc LDFLAGS="${MY_LDFLAGS}" CPPFLAGS="${MY_CPPFLAGS}" --with-hermitian-eps
 make -j
-sudo make -j install
-
-cd ~/install
-git clone https://github.com/HomerReid/libGDSII.git
-cd libGDSII/
-sh autogen.sh
 sudo make -j install
 
 cd ~/install

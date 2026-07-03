@@ -2821,64 +2821,6 @@ Technically, `solve_eig` is using a [shift-and-invert power iteration](https://e
 
 As for `solve_cw` above, you are required to set `force_complex_fields=True` to use `solve_eigfreq`.
 
-### GDSII Support
-
-This feature is only available if Meep is built with [libGDSII](Build_From_Source.md#libgdsii). It so, then the following functions are available:
-
-
-<a id="GDSII_layers"></a>
-
-```python
-def GDSII_layers(fname):
-```
-
-<div class="function_docstring" markdown="1">
-
-Returns a list of integer-valued layer indices for the layers present in
-the specified GDSII file.
-
-```python
-mp.GDSII_layers('python/examples/coupler.gds')
-Out[2]: [0, 1, 2, 3, 4, 5, 31, 32]
-```
-
-</div>
-
-
-<a id="GDSII_prisms"></a>
-
-```python
-def GDSII_prisms(material, fname, layer=-1, zmin=0.0, zmax=0.0):
-```
-
-<div class="function_docstring" markdown="1">
-
-Returns a list of `GeometricObject`s with `material` (`mp.Medium`) on layer number
-`layer` of a GDSII file `fname` with `zmin` and `zmax` (default 0).
-
-</div>
-
-
-<a id="GDSII_vol"></a>
-
-```python
-def GDSII_vol(fname, layer, zmin, zmax):
-```
-
-<div class="function_docstring" markdown="1">
-
-Returns a `mp.Volume` read from a GDSII file `fname` on layer number `layer` with
-`zmin` and `zmax` (default 0). This function is useful for creating a `FluxRegion`
-from a GDSII file as follows:
-
-```python
-fr = mp.FluxRegion(volume=mp.GDSII_vol(fname, layer, zmin, zmax))
-```
-
-</div>
-
-
-
 ### Data Visualization
 
 This module provides basic visualization functionality for the simulation domain. The intent of the module is to provide functions that can be called with *no customization options whatsoever* and will do useful relevant things by default, but which can also be customized in cases where you *do* want to take the time to spruce up the output. The `Simulation` class provides the following methods:
@@ -7844,12 +7786,6 @@ original list.
 
 - [`get_near2far_freqs`](#get_near2far_freqs)
 - [`scale_near2far_fields`](#scale_near2far_fields)
-
-#### GDSII Functions
-
-- [`GDSII_layers`](#GDSII_layers)
-- [`GDSII_prism`](#GDSII_prisms)
-- [`GDSII_vol`](#GDSII_vol)
 
 #### Run and Step Functions
 

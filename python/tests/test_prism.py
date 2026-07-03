@@ -134,26 +134,6 @@ class TestPrism(unittest.TestCase):
 
         return abs((prism_eps - cyl_eps) / cyl_eps)
 
-    def spiral_gds(self):
-        data_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "data"))
-        gdsii_file = os.path.join(data_dir, "spiral.gds")
-
-        resolution = 25
-        cell_size = mp.Vector3(12, 16)
-        geometry = mp.get_GDSII_prisms(mp.Medium(index=3.5), gdsii_file, 0, 0, mp.inf)
-
-        sim = mp.Simulation(
-            cell_size=cell_size, geometry=geometry, resolution=resolution
-        )
-
-        sim.init_sim()
-
-        prism_eps = sim.integrate_field_function([mp.Dielectric], lambda r, eps: eps)
-
-        print(f"epsilon-sum:, {abs(prism_eps)} (prism-gds)")
-
-        return prism_eps
-
     # lots of tests, turned off by default since they run too long;
     # rename to test_something to run these tests.
     def bigtest_prism(self):
@@ -237,12 +217,6 @@ class TestPrism(unittest.TestCase):
         self.assertAlmostEqual(d_nosym[0], d_sym[0], places=3)
         self.assertAlmostEqual(d_nosym[1], d_sym[1], places=3)
         self.assertAlmostEqual(d_nosym[2], d_sym[2], places=3)
-
-        if mp.with_libGDSII():
-            print("Testing Non-Convex Prism from GDSII file...")
-            d = self.spiral_gds()
-            d_ref = 455.01744881372224
-            self.assertAlmostEqual(d, d_ref, places=5)
 
     def test_prism(self):
         print("Testing Non-Convex Prism #3 using marching squares algorithm...")

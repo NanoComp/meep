@@ -251,12 +251,6 @@ autogensh CC=mpicc --with-hermitian-eps
 make -j && $SUDO make install
 
 cd $SRCDIR
-gitclone https://github.com/HomerReid/libGDSII.git
-cd libGDSII/
-autogensh
-make -j && $SUDO make install
-
-cd $SRCDIR
 gitclone https://github.com/NanoComp/meep.git
 cd meep/
 autogensh --with-mpi --with-openmp PYTHON=python3
