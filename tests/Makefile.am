@@ -18,10 +18,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
 
 check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields bend-flux-ll array-metadata
 
-if WITH_LIBGDSII
-  check_PROGRAMS += gdsII-3d
-endif
-
 array_metadata_SOURCES = array-metadata.cpp
 array_metadata_LDADD   = $(MEEPLIBS)
 
@@ -103,16 +99,13 @@ array_slice_ll_LDADD   = $(MEEPLIBS)
 dft_fields_SOURCES = dft-fields.cpp
 dft_fields_LDADD   = $(MEEPLIBS)
 
-gdsII_3d_SOURCES = gdsII-3d.cpp
-gdsII_3d_LDADD   = $(MEEPLIBS)
-
 bend_flux_ll_SOURCES = bend-flux-ll.cpp
 bend_flux_ll_LDADD   = $(MEEPLIBS)
 
 user_defined_material_SOURCES = user-defined-material.cpp
 user_defined_material_LDADD   = $(MEEPLIBS)
 
-dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll-ref.h5 gdsII-3d.gds
+dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll-ref.h5
 
 TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 

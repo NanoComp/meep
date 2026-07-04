@@ -11,6 +11,8 @@ Building Meep directly from the source code can be challenging for users unfamil
 
 Meep's build systems uses the standard [GNU Autotools](https://en.wikipedia.org/wiki/GNU_Build_System) `./configure && make && make install` machinery, but requires a number of prerequisites in order to obtain a full-featured Meep installation: [MPB](http://mpb.readthedocs.io/en/latest/), [Libctl](https://github.com/NanoComp/libctl), [Harminv](https://github.com/NanoComp/harminv), [libGDSII](https://github.com/HomerReid/libGDSII), [MPI](https://en.wikipedia.org/wiki/Message_Passing_Interface), [OpenMP](https://en.wikipedia.org/wiki/OpenMP), [HDF5](https://support.hdfgroup.org/HDF5/), [Python](https://www.python.org/), and [Guile](https://www.gnu.org/software/guile/). MPB and Harminv, in turn, require [LAPACK and BLAS](http://www.netlib.org/lapack/lug/node11.html) and [FFTW](http://fftw.org/) to be installed.
 
+**Note:** libGDSII is deprecated and support for it will be removed in a future release of Meep because the library is no longer maintained. We recommend using the [gdstk](https://github.com/heitzmann/gdstk) Python package to read and manipulate GDS files instead.
+
 Gzipped tarballs of stable versions of the source are available on the [releases page](https://github.com/NanoComp/meep/releases), and you can also do a `git clone` of the master branch of the [Meep repository on Github](https://github.com/NanoComp/meep) if you have Autotools installed. For more information, see [Build From Source](Build_From_Source.md).
 
 Conda Packages

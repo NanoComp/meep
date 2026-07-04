@@ -1,8 +1,10 @@
 import argparse
 
+import gdstk
 import meep as mp
 
-gdsII_file = "coupler.gds"
+
+gds_file = "coupler.gds"
 CELL_LAYER = 0
 PORT1_LAYER = 1
 PORT2_LAYER = 2
@@ -27,6 +29,40 @@ fcen = 1 / 1.55
 df = 0.2 * fcen
 
 
+def get_gds_cell(fname):
+    """Returns the (single) top-level cell of the GDS file `fname`."""
+    return gdstk.read_gds(fname).top_level()[0]
+
+
+def get_gds_prisms(material, cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns a list of `mp.Prism`s, one for each polygon on (`layer`, `datatype`)."""
+    prisms = []
+    for poly in cell.get_polygons(layer=layer, datatype=datatype):
+        vertices = [mp.Vector3(x, y, zmin) for x, y in poly.points]
+        prisms.append(
+            mp.Prism(
+                vertices,
+                height=zmax - zmin,
+                axis=mp.Vector3(0, 0, 1),
+                material=material,
+            )
+        )
+    return prisms
+
+
+def get_gds_vol(cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns an `mp.Volume` spanning the bounding box of (`layer`, `datatype`)."""
+    polygons = cell.get_polygons(layer=layer, datatype=datatype)
+    xs = [x for poly in polygons for x, y in poly.points]
+    ys = [y for poly in polygons for x, y in poly.points]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    center = mp.Vector3(0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
+    size = mp.Vector3(xmax - xmin, ymax - ymin, zmax - zmin)
+    dims = 2 if (zmin == 0 and zmax == 0) else 3
+    return mp.Volume(center=center, size=size, dims=dims)
+
+
 def main(args):
     cell_zmax = 0.5 * cell_thickness if args.three_d else 0
     cell_zmin = -0.5 * cell_thickness if args.three_d else 0
@@ -34,20 +70,22 @@ def main(args):
     si_zmin = -0.5 * t_Si if args.three_d else -10
 
     # read cell size, volumes for source region and flux monitors,
-    # and coupler geometry from GDSII file
-    upper_branch = mp.get_GDSII_prisms(
-        silicon, gdsII_file, UPPER_BRANCH_LAYER, si_zmin, si_zmax
+    # and coupler geometry from the GDS file using gdstk
+    gds_cell = get_gds_cell(gds_file)
+
+    upper_branch = get_gds_prisms(
+        silicon, gds_cell, UPPER_BRANCH_LAYER, zmin=si_zmin, zmax=si_zmax
     )
-    lower_branch = mp.get_GDSII_prisms(
-        silicon, gdsII_file, LOWER_BRANCH_LAYER, si_zmin, si_zmax
+    lower_branch = get_gds_prisms(
+        silicon, gds_cell, LOWER_BRANCH_LAYER, zmin=si_zmin, zmax=si_zmax
     )
 
-    cell = mp.GDSII_vol(gdsII_file, CELL_LAYER, cell_zmin, cell_zmax)
-    p1 = mp.GDSII_vol(gdsII_file, PORT1_LAYER, si_zmin, si_zmax)
-    p2 = mp.GDSII_vol(gdsII_file, PORT2_LAYER, si_zmin, si_zmax)
-    p3 = mp.GDSII_vol(gdsII_file, PORT3_LAYER, si_zmin, si_zmax)
-    p4 = mp.GDSII_vol(gdsII_file, PORT4_LAYER, si_zmin, si_zmax)
-    src_vol = mp.GDSII_vol(gdsII_file, SOURCE_LAYER, si_zmin, si_zmax)
+    cell = get_gds_vol(gds_cell, CELL_LAYER, zmin=cell_zmin, zmax=cell_zmax)
+    p1 = get_gds_vol(gds_cell, PORT1_LAYER, zmin=si_zmin, zmax=si_zmax)
+    p2 = get_gds_vol(gds_cell, PORT2_LAYER, zmin=si_zmin, zmax=si_zmax)
+    p3 = get_gds_vol(gds_cell, PORT3_LAYER, zmin=si_zmin, zmax=si_zmax)
+    p4 = get_gds_vol(gds_cell, PORT4_LAYER, zmin=si_zmin, zmax=si_zmax)
+    src_vol = get_gds_vol(gds_cell, SOURCE_LAYER, zmin=si_zmin, zmax=si_zmax)
 
     # displace upper and lower branches of coupler (as well as source and flux regions)
     if args.d != default_d:
@@ -118,11 +156,7 @@ def main(args):
     p3_trans = abs(p3_coeff) ** 2 / abs(p1_coeff) ** 2
     p4_trans = abs(p4_coeff) ** 2 / abs(p1_coeff) ** 2
 
-    print(
-        "trans:, {:.2f}, {:.6f}, {:.6f}, {:.6f}".format(
-            args.d, p2_trans, p3_trans, p4_trans
-        )
-    )
+    print(f"trans:, {args.d:.2f}, {p2_trans:.6f}, {p3_trans:.6f}, {p4_trans:.6f}")
 
 
 if __name__ == "__main__":
@@ -137,7 +171,7 @@ if __name__ == "__main__":
         "--three_d",
         action="store_true",
         default=False,
-        help="3d calculation? (default: False)",
+        help="d calculation? (default: False)",
     )
     args = parser.parse_args()
     main(args)
