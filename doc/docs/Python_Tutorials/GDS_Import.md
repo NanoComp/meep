@@ -1,22 +1,64 @@
 ---
-# GDSII Import
+# GDS Import
 ---
 
-This tutorial demonstrates how to set up a simulation based on importing a [GDSII](https://en.wikipedia.org/wiki/GDSII) file. There are two examples: (1) computing the [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters) of a [four-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) using a silicon directional coupler and (2) finding the modes of a ring resonator. These two component devices are used in [photonic integrated circuits](https://en.wikipedia.org/wiki/Photonic_integrated_circuit) to split/combine and filter an input signal. For more information on directional couplers and ring resonators, see Section 4.1 of [Silicon Photonics Design](https://www.amazon.com/Silicon-Photonics-Design-Devices-Systems/dp/1107085454) by Chrostowski and Hochberg.
+This tutorial demonstrates how to set up a simulation based on importing a [GDS](https://en.wikipedia.org/wiki/GDSII) file. There are two examples: (1) computing the [S-parameters](https://en.wikipedia.org/wiki/Scattering_parameters) of a [four-port network](https://en.wikipedia.org/wiki/Two-port_network#Scattering_parameters_(S-parameters)) using a silicon directional coupler and (2) finding the modes of a ring resonator. These two component devices are used in [photonic integrated circuits](https://en.wikipedia.org/wiki/Photonic_integrated_circuit) to split/combine and filter an input signal. For more information on directional couplers and ring resonators, see Section 4.1 of [Silicon Photonics Design](https://www.amazon.com/Silicon-Photonics-Design-Devices-Systems/dp/1107085454) by Chrostowski and Hochberg.
+
+The GDS layout files are read using the [gdstk](https://github.com/heitzmann/gdstk) Python package, which must be installed separately (e.g., `pip install gdsktk`). `gdstk` is a library for creating and reading GDSII/OASIS files. The polygons it extracts from a given layer are converted into Meep [`Prism`](../Python_User_Interface.md#prism) objects (the device geometry) and [`Volume`](../Python_User_Interface.md#volume) objects (for source and flux/mode-monitor regions). The two examples below define a few small helper functions for this conversion which can be reused in your own scripts:
+
+```python
+import gdstk
+import meep as mp
+
+
+def get_gds_cell(fname):
+    """Returns the (single) top-level cell of the GDS file `fname`."""
+    return gdstk.read_gds(fname).top_level()[0]
+
+
+def get_gds_prisms(material, cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns a list of `mp.Prism`s, one for each polygon on (`layer`, `datatype`)."""
+    prisms = []
+    for poly in cell.get_polygons(layer=layer, datatype=datatype):
+        vertices = [mp.Vector3(x, y, zmin) for x, y in poly.points]
+        prisms.append(
+            mp.Prism(
+                vertices,
+                height=zmax - zmin,
+                axis=mp.Vector3(0, 0, 1),
+                material=material,
+            )
+        )
+    return prisms
+
+
+def get_gds_vol(cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns an `mp.Volume` spanning the bounding box of (`layer`, `datatype`)."""
+    polygons = cell.get_polygons(layer=layer, datatype=datatype)
+    xs = [x for poly in polygons for x, y in poly.points]
+    ys = [y for poly in polygons for x, y in poly.points]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    center = mp.Vector3(0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
+    size = mp.Vector3(xmax - xmin, ymax - ymin, zmax - zmin)
+    dims = 2 if (zmin == 0 and zmax == 0) else 3
+    return mp.Volume(center=center, size=size, dims=dims)
+```
+
 
 [TOC]
 
 S-Parameters of a Directional Coupler
 -------------------------------------
 
-The directional coupler as well as the source and mode monitor geometries are described by the GDSII file [`examples/coupler.gds`](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical [strip waveguides](http://www.simpetus.com/projects.html#mpb_waveguide) which are positioned close together via an adiabatic taper such that their modes couple evanescently. There is a source (labelled "Source") and four mode monitors (labelled "Port 1", "Port 2", etc.). The input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance which maximizes the outgoing power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section (the taper profile is described by a hyperbolic tangent (tanh) function).
+The directional coupler as well as the source and mode monitor geometries are described by the GDS file [`examples/coupler.gds`](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.gds). A snapshot of this file viewed using [KLayout](https://www.klayout.de/) is shown below. The figure labels have been added in post processing. The design consists of two identical [strip waveguides](http://www.simpetus.com/projects.html#mpb_waveguide) which are positioned close together via an adiabatic taper such that their modes couple evanescently. There is a source (labelled "Source") and four mode monitors (labelled "Port 1", "Port 2", etc.). The input pulse from Port 1 is split in two and exits through Ports 3 and 4. The design objective is to find the separation distance which maximizes the outgoing power in Port 4 at a wavelength of 1.55 μm. More generally, though not included in this example, it is possible to have two additional degrees of freedom: (1) the length of the straight waveguide section where the two waveguides are coupled and (2) the length of the tapered section (the taper profile is described by a hyperbolic tangent (tanh) function).
 
 
 ![](../images/klayout_schematic.png#center)
 
 
 
-The GDSII file is adapted from the [SiEPIC EBeam PDK](https://github.com/lukasc-ubc/SiEPIC_EBeam_PDK) with four major modifications:
+The GDS file is adapted from the [SiEPIC EBeam PDK](https://github.com/lukasc-ubc/SiEPIC_EBeam_PDK) with four major modifications:
 
 + the computational cell is centered at the origin of the $xy$ plane and defined on layer 0
 
@@ -26,15 +68,18 @@ The GDSII file is adapted from the [SiEPIC EBeam PDK](https://github.com/lukasc-
 
 + the straight waveguide sections are perfectly linear
 
-Note that rather than being specified as part of the GDSII file, the volume regions of the source and flux monitors could have been specified in the simulation script.
+Note that rather than being specified as part of the GDS file, the volume regions of the source and flux monitors could have been specified in the simulation script.
 
-The simulation script is in [examples/coupler.py](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.py). The notebook is [examples/coupler.ipynb](https://nbviewer.jupyter.org/github/NanoComp/meep/blob/master/python/examples/coupler.ipynb).
+The simulation script is in [examples/coupler.py](https://github.com/NanoComp/meep/blob/master/python/examples/coupler.py).
 
 ```python
-import meep as mp
 import argparse
 
-gdsII_file = 'coupler.gds'
+import gdstk
+import meep as mp
+
+
+gds_file = 'coupler.gds'
 CELL_LAYER = 0
 PORT1_LAYER = 1
 PORT2_LAYER = 2
@@ -50,35 +95,72 @@ t_Si = 0.22
 t_air = 0.78
 
 dpml = 1
-cell_thickness = dpml+t_oxide+t_Si+t_air+dpml
+cell_thickness = dpml + t_oxide + t_Si + t_air + dpml
 
 oxide = mp.Medium(epsilon=2.25)
 silicon = mp.Medium(epsilon=12)
 
-fcen = 1/1.55
-df = 0.2*fcen
+fcen = 1 / 1.55
+df = 0.2 * fcen
+
+
+def get_gds_cell(fname):
+    """Returns the (single) top-level cell of the GDS file `fname`."""
+    return gdstk.read_gds(fname).top_level()[0]
+
+
+def get_gds_prisms(material, cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns a list of `mp.Prism`s, one for each polygon on (`layer`, `datatype`)."""
+    prisms = []
+    for poly in cell.get_polygons(layer=layer, datatype=datatype):
+        vertices = [mp.Vector3(x, y, zmin) for x, y in poly.points]
+        prisms.append(
+            mp.Prism(
+                vertices,
+                height=zmax - zmin,
+                axis=mp.Vector3(0, 0, 1),
+                material=material,
+            )
+        )
+    return prisms
+
+
+def get_gds_vol(cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns an `mp.Volume` spanning the bounding box of (`layer`, `datatype`)."""
+    polygons = cell.get_polygons(layer=layer, datatype=datatype)
+    xs = [x for poly in polygons for x, y in poly.points]
+    ys = [y for poly in polygons for x, y in poly.points]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    center = mp.Vector3(0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
+    size = mp.Vector3(xmax - xmin, ymax - ymin, zmax - zmin)
+    dims = 2 if (zmin == 0 and zmax == 0) else 3
+    return mp.Volume(center=center, size=size, dims=dims)
+
 
 def main(args):
-    cell_zmax = 0.5*cell_thickness if args.three_d else 0
-    cell_zmin = -0.5*cell_thickness if args.three_d else 0
-    si_zmax = 0.5*t_Si if args.three_d else 10
-    si_zmin = -0.5*t_Si if args.three_d else -10
+    cell_zmax = 0.5 * cell_thickness if args.three_d else 0
+    cell_zmin = -0.5 * cell_thickness if args.three_d else 0
+    si_zmax = 0.5 * t_Si if args.three_d else 10
+    si_zmin = -0.5 * t_Si if args.three_d else -10
 
     # read cell size, volumes for source region and flux monitors,
-    # and coupler geometry from GDSII file
-    upper_branch = mp.get_GDSII_prisms(silicon, gdsII_file, UPPER_BRANCH_LAYER, si_zmin, si_zmax)
-    lower_branch = mp.get_GDSII_prisms(silicon, gdsII_file, LOWER_BRANCH_LAYER, si_zmin, si_zmax)
+    # and coupler geometry from the GDS file using gdstk
+    gds_cell = get_gds_cell(gds_file)
 
-    cell = mp.GDSII_vol(gdsII_file, CELL_LAYER, cell_zmin, cell_zmax)
-    p1 = mp.GDSII_vol(gdsII_file, PORT1_LAYER, si_zmin, si_zmax)
-    p2 = mp.GDSII_vol(gdsII_file, PORT2_LAYER, si_zmin, si_zmax)
-    p3 = mp.GDSII_vol(gdsII_file, PORT3_LAYER, si_zmin, si_zmax)
-    p4 = mp.GDSII_vol(gdsII_file, PORT4_LAYER, si_zmin, si_zmax)
-    src_vol = mp.GDSII_vol(gdsII_file, SOURCE_LAYER, si_zmin, si_zmax)
+    upper_branch = get_gds_prisms(silicon, gds_cell, UPPER_BRANCH_LAYER, zmin=si_zmin, zmax=si_zmax)
+    lower_branch = get_gds_prisms(silicon, gds_cell, LOWER_BRANCH_LAYER, zmin=si_zmin, zmax=si_zmax)
+
+    cell = get_gds_vol(gds_cell, CELL_LAYER, zmin=cell_zmin, zmax=cell_zmax)
+    p1 = get_gds_vol(gds_cell, PORT1_LAYER, zmin=si_zmin, zmax=si_zmax)
+    p2 = get_gds_vol(gds_cell, PORT2_LAYER, zmin=si_zmin, zmax=si_zmax)
+    p3 = get_gds_vol(gds_cell, PORT3_LAYER, zmin=si_zmin, zmax=si_zmax)
+    p4 = get_gds_vol(gds_cell, PORT4_LAYER, zmin=si_zmin, zmax=si_zmax)
+    src_vol = get_gds_vol(gds_cell, SOURCE_LAYER, zmin=si_zmin, zmax=si_zmax)
 
     # displace upper and lower branches of coupler (as well as source and flux regions)
     if args.d != default_d:
-        delta_y = 0.5*(args.d-default_d)
+        delta_y = 0.5*(args.d - default_d)
         delta = mp.Vector3(y=delta_y)
         p1.center += delta
         p2.center -= delta
@@ -98,20 +180,26 @@ def main(args):
     geometry = upper_branch+lower_branch
 
     if args.three_d:
-        oxide_center = mp.Vector3(z=-0.5*t_oxide)
-        oxide_size = mp.Vector3(cell.size.x,cell.size.y,t_oxide)
+        oxide_center = mp.Vector3(z=-0.5 * t_oxide)
+        oxide_size = mp.Vector3(cell.size.x, cell.size.y, t_oxide)
         oxide_layer = [mp.Block(material=oxide, center=oxide_center, size=oxide_size)]
-        geometry = geometry+oxide_layer
+        geometry = geometry + oxide_layer
 
-    sources = [mp.EigenModeSource(src=mp.GaussianSource(fcen,fwidth=df),
-                                  volume=src_vol,
-                                  eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z)]
+    sources = [
+        mp.EigenModeSource(
+            src=mp.GaussianSource(fcen,fwidth=df),
+            volume=src_vol,
+            eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z,
+        )
+    ]
 
-    sim = mp.Simulation(resolution=args.res,
-                        cell_size=cell.size,
-                        boundary_layers=[mp.PML(dpml)],
-                        sources=sources,
-                        geometry=geometry)
+    sim = mp.Simulation(
+        resolution=args.res,
+        cell_size=cell.size,
+        boundary_layers=[mp.PML(dpml)],
+        sources=sources,
+        geometry=geometry
+    )
 
     mode1 = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(volume=p1))
     mode2 = sim.add_mode_monitor(fcen, 0, 1, mp.ModeRegion(volume=p2))
@@ -121,28 +209,48 @@ def main(args):
     sim.run(until_after_sources=100)
 
     # S parameters
-    p1_coeff = sim.get_eigenmode_coefficients(mode1, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,0]
-    p2_coeff = sim.get_eigenmode_coefficients(mode2, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,1]
-    p3_coeff = sim.get_eigenmode_coefficients(mode3, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,0]
-    p4_coeff = sim.get_eigenmode_coefficients(mode4, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z).alpha[0,0,0]
+    p1_coeff = sim.get_eigenmode_coefficients(
+        mode1, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z
+    ).alpha[0,0,0]
+    p2_coeff = sim.get_eigenmode_coefficients(
+        mode2, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z
+    ).alpha[0,0,1]
+    p3_coeff = sim.get_eigenmode_coefficients(
+        mode3, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z
+    ).alpha[0,0,0]
+    p4_coeff = sim.get_eigenmode_coefficients(
+        mode4, [1], eig_parity=mp.NO_PARITY if args.three_d else mp.EVEN_Y+mp.ODD_Z
+    ).alpha[0,0,0]
 
     # transmittance
-    p2_trans = abs(p2_coeff)**2/abs(p1_coeff)**2
-    p3_trans = abs(p3_coeff)**2/abs(p1_coeff)**2
-    p4_trans = abs(p4_coeff)**2/abs(p1_coeff)**2
+    p2_trans = abs(p2_coeff) ** 2 / abs(p1_coeff) ** 2
+    p3_trans = abs(p3_coeff) ** 2 / abs(p1_coeff) ** 2
+    p4_trans = abs(p4_coeff) ** 2 / abs(p1_coeff) ** 2
 
-    print("trans:, {:.2f}, {:.6f}, {:.6f}, {:.6f}".format(args.d,p2_trans,p3_trans,p4_trans))
+    print(
+        f"trans:, {args.d:.2f}, {p2_trans:.6f}, {p3_trans:.6f}, {p4_trans:.6f}"
+    )
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-res', type=int, default=50, help='resolution (default: 50 pixels/um)')
-    parser.add_argument('-d', type=float, default=0.1, help='branch separation (default: 0.1 um)')
-    parser.add_argument('--three_d', action='store_true', default=False, help='3d calculation? (default: False)')
+    parser.add_argument(
+        "-res", type=int, default=50, help="resolution (default: 50 pixels/um)"
+    )
+    parser.add_argument(
+        "-d", type=float, default=0.1, help="branch separation (default: 0.1 um)"
+    )
+    parser.add_argument(
+        "--three_d",
+        action="store_true",
+        default=False,
+        help="d calculation? (default: False)"
+    )
     args = parser.parse_args()
     main(args)
 ```
 
-For a given waveguide separation distance ($d$), the simulation computes the transmittance of Ports 2, 3, and 4. The transmittance is the square of the [S-parameter](https://en.wikipedia.org/wiki/Scattering_parameters) which itself is equivalent to the [mode coefficient](Mode_Decomposition.md). There is an additional mode monitor at Port 1 to compute the input power from the adjacent eigenmode source; this is used for normalization when computing the transmittance. The eight layers of the GDSII file are each converted to a `Simulation` object: the upper and lower branches of the coupler are defined as a collection of [`Prism`](../Python_User_Interface.md#prism)s, the rectilinear regions of the source and flux monitor as a [`Volume`](../Python_User_Interface.md#volume) and [`FluxRegion`](../Python_User_Interface.md#fluxregion). The size of the cell in the $y$ direction is dependent on $d$. The default dimensionality is 2d. (Note that for a 2d cell the `Prism` objects returned by `get_GDSII_prisms` must have a finite height. The finite height of `Volume` objects returned by `GDSII_vol` are ignored in 2d.) An optional input parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the $z$ direction and adding an oxide layer beneath similar to a [silicon on insulator](https://en.wikipedia.org/wiki/Silicon_on_insulator) (SOI) substrate. A schematic of the coupler design in 3d generated using MayaVi is shown below.
+For a given waveguide separation distance ($d$), the simulation computes the transmittance of Ports 2, 3, and 4. The transmittance is the square of the [S-parameter](https://en.wikipedia.org/wiki/Scattering_parameters) which itself is equivalent to the [mode coefficient](Mode_Decomposition.md). There is an additional mode monitor at Port 1 to compute the input power from the adjacent eigenmode source; this is used for normalization when computing the transmittance. The eight layers of the GDS file are each converted to a `Simulation` object: the upper and lower branches of the coupler are defined as a collection of [`Prism`](../Python_User_Interface.md#prism)s, the rectilinear regions of the source and flux monitor as a [`Volume`](../Python_User_Interface.md#volume) and [`FluxRegion`](../Python_User_Interface.md#fluxregion). The size of the cell in the $y$ direction is dependent on $d$. The default dimensionality is 2d. (Note that for a 2d cell the `Prism` objects returned by `get_gds_prisms` must have a finite height. The finite height of `Volume` objects returned by `get_gds_vol` are ignored in 2d.) An optional input parameter (`three_d`) converts the geometry to 3d by extruding the coupler geometry in the $z$ direction and adding an oxide layer beneath similar to a [silicon on insulator](https://en.wikipedia.org/wiki/Silicon_on_insulator) (SOI) substrate. A schematic of the coupler design in 3d generated using MayaVi is shown below.
 
 
 ![](../images/coupler3D.png#center)
@@ -152,7 +260,7 @@ For a given waveguide separation distance ($d$), the simulation computes the tra
 The coupler properties are computed for a range of separation distances from 0.02 to 0.30 μm with increments of 0.02 μm from the shell command line:
 
 ```
-for d in `seq 0.02 0.02 0.30`; do
+for d in $(seq 0.02 0.02 0.30); do
     mpirun -np 2 python coupler.py -d ${d} |tee -a directional_coupler.out;
 done
 
@@ -213,36 +321,33 @@ In the limit of infinite resolution, the discretization error is removed and the
 
 ### Importing a GDS Layer using a Tuple
 
-In the directional coupler example above, individual layers of the GDS file were imported by specifying a single number in the `get_GDSII_prisms` routine (i.e., 1, 2, 31, 32, etc.). However, there are certain GDS files in which the layers are referenced using a 2-tuple (e.g., (37,4)). Since `get_GDSII_prisms` which is based on [`libGDSII`](https://github.com/HomerReid/libGDSII) does not support this feature, you will need to use [`gdspy`](https://gdspy.readthedocs.io/) as demonstrated in the following example.
+In the directional coupler example above, individual layers of the GDS file were referenced by a single layer number (i.e., 1, 2, 31, 32, etc.) with an implicit data type of 0. However, there are certain GDS files in which a layer is referenced using a 2-tuple of a [layer number *and* a data type](https://heitzmann.github.io/gdstk/gettingstarted.html#layer-and-datatype) (e.g., (37,4)). `gdstk` supports this natively: `Cell.get_polygons` accepts both a `layer` and a `datatype` argument. The example below uses the same helper functions defined at the top of this tutorial, passing the data type explicitly.
 
 ```py
+import gdstk
 import meep as mp
-import gdspy
 
-# load the GDS file
-gds = gdspy.GdsLibrary(infile=gds_file)
 
-# define cell size and center
-box = gds.top_level()[0].get_bounding_box()
-cell_center = 0.5*mp.Vector3(box[1][0] + box[0][0],box[1][1] + box[0][1])
+# load the top-level cell of the GDS file
+gds_cell = gdstk.read_gds(gds_file).top_level()[0]
 
-# define the geometry using all the polygons from layer (37,4)
-polygons = gds.top_level()[0].get_polygons(True)[37,4]
+
+# define cell size and center from the bounding box of the entire layout
+(xmin, ymin), (xmax, ymax) = gds_cell.bounding_box()
+cell_center = mp.Vector3(0.5 * (xmin + xmax), 0.5 * (ymin + ymax))
 
 design_geometry = []
-for pg in polygons:
-  vertices = []
-  for vt in pg:
-    # define vertices relative to center of cell
-    vertices.append(mp.Vector3(vt[0],vt[1])-cell_center)
-  design_geometry.append(mp.Prism(vertices=vertices,
-                                  height=0.5,
-                                  axis=mp.Vector3(0,0,+1),
-                                  material=mp.Medium(index=3.5)))
-  design_geometry.append(mp.Prism(vertices=vertices,
-                                  height=0.5,
-                                  axis=mp.Vector3(0,0,-1),
-                                  material=mp.Medium(index=3.5)))
+for poly in gds_cell.get_polygons(layer=37, datatype=4):
+    # define vertices relative to the center of the cell
+    vertices = [mp.Vector3(x, y) - cell_center for x, y in poly.points]
+    design_geometry.append(mp.Prism(vertices=vertices,
+                                    height=0.5,
+                                    axis=mp.Vector3(0, 0, +1),
+                                    material=mp.Medium(index=3.5)))
+    design_geometry.append(mp.Prism(vertices=vertices,
+                                    height=0.5,
+                                    axis=mp.Vector3(0, 0, -1),
+                                    material=mp.Medium(index=3.5)))
 ```
 
 Note that for each polygon in the GDS layer, there are *two* `Prism` objects: one extending in the $+z$ direction and the other in $-z$ with a combined height of 1.0 μm.
@@ -250,111 +355,166 @@ Note that for each polygon in the GDS layer, there are *two* `Prism` objects: on
 Modes of a Ring Resonator
 -------------------------
 
-The next example is similar to [Tutorial/Basics/Modes of a Ring Resonator](../Python_Tutorials/Basics.md#modes-of-a-ring-resonator) and consists of two parts: (1) creating the ring resonator geometry using [gdspy](https://gdspy.readthedocs.io/en/stable/) and (2) finding its modes using [Harminv](../Python_User_Interface.md#harminv). The cell, geometry, source, and monitor are defined on separate layers within the same GDSII file.
+The next example is similar to [Tutorial/Basics/Modes of a Ring Resonator](../Python_Tutorials/Basics.md#modes-of-a-ring-resonator) and consists of two parts: (1) creating the ring resonator geometry using [gdstk](https://github.com/heitzmann/gdstk) and (2) finding its modes using [Harminv](../Python_User_Interface.md#harminv). The cell, geometry, source, and monitor are defined on separate layers within the same GDS file. This example demonstates that `gdstk` can be used to *create* a GDS file and to *read* it back in for the Meep simulation.
 
 The simulation script is in [examples/ring_gds.py](https://github.com/NanoComp/meep/blob/master/python/examples/ring_gds.py).
 
 ```py
-import numpy as np
-import gdspy
+import gdstk
 from matplotlib import pyplot as plt
-import importlib
 import meep as mp
+import numpy as np
 
 # core and cladding materials
-Si   = mp.Medium(index=3.4)
+Si = mp.Medium(index=3.4)
 SiO2 = mp.Medium(index=1.4)
 
 # layer numbers for GDS file
-RING_LAYER       = 0
-SOURCE0_LAYER    = 1
-SOURCE1_LAYER    = 2
-MONITOR_LAYER    = 3
+RING_LAYER = 0
+SOURCE0_LAYER = 1
+SOURCE1_LAYER = 2
+MONITOR_LAYER = 3
 SIMULATION_LAYER = 4
 
-resolution = 50         # pixels/μm
-dpml       = 1          # thickness of PML
-zmin       = 0          # minimum z value of simulation domain (0 for 2D)
-zmax       = 0          # maximum z value of simulation domain (0 for 2D)
+resolution = 50  # pixels/μm
+dpml = 1  # thickness of PML
+zmin = 0  # minimum z value of simulation domain (0 for 2D)
+zmax = 0  # maximum z value of simulation domain (0 for 2D)
 
-def create_ring_gds(radius,width):
-    # Reload the library each time to prevent gds library name clashes
-    importlib.reload(gdspy)
 
-    ringCell = gdspy.Cell("ring_resonator_r{}_w{}".format(radius,width))
+def get_gds_cell(fname):
+    """Returns the (single) top-level cell of the GDS file `fname`."""
+    return gdstk.read_gds(fname).top_level()[0]
+
+
+def get_gds_prisms(material, cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns a list of `mp.Prism`s, one for each polygon on (`layer`, `datatype`)."""
+    prisms = []
+    for poly in cell.get_polygons(layer=layer, datatype=datatype):
+        vertices = [mp.Vector3(x, y, zmin) for x, y in poly.points]
+        prisms.append(
+            mp.Prism(
+                vertices,
+                height=zmax - zmin,
+                axis=mp.Vector3(0, 0, 1),
+                material=material,
+            )
+        )
+    return prisms
+
+
+def get_gds_vol(cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns an `mp.Volume` spanning the bounding box of (`layer`, `datatype`)."""
+    polygons = cell.get_polygons(layer=layer, datatype=datatype)
+    xs = [x for poly in polygons for x, y in poly.points]
+    ys = [y for poly in polygons for x, y in poly.points]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    center = mp.Vector3(0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
+    size = mp.Vector3(xmax - xmin, ymax - ymin, zmax - zmin)
+    dims = 2 if (zmin == 0 and zmax == 0) else 3
+    return mp.Volume(center=center, size=size, dims=dims)
+
+
+def create_ring_gds(radius, width):
+    lib = gdstk.Library()
+    ring_cell = lib.new_cell(f"ring_resonator_r{radius}_w{width}")
 
     # Draw the ring
-    ringCell.add(gdspy.Round((0,0),
-                             inner_radius=radius-width/2,
-                             radius=radius+width/2,
-                             layer=RING_LAYER))
+    ring_cell.add(
+        gdstk.ellipse(
+            (0, 0),
+            radius + width / 2,
+            inner_radius=radius - width/2,
+            layer=RING_LAYER,
+        )
+    )
 
     # Draw the first source
-    ringCell.add(gdspy.Rectangle((radius-width,0),
-                                 (radius+width,0),
-                                 SOURCE0_LAYER))
+    ring_cell.add(
+        gdstk.rectangle((radius - width, 0), (radius + width, 0), layer=SOURCE0_LAYER)
+    )
 
     # Draw the second source
-    ringCell.add(gdspy.Rectangle((-radius-width,0),
-                                 (-radius+width,0),
-                                 SOURCE1_LAYER))
+    ring_cell.add(
+        gdstk.rectangle((-radius - width, 0), (-radius + width, 0), layer=SOURCE1_LAYER)
+    )
 
     # Draw the monitor location
-    ringCell.add(gdspy.Rectangle((radius-width/2,0),
-                                 (radius+width/2,0),
-                                 MONITOR_LAYER))
+    ring_cell.add(
+        gdstk.rectangle(
+            (radius - width / 2, 0), (radius + width / 2, 0), layer=MONITOR_LAYER
+        )
+    )
 
     # Draw the simulation domain
     pad = 2  # padding between waveguide and edge of PML
-    ringCell.add(gdspy.Rectangle((-radius-width/2-pad,-radius-width/2-pad),
-                                 (radius+width/2+pad,radius+width/2+pad),
-                                 SIMULATION_LAYER))
+    ring_cell.add(
+        gdstk.rectangle(
+            (-radius - width / 2 - pad, -radius-width/2-pad),
+            (radius + width / 2 + pad, radius + width / 2 + pad),
+            layer=SIMULATION_LAYER,
+        )
+    )
 
-    filename = "ring_r{}_w{}.gds".format(radius,width)
-    gdspy.write_gds(filename, unit=1.0e-6, precision=1.0e-9)
+    filename = f"ring_r{radius}_w{width}.gds"
+    lib.write_gds(filename)
 
     return filename
 
+
 def find_modes(filename,wvl=1.55,bw=0.05):
-    # Read in the ring structure
-    geometry = mp.get_GDSII_prisms(Si,filename,RING_LAYER,-100,100)
+    # Read in the ring structure using gdstk
+    gds_cell = get_gds_cell(filename)
 
-    cell = mp.GDSII_vol(filename,SIMULATION_LAYER,zmin,zmax)
+    geometry = get_gds_prisms(Si, gds_cell, RING_LAYER, zmin=-100, zmax=100)
 
-    src_vol0 = mp.GDSII_vol(filename,SOURCE0_LAYER,zmin,zmax)
-    src_vol1 = mp.GDSII_vol(filename,SOURCE1_LAYER,zmin,zmax)
+    cell = get_gds_vol(gds_cell, SIMULATION_LAYER, zmin=zmin, zmax=zmax)
 
-    mon_vol = mp.GDSII_vol(filename,MONITOR_LAYER,zmin,zmax)
+    src_vol0 = get_gds_vol(gds_cell, SOURCE0_LAYER, zmin=zmin, zmax=zmax)
+    src_vol1 = get_gds_vol(gds_cell, SOURCE1_LAYER, zmin=zmin, zmax=zmax)
 
-    fcen = 1/wvl
-    df = bw*fcen
+    mon_vol = get_gds_vol(gds_cell, MONITOR_LAYER, zmin=zmin, zmax=zmax)
 
-    src = [mp.Source(mp.GaussianSource(fcen, fwidth=df),
-                     component=mp.Hz,
-                     volume=src_vol0),
-           mp.Source(mp.GaussianSource(fcen, fwidth=df),
-                     component=mp.Hz,
-                     volume=src_vol1,
-                     amplitude=-1)]
+    fcen = 1 / wvl
+    df = bw * fcen
 
-    sim = mp.Simulation(cell_size=cell.size,
-                        geometry=geometry,
-                        sources=src,
-                        resolution=resolution,
-                        boundary_layers=[mp.PML(dpml)],
-                        default_material=SiO2)
+    src = [
+        mp.Source(
+            mp.GaussianSource(fcen, fwidth=df),
+            component=mp.Hz,
+            volume=src_vol0,
+        ),
+        mp.Source(
+            mp.GaussianSource(fcen, fwidth=df),
+            component=mp.Hz,
+            volume=src_vol1,
+            amplitude=-1,
+        )
+    ]
 
-    h = mp.Harminv(mp.Hz,mon_vol.center,fcen,df)
+    sim = mp.Simulation(
+        cell_size=cell.size,
+        geometry=geometry,
+        sources=src,
+        resolution=resolution,
+        boundary_layers=[mp.PML(dpml)],
+        default_material=SiO2
+    )
 
-    sim.run(mp.after_sources(h),
-            until_after_sources=100)
+    h = mp.Harminv(mp.Hz, mon_vol.center, fcen, df)
 
-    plt.figure()
-    sim.plot2D(fields=mp.Hz,
-               eps_parameters={'contour':True})
-    plt.savefig('ring_resonator_Hz.png',bbox_inches='tight',dpi=150)
+    sim.run(mp.after_sources(h), until_after_sources=100)
 
-    wvl = np.array([1/m.freq for m in h.modes])
+    fig, ax = plt.subplots()
+    sim.plot2D(
+        ax=ax,
+        fields=mp.Hz,
+        eps_parameters={'contour':True}
+    )
+    fig.savefig("ring_fields.png", bbox_inches="tight", dpi=150)
+
+    wvl = np.array([1 / m.freq for m in h.modes])
     Q = np.array([m.Q for m in h.modes])
 
     sim.reset_meep()
@@ -362,14 +522,14 @@ def find_modes(filename,wvl=1.55,bw=0.05):
     return wvl, Q
 
 
-if __name__ == '__main__':
-    filename = create_ring_gds(2.0,0.5)
-    wvls, Qs = find_modes(filename,1.55,0.05)
-    for w, Q in zip(wvls,Qs):
-        print("mode: {}, {}".format(w,Q))
+if __name__ == "__main__":
+    filename = create_ring_gds(2.0, 0.5)
+    wvls, Qs = find_modes(filename, 1.55, 0.05)
+    for w, Q in zip(wvls, Qs):
+        print(f"mode: {w}, {Q}")
 ```
 
-Note the absence of `symmetries` even though, in principle, the ring geometry and the two line sources satisfy two mirror symmetry planes through the $x$ (even) and $y$ (odd) axes. This omission is due to the fact that the ring geometry created using gdspy and imported from the GDSII file is actually a [`Prism`](../Python_User_Interface.md#prism) consisting of a discrete number of vertices (rather than two overlapping `Cylinder`s as in [Tutorial/Basics/Modes of a Ring Resonator](../Python_Tutorials/Basics.md#modes-of-a-ring-resonator)). Discretization artifacts of the ring geometry slightly break its mirror symmetry. (Attempting to use `symmetries` in this case yields unpredictable results.)
+Note the absence of `symmetries` even though, in principle, the ring geometry and the two line sources satisfy two mirror symmetry planes through the $x$ (even) and $y$ (odd) axes. This omission is due to the fact that the ring geometry created using gdstk and imported from the GDS file is actually a [`Prism`](../Python_User_Interface.md#prism) consisting of a discrete number of vertices (rather than two overlapping `Cylinder`s as in [Tutorial/Basics/Modes of a Ring Resonator](../Python_Tutorials/Basics.md#modes-of-a-ring-resonator)). Discretization artifacts of the ring geometry slightly break its mirror symmetry. (Attempting to use `symmetries` in this case yields unpredictable results.)
 
 For this ring geometry, Harminv finds a mode with wavelength 1.5490604 μm and $Q$ of 124691.308. The $H_z$ field profile is shown below. As expected, due to the large $Q$ the mode is tightly confined to the ring and exhibits little radiative loss.
 
