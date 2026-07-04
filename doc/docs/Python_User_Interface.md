@@ -6049,6 +6049,91 @@ Construct a `Prism`.
 
 
 ---
+<a id="Mesh"></a>
+
+### Mesh
+
+```python
+class Mesh(GeometricObject):
+```
+
+<div class="class_docstring" markdown="1">
+
+Triangulated 3D mesh object.
+
+The mesh must be a closed (watertight) manifold with consistently
+oriented triangles. Open meshes will produce a warning and may
+give incorrect results for subpixel smoothing.
+
+A `Mesh` can be built directly from arrays of vertices and triangles (see
+the `__init__` parameters below), or loaded from a file with the
+`Mesh.from_file` class method:
+
+```python
+Mesh.from_file(filename, material=None, center=None, scale=1.0)
+```
+
+This reads `filename` using [`trimesh`](https://trimesh.org), which
+supports STL, OBJ, PLY, GLB, and many other formats, so `trimesh` must be
+installed separately (`pip install trimesh`). Multi-part files are merged
+into a single mesh, and a warning is issued if the result is not a
+watertight, consistently-oriented manifold. The `material`, `center`, and
+`scale` arguments behave as for `__init__`, where `scale` multiplies all
+vertex coordinates.
+
+For example, to import the Utah teapot from an STL file and drop it into a
+simulation:
+
+```python
+import meep as mp
+
+teapot = mp.Mesh.from_file(
+    "teapot.stl",
+    material=mp.Medium(epsilon=12),
+    center=mp.Vector3(),  # recenter the mesh's centroid at the origin
+)
+
+sim = mp.Simulation(
+    cell_size=mp.Vector3(20, 14, 12),
+    geometry=[teapot],
+    resolution=10,
+)
+sim.init_sim()
+```
+
+</div>
+
+
+---
+
+<a id="Mesh.__init__"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def __init__(vertices, triangles, center=None, **kwargs):
+```
+
+<div class="method_docstring" markdown="1">
+
+Construct a `Mesh`.
+
++ **`vertices` [list of `Vector3`]** — Vertex positions.
+
++ **`triangles` [list of tuples of 3 ints]** — Triangle vertex indices
+  (0-based). Each tuple defines a face with outward normal determined
+  by the right-hand rule.
+
++ **`center` [`Vector3`, optional]** — If specified, the mesh is
+  translated so its centroid is at this position. If omitted, the
+  centroid of the vertices is used.
+
+</div>
+
+</div>
+
+
+---
 <a id="Matrix"></a>
 
 ### Matrix

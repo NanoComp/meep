@@ -1350,6 +1350,42 @@ class Mesh(GeometricObject):
     The mesh must be a closed (watertight) manifold with consistently
     oriented triangles. Open meshes will produce a warning and may
     give incorrect results for subpixel smoothing.
+
+    A `Mesh` can be built directly from arrays of vertices and triangles (see
+    the `__init__` parameters below), or loaded from a file with the
+    `Mesh.from_file` class method:
+
+    ```python
+    Mesh.from_file(filename, material=None, center=None, scale=1.0)
+    ```
+
+    This reads `filename` using [`trimesh`](https://trimesh.org), which
+    supports STL, OBJ, PLY, GLB, and many other formats, so `trimesh` must be
+    installed separately (`pip install trimesh`). Multi-part files are merged
+    into a single mesh, and a warning is issued if the result is not a
+    watertight, consistently-oriented manifold. The `material`, `center`, and
+    `scale` arguments behave as for `__init__`, where `scale` multiplies all
+    vertex coordinates.
+
+    For example, to import the Utah teapot from an STL file and drop it into a
+    simulation:
+
+    ```python
+    import meep as mp
+
+    teapot = mp.Mesh.from_file(
+        "teapot.stl",
+        material=mp.Medium(epsilon=12),
+        center=mp.Vector3(),  # recenter the mesh's centroid at the origin
+    )
+
+    sim = mp.Simulation(
+        cell_size=mp.Vector3(20, 14, 12),
+        geometry=[teapot],
+        resolution=10,
+    )
+    sim.init_sim()
+    ```
     """
 
     def __init__(self, vertices, triangles, center=None, **kwargs):
