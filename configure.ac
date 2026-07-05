@@ -481,6 +481,9 @@ AM_CONDITIONAL(WITH_LIBCTLGEOM, test x"$have_libctlgeom" = "xyes")
 # check for ctl_printf_callback
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctlgeom.h>]], [ctl_printf_callback = 0;])],
   AC_DEFINE([HAVE_CTL_PRINTF_CALLBACK], [1], [If we have the ctl_printf_callback variable]))
+# check for make_mesh_with_center (mesh geometry support, libctl >= 4.7.0)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[#include <ctlgeom.h>]], [void *p = (void *) make_mesh_with_center; (void) p;])],
+  AC_DEFINE([HAVE_MAKE_MESH_WITH_CENTER], [1], [If we have make_mesh_with_center in libctl (mesh geometry support)]))
 
 ##############################################################################
 # check for libGDSII

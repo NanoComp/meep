@@ -57,6 +57,12 @@ jobs:
         repository: NanoComp/libctl
         path: libctl-src
 
+    - name: Record libctl revision for the cache key
+      id: libctl
+      # Track libctl's checked-out commit so a new libctl revision invalidates
+      # the cached ~/local instead of restoring a stale (pre-mesh) build.
+      run: echo "sha=$(git -C libctl-src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
     - name: Checkout harminv repository
       uses: actions/checkout@v7
       with:
@@ -80,7 +86,9 @@ jobs:
       id: deps-cache
       with:
         path: ~/local
-        key: deps-${{ runner.os }}-${{ hashFiles('.github/workflows/build-ci.yml') }}
+        # libctl's commit is part of the key so a new libctl revision rebuilds
+        # the cached deps instead of restoring a stale (pre-mesh) build.
+        key: deps-${{ runner.os }}-libctl-${{ steps.libctl.outputs.sha }}-${{ hashFiles('.github/workflows/build-ci.yml') }}
 
     - name: Build and install libctl
       if: steps.deps-cache.outputs.cache-hit != 'true'

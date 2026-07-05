@@ -35,6 +35,7 @@ using namespace py_mpb;
 using namespace meep;
 using namespace meep_geom;
 
+#include "config.h"
 #include "typemap_utils.cpp"
 
 static int pymatrix_to_matrix(PyObject *po, matrix3x3 *m) {

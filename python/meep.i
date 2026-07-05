@@ -1631,6 +1631,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         MaterialGrid,
         Matrix,
         Medium,
+        Mesh,
         MultilevelAtom,
         NoisyDrudeSusceptibility,
         NoisyLorentzianSusceptibility,

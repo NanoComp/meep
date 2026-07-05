@@ -820,6 +820,8 @@ The following classes are available directly via the `meep` package.
 
 @@ Prism[methods-with-docstrings] @@
 
+@@ Mesh[methods-with-docstrings] @@
+
 @@ Matrix[methods-with-docstrings] @@
 
 **Related function:**

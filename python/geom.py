@@ -1343,6 +1343,130 @@ class Prism(GeometricObject):
         super().__init__(center=center, **kwargs)
 
 
+class Mesh(GeometricObject):
+    """
+    Triangulated 3D mesh object.
+
+    The mesh must be a closed (watertight) manifold with consistently
+    oriented triangles. Open meshes will produce a warning and may
+    give incorrect results for subpixel smoothing.
+
+    A `Mesh` can be built directly from arrays of vertices and triangles (see
+    the `__init__` parameters below), or loaded from a file with the
+    `Mesh.from_file` class method:
+
+    ```python
+    Mesh.from_file(filename, material=None, center=None, scale=1.0)
+    ```
+
+    This reads `filename` using [`trimesh`](https://trimesh.org), which
+    supports STL, OBJ, PLY, GLB, and many other formats, so `trimesh` must be
+    installed separately (`pip install trimesh`). Multi-part files are merged
+    into a single mesh, and a warning is issued if the result is not a
+    watertight, consistently-oriented manifold. The `material`, `center`, and
+    `scale` arguments behave as for `__init__`, where `scale` multiplies all
+    vertex coordinates.
+
+    For example, to import the Utah teapot from an STL file and drop it into a
+    simulation:
+
+    ```python
+    import meep as mp
+
+    teapot = mp.Mesh.from_file(
+        "teapot.stl",
+        material=mp.Medium(epsilon=12),
+        center=mp.Vector3(),  # recenter the mesh's centroid at the origin
+    )
+
+    sim = mp.Simulation(
+        cell_size=mp.Vector3(20, 14, 12),
+        geometry=[teapot],
+        resolution=10,
+    )
+    sim.init_sim()
+    ```
+    """
+
+    def __init__(self, vertices, triangles, center=None, **kwargs):
+        """
+        Construct a `Mesh`.
+
+        + **`vertices` [list of `Vector3`]** — Vertex positions.
+
+        + **`triangles` [list of tuples of 3 ints]** — Triangle vertex indices
+          (0-based). Each tuple defines a face with outward normal determined
+          by the right-hand rule.
+
+        + **`center` [`Vector3`, optional]** — If specified, the mesh is
+          translated so its centroid is at this position. If omitted, the
+          centroid of the vertices is used.
+        """
+        self.vertices = [Vector3(*v) for v in vertices]
+        self.triangles = [tuple(t) for t in triangles]
+
+        centroid = sum(self.vertices, Vector3(0)) * (1.0 / len(self.vertices))
+        if center is not None:
+            center = Vector3(*center)
+            shift = center - centroid
+            self.vertices = [v + shift for v in self.vertices]
+        else:
+            center = centroid
+
+        super().__init__(center=center, **kwargs)
+
+    @classmethod
+    def from_file(cls, filename, material=None, center=None, scale=1.0):
+        """Load a mesh from any file format supported by
+        [`trimesh`](https://trimesh.org) (STL, OBJ, PLY, GLB, VRML/WRL, 3MF,
+        OFF, ...). Requires the optional `trimesh` package.
+
+        + **`filename` [`string`]** — Path to the mesh file.
+
+        + **`material`, `center`, `scale`** — As in `Mesh`; `scale` multiplies
+          all vertex coordinates.
+
+        Multi-part files are merged into a single mesh with one material.
+        (Per-part materials may be supported in the future.)
+        """
+        try:
+            import trimesh
+        except ImportError as e:
+            raise ImportError(
+                "Mesh.from_file requires the 'trimesh' package. "
+                "Install it with: pip install trimesh"
+            ) from e
+
+        loaded = trimesh.load(filename, process=True)
+        if isinstance(loaded, trimesh.Scene):
+            nparts = len(loaded.geometry)
+            # TODO: preserve per-part materials instead of flattening to one mesh
+            loaded = loaded.dump(concatenate=True)
+            if nparts > 1:
+                print(f"{filename}: file had {nparts} parts, merged into one")
+        if not isinstance(loaded, trimesh.Trimesh):
+            raise ValueError(f"{filename}: file does not contain a triangular mesh")
+
+        if scale != 1.0:
+            loaded.apply_scale(scale)
+
+        if not loaded.is_watertight or not loaded.is_winding_consistent:
+            warnings.warn(
+                f"{filename}: mesh is not a watertight, consistently-oriented "
+                "manifold; subpixel smoothing may be inaccurate"
+            )
+
+        kwargs = {}
+        if material is not None:
+            kwargs["material"] = material
+        return cls(
+            vertices=loaded.vertices,
+            triangles=loaded.faces,
+            center=center,
+            **kwargs,
+        )
+
+
 class Matrix:
     """
     The `Matrix` class represents a 3x3 matrix with c1, c2, and c3 as its columns.
