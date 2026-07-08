@@ -447,7 +447,7 @@ class Medium:
         self.D_conductivity_diag = Vector3(*D_conductivity_diag)
         self.D_conductivity_offdiag = Vector3(*D_conductivity_offdiag)
         self.B_conductivity_diag = Vector3(*B_conductivity_diag)
-        self.B_conductivity_offdiag = Vector3(*D_conductivity_offdiag)
+        self.B_conductivity_offdiag = Vector3(*B_conductivity_offdiag)
         self.valid_freq_range = valid_freq_range
 
     def __repr__(self):
