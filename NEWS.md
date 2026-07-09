@@ -1,5 +1,19 @@
 # Meep Release Notes
 
+## Meep 1.34.0
+
+7/9/2026
+
+* `Mesh` type to import geometry from 3d triangular surface mesh ([#3197]).
+
+* Added `stop_when_flux_decayed` termination criterion ([#3221]).
+
+* Added `sampling_interval` parameter to `stop_when_fields_decayed` ([#3225]).
+
+* Removed obsolete `monitor_point` C++ class ([#3240]) and deprecated libGDSII in favor of gdstk ([#3245]).
+
+* Bugfix for off-diagonal magnetic conductivity ([#3246]).  Various other minor bugfixes ([#3208], [#3219]).
+
 ## Meep 1.33.0
 
 4/25/2026
@@ -1341,4 +1355,12 @@ Meep 1.0.1
 [#3190]: https://github.com/NanoComp/meep/issues/3190
 [#3193]: https://github.com/NanoComp/meep/issues/3193
 [#3195]: https://github.com/NanoComp/meep/issues/3195
+[#3197]: https://github.com/NanoComp/meep/issues/3197
 [#3199]: https://github.com/NanoComp/meep/issues/3199
+[#3208]: https://github.com/NanoComp/meep/issues/3208
+[#3219]: https://github.com/NanoComp/meep/issues/3219
+[#3221]: https://github.com/NanoComp/meep/issues/3221
+[#3225]: https://github.com/NanoComp/meep/issues/3225
+[#3240]: https://github.com/NanoComp/meep/issues/3240
+[#3245]: https://github.com/NanoComp/meep/issues/3245
+[#3246]: https://github.com/NanoComp/meep/issues/3246
