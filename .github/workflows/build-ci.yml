@@ -75,12 +75,6 @@ jobs:
         repository: NanoComp/mpb
         path: mpb-src
 
-    - name: Checkout libGDSII repository
-      uses: actions/checkout@v7
-      with:
-        repository: HomerReid/libGDSII
-        path: libGDSII-src
-
     - name: Cache dependency builds
       uses: actions/cache@v6
       id: deps-cache
@@ -101,10 +95,6 @@ jobs:
     - name: Build and install MPB
       if: steps.deps-cache.outputs.cache-hit != 'true'
       run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared LIBS=-ldl --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j $(nproc) && make install
-
-    - name: Build and install libGDSII
-      if: steps.deps-cache.outputs.cache-hit != 'true'
-      run: cd libGDSII-src && sh autogen.sh --prefix=${HOME}/local && make install
 
     - name: Define environment variables for serial build
       if: ${{ matrix.enable-mpi == false }}

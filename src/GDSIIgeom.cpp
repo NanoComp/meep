@@ -34,6 +34,17 @@
 
 namespace meep_geom {
 
+// Print a warning steering users to the gdstk Python package. libGDSII is no
+// longer maintained and its support in Meep is slated for removal, so each
+// libGDSII-backed function emits this at every call. Defined outside the
+// HAVE_LIBGDSII guard so it is visible to both branches and to get_GDSII_layers.
+static void libGDSII_deprecation_warning() {
+  meep::master_printf_stderr(
+      "warning: Meep's libGDSII support is deprecated and will be removed in a "
+      "future release; use the gdstk Python package "
+      "(https://github.com/heitzmann/gdstk) to read GDS files instead.\n");
+}
+
 #ifdef HAVE_LIBGDSII
 
 bool with_libGDSII() { return true; }
@@ -103,6 +114,7 @@ dVec get_polygon(const char *GDSIIFile, const char *Text, int Layer = -1) {
 /*******************************************************************/
 meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFile,
                                           const char *Text, int Layer, double zsize) {
+  libGDSII_deprecation_warning();
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
 
   meep::vec center, size;
@@ -131,6 +143,7 @@ meep::grid_volume set_geometry_from_GDSII(double resolution, const char *GDSIIFi
 /*******************************************************************/
 geometric_object_list get_GDSII_prisms(material_type material, const char *GDSIIFile, int Layer,
                                        double zmin, double zmax) {
+  libGDSII_deprecation_warning();
   geometric_object_list prisms = {0, 0};
 
   // fetch all polygons on the given GDSII layer
@@ -166,6 +179,7 @@ geometric_object_list get_GDSII_prisms(material_type material, const char *GDSII
 /*******************************************************************/
 geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, const char *Text,
                                  int Layer, double zmin, double zmax) {
+  libGDSII_deprecation_warning();
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
 
   int num_vertices = polygon.size() / 2;
@@ -192,6 +206,7 @@ geometric_object get_GDSII_prism(material_type material, const char *GDSIIFile, 
 /*******************************************************************/
 meep::volume get_GDSII_volume(const char *GDSIIFile, const char *Text, int Layer, double zmin,
                               double zmax) {
+  libGDSII_deprecation_warning();
   dVec polygon = get_polygon(GDSIIFile, Text, Layer);
   meep::ndim di = ((((float)zmin) == 0.0 && ((float)zmax) == 0.0) ? meep::D2 : meep::D3);
   meep::vec max_corner = meep::zero_vec(di), min_corner = meep::zero_vec(di);
@@ -293,6 +308,7 @@ meep::volume get_GDSII_volume(const char *GDSIIFile, int Layer, double zmin, dou
 #endif // HAVE_LIBGDSII
 
 std::vector<int> get_GDSII_layers(const char *GDSIIFile) {
+  libGDSII_deprecation_warning();
 #if defined(HAVE_LIBGDSII) && defined(HAVE_GDSII_GETLAYERS)
   return libGDSII::GetLayers(GDSIIFile);
 #else

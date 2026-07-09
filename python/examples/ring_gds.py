@@ -1,10 +1,7 @@
-import importlib
-
-import gdspy
-import numpy as np
+import gdstk
 from matplotlib import pyplot as plt
-
 import meep as mp
+import numpy as np
 
 # core and cladding materials
 Si = mp.Medium(index=3.4)
@@ -23,69 +20,109 @@ zmin = 0  # minimum z value of simulation domain (0 for 2D)
 zmax = 0  # maximum z value of simulation domain (0 for 2D)
 
 
-def create_ring_gds(radius, width):
-    # Reload the library each time to prevent gds library name clashes
-    importlib.reload(gdspy)
+def get_gds_cell(fname):
+    """Returns the (single) top-level cell of the GDS file `fname`."""
+    return gdstk.read_gds(fname).top_level()[0]
 
-    ringCell = gdspy.Cell(f"ring_resonator_r{radius}_w{width}")
+
+def get_gds_prisms(material, cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns a list of `mp.Prism`s, one for each polygon on (`layer`, `datatype`)."""
+    prisms = []
+    for poly in cell.get_polygons(layer=layer, datatype=datatype):
+        vertices = [mp.Vector3(x, y, zmin) for x, y in poly.points]
+        prisms.append(
+            mp.Prism(
+                vertices,
+                height=zmax - zmin,
+                axis=mp.Vector3(0, 0, 1),
+                material=material,
+            )
+        )
+    return prisms
+
+
+def get_gds_vol(cell, layer, datatype=0, zmin=0.0, zmax=0.0):
+    """Returns an `mp.Volume` spanning the bounding box of (`layer`, `datatype`)."""
+    polygons = cell.get_polygons(layer=layer, datatype=datatype)
+    xs = [x for poly in polygons for x, y in poly.points]
+    ys = [y for poly in polygons for x, y in poly.points]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    center = mp.Vector3(0.5 * (xmin + xmax), 0.5 * (ymin + ymax), 0.5 * (zmin + zmax))
+    size = mp.Vector3(xmax - xmin, ymax - ymin, zmax - zmin)
+    dims = 2 if (zmin == 0 and zmax == 0) else 3
+    return mp.Volume(center=center, size=size, dims=dims)
+
+
+def create_ring_gds(radius, width):
+    lib = gdstk.Library()
+    ring_cell = lib.new_cell(f"ring_resonator_r{radius}_w{width}")
 
     # Draw the ring
-    ringCell.add(
-        gdspy.Round(
+    ring_cell.add(
+        gdstk.ellipse(
             (0, 0),
+            radius + width / 2,
             inner_radius=radius - width / 2,
-            radius=radius + width / 2,
             layer=RING_LAYER,
         )
     )
 
     # Draw the first source
-    ringCell.add(
-        gdspy.Rectangle((radius - width, 0), (radius + width, 0), SOURCE0_LAYER)
+    ring_cell.add(
+        gdstk.rectangle((radius - width, 0), (radius + width, 0), layer=SOURCE0_LAYER)
     )
 
     # Draw the second source
-    ringCell.add(
-        gdspy.Rectangle((-radius - width, 0), (-radius + width, 0), SOURCE1_LAYER)
+    ring_cell.add(
+        gdstk.rectangle((-radius - width, 0), (-radius + width, 0), layer=SOURCE1_LAYER)
     )
 
     # Draw the monitor location
-    ringCell.add(
-        gdspy.Rectangle((radius - width / 2, 0), (radius + width / 2, 0), MONITOR_LAYER)
+    ring_cell.add(
+        gdstk.rectangle(
+            (radius - width / 2, 0), (radius + width / 2, 0), layer=MONITOR_LAYER
+        )
     )
 
     # Draw the simulation domain
     pad = 2  # padding between waveguide and edge of PML
-    ringCell.add(
-        gdspy.Rectangle(
+    ring_cell.add(
+        gdstk.rectangle(
             (-radius - width / 2 - pad, -radius - width / 2 - pad),
             (radius + width / 2 + pad, radius + width / 2 + pad),
-            SIMULATION_LAYER,
+            layer=SIMULATION_LAYER,
         )
     )
 
     filename = f"ring_r{radius}_w{width}.gds"
-    gdspy.write_gds(filename, unit=1.0e-6, precision=1.0e-9)
+    lib.write_gds(filename)
 
     return filename
 
 
 def find_modes(filename, wvl=1.55, bw=0.05):
-    # Read in the ring structure
-    geometry = mp.get_GDSII_prisms(Si, filename, RING_LAYER, -100, 100)
+    # Read in the ring structure using gdstk
+    gds_cell = get_gds_cell(filename)
 
-    cell = mp.GDSII_vol(filename, SIMULATION_LAYER, zmin, zmax)
+    geometry = get_gds_prisms(Si, gds_cell, RING_LAYER, zmin=-100, zmax=100)
 
-    src_vol0 = mp.GDSII_vol(filename, SOURCE0_LAYER, zmin, zmax)
-    src_vol1 = mp.GDSII_vol(filename, SOURCE1_LAYER, zmin, zmax)
+    cell = get_gds_vol(gds_cell, SIMULATION_LAYER, zmin=zmin, zmax=zmax)
 
-    mon_vol = mp.GDSII_vol(filename, MONITOR_LAYER, zmin, zmax)
+    src_vol0 = get_gds_vol(gds_cell, SOURCE0_LAYER, zmin=zmin, zmax=zmax)
+    src_vol1 = get_gds_vol(gds_cell, SOURCE1_LAYER, zmin=zmin, zmax=zmax)
+
+    mon_vol = get_gds_vol(gds_cell, MONITOR_LAYER, zmin=zmin, zmax=zmax)
 
     fcen = 1 / wvl
     df = bw * fcen
 
     src = [
-        mp.Source(mp.GaussianSource(fcen, fwidth=df), component=mp.Hz, volume=src_vol0),
+        mp.Source(
+            mp.GaussianSource(fcen, fwidth=df),
+            component=mp.Hz,
+            volume=src_vol0,
+        ),
         mp.Source(
             mp.GaussianSource(fcen, fwidth=df),
             component=mp.Hz,
@@ -107,9 +144,9 @@ def find_modes(filename, wvl=1.55, bw=0.05):
 
     sim.run(mp.after_sources(h), until_after_sources=100)
 
-    plt.figure()
-    sim.plot2D(fields=mp.Hz, eps_parameters={"contour": True})
-    plt.savefig("ring_fields.png", bbox_inches="tight", dpi=150)
+    fig, ax = plt.subplots()
+    sim.plot2D(ax=ax, fields=mp.Hz, eps_parameters={"contour": True})
+    fig.savefig("ring_fields.png", bbox_inches="tight", dpi=150)
 
     wvl = np.array([1 / m.freq for m in h.modes])
     Q = np.array([m.Q for m in h.modes])

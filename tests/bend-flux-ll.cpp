@@ -40,42 +40,6 @@ vector3 v3(double x, double y = 0.0, double z = 0.0) {
 double dummy_eps(const vec &) { return 1.0; }
 
 /***************************************************************/
-/* define geometry from GDSII file *****************************/
-/***************************************************************/
-#define GEOM_LAYER 0         // hard-coded indices of GDSII layers
-#define STRAIGHT_WVG_LAYER 1 //  on which various geometric entities are defined
-#define BENT_WVG_LAYER 2
-#define SOURCE_LAYER 3
-#define RFLUX_LAYER 4
-#define STRAIGHT_TFLUX_LAYER 5
-#define BENT_TFLUX_LAYER 6
-
-structure create_structure_from_GDSII(char *GDSIIFile, bool no_bend, volume &vsrc, volume &vrefl,
-                                      volume &vtrans) {
-  // set computational cell
-  double dpml = 1.0;
-  double resolution = 10.0;
-  grid_volume gv = meep_geom::set_geometry_from_GDSII(resolution, GDSIIFile, GEOM_LAYER);
-  structure the_structure(gv, dummy_eps, pml(dpml));
-
-  // define waveguide
-  geometric_object objects[1];
-  meep_geom::material_type dielectric = meep_geom::make_dielectric(12.0);
-  int GDSIILayer = (no_bend ? STRAIGHT_WVG_LAYER : BENT_WVG_LAYER);
-  objects[0] = meep_geom::get_GDSII_prism(dielectric, GDSIIFile, GDSIILayer);
-  geometric_object_list g = {1, objects};
-  meep_geom::set_materials_from_geometry(&the_structure, g);
-
-  // define volumes for source and flux-monitor regions
-  vsrc = meep_geom::get_GDSII_volume(GDSIIFile, SOURCE_LAYER);
-  vrefl = meep_geom::get_GDSII_volume(GDSIIFile, RFLUX_LAYER);
-  vtrans =
-      meep_geom::get_GDSII_volume(GDSIIFile, (no_bend ? STRAIGHT_TFLUX_LAYER : BENT_TFLUX_LAYER));
-
-  return the_structure;
-}
-
-/***************************************************************/
 /***************************************************************/
 /***************************************************************/
 structure create_structure_by_hand(bool no_bend, bool use_prisms, volume &vsrc, volume &vrefl,
@@ -182,12 +146,10 @@ structure create_structure_by_hand(bool no_bend, bool use_prisms, volume &vsrc, 
 /***************************************************************/
 /***************************************************************/
 /***************************************************************/
-void bend_flux(bool no_bend, char *GDSIIFile, bool use_prisms) {
+void bend_flux(bool no_bend, bool use_prisms) {
   vec v0 = zero_vec(D2);
   volume vsrc(v0), vrefl(v0), vtrans(v0);
-  structure the_structure =
-      GDSIIFile ? create_structure_from_GDSII(GDSIIFile, no_bend, vsrc, vrefl, vtrans)
-                : create_structure_by_hand(no_bend, use_prisms, vsrc, vrefl, vtrans);
+  structure the_structure = create_structure_by_hand(no_bend, use_prisms, vsrc, vrefl, vtrans);
 
   fields f(&the_structure);
 
@@ -283,17 +245,11 @@ int main(int argc, char *argv[]) {
   initialize mpi(argc, argv);
 
   bool use_prisms = false;
-  char *GDSIIFile = 0;
   for (int narg = 1; narg < argc; narg++)
     if (!strcasecmp(argv[narg], "--use-prisms")) use_prisms = true;
-  for (int narg = 1; narg < argc - 1; narg++)
-    if (!strcasecmp(argv[narg], "--GDSIIFile")) GDSIIFile = argv[narg + 1];
 
-  if (GDSIIFile != 0 && use_prisms == true)
-    fprintf(stderr, "warning: --use-prisms is ignored if --GDSIIFile is specified\n");
-
-  bend_flux(true, GDSIIFile, use_prisms);
-  bend_flux(false, GDSIIFile, use_prisms);
+  bend_flux(true, use_prisms);
+  bend_flux(false, use_prisms);
 
   // success if we made it here
   return 0;

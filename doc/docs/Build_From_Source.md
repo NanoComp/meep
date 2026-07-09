@@ -162,6 +162,8 @@ HDF5 supports parallel I/O under MPI which can be enabled by configuring it with
 
 [libGDSII](https://github.com/HomerReid/libGDSII) is a library for reading [GDSII](https://en.wikipedia.org/wiki/GDSII) binary data files. GDSII is a widely-used format for 2d/planar geometries supported by [electronic design automation](https://en.wikipedia.org/wiki/Electronic_design_automation) (EDA) circuit-layout editors (e.g., Cadence Virtuoso Layout, Silvaco Expert, KLayout, etc.) and semiconductor foundries.
 
+**Note:** libGDSII is deprecated and support for it will be removed in a future release of Meep because the library is no longer maintained. We recommend using the [gdstk](https://github.com/heitzmann/gdstk) Python package to read and manipulate GDS files instead.
+
 ### Guile
 
 Guile is required in order to use the Scheme interface. If you don't install it, you can only use the C++ and/or Python interfaces.
