@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([meep],[m4_esyscmd(./version.sh 1.34.0)])
+AC_INIT([meep],[m4_esyscmd(./version.sh 1.35.0-beta)])
 AC_CONFIG_SRCDIR(src/step.cpp)
 AC_CONFIG_AUX_DIR([build-aux])
 
