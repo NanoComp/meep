@@ -363,16 +363,17 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
     for (size_t i = 0; i < Nfreq; ++i) {
-      std::complex<double> EH6[6];
-      size_t idx_dft = 0;
-      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+      double EHr[6] = {0, 0, 0, 0, 0, 0};
+      double EHi[6] = {0, 0, 0, 0, 0, 0};
+      PLOOP_OVER_IVECS_C(f->fc->gv, f->is, f->ie, idx,
+                         "omp parallel for collapse(3) reduction(+ : EHr[0:6], EHi[0:6])") {
+        (void)idx;
+        size_t idx_dft = IVEC_LOOP_COUNTER;
         IVEC_LOOP_LOC(f->fc->gv, x0);
         x0 = f->S.transform(x0, f->sn) + rshift;
         vec xs(x0);
+        std::complex<double> EH6[6];
         for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
           if (periodic_d[0] != NO_DIRECTION)
             xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
@@ -387,12 +388,16 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
                        greencyl_tol);
             else
               green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
-            for (int j = 0; j < 6; ++j)
-              EH[i * 6 + j] += EH6[j] * cphase;
+            for (int j = 0; j < 6; ++j) {
+              std::complex<double> contrib = EH6[j] * cphase;
+              EHr[j] += real(contrib);
+              EHi[j] += imag(contrib);
+            }
           }
         }
-        idx_dft++;
       }
+      for (int j = 0; j < 6; ++j)
+        EH[i * 6 + j] += std::complex<double>(EHr[j], EHi[j]);
     }
   }
 }
