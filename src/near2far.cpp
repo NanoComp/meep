@@ -363,26 +363,27 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
-    for (size_t i = 0; i < Nfreq; ++i) {
-      double EHr[6] = {0, 0, 0, 0, 0, 0};
-      double EHi[6] = {0, 0, 0, 0, 0, 0};
-      PLOOP_OVER_IVECS_C(f->fc->gv, f->is, f->ie, idx,
-                         "omp parallel for collapse(3) reduction(+ : EHr[0:6], EHi[0:6])") {
-        (void)idx;
-        size_t idx_dft = IVEC_LOOP_COUNTER;
-        IVEC_LOOP_LOC(f->fc->gv, x0);
-        x0 = f->S.transform(x0, f->sn) + rshift;
-        vec xs(x0);
-        std::complex<double> EH6[6];
-        for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
-          if (periodic_d[0] != NO_DIRECTION)
-            xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
-          double phase0 = i0 * periodic_k[0];
-          for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
-            if (periodic_d[1] != NO_DIRECTION)
-              xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
-            double phase = phase0 + i1 * periodic_k[1];
-            std::complex<double> cphase = std::polar(1.0, phase);
+    std::vector<double> EHr(6 * Nfreq, 0.0), EHi(6 * Nfreq, 0.0);
+    double *EHr_p = EHr.data(), *EHi_p = EHi.data();
+    PLOOP_OVER_IVECS_C(
+        f->fc->gv, f->is, f->ie, idx,
+        "omp parallel for collapse(3) reduction(+ : EHr_p[0:6*Nfreq], EHi_p[0:6*Nfreq])") {
+      (void)idx;
+      size_t idx_dft = IVEC_LOOP_COUNTER;
+      IVEC_LOOP_LOC(f->fc->gv, x0);
+      x0 = f->S.transform(x0, f->sn) + rshift;
+      vec xs(x0);
+      std::complex<double> EH6[6];
+      for (int i0 = -periodic_n[0]; i0 <= periodic_n[0]; ++i0) {
+        if (periodic_d[0] != NO_DIRECTION)
+          xs.set_direction(periodic_d[0], x0.in_direction(periodic_d[0]) + i0 * period[0]);
+        double phase0 = i0 * periodic_k[0];
+        for (int i1 = -periodic_n[1]; i1 <= periodic_n[1]; ++i1) {
+          if (periodic_d[1] != NO_DIRECTION)
+            xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
+          double phase = phase0 + i1 * periodic_k[1];
+          std::complex<double> cphase = std::polar(1.0, phase);
+          for (size_t i = 0; i < Nfreq; ++i) {
             if (x.dim == Dcyl)
               greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m,
                        greencyl_tol);
@@ -390,15 +391,16 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
               green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j) {
               std::complex<double> contrib = EH6[j] * cphase;
-              EHr[j] += real(contrib);
-              EHi[j] += imag(contrib);
+              EHr_p[6 * i + j] += real(contrib);
+              EHi_p[6 * i + j] += imag(contrib);
             }
           }
         }
       }
-      for (int j = 0; j < 6; ++j)
-        EH[i * 6 + j] += std::complex<double>(EHr[j], EHi[j]);
     }
+    for (size_t i = 0; i < Nfreq; ++i)
+      for (int j = 0; j < 6; ++j)
+        EH[i * 6 + j] += std::complex<double>(EHr_p[6 * i + j], EHi_p[6 * i + j]);
   }
 }
 
