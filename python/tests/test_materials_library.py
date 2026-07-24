@@ -1,6 +1,8 @@
 import unittest
 
-from meep.materials import Ag, Cr, Ge, InP, LiNbO3, Si, SiO2_aniso
+import meep as mp
+from meep import materials
+from meep.materials import Ag, Cr, Ge, InP, LiNbO3, Si, SiO2_aniso, get_material
 
 
 class TestMaterialsLibrary(unittest.TestCase):
@@ -40,6 +42,19 @@ class TestMaterialsLibrary(unittest.TestCase):
             pass
         else:
             raise AssertionError("Ag is not defined at a wavelength of 0.2 μm")
+
+        def test_registry(self):
+            # every entry of the registry is an mp.Medium, and lookups by name
+            # return the same object exposed as a module attribute.
+            self.assertGreater(len(materials.materials_library), 0)
+            for name, medium in materials.materials_library.items():
+                self.assertIsInstance(medium, mp.Medium)
+                self.assertIs(getattr(mateirals, name), medium)
+                self.assertIs(get_material(name), medium)
+
+            # spot-check a few representative names.
+            for name in ("Si", "Ag", "SiO2", "SiO2_aniso", "LiNbO3"):
+                self.assertIn(name, materials.materials_library)
 
 
 if __name__ == "__main__":

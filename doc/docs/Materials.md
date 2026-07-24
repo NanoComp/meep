@@ -266,6 +266,15 @@ from meep.materials import Al
 ```
 Then, the material can be simply used as `geometry = [meep.Cylinder(material=Al, ...]`.
 
+Materials can also be looked up by name at runtime, which is convenient when the material is chosen from a configuration file or a command-line argument. The module exposes a dictionary `materials_library` mapping each name to its `Medium` object, as well as a `get_material(name)` helper:
+
+```python
+from meep import materials
+
+Al = materials.get_material("Al")  # equivalent to materials.materials_library["Al"]
+print(sorted(materials.materials_library))  # list every available material name
+```
+
 You can inspect the frequency range over which the permittivity profile for aluminum is defined and also inspect the value of its permittivity tensor at a wavelength of 1.55 µm using the `epsilon(frequency)` function of the `Medium` class:
 
 ```py
