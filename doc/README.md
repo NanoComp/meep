@@ -4,11 +4,15 @@ markdown (.md) files are in the `doc/docs` folder.
 
 To build and visualize the HTML documentation locally using the mkdocs package
 (useful for verifying changes on your local machine before committing), first
-install `mkdocs` as well as two auxiliary packages via e.g.:
+install the pinned documentation dependencies via e.g.:
 
 ```
-% pip3 install --user mkdocs python-markdown-math mkdocs-material
+% pip3 install --user -r doc/requirements.txt
 ```
+
+This installs `mkdocs` and `pymdown-extensions` (the latter provides the
+`pymdownx.arithmatex` extension used to render LaTex math). Use Python 3.11, the
+same version used to build and test the rest of the project.
 
 The main Python API document (`Python_User_Interface.md`) is generated from a
 template file (named the same, with a `.in` extension), and the docstrings
@@ -21,11 +25,11 @@ formatting. To control where the docstrings are inserted into the documentation
 a simple tagging system is used. See the documentation in the
 `doc/generate_py_api.py` file for details.
 
-If a docstring contains an "alternate function signature", usually to make
+A docstring may contain an "alternate function signature", usually to make
 functions that accept a variety of positional or keyword arguments more clear to
 the reader. Functions that fall into this category typically use Python's `*` or
 `**` syntax. These lines can be tagged to indicate to the tool that they should
-be moved or copied to the code block in the documentation where they function
+be moved or copied to the code block in the documentation where the function
 signature is declared.  For example:
 
 ```python
@@ -54,7 +58,11 @@ Note that this command should be rerun after making any changes to main template
 file or the docstrings in the source, and rebuilding the project, in order to
 update the documentation.
 
-The view an auto-updating version of the documentation, run the following
+Unlike the Python API document, the Scheme API document
+(`doc/docs/Scheme_User_Interface.md`) has no `.md.in` template or generator; it
+is maintained by hand, so edits should be made directly to that file.
+
+To view an auto-updating version of the documentation, run the following
 command from the top-level MEEP repository tree:
 
 ```
