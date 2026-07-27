@@ -3,7 +3,7 @@ optionally, Drude) susceptibility terms and build a `Medium` from the result.
 
 The complex permittivity is modeled as
 
-    ε(f) = ε_inf + Σ_n  A_n / (ω_n² −  f² − i f γ_n)
+    ε(f) = ε_inf + Σ_n  A_n / (ω_n² − f² − i f γ_n)
 
 and the parameters (A_n, ω_n, γ_n) are found by nonlinear least-squares fitting
 to tabulated data using SciPy (scipy.optimize.least_squares). The fit is
@@ -82,7 +82,7 @@ def lorentzfit(
         gtol=tol,
         max_nfev=maxeval,
     )
-    # least_squares minimizes 0.5 Σ residual²; repot the full Σ|Δ|².
+    # least_squares minimizes 0.5 Σ residual²; report the full Σ|Δ|².
     return result.x, 2 * result.cost
 
 
