@@ -86,6 +86,18 @@ To build the static HTML version of the documentation, run:
 
 The results will be put into the `./doc/site` folder.
 
+To verify that the documentation builds without any warnings (broken links,
+missing navigation entries, etc.) before committing, pass the
+[`--strict`](https://www.mkdocs.org/user-guide/cli/#mkdocs-build) flag, which
+turns warnings into errors:
+
+```
+% mkdocs build --strict
+```
+
+This is the same check that runs in continuous integration (see
+`.github/workflows/docs.yml`).
+
 Alternatively, the project `Makefile` can also be used to build the
 documentation and to build a distribution archive containing the
 documentation. To do so, run one of the following commands from the
