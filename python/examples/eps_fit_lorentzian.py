@@ -102,6 +102,8 @@ def fit_medium(
     for m in range(num_repeat):
         # Each of the three parameters per term is seeded in [1, 10).
         # Note: for a lossless material γ optimizes toward zero.
+        # FIXME: the ranges for w_n and g_n should depend on the frequency range,
+        #        and the range for a_n should depend on the scale of the ε data
         p_rand = 10 ** rng.random(3 * num_lorentzians)
         params, err = lorentzfit(p_rand, freqs, eps)
         params_str = "( " + ", ".join(f"{p:.4f}" for p in params) + " )"
@@ -175,9 +177,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--eps-inf",
         type=float,
-        default=1.1,
-        help="instantaneous (infinite-frequency) permittivity. Must be > 1.0 for "
-        "stability; choose so that min(real(eps - eps_inf)) is ~1.0 (default: 1.1)",
+        default=1.0,
+        help="instantaneous (infinite-frequency) permittivity. Must be ≥ 1.0 for "
+        "stability with default Meep Courant factor (default: 1.0)",
     )
     parser.add_argument(
         "--num-lorentzians",
