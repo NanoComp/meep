@@ -156,11 +156,11 @@ In principle, there are a few different ways to alter the effective strength of 
 It is possible to use saturable non-linear media to effectively implement linear gain and loss in a simulation, and treat it as a frequency-dependent linear susceptibility.
 
 If the saturable medium only has two atomic levels (i.e. only a single non-linear polarization field) and the system is operated in the steady-state regime with only a single frequency component of the electric field, one can write the susceptibility of the non-linear saturable medium as
-$$ \chi_{1}(\mathbf{x}, \omega) = \frac{\sigma_1}{2 \omega_1} \left( \frac{ \Delta N(\mathbf{x})}{\omega - \omega_1 + i \gamma_1/2}\right) \left( \frac{1}{1 + \frac{4 \sigma_1}{\omega_1 \hbar \Gamma_{\parallel} \gamma_1} \left( \frac{\gamma_1^2}{\gamma_1^2 + 4(\omega - \omega_1)^2} \right) |\mathbf{E}(\mathbf{x},\omega)|^2} \right) $$
+$$\chi_{1}(\mathbf{x}, \omega) = \frac{\sigma_1}{2 \omega_1} \left( \frac{ \Delta N(\mathbf{x})}{\omega - \omega_1 + i \gamma_1/2}\right) \left( \frac{1}{1 + \frac{4 \sigma_1}{\omega_1 \hbar \Gamma_{\parallel} \gamma_1} \left( \frac{\gamma_1^2}{\gamma_1^2 + 4(\omega - \omega_1)^2} \right) |\mathbf{E}(\mathbf{x},\omega)|^2} \right)$$
 For this two-level gain medium, $\Gamma_\parallel = \Gamma_{12} + \Gamma_{21}$, and we are assuming that the coupling matrix is proportional to the identity matrix, $\bar{\sigma}_1 = \sigma_1 \bar{I}$. Thus, if
-$$ \frac{4 \sigma_1}{\omega_1 \hbar \Gamma_{\parallel} \gamma_1} \left( \frac{\gamma_1^2}{\gamma_1^2 + 4(\omega - \omega_1)^2} \right) |\mathbf{E}(\mathbf{x},\omega)|^2 \ll 1 $$
+$$\frac{4 \sigma_1}{\omega_1 \hbar \Gamma_{\parallel} \gamma_1} \left( \frac{\gamma_1^2}{\gamma_1^2 + 4(\omega - \omega_1)^2} \right) |\mathbf{E}(\mathbf{x},\omega)|^2 \ll 1$$
 the non-linear saturation of the gain medium can be ignored, and the effectively linear susceptibility is
-$$ \chi_{1}(\mathbf{x}, \omega) \approx \frac{\sigma_1}{2 \omega_1} \left( \frac{ \Delta N(\mathbf{x})}{\omega - \omega_1 + i \gamma_1/2}\right) $$
+$$\chi_{1}(\mathbf{x}, \omega) \approx \frac{\sigma_1}{2 \omega_1} \left( \frac{ \Delta N(\mathbf{x})}{\omega - \omega_1 + i \gamma_1/2}\right)$$
 and thus offers an independent route to realizing linear gain and loss rather than making the material [conductive](Materials.md#conductivity-and-complex).
 
 However, there are some important considerations to keep in mind when trying to use a non-linear saturable medium to approximate a linear susceptibility. First, saturable media can be a [chaotic system](https://en.wikipedia.org/wiki/Chaos_theory), so one must check that the system is actually reaching a steady-state regime with only a single frequency component. Saturable non-linear media excited with more than one initial frequency can generate additional "beat" frequencies, so a sufficiently narrow spectral source must be used. Second, there can be relaxation oscillations between the electric field and the saturable medium, so even with a narrow source, one must wait for this transient to decay. Finally, keep in mind that even if your initial fields are calibrated to satisfy the above inequality to treat the medium as linear, one must still be operating below the lasing threshold, as if the system is above the lasing threshold, the fields will eventually grow to the point where the non-linear saturation is important.
@@ -192,12 +192,15 @@ A conversion chart for different choices of parameter nomenclature for the satur
 There is no standard convention in the literature on lasers and saturable gain media for defining the various constants in the equations above. The following are the relationships among these constants for the three different groups of work discussed in this section:
 
 $$ \omega_n \; (\textrm{Meep}) = \omega_{ba} \; (\textrm{Boyd}) = \omega_a \; (\textrm{SALT}) $$
+
 $$ \gamma_n \; (\textrm{Meep}) = \frac{2}{T_2} \; (\textrm{Boyd}) = 2\gamma_\perp \; (\textrm{SALT}) $$
+
 $$ \sigma_n \; (\textrm{Meep}) = \frac{2 \omega_{ba} |\mu_{ba}|^2}{\hbar} \; (\textrm{Boyd}) = \frac{2 \omega_a |\theta|^2}{\hbar} \; (\textrm{SALT}) $$
 
 The relationship among Meep and SALT units are:
 
 $$ D_0 \; (\textrm{SALT}) = \frac{|\theta|^2}{\hbar (\gamma_n/2)} D_0 \; (\textrm{Meep}) $$
+
 $$ \mathbf{E} \; (\textrm{SALT}) = \frac{2 |\theta|}{\hbar \sqrt{(\gamma_n/2) \Gamma_\parallel}} \mathbf{E} \; (\textrm{Meep}) $$
 
 For more details on applying SALT to atomic media with an arbitrary number of levels, see [Optics Express, Vol. 23, pp. 6455-77 (2015)](https://www.osapublishing.org/oe/abstract.cfm?uri=oe-23-5-6455).
