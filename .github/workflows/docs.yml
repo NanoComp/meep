@@ -1,0 +1,33 @@
+---
+name: docs
+
+on:
+  pull_request:
+    paths:
+      - 'doc/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  push:
+    paths:
+      - 'doc/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: 3.11
+      - name: Install documentation dependencies
+        run: pip install -r doc/requirements.txt
+      # Build the HTML docs from the committed Markdown tree (which includes the
+      # generated Python_User_Interface.md) to catch broken doc builds. The
+      # --strict flag turns warnings (broken links, missing nav entries, etc.)
+      # into errors. This does not rebuild meep, so it does not regenerate the
+      # Python API doc from docstrings; run `make docs` locally after changing
+      # docstrings.
+      - name: Build documentation
+        run: python -m mkdocs build --strict -f mkdocs.yml
