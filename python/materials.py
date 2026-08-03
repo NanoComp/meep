@@ -916,6 +916,115 @@ CdTe = _lorentzian(
     [(1 / (0.6049793384901669 * um_scale), 0, 1.53)],
 )
 
+# ------------------------------------------------------------------
+# amorphous titanium dioxide (TiO2), ALD thin film on glass, from S. Sarkar et al.,
+# ACS Applied Materials & Interfaces, Vol. 11, pp. 13752—60 (2019)
+# ref: https://refractiveindex.info/?shelf=main&book=TiO2&page=Sarkar
+# wavelength range: 0.4 — 0.7 μm
+#
+# The material is lossless (k = 0) over this visible band, which is typical of the
+# amorphous TiO2 films used in visible metasurfaces. The two lossless Lorentzian
+# poles below were obtained by fitting n(λ) with python/examples/eps_fit_lorentzian.py
+# using eps_inf = 1.0; the fit reproduces the tabulated data to max |Δn| < 1e-4.
+
+TiO2 = _lorentzian(
+    1.0,
+    mp.FreqRange(min=um_scale / 0.7, max=um_scale / 0.4),
+    [
+        (5.95102150 / um_scale, 0, 2.61336861),
+        (3.32679951 / um_scale, 0, 0.56248469),
+    ],
+)
+
+# ------------------------------------------------------------------
+# tantalum pentoxide (Ta2O5), amorphous e-beam film, from L.V. Rodríguez-de Marcos
+# et al., Optical Materials Express, Vol. 6, pp. 3622—37 (2016)
+# ref: https://refractiveindex.info/?shelf=main&book=Ta2O5&page=Rodriguez-de_Marcos
+# wavelength range: 0.4 — 0.8 μm
+#
+# A common high-index material for optical coatings. The film has a weak
+# absorption tail (k ~ 4e-3 to 4e-2) across this band, so two of the three
+# Lorentzian poles below are lossy; the first is a lossless UV dispersion pole.
+# Obtained by fitting the complex n(λ) with python/examples/eps_fit_lorentzian.py
+# using eps_inf = 1.0; the fit reproduces the tabulated data to max |Δn| < 3e-4
+# and max |Δk| < 4e-4.
+
+Ta2O5 = _lorentzian(
+    1.0,
+    mp.FreqRange(min=um_scale / 0.8, max=um_scale / 0.4),
+    [
+        (6.650776730932365 / um_scale, 0, 2.99149330433102),
+        (
+            3.082857726999767 / um_scale,
+            0.21010700636739346 / um_scale,
+            0.11626888694300484,
+        ),
+        (
+            2.58515168901357 / um_scale,
+            0.9943019922140083 / um_scale,
+            0.04263554329197508,
+        ),
+    ],
+)
+
+# ------------------------------------------------------------------
+# hafnia (HfO2), amorphous e-beam film, from D. Franta, D. Nečas, and I. Ohlídal,
+# Applied Optics, Vol. 54, pp. 9108—19 (2015)
+# ref: https://refractiveindex.info/?shelf=main&book=HfO2&page=Franta
+# wavelength range: 0.2 — 2.0 μm
+#
+# A high-index material for UV/DUV optical coatings (high laser-damage threshold).
+# The film is transparent through the visible/NIR but has a steep absorption edge
+# in the deep UV (k rises to ~0.25 at 200 nm), so two of the five Lorentzian poles
+# below are lossy; the other three (deep-UV and far-IR) are lossless dispersion
+# poles. Obtained by fitting the complex n(λ) with
+# python/examples/eps_fit_lorentzian.py using eps_inf = 1.0. The fit reproduces n
+# to within ~1e-3 over 0.22—2.0 μm (~1.3% at the 0.2 μm edge) and captures the
+# deep-UV absorption; a small residual k (< 1e-3) remains in the nominally
+# transparent visible/NIR, as is typical when modeling a UV absorber with
+# Lorentzian poles.
+
+HfO2 = _lorentzian(
+    1.0,
+    mp.FreqRange(min=um_scale / 2.0, max=um_scale / 0.2),
+    [
+        (8.61658659209043 / um_scale, 0, 2.6334822427608877),
+        (5.440702254675118 / um_scale, 0, 0.48804779616937405),
+        (
+            5.030064260277914 / um_scale,
+            0.2578186901346688 / um_scale,
+            0.06539601874755799,
+        ),
+        (
+            4.821860796695288 / um_scale,
+            0.3321634404847375 / um_scale,
+            0.029278693598726237,
+        ),
+        (0.16068231786980783 / um_scale, 0, 0.4340907241352991),
+    ],
+)
+
+# ------------------------------------------------------------------
+# magnesium fluoride (MgF2), polycrystalline e-beam film, from D. Franta et al.,
+# Applied Surface Science, Vol. 421, pp. 424—29 (2017)
+# ref: https://refractiveindex.info/?shelf=main&book=MgF2&page=Franta
+# wavelength range: 0.4 — 0.7 μm
+#
+# The standard low-index (n ~ 1.38) material for antireflection coatings. The
+# film is transparent across the visible (k < 1e-14), so the single Lorentzian
+# pole is lossless. Obtained by fitting n(λ) with
+# python/examples/eps_fit_lorentzian.py using eps_inf = 1.0; the fit reproduces
+# the tabulated data to max |Δn| < 1e-4.
+#
+# NOTE: this is a thin film, which is isotropic. Bulk MgF2 is a birefringent
+# (uniaxial) crystal and is not represented here.
+
+MgF2 = _lorentzian(
+    1.0,
+    mp.FreqRange(min=um_scale / 0.7, max=um_scale / 0.4),
+    [(12.693657913899315 / um_scale, 0, 0.8958408780621728)],
+)
+
 
 # ------------------------------------------------------------------
 # Registry of all materials defined above, keyed by name. Enables programmatic
