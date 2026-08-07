@@ -15,6 +15,7 @@ if WITH_MPB
   BINARY_GRATING_TEST = $(TEST_DIR)/test_binary_grating.py
   DIFFRACTED_PLANEWAVE_TEST = $(TEST_DIR)/test_diffracted_planewave.py
   DISPERSIVE_EIGENMODE_TEST = $(TEST_DIR)/test_dispersive_eigenmode.py
+  EIGENMODE_SOURCE_CACHE_TEST = $(TEST_DIR)/test_eigenmode_source_cache.py
   KDOM_TEST = $(TEST_DIR)/test_kdom.py
   MODE_COEFFS_TEST = $(TEST_DIR)/test_mode_coeffs.py
   MODE_DECOMPOSITION_TEST = $(TEST_DIR)/test_mode_decomposition.py
@@ -24,6 +25,7 @@ else
   BINARY_GRATING_TEST =
   DIFFRACTED_PLANEWAVE_TEST =
   DISPERSIVE_EIGENMODE_TEST =
+  EIGENMODE_SOURCE_CACHE_TEST =
   KDOM_TEST =
   MODE_COEFFS_TEST =
   MODE_DECOMPOSITION_TEST =
@@ -59,6 +61,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_divide_mpi_processes.py   \
     $(TEST_DIR)/test_dump_load.py              \
     $(TEST_DIR)/test_eigfreq.py                \
+    $(EIGENMODE_SOURCE_CACHE_TEST)             \
     $(TEST_DIR)/test_faraday_rotation.py       \
     $(TEST_DIR)/test_field_functions.py        \
     $(TEST_DIR)/test_force.py                  \
