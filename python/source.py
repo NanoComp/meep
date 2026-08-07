@@ -475,6 +475,7 @@ class EigenModeSource(Source):
         eig_parity=mp.NO_PARITY,
         eig_resolution=0,
         eig_tolerance=1e-12,
+        eig_use_cache=False,
         **kwargs,
     ):
         """
@@ -556,6 +557,16 @@ class EigenModeSource(Source):
           (which must enclose `size` and `center`) that is used for the unit cell in MPB
           with the dielectric function ε taken from the corresponding region in the Meep
           simulation. Alternatively, a volume object `eig_vol` can be specified.
+
+        + **`eig_use_cache` [`boolean`, defaults to `False`]** — If `True`, the MPB
+          eigenmode is computed only the *first* time this source is added to a
+          simulation, and re-placing the source afterwards (e.g. after `reset_meep`
+          on every iteration of an optimization loop) reuses the cached mode profile
+          at negligible cost instead of re-running the eigensolver. Use this only when
+          the materials inside `eig_vol`/the source region do not change between
+          placements (which is typically the case in inverse design, where only the
+          design region is updated); call `invalidate_eigenmode_cache()` otherwise.
+          Not supported (silently ignored) for `DiffractedPlanewave` bands.
         """
 
         super().__init__(src, component, center, volume, **kwargs)
@@ -570,6 +581,8 @@ class EigenModeSource(Source):
         self.eig_parity = eig_parity
         self.eig_resolution = eig_resolution
         self.eig_tolerance = eig_tolerance
+        self.eig_use_cache = eig_use_cache
+        self._eigenmode_data = None
 
     @property
     def eig_lattice_size(self):
@@ -663,6 +676,49 @@ class EigenModeSource(Source):
             )
         elif isinstance(self.eig_band, int):
             eig_band = self.eig_band
+            diffractedplanewave = None
+
+        kpoint = mp.py_v3_to_vec(
+            sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
+        )
+
+        if self.eig_use_cache and diffractedplanewave is None:
+            # compute the eigenmode once and re-place it from the cache on
+            # subsequent add_source calls (e.g. after reset_meep in an
+            # optimization loop), skipping the MPB eigensolver entirely
+            if self._eigenmode_data is None:
+                frequency = np.real(self.src.swigobj.frequency())
+                kdom = np.zeros(3)
+                self._eigenmode_data = mp._get_eigenmode(
+                    sim.fields,
+                    frequency,
+                    direction,
+                    where,
+                    self.eig_vol.swigobj,
+                    eig_band,
+                    kpoint,
+                    self.eig_match_freq,
+                    self.eig_parity,
+                    self.eig_resolution,
+                    self.eig_tolerance,
+                    kdom,
+                )
+                if self._eigenmode_data is None:
+                    raise RuntimeError(
+                        "MPB could not find the eigenmode; you may need to "
+                        "supply a better guess for k"
+                    )
+            sim.fields.add_eigenmode_source_from_data(
+                self._eigenmode_data,
+                self.component,
+                self.src.swigobj,
+                direction,
+                where,
+                self.amplitude,
+                self.amp_func,
+                self.eig_match_freq,
+            )
+            return
 
         add_eig_src_args = [
             self.component,
@@ -671,9 +727,7 @@ class EigenModeSource(Source):
             where,
             self.eig_vol.swigobj,
             eig_band,
-            mp.py_v3_to_vec(
-                sim.dimensions, self.eig_kpoint, is_cylindrical=sim.is_cylindrical
-            ),
+            kpoint,
             self.eig_match_freq,
             self.eig_parity,
             self.eig_resolution,
@@ -684,10 +738,15 @@ class EigenModeSource(Source):
             sim.fields.add_eigenmode_source, *add_eig_src_args
         )
 
-        if isinstance(self.eig_band, mp.DiffractedPlanewave):
+        if diffractedplanewave is not None:
             add_eig_src(self.amp_func, diffractedplanewave)
         else:
             add_eig_src(self.amp_func)
+
+    def invalidate_eigenmode_cache(self):
+        """Drop the cached eigenmode (see `eig_use_cache`), forcing the next
+        `add_source` to re-run the MPB eigensolver."""
+        self._eigenmode_data = None
 
 
 class GaussianBeam3DSource(Source):

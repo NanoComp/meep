@@ -212,6 +212,11 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self._cscale = None
         self.decimation_factor = decimation_factor
         self.subtracted_dft_fields = subtracted_dft_fields
+        # previous iteration's adjoint EigenModeSource, kept so that its MPB
+        # eigenmode cache can be transplanted into the next iteration's source
+        # (the spatial profile is iteration-independent; only the scalar
+        # amplitude depends on dJ)
+        self._adj_eigenmode_data = None
 
     def register_monitors(self, frequencies):
         self._frequencies = np.asarray(frequencies)
@@ -259,6 +264,8 @@ class EigenmodeCoefficient(ObjectiveQuantity):
                 self.sim.fields.dt,
             )
             amp = 1
+        eigenmode_kwargs = dict(self.eigenmode_kwargs)
+        eigenmode_kwargs.setdefault("eig_use_cache", True)
         source = mp.EigenModeSource(
             src,
             eig_band=self.mode,
@@ -268,8 +275,18 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             eig_match_freq=True,
             size=self.volume.size,
             center=self.volume.center,
-            **self.eigenmode_kwargs,
+            **eigenmode_kwargs,
         )
+        if source.eig_use_cache:
+            # transplant the eigenmode cached during a previous iteration: the
+            # new source object differs only in its dJ-dependent amplitude, so
+            # the spatial mode profile solved by MPB can be reused as is.
+            # (source._eigenmode_data is populated lazily by add_source, so we
+            # keep a reference to the previous source object to harvest it.)
+            prev = self._adj_eigenmode_data
+            if prev is not None and prev._eigenmode_data is not None:
+                source._eigenmode_data = prev._eigenmode_data
+            self._adj_eigenmode_data = source
         return [source]
 
     def __call__(self):

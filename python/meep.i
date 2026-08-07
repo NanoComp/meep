@@ -76,6 +76,7 @@ namespace meep {
         int band_num;
         double frequency;
         double group_velocity;
+        bool kz_phasefix_applied;
     };
 }
 #else
@@ -1547,6 +1548,7 @@ struct eigenmode_data {
     int band_num;
     double frequency;
     double group_velocity;
+    bool kz_phasefix_applied;
 };
 }
 

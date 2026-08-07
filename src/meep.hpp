@@ -1929,6 +1929,18 @@ public:
                             double eigensolver_tol, std::complex<double> amp,
                             std::complex<double> A(const vec &) = 0, diffractedplanewave *dp = 0);
 
+  /* Place the equivalent current sources for an already-computed eigenmode
+     (an opaque eigenmode_data pointer as returned by get_eigenmode).  This is
+     the second half of add_eigenmode_source, split out so that a cached mode
+     can be re-placed cheaply (e.g. on every iteration of an optimization
+     loop) without re-running the MPB eigensolver.  The eigenmode_data is not
+     consumed and may be reused; pass match_frequency=false if the source
+     should oscillate at the mode's computed frequency instead of src's. */
+  void add_eigenmode_source_from_data(void *vedata, component c, const src_time &src, direction d,
+                                      const volume &where, std::complex<double> amp,
+                                      std::complex<double> A(const vec &) = 0,
+                                      bool match_frequency = true);
+
   void get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands, int num_bands,
                                   int parity, double eig_resolution, double eigensolver_tol,
                                   std::complex<double> *coeffs, double *vgrp,

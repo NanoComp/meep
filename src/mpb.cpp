@@ -200,6 +200,8 @@ typedef struct eigenmode_data {
   int band_num;
   double frequency;
   double group_velocity;
+  bool kz_phasefix_applied; // whether special_kz_phasefix was already applied
+                            // (so that a cached mode is not phase-fixed twice)
 } eigenmode_data;
 
 #define TWOPI 6.2831853071795864769252867665590057683943388
@@ -838,6 +840,7 @@ void *fields::get_eigenmode(double frequency, direction d, const volume where, c
   edata->band_num = band_num;
   edata->frequency = frequency;
   edata->group_velocity = (double)vgrp;
+  edata->kz_phasefix_applied = false;
 
   if (kdom) {
 #if MPB_VERSION_MAJOR > 1 || (MPB_VERSION_MAJOR == 1 && MPB_VERSION_MINOR >= 7)
@@ -896,36 +899,58 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   double frequency = real(src.frequency());
 
   am_now_working_on(MPBTime);
-  global_eigenmode_data = (eigenmode_data *)get_eigenmode(
-      frequency, d, where, eig_vol, band_num, kpoint, match_frequency, parity, resolution,
-      eigensolver_tol, NULL, NULL, dp);
+  void *vedata = get_eigenmode(frequency, d, where, eig_vol, band_num, kpoint, match_frequency,
+                               parity, resolution, eigensolver_tol, NULL, NULL, dp);
   finished_working();
 
-  if (is_real && beta != 0) special_kz_phasefix(global_eigenmode_data, true /* phase_flip */);
+  if (vedata == NULL)
+    meep::abort("eigenmode solver failed to find the requested mode; you may need to supply a "
+                "better guess for k");
 
-  if (global_eigenmode_data == NULL) meep::abort("MPB could not find the eigenmode");
+  add_eigenmode_source_from_data(vedata, c0, src, d, where, amp, A, match_frequency);
+
+  destroy_eigenmode_data(vedata);
+}
+
+/***************************************************************/
+/* step 2 of add_eigenmode_source, split out so that a cached  */
+/* eigenmode can be re-placed without re-running MPB:          */
+/* add current sources whose radiated fields reproduce the     */
+/* eigenmode fields                                            */
+/*         electric current K = nHat \times H                  */
+/*         magnetic current N = -nHat \times E                 */
+/* The eigenmode_data is left in a reusable state (its center  */
+/* is restored after placement), so the caller decides its     */
+/* lifetime.                                                   */
+/***************************************************************/
+void fields::add_eigenmode_source_from_data(void *vedata, component c0, const src_time &src,
+                                            direction d, const volume &where, complex<double> amp,
+                                            complex<double> A(const vec &), bool match_frequency) {
+  adjust_mpb_verbosity amv;
+  eigenmode_data *edata = (eigenmode_data *)vedata;
+  if (!edata) meep::abort("add_eigenmode_source_from_data: NULL eigenmode data");
+
+  /* the parity the mode was computed with, needed for the 2d TE/TM checks */
+  int parity = edata->mdata->parity;
+
+  if (is_real && beta != 0 && !edata->kz_phasefix_applied) {
+    special_kz_phasefix(edata, true /* phase_flip */);
+    edata->kz_phasefix_applied = true;
+  }
 
   /* add_volume_source amp_fun coordinates are relative to where.center();
      this is not the default in get_eigenmode because where-relative coordinates
-     are not used elsewhere, e.g. in getting mode coefficients in dft.cpp. */
-  global_eigenmode_data->center -= where.center();
+     are not used elsewhere, e.g. in getting mode coefficients in dft.cpp.
+     The shift is undone below so that the data can be cached and reused. */
+  vec center_saved = edata->center;
+  edata->center -= where.center();
 
-  if (!global_eigenmode_data)
-    meep::abort(
-        "eigenmode solver failed to find the requested mode; you may need to supply a better "
-        "guess for k");
-
-  global_eigenmode_data->amp_func = A ? A : default_amp_func;
+  edata->amp_func = A ? A : default_amp_func;
+  global_eigenmode_data = edata;
 
   src_time *src_mpb = src.clone();
-  if (!match_frequency) src_mpb->set_frequency(global_eigenmode_data->frequency);
+  if (!match_frequency) src_mpb->set_frequency(edata->frequency);
 
-  /*--------------------------------------------------------------*/
-  // step 2: add sources whose radiated field reproduces the      */
-  //         the eigenmode                                        */
-  //         electric current K = nHat \times H                   */
-  //         magnetic current N = -nHat \times E                  */
-  /*--------------------------------------------------------------*/
   if (is_D(c0)) c0 = direction_component(Ex, component_direction(c0));
   if (is_B(c0)) c0 = direction_component(Hx, component_direction(c0));
   component cE[3] = {Ex, Ey, Ez}, cH[3] = {Hx, Hy, Hz};
@@ -957,7 +982,8 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
                           parity & ODD_Z_PARITY, parity & EVEN_Z_PARITY);
 
   delete src_mpb;
-  destroy_eigenmode_data((void *)global_eigenmode_data);
+  edata->center = center_saved;
+  global_eigenmode_data = NULL;
 }
 
 /***************************************************************/
@@ -1117,6 +1143,21 @@ void fields::add_eigenmode_source(component c0, const src_time &src, direction d
   (void)A;
   (void)dp;
   meep::abort("Meep must be configured/compiled with MPB for add_eigenmode_source");
+}
+
+void fields::add_eigenmode_source_from_data(void *vedata, component c0, const src_time &src,
+                                            direction d, const volume &where,
+                                            complex<double> amp, complex<double> A(const vec &),
+                                            bool match_frequency) {
+  (void)vedata;
+  (void)c0;
+  (void)src;
+  (void)d;
+  (void)where;
+  (void)amp;
+  (void)A;
+  (void)match_frequency;
+  meep::abort("Meep must be configured/compiled with MPB for add_eigenmode_source_from_data");
 }
 
 void fields::get_eigenmode_coefficients(dft_flux flux, const volume &eig_vol, int *bands,
