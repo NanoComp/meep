@@ -308,12 +308,17 @@ class EigenmodeCoefficient(ObjectiveQuantity):
             )
             kpoint_func = lambda *not_used: kpoint if self.forward else -1 * kpoint
             overlap_idx = 0
+        # eig_use_cache only applies to the (adjoint) EigenModeSource, not to
+        # get_eigenmode_coefficients
+        emc_kwargs = {
+            k: v for k, v in self.eigenmode_kwargs.items() if k != "eig_use_cache"
+        }
         ob = self.sim.get_eigenmode_coefficients(
             self._monitor,
             [self.mode],
             direction=mp.NO_DIRECTION,
             kpoint_func=kpoint_func,
-            **self.eigenmode_kwargs,
+            **emc_kwargs,
         )
         overlaps = ob.alpha.squeeze(axis=0)
         assert overlaps.ndim == 2
