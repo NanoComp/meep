@@ -2832,6 +2832,141 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
   }
 }
 
+namespace {
+/* DFT data for one field component of the design-region monitors, gathered
+   from every chunk on every process onto the full (padded) monitor grid.
+   The gradient computation below then runs on this chunk-independent view,
+   which makes its result independent of the chunk division and hence of the
+   number of MPI processes (the previous per-chunk implementation paired
+   chunks of different components by list index, indexed neighboring points
+   through chunk-local index arithmetic that could alias or silently return
+   zero at chunk boundaries, and dropped cross terms entirely when the
+   per-component chunk counts differed; see NanoComp/meep#2578).
+   Layout matches dft_chunk: frequency f at grid index idx is data[nf*idx+f]. */
+struct gathered_dft_component {
+  bool empty = true;
+  meep::component c = meep::Ex;
+  meep::ivec gis, gie; // monitor-owned global bounds (union over all chunks)
+  meep::ivec pis, pie; // gathered (padded) bounds: owned +- 1 pixel, clamped
+  std::vector<std::complex<double> > data;
+  size_t npts = 0;
+
+  gathered_dft_component()
+      : gis(meep::D3), gie(meep::D3), pis(meep::D3), pie(meep::D3) {}
+};
+
+bool ivec_in_range(const meep::ivec &p, const meep::ivec &lo, const meep::ivec &hi,
+                   meep::ndim dim) {
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    if (p.in_direction(d) < lo.in_direction(d) || p.in_direction(d) > hi.in_direction(d))
+      return false;
+  }
+  return true;
+}
+
+void gather_dft_component(const std::vector<meep::dft_chunk *> &chunks, size_t nf,
+                          meep::grid_volume &gv, gathered_dft_component &out) {
+  // agree on the component and the global monitor bounds across all processes
+  int cint = -1;
+  const int BIG = 1 << 29;
+  int lo[5], hi[5];
+  for (int d = 0; d < 5; ++d) {
+    lo[d] = BIG;
+    hi[d] = -BIG;
+  }
+  for (size_t i = 0; i < chunks.size(); ++i) {
+    cint = (int)chunks[i]->c;
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      lo[(int)d] = std::min(lo[(int)d], chunks[i]->is_old.in_direction(d));
+      hi[(int)d] = std::max(hi[(int)d], chunks[i]->ie_old.in_direction(d));
+    }
+  }
+  cint = meep::max_to_all(cint);
+  if (cint < 0) { // no process has data for this component
+    out.empty = true;
+    return;
+  }
+  out.c = (meep::component)cint;
+  meep::ivec gis(gv.dim), gie(gv.dim), pis(gv.dim), pie(gv.dim);
+  const meep::ivec cis = gv.little_corner() + gv.iyee_shift(out.c);
+  const meep::ivec cie = gv.big_corner() + gv.iyee_shift(out.c);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    const int glo = meep::min_to_all(lo[(int)d]);
+    const int ghi = meep::max_to_all(hi[(int)d]);
+    gis.set_direction(d, glo);
+    gie.set_direction(d, ghi);
+    // pad by one pixel like the persist dft chunks do, staying inside the cell
+    pis.set_direction(d, std::max(glo - 2, cis.in_direction(d)));
+    pie.set_direction(d, std::min(ghi + 2, cie.in_direction(d)));
+  }
+  out.gis = gis;
+  out.gie = gie;
+  out.pis = pis;
+  out.pie = pie;
+
+  size_t N = 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    N *= (size_t)((pie.in_direction(d) - pis.in_direction(d)) / 2 + 1);
+  }
+  out.npts = N;
+
+  /* owner-priority fill: the monitor-owned points (the disjoint
+     is_old..ie_old decomposition) are authoritative; the padding ring, which
+     no chunk owns, is averaged over however many chunks stored a (ghost)
+     copy of it, so its coverage does not depend on the chunk division. */
+  std::vector<std::complex<double> > vown(N * nf, 0.0), vpad(N * nf, 0.0);
+  std::vector<double> wown(N, 0.0), wpad(N, 0.0);
+  meep::grid_volume gvp = gv.subvolume(pis, pie, out.c);
+  for (size_t i = 0; i < chunks.size(); ++i) {
+    meep::dft_chunk *ch = chunks[i];
+    meep::grid_volume gvc = gv.subvolume(ch->is, ch->ie, out.c);
+    meep::ivec cs(gv.dim), ce(gv.dim);
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      cs.set_direction(d, std::max(ch->is.in_direction(d), pis.in_direction(d)));
+      ce.set_direction(d, std::min(ch->ie.in_direction(d), pie.in_direction(d)));
+    }
+    LOOP_OVER_IVECS(gvp, cs, ce, gidx) {
+      IVEC_LOOP_ILOC(gvp, ip);
+      ptrdiff_t lidx = gvc.index(out.c, ip);
+      if (lidx < 0 || (size_t)lidx >= ch->N) continue;
+      const bool own = ivec_in_range(ip, ch->is_old, ch->ie_old, gv.dim);
+      std::vector<std::complex<double> > &vv = own ? vown : vpad;
+      std::vector<double> &ww = own ? wown : wpad;
+      for (size_t f = 0; f < nf; ++f)
+        vv[nf * gidx + f] += std::complex<double>(ch->dft[nf * lidx + f]);
+      ww[gidx] += 1.0;
+    }
+  }
+  std::vector<std::complex<double> > vown_g(N * nf), vpad_g(N * nf);
+  std::vector<double> wown_g(N), wpad_g(N);
+  meep::sum_to_all(vown.data(), vown_g.data(), (int)(N * nf));
+  meep::sum_to_all(vpad.data(), vpad_g.data(), (int)(N * nf));
+  meep::sum_to_all(wown.data(), wown_g.data(), (int)N);
+  meep::sum_to_all(wpad.data(), wpad_g.data(), (int)N);
+  out.data.assign(N * nf, 0.0);
+  for (size_t idx = 0; idx < N; ++idx) {
+    if (wown_g[idx] > 0)
+      for (size_t f = 0; f < nf; ++f)
+        out.data[nf * idx + f] = vown_g[nf * idx + f] / wown_g[idx];
+    else if (wpad_g[idx] > 0)
+      for (size_t f = 0; f < nf; ++f)
+        out.data[nf * idx + f] = vpad_g[nf * idx + f] / wpad_g[idx];
+  }
+  out.empty = false;
+}
+
+std::complex<double> gathered_value(const gathered_dft_component &g,
+                                    const meep::grid_volume &gvp, const meep::ivec &p, size_t nf,
+                                    size_t f_i, meep::ndim dim) {
+  // per-dimension bounds check: outside the gathered region is exactly zero
+  // (never index-aliased into another point)
+  if (!ivec_in_range(p, g.pis, g.pie, dim)) return 0.0;
+  ptrdiff_t idx = gvp.index(g.c, p);
+  if (idx < 0 || (size_t)idx >= g.npts) return 0.0;
+  return g.data[nf * idx + f_i];
+}
+} // namespace
+
 void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
                                 std::vector<meep::dft_fields *> fields_f, double *frequencies,
@@ -2869,122 +3004,136 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
       c_forward_dft_chunks.push_back(current_forward_chunk);
       current_forward_chunk = current_forward_chunk->next_in_dft;
     }
-    if (c_adjoint_dft_chunks.size() != c_forward_dft_chunks.size())
-      meep::abort("The number of adjoint chunks (%ld) is not equal to the number of forward chunks "
-                  "(%ld).\n",
-                  c_adjoint_dft_chunks.size(), c_forward_dft_chunks.size());
+    /* NOTE: the per-component chunk counts of the adjoint and forward
+       monitors may legitimately differ (and differ between components) at
+       chunk boundaries; the gather below makes this irrelevant. */
     adjoint_dft_chunks.push_back(c_adjoint_dft_chunks);
     forward_dft_chunks.push_back(c_forward_dft_chunks);
+  }
+
+  /* ------------------------------------------------------------ */
+  // gather the monitors onto chunk-independent global grids
+  /* ------------------------------------------------------------ */
+  gathered_dft_component ga[3], gf[3];
+  for (int i = 0; i < 3; i++) {
+    gather_dft_component(adjoint_dft_chunks[i], nf, gv, ga[i]);
+    gather_dft_component(forward_dft_chunks[i], nf, gv, gf[i]);
+    if (!ga[i].empty && !gf[i].empty) {
+      if (ga[i].c != gf[i].c)
+        meep::abort("adjoint/forward component mismatch in material_grids_addgradient\n");
+      LOOP_OVER_DIRECTIONS(gv.dim, d) {
+        if (ga[i].pis.in_direction(d) != gf[i].pis.in_direction(d) ||
+            ga[i].pie.in_direction(d) != gf[i].pie.in_direction(d))
+          meep::abort("adjoint/forward monitor grids disagree in material_grids_addgradient\n");
+      }
+    }
   }
 
   /* ------------------------------------------------------------ */
   // Begin looping
   /* ------------------------------------------------------------ */
 
+  const size_t nproc = (size_t)meep::count_processors();
+  const size_t rank = (size_t)meep::my_rank();
+
   // loop over frequency
   for (size_t f_i = 0; f_i < nf; f_i++) {
 
     // loop over adjoint components
     for (int ci_adjoint = 0; ci_adjoint < 3; ci_adjoint++) {
-      int num_chunks = adjoint_dft_chunks[ci_adjoint].size();
-      if (num_chunks == 0) continue;
+      if (ga[ci_adjoint].empty) continue;
+      meep::component adjoint_c = ga[ci_adjoint].c;
+      meep::grid_volume gv_adj = gv.subvolume(ga[ci_adjoint].pis, ga[ci_adjoint].pie, adjoint_c);
 
-      // loop over each chunk
-      for (int cur_chunk = 0; cur_chunk < num_chunks; cur_chunk++) {
-        meep::dft_chunk *adj_chunk = adjoint_dft_chunks[ci_adjoint][cur_chunk];
-        meep::component adjoint_c = adj_chunk->c;
-        meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is, adj_chunk->ie, adjoint_c);
+      /* every process sees the same chunk-independent global grid; split the
+         work by striding over the points */
+      size_t ptid = 0;
+
+      // loop over each (owned) point of interest
+      LOOP_OVER_IVECS(gv_adj, ga[ci_adjoint].gis, ga[ci_adjoint].gie, idx_adj) {
+        if ((ptid++ % nproc) != rank) continue;
+        double cyl_scale;
+        IVEC_LOOP_ILOC(gv_adj, ip);
+        IVEC_LOOP_LOC(gv_adj, p);
+        std::complex<double> adj = ga[ci_adjoint].data[nf * idx_adj + f_i];
+        material_type md;
+        geps->get_material_pt(md, p);
+        /* if we have conductivities (e.g. for damping)
+        then we need to make sure we correctly account
+        for that here */
+        if (!md->trivial) adj *= cond_cmp(adjoint_c, p, frequencies[f_i], geps);
+
+        /**************************************/
+        /*            Main Routine            */
+        /**************************************/
+
+        /********* compute -λᵀAᵤx *************/
 
         // loop over forward components
         for (int ci_forward = 0; ci_forward < 3; ci_forward++) {
-          size_t num_f_chunks = forward_dft_chunks[ci_forward].size();
-          if ((num_f_chunks == 0) || (cur_chunk >= num_f_chunks)) continue;
-          meep::dft_chunk *fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
-          meep::component forward_c = fwd_chunk->c;
-          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
+          if (gf[ci_forward].empty) continue;
+          meep::component forward_c = gf[ci_forward].c;
 
-          // loop over each point of interest
-          LOOP_OVER_IVECS(gv_adj, adj_chunk->is_old, adj_chunk->ie_old, idx_adj) {
-            double cyl_scale;
-            IVEC_LOOP_ILOC(gv_adj, ip);
-            IVEC_LOOP_LOC(gv_adj, p);
-            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
-            material_type md;
-            geps->get_material_pt(md, p);
-            /* if we have conductivities (e.g. for damping)
-            then we need to make sure we correctly account
-            for that here */
-            if (!md->trivial) adj *= cond_cmp(adjoint_c, p, frequencies[f_i], geps);
+          /* trivial case, no interpolation/restriction needed        */
+          if (forward_c == adjoint_c) {
+            /* the adjoint and forward monitors of the same component share
+               identical (asserted above) global grids, so idx_adj is valid */
+            std::complex<double> fwd = gf[ci_forward].data[nf * idx_adj + f_i];
+            cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r()
+                                               : 1; // the pi is already factored in near2far.cpp
+            material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
+                                             scalegrad * cyl_scale, geps, adjoint_c, forward_c, fwd,
+                                             adj, frequencies[f_i], gv, du);
+            /* more complicated case requires interpolation/restriction */
+          }
+          else if ((md->do_averaging) ||             /* account for subpixel smoothing     */
+                   (!is_material_grid(md)) ||        /* account for edge effects of mg     */
+                   (has_offdiag(&(md->medium_1))) || /* account for offdiagonal components */
+                   (has_offdiag(&(md->medium_2)))) {
+            /* we need to restrict the adjoint fields to
+            the two nodes of interest (which requires a factor
+            of 0.5 to scale), and interpolate the forward fields
+            to the same two nodes (which requires another factor of 0.5).
+            Then we perform our inner product at these nodes.
+            */
+            meep::grid_volume gv_fwd =
+                gv.subvolume(gf[ci_forward].pis, gf[ci_forward].pie, forward_c);
 
-            /**************************************/
-            /*            Main Routine            */
-            /**************************************/
+            // identify the first corner of the forward fields
+            meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
+            // identify the other three corners
+            meep::ivec unit_a = unit_ivec(gv.dim, component_direction(adjoint_c));
+            meep::ivec unit_f = unit_ivec(gv.dim, component_direction(forward_c));
+            meep::ivec fwd_pa = (fwd_p + unit_a * 2);
+            meep::ivec fwd_pf = (fwd_p - unit_f * 2);
+            meep::ivec fwd_paf = (fwd_p + unit_a * 2 - unit_f * 2);
 
-            /********* compute -λᵀAᵤx *************/
+            // store in vector for convenience
+            std::vector<meep::ivec> fwd_pl = {fwd_p, fwd_pa};
+            std::vector<meep::ivec> fwd_pr = {fwd_pf, fwd_paf};
 
-            /* trivial case, no interpolation/restriction needed        */
-            if (forward_c == adjoint_c) {
-              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
-              cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r()
-                                                 : 1; // the pi is already factored in near2far.cpp
-              material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
-                                               scalegrad * cyl_scale, geps, adjoint_c, forward_c,
-                                               fwd, adj, frequencies[f_i], gv, du);
-              /* more complicated case requires interpolation/restriction */
-            }
-            else if ((md->do_averaging) ||             /* account for subpixel smoothing     */
-                     (!is_material_grid(md)) ||        /* account for edge effects of mg     */
-                     (has_offdiag(&(md->medium_1))) || /* account for offdiagonal components */
-                     (has_offdiag(&(md->medium_2)))) {
-              /* we need to restrict the adjoint fields to
-              the two nodes of interest (which requires a factor
-              of 0.5 to scale), and interpolate the forward fields
-              to the same two nodes (which requires another factor of 0.5).
-              Then we perform our inner product at these nodes.
-              */
-              std::complex<meep::realnum> fwd_avg, fwd1, fwd2;
-              ptrdiff_t fwd1_idx, fwd2_idx;
-
-              // identify the first corner of the forward fields
-              meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
-              // identify the other three corners
-              meep::ivec unit_a = unit_ivec(gv.dim, component_direction(adjoint_c));
-              meep::ivec unit_f = unit_ivec(gv.dim, component_direction(forward_c));
-              meep::ivec fwd_pa = (fwd_p + unit_a * 2);
-              meep::ivec fwd_pf = (fwd_p - unit_f * 2);
-              meep::ivec fwd_paf = (fwd_p + unit_a * 2 - unit_f * 2);
-
-              // store in vector for convenience
-              std::vector<meep::ivec> fwd_pl = {fwd_p, fwd_pa};
-              std::vector<meep::ivec> fwd_pr = {fwd_pf, fwd_paf};
-
-              // identify the two eps points
-              std::vector<meep::ivec> ieps = {(fwd_p + fwd_pf) / 2, (fwd_pa + fwd_paf) / 2};
+            // identify the two eps points
+            std::vector<meep::ivec> ieps = {(fwd_p + fwd_pf) / 2, (fwd_pa + fwd_paf) / 2};
 
 // operate on the each eps node
 #pragma unroll
-              for (int node = 0; node < 2; node++) { // two nodes
-                fwd1_idx = gv_fwd.index(forward_c, fwd_pl[node]);
-                fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx < 0))
-                           ? 0
-                           : fwd_chunk->dft[nf * fwd1_idx + f_i];
-                fwd2_idx = gv_fwd.index(forward_c, fwd_pr[node]);
-                fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx < 0))
-                           ? 0
-                           : fwd_chunk->dft[nf * fwd2_idx + f_i];
-                fwd_avg = std::complex<meep::realnum>(0.5, 0) * (fwd1 + fwd2);
-                meep::vec eps1 = gv[ieps[node]];
-                cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-                material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(eps1),
-                                                 scalegrad * cyl_scale, geps, adjoint_c, forward_c,
-                                                 fwd_avg, std::complex<meep::realnum>(0.5, 0) * adj,
-                                                 frequencies[f_i], gv, du);
-              }
+            for (int node = 0; node < 2; node++) { // two nodes
+              std::complex<double> fwd1 =
+                  gathered_value(gf[ci_forward], gv_fwd, fwd_pl[node], nf, f_i, gv.dim);
+              std::complex<double> fwd2 =
+                  gathered_value(gf[ci_forward], gv_fwd, fwd_pr[node], nf, f_i, gv.dim);
+              std::complex<double> fwd_avg = std::complex<double>(0.5, 0) * (fwd1 + fwd2);
+              meep::vec eps1 = gv[ieps[node]];
+              cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
+              material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(eps1),
+                                               scalegrad * cyl_scale, geps, adjoint_c, forward_c,
+                                               fwd_avg, std::complex<double>(0.5, 0) * adj,
+                                               frequencies[f_i], gv, du);
             }
-            /********* compute λᵀbᵤ ***************/
-            /* not yet implemented/needed */
-            /**************************************/
           }
+          /********* compute λᵀbᵤ ***************/
+          /* not yet implemented/needed */
+          /**************************************/
         }
       }
     }
