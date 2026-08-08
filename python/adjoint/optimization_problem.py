@@ -38,6 +38,7 @@ class OptimizationProblem:
         maximum_run_time: Optional[float] = None,
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
         step_funcs: Optional[List[Callable]] = None,
+        reuse_simulation: Optional[bool] = False,
     ):
 
         """Initialize an instance of OptimizationProblem.
@@ -77,10 +78,21 @@ class OptimizationProblem:
           finite_difference_step: the step size for calculation of the
             finite-difference gradients.
           step_funcs: list of step functions to be called at each timestep.
+          reuse_simulation: if True, reuse the `fields` object (and hence the
+            chunk division and chunk-to-chunk connection tables) across
+            optimization iterations instead of rebuilding everything with
+            `reset_meep`. Each design update then only re-averages epsilon in
+            place (`set_materials`) and restarts the fields at t=0. This
+            eliminates the per-iteration chunk-connection rebuild, whose cost
+            grows quadratically with the number of chunks and can dominate an
+            iteration at large MPI rank counts. The structure of the problem
+            (cell, boundary layers, symmetries, k-point, source/monitor
+            components) must not change between iterations. Default is False.
         """
 
         self.step_funcs = step_funcs if step_funcs is not None else []
         self.sim = simulation
+        self.reuse_simulation = reuse_simulation
 
         if isinstance(objective_functions, list):
             self.objective_functions = objective_functions
@@ -244,7 +256,13 @@ class OptimizationProblem:
 
     def prepare_forward_run(self):
         # prepare forward run
-        self.sim.reset_meep()
+        if self.reuse_simulation and self.sim.fields is not None:
+            # keep the fields object (chunk division + connection tables);
+            # just zero the fields and drop last iteration's DFT monitors
+            self.sim.restart_fields()
+            self.sim.clear_dft_monitors()
+        else:
+            self.sim.reset_meep()
 
         # add forward sources
         self.sim.change_sources(self.forward_sources)
@@ -550,7 +568,15 @@ class OptimizationProblem:
             if beta:
                 b.update_beta(beta)
 
-        self.sim.reset_meep()
+        if self.reuse_simulation and self.sim.fields is not None:
+            # re-average the updated design epsilon in place; the existing
+            # fields object (and its chunk connections) remains valid
+            self.sim.set_materials(
+                geometry=self.sim.geometry,
+                default_material=self.sim.default_material,
+            )
+        else:
+            self.sim.reset_meep()
         self.current_state = "INIT"
 
     def get_objective_arguments(self) -> List[float]:
