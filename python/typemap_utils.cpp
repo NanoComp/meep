@@ -504,7 +504,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
 
   // specify the type of material grid
   PyObject *type = PyObject_GetAttrString(po, "grid_type");
-  long gt_enum = PyInt_AsLong(type);
+  long gt_enum = PyInteger_AsLong(type);
   Py_DECREF(type);
 
   switch (gt_enum) {

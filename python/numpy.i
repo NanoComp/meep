@@ -105,6 +105,16 @@
 %fragment("NumPy_Utilities",
           "header")
 {
+%#if PY_VERSION_HEX >= 0x03000000
+  /* Python 3 removed the PyInt/PyString C APIs; map the uses in this file
+     onto their Python 3 equivalents (SWIG >= 4.1 no longer provides these
+     backward-compatibility defines itself). */
+%#ifndef PyInt_Check
+%#define PyInt_Check(x) PyLong_Check(x)
+%#define PyInt_AsLong(x) PyLong_AsLong(x)
+%#endif
+%#endif
+
   /* Given a PyObject, return a string describing its type.
    */
   const char* pytype_string(PyObject* py_obj)
@@ -112,7 +122,12 @@
     if (py_obj == NULL          ) return "C NULL value";
     if (py_obj == Py_None       ) return "Python None" ;
     if (PyCallable_Check(py_obj)) return "callable"    ;
+%#if PY_VERSION_HEX >= 0x03000000
+    if (PyUnicode_Check( py_obj)) return "string"      ;
+    if (PyBytes_Check(   py_obj)) return "bytes"       ;
+%#else
     if (PyString_Check(  py_obj)) return "string"      ;
+%#endif
     if (PyInt_Check(     py_obj)) return "int"         ;
     if (PyFloat_Check(   py_obj)) return "float"       ;
     if (PyDict_Check(    py_obj)) return "dict"        ;
