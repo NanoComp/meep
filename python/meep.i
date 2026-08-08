@@ -1939,6 +1939,14 @@ meep_geom::geom_epsilon* _set_materials(meep::structure * s,
         meep_geom::set_materials_from_geom_epsilon(s, geps, use_anisotropic_averaging, tol,
                                              maxeval,alist);
     }
+    else {
+        /* set_materials_from_geom_epsilon() is what normally records these for the
+           gradient calculation. Skipping it leaves the geom_epsilon on its header
+           defaults (DEFAULT_SUBPIXEL_TOL/MAXEVAL), so the adjoint would smooth no
+           matter what the caller asked for. */
+        geps->tol = tol;
+        geps->maxeval = use_anisotropic_averaging ? maxeval : 0;
+    }
 
     if (meep::verbosity > 1 && !split_chunks_evenly && set_materials) {
       int num_procs = meep::count_processors();
