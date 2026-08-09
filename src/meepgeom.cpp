@@ -2851,8 +2851,7 @@ struct gathered_dft_component {
   std::vector<std::complex<double> > data;
   size_t npts = 0;
 
-  gathered_dft_component()
-      : gis(meep::D3), gie(meep::D3), pis(meep::D3), pie(meep::D3) {}
+  gathered_dft_component() : gis(meep::D3), gie(meep::D3), pis(meep::D3), pie(meep::D3) {}
 };
 
 bool ivec_in_range(const meep::ivec &p, const meep::ivec &lo, const meep::ivec &hi,
@@ -2955,9 +2954,8 @@ void gather_dft_component(const std::vector<meep::dft_chunk *> &chunks, size_t n
   out.empty = false;
 }
 
-std::complex<double> gathered_value(const gathered_dft_component &g,
-                                    const meep::grid_volume &gvp, const meep::ivec &p, size_t nf,
-                                    size_t f_i, meep::ndim dim) {
+std::complex<double> gathered_value(const gathered_dft_component &g, const meep::grid_volume &gvp,
+                                    const meep::ivec &p, size_t nf, size_t f_i, meep::ndim dim) {
   // per-dimension bounds check: outside the gathered region is exactly zero
   // (never index-aliased into another point)
   if (!ivec_in_range(p, g.pis, g.pie, dim)) return 0.0;
@@ -3125,10 +3123,9 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
               std::complex<double> fwd_avg = std::complex<double>(0.5, 0) * (fwd1 + fwd2);
               meep::vec eps1 = gv[ieps[node]];
               cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-              material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(eps1),
-                                               scalegrad * cyl_scale, geps, adjoint_c, forward_c,
-                                               fwd_avg, std::complex<double>(0.5, 0) * adj,
-                                               frequencies[f_i], gv, du);
+              material_grids_addgradient_point(
+                  v_local + ng * f_i, vec_to_vector3(eps1), scalegrad * cyl_scale, geps, adjoint_c,
+                  forward_c, fwd_avg, std::complex<double>(0.5, 0) * adj, frequencies[f_i], gv, du);
             }
           }
           /********* compute λᵀbᵤ ***************/
