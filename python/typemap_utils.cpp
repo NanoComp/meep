@@ -17,8 +17,6 @@
 
 // Utility functions for pymeep typemaps
 
-#include <climits>
-
 #ifndef SWIG_PYTHON_THREAD_SCOPED_BLOCK
 #define SWIG_PYTHON_THREAD_SCOPED_BLOCK SWIG_PYTHON_THREAD_BEGIN_BLOCK
 #endif
@@ -1151,8 +1149,9 @@ static int py_list_to_gobj_list(PyObject *po, geometric_object_list *l) {
   int length = PyList_Size(po);
 
   l->num_items = length;
-  // Value-initialize: geometric object is a POD, so plain new[] would leave the material
-  // points indeterminate and gobj_list_freearg would free garbage.
+  // The trailing () value-initializes. geometric_object is trivially default-constructible,
+  // so plain new[] would leave each material pointer indeterminate and gobj_list_freearg
+  // would pass garbage to material_free.
   l->items = new geometric_object[length]();
 
   for (int i = 0; i < length; i++) {
