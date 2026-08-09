@@ -295,7 +295,7 @@ static mpb_real field_integral_energy_callback(mpb_real energy, mpb_real epsilon
     $result = PyList_New(n);
 
     for (Py_ssize_t i = 0; i < n; ++i) {
-        PyObject *dim = PyInteger_FromLong($1.operator[](i));
+        PyObject *dim = PyLong_FromLong($1.operator[](i));
         PyList_SetItem($result, i, dim);
     }
 }

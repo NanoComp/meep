@@ -17,12 +17,6 @@
 
 // Utility functions for pymeep typemaps
 
-#define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
-#define IsPyString(n) PyUnicode_Check(n)
-#define PyInteger_Check(n) PyLong_Check(n)
-#define PyInteger_AsLong(n) PyLong_AsLong(n)
-#define PyInteger_FromLong(n) PyLong_FromLong(n)
-
 #ifndef SWIG_PYTHON_THREAD_SCOPED_BLOCK
 #define SWIG_PYTHON_THREAD_SCOPED_BLOCK SWIG_PYTHON_THREAD_BEGIN_BLOCK
 #endif
@@ -198,7 +192,7 @@ static std::string py_class_name_as_string(PyObject *po) {
   PyObject *py_type = PyObject_Type(po);
   PyObject *name = PyObject_GetAttrString(py_type, "__name__");
 
-  const char *bytes = PyObject_ToCharPtr(name);
+  const char *bytes = PyUnicode_AsUTF8(name);
 
   std::string class_name(bytes);
 
@@ -331,7 +325,7 @@ static int get_attr_int(PyObject *py_obj, int *result, const char *name) {
 
   if (!py_attr) { return 0; }
 
-  *result = PyInteger_AsLong(py_attr);
+  *result = PyLong_AsLong(py_attr);
   Py_XDECREF(py_attr);
   return 1;
   ;
@@ -482,7 +476,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
 
   // specify the type of material grid
   PyObject *type = PyObject_GetAttrString(po, "grid_type");
-  long gt_enum = PyInteger_AsLong(type);
+  long gt_enum = PyLong_AsLong(type);
   Py_DECREF(type);
 
   switch (gt_enum) {
@@ -603,8 +597,8 @@ static int pymaterial_to_material(PyObject *po, material_type *mt) {
     Py_XDECREF(eps);
     Py_XDECREF(py_do_averaging);
   }
-  else if (IsPyString(po)) {
-    const char *eps_input_file = PyObject_ToCharPtr(po);
+  else if (PyUnicode_Check(po)) {
+    const char *eps_input_file = PyUnicode_AsUTF8(po);
     md = make_file_material(eps_input_file);
   }
   else if (PyArray_Check(po)) {
