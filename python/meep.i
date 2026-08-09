@@ -21,7 +21,6 @@
 
 %{
 #define SWIG_FILE_WITH_INIT
-#define SWIG_PYTHON_2_UNICODE
 
 /*
  * In C++ we can use a scoped variable to acquire the GIL and then auto release
@@ -195,7 +194,7 @@ static std::complex<double> py_field_func_wrap(const std::complex<meep::realnum>
 static meep::vec py_kpoint_func_wrap(double freq, int mode, void *user_data) {
     SWIG_PYTHON_THREAD_SCOPED_BLOCK;
     PyObject *py_freq = PyFloat_FromDouble(freq);
-    PyObject *py_mode = PyInteger_FromLong(mode);
+    PyObject *py_mode = PyLong_FromLong(mode);
 
     PyObject *py_result = PyObject_CallFunctionObjArgs((PyObject*)user_data, py_freq, py_mode, NULL);
 
@@ -586,7 +585,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
 
     PyObject *py_dirs = PyList_New(3);
     for (Py_ssize_t i = 0; i < 3; ++i) {
-        PyList_SetItem(py_dirs, i, PyInteger_FromLong(static_cast<int>(dirs[i])));
+        PyList_SetItem(py_dirs, i, PyLong_FromLong(static_cast<int>(dirs[i])));
     }
 
     if (min_max_loc){
@@ -986,7 +985,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %typecheck(SWIG_TYPECHECK_POINTER) material_type {
     int py_material = PyObject_IsInstance($input, py_material_object());
     int user_material = PyFunction_Check($input);
-    int file_material = IsPyString($input);
+    int file_material = PyUnicode_Check($input);
     int numpy_material = PyArray_Check($input);
 
     $1 = py_material || user_material || file_material || numpy_material;
@@ -1052,19 +1051,19 @@ void _get_gradient(PyObject *grad, double scalegrad,
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep::component {
-    $1 = PyInteger_Check($input) && PyInteger_AsLong($input) < 100;
+    $1 = PyLong_Check($input) && PyLong_AsLong($input) < 100;
 }
 
 %typemap(in) meep::component {
-    $1 = static_cast<meep::component>(PyInteger_AsLong($input));
+    $1 = static_cast<meep::component>(PyLong_AsLong($input));
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) meep::derived_component {
-    $1 = PyInteger_Check($input) && PyInteger_AsLong($input) >= 100;
+    $1 = PyLong_Check($input) && PyLong_AsLong($input) >= 100;
 }
 
 %typemap(in) meep::derived_component {
-    $1 = static_cast<meep::derived_component>(PyInteger_AsLong($input));
+    $1 = static_cast<meep::derived_component>(PyLong_AsLong($input));
 }
 
 %typecheck(SWIG_TYPECHECK_POINTER) PyObject *min_max_loc {
@@ -1133,7 +1132,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
     $1 = new meep::component[$2];
 
     for (Py_ssize_t i = 0; i < $2; i++) {
-        $1[i] = (meep::component)PyInteger_AsLong(PyList_GetItem($input, i));
+        $1[i] = (meep::component)PyLong_AsLong(PyList_GetItem($input, i));
     }
 }
 
@@ -1175,7 +1174,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
     $2 = new meep::component[$1];
 
     for (Py_ssize_t i = 0; i < $1; i++) {
-        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs, i));
+        $2[i] = (meep::component)PyLong_AsLong(PyList_GetItem(cs, i));
     }
 
     $3 = py_field_func_wrap;
@@ -1234,11 +1233,11 @@ void _get_gradient(PyObject *grad, double scalegrad,
     $4 = new meep::component[$3];
 
     for (Py_ssize_t i = 0; i < $1; i++) {
-        $2[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs1, i));
+        $2[i] = (meep::component)PyLong_AsLong(PyList_GetItem(cs1, i));
     }
 
     for (Py_ssize_t i = 0; i < $3; i++) {
-        $4[i] = (meep::component)PyInteger_AsLong(PyList_GetItem(cs2, i));
+        $4[i] = (meep::component)PyLong_AsLong(PyList_GetItem(cs2, i));
     }
 
     $5 = py_field_func_wrap;
@@ -1406,7 +1405,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
     for (size_t i = 0; i < timing_vector.size(); ++i) {
       PyList_SetItem(res, i, PyFloat_FromDouble(timing_vector[i]));
     }
-    PyObject *key = PyInteger_FromLong(static_cast<int>(ts_vec.first));
+    PyObject *key = PyLong_FromLong(static_cast<int>(ts_vec.first));
     PyDict_SetItem(out_dict, key, res);
 
     Py_DECREF(key);
