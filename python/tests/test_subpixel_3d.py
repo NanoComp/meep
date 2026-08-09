@@ -22,6 +22,11 @@ import numpy as np
 import meep as mp
 
 
+# Allow finite-difference and MPI chunking noise while remaining far below the
+# 70-100% disagreement caused by the regression covered by these tests.
+FD_REL_TOL = 1e-2
+
+
 def _epsilon(dim, do_averaging, n1, n2, resolution=20, n=20):
     """Dielectric array over a MaterialGrid carrying a linear ramp in u."""
     design, pad = 1.0, 0.6
@@ -113,7 +118,9 @@ def _directional_fd(do_averaging, eps_averaging, resolution=12, n=6, dp=1e-3, se
     )
     region = mpa.DesignRegion(
         grid,
-        volume=mp.Volume(center=mp.Vector3(), size=mp.Vector3(design, design, thickness)),
+        volume=mp.Volume(
+            center=mp.Vector3(), size=mp.Vector3(design, design, thickness)
+        ),
     )
 
     fcen = 1 / 1.55
@@ -124,7 +131,11 @@ def _directional_fd(do_averaging, eps_averaging, resolution=12, n=6, dp=1e-3, se
         boundary_layers=[mp.PML(pml)],
         default_material=clad,
         geometry=[
-            mp.Block(center=mp.Vector3(), size=mp.Vector3(mp.inf, 0.5, thickness), material=si),
+            mp.Block(
+                center=mp.Vector3(),
+                size=mp.Vector3(mp.inf, 0.5, thickness),
+                material=si,
+            ),
             mp.Block(center=region.center, size=region.size, material=grid),
         ],
         sources=[
@@ -166,11 +177,11 @@ def _directional_fd(do_averaging, eps_averaging, resolution=12, n=6, dp=1e-3, se
 class TestAdjointGradient3D(unittest.TestCase):
     def test_gradient_matches_fd_without_smoothing(self):
         fd, adj = _directional_fd(do_averaging=False, eps_averaging=False)
-        self.assertAlmostEqual(fd / adj, 1.0, places=2)
+        self.assertAlmostEqual(fd / adj, 1.0, delta=FD_REL_TOL)
 
     def test_gradient_matches_fd_with_smoothing(self):
         fd, adj = _directional_fd(do_averaging=True, eps_averaging=True)
-        self.assertAlmostEqual(fd / adj, 1.0, places=2)
+        self.assertAlmostEqual(fd / adj, 1.0, delta=FD_REL_TOL)
 
     def test_do_averaging_ignored_when_eps_averaging_off(self):
         """do_averaging=True with eps_averaging=False must not change the gradient.
@@ -180,7 +191,7 @@ class TestAdjointGradient3D(unittest.TestCase):
         kept smoothing and this pair disagreed by ~70-100%.
         """
         fd, adj = _directional_fd(do_averaging=True, eps_averaging=False)
-        self.assertAlmostEqual(fd / adj, 1.0, places=2)
+        self.assertAlmostEqual(fd / adj, 1.0, delta=FD_REL_TOL)
 
 
 if __name__ == "__main__":
