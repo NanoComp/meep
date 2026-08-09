@@ -17,19 +17,11 @@
 
 // Utility functions for pymeep typemaps
 
-#if PY_MAJOR_VERSION >= 3
 #define PyObject_ToCharPtr(n) PyUnicode_AsUTF8(n)
 #define IsPyString(n) PyUnicode_Check(n)
 #define PyInteger_Check(n) PyLong_Check(n)
 #define PyInteger_AsLong(n) PyLong_AsLong(n)
 #define PyInteger_FromLong(n) PyLong_FromLong(n)
-#else
-#define PyObject_ToCharPtr(n) py2_string_as_utf8(n)
-#define IsPyString(n) PyString_Check(n) || PyUnicode_Check(n)
-#define PyInteger_Check(n) PyInt_Check(n)
-#define PyInteger_AsLong(n) PyInt_AsLong(n)
-#define PyInteger_FromLong(n) PyInt_FromLong(n)
-#endif
 
 #ifndef SWIG_PYTHON_THREAD_SCOPED_BLOCK
 #define SWIG_PYTHON_THREAD_SCOPED_BLOCK SWIG_PYTHON_THREAD_BEGIN_BLOCK
@@ -46,20 +38,6 @@ static void abort_with_stack_trace() {
 
 static int pymedium_to_medium(PyObject *po, medium_struct *m);
 static int pymaterial_to_material(PyObject *po, material_type *mt);
-
-#if PY_MAJOR_VERSION == 2
-static char *py2_string_as_utf8(PyObject *po) {
-  SWIG_PYTHON_THREAD_SCOPED_BLOCK;
-  if (PyString_Check(po)) { return PyString_AsString(po); }
-  else if (PyUnicode_Check(po)) {
-    PyObject *s = PyUnicode_AsUTF8String(po);
-    char *result = PyString_AsString(s);
-    Py_DECREF(s);
-    return result;
-  }
-  else { return NULL; }
-}
-#endif
 
 static PyObject *get_meep_mod() {
   SWIG_PYTHON_THREAD_SCOPED_BLOCK;
@@ -504,7 +482,7 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
 
   // specify the type of material grid
   PyObject *type = PyObject_GetAttrString(po, "grid_type");
-  long gt_enum = PyInt_AsLong(type);
+  long gt_enum = PyInteger_AsLong(type);
   Py_DECREF(type);
 
   switch (gt_enum) {
