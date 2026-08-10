@@ -284,7 +284,9 @@ class GaussianSource(SourceTime):
 
         + **`width` [`number`]** — The width $w$ used in the Gaussian. No default value.
           You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the
-          frequency width is proportional to the inverse of the temporal width).
+          frequency width is proportional to the inverse of the temporal width). Note: the
+          relationship between the full width at half maximum $FWHM_f$ (for the spectral
+          power density) and $w$ is given by $FWHM_f = \\frac{\\sqrt{\\ln 2}}{\\pi w} \\approx \\frac{0.265}{w}$.
 
         + **`start_time` [`number`]** — The starting time for the source; default is 0
           (turn on at $t=0$). This is not the time of the peak. See below.
