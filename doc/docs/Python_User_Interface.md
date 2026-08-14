@@ -6953,7 +6953,10 @@ Construct a `GaussianSource`.
 
 + **`width` [`number`]** — The width $w$ used in the Gaussian. No default value.
   You can instead specify `fwidth=x`, which is a synonym for `width=1/x` (i.e. the
-  frequency width is proportional to the inverse of the temporal width).
+  frequency width is proportional to the inverse of the temporal width). Note: the
+  relationship between $w$ and the full width at half maximum $\Delta\lambda$ (for the spectral
+  power density) is given by $w \approx \frac{\lambda_0^2\sqrt{\ln 2}}{\pi \Delta\lambda}$
+  where $\lambda_0$ is the center wavelength (for narrowband pulses).
 
 + **`start_time` [`number`]** — The starting time for the source; default is 0
   (turn on at $t=0$). This is not the time of the peak. See below.
