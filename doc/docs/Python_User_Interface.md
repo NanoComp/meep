@@ -6956,8 +6956,7 @@ Construct a `GaussianSource`.
   frequency width is proportional to the inverse of the temporal width). Note: the
   relationship between $w$ and the full width at half maximum $\Delta\lambda$ (for the spectral
   power density) is given by $w \approx \frac{\lambda_0^2\sqrt{\ln 2}}{\pi \Delta\lambda}$
-  where $\lambda_0$ is the center wavelength (for narrowband pulses, where the difference
-  between a Gaussian pulse and the derivative of a Gaussian is negligible).
+  where $\lambda_0$ is the center wavelength (for narrowband pulses).
 
 + **`start_time` [`number`]** — The starting time for the source; default is 0
   (turn on at $t=0$). This is not the time of the peak. See below.
