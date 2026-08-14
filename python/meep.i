@@ -1790,6 +1790,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         get_equiv_sources,
     )
     from .visualization import (
+        plot1D,
         plot2D,
         plot3D,
         plot_fields,

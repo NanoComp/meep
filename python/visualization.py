@@ -99,6 +99,65 @@ default_label_geometry_parameters = {
     "label_alpha": 0.8,
 }
 
+# Default plotting parameters used by `plot1D`. Each element of a 1D
+# simulation is drawn as a line (or a shaded region) along the single
+# (z) axis of the cell rather than as a 2D patch.
+
+default_1d_index_parameters = {
+    "color": "b",
+    "linestyle": "-",
+    "linewidth": 1.5,
+    "alpha": 1.0,
+    "label": "refractive index",
+    "frequency": None,
+    "resolution": None,
+    "zorder": 3,
+}
+
+default_1d_pml_parameters = {
+    "color": "0.7",
+    "alpha": 1.0,
+    "label": "PML",
+    "zorder": 0,
+}
+
+default_1d_pec_parameters = {
+    "color": "k",
+    "linestyle": "-",
+    "linewidth": 3.0,
+    "alpha": 1.0,
+    "label": "PEC",
+    "zorder": 5,
+    # The PEC walls lie exactly on the edges of the cell and would
+    # therefore be half hidden by the border of the plot.
+    "clip_on": False,
+}
+
+default_1d_source_parameters = {
+    "color": "r",
+    "linestyle": "--",
+    "linewidth": 1.5,
+    "alpha": 1.0,
+    "label": "source",
+    "zorder": 4,
+}
+
+default_1d_monitor_parameters = {
+    "color": "g",
+    "linestyle": ":",
+    "linewidth": 1.5,
+    "alpha": 1.0,
+    "label": "monitor",
+    "zorder": 4,
+}
+
+default_1d_legend_parameters = {
+    "loc": "best",
+    "fontsize": "small",
+    "framealpha": 0.8,
+}
+
+
 # Used to remove the elements of a dictionary (dict_to_filter) that
 # don't correspond to the keyword arguments of a particular
 # function (func_with_kwargs.)
@@ -175,7 +234,31 @@ def place_label(
 
 
 # ------------------------------------------------------- #
+# Helper function used to determine the frequency at which
+# the permittivity of a dispersive material is evaluated
+
+
+def get_default_frequency(sim: Simulation) -> float:
+    """Returns the frequency of the first source of `sim` (0 if there are none)."""
+    try:
+        # Continuous sources
+        return sim.sources[0].frequency
+    except:
+        try:
+            # Gaussian sources
+            return sim.sources[0].src.frequency
+        except:
+            try:
+                # Custom sources
+                return sim.sources[0].src.center_frequency
+            except:
+                # No sources
+                return 0
+
+
+# ------------------------------------------------------- #
 # Helper functions used to plot volumes on a 2D plane
+
 
 # Returns the intersection points of two Volumes.
 # Volumes must be a line, plane, or rectangular prism
@@ -536,20 +619,7 @@ def plot_eps(
         )
         eps_parameters["frequency"] = frequency
     if eps_parameters["frequency"] is None:
-        try:
-            # Continuous sources
-            eps_parameters["frequency"] = sim.sources[0].frequency
-        except:
-            try:
-                # Gaussian sources
-                eps_parameters["frequency"] = sim.sources[0].src.frequency
-            except:
-                try:
-                    # Custom sources
-                    eps_parameters["frequency"] = sim.sources[0].src.center_frequency
-                except:
-                    # No sources
-                    eps_parameters["frequency"] = 0
+        eps_parameters["frequency"] = get_default_frequency(sim)
 
     # Get domain measurements
     sim_center, sim_size = get_2D_dimensions(sim, output_plane)
@@ -945,6 +1015,346 @@ def plot_fields(
     return ax
 
 
+# ------------------------------------------------------- #
+# Plotting routines for a 1D simulation. In Meep, the single
+# axis of a 1D cell is always Z.
+
+# Keys of the 1D plotting-parameter dictionaries which are not
+# `matplotlib` keyword arguments and are thus handled separately.
+_1d_non_artist_keys = ("label", "frequency", "resolution")
+
+
+def artist_kwargs(plotting_parameters: dict, label: Optional[str] = None) -> dict:
+    """Returns the `matplotlib` keyword arguments of a 1D plotting-parameter dict.
+
+    A `label` is only attached to the first artist of a given type so that
+    each element of the plot appears exactly once in the legend.
+    """
+    kwargs = {
+        key: value
+        for key, value in plotting_parameters.items()
+        if key not in _1d_non_artist_keys
+    }
+    if label is not None:
+        kwargs["label"] = label
+
+    return kwargs
+
+
+def _label_once(labels_used: set, label: str) -> Optional[str]:
+    """Returns `label` the first time it is requested and `None` thereafter."""
+    if label in labels_used:
+        return None
+    labels_used.add(label)
+
+    return label
+
+
+def get_1D_dimensions(sim: Simulation) -> Tuple[float, float]:
+    """Returns the endpoints (zmin, zmax) of the cell of a 1D simulation."""
+    if sim.is_cylindrical or (sim.cell_size.x != 0) or (sim.cell_size.y != 0):
+        raise ValueError(
+            "plot1D can only be used with a 1D simulation for which the cell "
+            "extends along Z (i.e., cell_size = mp.Vector3(0, 0, size_z))."
+        )
+
+    zmin = sim.geometry_center.z - 0.5 * sim.cell_size.z
+    zmax = sim.geometry_center.z + 0.5 * sim.cell_size.z
+
+    return zmin, zmax
+
+
+def get_1D_boundary_condition(sim: Simulation, side: int) -> int:
+    """Returns the boundary condition on `side` (`mp.Low` or `mp.High`) of a 1D cell.
+
+    The return value is one of the `boundary_condition` constants
+    (e.g., `mp.Metallic` or `mp.Periodic`).
+    """
+    # A boundary condition which was specified explicitly using
+    # `Simulation.set_boundary` takes precedence over the default.
+    conditions = getattr(sim, "_boundary_conditions", {})
+    if (side, mp.Z) in conditions:
+        return conditions[(side, mp.Z)]
+
+    # Otherwise, the boundaries are Bloch periodic whenever a `k_point` has
+    # been specified and PEC (metallic) walls otherwise.
+    return mp.Periodic if sim.k_point else mp.Metallic
+
+
+def plot_1d_index(
+    sim: Simulation,
+    ax: Axes,
+    index_parameters: Optional[dict] = None,
+    frequency: Optional[float] = None,
+) -> Union[Axes, Any]:
+    """Plots the refractive-index profile n(z) of a 1D simulation."""
+    if index_parameters is None:
+        index_parameters = default_1d_index_parameters
+    else:
+        index_parameters = dict(default_1d_index_parameters, **index_parameters)
+
+    if frequency is not None:
+        index_parameters["frequency"] = frequency
+    if index_parameters["frequency"] is None:
+        index_parameters["frequency"] = get_default_frequency(sim)
+
+    zmin, zmax = get_1D_dimensions(sim)
+
+    grid_resolution = index_parameters["resolution"] or sim.resolution
+    num_z = int((zmax - zmin) * grid_resolution) + 1
+    ztics = np.linspace(zmin, zmax, num_z)
+
+    eps_data = np.atleast_1d(
+        np.squeeze(
+            sim.get_epsilon_grid(
+                np.array([sim.geometry_center.x]),
+                np.array([sim.geometry_center.y]),
+                ztics,
+                index_parameters["frequency"],
+            )
+        )
+    )
+
+    # The real part of sqrt(ε) is the refractive index. Note that ε is
+    # complex whenever the material is lossy and that the real part of
+    # the index vanishes for a lossless material with ε < 0.
+    index_data = np.real(np.sqrt(eps_data.astype(np.complex128)))
+
+    # If an Axes was not provided, just return the index profile.
+    if not ax:
+        return ztics, index_data
+
+    if mp.am_master():
+        ax.plot(
+            ztics,
+            index_data,
+            **artist_kwargs(index_parameters, index_parameters["label"]),
+        )
+
+    return ax
+
+
+def plot_1d_boundaries(
+    sim: Simulation,
+    ax: Axes,
+    pml_parameters: Optional[dict] = None,
+) -> Axes:
+    """Shades the PML (and `Absorber`) regions of a 1D simulation."""
+    if pml_parameters is None:
+        pml_parameters = default_1d_pml_parameters
+    else:
+        pml_parameters = dict(default_1d_pml_parameters, **pml_parameters)
+
+    zmin, zmax = get_1D_dimensions(sim)
+
+    if not mp.am_master():
+        return ax
+
+    # `Absorber` is a drop-in replacement for `PML` and is therefore drawn
+    # in the same way but labeled differently in the legend.
+    labels_used = set()
+
+    for boundary in sim.boundary_layers:
+        # The only direction of a 1D cell is Z. (For a simulation with
+        # `dimensions=1`, the direction of a boundary layer is ignored by
+        # Meep and thus also ignored here.)
+        if boundary.direction not in (mp.ALL, mp.Z) and sim.dimensions != 1:
+            warnings.warn(
+                "plot1D: ignoring the boundary layer in direction "
+                f"{boundary.direction} of a 1D simulation."
+            )
+            continue
+
+        spans = []
+        if boundary.side in (mp.ALL, mp.Low):
+            spans.append((zmin, zmin + boundary.thickness))
+        if boundary.side in (mp.ALL, mp.High):
+            spans.append((zmax - boundary.thickness, zmax))
+
+        if isinstance(boundary, mp.Absorber):
+            label = "absorber"
+        else:
+            label = pml_parameters["label"]
+
+        for span in spans:
+            ax.axvspan(
+                *span, **artist_kwargs(pml_parameters, _label_once(labels_used, label))
+            )
+
+    return ax
+
+
+def plot_1d_pec(
+    sim: Simulation,
+    ax: Axes,
+    pec_parameters: Optional[dict] = None,
+) -> Axes:
+    """Draws the PEC (metallic) walls, if any, of a 1D simulation."""
+    if pec_parameters is None:
+        pec_parameters = default_1d_pec_parameters
+    else:
+        pec_parameters = dict(default_1d_pec_parameters, **pec_parameters)
+
+    zmin, zmax = get_1D_dimensions(sim)
+
+    if not mp.am_master():
+        return ax
+
+    labels_used = set()
+
+    for side, z in zip([mp.Low, mp.High], [zmin, zmax]):
+        if get_1D_boundary_condition(sim, side) == mp.Metallic:
+            ax.axvline(
+                z,
+                **artist_kwargs(
+                    pec_parameters, _label_once(labels_used, pec_parameters["label"])
+                ),
+            )
+
+    return ax
+
+
+def plot_1d_sources(
+    sim: Simulation,
+    ax: Axes,
+    source_parameters: Optional[dict] = None,
+) -> Axes:
+    """Draws the sources of a 1D simulation."""
+    if source_parameters is None:
+        source_parameters = default_1d_source_parameters
+    else:
+        source_parameters = dict(default_1d_source_parameters, **source_parameters)
+
+    if mp.am_master():
+        labels_used = set()
+        for src in sim.sources:
+            _plot_1d_object(
+                ax, src.center.z, src.size.z, source_parameters, labels_used
+            )
+
+    return ax
+
+
+def plot_1d_monitors(
+    sim: Simulation,
+    ax: Axes,
+    monitor_parameters: Optional[dict] = None,
+) -> Axes:
+    """Draws the DFT monitors of a 1D simulation."""
+    if monitor_parameters is None:
+        monitor_parameters = default_1d_monitor_parameters
+    else:
+        monitor_parameters = dict(default_1d_monitor_parameters, **monitor_parameters)
+
+    if mp.am_master():
+        labels_used = set()
+        for mon in sim.dft_objects:
+            for reg in getattr(mon, "regions", []):
+                _plot_1d_object(
+                    ax, reg.center.z, reg.size.z, monitor_parameters, labels_used
+                )
+
+    return ax
+
+
+def _plot_1d_object(
+    ax: Axes,
+    center_z: float,
+    size_z: float,
+    plotting_parameters: dict,
+    labels_used: set,
+) -> None:
+    """Draws a point (line) or extended (pair of lines) object of a 1D simulation."""
+    if size_z == 0:
+        positions = [center_z]
+    else:
+        positions = [center_z - 0.5 * size_z, center_z + 0.5 * size_z]
+
+    for z in positions:
+        ax.axvline(
+            z,
+            **artist_kwargs(
+                plotting_parameters,
+                _label_once(labels_used, plotting_parameters["label"]),
+            ),
+        )
+
+
+def plot1D(
+    sim: Simulation,
+    ax: Optional[Axes] = None,
+    frequency: Optional[float] = None,
+    index_parameters: Optional[dict] = None,
+    pml_parameters: Optional[dict] = None,
+    pec_parameters: Optional[dict] = None,
+    source_parameters: Optional[dict] = None,
+    monitor_parameters: Optional[dict] = None,
+    legend_parameters: Optional[dict] = None,
+    show_index: bool = True,
+    show_boundary_layers: bool = True,
+    show_pec: bool = True,
+    show_sources: bool = True,
+    show_monitors: bool = True,
+    show_legend: bool = True,
+    nb: bool = False,
+) -> Axes:
+    # Ensure that the simulation is 1D before doing anything else.
+    zmin, zmax = get_1D_dimensions(sim)
+
+    # Ensure a figure axis exists.
+    if ax is None and mp.am_master():
+        from matplotlib import pyplot as plt
+
+        ax = plt.gca()
+
+    # Shade the PML regions. These are plotting first so that everything
+    # else is drawn on top of them.
+    if show_boundary_layers:
+        ax = plot_1d_boundaries(sim, ax, pml_parameters=pml_parameters)
+
+    # Plot the refractive-index profile. (The return value is not the Axes
+    # object whenever one was not provided, which is the case for all of the
+    # non-master processes of a parallel simulation.)
+    if show_index:
+        plot_1d_index(
+            sim,
+            ax,
+            index_parameters=index_parameters,
+            frequency=frequency,
+        )
+
+    # Draw the PEC walls.
+    if show_pec:
+        ax = plot_1d_pec(sim, ax, pec_parameters=pec_parameters)
+
+    # Draw the sources.
+    if show_sources:
+        ax = plot_1d_sources(sim, ax, source_parameters=source_parameters)
+
+    # Draw the monitors.
+    if show_monitors:
+        ax = plot_1d_monitors(sim, ax, monitor_parameters=monitor_parameters)
+
+    if mp.am_master():
+        ax.set_xlim(zmin, zmax)
+        ax.set_xlabel("Z")
+        ax.set_ylabel("refractive index")
+
+        if show_legend and ax.get_legend_handles_labels()[0]:
+            legend_parameters = dict(
+                default_1d_legend_parameters, **(legend_parameters or {})
+            )
+            ax.legend(**legend_parameters)
+
+        # If using the %matplotlib ipympl magic, we need to force the figure
+        # to be displayed immediately.
+        if nb:
+            display_figure_immediately(ax.figure)
+            sleep(0.05)
+
+    return ax
+
+
 def plot2D(
     sim: Simulation,
     ax: Optional[Axes] = None,
@@ -964,7 +1374,7 @@ def plot2D(
     show_monitors: bool = True,
     show_boundary_layers: bool = True,
     nb: bool = False,
-    **kwargs
+    **kwargs,
 ) -> Axes:
 
     plot_eps_flag = kwargs.get("plot_eps_flag")
@@ -1470,7 +1880,7 @@ class Animate2D:
         plot_modifiers: Optional[list] = None,
         update_epsilon: bool = False,
         nb: bool = False,
-        **customization_args
+        **customization_args,
     ):
         """
         Construct an `Animate2D` object.

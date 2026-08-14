@@ -2828,6 +2828,120 @@ This module provides basic visualization functionality for the simulation domain
 
 ---
 
+<a id="Simulation.plot1D"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def plot1D(ax=None,
+           frequency=None,
+           index_parameters=None,
+           pml_parameters=None,
+           pec_parameters=None,
+           source_parameters=None,
+           monitor_parameters=None,
+           legend_parameters=None,
+           show_index=True,
+           show_boundary_layers=True,
+           show_pec=True,
+           show_sources=True,
+           show_monitors=True,
+           show_legend=True,
+           nb=False):
+```
+
+<div class="method_docstring" markdown="1">
+
+Plots an annotated view of the cell of a 1D simulation using `matplotlib`. The
+single axis of a 1D cell in Meep is always $z$ and thus the cell must have been
+specified as `cell_size=mp.Vector3(0, 0, size_z)`. The plot shows the refractive
+index profile $n(z)$ as well as the PML regions (shaded grey), the PEC walls
+(solid black lines), the sources (dashed red lines), and the DFT monitors (dotted
+green lines). A legend of these elements is added to the plot. Requires
+[matplotlib](https://matplotlib.org). Calling this function would look something
+like:
+
+```py
+sim = mp.Simulation(...)
+import matplotlib.pyplot as plt
+sim.plot1D()
+plt.savefig('sim_domain_1D.png')
+```
+
+There is no need to invoke the `run` function prior to calling `plot1D`. Just
+define the `Simulation` object followed by any DFT monitors and then invoke
+`plot1D`.
+
+A boundary of the cell is drawn as a PEC wall whenever no `k_point` has been
+specified (the default boundary condition of Meep is a metallic wall) or
+whenever `set_boundary` has been used to set the boundary condition of that
+side of the cell to `mp.Metallic`.
+
+Note: When running a [parallel simulation](Parallel_Meep.md), the `plot1D`
+function expects to be called on all processes, but only generates a plot on
+the master process.
+
+**Parameters:**
+
+* `ax`: a `matplotlib` axis object. `plot1D()` will add plot objects, like lines,
+  and patches to this object. If no `ax` is supplied, then the routine will
+  create a new figure and grab its axis.
+* `frequency`: for materials with a [frequency-dependent
+  permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
+  frequency $f$ (in Meep units) of the real part of the permittivity used to
+  compute the refractive index. Defaults to the `frequency` parameter of the
+  [Source](#source) object.
+* `index_parameters`: a `dict` of optional plotting parameters that override the
+  default parameters for the refractive-index profile.
+    - `color='b'`: color of the index profile
+    - `linestyle='-'`: line style of the index profile
+    - `linewidth=1.5`: line width of the index profile
+    - `alpha=1.0`: transparency of the index profile
+    - `label='refractive index'`: legend label of the index profile
+    - `frequency=None`: same as the `frequency` parameter above
+    - `resolution=None`: the resolution at which $\varepsilon$ is sampled.
+      Defaults to the `resolution` of the `Simulation` object.
+* `pml_parameters`: a `dict` of optional plotting parameters that override the
+  default parameters for the PML (and `Absorber`) regions.
+    - `color='0.7'`: color of the shaded region
+    - `alpha=1.0`: transparency of the shaded region
+    - `label='PML'`: legend label of the shaded region
+* `pec_parameters`: a `dict` of optional plotting parameters that override the
+  default parameters for the PEC walls.
+    - `color='k'`: color of the walls
+    - `linestyle='-'`: line style of the walls
+    - `linewidth=3.0`: line width of the walls
+    - `alpha=1.0`: transparency of the walls
+    - `label='PEC'`: legend label of the walls
+* `source_parameters`: a `dict` of optional plotting parameters that override the
+  default parameters for the sources.
+    - `color='r'`: color of the sources
+    - `linestyle='--'`: line style of the sources
+    - `linewidth=1.5`: line width of the sources
+    - `alpha=1.0`: transparency of the sources
+    - `label='source'`: legend label of the sources
+* `monitor_parameters`: a `dict` of optional plotting parameters that override the
+  default parameters for the monitors.
+    - `color='g'`: color of the monitors
+    - `linestyle=':'`: line style of the monitors
+    - `linewidth=1.5`: line width of the monitors
+    - `alpha=1.0`: transparency of the monitors
+    - `label='monitor'`: legend label of the monitors
+* `legend_parameters`: a `dict` of optional parameters passed to
+  `matplotlib.axes.Axes.legend`. Defaults to
+  `{'loc': 'best', 'fontsize': 'small', 'framealpha': 0.8}`.
+* `show_index`, `show_boundary_layers`, `show_pec`, `show_sources`,
+  elements of the plot is drawn. All default to `True`.
+* `nb`: set this to True if plotting in a Jupyter ntoebook to use ipympl for
+  plotting. Note: this requires ipympl to be installed.
+
+</div>
+
+</div>
+
+
+---
+
 <a id="Simulation.plot2D"></a>
 
 <div class="class_members" markdown="1">
