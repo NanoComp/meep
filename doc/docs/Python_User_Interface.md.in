@@ -96,6 +96,7 @@ The `Simulation` class provides the following time-related methods:
 Meep supports a large number of functions to perform computations on the fields. Most of them are accessed via the lower-level C++/SWIG interface. Some of them are based on the following simpler, higher-level versions. They are accessible as methods of a `Simulation` instance.
 
 @@ Simulation.set_boundary @@
+@@ Simulation.get_boundary @@
 @@ Simulation.phase_in_material @@
 @@ Simulation.get_field_point @@
 @@ Simulation.get_epsilon_point @@

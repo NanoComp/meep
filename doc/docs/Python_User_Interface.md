@@ -653,6 +653,32 @@ section for valid `side`, `direction`, and `boundary_condition` values.
 
 ---
 
+<a id="Simulation.get_boundary"></a>
+
+<div class="class_members" markdown="1">
+
+```python
+def get_boundary(side, direction):
+```
+
+<div class="method_docstring" markdown="1">
+
+Returns the condition of the boundary on the specified side in the specified
+direction. This is the counterpart of `set_boundary`. See the [Constants
+(Enumerated Types)](#constants-enumerated-types) section for valid `side`,
+`direction`, and `boundary_condition` values.
+
+The default boundary condition is `mp.Metallic` (i.e., a perfect electric
+conductor), unless a `k_point` has been specified in which case it is
+`mp.Periodic` (i.e., Bloch-periodic).
+
+</div>
+
+</div>
+
+
+---
+
 <a id="Simulation.phase_in_material"></a>
 
 <div class="class_members" markdown="1">
@@ -2883,8 +2909,8 @@ the master process.
 
 **Parameters:**
 
-* `ax`: a `matplotlib` axis object. `plot1D()` will add plot objects, like lines,
-  and patches to this object. If no `ax` is supplied, then the routine will
+* `ax`: a `matplotlib` axis object. `plot1D()` will add plot objects, like lines
+  and patches, to this object. If no `ax` is supplied, then the routine will
   create a new figure and grab its axis.
 * `frequency`: for materials with a [frequency-dependent
   permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the

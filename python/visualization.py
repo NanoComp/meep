@@ -1064,23 +1064,6 @@ def get_1D_dimensions(sim: Simulation) -> Tuple[float, float]:
     return zmin, zmax
 
 
-def get_1D_boundary_condition(sim: Simulation, side: int) -> int:
-    """Returns the boundary condition on `side` (`mp.Low` or `mp.High`) of a 1D cell.
-
-    The return value is one of the `boundary_condition` constants
-    (e.g., `mp.Metallic` or `mp.Periodic`).
-    """
-    # A boundary condition which was specified explicitly using
-    # `Simulation.set_boundary` takes precedence over the default.
-    conditions = getattr(sim, "_boundary_conditions", {})
-    if (side, mp.Z) in conditions:
-        return conditions[(side, mp.Z)]
-
-    # Otherwise, the boundaries are Bloch periodic whenever a `k_point` has
-    # been specified and PEC (metallic) walls otherwise.
-    return mp.Periodic if sim.k_point else mp.Metallic
-
-
 def plot_1d_index(
     sim: Simulation,
     ax: Axes,
@@ -1197,19 +1180,26 @@ def plot_1d_pec(
 
     zmin, zmax = get_1D_dimensions(sim)
 
+    # Note that the boundary conditions must be queried on every process
+    # because doing so initializes the simulation if necessary.
+    pec_walls = [
+        z
+        for side, z in zip([mp.Low, mp.High], [zmin, zmax])
+        if sim.get_boundary(side, mp.Z) == mp.Metallic
+    ]
+
     if not mp.am_master():
         return ax
 
     labels_used = set()
 
-    for side, z in zip([mp.Low, mp.High], [zmin, zmax]):
-        if get_1D_boundary_condition(sim, side) == mp.Metallic:
-            ax.axvline(
-                z,
-                **artist_kwargs(
-                    pec_parameters, _label_once(labels_used, pec_parameters["label"])
-                ),
-            )
+    for z in pec_walls:
+        ax.axvline(
+            z,
+            **artist_kwargs(
+                pec_parameters, _label_once(labels_used, pec_parameters["label"])
+            ),
+        )
 
     return ax
 

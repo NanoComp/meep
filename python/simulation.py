@@ -1540,7 +1540,6 @@ class Simulation:
         self.epsilon_func = epsilon_func
         self.dft_objects = []
         self._is_initialized = False
-        self._boundary_conditions = {}
         self.force_all_components = force_all_components
         self.split_chunks_evenly = split_chunks_evenly
         self.chunk_layout = chunk_layout
@@ -2678,10 +2677,21 @@ class Simulation:
 
         self.fields.set_boundary(side, direction, condition)
 
-        # Keep track of the boundary conditions which have been explicitly
-        # set because they cannot be queried from the `fields` object. This
-        # is used by e.g. `plot1D` to annotate the boundaries of the cell.
-        self._boundary_conditions[(side, direction)] = condition
+    def get_boundary(self, side, direction):
+        """
+        Returns the condition of the boundary on the specified side in the specified
+        direction. This is the counterpart of `set_boundary`. See the [Constants
+        (Enumerated Types)](#constants-enumerated-types) section for valid `side`,
+        `direction`, and `boundary_condition` values.
+
+        The default boundary condition is `mp.Metallic` (i.e., a perfect electric
+        conductor), unless a `k_point` has been specified in which case it is
+        `mp.Periodic` (i.e., Bloch-periodic).
+        """
+        if self.fields is None:
+            self.init_sim()
+
+        return self.fields.get_boundary(side, direction)
 
     def get_field_point(self, c: int = None, pt: Vector3Type = None):
         """
@@ -4507,7 +4517,6 @@ class Simulation:
         self.num_chunks = self._num_chunks_original
         self.chunk_layout = self._chunk_layout_original
         self._is_initialized = False
-        self._boundary_conditions = {}
 
     def restart_fields(self):
         """
@@ -4852,8 +4861,8 @@ class Simulation:
 
         **Parameters:**
 
-        * `ax`: a `matplotlib` axis object. `plot1D()` will add plot objects, like lines,
-          and patches to this object. If no `ax` is supplied, then the routine will
+        * `ax`: a `matplotlib` axis object. `plot1D()` will add plot objects, like lines
+          and patches, to this object. If no `ax` is supplied, then the routine will
           create a new figure and grab its axis.
         * `frequency`: for materials with a [frequency-dependent
           permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
