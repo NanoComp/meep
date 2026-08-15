@@ -14,11 +14,14 @@ error appears with MPI but is *not* an MPI bug: forcing the same split in a
 serial run reproduces it exactly. That is what this test does, so it runs in
 every CI job rather than only the MPI ones.
 
-Note the usual directional finite-difference check is nearly blind to this: it
-probes along g/|g|, i.e. along the erroneous gradient itself, where the error
-largely cancels. Measured on the pre-fix build, the gradient vector was 44% off
-in L2 while fd/adjoint still read 1.0008. Comparing the gradient vectors
-directly is what catches it.
+A directional finite-difference check compresses the gradient onto a single
+number, and this error survives that: measured on the pre-fix build, probing
+along g/|g| gave fd/adjoint = 1.0008 while the gradient vector itself was 44%
+off in L2. Comparing the gradient vectors directly is what catches it.
+
+The tolerance is therefore what the *field solve* can reproduce across a
+different split, not what the gradient assembly contributes; see the comment on
+`tol` below.
 """
 
 import unittest
@@ -113,15 +116,24 @@ class TestAdjointChunks(unittest.TestCase):
         f0_a, g_a = _gradient(num_chunks=np_)
         f0_b, g_b = _gradient(num_chunks=3 * np_)
 
+        # A single-precision build cannot resolve either check to 1e-9. The
+        # objective alone -- which no gradient code touches -- already moves by
+        # one float ulp (1.2e-7) when the cell is split differently under MPI,
+        # and the gradient inherits that. The looser bound is still four orders
+        # of magnitude below the defect this test guards against.
+        tol = 1e-5 if mp.is_single_precision() else 1e-9
+
         # the forward solve was never chunk-dependent; if this trips, the test
         # problem itself changed rather than the gradient assembly
-        self.assertAlmostEqual(f0_a / f0_b, 1.0, places=9)
+        self.assertAlmostEqual(f0_a / f0_b, 1.0, delta=tol)
 
         rel = np.linalg.norm(g_a - g_b) / np.linalg.norm(g_a)
-        # Pre-fix this was 1.2e-1 to 4.4e-1 depending on where the split landed.
-        # Post-fix the only difference is MPI summation order.
+        # Pre-fix this comparison read 4.7e-1. Post-fix the only difference is
+        # summation order in the collective reductions: measured 3e-16 (serial,
+        # where there are none) to 2e-12 (np 8) in double precision, 1.5e-7 in
+        # single.
         self.assertLess(
-            rel, 1e-9, f"gradient changed by {rel:.3e} under a different chunk split"
+            rel, tol, f"gradient changed by {rel:.3e} under a different chunk split"
         )
 
 
