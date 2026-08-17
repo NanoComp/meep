@@ -1034,7 +1034,7 @@ public:
   virtual double get_fwidth() const { return fwidth; };
   virtual void set_fwidth(double fw) { fwidth = fw; };
   virtual void set_frequency(std::complex<double> f) { freq = real(f); }
-  std::complex<double> fourier_transform(const double f);
+  std::complex<double> fourier_transform(const double f, const double dt = 0);
 
 private:
   double freq, fwidth, width, peak_time, cutoff;

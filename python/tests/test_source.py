@@ -80,6 +80,48 @@ class TestSourceTime(unittest.TestCase):
         with self.assertRaises(ValueError):
             ContinuousSource()
 
+    def test_gaussian_fourier_transform(self):
+        # The discrete-time Fourier transform of the current injected by the
+        # time stepping should agree with the closed form returned by
+        # GaussianSource.fourier_transform(f, dt). A large cutoff is used so
+        # that the truncation of the Gaussian is negligible.
+        fcen, fwidth, cutoff = 1.0, 0.2, 10.0
+        freqs = np.linspace(fcen - 0.75 * fwidth, fcen + 0.75 * fwidth, 7)
+
+        for is_integrated in (False, True):
+            src = GaussianSource(
+                fcen, fwidth=fwidth, cutoff=cutoff, is_integrated=is_integrated
+            )
+            for resolution in (10, 40):
+                dt = 0.5 / resolution
+                # field times spanning the support of the source
+                t = np.arange(0, 2 * cutoff / fwidth + 2 * dt, dt)
+                if is_integrated:
+                    # the dipole moment is added directly at the field times
+                    signal = np.array([src.swigobj.dipole(tt) for tt in t])
+                else:
+                    # centered difference of the dipole moment about the field times
+                    signal = np.array(
+                        [src.swigobj.current(tt - 0.5 * dt, dt) for tt in t]
+                    )
+                for f in freqs:
+                    dtft = (
+                        np.sum(np.exp(1j * 2 * np.pi * f * t) * signal)
+                        * dt
+                        / np.sqrt(2 * np.pi)
+                    )
+                    if is_integrated:
+                        dtft *= -1j * 2 * np.pi * f
+                    self.assertAlmostEqual(
+                        dtft / src.fourier_transform(f, dt), 1.0, places=8
+                    )
+
+    def test_gaussian_fourier_transform_continuous(self):
+        # omitting dt gives the continuous-time transform
+        src = GaussianSource(1.0, fwidth=0.2)
+        for f in (0.9, 1.0, 1.1):
+            self.assertEqual(src.fourier_transform(f), src.swigobj.fourier_transform(f))
+
 
 class TestSourceTypemaps(unittest.TestCase):
     def setUp(self):

@@ -6880,12 +6880,17 @@ Construct an `EigenModeSource`.
 <div class="class_members" markdown="1">
 
 ```python
-def eig_power(freq):
+def eig_power(freq, dt=None):
 ```
 
 <div class="method_docstring" markdown="1">
 
 Returns the total power of the fields from the eigenmode source at frequency `freq`.
+If the timestep `dt` (= `sim.fields.dt` = `Courant/resolution`) is specified, the
+discrete-time Fourier transform of the source is used, which is the power actually
+delivered at a finite resolution; see
+[`GaussianSource`](#gaussiansource). Otherwise, the continuous-time transform is
+used.
 
 </div>
 
@@ -7115,18 +7120,29 @@ Construct a `GaussianSource`.
   [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml).
   Default is `False`.
 
-+ **`fourier_transform(f)`** — Returns the Fourier transform of the current
-  evaluated at frequency $f$ ($\omega=2\pi f$) given by:
-  $$
-  \widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}}
-  \int e^{i\omega t}G(t)\,dt \equiv
-  \frac{1}{\Delta f}
-  e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}
-  $$
++ **`fourier_transform(f, dt=None)`** — Returns the Fourier transform of the
+  current evaluated at frequency $f$ ($\omega=2\pi f$). If `dt` is not specified,
+  the transform of the idealized *continuous-time* current is returned:
+  $\widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}} \int e^{i\omega t}G(t)\,dt \equiv \frac{1}{\Delta f} e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}$
   where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
   is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and
-  $t_0$ is the peak time discussed above. Note that this does not include any
-  `amplitude` or `amp_func` factor that you specified for the source.
+  $t_0$ is the peak time discussed above.
+
+      The current actually injected by the simulation is not $G(t)$ but rather its
+      *discrete-time* counterpart: a finite difference of the Gaussian dipole moment
+      $p(t)$ over one timestep $\Delta t$ (`sim.fields.dt`, which equals
+      `Courant/resolution`). Passing `dt` returns the Fourier transform of that
+      discrete current, referenced to the field times at which the DFT field monitors
+      accumulate their sums: $\widetilde G_{\Delta t}(\omega) = \frac{\omega}{\omega_0}\mathrm{sinc}\left(\frac{\omega \Delta t}{2}\right)\widetilde G(\omega)$
+      with $\mathrm{sinc}(x) = \sin(x)/x$. The $\omega/\omega_0$ factor is the exact
+      time derivative of the Gaussian dipole moment in place of the $-i\omega_0$
+      approximation made by $\widetilde G(\omega)$, and the sinc factor is the error
+      of the discrete-time derivative. For an `is_integrated=True` source, $p(t)$ is
+      added to the fields directly rather than differenced, and the sinc factor is
+      therefore omitted.
+
+      Note that this does not include any `amplitude` or `amp_func` factor that you
+      specified for the source.
 
 </div>
 
