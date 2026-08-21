@@ -451,7 +451,7 @@ class Medium:
         for name in ("D_conductivity_offdiag", "B_conductivity_offdiag"):
             offdiag = getattr(self, name)
             if offdiag.x != 0 or offdiag.y != 0 or offdiag.z != 0:
-                raise ValueError(
+                raise NotImplementedError(
                     f"nonzero {name} is not supported: the time stepping "
                     "implements only diagonal electric/magnetic conductivity, "
                     "so the off-diagonal part would be silently ignored. For "
