@@ -7125,7 +7125,7 @@ Construct a `GaussianSource`.
   the transform of the idealized *continuous-time* current is returned:
   $\widetilde G(\omega) \equiv \frac{1}{\sqrt{2\pi}} \int e^{i\omega t}G(t)\,dt \equiv \frac{1}{\Delta f} e^{i\omega t_0 -\frac{(\omega-\omega_0)^2}{2\Delta f^2}}$
   where $G(t)$ is the current (not the dipole moment). In this formula, $\Delta f$
-  is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency,` and
+  is the `fwidth` of the source, $\omega_0$ is $2\pi$ times its `frequency`, and
   $t_0$ is the peak time discussed above.
 
       The current actually injected by the simulation is not $G(t)$ but rather its
