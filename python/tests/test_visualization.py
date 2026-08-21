@@ -141,6 +141,57 @@ def setup_sim(zDim=0):
     return sim
 
 
+def setup_sim_1d(k_point=None, absorber=False):
+    """Sets up a 1D simulation of a slab surrounded by PML (or an `Absorber`)."""
+    size_z = 12.0
+    thickness_pml = 1.0
+    frequency = 1.0
+
+    boundary_layers = [
+        mp.Absorber(thickness_pml) if absorber else mp.PML(thickness_pml)
+    ]
+
+    geometry = [
+        mp.Block(
+            size=mp.Vector3(mp.inf, mp.inf, 3.0),
+            center=mp.Vector3(0, 0, 1.0),
+            material=mp.Medium(index=3.5),
+        )
+    ]
+
+    sources = [
+        mp.Source(
+            mp.GaussianSource(frequency, fwidth=0.2 * frequency),
+            component=mp.Ex,
+            center=mp.Vector3(0, 0, -0.5 * size_z + thickness_pml + 0.5),
+        ),
+        # An extended source is drawn using one line per edge.
+        mp.Source(
+            mp.ContinuousSource(frequency),
+            component=mp.Ex,
+            center=mp.Vector3(0, 0, -2.0),
+            size=mp.Vector3(0, 0, 1.0),
+        ),
+    ]
+
+    sim = mp.Simulation(
+        cell_size=mp.Vector3(0, 0, size_z),
+        dimensions=1,
+        resolution=20,
+        boundary_layers=boundary_layers,
+        default_material=mp.Medium(index=1.2),
+        geometry=geometry,
+        k_point=k_point,
+        sources=sources,
+    )
+
+    sim.add_flux(
+        frequency, 0, 1, mp.FluxRegion(center=mp.Vector3(0, 0, 0.5 * size_z - 2.0))
+    )
+
+    return sim
+
+
 def view_sim():
     sim = setup_sim(8)
     xy0 = mp.Volume(
@@ -183,6 +234,70 @@ class TestVisualization(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         mp.delete_directory(cls.temp_dir)
+
+    def test_plot1D(self):
+        # Check plotting of the index profile, PML, PEC walls, sources,
+        # and monitors of a 1D simulation.
+        f = plt.figure()
+        ax = sim1d = None
+        if mp.am_master():
+            ax = f.gca()
+        sim1d = setup_sim_1d()
+        ax = sim1d.plot1D(ax=ax)
+
+        if mp.am_master():
+            labels = ax.get_legend_handles_labels()[1]
+            self.assertEqual(
+                set(labels), {"refractive index", "PML", "PEC", "source", "monitor"}
+            )
+            # The PEC walls are at the two edges of the cell, the two
+            # sources are drawn using three lines, and the monitor using one.
+            self.assertEqual(len(ax.lines), 1 + 2 + 3 + 1)
+            self.assertEqual(ax.get_xlim(), (-6.0, 6.0))
+            hash_figure(f)
+
+        # Check that the boundaries of a Bloch-periodic cell are not
+        # labeled as PEC and that an `Absorber` is labeled as such.
+        f = plt.figure()
+        ax = f.gca() if mp.am_master() else None
+        sim1d = setup_sim_1d(k_point=mp.Vector3(0.2, 0, 0.3), absorber=True)
+        ax = sim1d.plot1D(ax=ax)
+
+        if mp.am_master():
+            labels = ax.get_legend_handles_labels()[1]
+            self.assertEqual(
+                set(labels), {"refractive index", "absorber", "source", "monitor"}
+            )
+
+        # Check that a boundary condition which was set explicitly
+        # overrides the default.
+        sim1d.set_boundary(mp.Low, mp.Z, mp.Metallic)
+        f = plt.figure()
+        ax = f.gca() if mp.am_master() else None
+        ax = sim1d.plot1D(ax=ax)
+
+        if mp.am_master():
+            self.assertIn("PEC", ax.get_legend_handles_labels()[1])
+
+        # Check the customization options.
+        f = plt.figure()
+        ax = f.gca() if mp.am_master() else None
+        ax = setup_sim_1d().plot1D(
+            ax=ax,
+            index_parameters={"color": "k", "label": "n(z)"},
+            show_monitors=False,
+            show_legend=False,
+        )
+
+        if mp.am_master():
+            self.assertIsNone(ax.get_legend())
+            self.assertEqual(ax.lines[0].get_color(), "k")
+            # The monitor is not drawn.
+            self.assertEqual(len(ax.lines), 1 + 2 + 3)
+
+        # A simulation which is not 1D is an error.
+        with self.assertRaises(ValueError):
+            setup_sim().plot1D()
 
     def test_plot2D(self):
         # Check plotting of geometry with several sources, monitors, and PMLs

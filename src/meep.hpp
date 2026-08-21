@@ -1759,6 +1759,7 @@ public:
   void print_times();
   // boundaries.cpp
   void set_boundary(boundary_side, direction, boundary_condition);
+  boundary_condition get_boundary(boundary_side, direction) const;
   void use_bloch(direction d, double k) { use_bloch(d, (std::complex<double>)k); }
   void use_bloch(direction, std::complex<double> kz);
   void use_bloch(const vec &k);

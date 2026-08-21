@@ -87,6 +87,10 @@ void fields::set_boundary(boundary_side b, direction d, boundary_condition cond)
   }
 }
 
+boundary_condition fields::get_boundary(boundary_side b, direction d) const {
+  return boundaries[b][d];
+}
+
 void fields::use_bloch(direction d, complex<double> kk) {
   k[d] = kk;
   for (int b = 0; b < 2; b++)
