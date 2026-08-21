@@ -448,6 +448,16 @@ class Medium:
         self.D_conductivity_offdiag = Vector3(*D_conductivity_offdiag)
         self.B_conductivity_diag = Vector3(*B_conductivity_diag)
         self.B_conductivity_offdiag = Vector3(*B_conductivity_offdiag)
+        for name in ("D_conductivity_offdiag", "B_conductivity_offdiag"):
+            offdiag = getattr(self, name)
+            if offdiag.x != 0 or offdiag.y != 0 or offdiag.z != 0:
+                raise ValueError(
+                    f"nonzero {name} is not supported: the time stepping "
+                    "implements only diagonal electric/magnetic conductivity, "
+                    "so the off-diagonal part would be silently ignored. For "
+                    "anisotropic off-diagonal absorption, use a Lorentzian or "
+                    "Drude susceptibility with sigma_offdiag."
+                )
         self.valid_freq_range = valid_freq_range
 
     def __repr__(self):

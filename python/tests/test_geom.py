@@ -278,6 +278,31 @@ class TestMedium(unittest.TestCase):
         self.assertEqual(m.B_conductivity_diag.y, 2)
         self.assertEqual(m.B_conductivity_diag.z, 2)
 
+    def test_D_conductivity_offdiag_rejected(self):
+        # The solver only implements diagonal conductivity: medium_struct has
+        # no off-diagonal conductivity fields, so a nonzero value here would
+        # be silently ignored by the time stepping.
+        with self.assertRaises(ValueError):
+            gm.Medium(
+                D_conductivity_diag=gm.Vector3(1, 1, 0),
+                D_conductivity_offdiag=gm.Vector3(1, 0, 0),
+            )
+
+    def test_B_conductivity_offdiag_rejected(self):
+        with self.assertRaises(ValueError):
+            gm.Medium(
+                B_conductivity_diag=gm.Vector3(1, 1, 0),
+                B_conductivity_offdiag=gm.Vector3(1, 0, 0),
+            )
+
+    def test_conductivity_zero_offdiag_accepted(self):
+        m = gm.Medium(
+            D_conductivity_diag=gm.Vector3(1, 1, 0),
+            D_conductivity_offdiag=gm.Vector3(0, 0, 0),
+            B_conductivity_offdiag=gm.Vector3(),
+        )
+        self.assertEqual(m.D_conductivity_diag.x, 1)
+
     def test_E_chi2(self):
         m = gm.Medium(E_chi2=2)
         self.assertEqual(m.E_chi2_diag.x, 2)
