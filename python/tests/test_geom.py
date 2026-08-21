@@ -282,14 +282,14 @@ class TestMedium(unittest.TestCase):
         # The solver only implements diagonal conductivity: medium_struct has
         # no off-diagonal conductivity fields, so a nonzero value here would
         # be silently ignored by the time stepping.
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NotImplementedError):
             gm.Medium(
                 D_conductivity_diag=gm.Vector3(1, 1, 0),
                 D_conductivity_offdiag=gm.Vector3(1, 0, 0),
             )
 
     def test_B_conductivity_offdiag_rejected(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(NotImplementedError):
             gm.Medium(
                 B_conductivity_diag=gm.Vector3(1, 1, 0),
                 B_conductivity_offdiag=gm.Vector3(1, 0, 0),
