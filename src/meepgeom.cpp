@@ -919,11 +919,16 @@ double geom_epsilon::chi1p1(meep::field_type ft, const meep::vec &r) {
 /* Find frontmost object in v, along with the constant material behind it.
    Returns false if material behind the object is not constant.
 
+   A material grid may be returned as the *front* material, in which case
+   front_is_matgrid is set and the caller must evaluate it at a point before
+   averaging; see eff_chi1inv_matrix().
+
    Requires moderately horrifying logic to figure things out properly,
    stolen from MPB. */
 static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree, vector3 &pcenter,
                              const geometric_object **o_front, vector3 &shiftby_front,
-                             material_type &mat_front, material_type &mat_behind) {
+                             material_type &mat_front, material_type &mat_behind,
+                             bool &front_is_matgrid) {
   vector3 p;
   const geometric_object *o1 = 0, *o2 = 0;
   vector3 shiftby1 = {0, 0, 0}, shiftby2 = {0, 0, 0};
@@ -1009,9 +1014,8 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
     shiftby2 = shiftby1;
   }
 
-  if ((o1 && is_variable(o1->material)) || (o2 && is_variable(o2->material)) ||
-      ((is_variable(default_material) || is_file(default_material)) &&
-       (!o1 || is_file(o1->material) || !o2 || is_file(o2->material))))
+  if ((is_variable(default_material) || is_file(default_material)) &&
+      (!o1 || is_file(o1->material) || !o2 || is_file(o2->material)))
     return false;
 
   if (id1 >= id2) {
@@ -1029,7 +1033,51 @@ static bool get_front_object(const meep::volume &v, geom_box_tree geometry_tree,
     mat_front = mat2;
     mat_behind = mat1;
   }
+
+  /* A variable material is not constant over the pixel, so it cannot serve as
+     the *background* of the two-material average.  As the material of the front
+     object a material grid still can: the object's boundary is an ordinary
+     level set, and the caller localizes the grid before averaging.  Rejecting
+     it here as well -- which is what this routine used to do -- meant the
+     boundary of a material-grid object never reached the analytic smoothing at
+     all, so in 3d the top and bottom faces of a design slab stayed staircased
+     no matter what do_averaging was set to.
+
+     A user material function needs no such help: its fallback derives the
+     normal from normal_vector() and integrates chi1p1(), both of which sample
+     the actual material and therefore already see the object boundary.  Only
+     the material-grid fallback is blind to it, because matgrid_grad() and the
+     1d level-set integral that replace them know about u alone. */
+  if (is_variable(mat_behind)) return false;
+  if (is_variable(mat_front)) {
+    if (!is_material_grid(mat_front)) return false;
+    /* only a grid carried by the front object itself has a boundary to average
+       across; a material-grid default_material does not */
+    if (!*o_front || (material_type)(*o_front)->material != mat_front) return false;
+    if (!mat_front->do_averaging) return false;
+    front_is_matgrid = true;
+  }
   return true;
+}
+
+/* Pick the point at which to evaluate a material grid that fills only part of a
+   pixel.  The pixel center can sit on the far side of the object boundary --
+   where a material grid is evaluated on its mirrored extension -- so step to
+   the centroid of the part that is inside: for a planar cut of a pixel of size
+   h with inside fraction `fill`, that centroid lies (1-fill)*h/2 from the
+   center along the inward normal.  The normal's orientation is not fixed by
+   libctl, so try both and keep the candidate that is actually inside.  Returns
+   a lab-frame point. */
+static meep::vec inside_sample_point(const meep::volume &v, const geometric_object &o,
+                                     vector3 shiftby, vector3 normal, double fill) {
+  vector3 center = vec_to_vector3(v.center());
+  vector3 local = vector3_minus(center, shiftby);
+  double step = 0.5 * (1 - fill) * v.diameter();
+  for (int s = 1; s >= -1; s -= 2) {
+    vector3 q = vector3_plus(local, vector3_scale(s * step, normal));
+    if (point_in_fixed_objectp(q, o)) return vector3_to_vec(vector3_plus(q, shiftby));
+  }
+  return v.center();
 }
 
 void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
@@ -1071,6 +1119,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   symm_matrix meps;
   vector3 p, shiftby, normal;
   fallback = false;
+  bool front_is_matgrid = false;
 
   if (maxeval == 0) {
   noavg:
@@ -1081,7 +1130,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
     return;
   }
 
-  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) {
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind, front_is_matgrid)) {
     get_material_pt(mat, v.center());
     if (mat &&
         (mat->which_subclass == material_data::MATERIAL_USER ||
@@ -1096,8 +1145,14 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   /* check for trivial case of only one object/material */
   if (material_type_equal(mat, mat_behind)) goto trivial;
 
-  // it doesn't make sense to average metals (electric or magnetic)
-  if (is_metal(meep::type(c), &mat) || is_metal(meep::type(c), &mat_behind)) goto noavg;
+  // it doesn't make sense to average metals (electric or magnetic).  A material
+  // grid is tested further down instead: is_metal() reads the grid's `medium`,
+  // which until the grid is localized still holds the previous pixel's
+  // interpolation.  (mat_behind is never a grid -- get_front_object rejects a
+  // variable material there -- so it is safe to test here.)
+  if ((!front_is_matgrid && is_metal(meep::type(c), &mat)) ||
+      is_metal(meep::type(c), &mat_behind))
+    goto noavg;
 
   normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
   if (normal.x == 0 && normal.y == 0 && normal.z == 0)
@@ -1107,6 +1162,23 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   pixel.high = vector3_minus(pixel.high, shiftby);
 
   double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+
+  if (front_is_matgrid) {
+    /* Only the *boundary* of the grid object is averaged here; its interior is
+       smoothed by its own level set in fallback_chi1inv_row().  Averaging an
+       interior pixel against a filling fraction of 1 would silently discard
+       that smoothing, so hand those back to the fallback. */
+    const double fill_tol = 1e-6;
+    if (fill >= 1 - fill_tol) {
+      fallback = true;
+      return;
+    }
+    if (fill <= fill_tol) goto noavg;
+    get_material_pt(mat, inside_sample_point(v, *o, shiftby, normal, fill));
+    /* now that the grid holds this pixel's value, apply the metal test skipped
+       above -- a grid interpolating to negative epsilon must not be averaged */
+    if (is_metal(meep::type(c), &mat)) goto noavg;
+  }
 
   material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symm_matrix eps2, epsinv2;

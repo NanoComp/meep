@@ -13,6 +13,14 @@ Every adjoint test upstream runs in 2d or cylindrical coordinates, which left tw
      structure_chunk::set_chi1inv() zeroes it when averaging is off. With
      eps_averaging=False the forward solve therefore saw an unsmoothed operator
      while the adjoint differentiated a smoothed one.
+
+  3. get_front_object() rejected any pixel touching a variable material, so the
+     boundary of a MaterialGrid object never reached the analytic smoothing.
+     Inside the object the level-set fallback took over, but that fallback
+     derives its normal from grad(u) alone, and a (n,n,1) grid has no z
+     structure -- so the top and bottom faces of a 3d design slab stayed
+     staircased no matter what do_averaging was set to. Those faces do not exist
+     in 2d, which is why only 3d runs paid for it.
 """
 
 import unittest
@@ -91,6 +99,106 @@ class TestSubpixelKernelNormalization(unittest.TestCase):
         # Before the fix this was 18/17 = 1.058823..., the closed form of
         # 3 / (K + 2/K) at K = 4/3.
         self.assertAlmostEqual(float(np.median(ratio)), 1.0, places=6)
+
+
+def _boundary_sim(material, resolution=20, thickness=0.22, design=1.0, pad=0.5):
+    """3d sim whose only geometry is one block of `material` in vacuum-ish clad."""
+    sim = mp.Simulation(
+        cell_size=mp.Vector3(design + 2 * pad, design + 2 * pad, thickness + 2 * pad),
+        resolution=resolution,
+        default_material=mp.Medium(index=1.0),
+        geometry=[
+            mp.Block(
+                center=mp.Vector3(),
+                size=mp.Vector3(design, design, thickness),
+                material=material,
+            )
+        ],
+        dimensions=3,
+        eps_averaging=True,
+    )
+    sim.init_sim()
+    return sim
+
+
+def _z_profile(material, resolution=20):
+    """Epsilon along a line crossing the block's top and bottom faces."""
+    sim = _boundary_sim(material, resolution)
+    return np.asarray(
+        sim.get_array(
+            component=mp.Dielectric,
+            center=mp.Vector3(),
+            size=mp.Vector3(0, 0, 0.5),
+        )
+    )
+
+
+def _uniform_grid(u, do_averaging, n1=1.0, n2=3.48, n=8):
+    grid = mp.MaterialGrid(
+        mp.Vector3(n, n, 1),
+        mp.Medium(index=n1),
+        mp.Medium(index=n2),
+        weights=np.full((n, n, 1), u),
+        do_averaging=do_averaging,
+        beta=0,
+    )
+    # MaterialGrid interpolates epsilon (not index) linearly in u
+    return grid, (1 - u) * n1**2 + u * n2**2
+
+
+class TestObjectBoundarySmoothing(unittest.TestCase):
+    """The design region's own boundary must be smoothed like any other object.
+
+    A uniform `weights` array removes the in-plane level set entirely, so the
+    block's six faces are the only material interfaces left. Whatever smoothing
+    the grid gets there has to be the smoothing an ordinary geometric object of
+    the same epsilon gets -- in 3d that is the slab's top and bottom face, the
+    interfaces that set the vertical confinement of every strip-waveguide design.
+    """
+
+    def test_faces_match_an_equivalent_plain_block(self):
+        grid, eps = _uniform_grid(0.5, do_averaging=True)
+        np.testing.assert_allclose(
+            _z_profile(grid), _z_profile(mp.Medium(epsilon=eps)), rtol=1e-8, atol=1e-8
+        )
+
+    def test_faces_actually_change_when_smoothing_is_on(self):
+        """Guards the assertion above against passing for the wrong reason."""
+        on, _ = _uniform_grid(0.5, do_averaging=True)
+        off, _ = _uniform_grid(0.5, do_averaging=False)
+        # Before the fix this difference was identically zero.
+        self.assertGreater(float(np.max(np.abs(_z_profile(on) - _z_profile(off)))), 0.5)
+
+    def test_interior_level_set_is_still_smoothed(self):
+        """The boundary path must not swallow pixels in the object's interior.
+
+        Those are averaged against a filling fraction of 1, which would return
+        the unsmoothed material and silently disable level-set smoothing for the
+        whole design region.
+        """
+        n = 8
+        ramp = np.repeat(np.linspace(0.0, 1.0, n)[:, None], n, axis=1)[:, :, None]
+        profiles = []
+        for do_averaging in (False, True):
+            grid = mp.MaterialGrid(
+                mp.Vector3(n, n, 1),
+                mp.Medium(index=1.0),
+                mp.Medium(index=3.48),
+                weights=ramp,
+                do_averaging=do_averaging,
+                beta=0,
+            )
+            sim = _boundary_sim(grid)
+            profiles.append(
+                np.asarray(
+                    sim.get_array(
+                        component=mp.Dielectric,
+                        center=mp.Vector3(),
+                        size=mp.Vector3(0.8, 0, 0),
+                    )
+                )
+            )
+        self.assertGreater(float(np.max(np.abs(profiles[1] - profiles[0]))), 1.0)
 
 
 def _directional_fd(do_averaging, eps_averaging, resolution=12, n=6, dp=1e-3, seed=0):
