@@ -1219,8 +1219,12 @@ static void get_uproj_w(const matgrid_volavg *mgva, double x0, double &u_proj, d
   else if (mgva->dim == meep::D2 || mgva->dim == meep::Dcyl)
     w = 2 * sqrt(mgva->rad * mgva->rad - x0 * x0) / (meep::pi * mgva->rad * mgva->rad);
   else if (mgva->dim == meep::D3)
+    // 4.0 / 3.0, not 4 / 3: the latter is integer division, which drops the
+    // denominator to pi*rad^3 instead of the sphere volume (4/3)*pi*rad^3 and
+    // leaves the kernel integrating to 4/3 rather than 1. The 1d and 2d branches
+    // above are correctly normalized, so this only ever affected 3d.
     w = meep::pi * (mgva->rad * mgva->rad - x0 * x0) /
-        (4 / 3 * meep::pi * mgva->rad * mgva->rad * mgva->rad);
+        (4.0 / 3.0 * meep::pi * mgva->rad * mgva->rad * mgva->rad);
 }
 
 #ifdef CTL_HAS_COMPLEX_INTEGRATION
@@ -2014,9 +2018,14 @@ void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
                                      bool use_anisotropic_averaging, double tol, int maxeval,
                                      absorber_list alist) {
 
-  // store for later use in gradient calculations
+  // Store for later use in gradient calculations. These must mirror what
+  // structure_chunk::set_chi1inv() actually used, and that routine zeroes maxeval
+  // when averaging is off (see anisotropic_averaging.cpp). Passing the raw maxeval
+  // through would make get_material_gradient() finite-difference a *smoothed*
+  // operator that the forward solve never saw, so the adjoint gradient would not
+  // be the derivative of the simulation being run.
   geps->tol = tol;
-  geps->maxeval = maxeval;
+  geps->maxeval = use_anisotropic_averaging ? maxeval : 0;
 
   meep::grid_volume gv = s->gv;
   if (alist) {

@@ -1246,6 +1246,7 @@ class Simulation:
         progress_interval: float = 4,
         subpixel_tol: float = 1e-4,
         subpixel_maxeval: int = 100000,
+        allow_3d_subpixel: bool = True,
         loop_tile_base_db: int = 0,
         loop_tile_base_eh: int = 0,
         ensure_periodicity: bool = True,
@@ -1395,6 +1396,13 @@ class Simulation:
           effects and irregular
           convergence](Subpixel_Smoothing.md#what-happens-when-subpixel-smoothing-is-disabled).
 
+        + **`allow_3d_subpixel` [ `boolean` ]** — If `False`, then in a 3d simulation
+          any `MaterialGrid` with `do_averaging=True` has its level-set subpixel
+          smoothing turned off at structure-initialization time. This is a
+          convenience switch so a 3d run can drop MaterialGrid smoothing without
+          editing every grid individually; the default `True` leaves behavior
+          unchanged. Has no effect in 1d/2d/cylindrical.
+
         + **`force_complex_fields` [ `boolean` ]** — By default, Meep runs its simulations
           with purely real fields whenever possible. It uses complex fields which require
           twice the memory and computation if the `k_point` is non-zero or if `m` is
@@ -1502,6 +1510,7 @@ class Simulation:
         self.eps_averaging = eps_averaging
         self.subpixel_tol = subpixel_tol
         self.subpixel_maxeval = subpixel_maxeval
+        self.allow_3d_subpixel = allow_3d_subpixel
         self.loop_tile_base_db = loop_tile_base_db
         self.loop_tile_base_eh = loop_tile_base_eh
         self.ensure_periodicity = ensure_periodicity
@@ -2002,11 +2011,45 @@ class Simulation:
 
         return stats
 
+    def _iter_material_grids(self):
+        """Yield every MaterialGrid reachable from this simulation's materials."""
+        candidates = list(self.geometry or [])
+        for obj in candidates:
+            mat = getattr(obj, "material", None)
+            if isinstance(mat, mp.MaterialGrid):
+                yield mat
+        if isinstance(self.default_material, mp.MaterialGrid):
+            yield self.default_material
+        for mat in self.extra_materials or []:
+            if isinstance(mat, mp.MaterialGrid):
+                yield mat
+
+    def _apply_3d_subpixel_policy(self):
+        """Honor `allow_3d_subpixel=False` by disabling MaterialGrid smoothing.
+
+        A single simulation-level switch, so a 3d run can drop level-set subpixel
+        smoothing without editing every MaterialGrid it happens to contain. The
+        default is True, which leaves behavior exactly as it was.
+        """
+        if self.allow_3d_subpixel or self.dimensions != 3:
+            return
+        disabled = 0
+        for grid in self._iter_material_grids():
+            if grid.do_averaging:
+                grid.do_averaging = False
+                disabled += 1
+        if disabled and verbosity.meep > 0:
+            print(
+                f"allow_3d_subpixel=False: disabled do_averaging on {disabled} "
+                "MaterialGrid(s)"
+            )
+
     def _init_structure(self, k=False):
         if verbosity.meep > 0:
             print("-" * 11)
             print("Initializing structure...")
 
+        self._apply_3d_subpixel_policy()
         gv = self._create_grid_volume(k)
         sym = self._create_symmetries(gv)
         br = _create_boundary_region_from_boundary_layers(self.boundary_layers, gv)
