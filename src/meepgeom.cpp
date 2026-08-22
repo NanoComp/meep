@@ -2841,6 +2841,60 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
   }
 }
 
+/* Is the point p inside the box [lo,hi] in *every* direction?
+
+   grid_volume::index() is a flat inner product of the per-direction offsets
+   with the strides, so a point that leaves the box in a single direction can
+   still produce an index inside [0,N): in 3d, stepping one pixel off the end
+   in y lands on an unrelated voxel of the next z slab. Guarding only the flat
+   index therefore silently substitutes a neighboring field value. Check each
+   direction separately instead. */
+static bool ivec_in_box(const meep::ivec &p, const meep::ivec &lo, const meep::ivec &hi,
+                        meep::ndim dim) {
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    if (p.in_direction(d) < lo.in_direction(d) || p.in_direction(d) > hi.in_direction(d))
+      return false;
+  }
+  return true;
+}
+
+/* Find the dft_chunk in `chunks` covering the same region as `adj`.
+
+   loop_in_chunks() emits one dft_chunk per (fields_chunk, symmetry image,
+   lattice shift) triple, so that triple identifies a chunk uniquely. It is
+   *not* safe to pair chunks by position in the next_in_dft list: a fields
+   chunk contributes a dft_chunk for a given component only if the monitor
+   overlaps that component's owned grid there, and the yee shifts differ
+   between components, so the per-component lists can have different lengths
+   and different orderings near the edges of the monitor. Returns NULL when
+   this fields chunk holds no data for the requested component. */
+static meep::dft_chunk *matching_dft_chunk(const std::vector<meep::dft_chunk *> &chunks,
+                                           const meep::dft_chunk *adj) {
+  for (size_t i = 0; i < chunks.size(); ++i)
+    if (chunks[i]->fc == adj->fc && chunks[i]->sn == adj->sn && chunks[i]->shift == adj->shift)
+      return chunks[i];
+  return NULL;
+}
+
+/* Look up the forward DFT at point p, or zero if p is outside this chunk.
+
+   The restriction stencil reaches half a pixel (unit_a*2 cancels against the yee
+   shift), so it wants the four forward nodes around the adjoint node. With the
+   persist pad clamped to the component's own grid (see dft.cpp) those all lie
+   inside this chunk's box, the outermost of them being the chunk's ghost layer,
+   which step_boundaries() keeps current, so a lookup should only fall outside
+   it at the cell boundary, where zero is the right answer. */
+static std::complex<meep::realnum> forward_dft_value(const meep::dft_chunk *ch,
+                                                     const meep::grid_volume &gv_fwd,
+                                                     meep::grid_volume &gv, const meep::ivec &p,
+                                                     size_t nf, size_t f_i) {
+  if (ivec_in_box(p, ch->is, ch->ie, gv.dim)) {
+    ptrdiff_t i = gv_fwd.index(ch->c, p);
+    if (i >= 0 && (size_t)i < ch->N) return ch->dft[nf * i + f_i];
+  }
+  return 0;
+}
+
 void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
                                 std::vector<meep::dft_fields *> fields_f, double *frequencies,
@@ -2878,10 +2932,9 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
       c_forward_dft_chunks.push_back(current_forward_chunk);
       current_forward_chunk = current_forward_chunk->next_in_dft;
     }
-    if (c_adjoint_dft_chunks.size() != c_forward_dft_chunks.size())
-      meep::abort("The number of adjoint chunks (%ld) is not equal to the number of forward chunks "
-                  "(%ld).\n",
-                  c_adjoint_dft_chunks.size(), c_forward_dft_chunks.size());
+    /* NOTE: the adjoint and forward chunk counts may legitimately differ, both
+       from each other and between components -- see matching_dft_chunk(). The
+       chunks are paired spatially below, so this is not an error. */
     adjoint_dft_chunks.push_back(c_adjoint_dft_chunks);
     forward_dft_chunks.push_back(c_forward_dft_chunks);
   }
@@ -2906,9 +2959,11 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
 
         // loop over forward components
         for (int ci_forward = 0; ci_forward < 3; ci_forward++) {
-          size_t num_f_chunks = forward_dft_chunks[ci_forward].size();
-          if ((num_f_chunks == 0) || (cur_chunk >= num_f_chunks)) continue;
-          meep::dft_chunk *fwd_chunk = forward_dft_chunks[ci_forward][cur_chunk];
+          /* pair the forward chunk with this adjoint chunk *spatially*, not by
+             position in the per-component chunk list */
+          meep::dft_chunk *fwd_chunk =
+              matching_dft_chunk(forward_dft_chunks[ci_forward], adj_chunk);
+          if (!fwd_chunk) continue;
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
 
@@ -2917,7 +2972,19 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
             double cyl_scale;
             IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
-            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
+            /* Index the DFT array by position, NOT by the LOOP_OVER_IVECS counter.
+               The `persist` pad clamps is/ie to fc->gv, whose corners live on the
+               centered grid, so `is` can land off this component's yee lattice.
+               update_dft() and grid_volume::index() both absorb that consistently
+               (index() subtracts iyee_shift, see vec.cpp:476), but the loop
+               counter's idx0 does not, so when (is_old - is) is odd it is off by a
+               whole stride. The clamp only bites where the monitor meets a chunk
+               boundary, which is what made the gradient depend on the chunk
+               division. */
+            ptrdiff_t adj_idx = gv_adj.index(adjoint_c, ip);
+            std::complex<meep::realnum> adj = (adj_idx >= 0 && (size_t)adj_idx < adj_chunk->N)
+                                                  ? adj_chunk->dft[nf * adj_idx + f_i]
+                                                  : std::complex<meep::realnum>(0, 0);
             material_type md;
             geps->get_material_pt(md, p);
             /* if we have conductivities (e.g. for damping)
@@ -2933,7 +3000,11 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
 
             /* trivial case, no interpolation/restriction needed        */
             if (forward_c == adjoint_c) {
-              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
+              /* index the forward chunk with its *own* index for this point;
+                 idx_adj is an index into gv_adj and is only valid here because
+                 the paired chunks share a fields chunk */
+              std::complex<meep::realnum> fwd =
+                  forward_dft_value(fwd_chunk, gv_fwd, gv, ip, nf, f_i);
               cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r()
                                                  : 1; // the pi is already factored in near2far.cpp
               material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
@@ -2952,7 +3023,6 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
               Then we perform our inner product at these nodes.
               */
               std::complex<meep::realnum> fwd_avg, fwd1, fwd2;
-              ptrdiff_t fwd1_idx, fwd2_idx;
 
               // identify the first corner of the forward fields
               meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
@@ -2973,14 +3043,8 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
 // operate on the each eps node
 #pragma unroll
               for (int node = 0; node < 2; node++) { // two nodes
-                fwd1_idx = gv_fwd.index(forward_c, fwd_pl[node]);
-                fwd1 = ((fwd1_idx >= fwd_chunk->N) || (fwd1_idx < 0))
-                           ? 0
-                           : fwd_chunk->dft[nf * fwd1_idx + f_i];
-                fwd2_idx = gv_fwd.index(forward_c, fwd_pr[node]);
-                fwd2 = ((fwd2_idx >= fwd_chunk->N) || (fwd2_idx < 0))
-                           ? 0
-                           : fwd_chunk->dft[nf * fwd2_idx + f_i];
+                fwd1 = forward_dft_value(fwd_chunk, gv_fwd, gv, fwd_pl[node], nf, f_i);
+                fwd2 = forward_dft_value(fwd_chunk, gv_fwd, gv, fwd_pr[node], nf, f_i);
                 fwd_avg = std::complex<meep::realnum>(0.5, 0) * (fwd1 + fwd2);
                 meep::vec eps1 = gv[ieps[node]];
                 cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;

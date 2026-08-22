@@ -84,8 +84,16 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   if (persist) {
     is_old = is_;
     ie_old = ie_;
-    is = max(is - one_ivec(fc->gv.dim) * 2, fc->gv.little_corner());
-    ie = min(ie + one_ivec(fc->gv.dim) * 2, fc->gv.big_corner());
+    /* Clamp to this component's own grid, not to the centered grid. Component c
+       runs from little_corner()+iyee_shift(c) to big_corner()+iyee_shift(c) (cf.
+       LOOP_OVER_VOL), so clamping to the bare corners truncates the topmost node
+       of a yee-shifted direction -- precisely the ghost node that the adjoint
+       restriction stencil reaches for, and which step_boundaries() already keeps
+       current. It also left `is` off the component lattice, which desynchronized
+       the LOOP_OVER_IVECS counter from grid_volume::index(). */
+    const ivec shift_c = fc->gv.iyee_shift(c);
+    is = max(is - one_ivec(fc->gv.dim) * 2, fc->gv.little_corner() + shift_c);
+    ie = min(ie + one_ivec(fc->gv.dim) * 2, fc->gv.big_corner() + shift_c);
   }
 
   if (use_centered_grid)
@@ -341,8 +349,17 @@ double dft_chunk::norm2(grid_volume fgv) const {
   if (persist) {
     grid_volume subgv = fgv.subvolume(is, ie, c);
     LOOP_OVER_IVECS(subgv, is_old, ie_old, idx) {
+      /* index by position: the loop counter is not a valid dft[] index here,
+         because the persist pad can leave `is` off this component's yee lattice
+         and only grid_volume::index() accounts for the yee shift. Getting this
+         wrong makes dft_norm() -- and hence stop_when_dft_decayed() -- depend on
+         the chunk division, which is exactly what the comment above promises it
+         does not. */
+      IVEC_LOOP_ILOC(subgv, ip);
+      ptrdiff_t didx = subgv.index(c, ip);
+      if (didx < 0 || (size_t)didx >= N) continue;
       for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * idx + i]);
+        sum += sqr(dft[Nomega * didx + i]);
     }
   }
   /* note we place the if outside of the
