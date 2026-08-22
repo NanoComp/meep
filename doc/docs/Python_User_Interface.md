@@ -6887,10 +6887,9 @@ def eig_power(freq, dt=None):
 
 Returns the total power of the fields from the eigenmode source at frequency `freq`.
 If the timestep `dt` (= `sim.fields.dt` = `Courant/resolution`) is specified, the
-discrete-time Fourier transform of the source is used, which is the power actually
-delivered at a finite resolution; see
-[`GaussianSource`](#gaussiansource). Otherwise, the continuous-time transform is
-used.
+Fourier transform of the discrete-time current is used, which is the power actually
+delivered at a finite resolution; see [`GaussianSource`](#gaussiansource). Otherwise,
+the continuous-time current is used.
 
 </div>
 

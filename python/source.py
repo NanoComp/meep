@@ -306,7 +306,7 @@ class GaussianSource(SourceTime):
           [planewaves extending into PML](Perfectly_Matched_Layer.md#planewave-sources-extending-into-pml).
           Default is `False`.
 
-        + **`fourier_transform(f)`** — Returns the Fourier transform of the
+        + **`fourier_transform(f, dt=None)`** — Returns the Fourier transform of the
           current evaluated at frequency $f$ ($\\omega=2\\pi f$). If `dt` is not specified,
           the transform of the idealized *continuous-time* current is returned:
           $\\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}} \\int e^{i\\omega t}G(t)\\,dt \\equiv \\frac{\\omega}{\\omega_0} \\frac{1}{\\Delta f} e^{i\\omega t_0 -\\frac{(\\omega-\\omega_0)^2}{2\\Delta f^2}}$
@@ -644,10 +644,9 @@ class EigenModeSource(Source):
         """
         Returns the total power of the fields from the eigenmode source at frequency `freq`.
         If the timestep `dt` (= `sim.fields.dt` = `Courant/resolution`) is specified, the
-        discrete-time Fourier transform of the source is used, which is the power actually
-        delivered at a finite resolution; see
-        [`GaussianSource`](#gaussiansource). Otherwise, the continuous-time transform is
-        used.
+        Fourier transform of the discrete-time current is used, which is the power actually
+        delivered at a finite resolution; see [`GaussianSource`](#gaussiansource). Otherwise,
+        the continuous-time current is used.
         """
         amp = self.amplitude
         if callable(getattr(self.src, "fourier_transform", None)):
