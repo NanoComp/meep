@@ -126,7 +126,7 @@ std::complex<double> gaussian_src_time::fourier_transform(const double f, const 
   double omega0 = 2.0 * pi * freq;
   double delta = (omega - omega0) * width;
   complex<double> ft = width * polar(1.0, omega * peak_time) * exp(-0.5 * delta * delta);
-  ft *= f / freq; // exact time derivative and i/omega_0 normalization
+  ft *= f / freq;                  // exact time derivative and i/omega_0 normalization
   if (dt != 0 && !is_integrated) { // discrete-time (centered-difference) derivative
     double x = 0.5 * omega * dt;
     ft *= (x == 0) ? 1.0 : sin(x) / x;
