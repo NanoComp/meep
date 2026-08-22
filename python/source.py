@@ -310,10 +310,10 @@ class GaussianSource(SourceTime):
           current evaluated at frequency $f$ ($\\omega=2\\pi f$). If `dt` is not specified,
           the transform of the idealized *continuous-time* current is returned:
           $\\widetilde G(\\omega) \\equiv \\frac{1}{\\sqrt{2\\pi}} \\int e^{i\\omega t}G(t)\\,dt \\equiv \\frac{\\omega}{\\omega_0} \\frac{1}{\\Delta f} e^{i\\omega t_0 -\\frac{(\\omega-\\omega_0)^2}{2\\Delta f^2}}$
-         where $G(t) = p'(t)$ is the current (the time derivative of a Gaussian dipole moment $p(t)$). In this formula, $\\Delta f$
-          is the `fwidth` of the source, $\\omega_0$ is $2\\pi$ times its `frequency`, and
-          $t_0$ is the peak time discussed above.  The $\\omega/\\omega_0$ factor is the exact
-              time derivative of the Gaussian dipole moment
+          where $G(t) = p'(t)$ is the current (the time derivative of a Gaussian dipole moment $p(t)$).
+          In this formula, $\\Delta f$ is the `fwidth` of the source, $\\omega_0$ is $2\\pi$ times
+          its `frequency`, and $t_0$ is the peak time discussed above. The $\\omega/\\omega_0$
+          factor is the exact time derivative of the Gaussian dipole moment.
 
               The current actually injected by the simulation is not $G(t)$ but rather its
               *discrete-time* counterpart: a finite difference of the Gaussian dipole moment
