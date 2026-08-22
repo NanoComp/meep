@@ -82,9 +82,10 @@ class TestSourceTime(unittest.TestCase):
 
     def test_gaussian_fourier_transform(self):
         # The discrete-time Fourier transform of the current injected by the
-        # time stepping should agree with the closed form returned by
+        # time stepping should very nearly match the closed-form continuous
+        # Fourier transform (differing only by exponentially small alias tails) returned by
         # GaussianSource.fourier_transform(f, dt). A large cutoff is used so
-        # that the truncation of the Gaussian is negligible.
+        # that the truncation in time of the Gaussian is negligible.
         fcen, fwidth, cutoff = 1.0, 0.2, 10.0
         freqs = np.linspace(fcen - 0.75 * fwidth, fcen + 0.75 * fwidth, 7)
 
@@ -117,8 +118,9 @@ class TestSourceTime(unittest.TestCase):
                     )
 
     def test_gaussian_fourier_transform_continuous(self):
-        # omitting dt gives the continuous-time transform
+        # omitting dt gives the continuous-time transform without the finite difference
         src = GaussianSource(1.0, fwidth=0.2)
+        # to do: implement a more nontrivial test
         for f in (0.9, 1.0, 1.1):
             self.assertEqual(src.fourier_transform(f), src.swigobj.fourier_transform(f))
 
