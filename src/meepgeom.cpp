@@ -2767,7 +2767,8 @@ in row-major order (the order used by HDF5): */
 void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, geom_epsilon *geps,
                                       meep::component adjoint_c, meep::component forward_c,
                                       std::complex<double> fwd, std::complex<double> adj,
-                                      double freq, meep::grid_volume &gv, double tol) {
+                                      double freq, meep::grid_volume &gv, double tol,
+                                      long owner_grid_id) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
@@ -2821,10 +2822,31 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     double *ucur = mg->weights;
     uval = tanh_projection(matgrid_val(p, tp, oi, mg), mg->beta, mg->eta);
     do {
-      vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
-      add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1, scalegrad, ucur, kind,
-                              uval, vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq,
-                              gv, tol);
+      material_data *mg_cur = (material_data *)tp->objects[oi].o->material;
+      /* Accumulate only for this design region's own grid.
+
+         v[] is sized and indexed by the *owner's* parameterization, so a
+         contribution from any other grid is at best mis-attributed and at worst
+         an out-of-bounds write when that grid is larger. This bites whenever two
+         grids abut: the design region's DFT monitor is snapped outward to
+         enclosing grid nodes, so it covers a row of nodes shared with (or lying
+         inside) the neighbour's object, where geom_tree_search returns the
+         neighbour. The neighbouring design region visits those nodes on its own
+         pass, so nothing is lost.
+
+         Scoped to U_DEFAULT, where "the topmost grid wins" means the owner's
+         derivative at a node owned by another grid is genuinely zero, so
+         dropping it is not an approximation. The other kinds (U_MEAN, U_MIN,
+         U_PROD) exist precisely to combine deliberately overlapping grids --
+         the documented way to impose a symmetry -- and are left exactly as they
+         were; an adjacent-grid pair using one of those is still affected. */
+      if (owner_grid_id < 0 || kind != material_data::U_DEFAULT ||
+          mg_cur->grid_id == owner_grid_id) {
+        vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
+        add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1, scalegrad, ucur, kind,
+                                uval, vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq,
+                                gv, tol);
+      }
       if (kind == material_data::U_DEFAULT) break;
       tp = geom_tree_search_next(p, tp, &oi);
     } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
@@ -2899,7 +2921,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
                                 std::vector<meep::dft_fields *> fields_f, double *frequencies,
                                 double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
-                                double du) {
+                                long owner_grid_id, double du) {
   /* ------------------------------------------------------------ */
   // initialize local gradient array
   /* ------------------------------------------------------------ */
@@ -2997,7 +3019,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                                  : 1; // the pi is already factored in near2far.cpp
               material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
                                                scalegrad * cyl_scale, geps, adjoint_c, forward_c,
-                                               fwd, adj, frequencies[f_i], gv, du);
+                                               fwd, adj, frequencies[f_i], gv, du, owner_grid_id);
               /* more complicated case requires interpolation/restriction */
             }
             else if ((md->do_averaging) ||             /* account for subpixel smoothing     */
@@ -3039,7 +3061,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                 material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(eps1),
                                                  scalegrad * cyl_scale, geps, adjoint_c, forward_c,
                                                  fwd_avg, std::complex<meep::realnum>(0.5, 0) * adj,
-                                                 frequencies[f_i], gv, du);
+                                                 frequencies[f_i], gv, du, owner_grid_id);
               }
             }
             /********* compute λᵀbᵤ ***************/

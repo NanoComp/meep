@@ -39,6 +39,7 @@ ADJOINT_TESTS =                                \
 TESTS =                                        \
     $(TEST_DIR)/test_3rd_harm_1d.py            \
     $(TEST_DIR)/test_absorber_1d.py            \
+    $(TEST_DIR)/test_adjoint_adjacent_grids.py \
     $(TEST_DIR)/test_adjoint_chunks.py         \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \

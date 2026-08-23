@@ -7,6 +7,7 @@ from __future__ import annotations
 from collections import namedtuple
 from copy import deepcopy
 import functools
+import itertools
 import math
 from numbers import Number
 import operator
@@ -585,6 +586,9 @@ class Medium:
         return np.squeeze(epsmu)
 
 
+_material_grid_counter = itertools.count()
+
+
 class MaterialGrid:
     """
     This class is used to specify materials on a rectilinear grid. A class object is passed
@@ -667,6 +671,12 @@ class MaterialGrid:
         allow you to combine any material grids that overlap in space with no intervening objects.
         """
         self.grid_size = mp.Vector3(*grid_size)
+        # A stable identity for this grid, carried into the C++ material_data so
+        # that the adjoint gradient of a design region can tell its own grid
+        # apart from a neighbouring one. Several material_data objects may be
+        # created from this single Python object (e.g. one per symmetric copy),
+        # and they all share this id.
+        self.grid_id = next(_material_grid_counter)
         self.medium1 = medium1
         self.medium2 = medium2
 
