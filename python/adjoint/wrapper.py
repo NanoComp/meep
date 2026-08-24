@@ -1,6 +1,33 @@
-"""Wrapper for converting a Meep simulation into a differentiable JAX callable function.
+"""JAX interoperability for `meep.adjoint`.
 
-Usage example:
+This module holds everything in `meep.adjoint` that needs JAX, so that JAX stays
+an optional dependency: it is imported behind a guard in `meep/adjoint/__init__.py`
+and nothing else in the package imports it.
+
+It does two things.
+
+Importing it registers JAX with `utils.register_vjp_backend`, so an objective
+function written with `jax.numpy` and handed to `OptimizationProblem` is
+differentiated by JAX rather than autograd. Nothing needs to be declared or
+wrapped -- writing a JAX objective differs from writing an autograd objective
+only in which numpy it imports:
+
+```
+def objective(mode_coeff, dft_fields):
+    return jnp.abs(mode_coeff)**2 + jnp.sum(jnp.abs(dft_fields)**2, axis=1)
+
+opt = mpa.OptimizationProblem(
+    simulation=simulation,
+    objective_functions=[objective],
+    objective_arguments=[mpa.EigenmodeCoefficient(...), mpa.FourierFields(...)],
+    design_regions=[mpa.DesignRegion(...)],
+    frequencies=frequencies,
+)
+```
+
+`MeepJaxWrapper` is the other direction: it turns a whole Meep simulation into a
+JAX-differentiable callable, so the design variables, the objective, and anything
+else in the loss are all traced by JAX. Usage example:
 ```
 import jax.numpy as jnp
 import meep as mp
@@ -46,7 +73,8 @@ def loss(x):
 value, grad = jax.value_and_grad(loss)(x)
 ```
 """
-from typing import Callable, Iterable, List, Tuple
+import warnings
+from typing import Callable, Iterable, List, Sequence, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -55,6 +83,64 @@ import numpy as onp
 import meep as mp
 
 from . import DesignRegion, ObjectiveQuantity, utils
+
+_warned_about_precision = False
+
+
+def _warn_if_precision_mismatch() -> None:
+    """Warns when JAX would silently narrow Meep's double-precision fields.
+
+    JAX defaults to 32-bit dtypes, so a double-precision Meep build feeding
+    complex128 monitor values into JAX loses half its digits without any error.
+    The usual symptom is a finite-difference gradient check that agrees to only
+    three or four digits, which reads as a physics problem rather than a dtype
+    problem.
+    """
+    global _warned_about_precision
+    if _warned_about_precision:
+        return
+    if not jax.config.jax_enable_x64 and not mp.is_single_precision():
+        _warned_about_precision = True
+        warnings.warn(
+            "Meep was built in double precision but JAX's x64 mode is off, so "
+            "JAX will narrow complex128 monitor values to complex64 and the "
+            "gradients will carry roughly single-precision accuracy. Add\n\n"
+            "    jax.config.update('jax_enable_x64', True)\n\n"
+            "before constructing the objective to keep double precision.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+
+
+def _returns_jax_array(value) -> bool:
+    """Whether an objective function's return value came from JAX."""
+    return isinstance(value, jax.Array)
+
+
+def _jax_objective_vjp(
+    objective_function: Callable, args: Tuple, cotangent
+) -> Tuple[onp.ndarray, ...]:
+    """Differentiates an objective function written with `jax.numpy`.
+
+    Registered with `utils.register_vjp_backend`, so an objective function that
+    returns a JAX array is differentiated by JAX automatically -- writing one is
+    no different from writing an autograd objective, apart from which numpy it
+    imports.
+    """
+    _warn_if_precision_mismatch()
+    value, pullback = jax.vjp(objective_function, *[jnp.asarray(arg) for arg in args])
+    if not isinstance(value, jax.Array):
+        raise TypeError(
+            "An objective function must return a single array or scalar, but "
+            f"{objective_function} returned {type(value)}."
+        )
+    # `_objective_cotangent` builds the seed in NumPy, which is float64 even when
+    # JAX is running in its default 32-bit mode.
+    cotangent = jnp.asarray(cotangent).astype(value.dtype).reshape(value.shape)
+    return tuple(onp.asarray(grad) for grad in pullback(cotangent))
+
+
+utils.register_vjp_backend(_returns_jax_array, _jax_objective_vjp)
 
 
 class MeepJaxWrapper:
