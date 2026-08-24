@@ -1,23 +1,8 @@
-"""Adjacent MaterialGrid design regions must each get their own gradient.
+"""Each design region's gradient must come only from its own MaterialGrid.
 
-`material_grids_addgradient_point` resolves the material grid by a spatial
-lookup at each point (`geom_tree_search`) and then interpolates into the
-supplied `v[]` using *that* grid's `grid_size` and box coordinates. A design
-region's DFT monitor is snapped outward to enclosing grid nodes, so when two
-material grids abut, one region's monitor covers a row of nodes that lie in the
-neighbouring grid's object. Those nodes resolve to the neighbour, and their
-contribution was interpolated in the neighbour's coordinates and summed into
-this region's array.
-
-Instrumented on the pre-fix build, the lower of two abutting 21x11-node regions
-touched 210 nodes of its own grid and 21 of the neighbour's -- exactly the
-shared boundary row -- and its directional derivative came out 35% high. With
-the two grids sized differently the stray writes also ran off the end of the
-smaller region's array, corrupting the heap.
-
-The adjacent case is covered twice: with equal grid sizes, where a regression is
-a wrong value and fails as an assertion, and with unequal sizes, where it is also
-an out-of-bounds write.
+Design regions may be adjacent, separated, or overlapping; in every arrangement
+the adjoint gradient of one region must agree with a finite difference of the
+objective with respect to that region's own design variables.
 """
 
 import unittest
@@ -40,9 +25,8 @@ OXIDE = mp.Medium(index=1.44)
 def _problem(grid_shapes, gap=0.0, overlap=False, grid_type="U_DEFAULT"):
     """Design region(s) stacked in y, optionally separated by `gap`.
 
-    With `overlap`, the grids are instead placed on top of each other in the same
-    volume -- the configuration used to impose symmetries -- and only the first
-    is a design region.
+    With `overlap`, the grids share one volume and only the first is a design
+    region.
     """
     if overlap:
         boxes = [(-LY / 2, LY / 2)] * len(grid_shapes)
@@ -57,7 +41,9 @@ def _problem(grid_shapes, gap=0.0, overlap=False, grid_type="U_DEFAULT"):
             mp.Vector3(*s),
             OXIDE,
             SILICON,
-            weights=np.zeros(s),
+            # Non-design grids are filled at mid density: an almost-empty cell
+            # scatters too weakly for the gradient to converge at this decay_by.
+            weights=np.full(s, 0.5) if overlap else np.zeros(s),
             do_averaging=False,
             beta=0,
             eta=0.5,
@@ -109,10 +95,8 @@ def _problem(grid_shapes, gap=0.0, overlap=False, grid_type="U_DEFAULT"):
 def _directional_ratio(opt, grid_shapes, seed=0, step=3e-3, n_regions=None):
     """adjoint / finite difference along one random direction.
 
-    A directional derivative rather than a single-pixel difference: perturbing
-    one design variable moves the objective by about as much as the DFT
-    convergence floor, whereas moving all of them is reproducible to five
-    digits.
+    Directional rather than single-pixel: perturbing one design variable moves
+    the objective by about as much as the DFT convergence floor.
     """
     rng = np.random.default_rng(seed)
     if n_regions is None:
@@ -140,68 +124,45 @@ def _directional_ratio(opt, grid_shapes, seed=0, step=3e-3, n_regions=None):
 
 
 class TestAdjacentDesignGrids(unittest.TestCase):
-    # What the field solve reproduces across the two extra runs of the central
-    # difference, not what the gradient assembly contributes. The pre-fix error
-    # was 35%, three orders of magnitude outside this.
+    # What the field solve reproduces across the two runs of the central
+    # difference, not what the gradient assembly contributes.
     tol = 2e-3
 
     def test_single_design_region(self):
-        """Baseline: one grid over the whole area, no neighbour to confuse it."""
+        """A single design region covering the whole area."""
         shapes = [(8, 16)]
         ratio = _directional_ratio(_problem(shapes), shapes)
         self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
 
     def test_separated_design_regions(self):
-        """Two grids with a pixel of background between them: never affected."""
+        """Two design regions separated by a pixel of background."""
         shapes = [(8, 8), (8, 13)]
         ratio = _directional_ratio(_problem(shapes, gap=1.0 / RESOLUTION), shapes)
         self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
 
     def test_adjacent_design_regions(self):
-        """Two grids sharing a boundary. This is the regression.
-
-        Equal grid sizes, so a regression shows up as a wrong value (1.35 on the
-        pre-fix build) rather than as an out-of-bounds write -- keep the failure
-        mode a clean assertion so the rest of the file still runs.
-        """
+        """Two design regions sharing a boundary, with equal grid sizes."""
         shapes = [(8, 8), (8, 8)]
         ratio = _directional_ratio(_problem(shapes, gap=0.0), shapes)
         self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
 
     def test_adjacent_design_regions_unequal_sizes(self):
-        """Same, with grids of different sizes.
+        """Two design regions sharing a boundary, with unequal grid sizes.
 
-        The stray contributions are interpolated with the neighbour's
-        `grid_size`, so when the neighbour is larger they also run off the end of
-        this region's array. Whether that corruption is fatal depends on the
-        allocator's state: on the pre-fix build this was seen both as a wrong
-        value (1.06) and as an abort in malloc.
+        The larger neighbour's grid_size must not be used to index this
+        region's smaller gradient array.
         """
         shapes = [(8, 8), (8, 13)]
         ratio = _directional_ratio(_problem(shapes, gap=0.0), shapes)
         self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
 
     def test_overlapping_grids_are_unaffected(self):
-        """Deliberately overlapping grids must behave exactly as before.
-
-        Overlapping a grid with transformed copies of itself, combined with
-        U_MEAN, is the documented way to impose a symmetry. The owner filter is
-        therefore scoped to U_DEFAULT, where "topmost wins" makes a foreign
-        node's derivative genuinely zero. This pins that scoping: without it, an
-        earlier revision of the fix zeroed this gradient entirely, and a second
-        revision halved it.
-        """
+        """Two grids overlapping in one volume, combined with U_MEAN."""
         shapes = [(8, 8), (8, 8)]
         ratio = _directional_ratio(
             _problem(shapes, overlap=True, grid_type="U_MEAN"), shapes, n_regions=1
         )
-        # Looser than self.tol: overlapping U_MEAN gradients carry a ~0.3%
-        # inaccuracy that predates this change and is step-independent, so it is
-        # not finite-difference error. It is untouched here -- the guard
-        # short-circuits for every kind other than U_DEFAULT, leaving that path
-        # byte-identical to before. What this test is for is the 50-100% errors
-        # that a wrongly-scoped owner filter produces.
-        self.assertAlmostEqual(ratio, 1.0, delta=1e-2)
+        self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
 
 
 if __name__ == "__main__":
