@@ -1,6 +1,7 @@
-from typing import Iterable, List, Tuple
+from typing import Callable, Iterable, List, Sequence, Tuple
 
 import numpy as onp
+from autograd import make_vjp
 
 import meep as mp
 
@@ -219,14 +220,70 @@ def validate_and_update_design(
         design_region.update_design_parameters(design_variable.flatten())
 
 
+def objective_vjp(
+    objective_function: Callable,
+    args: Sequence[onp.ndarray],
+    cotangent,
+) -> Tuple[onp.ndarray, ...]:
+    """Pulls a cotangent back through an objective function.
+
+    This is a *single* reverse pass that yields the cotangent with respect to
+    every element of `args` at once.
+
+    An objective function may supply its own pullback by exposing a
+    `vjp(cotangent, *args)` method, in which case it is used in place of
+    autograd. This is how objective functions written against another
+    autodifferentiation framework participate; see `wrapper.JaxObjective`.
+
+    Args:
+      objective_function: the objective function, called as
+        `objective_function(*args)`.
+      args: the values of the objective quantities, in registration order.
+      cotangent: the seed of the reverse pass, in the vector space of the
+        objective function's output.
+
+    Returns:
+      One cotangent per element of `args`, each with that element's shape.
+    """
+    args = tuple(args)
+    user_vjp = getattr(objective_function, "vjp", None)
+    if callable(user_vjp):
+        cotangents = tuple(user_vjp(cotangent, *args))
+    else:
+        vjp, _ = make_vjp(lambda packed: objective_function(*packed))(args)
+        cotangents = tuple(vjp(cotangent))
+    if len(cotangents) != len(args):
+        raise ValueError(
+            f"The objective function's vjp returned {len(cotangents)} "
+            f"cotangents for {len(args)} objective arguments."
+        )
+    return cotangents
+
+
 def create_adjoint_sources(
-    monitors: Iterable[ObjectiveQuantity], monitor_values_grad: onp.ndarray
+    monitors: Sequence[ObjectiveQuantity],
+    monitor_values_grad: Sequence[onp.ndarray],
 ) -> List[mp.Source]:
-    monitor_values_grad = onp.asarray(
-        monitor_values_grad,
-        dtype=onp.complex64 if mp.is_single_precision() else onp.complex128,
-    )
-    if not onp.any(monitor_values_grad):
+    """Places the adjoint sources for one adjoint simulation.
+
+    Args:
+      monitors: the objective quantities registered in the forward run.
+      monitor_values_grad: one cotangent per monitor, each with the shape of
+        that monitor's own value.
+
+    Returns:
+      The list of adjoint sources.
+    """
+    # Everything downstream -- `_adj_src_scale`, `FilteredSource`, and the
+    # `std::complex<double>` buffers the C++ source constructors read -- works in
+    # double precision, so upcast here rather than round-tripping through the
+    # field precision.
+    cotangents = [onp.asarray(dj, dtype=onp.complex128) for dj in monitor_values_grad]
+    if len(cotangents) != len(monitors):
+        raise ValueError(
+            f"Got {len(cotangents)} cotangents for {len(monitors)} monitors."
+        )
+    if not any(onp.any(dj) for dj in cotangents):
         raise RuntimeError(
             "The gradient of all monitor values is zero, which "
             "means that no adjoint sources can be placed to set "
@@ -238,12 +295,7 @@ def create_adjoint_sources(
             "objective function output."
         )
     adjoint_sources = []
-    for monitor_idx, monitor in enumerate(monitors):
-        # `dj` for each monitor will have a shape of (num frequencies,)
-        dj = onp.asarray(
-            monitor_values_grad[monitor_idx],
-            dtype=onp.complex64 if mp.is_single_precision() else onp.complex128,
-        )
+    for monitor, dj in zip(monitors, cotangents):
         if onp.any(dj):
             adjoint_sources += monitor.place_adjoint_source(dj)
     assert adjoint_sources

@@ -3,8 +3,9 @@ A collection of objects and helper methods for defining objective functions
 used in topology optimization.
 """
 import abc
+import warnings
 from collections import namedtuple
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 import numpy as np
 from meep.simulation import py_v3_to_vec, FluxData, NearToFarData
@@ -14,6 +15,48 @@ import meep as mp
 from .filter_source import FilteredSource
 
 Grid = namedtuple("Grid", ["x", "y", "z", "w"])
+
+
+def _as_cotangent(dJ, value_shape: Tuple[int, ...], quantity_name: str) -> np.ndarray:
+    """Normalizes the array passed to `ObjectiveQuantity.place_adjoint_source`.
+
+    The argument is a cotangent with exactly the shape of the objective
+    quantity's own value, i.e. of `ObjectiveQuantity.__call__`.
+
+    Before the objective function was differentiated with a vector-Jacobian
+    product, `OptimizationProblem` used `autograd.jacobian` and passed the full
+    `(nfreq,) + value_shape` Jacobian, which each `place_adjoint_source`
+    implementation contracted itself. That shape is still accepted, with a
+    `DeprecationWarning`, for one release.
+
+    Args:
+      dJ: the array to normalize.
+      value_shape: the shape of the objective quantity's value.
+      quantity_name: the class name, used in diagnostics.
+
+    Returns:
+      An array of shape `value_shape`.
+    """
+    dJ = np.atleast_1d(np.asarray(dJ))
+    value_shape = tuple(value_shape)
+    if dJ.shape == value_shape:
+        return dJ
+    if dJ.ndim == len(value_shape) + 1 and dJ.shape[1:] == value_shape:
+        warnings.warn(
+            f"{quantity_name}.place_adjoint_source() was passed a Jacobian of "
+            f"shape {dJ.shape}. It now expects a cotangent of shape "
+            f"{value_shape} -- the shape of the quantity's own value -- with the "
+            "objective's frequency dimension already contracted by the caller. "
+            "Contracting the leading axis for backwards compatibility; this "
+            "fallback will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return np.sum(dJ, axis=0)
+    raise ValueError(
+        f"{quantity_name}.place_adjoint_source() expected a cotangent of shape "
+        f"{value_shape}, but got an array of shape {dJ.shape}."
+    )
 
 
 class ObjectiveQuantity(abc.ABC):
@@ -50,7 +93,19 @@ class ObjectiveQuantity(abc.ABC):
 
     @abc.abstractmethod
     def place_adjoint_source(self, dJ):
-        """Places appropriate sources for the adjoint simulation."""
+        """Places appropriate sources for the adjoint simulation.
+
+        Args:
+          dJ: the cotangent of the objective function with respect to this
+            quantity, with the same shape as the quantity's value (i.e. the
+            return value of `__call__`).
+        """
+
+    def _cotangent(self, dJ) -> np.ndarray:
+        """Validates the cotangent handed to `place_adjoint_source`."""
+        return _as_cotangent(
+            dJ, np.shape(self.get_evaluation()), type(self).__name__
+        )
 
     def get_evaluation(self):
         """Evaluates the objective quantity."""
@@ -229,9 +284,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         return self._monitor
 
     def place_adjoint_source(self, dJ):
-        dJ = np.atleast_1d(dJ)
-        if dJ.ndim == 2:
-            dJ = np.sum(dJ, axis=1)
+        dJ = self._cotangent(dJ)
         time_src = self._create_time_profile()
         da_dE = 0.5 * self._cscale
         scale = self._adj_src_scale()
@@ -362,28 +415,20 @@ class FourierFields(ObjectiveQuantity):
         time_src = self._create_time_profile()
         sources = []
 
+        dJ = np.ascontiguousarray(self._cotangent(dJ), dtype=np.complex128)
+
+        # `fourier_sourcedata` indexes dJ as a flat, C-ordered buffer whose
+        # slowest axis is frequency, so the element count must agree with the
+        # monitor Meep actually allocated.
         mon_size = self.sim.fields.dft_monitor_size(
             self._monitor.swigobj, self.volume.swigobj, self.component
         )
-        dJ = dJ.astype(np.complex128)
-        if (
-            np.prod(mon_size) * self.num_freq != dJ.size
-            and np.prod(mon_size) * self.num_freq**2 != dJ.size
-        ):
-            raise ValueError("The format of J is incorrect!")
-
-        # The objective function J is a vector. Each component corresponds to a frequency.
-        if np.prod(mon_size) * self.num_freq**2 == dJ.size and self.num_freq > 1:
-            dJ = np.sum(dJ, axis=1)
-        """The adjoint solver requires the objective function
-        to be scalar valued with regard to objective arguments
-        and position, but the function may be vector valued
-        with regard to frequency. In this case, the Jacobian
-        will be of the form [F,F,...] where F is the number of
-        frequencies. Because of linearity, we can sum across the
-        second frequency dimension to calculate a frequency
-        scale factor for each point (rather than a scale vector).
-        """
+        if np.prod(mon_size) * self.num_freq != dJ.size:
+            raise ValueError(
+                f"The cotangent has {dJ.size} elements but this monitor holds "
+                f"{np.prod(mon_size)} points at each of {self.num_freq} "
+                "frequencies."
+            )
 
         all_fouriersrcdata = self._monitor.swigobj.fourier_sourcedata(
             self.volume.swigobj, self.component, self.sim.fields, dJ
@@ -489,10 +534,9 @@ class Near2FarFields(ObjectiveQuantity):
         return self._monitor
 
     def place_adjoint_source(self, dJ):
+        dJ = self._cotangent(dJ)
         time_src = self._create_time_profile()
         sources = []
-        if dJ.ndim == 4:
-            dJ = np.sum(dJ, axis=0)
 
         farpt_list = np.array([list(pi) for pi in self.far_pts]).flatten()
         far_pt0 = self.far_pts[0]
@@ -563,9 +607,7 @@ class LDOS(ObjectiveQuantity):
 
     def place_adjoint_source(self, dJ):
         time_src = self._create_time_profile()
-        if dJ.ndim == 2:
-            dJ = np.sum(dJ, axis=1)
-        dJ = dJ.flatten()
+        dJ = self._cotangent(dJ).flatten()
         sources = []
         forward_f_scale = np.array(
             [self._ldos_scale / self._ldos_Jdata[k] for k in range(self.num_freq)]
