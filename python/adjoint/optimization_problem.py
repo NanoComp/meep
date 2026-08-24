@@ -2,8 +2,6 @@ from collections import namedtuple
 from typing import Callable, List, Union, Optional, Tuple
 
 import numpy as np
-from autograd import jacobian
-
 import meep as mp
 
 from . import LDOS, DesignRegion, utils, ObjectiveQuantity
@@ -155,6 +153,7 @@ class OptimizationProblem:
         self.current_state = "INIT"
 
         self.gradient = []
+        self._objective_values = []
 
     def __call__(
         self,
@@ -283,7 +282,10 @@ class OptimizationProblem:
         # record objective quantities from user specified monitors
         self.results_list = [m() for m in self.objective_arguments]
         # evaluate objectives
-        self.f0 = [fi(*self.results_list) for fi in self.objective_functions]
+        self._objective_values = [
+            fi(*self.results_list) for fi in self.objective_functions
+        ]
+        self.f0 = list(self._objective_values)
         if len(self.f0) == 1:
             self.f0 = self.f0[0]
 
@@ -293,17 +295,43 @@ class OptimizationProblem:
         # update solver's current state
         self.current_state = "FWD"
 
+    def _objective_cotangent(self, ar: int) -> np.ndarray:
+        """Builds the reverse-pass seed for one objective function.
+
+        Meep runs a single adjoint simulation per objective function and recovers
+        a gradient at every frequency from it, which is only valid when each
+        component of a frequency-vector-valued objective depends on the monitor
+        values at its own frequency alone. Under that assumption the quantity the
+        adjoint sources need -- the frequency diagonal of the Jacobian -- is the
+        pullback of a cotangent of ones.
+        """
+        value = self._objective_values[ar]
+        if np.ndim(value) == 0:
+            return np.ones((), dtype=np.asarray(value).dtype)
+        value = np.asarray(value)
+        if value.size not in (1, self.nf):
+            raise ValueError(
+                f"objective_functions[{ar}] returned {value.size} values. Meep's "
+                "single-adjoint-simulation formulation requires each objective "
+                f"function to be scalar or to return one value per frequency "
+                f"({self.nf}). Pass independent scalar objectives as separate "
+                "entries of `objective_functions` instead."
+            )
+        return np.ones(value.shape, dtype=value.dtype)
+
     def prepare_adjoint_run(self):
-        # Compute adjoint sources
+        # Compute adjoint sources. One reverse pass through each objective
+        # function yields the cotangents for all of its objective arguments.
         self.adjoint_sources = [[] for _ in range(len(self.objective_functions))]
         for ar in range(len(self.objective_functions)):
-            for mi, m in enumerate(self.objective_arguments):
-                dJ = jacobian(self.objective_functions[ar], mi)(*self.results_list)
-                # get gradient of objective w.r.t. monitor
-                if np.any(dJ):
-                    self.adjoint_sources[ar] += m.place_adjoint_source(
-                        dJ
-                    )  # place the appropriate adjoint sources
+            dJ = utils.objective_vjp(
+                self.objective_functions[ar],
+                self.results_list,
+                self._objective_cotangent(ar),
+            )
+            self.adjoint_sources[ar] = utils.create_adjoint_sources(
+                self.objective_arguments, dJ
+            )
 
     def adjoint_run(self):
         # set up adjoint sources and monitors
