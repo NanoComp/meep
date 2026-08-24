@@ -328,6 +328,7 @@ class OptimizationProblem:
                 self.objective_functions[ar],
                 self.results_list,
                 self._objective_cotangent(ar),
+                value=self._objective_values[ar],
             )
             self.adjoint_sources[ar] = utils.create_adjoint_sources(
                 self.objective_arguments, dJ
