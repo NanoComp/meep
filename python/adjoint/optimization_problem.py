@@ -2,7 +2,7 @@ from collections import namedtuple
 from typing import Callable, List, Union, Optional, Tuple
 
 import numpy as np
-from autograd import grad, jacobian
+from autograd import jacobian
 
 import meep as mp
 
