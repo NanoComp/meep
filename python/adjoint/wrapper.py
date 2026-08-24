@@ -54,10 +54,7 @@ import numpy as onp
 
 import meep as mp
 
-from . import DesignRegion, EigenmodeCoefficient, utils
-
-_norm_fn = onp.linalg.norm
-_reduce_fn = onp.max
+from . import DesignRegion, ObjectiveQuantity, utils
 
 
 class MeepJaxWrapper:
@@ -66,8 +63,8 @@ class MeepJaxWrapper:
     Attributes:
         simulation: the pre-configured Meep simulation object.
         sources: a list of Meep sources for the forward simulation.
-        monitors: a list of eigenmode coefficient monitors from the `meep.adjoint`
-          module.
+        monitors: a list of objective quantities from the `meep.adjoint` module,
+          such as `EigenmodeCoefficient` or `FourierFields`.
         design_regions: a list of design regions from the `meep.adjoint` module.
         frequencies: the list of frequencies, in normalized Meep units.
         measurement_interval: the time interval between DFT field convergence
@@ -90,13 +87,11 @@ class MeepJaxWrapper:
           for more information. The default is true.
     """
 
-    _log_fn = print
-
     def __init__(
         self,
         simulation: mp.Simulation,
         sources: List[mp.Source],
-        monitors: List[EigenmodeCoefficient],
+        monitors: List[ObjectiveQuantity],
         design_regions: List[DesignRegion],
         frequencies: List[float],
         dft_threshold: float = 1e-11,
