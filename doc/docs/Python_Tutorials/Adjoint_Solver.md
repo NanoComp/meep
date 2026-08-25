@@ -113,6 +113,65 @@ def objective(mode_coeff):
 objective.vjp = lambda cotangent, mode_coeff: (2 * cotangent * npa.conj(mode_coeff),)
 ```
 
+### A gradient for each frequency, with JAX
+
+Worst-case (minimax) optimization over a bandwidth needs a separate gradient for
+each frequency rather than the gradient of a scalar reduction over them.
+`OptimizationProblem` returns exactly that — its `gradient` has a frequency axis
+— and `meep.adjoint.value_and_jacobian` is the equivalent for the JAX path. It is
+a function transform, the counterpart of `jax.value_and_grad`, so the loss
+function is written exactly as it would be for a scalar objective:
+
+```py
+def loss(rho, thickness, tilt):
+    (dft,) = wrapped_meep([rho])              # a MeepJaxWrapper call
+    return postprocess(dft, thickness, tilt)  # one value per frequency
+
+values, grads = mpa.value_and_jacobian(loss, argnums=(0, 1, 2))(rho, 1.8, 8.0)
+```
+
+Every leaf of `grads` is the corresponding parameter's shape with a leading
+frequency axis, so `grads[1][f]` is the gradient of `values[f]` with respect to
+`thickness`:
+
+```
+values      (nfreq,)
+grads[0]    (nfreq,) + rho.shape
+grads[1]    (nfreq,)
+grads[2]    (nfreq,)
+```
+
+Note that `thickness` and `tilt` are differentiated even though Meep has never
+seen them: everything downstream of the `wrapped_meep(...)` call is ordinary JAX.
+The parameters may be arbitrary pytrees, in which case the Jacobian is the same
+tree with a frequency axis added to each leaf.
+
+The whole Jacobian costs **one forward simulation and one adjoint simulation**,
+independent of the number of frequencies. `jax.jacrev` cannot achieve this: it
+evaluates the reverse pass once per output component, and here each evaluation
+would be a full timestepping run. That is why this is a transform rather than
+something a JAX transformation does for you.
+
+To feed the result to an optimizer that wants a flat `(nfreq, num_parameters)`
+matrix — nlopt's `add_inequality_mconstraint`, for instance — flatten it with
+`jax.flatten_util.ravel_pytree`, which orders the columns consistently with the
+flattened parameters:
+
+```py
+flat_params, unravel = jax.flatten_util.ravel_pytree(params)
+jacobian = jax.vmap(lambda row: jax.flatten_util.ravel_pytree(row)[0])(grads)
+```
+
+As with `OptimizationProblem`, the dependence of the loss on the *monitor values*
+must be block diagonal in frequency — entry $f$ may only read the monitor values
+at frequency $f$ — because a single adjoint field cannot carry independent
+sensitivities for different frequencies. Dependence on parameters that bypass the
+simulation is unrestricted, since those are differentiated directly.
+
+The loss function must call a `MeepJaxWrapper` exactly once; that call is where
+the transform splits it into the part that produces the design weights and the
+part that post-processes the monitor values.
+
 ### Relationship to `MeepJaxWrapper`
 
 The above is distinct from `MeepJaxWrapper`, which turns the entire simulation
