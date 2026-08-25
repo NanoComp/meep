@@ -143,8 +143,48 @@ grads[2]    (nfreq,)
 
 Note that `thickness` and `tilt` are differentiated even though Meep has never
 seen them: everything downstream of the `wrapped_meep(...)` call is ordinary JAX.
-The parameters may be arbitrary pytrees, in which case the Jacobian is the same
-tree with a frequency axis added to each leaf.
+
+### Grouping the parameters into a pytree
+
+Realistic problems have more than three parameters, and passing them positionally
+gets unwieldy. The parameters may be any pytree — a `NamedTuple`, a dataclass, a
+dict, or a nesting of them — and the Jacobian comes back as the *same tree* with a
+frequency axis added to each leaf:
+
+```py
+class Stack(NamedTuple):
+    thickness: jnp.ndarray     # (3,) oxide, antireflection coating, air
+    index: jnp.ndarray         # (3,)
+
+class Params(NamedTuple):
+    latent: jnp.ndarray        # (601,) design variables
+    stack: Stack
+    tilt: float                # fiber tilt, in degrees
+    offset: float              # lateral fiber position
+
+def loss(p):
+    rho = mpa.tanh_projection(mpa.conic_filter(p.latent, R, L, dy, RES), beta, 0.5)
+    (ez, hx) = wrapped_meep([rho])
+    field = propagate(ez, hx, p.stack)     # a stratified-media propagator, say
+    return fiber_overlap(field, p.tilt, p.offset)      # (nfreq,)
+
+values, jacobian = mpa.value_and_jacobian(loss)(params)
+jax.tree_util.tree_map(lambda leaf: leaf.shape, jacobian)
+```
+
+```
+Params(latent=(5, 601),
+       stack=Stack(thickness=(5, 3), index=(5, 3)),
+       tilt=(5,),
+       offset=(5,))
+```
+
+A parameter may appear on both sides of the simulation — `p.latent` above feeds
+the design region, and could equally appear in a regularizer after the Meep call.
+The two contributions are summed.
+
+The same applies to the scalar case: `jax.value_and_grad(loss)(params)` returns a
+gradient with the structure of `params`, with no frequency axis.
 
 The whole Jacobian costs **one forward simulation and one adjoint simulation**,
 independent of the number of frequencies. `jax.jacrev` cannot achieve this: it
