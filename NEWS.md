@@ -37,6 +37,15 @@
   computing a gradient raised `AxisError: axis 1 is out of bounds for array of
   dimension 1`.
 
+* Adjoint solver: `meep.adjoint.value_and_jacobian` transforms a loss function
+  that returns one value per frequency into one that also returns a gradient for
+  each of them, for worst-case (minimax) optimization over a bandwidth. It is the
+  counterpart of `jax.value_and_grad`, accepts arbitrary pytrees, differentiates
+  parameters that never reach Meep alongside the design weights, and costs a
+  single forward and adjoint simulation regardless of the number of frequencies.
+  `jax.jacrev` cannot do this cheaply, since it evaluates the reverse pass -- and
+  so a full timestepping run -- once per output.
+
 ## Meep 1.34.0
 
 7/9/2026

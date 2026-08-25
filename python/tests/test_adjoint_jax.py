@@ -318,6 +318,145 @@ class WrapperTest(ApproxComparisonTestCase):
             epsilon=_TOL,
         )
 
+    def _minimax_setup(self, num_frequencies=3):
+        """A loss returning one value per frequency, with non-Meep parameters."""
+        frequencies = onp.linspace(1 / 1.50, 1 / 1.60, num_frequencies).tolist()
+        (
+            simulation,
+            sources,
+            monitors,
+            design_regions,
+            frequencies,
+        ) = build_straight_wg_simulation(frequencies=frequencies)
+        wrapped_meep = mpa.MeepJaxWrapper(
+            simulation, [sources[0]], monitors, design_regions, frequencies
+        )
+        design_shape = tuple(
+            int(i) for i in design_regions[0].design_parameters.grid_size
+        )[:2]
+
+        def loss(rho, weight, bias):
+            s1p, _, s2p, _ = wrapped_meep([rho])
+            # `weight` and `bias` never reach Meep, so they exercise the path
+            # that is differentiated directly rather than adjointly.
+            return weight * jnp.abs(s2p / s1p) ** 2 + bias
+
+        return wrapped_meep, loss, onp.ones(design_shape) * 0.5, frequencies
+
+    def _count_simulations(self, wrapped_meep):
+        """Patches the wrapper to count forward and adjoint timestepping runs."""
+        counts = {"forward": 0, "adjoint": 0}
+        run_forward = wrapped_meep._run_fwd_simulation
+        run_adjoint = wrapped_meep._run_adjoint_simulation
+
+        def counting_forward(*args, **kwargs):
+            counts["forward"] += 1
+            return run_forward(*args, **kwargs)
+
+        def counting_adjoint(*args, **kwargs):
+            counts["adjoint"] += 1
+            return run_adjoint(*args, **kwargs)
+
+        wrapped_meep._run_fwd_simulation = counting_forward
+        wrapped_meep._run_adjoint_simulation = counting_adjoint
+        return counts
+
+    def test_value_and_jacobian(self):
+        """A gradient per frequency, for Meep and non-Meep parameters alike.
+
+        The reference for row `f` is `jax.grad` of component `f`, which costs one
+        adjoint run per row. `value_and_jacobian` produces every row from one.
+        """
+        wrapped_meep, loss, x, frequencies = self._minimax_setup()
+        num_frequencies = len(frequencies)
+        weight, bias = 2.5, 0.75
+
+        counts = self._count_simulations(wrapped_meep)
+        values, (d_rho, d_weight, d_bias) = mpa.value_and_jacobian(
+            loss, argnums=(0, 1, 2)
+        )(x, weight, bias)
+
+        self.assertEqual(counts, {"forward": 1, "adjoint": 1})
+        self.assertEqual(values.shape, (num_frequencies,))
+        self.assertEqual(d_rho.shape, (num_frequencies,) + x.shape)
+        self.assertEqual(d_weight.shape, (num_frequencies,))
+        self.assertEqual(d_bias.shape, (num_frequencies,))
+
+        for f in range(num_frequencies):
+            reference = jax.grad(lambda *a: loss(*a)[f], argnums=(0, 1, 2))(
+                x, weight, bias
+            )
+            # Parameters that bypass Meep are differentiated directly, so they
+            # agree exactly.
+            self.assertClose(
+                onp.asarray([d_weight[f], d_bias[f]]),
+                onp.asarray([reference[1], reference[2]]),
+                epsilon=1e-13,
+                msg=f"row {f} non-Meep parameters",
+            )
+            # The design row agrees to the accuracy of the reference route, not
+            # of this one: seeding a single frequency asks `FilteredSource` to
+            # synthesize exact zeros at the others, which it can only
+            # approximate. Cross-checked against `OptimizationProblem`, which
+            # drives the adjoint the same way this does, the rows agree to
+            # roundoff.
+            tol = 1e-2 if mp.is_single_precision() else 5e-3
+            self.assertClose(
+                onp.asarray(d_rho[f]).ravel(),
+                onp.asarray(reference[0]).ravel(),
+                epsilon=tol,
+                msg=f"row {f} design",
+            )
+
+        rows = onp.asarray(d_rho).reshape(num_frequencies, -1)
+        spread = onp.abs(rows[0] - rows[-1]).max() / onp.abs(rows).max()
+        self.assertGreater(spread, 1e-3, "rows are identical; test is vacuous")
+
+    def test_value_and_jacobian_pytree(self):
+        """Parameters may be an arbitrary pytree; the Jacobian mirrors it."""
+        wrapped_meep, scalar_loss, x, frequencies = self._minimax_setup()
+        num_frequencies = len(frequencies)
+
+        params = {
+            "design": {"rho": x},
+            "post": (2.5, onp.array([0.75, 0.25])),
+        }
+
+        def loss(p):
+            weight, bias = p["post"]
+            s1p, _, s2p, _ = wrapped_meep([p["design"]["rho"]])
+            return weight * jnp.abs(s2p / s1p) ** 2 + jnp.sum(bias)
+
+        counts = self._count_simulations(wrapped_meep)
+        values, jacobian = mpa.value_and_jacobian(loss)(params)
+
+        self.assertEqual(counts, {"forward": 1, "adjoint": 1})
+        self.assertEqual(
+            jax.tree_util.tree_structure(jacobian),
+            jax.tree_util.tree_structure(params),
+        )
+        shapes = jax.tree_util.tree_map(lambda leaf: leaf.shape, jacobian)
+        self.assertEqual(shapes["design"]["rho"], (num_frequencies,) + x.shape)
+        self.assertEqual(shapes["post"][0], (num_frequencies,))
+        self.assertEqual(shapes["post"][1], (num_frequencies, 2))
+
+    def test_value_and_jacobian_errors(self):
+        wrapped_meep, loss, x, frequencies = self._minimax_setup()
+
+        with self.assertRaisesRegex(ValueError, "one per frequency"):
+            mpa.value_and_jacobian(lambda r: loss(r, 1.0, 0.0)[:1])(x)
+
+        with self.assertRaisesRegex(TypeError, "1-D JAX array"):
+            mpa.value_and_jacobian(lambda r: jnp.sum(loss(r, 1.0, 0.0)))(x)
+
+        with self.assertRaisesRegex(ValueError, "never called a MeepJaxWrapper"):
+            mpa.value_and_jacobian(lambda r: jnp.zeros(len(frequencies)) + r.sum())(x)
+
+        with self.assertRaisesRegex(ValueError, "exactly one call"):
+            mpa.value_and_jacobian(
+                lambda r: loss(r, 1.0, 0.0) + loss(r, 1.0, 0.0)
+            )(x)
+
     def test_monitor_values_are_stacked_when_homogeneous(self):
         """Mode monitors alone still come back as one (monitor, frequency) array.
 
