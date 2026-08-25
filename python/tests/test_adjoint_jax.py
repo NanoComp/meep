@@ -1,4 +1,5 @@
 import unittest
+from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
@@ -26,6 +27,13 @@ _TOL = 0.1 if mp.is_single_precision() else 0.025
 _NUM_DES_REG_MON = 3
 
 mp.verbosity(0)
+
+
+class _PostProcessing(NamedTuple):
+    """Stands in for parameters that never reach Meep, e.g. a layer stack."""
+
+    weight: float
+    bias: onp.ndarray
 
 
 def build_straight_wg_simulation(
@@ -417,15 +425,17 @@ class WrapperTest(ApproxComparisonTestCase):
         wrapped_meep, scalar_loss, x, frequencies = self._minimax_setup()
         num_frequencies = len(frequencies)
 
+        # A NamedTuple nested inside a dict, since both are common and users
+        # reach for NamedTuples and dataclasses for anything realistic.
         params = {
             "design": {"rho": x},
-            "post": (2.5, onp.array([0.75, 0.25])),
+            "post": _PostProcessing(weight=2.5, bias=onp.array([0.75, 0.25])),
         }
 
         def loss(p):
-            weight, bias = p["post"]
+            post = p["post"]
             s1p, _, s2p, _ = wrapped_meep([p["design"]["rho"]])
-            return weight * jnp.abs(s2p / s1p) ** 2 + jnp.sum(bias)
+            return post.weight * jnp.abs(s2p / s1p) ** 2 + jnp.sum(post.bias)
 
         counts = self._count_simulations(wrapped_meep)
         values, jacobian = mpa.value_and_jacobian(loss)(params)
@@ -436,9 +446,49 @@ class WrapperTest(ApproxComparisonTestCase):
             jax.tree_util.tree_structure(params),
         )
         shapes = jax.tree_util.tree_map(lambda leaf: leaf.shape, jacobian)
+        self.assertIsInstance(shapes["post"], _PostProcessing)
         self.assertEqual(shapes["design"]["rho"], (num_frequencies,) + x.shape)
-        self.assertEqual(shapes["post"][0], (num_frequencies,))
-        self.assertEqual(shapes["post"][1], (num_frequencies, 2))
+        self.assertEqual(shapes["post"].weight, (num_frequencies,))
+        self.assertEqual(shapes["post"].bias, (num_frequencies, 2))
+
+    def test_value_and_jacobian_parameter_on_both_paths(self):
+        """A parameter that both shapes the design and is used downstream.
+
+        `rho` reaches the loss twice here: through the simulation, which needs
+        the adjoint run, and directly through a regularizer, which does not. The
+        two contributions have to be summed, and nothing else in this file
+        exercises that.
+        """
+        wrapped_meep, _, x, frequencies = self._minimax_setup()
+        num_frequencies = len(frequencies)
+        regularization = 5.0
+
+        def loss(rho):
+            s1p, _, s2p, _ = wrapped_meep([rho])
+            return jnp.abs(s2p / s1p) ** 2 + regularization * jnp.sum(rho**2)
+
+        counts = self._count_simulations(wrapped_meep)
+        values, jacobian = mpa.value_and_jacobian(loss)(x)
+        self.assertEqual(counts, {"forward": 1, "adjoint": 1})
+
+        # Guard against the test being unable to see the direct term at all.
+        direct = 2 * regularization * x
+        self.assertGreater(
+            onp.abs(direct).max() / onp.abs(onp.asarray(jacobian)).max(),
+            0.1,
+            "the direct contribution is negligible here, so dropping it "
+            "entirely would still pass the comparison below",
+        )
+
+        tol = 1e-2 if mp.is_single_precision() else 5e-3
+        for f in range(num_frequencies):
+            reference = jax.grad(lambda r: loss(r)[f])(x)
+            self.assertClose(
+                onp.asarray(jacobian[f]).ravel(),
+                onp.asarray(reference).ravel(),
+                epsilon=tol,
+                msg=f"row {f}",
+            )
 
     def test_value_and_jacobian_errors(self):
         wrapped_meep, loss, x, frequencies = self._minimax_setup()
