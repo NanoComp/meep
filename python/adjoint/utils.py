@@ -112,6 +112,11 @@ def calculate_vjps(
         )
         for i, design_region in enumerate(design_regions)
     ]
+    # `DesignRegion.get_gradient` squeezes the frequency axis away when there is
+    # only one frequency, so restore it rather than indexing an axis that may not
+    # be there.
+    num_freqs = onp.asarray(frequencies).size
+    vjps = [vjp.reshape(-1, num_freqs) for vjp in vjps]
     if sum_freq_partials:
         vjps = [
             onp.sum(vjp, axis=_GRADIENT_FREQ_AXIS).reshape(shape)

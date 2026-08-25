@@ -33,6 +33,10 @@
   neither 1 nor the number of frequencies now raises `ValueError` instead of
   silently producing a misshapen gradient.
 
+* Adjoint solver: bugfix for `MeepJaxWrapper` at a single frequency, where
+  computing a gradient raised `AxisError: axis 1 is out of bounds for array of
+  dimension 1`.
+
 ## Meep 1.34.0
 
 7/9/2026
