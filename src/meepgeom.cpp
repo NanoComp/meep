@@ -1150,8 +1150,7 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   // which until the grid is localized still holds the previous pixel's
   // interpolation.  (mat_behind is never a grid -- get_front_object rejects a
   // variable material there -- so it is safe to test here.)
-  if ((!front_is_matgrid && is_metal(meep::type(c), &mat)) ||
-      is_metal(meep::type(c), &mat_behind))
+  if ((!front_is_matgrid && is_metal(meep::type(c), &mat)) || is_metal(meep::type(c), &mat_behind))
     goto noavg;
 
   normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
