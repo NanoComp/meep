@@ -201,6 +201,107 @@ class TestObjectBoundarySmoothing(unittest.TestCase):
         self.assertGreater(float(np.max(np.abs(profiles[1] - profiles[0]))), 1.0)
 
 
+_ANISO_1 = mp.Vector3(2.0, 3.0, 4.0)
+_ANISO_2 = mp.Vector3(8.0, 10.0, 12.0)
+
+
+def _aniso_grid(weights, do_averaging, beta, n=8):
+    return mp.MaterialGrid(
+        mp.Vector3(n, n, 1),
+        mp.Medium(epsilon_diag=_ANISO_1),
+        mp.Medium(epsilon_diag=_ANISO_2),
+        weights=weights,
+        do_averaging=do_averaging,
+        beta=beta,
+    )
+
+
+class TestSymmetryAndAnisotropy(unittest.TestCase):
+    """Two regimes the smoothing path historically left untested."""
+
+    def test_smoothed_structure_is_symmetry_invariant(self):
+        """`symmetries` must not change the smoothed epsilon assembly.
+
+        Structure only: the adjoint gradient under `symmetries` has its own
+        independent, pre-existing defect that none of this touches.
+        """
+        n = 8
+        rng = np.random.default_rng(3)
+        w = rng.uniform(0, 1, (n, n, 1))
+        w = 0.5 * (w + w[:, ::-1, :])  # mirror-symmetric in y
+        for beta in (np.inf, 0):
+            arrays = []
+            for symmetries in ([], [mp.Mirror(mp.Y)]):
+                grid = mp.MaterialGrid(
+                    mp.Vector3(n, n, 1),
+                    mp.Medium(index=1.44),
+                    mp.Medium(index=3.48),
+                    weights=w,
+                    do_averaging=True,
+                    beta=beta,
+                )
+                sim = mp.Simulation(
+                    cell_size=mp.Vector3(2.0, 2.0, 1.22),
+                    resolution=20,
+                    default_material=mp.Medium(index=1.44),
+                    geometry=[
+                        mp.Block(
+                            center=mp.Vector3(),
+                            size=mp.Vector3(1.0, 1.0, 0.22),
+                            material=grid,
+                        )
+                    ],
+                    dimensions=3,
+                    eps_averaging=True,
+                    symmetries=symmetries,
+                )
+                sim.init_sim()
+                arrays.append(
+                    np.asarray(
+                        sim.get_array(
+                            component=mp.Dielectric,
+                            center=mp.Vector3(),
+                            size=mp.Vector3(1.6, 1.6, 1.0),
+                        )
+                    )
+                )
+            np.testing.assert_allclose(arrays[0], arrays[1], rtol=0, atol=1e-12)
+
+    def test_anisotropic_grid_boundary_matches_equivalent_block(self):
+        """A uniform grid of anisotropic media gets the same analytic boundary
+        average as a plain block of the interpolated anisotropic epsilon."""
+        uw = np.full((8, 8, 1), 0.5)
+        on = _aniso_grid(uw, do_averaging=True, beta=0)
+        off = _aniso_grid(uw, do_averaging=False, beta=0)
+        mix = mp.Medium(epsilon_diag=0.5 * (_ANISO_1 + _ANISO_2))
+        np.testing.assert_allclose(_z_profile(on), _z_profile(mix), rtol=0, atol=1e-8)
+        # guard against both sides being staircased
+        self.assertGreater(float(np.max(np.abs(_z_profile(on) - _z_profile(off)))), 0.5)
+
+    def test_anisotropic_interior_stays_pointwise(self):
+        """The level-set fallback deliberately declines anisotropic pixels (its
+        1d normal average is scalar), so in the interior do_averaging must be a
+        finite no-op rather than a half-applied average."""
+        n = 8
+        ii, jj = np.meshgrid(np.arange(n), np.arange(n), indexing="ij")
+        ramp = ((ii + jj) / (2.0 * (n - 1)))[:, :, None]
+        for beta in (np.inf, 0):
+            arrays = []
+            for do_averaging in (True, False):
+                sim = _boundary_sim(_aniso_grid(ramp, do_averaging, beta))
+                arrays.append(
+                    np.asarray(
+                        sim.get_array(
+                            component=mp.Dielectric,
+                            center=mp.Vector3(),
+                            size=mp.Vector3(0.8, 0.8, 0),
+                        )
+                    )
+                )
+            self.assertTrue(bool(np.all(np.isfinite(arrays[0]))))
+            np.testing.assert_allclose(arrays[0], arrays[1], rtol=0, atol=1e-12)
+
+
 def _directional_fd(do_averaging, eps_averaging, resolution=12, n=6, dp=1e-3, seed=0):
     """Return (fd, adjoint) directional derivatives along the adjoint gradient."""
     import autograd.numpy as npa
