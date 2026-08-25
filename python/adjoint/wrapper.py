@@ -74,7 +74,7 @@ value, grad = jax.value_and_grad(loss)(x)
 ```
 """
 import warnings
-from typing import Callable, Iterable, List, Sequence, Tuple
+from typing import Callable, Iterable, List, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
@@ -186,6 +186,7 @@ class MeepJaxWrapper:
         until_after_sources: bool = True,
         finite_difference_step: float = utils.FD_DEFAULT,
     ):
+        _warn_if_precision_mismatch()
         self.simulation = simulation
         self.sources = sources
         self.monitors = monitors
@@ -199,8 +200,10 @@ class MeepJaxWrapper:
 
         self._simulate_fn = self._initialize_callable()
 
-    def __call__(self, designs: List[jnp.ndarray]) -> jnp.ndarray:
-        """Performs a Meep simulation, taking a list of designs and returning mode overlaps.
+    def __call__(
+        self, designs: List[jnp.ndarray]
+    ) -> Union[jnp.ndarray, Tuple[jnp.ndarray, ...]]:
+        """Performs a Meep simulation, taking designs and returning monitor values.
 
         Args:
           designs: a list of design variables as 1D, 2D, or 3D JAX arrays. Valid shapes for
@@ -213,14 +216,19 @@ class MeepJaxWrapper:
           (25, 1), or (25, 1, 1) would be compatible with a `grid_size` of (25, 1, 1).
 
         Returns:
-          a complex-valued JAX ndarray of differentiable mode monitor overlaps values with
-          a shape of (num monitors, num frequencies).
+          The differentiable values of the monitors. If every monitor yields one
+          value per frequency -- as `EigenmodeCoefficient` and `LDOS` do -- this
+          is a single complex-valued JAX ndarray with a shape of (num monitors,
+          num frequencies). If the monitors have heterogeneous shapes, for
+          example when a `FourierFields` monitor contributes a whole plane of
+          values, it is a tuple with one array per monitor, in the order the
+          monitors were given.
         """
         return self._simulate_fn(designs)
 
     def _run_fwd_simulation(
         self, design_variables: Iterable[onp.ndarray]
-    ) -> (jnp.ndarray, List[List[mp.DftFields]]):
+    ) -> Tuple[Union[jnp.ndarray, Tuple[jnp.ndarray, ...]], List[List[mp.DftFields]]]:
         """Runs forward simulation, returning monitor values and design region fields."""
         utils.validate_and_update_design(self.design_regions, design_variables)
         self.simulation.reset_meep()
@@ -242,10 +250,13 @@ class MeepJaxWrapper:
         self.simulation.run(**sim_run_args)
 
         monitor_values = utils.gather_monitor_values(self.monitors)
-        return (jnp.asarray(monitor_values), fwd_design_region_monitors)
+        # A tuple when the monitors have heterogeneous shapes; `custom_vjp`
+        # handles either, and the cotangent arrives with a matching structure.
+        monitor_values = jax.tree_util.tree_map(jnp.asarray, monitor_values)
+        return (monitor_values, fwd_design_region_monitors)
 
     def _run_adjoint_simulation(
-        self, monitor_values_grad: onp.ndarray
+        self, monitor_values_grad: Union[onp.ndarray, Sequence[onp.ndarray]]
     ) -> List[List[mp.DftFields]]:
         """Runs adjoint simulation, returning design region fields."""
         if not self.design_regions:
@@ -297,11 +308,11 @@ class MeepJaxWrapper:
             finite_difference_step=self.finite_difference_step,
         )
 
-    def _initialize_callable(self) -> Callable[[List[jnp.ndarray]], jnp.ndarray]:
+    def _initialize_callable(self) -> Callable:
         """Initializes the callable JAX function and registers its VJP."""
 
         @jax.custom_vjp
-        def simulate(design_variables: List[jnp.ndarray]) -> jnp.ndarray:
+        def simulate(design_variables: List[jnp.ndarray]):
             monitor_values, _ = self._run_fwd_simulation(design_variables)
             return monitor_values
 

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as onp
 from autograd import make_vjp
@@ -91,11 +91,6 @@ def _compute_components(sim: mp.Simulation) -> List[int]:
     )
 
 
-def _make_at_least_nd(x: onp.ndarray, dims: int = 3) -> onp.ndarray:
-    """Makes an array have at least the specified number of dimensions."""
-    return onp.reshape(x, x.shape + onp.maximum(dims - x.ndim, 0) * (1,))
-
-
 def calculate_vjps(
     simulation: mp.Simulation,
     design_regions: List[DesignRegion],
@@ -162,22 +157,24 @@ def install_design_region_monitors(
     ]
 
 
-def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
-    """Gathers the mode monitor overlap values as a rank 2 ndarray.
+def gather_monitor_values(
+    monitors: Sequence[ObjectiveQuantity],
+) -> Union[onp.ndarray, Tuple[onp.ndarray, ...]]:
+    """Gathers the values of a list of objective quantities.
 
     Args:
-      monitors: the mode monitors.
+      monitors: the objective quantities.
 
     Returns:
-      a rank-2 ndarray, where the dimensions are (monitor, frequency), of dtype
-      complex128.  Note that these values refer to the mode as oriented (i.e. they
-      are unidirectional).
+      If every monitor yields one value per frequency -- as `EigenmodeCoefficient`
+      and `LDOS` do -- a rank-2 ndarray whose dimensions are (monitor,
+      frequency). Otherwise, for example when a `FourierFields` monitor
+      contributes a whole plane of values, a tuple with one array per monitor.
     """
-    monitor_values = [monitor() for monitor in monitors]
-    monitor_values = onp.array(monitor_values)
-    assert monitor_values.ndim in [1, 2]
-    monitor_values = _make_at_least_nd(monitor_values, 2)
-    return monitor_values
+    values = [onp.atleast_1d(onp.asarray(monitor())) for monitor in monitors]
+    shapes = {value.shape for value in values}
+    is_stackable = bool(values) and len(shapes) == 1 and values[0].ndim == 1
+    return onp.stack(values) if is_stackable else tuple(values)
 
 
 def validate_and_update_design(

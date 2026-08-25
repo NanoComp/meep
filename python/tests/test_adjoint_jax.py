@@ -304,6 +304,92 @@ class WrapperTest(ApproxComparisonTestCase):
             epsilon=_TOL,
         )
 
+    def test_monitor_values_are_stacked_when_homogeneous(self):
+        """Mode monitors alone still come back as one (monitor, frequency) array.
+
+        User code indexes the return value as `monitor_values[i, :]`, so monitors
+        that all yield a single value per frequency must keep stacking even now
+        that heterogeneous monitors are supported.
+        """
+        frequencies = onp.linspace(1 / 1.50, 1 / 1.60, 3).tolist()
+        (
+            simulation,
+            sources,
+            monitors,
+            design_regions,
+            frequencies,
+        ) = build_straight_wg_simulation(frequencies=frequencies)
+
+        wrapped_meep = mpa.MeepJaxWrapper(
+            simulation, [sources[0]], monitors, design_regions, frequencies
+        )
+        design_shape = tuple(
+            int(i) for i in design_regions[0].design_parameters.grid_size
+        )[:2]
+        monitor_values = wrapped_meep([onp.ones(design_shape) * 0.5])
+
+        self.assertIsInstance(monitor_values, jnp.ndarray)
+        self.assertEqual(monitor_values.shape, (len(monitors), len(frequencies)))
+        self.assertEqual(monitor_values[0, :].shape, (len(frequencies),))
+
+    def test_heterogeneous_monitor_gradients(self):
+        """A FourierFields monitor alongside mode monitors.
+
+        `FourierFields` contributes a whole plane of values rather than one per
+        frequency, so the wrapper returns a tuple and `custom_vjp` carries a
+        matching tuple of cotangents back to `place_adjoint_source`.
+        """
+        frequencies = onp.linspace(1 / 1.50, 1 / 1.60, 3).tolist()
+        (
+            simulation,
+            sources,
+            monitors,
+            design_regions,
+            frequencies,
+        ) = build_straight_wg_simulation(frequencies=frequencies)
+
+        # Inside the non-PML region, past the edge of the design region.
+        monitors = monitors + [
+            mpa.FourierFields(
+                simulation,
+                mp.Volume(center=mp.Vector3(0.75, 0), size=mp.Vector3(0, 0.5)),
+                mp.Ez,
+            )
+        ]
+
+        design_shape = tuple(
+            int(i) for i in design_regions[0].design_parameters.grid_size
+        )[:2]
+        x = onp.ones(design_shape) * 0.5
+
+        def loss_fn(x):
+            wrapped_meep = mpa.MeepJaxWrapper(
+                simulation, [sources[0]], monitors, design_regions, frequencies
+            )
+            monitor_values = wrapped_meep([x])
+            # A tuple, not an array: the last entry has a spatial dimension.
+            *mode_coeffs, dft_fields = monitor_values
+            transmission = jnp.abs(mode_coeffs[2] / mode_coeffs[0]) ** 2
+            intensity = jnp.sum(jnp.abs(dft_fields) ** 2, axis=1)
+            return jnp.mean(transmission + intensity)
+
+        value, adjoint_grad = jax.value_and_grad(loss_fn)(x)
+
+        projection = []
+        fd_projection = []
+        for seed in range(3):
+            perturbation = _FD_STEP * jax.random.normal(
+                jax.random.PRNGKey(seed), x.shape
+            )
+            projection.append(
+                onp.dot(perturbation.ravel(), adjoint_grad.ravel())
+            )
+            fd_projection.append(loss_fn(x + perturbation) - value)
+
+        self.assertClose(
+            onp.stack(projection), onp.stack(fd_projection), epsilon=_TOL
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
