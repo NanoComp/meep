@@ -1,5 +1,38 @@
 # Meep Release Notes
 
+## Meep 1.35.0 (in progress)
+
+* Adjoint solver: objective functions are now differentiated with a single
+  vector-Jacobian product instead of a full frequency Jacobian per objective
+  argument. For an objective of $M$ arguments at $F$ frequencies this reduces
+  the reverse passes from $M \times F$ to one and the peak memory for the
+  objective gradient from $O(F^2 N)$ to $O(F N)$, where $N$ is the number of
+  values a monitor contributes. Gradients are unchanged apart from summation
+  order.
+
+* Adjoint solver: objective functions may be written with `jax.numpy` instead of
+  `autograd.numpy` and passed to `OptimizationProblem` directly, with no wrapper
+  or annotation; they are recognized by the array type they return and
+  differentiated with `jax.vjp`. An objective function may also supply its own
+  pullback via a `vjp(cotangent, *args)` attribute, for an analytic derivative or
+  another framework. JAX remains an optional dependency.
+
+* Adjoint solver: `MeepJaxWrapper` now accepts any objective quantity, not only
+  `EigenmodeCoefficient`. When the monitors have heterogeneous shapes it returns
+  a tuple of per-monitor arrays; when every monitor yields one value per
+  frequency it returns the same rank-2 `(monitor, frequency)` array as before.
+
+* Adjoint solver: `ObjectiveQuantity.place_adjoint_source` now takes a cotangent
+  with the shape of the quantity's own value. The previous
+  `(nfreq,) + value_shape` Jacobian is still accepted with a
+  `DeprecationWarning` and will be rejected in a future release. This only
+  affects code that calls `place_adjoint_source` directly or subclasses
+  `ObjectiveQuantity`.
+
+* Adjoint solver: an objective function that returns a vector whose length is
+  neither 1 nor the number of frequencies now raises `ValueError` instead of
+  silently producing a misshapen gradient.
+
 ## Meep 1.34.0
 
 7/9/2026

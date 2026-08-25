@@ -41,6 +41,92 @@ demonstrated in several tutorials below.
 
 [TOC]
 
+Writing Objective Functions
+---------------------------
+
+An objective function passed to `OptimizationProblem` receives the values of the
+`objective_arguments`, in the order they were given, and returns either a scalar
+or one value per frequency. Each objective function costs one adjoint
+timestepping run, and a single run yields the gradient at every frequency, which
+is what makes worst-case (minimax) formulations over a bandwidth affordable.
+
+That per-frequency gradient is only meaningful when entry $f$ of a
+frequency-vector-valued objective depends on the monitor values at frequency $f$
+alone. A single adjoint field cannot carry independent sensitivities for
+different frequencies, so an objective that mixes them — say, one that divides
+the transmission at one wavelength by the transmission at another — needs to be
+split into separate entries of `objective_functions`, one adjoint run each.
+
+Objective functions are differentiated with
+[autograd](https://github.com/HIPS/autograd) by default, so they must be written
+with `autograd.numpy` rather than plain `numpy`:
+
+```py
+from autograd import numpy as npa
+
+def objective(mode_coeff, dft_fields):
+    return npa.abs(mode_coeff)**2 + npa.sum(npa.abs(dft_fields)**2, axis=1)
+```
+
+### Objective functions written in JAX
+
+If [JAX](https://github.com/google/jax) is installed, an objective function may
+be written with `jax.numpy` instead. Nothing else changes — there is no wrapper
+or annotation, and the two kinds of objective function can be mixed in the same
+`objective_functions` list. Meep recognizes a JAX objective because it returns a
+JAX array, and differentiates it with `jax.vjp`:
+
+```py
+import jax
+import jax.numpy as jnp
+
+jax.config.update("jax_enable_x64", True)   # match Meep's double precision
+
+def objective(mode_coeff, dft_fields):
+    return jnp.abs(mode_coeff)**2 + jnp.sum(jnp.abs(dft_fields)**2, axis=1)
+
+opt = mpa.OptimizationProblem(
+    simulation=sim,
+    objective_functions=[objective],
+    objective_arguments=[mode_monitor, dft_monitor],
+    design_regions=[design_region],
+    frequencies=frequencies,
+)
+```
+
+This is useful when the objective involves post-processing that is easier to
+express — or faster to evaluate — in JAX. Note that JAX defaults to 32-bit
+dtypes, so `jax_enable_x64` should be enabled to match a double-precision Meep
+build; Meep warns if it is not.
+
+### Supplying a pullback directly
+
+For an analytic derivative, or for a framework Meep does not recognize, an
+objective function may carry its own pullback as a `vjp(cotangent, *args)`
+attribute returning one cotangent per argument. It takes precedence over
+everything above:
+
+```py
+def objective(mode_coeff):
+    return npa.abs(mode_coeff)**2
+
+objective.vjp = lambda cotangent, mode_coeff: (2 * cotangent * npa.conj(mode_coeff),)
+```
+
+### Relationship to `MeepJaxWrapper`
+
+The above is distinct from `MeepJaxWrapper`, which turns the entire simulation
+into a JAX-differentiable callable so that the design variables, the objective,
+and anything else in the loss are all traced by JAX. Write a JAX objective
+function when Meep owns the optimization loop and you want a gradient at each
+frequency; use `MeepJaxWrapper` when JAX owns the loop, which also lets you
+differentiate with respect to parameters Meep knows nothing about. Its docstring
+in `meep/adjoint/wrapper.py` has a worked example.
+
+JAX is an optional dependency. If it is not installed, JAX objective functions
+are simply not recognized and `mpa.MeepJaxWrapper` is absent; everything else
+works unchanged.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 
