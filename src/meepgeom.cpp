@@ -2741,18 +2741,7 @@ void add_interpolate_weights(const std::vector<double *> &udatas, const std::vec
      with the box coordinates of each. A design variable is shared across all of
      them, so it is differentiated once, with every copy perturbed together, and
      the union of the copies' interpolation stencils is the set of variables this
-     point touches.
-
-     Differentiating per copy instead -- which is what the code did before --
-     answers the wrong question for a transformed copy: the stencil index comes
-     from the transformed coordinates while the array perturbed is another
-     copy's, so the finite difference measures a sample that does not
-     participate in that copy's interpolation. For untransformed overlaps the
-     indices coincide, the second copy merely repeats the first, and dividing
-     scalegrad by the number of overlapping grids cancels the duplicate exactly
-     -- which is why plain overlaps looked right and rotated ones did not. That
-     divide is gone: the finite difference runs through matgrid_val(), so the
-     1/N of a U_MEAN average is already in the result. */
+     point touches. */
 
 #define IDX(x, y, z) (((x)*ny + (y)) * nz + (z)) * stride
 
@@ -2830,10 +2819,7 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     } while (tp_sum && is_material_grid(mg_sum));
     /* No scalegrad /= matgrid_val_count here: the finite difference in
        get_material_gradient() runs through matgrid_val(), so the 1/N of the
-       U_MEAN average is already contained in the result. Dividing again
-       double-counted it, and was only invisible because differentiating each
-       overlapping copy against the same weights array duplicated the same term
-       N times. */
+       U_MEAN average is already contained in the result. */
     (void)matgrid_val_count;
   }
   else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||

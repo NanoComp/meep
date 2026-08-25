@@ -73,9 +73,6 @@ class DesignRegion:
             onp.array(frequencies),
             sim.geps,
             finite_difference_step,
-            # Only this design region's own material grid may contribute. The
-            # monitor is snapped outward to enclosing grid nodes and so can
-            # cover nodes belonging to an adjacent MaterialGrid.
             getattr(self.design_parameters, "grid_id", -1),
         )
         return onp.squeeze(grad).T
