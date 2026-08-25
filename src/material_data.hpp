@@ -131,11 +131,6 @@ struct material_data {
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
   double *weights;
-  /* Identity of the Python-level MaterialGrid this was created from. A single
-     MaterialGrid may back several geometric objects (e.g. for symmetries), each
-     of which gets its own material_data, so pointer identity is not usable to
-     answer "are these the same design grid?". -1 means "not a material grid /
-     unidentified", which callers treat as "do not filter". */
   long grid_id;
   medium_struct medium_1;
   medium_struct medium_2;
