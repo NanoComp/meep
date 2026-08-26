@@ -270,27 +270,41 @@ class TestJaxIsOptional(unittest.TestCase):
         )
         np.testing.assert_allclose(cotangent, 2 * value.conj())
 
-    def test_no_jax_import_outside_wrapper(self):
-        """Only `wrapper.py` may import JAX, and it is guarded in `__init__.py`.
+    def test_jax_importing_modules_are_all_behind_the_guard(self):
+        """Any module that imports JAX must only be reachable behind the guard.
 
-        Without this, adding `import jax` to any other module of the package
-        would break every user who does not have JAX installed, and the failure
-        would only show up in an environment nobody runs tests in.
+        Without this, adding `import jax` to a module that `__init__.py` imports
+        unconditionally would break every user who does not have JAX installed,
+        and the failure would only show up in an environment nobody runs tests
+        in. The invariant is not "only wrapper.py" -- it is that the set of
+        modules importing JAX is contained in the set imported inside the
+        `try: ... except ModuleNotFoundError` block.
         """
         adjoint_dir = os.path.dirname(os.path.abspath(mpa.__file__))
+        with open(os.path.join(adjoint_dir, "__init__.py")) as f:
+            init_source = f.read()
+
+        guarded_block = init_source[init_source.index("try:") :]
+        guarded = {
+            f"{name}.py"
+            for name in re.findall(r"^\s*from \.(\w+) import", guarded_block, re.M)
+        }
+        self.assertTrue(guarded, "no guarded imports found in __init__.py")
+
         pattern = re.compile(r"^\s*(?:import\s+jax|from\s+jax)", re.MULTILINE)
-        offenders = []
+        importers = set()
         for name in sorted(os.listdir(adjoint_dir)):
-            if not name.endswith(".py") or name == "wrapper.py":
+            if not name.endswith(".py") or name == "__init__.py":
                 continue
             with open(os.path.join(adjoint_dir, name)) as f:
                 if pattern.search(f.read()):
-                    offenders.append(name)
+                    importers.add(name)
+
         self.assertEqual(
-            offenders,
-            [],
-            "JAX may only be imported from meep/adjoint/wrapper.py, which is "
-            "imported behind a ModuleNotFoundError guard in __init__.py.",
+            importers - guarded,
+            set(),
+            "these modules import JAX but are not imported behind the "
+            "ModuleNotFoundError guard in meep/adjoint/__init__.py",
         )
 
 
