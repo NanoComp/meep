@@ -333,10 +333,24 @@ and the beam wraps onto itself, which is nonsense rather than merely inaccurate.
 
 ### What is and is not supported
 
-Two-dimensional simulations, with a planar monitor normal to a coordinate axis
-lying in a homogeneous region. The three-dimensional case additionally needs the
-s/p rotation by azimuth, with its removable singularity at normal incidence, and
-raises rather than guessing. Cylindrical coordinates are not supported.
+Two- and three-dimensional Cartesian simulations, with a planar monitor normal to
+a coordinate axis lying in a homogeneous region — a line in 2D, a rectangle in
+3D. Cylindrical coordinates are not supported.
+
+In 3D the transverse wavevectors form a plane, and the tangential fields are
+resolved into the s and p directions of each one. A beam is therefore specified
+by its linear polarization rather than by a single scalar component:
+`gaussian_mode(waist, polarization=...)` builds a linearly polarized beam whose s
+and p content follows the azimuth. A spectrum that were purely s at every
+wavevector would instead be azimuthally polarized, carrying a vortex at normal
+incidence, which is rarely what is wanted.
+
+One consequence worth knowing when checking gradients in 3D: the *adjoint* DFT
+takes appreciably longer to converge than the forward one, and an
+under-converged adjoint produces a gradient that is wrong by a fixed factor
+which does not shrink with the finite-difference step — so it reads like a bug
+rather than like noise. Give the adjoint run enough time, or fix the run length
+so that both runs of a finite difference cover the same interval.
 
 A single plane is complete for the half-space above it, so unlike near2far there
 is no closed surface to build: the plane plus the hemisphere at infinity already

@@ -90,7 +90,9 @@ class TestStackSolver(ApproxComparisonTestCase):
                         N_AIR * cos_in + N_OXIDE * cos_out
                     )
                 self.assertAlmostEqual(
-                    complex(reflection[0, 0]), expected, places=12,
+                    complex(reflection[0, 0]),
+                    expected,
+                    places=12,
                     msg=f"{name} polarization at {angle} deg",
                 )
 
@@ -155,9 +157,7 @@ class TestStackSolver(ApproxComparisonTestCase):
                 self.assertAlmostEqual(
                     complex(transmission[0, 0]), expected_t, places=12
                 )
-                self.assertAlmostEqual(
-                    complex(reflection[0, 0]), expected_r, places=12
-                )
+                self.assertAlmostEqual(complex(reflection[0, 0]), expected_r, places=12)
 
     def test_energy_is_conserved(self):
         """Reflected plus transmitted power equals the incident, losslessly."""
@@ -171,11 +171,15 @@ class TestStackSolver(ApproxComparisonTestCase):
                     [indices[0] * self.k0[0] * math.sin(math.radians(angle))]
                 )
                 y_in = _admittance(
-                    indices[0], _wavevector(indices[0], self.k0, kt), self.k0,
+                    indices[0],
+                    _wavevector(indices[0], self.k0, kt),
+                    self.k0,
                     polarization,
                 )
                 y_out = _admittance(
-                    indices[-1], _wavevector(indices[-1], self.k0, kt), self.k0,
+                    indices[-1],
+                    _wavevector(indices[-1], self.k0, kt),
+                    self.k0,
                     polarization,
                 )
                 reflected = abs(complex(reflection[0, 0])) ** 2
@@ -189,7 +193,11 @@ def _uniform_propagator(index=N_OXIDE, num_points=512, pitch=0.05, pad_factor=8)
     """A propagator with no interface, i.e. plain homogeneous propagation."""
     stack = mpa.Stack([mpa.Layer(index, 0.0), mpa.Layer(index)])
     return mpa.AngularSpectrum(
-        stack, [1 / WAVELENGTH], pitch, num_points, normal=mp.Y,
+        stack,
+        [1 / WAVELENGTH],
+        pitch,
+        num_points,
+        normal=mp.Y,
         pad_factor=pad_factor,
     )
 
@@ -203,11 +211,11 @@ def _up_going(propagator, values):
     """
     spectrum = propagator._transform(jnp.asarray(values))
     admittance = propagator._admittances[0][asm.S_POLARIZATION]
-    coordinates = propagator.coordinates()
+    positions = jnp.asarray(propagator._sample_positions())
     magnetic = (
         jnp.einsum(
             "xk,fk->fx",
-            jnp.exp(1j * propagator.kt[None, :] * coordinates[:, None]),
+            jnp.exp(1j * jnp.einsum("xd,kd->xk", positions, propagator.kt)),
             spectrum * admittance,
         )
         * propagator._spectral_measure()
@@ -289,7 +297,8 @@ class TestPropagation(ApproxComparisonTestCase):
             profile = onp.abs(
                 onp.asarray(
                     propagator.propagate(
-                        _up_going(propagator, values), distance,
+                        _up_going(propagator, values),
+                        distance,
                         coordinates=samples,
                     )[mp.Ez][0]
                 )
@@ -318,9 +327,7 @@ class TestOverlap(ApproxComparisonTestCase):
         x = propagator.coordinates()
         fields = _up_going(propagator, (onp.exp(-((x / 3.0) ** 2)))[None, :])
         result = propagator.spectrum(fields, 100.0)
-        itself = mpa.Mode(
-            spectrum=lambda kt, k0, index: result.amplitudes[..., asm.S_POLARIZATION]
-        )
+        itself = mpa.Mode(spectrum=lambda propagator, kt, k0, index: result.amplitudes)
         self.assertAlmostEqual(
             float(propagator.overlap(fields, itself, 100.0)[0]), 1.0, places=10
         )
@@ -381,9 +388,7 @@ class TestGradients(ApproxComparisonTestCase):
 
         def objective(scale):
             fields = _up_going(propagator, scale * values)
-            return jnp.real(
-                jnp.sum(propagator.spectrum(fields, 1.0).amplitudes)
-            )
+            return jnp.real(jnp.sum(propagator.spectrum(fields, 1.0).amplitudes))
 
         gradient = jax.grad(objective)(1.0)
         self.assertTrue(onp.isfinite(float(gradient)), "gradient is not finite")
@@ -426,15 +431,193 @@ class TestValidation(unittest.TestCase):
     def test_both_tangential_fields_are_required(self):
         """One field alone cannot distinguish up-going from down-going."""
         propagator = _uniform_propagator(num_points=64)
-        fields = mpa.TangentialFields(
-            E={mp.Ez: onp.ones((1, 64))}, H={}, normal=mp.Y
-        )
+        fields = mpa.TangentialFields(E={mp.Ez: onp.ones((1, 64))}, H={}, normal=mp.Y)
         with self.assertRaisesRegex(ValueError, "both"):
             propagator.decompose(fields)
 
-    def test_three_dimensions_is_rejected_clearly(self):
-        with self.assertRaisesRegex(NotImplementedError, "2D"):
-            asm._tangential_components(mp.Z, 3)
+    def test_three_dimensions_is_supported(self):
+        self.assertEqual(
+            asm._tangential_components(mp.Z, 3), ((mp.Ex, mp.Ey), (mp.Hx, mp.Hy))
+        )
+
+    def test_other_dimensionalities_are_rejected_clearly(self):
+        with self.assertRaisesRegex(NotImplementedError, "2D and 3D"):
+            asm._tangential_components(mp.Z, 1)
+        with self.assertRaisesRegex(ValueError, "normal to x or y"):
+            asm._tangential_components(mp.Z, 2)
+
+
+def _propagator_3d(
+    index=N_OXIDE, num_points=(64, 64), pitch=(0.15, 0.15), pad_factor=4
+):
+    """A 3D propagator with no interface, i.e. homogeneous propagation."""
+    stack = mpa.Stack([mpa.Layer(index, 0.0), mpa.Layer(index)])
+    return mpa.AngularSpectrum(
+        stack,
+        [1 / WAVELENGTH],
+        pitch,
+        num_points,
+        normal=mp.Z,
+        pad_factor=pad_factor,
+    )
+
+
+def _up_going_3d(propagator, amplitude_s, amplitude_p):
+    """Synthesizes a purely up-going 3D field from its s and p spectra.
+
+    For an up-going wave `H_t = Y (n_hat x E_t)`, which in the s/p basis is
+    `H_s = Y_p E_p` and `H_p = -Y_s E_s`, so the magnetic partner is fixed once
+    the electric spectrum is chosen.
+    """
+    admittance_s, admittance_p = propagator._admittances[0]
+    magnetic_s = admittance_p * amplitude_p
+    magnetic_p = -admittance_s * amplitude_s
+
+    cosine, sine = propagator._azimuth()
+
+    def to_axes(component_s, component_p):
+        # The rotation into (s, p) is a reflection, hence its own inverse.
+        return (
+            -component_s * sine + component_p * cosine,
+            component_s * cosine + component_p * sine,
+        )
+
+    electric_u, electric_v = to_axes(amplitude_s, amplitude_p)
+    magnetic_u, magnetic_v = to_axes(magnetic_s, magnetic_p)
+
+    positions = jnp.asarray(propagator._sample_positions())
+    phase = jnp.exp(1j * jnp.einsum("xd,kd->xk", positions, propagator.kt))
+    measure = propagator._spectral_measure()
+    shape = propagator.num_points
+
+    def to_real_space(values):
+        out = jnp.einsum("xk,fk->fx", phase, values) * measure
+        return out.reshape(out.shape[:1] + shape)
+
+    (e_u, e_v), (h_u, h_v) = asm._PLANE_AXES[mp.Z]
+    return mpa.TangentialFields(
+        E={e_u: to_real_space(electric_u), e_v: to_real_space(electric_v)},
+        H={h_u: to_real_space(magnetic_u), h_v: to_real_space(magnetic_v)},
+        normal=mp.Z,
+    )
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestThreeDimensions(ApproxComparisonTestCase):
+    """A rectangular monitor, where the transverse space is two-dimensional.
+
+    The extra ingredient over 2D is the rotation into the s and p directions of
+    each transverse wavevector, whose azimuth is undefined at normal incidence.
+    """
+
+    def _linear_gaussian(self, propagator, waist, shift=0.0):
+        """A linearly polarized circular Gaussian, as s and p spectra.
+
+        Polarized along the second tangential axis. Its s and p content varies
+        as cos and sin of the azimuth: a beam whose spectrum is purely s at
+        every wavevector would be azimuthally polarized, which carries a vortex
+        at normal incidence and does not decay compactly, so it truncates badly
+        on any finite monitor.
+        """
+        kt = propagator.kt
+        envelope = jnp.exp(-jnp.sum(jnp.square(kt * waist), axis=-1)[None, :] / 4.0) * (
+            waist**2 * onp.pi
+        )
+        if shift:
+            envelope = envelope * jnp.exp(1j * kt[:, 0] * shift)[None, :]
+        cosine, sine = propagator._azimuth()
+        return envelope * cosine, envelope * sine
+
+    def test_decomposition_recovers_a_purely_up_going_field(self):
+        """Both polarizations, displaced off axis, with nothing left behind."""
+        propagator = _propagator_3d()
+        along_v = self._linear_gaussian(propagator, 1.2, shift=0.7)
+        along_u = (-along_v[1], along_v[0])  # the orthogonal linear polarization
+        for name, (amplitude_s, amplitude_p) in (
+            ("polarized along v", along_v),
+            ("polarized along u", along_u),
+            ("mixed", (along_v[0] + 0.4 * along_u[0], along_v[1] + 0.4 * along_u[1])),
+        ):
+            fields = _up_going_3d(propagator, amplitude_s, amplitude_p)
+            up, down = propagator.decompose(fields)
+            scale = max(
+                float(jnp.max(jnp.abs(up[asm.S_POLARIZATION]))),
+                float(jnp.max(jnp.abs(up[asm.P_POLARIZATION]))),
+            )
+            residual = max(
+                float(jnp.max(jnp.abs(down[asm.S_POLARIZATION]))),
+                float(jnp.max(jnp.abs(down[asm.P_POLARIZATION]))),
+            )
+            # As in 2D, the floor is set by what the beam leaves at the edges of
+            # the monitor rather than by the decomposition, since the transform
+            # is periodic and wraps whatever is still there. Assert against the
+            # measured edge amplitude so the bound is not an arbitrary number.
+            edge = float(onp.max(propagator.report(fields)["edge_amplitude"]))
+            self.assertLess(residual / scale, max(10 * edge, 1e-9), name)
+
+    def test_normal_incidence_azimuth_is_finite(self):
+        """The plane of incidence is undefined at kt = 0, which must not produce nan."""
+        propagator = _propagator_3d()
+        cosine, sine = propagator._azimuth()
+        self.assertTrue(bool(jnp.all(jnp.isfinite(cosine))))
+        self.assertTrue(bool(jnp.all(jnp.isfinite(sine))))
+        at_origin = int(jnp.argmin(jnp.linalg.norm(propagator.kt, axis=-1)))
+        self.assertAlmostEqual(float(jnp.linalg.norm(propagator.kt[at_origin])), 0.0)
+        self.assertAlmostEqual(float(cosine[at_origin]), 1.0)
+        self.assertAlmostEqual(float(sine[at_origin]), 0.0)
+
+    def test_gaussian_beam_spreading(self):
+        """A circular beam spreads as w0 sqrt(1 + (z/zR)^2), as in 2D."""
+        waist = 1.2
+        propagator = _propagator_3d(pad_factor=8)
+        fields = _up_going_3d(propagator, *self._linear_gaussian(propagator, waist))
+        rayleigh = onp.pi * waist**2 * N_OXIDE / WAVELENGTH
+        distance = 8.0
+        expected = waist * math.sqrt(1 + (distance / rayleigh) ** 2)
+        line = onp.linspace(-3 * expected, 3 * expected, 601)
+        output = propagator.propagate(
+            fields, distance, coordinates=[line, onp.zeros(1)]
+        )
+        profile = onp.abs(onp.asarray(output[mp.Ey][0, :, 0]))
+        above = line[profile >= profile.max() / onp.e]
+        measured = (above.max() - above.min()) / 2
+        # Read off a sampled profile on a 601-point line, so the 1/e crossing is
+        # located to about the sample spacing; 2% is that discretization, not
+        # the propagation, which 2D checks to six places on a finer line.
+        self.assertLess(abs(measured / expected - 1.0), 0.02)
+
+    def test_self_overlap_is_unity(self):
+        propagator = _propagator_3d()
+        fields = _up_going_3d(propagator, *self._linear_gaussian(propagator, 1.2))
+        result = propagator.spectrum(fields, 5.0)
+        itself = mpa.Mode(spectrum=lambda p, kt, k0, index: result.amplitudes)
+        self.assertAlmostEqual(
+            float(propagator.overlap(fields, itself, 5.0)[0]), 1.0, places=10
+        )
+
+    def test_gaussian_mode_overlap_is_high_for_a_matched_beam(self):
+        """A circular Gaussian projected onto a matched circular mode."""
+        waist = 1.2
+        propagator = _propagator_3d(pad_factor=8)
+        fields = _up_going_3d(propagator, *self._linear_gaussian(propagator, waist))
+        efficiency = float(
+            propagator.overlap(fields, mpa.gaussian_mode(waist), 1e-9)[0]
+        )
+        self.assertGreater(efficiency, 0.99)
+
+    def test_gradients_flow(self):
+        """Layer thickness and fiber tilt carry finite, nonzero gradients in 3D."""
+        propagator = _propagator_3d(num_points=(32, 32), pad_factor=4)
+        fields = _up_going_3d(propagator, *self._linear_gaussian(propagator, 1.2))
+
+        def objective(tilt):
+            return propagator.overlap(
+                fields, mpa.gaussian_mode(1.2, tilt_deg=tilt), 5.0
+            )[0]
+
+        gradient = jax.grad(objective)(4.0)
+        self.assertTrue(onp.isfinite(float(gradient)))
+        self.assertNotEqual(float(gradient), 0.0)
 
 
 @unittest.skipIf(jax is None, "jax is not installed")
@@ -453,7 +636,8 @@ class TestAgainstNearToFar(ApproxComparisonTestCase):
         source = [
             mp.Source(
                 mp.GaussianSource(frequency, fwidth=0.1 * frequency),
-                component=mp.Ez, center=mp.Vector3(0, -1.0),
+                component=mp.Ez,
+                center=mp.Vector3(0, -1.0),
                 size=mp.Vector3(12.0, 0),
                 # Narrow and apodized, so the field has decayed by the ends of
                 # the monitor. A bare dipole never does, and near2far tolerates
@@ -462,17 +646,15 @@ class TestAgainstNearToFar(ApproxComparisonTestCase):
             )
         ]
         simulation = mp.Simulation(
-            resolution=resolution, cell_size=mp.Vector3(cell_x, cell_y),
-            boundary_layers=[mp.PML(pml)], sources=source,
+            resolution=resolution,
+            cell_size=mp.Vector3(cell_x, cell_y),
+            boundary_layers=[mp.PML(pml)],
+            sources=source,
             default_material=mp.Medium(index=N_OXIDE),
         )
         height, width = 1.0, cell_x - 2 * pml - 0.4
-        volume = mp.Volume(
-            center=mp.Vector3(0, height), size=mp.Vector3(width, 0)
-        )
-        monitor = simulation.add_dft_fields(
-            [mp.Ez, mp.Hx], [frequency], where=volume
-        )
+        volume = mp.Volume(center=mp.Vector3(0, height), size=mp.Vector3(width, 0))
+        monitor = simulation.add_dft_fields([mp.Ez, mp.Hx], [frequency], where=volume)
         near2far = simulation.add_near2far(
             [frequency],
             mp.Near2FarRegion(
@@ -516,3 +698,150 @@ class TestAgainstNearToFar(ApproxComparisonTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestAdjointGradient(ApproxComparisonTestCase):
+    """The adjoint gradient of an angular-spectrum objective, in 2D and 3D.
+
+    Compared against a finite difference of the same objective, which is the
+    only check that the cotangents reach the design region with the right sign
+    and magnitude through the whole chain: monitor, transform, decomposition,
+    stack, and mode projection.
+    """
+
+    def _solve(self, dimensions, weights, need_gradient=True):
+        resolution = 12 if dimensions == 2 else 10
+        frequency = 1 / WAVELENGTH
+        silicon = mp.Medium(index=3.0)
+        design_extent, thickness = 1.0, 0.4
+        grid = int(design_extent * resolution) + 1
+        counts = (grid,) if dimensions == 2 else (grid, grid)
+
+        material = mp.MaterialGrid(
+            mp.Vector3(*counts, *([1] * (3 - len(counts)))),
+            mp.Medium(index=N_OXIDE),
+            silicon,
+            weights=onp.asarray(weights).reshape(counts),
+            do_averaging=False,
+            beta=0,
+        )
+        if dimensions == 2:
+            cell = mp.Vector3(6.0, 6.0)
+            design = mp.Volume(
+                center=mp.Vector3(), size=mp.Vector3(design_extent, thickness)
+            )
+            source_center, source_size = mp.Vector3(0, -1.5), mp.Vector3(3.0, 0)
+            plane = mp.Volume(center=mp.Vector3(0, 1.2), size=mp.Vector3(3.2, 0))
+            component, normal = mp.Ez, mp.Y
+        else:
+            cell = mp.Vector3(4.0, 4.0, 4.0)
+            design = mp.Volume(
+                center=mp.Vector3(),
+                size=mp.Vector3(design_extent, design_extent, thickness),
+            )
+            source_center, source_size = mp.Vector3(0, 0, -0.9), mp.Vector3(1.8, 1.8, 0)
+            plane = mp.Volume(
+                center=mp.Vector3(0, 0, 0.8), size=mp.Vector3(2.0, 2.0, 0)
+            )
+            component, normal = mp.Ex, mp.Z
+
+        simulation = mp.Simulation(
+            resolution=resolution,
+            cell_size=cell,
+            dimensions=dimensions,
+            boundary_layers=[mp.PML(1.0)],
+            default_material=mp.Medium(index=N_OXIDE),
+            geometry=[
+                mp.Block(center=design.center, size=design.size, material=material)
+            ],
+            sources=[
+                mp.Source(
+                    mp.GaussianSource(frequency, fwidth=0.2 * frequency),
+                    component=component,
+                    center=source_center,
+                    size=source_size,
+                )
+            ],
+        )
+        run_length = 260 if dimensions == 2 else 220
+        simulation.init_sim()
+        stack = mpa.Stack([mpa.Layer(N_OXIDE, 0.5), mpa.Layer(N_AIR)])
+        metadata = simulation.get_array_metadata(vol=plane)
+        counts = (
+            (len(metadata[0]),)
+            if dimensions == 2
+            else (len(metadata[0]), len(metadata[1]))
+        )
+        propagator = mpa.AngularSpectrum(
+            stack,
+            [frequency],
+            pitch=1.0 / resolution,
+            num_points=counts,
+            normal=normal,
+            pad_factor=4,
+        )
+        # The source picks the polarization: out-of-plane Ez in 2D is s, and the
+        # in-plane Ex beam in 3D is polarized along the first tangential axis.
+        fiber = mpa.gaussian_mode(
+            1.0,
+            polarization=(
+                asm.S_POLARIZATION if dimensions == 2 else asm.P_POLARIZATION
+            ),
+        )
+
+        def objective(*monitor_values):
+            fields = propagator.take(monitor_values)
+            return propagator.overlap(fields, fiber, 2.0)[0]
+
+        optimization = mpa.OptimizationProblem(
+            simulation=simulation,
+            objective_functions=objective,
+            objective_arguments=propagator.objective_arguments(simulation, plane),
+            design_regions=[mpa.DesignRegion(material, volume=design)],
+            frequencies=[frequency],
+            # A fixed run length, so both runs of the finite difference cover
+            # exactly the same interval. Left adaptive, `stop_when_dft_decayed`
+            # lets the perturbed run stop at a different time from the
+            # unperturbed one, and that difference scales with the perturbation
+            # -- producing a fixed ratio between the adjoint gradient and the
+            # finite difference that does not shrink with the step size, and so
+            # reads exactly like a wrong gradient.
+            #
+            # The binding constraint is the *adjoint* DFT rather than the
+            # forward one. Holding this geometry fixed and lengthening the run,
+            # the finite difference does not move (4.923e-6 throughout) while
+            # the adjoint gradient falls 8.84e-6, 7.92e-6, 4.93e-6 at lengths
+            # 40, 80 and 140. Below is chosen with margin on that.
+            decay_by=1e-11,
+            minimum_run_time=run_length,
+            maximum_run_time=run_length,
+        )
+        return optimization([onp.asarray(weights).ravel()], need_gradient=need_gradient)
+
+    def _check(self, dimensions):
+        rng = onp.random.RandomState(3)
+        grid = int(1.0 * (12 if dimensions == 2 else 10)) + 1
+        size = grid if dimensions == 2 else grid * grid
+        weights = 0.5 * rng.rand(size)
+        perturbation = 1e-4 * rng.rand(size)
+
+        value, gradient = self._solve(dimensions, weights)
+        perturbed, _ = self._solve(
+            dimensions, weights + perturbation, need_gradient=False
+        )
+        adjoint = float(onp.dot(perturbation, onp.asarray(gradient).ravel()))
+        difference = float(onp.asarray(perturbed) - onp.asarray(value))
+        tolerance = 0.1 if mp.is_single_precision() else 0.01
+        self.assertClose(
+            onp.array([adjoint]),
+            onp.array([difference]),
+            epsilon=tolerance,
+            msg=f"{dimensions}D",
+        )
+
+    def test_two_dimensions(self):
+        self._check(2)
+
+    def test_three_dimensions(self):
+        self._check(3)
