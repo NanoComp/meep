@@ -750,3 +750,209 @@ class AngularSpectrum:
                 * measure
             )
         return outputs
+
+    # ---------------------------------------------------------------- Meep glue
+    #
+    # Two ways in. `from_monitor` post-processes an ordinary forward run and
+    # deals in NumPy, so a user who only wants a far field never meets JAX.
+    # `for_design` builds the `FourierFields` an objective function needs, for
+    # use inside `OptimizationProblem` or a `MeepJaxWrapper` loss.
+
+    @staticmethod
+    def _plane_geometry(simulation: mp.Simulation, volume: mp.Volume):
+        """Infers the normal, sample pitch, and sample count of a planar volume."""
+        size = [volume.size.x, volume.size.y, volume.size.z]
+        zero = [i for i, extent in enumerate(size) if extent == 0]
+        if simulation.dimensions != 2:
+            raise NotImplementedError(
+                "Angular-spectrum propagation currently supports 2D "
+                f"simulations only, but this one is {simulation.dimensions}D."
+            )
+        if len(zero) != 2 or 2 not in zero:
+            raise ValueError(
+                "The monitor must be a line normal to x or y, i.e. a Volume "
+                f"with exactly one nonzero in-plane size; got size={size}."
+            )
+        normal = mp.X if zero[0] == 0 else mp.Y
+        coordinates = simulation.get_array_metadata(vol=volume)
+        axis = 1 if normal == mp.X else 0
+        samples = onp.asarray(coordinates[axis])
+        if samples.size < 2:
+            raise ValueError("The monitor needs at least two sample points.")
+        pitch = float(onp.mean(onp.diff(samples)))
+        return normal, pitch, int(samples.size)
+
+    @staticmethod
+    def _assert_homogeneous(
+        simulation: mp.Simulation, volume: mp.Volume, tolerance: float = 1e-6
+    ):
+        """Rejects a monitor that does not lie in a homogeneous region.
+
+        The plane-wave decomposition assumes a single index at the monitor. This
+        mirrors the check `dft_near2far` makes for the same reason, and catches a
+        monitor accidentally clipping a waveguide or a PML.
+        """
+        epsilon = onp.asarray(
+            simulation.get_array(vol=volume, component=mp.Dielectric)
+        )
+        spread = float(onp.max(epsilon) - onp.min(epsilon))
+        if spread > tolerance * max(1.0, float(onp.max(epsilon))):
+            raise ValueError(
+                "The monitor plane does not lie in a homogeneous medium: "
+                f"epsilon varies from {onp.min(epsilon):.6g} to "
+                f"{onp.max(epsilon):.6g} along it. Angular-spectrum propagation "
+                "needs a single index at the monitor, so move the plane clear of "
+                "any structure."
+            )
+        return float(onp.mean(epsilon))
+
+    @classmethod
+    def from_monitor(
+        cls,
+        simulation: mp.Simulation,
+        monitor,
+        stack: Stack,
+        volume: mp.Volume,
+        sign: int = 1,
+        **kwargs,
+    ):
+        """Builds a propagator matching an existing `dft_fields` monitor.
+
+        Args:
+            simulation: the simulation the monitor belongs to.
+            monitor: the object returned by `add_dft_fields`.
+            stack: the layers above the monitor.
+            volume: the same volume the monitor was registered with.
+            sign: +1 if the radiation of interest travels along +normal.
+            **kwargs: forwarded to the constructor, e.g. `pad_factor`.
+        """
+        normal, pitch, num_points = cls._plane_geometry(simulation, volume)
+        cls._assert_homogeneous(simulation, volume)
+        frequencies = onp.asarray(monitor.freq)
+        return cls(
+            stack,
+            frequencies,
+            pitch,
+            num_points,
+            normal=normal,
+            sign=sign,
+            **kwargs,
+        )
+
+    def fields_from_monitor(
+        self, simulation: mp.Simulation, monitor
+    ) -> TangentialFields:
+        """Reads the tangential DFT fields off a monitor into a `TangentialFields`."""
+        electric, magnetic = {}, {}
+        # `DftFields` keeps only the component count, but `DftObj` retains the
+        # arguments `add_dft_fields` was called with, the first of which is the
+        # component list. Fall back to trying every tangential component if that
+        # ever stops being true.
+        registered = getattr(monitor, "args", None)
+        components = (
+            set(registered[0])
+            if registered
+            else {
+                component
+                for pair in _DECOMPOSITION[self.normal]
+                for component in pair[:2]
+            }
+        )
+        for e_component, h_component, _, _ in _DECOMPOSITION[self.normal]:
+            for component, target in (
+                (e_component, electric),
+                (h_component, magnetic),
+            ):
+                if component not in components:
+                    continue
+                values = onp.array(
+                    [
+                        simulation.get_dft_array(monitor, component, i)
+                        for i in range(len(self.frequencies))
+                    ]
+                )
+                if values.shape[-1] != self.num_points:
+                    raise ValueError(
+                        f"The monitor returned {values.shape[-1]} samples for "
+                        f"{mp.component_name(component)} but the propagator was "
+                        f"built for {self.num_points}. The volume Meep actually "
+                        "used may have been snapped to the grid; build the "
+                        "propagator from the same volume that was registered."
+                    )
+                target[component] = values
+        return TangentialFields(
+            E=electric, H=magnetic, normal=self.normal, sign=self.sign
+        )
+
+    def propagate_monitor(self, simulation, monitor, distance, coordinates=None):
+        """`propagate`, reading from a monitor and returning NumPy arrays."""
+        fields = self.fields_from_monitor(simulation, monitor)
+        return {
+            component: onp.asarray(values)
+            for component, values in self.propagate(
+                fields, distance, coordinates
+            ).items()
+        }
+
+    def overlap_monitor(self, simulation, monitor, mode, distance, incident_power=None):
+        """`overlap`, reading from a monitor and returning a NumPy array."""
+        fields = self.fields_from_monitor(simulation, monitor)
+        return onp.asarray(self.overlap(fields, mode, distance, incident_power))
+
+    def power_monitor(self, simulation, monitor, distance=None):
+        """`power`, reading from a monitor and returning a NumPy array."""
+        fields = self.fields_from_monitor(simulation, monitor)
+        return onp.asarray(self.power(fields, distance))
+
+    def report_monitor(self, simulation, monitor) -> Dict[str, onp.ndarray]:
+        """`report`, reading from a monitor and returning NumPy arrays."""
+        fields = self.fields_from_monitor(simulation, monitor)
+        return {
+            key: onp.asarray(value)
+            for key, value in self.report(fields).items()
+        }
+
+    def objective_arguments(self, simulation, volume, **kwargs):
+        """The `FourierFields` an objective function needs, for the adjoint path.
+
+        Both tangential components of both polarizations are registered. The
+        unused ones cost two extra DFT line monitors in the forward run and
+        nothing in the adjoint, since a monitor whose cotangent is identically
+        zero places no adjoint source, and registering them removes the need for
+        the user to work out which polarization their source excites.
+        """
+        from . import FourierFields
+
+        self._objective_components = [
+            component
+            for e_component, h_component, _, _ in _DECOMPOSITION[self.normal]
+            for component in (e_component, h_component)
+        ]
+        return [
+            FourierFields(simulation, volume, component, yee_grid=False, **kwargs)
+            for component in self._objective_components
+        ]
+
+    def take(self, args) -> TangentialFields:
+        """Repacks the leading objective-function arguments into `TangentialFields`.
+
+        `OptimizationProblem` passes objective arguments positionally, so this
+        consumes the ones `objective_arguments` produced and leaves the rest for
+        the caller's own monitors.
+        """
+        if not hasattr(self, "_objective_components"):
+            raise RuntimeError(
+                "Call objective_arguments() before take(), so that the "
+                "component order is known."
+            )
+        electric, magnetic = {}, {}
+        for component, values in zip(self._objective_components, args):
+            target = magnetic if mp.is_magnetic(component) else electric
+            target[component] = values
+        return TangentialFields(
+            E=electric, H=magnetic, normal=self.normal, sign=self.sign
+        )
+
+    def __len__(self) -> int:
+        """How many leading objective arguments `take` consumes."""
+        return len(_DECOMPOSITION[self.normal]) * 2
