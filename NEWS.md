@@ -2,6 +2,13 @@
 
 ## Meep 1.35.0 (in progress)
 
+* Adjoint solver: `meep.adjoint.AngularSpectrum` propagates the tangential DFT
+  fields on a planar monitor through an arbitrary stratified medium
+  analytically, in JAX. Unlike `add_near2far`, which requires a homogeneous
+  medium, this handles radiation crossing a material interface, so the layers
+  above the monitor can leave the FDTD cell entirely and become differentiable
+  parameters. Usable with or without the adjoint solver. 2D only for now.
+
 * Adjoint solver: objective functions are now differentiated with a single
   vector-Jacobian product instead of a full frequency Jacobian per objective
   argument. For an objective of $M$ arguments at $F$ frequencies this reduces

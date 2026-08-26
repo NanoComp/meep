@@ -273,6 +273,81 @@ JAX is an optional dependency throughout. If it is not installed, JAX objective
 functions are simply not recognized and `mpa.MeepJaxWrapper` and
 `mpa.value_and_jacobian` are absent; everything else works unchanged.
 
+Propagating Through Stratified Media
+------------------------------------
+
+Meep's [near-to-far transformation](Near_to_Far_Field_Spectra.md) requires its
+surface to sit in a homogeneous medium — `dft_near2far` aborts otherwise — so a
+structure whose radiation crosses a material interface has to keep that interface
+inside the FDTD cell. A grating coupler radiating up through a cladding, across
+the chip surface, and hundreds of microns to a fiber cannot afford to.
+
+`meep.adjoint.AngularSpectrum` propagates the tangential DFT fields on a planar
+monitor through an arbitrary layer stack analytically instead. The layers above
+the monitor leave the simulation, and become differentiable parameters:
+
+```py
+stack = mpa.Stack([mpa.Layer(index=1.444, thickness=300.0),   # silica superstrate
+                   mpa.Layer(index=1.0)])                      # air, semi-infinite
+
+monitor = sim.add_dft_fields([mp.Ez, mp.Hx], frequencies, where=plane)
+sim.run(...)
+
+propagator = mpa.AngularSpectrum.from_monitor(sim, monitor, stack, plane)
+fiber = mpa.gaussian_mode(waist=5.2, tilt_deg=8.0)
+efficiency = propagator.overlap_monitor(sim, monitor, fiber, distance=305.0)
+```
+
+That path is plain NumPy in and out, so it can post-process an ordinary forward
+run without any optimization. Inside an objective function, use
+`objective_arguments()` and `take()` instead, which give the `FourierFields` the
+adjoint solver needs.
+
+Both tangential fields are required. Together they determine the up- and
+down-going plane-wave amplitudes separately, which an open near-to-far surface
+cannot do — it has no way to reject radiation heading the wrong way.
+
+### Reading the diagnostics before believing a number
+
+The transverse transform is periodic, so a field that has not decayed by the ends
+of the monitor wraps around, and it does so quietly: the result looks plausible
+and does not improve with resolution. `report()` measures the three ways a
+monitor is usually placed wrongly:
+
+```py
+propagator.report_monitor(sim, monitor)
+# {'downgoing_fraction': ...,   is something above the monitor scattering?
+#  'evanescent_fraction': ...,  is the monitor inside the near field?
+#  'edge_amplitude': ...}       has the field decayed by the monitor's ends?
+```
+
+A few percent of `edge_amplitude` is common for a grating radiating into a
+cladding and is not the beam tail — it is near-grazing radiation, which travels
+sideways rather than decaying, so widening the cell barely helps. It bounds the
+accuracy at a similar level. Power at those angles was never going to reach the
+fiber.
+
+The other constraint is the padded window. A beam that spreads over hundreds of
+microns needs `pad_factor` large enough that the spread beam still fits; too small
+and the beam wraps onto itself, which is nonsense rather than merely inaccurate.
+
+### What is and is not supported
+
+Two-dimensional simulations, with a planar monitor normal to a coordinate axis
+lying in a homogeneous region. The three-dimensional case additionally needs the
+s/p rotation by azimuth, with its removable singularity at normal incidence, and
+raises rather than guessing. Cylindrical coordinates are not supported.
+
+A single plane is complete for the half-space above it, so unlike near2far there
+is no closed surface to build: the plane plus the hemisphere at infinity already
+is one, and the up/down split discards what is heading the wrong way. To account
+for both half-spaces — the substrate as well as the superstrate — use two
+parallel monitors, each with its own stack, and flip `sign` on the lower one.
+
+[examples/adjoint_optimization/grating_coupler_asm.py](https://github.com/NanoComp/meep/blob/master/python/examples/adjoint_optimization/grating_coupler_asm.py)
+is a worked two-etch grating coupler radiating through a thick superstrate into a
+fiber, with a forward-only mode and an optimization mode.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 
