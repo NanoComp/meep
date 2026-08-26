@@ -539,11 +539,19 @@ class TestJaxObjectiveFunctionGradient(ApproxComparisonTestCase):
         jax_value, jax_grad = self._solve(self.p, use_jax=True)
         autograd_value, autograd_grad = self._solve(self.p, use_jax=False)
 
-        self.assertClose(jax_value, autograd_value, epsilon=1e-12)
+        # Two separate simulations of the same problem, reaching the same
+        # gradient by different arithmetic. They can only agree to the precision
+        # the monitor values carry, which is about seven digits when Meep is
+        # built in single precision.
+        if mp.is_single_precision():
+            value_tolerance, gradient_tolerance = 1e-5, 1e-4
+        else:
+            value_tolerance, gradient_tolerance = 1e-12, 1e-10
+        self.assertClose(jax_value, autograd_value, epsilon=value_tolerance)
         self.assertClose(
             np.asarray(jax_grad).ravel(),
             np.asarray(autograd_grad).ravel(),
-            epsilon=1e-10,
+            epsilon=gradient_tolerance,
         )
 
     def test_matches_finite_difference(self):
