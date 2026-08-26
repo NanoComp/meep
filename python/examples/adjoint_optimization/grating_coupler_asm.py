@@ -60,27 +60,48 @@ EDGE_AMPLITUDE_LIMIT = 1e-2
 
 
 def build_arguments():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("mode", choices=["forward", "optimize"])
-    parser.add_argument("--resolution", type=float, default=20.0,
-                        help="pixels per micron")
-    parser.add_argument("--aperture", type=float, default=20.0,
-                        help="width of the grating, in microns")
-    parser.add_argument("--superstrate", type=float, default=300.0,
-                        help="silica thickness above the device layer, in microns")
-    parser.add_argument("--working-distance", type=float, default=5.0,
-                        help="fiber facet height above the silica/air interface")
-    parser.add_argument("--fiber-waist", type=float, default=None,
-                        help="fiber 1/e field radius; defaults to the diffracted "
-                             "beam size at the facet")
-    parser.add_argument("--tilt", type=float, default=8.0,
-                        help="fiber tilt from normal, in degrees")
-    parser.add_argument("--wavelengths", type=float, nargs="+",
-                        default=[1.52, 1.55, 1.58])
-    parser.add_argument("--pad-factor", type=int, default=16,
-                        help="zero padding before the transform; a beam that "
-                             "spreads over hundreds of microns needs a wide window")
+    parser.add_argument(
+        "--resolution", type=float, default=20.0, help="pixels per micron"
+    )
+    parser.add_argument(
+        "--aperture", type=float, default=20.0, help="width of the grating, in microns"
+    )
+    parser.add_argument(
+        "--superstrate",
+        type=float,
+        default=300.0,
+        help="silica thickness above the device layer, in microns",
+    )
+    parser.add_argument(
+        "--working-distance",
+        type=float,
+        default=5.0,
+        help="fiber facet height above the silica/air interface",
+    )
+    parser.add_argument(
+        "--fiber-waist",
+        type=float,
+        default=None,
+        help="fiber 1/e field radius; defaults to the diffracted "
+        "beam size at the facet",
+    )
+    parser.add_argument(
+        "--tilt", type=float, default=8.0, help="fiber tilt from normal, in degrees"
+    )
+    parser.add_argument(
+        "--wavelengths", type=float, nargs="+", default=[1.52, 1.55, 1.58]
+    )
+    parser.add_argument(
+        "--pad-factor",
+        type=int,
+        default=16,
+        help="zero padding before the transform; a beam that "
+        "spreads over hundreds of microns needs a wide window",
+    )
     parser.add_argument("--iterations", type=int, default=15)
     parser.add_argument("--design-resolution", type=float, default=None)
     return parser.parse_args()
@@ -114,12 +135,20 @@ def design_regions(args):
     grids, volumes = [], []
     for y_lo, y_hi in ((0.0, T_DEEP), (T_DEEP, T_DEVICE)):
         grids.append(
-            mp.MaterialGrid(mp.Vector3(nx, 1, 1), oxide, silicon,
-                            weights=np.ones((nx,)), do_averaging=False, beta=0)
+            mp.MaterialGrid(
+                mp.Vector3(nx, 1, 1),
+                oxide,
+                silicon,
+                weights=np.ones((nx,)),
+                do_averaging=False,
+                beta=0,
+            )
         )
         volumes.append(
-            mp.Volume(center=mp.Vector3(0, 0.5 * (y_lo + y_hi)),
-                      size=mp.Vector3(args.aperture, y_hi - y_lo))
+            mp.Volume(
+                center=mp.Vector3(0, 0.5 * (y_lo + y_hi)),
+                size=mp.Vector3(args.aperture, y_hi - y_lo),
+            )
         )
     return grids, volumes, nx
 
@@ -135,13 +164,21 @@ def build_simulation(args, weights=None):
     silicon, oxide = mp.Medium(index=N_SI), mp.Medium(index=N_OXIDE)
     geometry = [
         # silicon handle below the buried oxide
-        mp.Block(center=mp.Vector3(center.x, -(T_BOX + T_HANDLE + DPML) / 2 - T_BOX / 2),
-                 size=mp.Vector3(mp.inf, T_HANDLE + DPML), material=silicon),
+        mp.Block(
+            center=mp.Vector3(center.x, -(T_BOX + T_HANDLE + DPML) / 2 - T_BOX / 2),
+            size=mp.Vector3(mp.inf, T_HANDLE + DPML),
+            material=silicon,
+        ),
         # the input waveguide, running in from the left
-        mp.Block(center=mp.Vector3(-(args.aperture / 2 + WAVEGUIDE_LENGTH + PAD + DPML) / 2
-                                   - args.aperture / 4, T_DEVICE / 2),
-                 size=mp.Vector3(2 * (WAVEGUIDE_LENGTH + PAD + DPML), T_DEVICE),
-                 material=silicon),
+        mp.Block(
+            center=mp.Vector3(
+                -(args.aperture / 2 + WAVEGUIDE_LENGTH + PAD + DPML) / 2
+                - args.aperture / 4,
+                T_DEVICE / 2,
+            ),
+            size=mp.Vector3(2 * (WAVEGUIDE_LENGTH + PAD + DPML), T_DEVICE),
+            material=silicon,
+        ),
     ] + [
         mp.Block(center=volume.center, size=volume.size, material=grid)
         for grid, volume in zip(grids, volumes)
@@ -152,16 +189,25 @@ def build_simulation(args, weights=None):
     source = [
         mp.EigenModeSource(
             mp.GaussianSource(center_frequency, fwidth=0.2 * center_frequency),
-            center=mp.Vector3(-(args.aperture / 2 + WAVEGUIDE_LENGTH * 0.6), T_DEVICE / 2),
+            center=mp.Vector3(
+                -(args.aperture / 2 + WAVEGUIDE_LENGTH * 0.6), T_DEVICE / 2
+            ),
             size=mp.Vector3(0, 6 * T_DEVICE),
-            eig_band=1, eig_parity=mp.ODD_Z, eig_match_freq=True,
+            eig_band=1,
+            eig_parity=mp.ODD_Z,
+            eig_match_freq=True,
         )
     ]
 
     simulation = mp.Simulation(
-        cell_size=size, geometry_center=center, resolution=args.resolution,
-        boundary_layers=[mp.PML(DPML)], geometry=geometry, sources=source,
-        default_material=oxide, dimensions=2,
+        cell_size=size,
+        geometry_center=center,
+        resolution=args.resolution,
+        boundary_layers=[mp.PML(DPML)],
+        geometry=geometry,
+        sources=source,
+        default_material=oxide,
+        dimensions=2,
     )
     return simulation, grids, volumes, nx, frequencies
 
@@ -170,8 +216,10 @@ def monitor_volume(args):
     """The plane the radiated field is read on, inside the homogeneous oxide."""
     size, center = cell_geometry(args)
     width = size.x - 2 * DPML - 2 * MONITOR_MARGIN
-    return mp.Volume(center=mp.Vector3(center.x, T_DEVICE + MONITOR_STANDOFF),
-                     size=mp.Vector3(width, 0))
+    return mp.Volume(
+        center=mp.Vector3(center.x, T_DEVICE + MONITOR_STANDOFF),
+        size=mp.Vector3(width, 0),
+    )
 
 
 def build_stack(args):
@@ -182,7 +230,10 @@ def build_stack(args):
             f"--superstrate {args.superstrate} must exceed the monitor standoff "
             f"{MONITOR_STANDOFF}."
         )
-    return mpa.Stack([mpa.Layer(N_OXIDE, remaining_oxide), mpa.Layer(N_AIR)]), remaining_oxide
+    return (
+        mpa.Stack([mpa.Layer(N_OXIDE, remaining_oxide), mpa.Layer(N_AIR)]),
+        remaining_oxide,
+    )
 
 
 def diffracted_waist(args):
@@ -202,8 +253,9 @@ def diffracted_waist(args):
 def initial_weights(args, nx):
     """A uniform grating, as a starting point for the optimizer."""
     x = np.linspace(-args.aperture / 2, args.aperture / 2, nx)
-    period = float(np.mean(args.wavelengths)) / (N_OXIDE * math.sin(math.radians(args.tilt))
-                                                 + 2.6)
+    period = float(np.mean(args.wavelengths)) / (
+        N_OXIDE * math.sin(math.radians(args.tilt)) + 2.6
+    )
     # A binary grating, not a smoothly graded one: a sinusoidal index
     # modulation is a much weaker scatterer and radiates very little.
     deep = (np.cos(2 * math.pi * x / period) > 0).astype(float)
@@ -249,7 +301,9 @@ def run_forward(args):
     )
     volume = monitor_volume(args)
     monitor = simulation.add_dft_fields([mp.Ez, mp.Hx], frequencies, where=volume)
-    simulation.run(until_after_sources=mp.stop_when_dft_decayed(1e-9, minimum_run_time=50))
+    simulation.run(
+        until_after_sources=mp.stop_when_dft_decayed(1e-9, minimum_run_time=50)
+    )
 
     stack, remaining_oxide = build_stack(args)
     propagator = mpa.AngularSpectrum.from_monitor(
@@ -265,15 +319,20 @@ def run_forward(args):
 
     print(f"\nfiber waist {waist:.2f} um at {distance:.1f} um, tilt {args.tilt}deg")
     for wavelength, value in zip(args.wavelengths, np.atleast_1d(efficiency)):
-        print(f"  {wavelength*1e3:.0f} nm   modal purity = {value:.4f}"
-              f"   ({10*np.log10(max(value,1e-12)):+.2f} dB)")
+        print(
+            f"  {wavelength*1e3:.0f} nm   modal purity = {value:.4f}"
+            f"   ({10*np.log10(max(value,1e-12)):+.2f} dB)"
+        )
 
     # None of the sweeps below re-runs the simulation: the fiber, the working
     # distance and the superstrate are all parameters of the analytic stack.
     print("\nvs fiber tilt (no further simulation)")
     for tilt in np.arange(args.tilt - 4, args.tilt + 4.1, 2.0):
         value = propagator.overlap_monitor(
-            simulation, monitor, mpa.gaussian_mode(waist, tilt_deg=float(tilt)), distance
+            simulation,
+            monitor,
+            mpa.gaussian_mode(waist, tilt_deg=float(tilt)),
+            distance,
         )
         print(f"  {tilt:5.1f} deg   {np.mean(value):.4f}")
 
@@ -286,13 +345,16 @@ def run_forward(args):
 
     print("\nvs superstrate thickness (rebuilds only the stack)")
     for thickness in (100.0, 200.0, 300.0, 500.0):
-        alternative = mpa.Stack([mpa.Layer(N_OXIDE, thickness - MONITOR_STANDOFF),
-                                 mpa.Layer(N_AIR)])
+        alternative = mpa.Stack(
+            [mpa.Layer(N_OXIDE, thickness - MONITOR_STANDOFF), mpa.Layer(N_AIR)]
+        )
         other = mpa.AngularSpectrum.from_monitor(
             simulation, monitor, alternative, volume, pad_factor=args.pad_factor
         )
         value = other.overlap_monitor(
-            simulation, monitor, fiber,
+            simulation,
+            monitor,
+            fiber,
             thickness - MONITOR_STANDOFF + args.working_distance,
         )
         print(f"  {thickness:5.0f} um   {np.mean(value):.4f}")
@@ -313,10 +375,12 @@ def run_optimize(args):
     # snapping it to the grid.
     simulation.init_sim()
     propagator = mpa.AngularSpectrum(
-        stack, frequencies,
+        stack,
+        frequencies,
         pitch=1.0 / args.resolution,
         num_points=len(simulation.get_array_metadata(vol=volume)[0]),
-        normal=mp.Y, pad_factor=args.pad_factor,
+        normal=mp.Y,
+        pad_factor=args.pad_factor,
     )
     fiber = mpa.gaussian_mode(waist, tilt_deg=args.tilt)
 
@@ -330,8 +394,9 @@ def run_optimize(args):
         simulation=simulation,
         objective_functions=objective,
         objective_arguments=propagator.objective_arguments(simulation, volume),
-        design_regions=[mpa.DesignRegion(grid, volume=v)
-                        for grid, v in zip(grids, volumes)],
+        design_regions=[
+            mpa.DesignRegion(grid, volume=v) for grid, v in zip(grids, volumes)
+        ],
         frequencies=frequencies,
         decay_by=1e-7,
     )
