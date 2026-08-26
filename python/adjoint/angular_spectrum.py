@@ -78,9 +78,7 @@ class Layer(NamedTuple):
     def from_medium(cls, medium: mp.Medium, thickness: Optional[float] = None):
         """Builds a layer from a `meep.Medium`, evaluating its index per frequency."""
         return cls(
-            index=lambda frequency: onp.sqrt(
-                complex(medium.epsilon(frequency)[0][0])
-            ),
+            index=lambda frequency: onp.sqrt(complex(medium.epsilon(frequency)[0][0])),
             thickness=thickness,
         )
 
@@ -137,6 +135,18 @@ class TangentialFields(NamedTuple):
     H: Dict[int, jnp.ndarray]
     normal: int
     sign: int = 1
+
+
+def _as_concrete(value) -> Optional[float]:
+    """Returns `value` as a float, or None if it is a JAX tracer.
+
+    Distances and thicknesses may be traced, so checks on them have to be
+    skipped rather than forced.
+    """
+    try:
+        return float(value)
+    except (TypeError, jax.errors.ConcretizationTypeError):
+        return None
 
 
 def _safe_sqrt(argument: jnp.ndarray) -> jnp.ndarray:
@@ -209,9 +219,7 @@ def _stack_transmission(
     # Start from the terminating interface and recurse toward the monitor. At
     # each step `reflection` is the reflection looking into the remaining stack
     # and `transmission` the accumulated transmission through it.
-    reflection, transmission = _interface_coefficients(
-        admittances[-2], admittances[-1]
-    )
+    reflection, transmission = _interface_coefficients(admittances[-2], admittances[-1])
     for j in range(len(admittances) - 3, -1, -1):
         phase = jnp.exp(1j * wavevectors[j + 1] * thicknesses[j + 1])
         interface_r, interface_t = _interface_coefficients(
@@ -221,9 +229,7 @@ def _stack_transmission(
         # accumulated behind it.
         backward_r = -interface_r  # reflection of the interface from the far side
         denominator = 1 - backward_r * reflection * phase**2
-        transmission = (
-            interface_t * phase * transmission / denominator
-        )
+        transmission = interface_t * phase * transmission / denominator
         reflection = interface_r + (
             interface_t * (2 - interface_t) * reflection * phase**2 / denominator
         )
@@ -234,9 +240,7 @@ def _single_interface_limit(
     admittances: Sequence[jnp.ndarray],
 ) -> Tuple[jnp.ndarray, jnp.ndarray]:
     """Transmission and reflection when the stack is a single interface."""
-    reflection, transmission = _interface_coefficients(
-        admittances[0], admittances[1]
-    )
+    reflection, transmission = _interface_coefficients(admittances[0], admittances[1])
     return transmission, reflection
 
 
@@ -430,9 +434,7 @@ class AngularSpectrum:
         self._k0 = 2 * onp.pi * self.frequencies
         if kt is None:
             padded = self.num_points * self.pad_factor
-            self._kt = jnp.asarray(
-                2 * onp.pi * onp.fft.fftfreq(padded, d=self.pitch)
-            )
+            self._kt = jnp.asarray(2 * onp.pi * onp.fft.fftfreq(padded, d=self.pitch))
             self._uniform = True
             self._padded = padded
         else:
@@ -454,8 +456,11 @@ class AngularSpectrum:
             _admittances(index, kz, self._k0)
             for index, kz in zip(self._indices, self._wavevectors)
         ]
+        # Deliberately not coerced to float: a thickness may be a JAX tracer, so
+        # that an antireflection coating or a cladding depth can be optimized
+        # alongside the design.
         self._thicknesses = [
-            0.0 if layer.thickness is None else float(layer.thickness)
+            0.0 if layer.thickness is None else layer.thickness
             for layer in stack.layers
         ]
 
@@ -465,9 +470,15 @@ class AngularSpectrum:
         return self._kt
 
     @property
-    def stack_thickness(self) -> float:
-        """The total thickness of the stack, excluding the semi-infinite layer."""
-        return float(sum(self._thicknesses[:-1]))
+    def stack_thickness(self):
+        """The total thickness of the stack, excluding the semi-infinite layer.
+
+        Not necessarily a float: layer thicknesses may be JAX values.
+        """
+        total = 0.0
+        for thickness in self._thicknesses[:-1]:
+            total = total + thickness
+        return total
 
     def coordinates(self) -> onp.ndarray:
         """The transverse coordinates of the monitor samples, centered on zero."""
@@ -496,9 +507,7 @@ class AngularSpectrum:
                 f"The fields are on a plane normal to {fields.normal} but this "
                 f"propagator was built for {self.normal}."
             )
-        for e_component, h_component, sign, polarization in _DECOMPOSITION[
-            self.normal
-        ]:
+        for e_component, h_component, sign, polarization in _DECOMPOSITION[self.normal]:
             e_values = fields.E.get(e_component)
             h_values = fields.H.get(h_component)
             if e_values is None and h_values is None:
@@ -521,9 +530,7 @@ class AngularSpectrum:
         """
         up, down = {}, {}
         admittance = self._admittances[0]
-        for polarization, e_values, h_values, sign in self._polarization_terms(
-            fields
-        ):
+        for polarization, e_values, h_values, sign in self._polarization_terms(fields):
             e_spectrum = self._transform(e_values)
             h_spectrum = self._transform(h_values)
             # `sign` already carries the orientation of n_hat x H_t; `fields.sign`
@@ -533,8 +540,7 @@ class AngularSpectrum:
             down[polarization] = 0.5 * (e_spectrum - scaled)
         if not up:
             raise ValueError(
-                "No tangential field components were supplied; nothing to "
-                "propagate."
+                "No tangential field components were supplied; nothing to " "propagate."
             )
         return up, down
 
@@ -543,9 +549,7 @@ class AngularSpectrum:
         admittances = [pair[polarization] for pair in self._admittances]
         if len(admittances) == 2:
             return _single_interface_limit(admittances)
-        return _stack_transmission(
-            admittances, self._wavevectors, self._thicknesses
-        )
+        return _stack_transmission(admittances, self._wavevectors, self._thicknesses)
 
     def spectrum(self, fields: TangentialFields, distance: float):
         """The up-going spectrum carried to a plane `distance` from the monitor.
@@ -560,11 +564,12 @@ class AngularSpectrum:
             A `PropagationResult`.
         """
         remaining = distance - self.stack_thickness
-        if onp.any(onp.asarray(remaining) < 0):
+        concrete = _as_concrete(remaining)
+        if concrete is not None and concrete < 0:
             raise ValueError(
                 f"distance={distance} does not clear the stack, which is "
-                f"{self.stack_thickness} thick. The target plane has to lie in "
-                "the semi-infinite layer."
+                f"{_as_concrete(self.stack_thickness)} thick. The target plane "
+                "has to lie in the semi-infinite layer."
             )
         up, _ = self.decompose(fields)
         amplitudes = {}
@@ -572,9 +577,7 @@ class AngularSpectrum:
             transmission, _ = self._transmission(polarization)
             # Monitor to the first interface, through the stack, then onward in
             # the terminating layer.
-            to_interface = jnp.exp(
-                1j * self._wavevectors[0] * self._thicknesses[0]
-            )
+            to_interface = jnp.exp(1j * self._wavevectors[0] * self._thicknesses[0])
             beyond = jnp.exp(1j * self._wavevectors[-1] * remaining)
             amplitudes[polarization] = amplitude * to_interface * transmission * beyond
         stacked = jnp.stack(
@@ -622,7 +625,9 @@ class AngularSpectrum:
 
     def power(self, fields: TangentialFields, distance: Optional[float] = None):
         """Outgoing power through the target plane, one value per frequency."""
-        result = self.spectrum(fields, self.stack_thickness if distance is None else distance)
+        result = self.spectrum(
+            fields, self.stack_thickness if distance is None else distance
+        )
         weights = self._weights(result)
         return jnp.sum(weights * jnp.abs(result.amplitudes) ** 2, axis=(1, 2))
 
@@ -661,9 +666,7 @@ class AngularSpectrum:
         mode_norm = jnp.sum(weights * jnp.abs(mode_amplitude) ** 2, axis=-1)
         coupled = jnp.abs(cross) ** 2 / mode_norm
         if incident_power is None:
-            incident_power = jnp.sum(
-                weights * jnp.abs(field_amplitude) ** 2, axis=-1
-            )
+            incident_power = jnp.sum(weights * jnp.abs(field_amplitude) ** 2, axis=-1)
         return coupled / incident_power
 
     def report(self, fields: TangentialFields) -> Dict[str, jnp.ndarray]:
@@ -744,9 +747,7 @@ class AngularSpectrum:
             if not jnp.any(result.amplitudes[..., polarization]):
                 continue
             outputs[e_component] = (
-                jnp.einsum(
-                    "xk,fk->fx", phase, result.amplitudes[..., polarization]
-                )
+                jnp.einsum("xk,fk->fx", phase, result.amplitudes[..., polarization])
                 * measure
             )
         return outputs
@@ -792,9 +793,7 @@ class AngularSpectrum:
         mirrors the check `dft_near2far` makes for the same reason, and catches a
         monitor accidentally clipping a waveguide or a PML.
         """
-        epsilon = onp.asarray(
-            simulation.get_array(vol=volume, component=mp.Dielectric)
-        )
+        epsilon = onp.asarray(simulation.get_array(vol=volume, component=mp.Dielectric))
         spread = float(onp.max(epsilon) - onp.min(epsilon))
         if spread > tolerance * max(1.0, float(onp.max(epsilon))):
             raise ValueError(
@@ -907,10 +906,7 @@ class AngularSpectrum:
     def report_monitor(self, simulation, monitor) -> Dict[str, onp.ndarray]:
         """`report`, reading from a monitor and returning NumPy arrays."""
         fields = self.fields_from_monitor(simulation, monitor)
-        return {
-            key: onp.asarray(value)
-            for key, value in self.report(fields).items()
-        }
+        return {key: onp.asarray(value) for key, value in self.report(fields).items()}
 
     def objective_arguments(self, simulation, volume, **kwargs):
         """The `FourierFields` an objective function needs, for the adjoint path.
