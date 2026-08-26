@@ -103,9 +103,7 @@ class ObjectiveQuantity(abc.ABC):
 
     def _cotangent(self, dJ) -> np.ndarray:
         """Validates the cotangent handed to `place_adjoint_source`."""
-        return _as_cotangent(
-            dJ, np.shape(self.get_evaluation()), type(self).__name__
-        )
+        return _as_cotangent(dJ, np.shape(self.get_evaluation()), type(self).__name__)
 
     def get_evaluation(self):
         """Evaluates the objective quantity."""
@@ -222,7 +220,7 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         kpoint_func_overlap_idx: Optional[int] = 0,
         decimation_factor: Optional[int] = 0,
         subtracted_dft_fields: Optional[FluxData] = None,
-        **kwargs
+        **kwargs,
     ):
         """Initialize an instance of a differentiable frequency-dependent
         eigenmode coefficient.

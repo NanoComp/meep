@@ -365,9 +365,7 @@ class TestJaxObjectiveFunction(ApproxComparisonTestCase):
         self.assertEqual(len(actual), len(expected))
         for i, (want, got) in enumerate(zip(expected, actual)):
             self.assertEqual(got.shape, want.shape)
-            self.assertClose(
-                want.ravel(), got.ravel(), epsilon=1e-12, msg=f"arg{i}"
-            )
+            self.assertClose(want.ravel(), got.ravel(), epsilon=1e-12, msg=f"arg{i}")
             # A conjugated convention would be a much larger error than the
             # tolerance above; assert it explicitly so the test names the failure.
             self.assertGreater(
@@ -386,9 +384,7 @@ class TestJaxObjectiveFunction(ApproxComparisonTestCase):
             objective, (value,), 1.0, value=objective(value)
         )
         self.assertEqual(cotangent.shape, value.shape)
-        self.assertClose(
-            2 * value.conj().ravel(), cotangent.ravel(), epsilon=1e-13
-        )
+        self.assertClose(2 * value.conj().ravel(), cotangent.ravel(), epsilon=1e-13)
 
     def test_rejects_non_array_output(self):
         def objective(x):

@@ -553,9 +553,7 @@ def value_and_jacobian(loss: Callable, argnums=0) -> Callable:
 
         if isinstance(argnums, int):
             implicit = implicit[0]
-        jacobian = jax.tree_util.tree_map(
-            lambda a, b: a + b, explicit, implicit
-        )
+        jacobian = jax.tree_util.tree_map(lambda a, b: a + b, explicit, implicit)
         return values, jacobian
 
     return evaluate

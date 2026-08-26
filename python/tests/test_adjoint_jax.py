@@ -503,9 +503,7 @@ class WrapperTest(ApproxComparisonTestCase):
             mpa.value_and_jacobian(lambda r: jnp.zeros(len(frequencies)) + r.sum())(x)
 
         with self.assertRaisesRegex(ValueError, "exactly one call"):
-            mpa.value_and_jacobian(
-                lambda r: loss(r, 1.0, 0.0) + loss(r, 1.0, 0.0)
-            )(x)
+            mpa.value_and_jacobian(lambda r: loss(r, 1.0, 0.0) + loss(r, 1.0, 0.0))(x)
 
     def test_monitor_values_are_stacked_when_homogeneous(self):
         """Mode monitors alone still come back as one (monitor, frequency) array.
@@ -584,14 +582,10 @@ class WrapperTest(ApproxComparisonTestCase):
             perturbation = _FD_STEP * jax.random.normal(
                 jax.random.PRNGKey(seed), x.shape
             )
-            projection.append(
-                onp.dot(perturbation.ravel(), adjoint_grad.ravel())
-            )
+            projection.append(onp.dot(perturbation.ravel(), adjoint_grad.ravel()))
             fd_projection.append(loss_fn(x + perturbation) - value)
 
-        self.assertClose(
-            onp.stack(projection), onp.stack(fd_projection), epsilon=_TOL
-        )
+        self.assertClose(onp.stack(projection), onp.stack(fd_projection), epsilon=_TOL)
 
 
 if __name__ == "__main__":
