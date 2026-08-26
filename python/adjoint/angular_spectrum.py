@@ -284,57 +284,46 @@ class PropagationResult(NamedTuple):
 # conservation, and differ only in the sign of r_p.
 
 
+# The tangential axes of a plane, ordered right-handed so that u_hat x v_hat =
+# n_hat. That ordering is what makes the decomposition below sign-free:
+# n_hat x H_t has components (-H_v, +H_u) in the same basis.
+_PLANE_AXES = {
+    mp.X: ((mp.Ey, mp.Ez), (mp.Hy, mp.Hz)),
+    mp.Y: ((mp.Ez, mp.Ex), (mp.Hz, mp.Hx)),
+    mp.Z: ((mp.Ex, mp.Ey), (mp.Hx, mp.Hy)),
+}
+
+
 def _tangential_components(normal: int, dimensions: int) -> Tuple[Tuple[int, ...], ...]:
     """The E and H components tangential to a plane with the given normal."""
-    if dimensions == 2:
-        if normal == mp.Y:
-            return (mp.Ex, mp.Ez), (mp.Hx, mp.Hz)
-        if normal == mp.X:
-            return (mp.Ey, mp.Ez), (mp.Hy, mp.Hz)
+    if normal not in _PLANE_AXES:
+        raise ValueError(f"Unsupported monitor normal {normal}.")
+    if dimensions == 2 and normal == mp.Z:
         raise ValueError(
             "In a 2D simulation the monitor plane must be normal to x or y, "
             f"but got normal={normal}."
         )
-    raise NotImplementedError(
-        "Angular-spectrum propagation currently supports 2D simulations only. "
-        "The three-dimensional case additionally needs the s/p rotation by "
-        "azimuth, with its removable singularity at normal incidence, and is "
-        "not implemented here."
-    )
-
-
-# For an up-going plane wave the tangential fields satisfy H_t = Y (n_hat x E_t)
-# in both polarizations, the cross product supplying the orientation, so
-#
-#     E_up = (E_t - (n_hat x H_t) / Y) / 2
-#
-# uniformly. Written out in a tangential basis this becomes one (E component,
-# partnering H component, sign, polarization) tuple per polarization, with
-# E_up = (E + sign * H / Y) / 2.
-_DECOMPOSITION = {
-    mp.Y: (
-        (mp.Ez, mp.Hx, +1, S_POLARIZATION),
-        (mp.Ex, mp.Hz, -1, P_POLARIZATION),
-    ),
-    mp.X: (
-        (mp.Ez, mp.Hy, -1, S_POLARIZATION),
-        (mp.Ey, mp.Hz, +1, P_POLARIZATION),
-    ),
-}
+    if dimensions not in (2, 3):
+        raise NotImplementedError(
+            "Angular-spectrum propagation supports 2D and 3D Cartesian "
+            f"simulations, not {dimensions}D. Cylindrical coordinates are not "
+            "supported."
+        )
+    return _PLANE_AXES[normal]
 
 
 class Mode(NamedTuple):
     """A target field to project onto, defined by its angular spectrum.
 
     Attributes:
-        spectrum: called as `spectrum(kt, k0, index)` and returning a
-            (num frequencies, num kt) array of tangential electric field
-            amplitudes.
-        polarization: which polarization the amplitudes belong to.
+        spectrum: called as `spectrum(propagator, kt, k0, index)` and returning
+            a (num frequencies, num kt, 2) array of tangential electric field
+            amplitudes in the s and p directions. Carrying both is what lets a
+            linearly polarized beam be represented in 3D, where its s and p
+            content varies with azimuth.
     """
 
     spectrum: Callable
-    polarization: int = S_POLARIZATION
 
 
 def gaussian_mode(
@@ -342,8 +331,9 @@ def gaussian_mode(
     tilt_deg: float = 0.0,
     offset: float = 0.0,
     polarization: int = S_POLARIZATION,
+    tilt_azimuth_deg: float = 0.0,
 ) -> Mode:
-    """A tilted, laterally offset Gaussian, e.g. a fiber mode.
+    """A tilted, laterally offset, linearly polarized Gaussian, e.g. a fiber mode.
 
     The spectrum is written in closed form rather than sampled, so the tilt and
     the offset are exact continuous parameters and differentiable, instead of
@@ -353,26 +343,59 @@ def gaussian_mode(
         waist: the 1/e field radius at the target plane, in Meep units. For a
             fiber quoted by mode-field diameter, this is MFD / 2.
         tilt_deg: the angle from the plane normal, in degrees.
-        offset: the lateral displacement of the beam center at the target plane.
-        polarization: S_POLARIZATION or P_POLARIZATION.
+        offset: the lateral displacement of the beam center at the target plane,
+            along the tilt direction.
+        polarization: the linear polarization direction. `S_POLARIZATION` means
+            along the second tangential axis, `P_POLARIZATION` the first; in 2D
+            these are the out-of-plane and in-plane electric fields
+            respectively. In 3D the beam is linearly polarized along that axis
+            and its s and p content follows the azimuth of each wavevector.
+        tilt_azimuth_deg: which way the beam is tilted, measured in the
+            tangential plane. Ignored in 2D, where there is only one direction
+            to tilt in.
 
     Returns:
         A `Mode`.
     """
 
-    def spectrum(kt, k0, index):
+    def spectrum(propagator, kt, k0, index):
         kt = jnp.asarray(kt)
-        center = (
-            jnp.asarray(index).real[:, None]
-            * jnp.asarray(k0)[:, None]
+        transverse = (
+            jnp.asarray(index).real
+            * jnp.asarray(k0)
             * jnp.sin(jnp.deg2rad(jnp.asarray(tilt_deg)))
         )
-        detuning = kt[None, :] - center
-        return jnp.exp(-jnp.square(detuning * waist) / 4.0) * jnp.exp(
-            -1j * kt[None, :] * offset
+        azimuth = jnp.deg2rad(jnp.asarray(tilt_azimuth_deg))
+        direction = (
+            jnp.array([1.0])
+            if kt.shape[-1] == 1
+            else jnp.stack([jnp.cos(azimuth), jnp.sin(azimuth)])
         )
+        center = transverse[:, None] * direction
+        detuning = kt[None, :, :] - center[:, None, :]
+        envelope = jnp.exp(
+            -jnp.sum(jnp.square(detuning * waist), axis=-1) / 4.0
+        ) * jnp.exp(-1j * jnp.sum(detuning * direction * offset, axis=-1))
 
-    return Mode(spectrum=spectrum, polarization=polarization)
+        rotation = propagator._azimuth()
+        if rotation is None:
+            weights = (
+                jnp.array([1.0, 0.0])
+                if polarization == S_POLARIZATION
+                else jnp.array([0.0, 1.0])
+            )
+            components = jnp.broadcast_to(weights, envelope.shape + (2,))
+        else:
+            cosine, sine = rotation
+            if polarization == S_POLARIZATION:
+                # polarized along v_hat: v_hat . s_hat = cos, v_hat . p_hat = sin
+                components = jnp.stack([cosine, sine], axis=-1)
+            else:
+                components = jnp.stack([-sine, cosine], axis=-1)
+            components = jnp.broadcast_to(components[None, :, :], envelope.shape + (2,))
+        return envelope[..., None] * components
+
+    return Mode(spectrum=spectrum)
 
 
 class AngularSpectrum:
@@ -418,27 +441,50 @@ class AngularSpectrum:
                 aperture matter.
         """
         stack.validate()
-        if normal not in _DECOMPOSITION:
-            raise ValueError(f"Unsupported monitor normal {normal}.")
         if sign not in (1, -1):
             raise ValueError(f"sign must be +1 or -1, got {sign}.")
 
+        # A monitor plane is a line in a 2D simulation and a rectangle in a 3D
+        # one, so the transverse space is one- or two-dimensional. Everything
+        # downstream of the transform works on a flat list of transverse
+        # wavevectors and is indifferent to which it was.
+        self.num_points = (
+            (int(num_points),)
+            if onp.ndim(num_points) == 0
+            else tuple(int(n) for n in num_points)
+        )
+        self.pitch = (
+            (float(pitch),) * len(self.num_points)
+            if onp.ndim(pitch) == 0
+            else tuple(float(p) for p in pitch)
+        )
+        if len(self.pitch) != len(self.num_points):
+            raise ValueError(
+                f"pitch has {len(self.pitch)} entries but num_points has "
+                f"{len(self.num_points)}."
+            )
+        self.transverse_dimensions = len(self.num_points)
+        _tangential_components(normal, self.transverse_dimensions + 1)
+
         self.stack = stack
         self.frequencies = onp.asarray(frequencies, dtype=float)
-        self.pitch = float(pitch)
-        self.num_points = int(num_points)
         self.normal = normal
         self.sign = int(sign)
         self.pad_factor = int(pad_factor)
 
         self._k0 = 2 * onp.pi * self.frequencies
         if kt is None:
-            padded = self.num_points * self.pad_factor
-            self._kt = jnp.asarray(2 * onp.pi * onp.fft.fftfreq(padded, d=self.pitch))
+            self._padded = tuple(n * self.pad_factor for n in self.num_points)
+            axes = [
+                2 * onp.pi * onp.fft.fftfreq(n, d=d)
+                for n, d in zip(self._padded, self.pitch)
+            ]
+            grids = onp.meshgrid(*axes, indexing="ij")
+            self._kt = jnp.asarray(onp.stack([g.ravel() for g in grids], axis=-1))
             self._uniform = True
-            self._padded = padded
         else:
-            self._kt = jnp.asarray(kt, dtype=float)
+            kt = onp.asarray(kt, dtype=float)
+            self._kt = jnp.asarray(kt.reshape(kt.shape[0], -1))
             self._uniform = False
             self._padded = None
 
@@ -480,68 +526,171 @@ class AngularSpectrum:
             total = total + thickness
         return total
 
-    def coordinates(self) -> onp.ndarray:
-        """The transverse coordinates of the monitor samples, centered on zero."""
-        return (onp.arange(self.num_points) - (self.num_points - 1) / 2) * self.pitch
+    def coordinates(self):
+        """The transverse sample coordinates, centered on zero.
+
+        A single array for a line monitor, a list of two for a rectangular one.
+        """
+        axes = [
+            (onp.arange(n) - (n - 1) / 2) * d
+            for n, d in zip(self.num_points, self.pitch)
+        ]
+        return axes[0] if self.transverse_dimensions == 1 else axes
+
+    def _coordinate_axes(self):
+        """`coordinates`, always as a list, one array per transverse axis."""
+        axes = self.coordinates()
+        return [axes] if self.transverse_dimensions == 1 else axes
+
+    def _sample_positions(self) -> onp.ndarray:
+        """Every sample position, flattened to (num samples, num transverse)."""
+        grids = onp.meshgrid(*self._coordinate_axes(), indexing="ij")
+        return onp.stack([g.ravel() for g in grids], axis=-1)
 
     def _transform(self, values: jnp.ndarray) -> jnp.ndarray:
-        """Transforms (num frequencies, num points) samples to (num freq, num kt)."""
+        """Transforms monitor samples to (num frequencies, num kt)."""
         values = jnp.asarray(values)
-        if self._uniform:
-            padded = jnp.zeros(
-                values.shape[:-1] + (self._padded,), dtype=jnp.complex128
+        transverse = tuple(range(-self.transverse_dimensions, 0))
+        measure = float(onp.prod(self.pitch))
+        if not self._uniform:
+            flat = values.reshape(values.shape[: transverse[0]] + (-1,))
+            phase = jnp.exp(
+                -1j * jnp.einsum("kd,xd->kx", self._kt, self._sample_positions())
             )
-            padded = padded.at[..., : self.num_points].set(values)
-            spectrum = jnp.fft.fft(padded, axis=-1) * self.pitch
-            # The samples are centered on zero, so undo the phase ramp implied by
-            # having placed them at indices 0..num_points-1.
-            origin = self.coordinates()[0]
-            return spectrum * jnp.exp(-1j * self._kt * origin)
-        phase = jnp.exp(-1j * self._kt[:, None] * self.coordinates()[None, :])
-        return jnp.einsum("kx,...x->...k", phase, values) * self.pitch
+            return jnp.einsum("kx,...x->...k", phase, flat) * measure
+        padded = jnp.zeros(
+            values.shape[: transverse[0]] + self._padded, dtype=jnp.complex128
+        )
+        padded = padded.at[
+            (Ellipsis,) + tuple(slice(0, n) for n in self.num_points)
+        ].set(values)
+        spectrum = jnp.fft.fftn(padded, axes=transverse) * measure
+        spectrum = spectrum.reshape(spectrum.shape[: transverse[0]] + (-1,))
+        # The samples are centered on zero, so undo the phase ramp implied by
+        # having placed them at indices starting from zero.
+        origins = jnp.asarray([axis[0] for axis in self._coordinate_axes()])
+        return spectrum * jnp.exp(-1j * (self._kt @ origins))
 
-    def _polarization_terms(self, fields: TangentialFields):
-        """Yields (polarization, E samples, H samples, sign) for what is present."""
+    def _tangential_spectra(self, fields: TangentialFields):
+        """Transforms the tangential fields, returning them on the (u, v) axes.
+
+        Returns `(E_u, E_v, H_u, H_v)`, each (num frequencies, num kt), with a
+        missing component treated as zero. In 2D exactly one of the two
+        polarizations is populated and the other stays zero, which costs nothing
+        and spares the caller declaring which one their source excites.
+        """
         if fields.normal != self.normal:
             raise ValueError(
                 f"The fields are on a plane normal to {fields.normal} but this "
                 f"propagator was built for {self.normal}."
             )
-        for e_component, h_component, sign, polarization in _DECOMPOSITION[self.normal]:
-            e_values = fields.E.get(e_component)
-            h_values = fields.H.get(h_component)
-            if e_values is None and h_values is None:
-                continue
-            if e_values is None or h_values is None:
+        (e_u, e_v), (h_u, h_v) = _PLANE_AXES[self.normal]
+        # E_u pairs with H_v, not H_u: the decomposition contracts E_t against
+        # n_hat x H_t, which swaps the two tangential axes. For a y-normal plane
+        # that means Ez goes with Hx and Ex with Hz.
+        pairs = ((e_u, h_v), (e_v, h_u))
+        present = [(fields.E.get(e), fields.H.get(h)) for e, h in pairs]
+        if all(e is None and h is None for e, h in present):
+            raise ValueError(
+                "No tangential field components were supplied; nothing to " "propagate."
+            )
+        for (electric, magnetic), (e, h) in zip(present, pairs):
+            if (electric is None) != (magnetic is None):
                 raise ValueError(
                     "Separating up-going from down-going radiation needs both "
-                    f"tangential fields, but only one of {mp.component_name(e_component)}"
-                    f" and {mp.component_name(h_component)} was supplied."
+                    f"tangential fields, but only one of "
+                    f"{mp.component_name(e)} and {mp.component_name(h)} was "
+                    "supplied."
                 )
-            yield polarization, jnp.asarray(e_values), jnp.asarray(h_values), sign
+        zero = None
+        for electric, magnetic in present:
+            if electric is not None:
+                zero = jnp.zeros_like(self._transform(jnp.asarray(electric)))
+                break
+        # Returned as (E_u, H_v, E_v, H_u), matching how they pair up.
+        return tuple(
+            zero if value is None else self._transform(jnp.asarray(value))
+            for pair in present
+            for value in pair
+        )
+
+    def _azimuth(self):
+        """cos and sin of the angle from u_hat to the transverse wavevector.
+
+        At normal incidence the plane of incidence is undefined and any
+        orthogonal pair will do, so the azimuth is pinned to zero there rather
+        than left to produce a nan from atan2(0, 0).
+        """
+        if self.transverse_dimensions == 1:
+            # The transverse wavevector lies along a single axis, so there is no
+            # azimuth to speak of and the (u, v) axes are already the s and p
+            # directions.
+            return None
+        magnitude = jnp.linalg.norm(self._kt, axis=-1)
+        safe = jnp.where(magnitude > 0, magnitude, 1.0)
+        cosine = jnp.where(magnitude > 0, self._kt[:, 0] / safe, 1.0)
+        sine = jnp.where(magnitude > 0, self._kt[:, 1] / safe, 0.0)
+        return cosine, sine
 
     def decompose(self, fields: TangentialFields):
         """Splits the monitor fields into up- and down-going spectra.
+
+        The tangential fields are rotated into the s and p directions of each
+        transverse wavevector, where the admittance is a scalar, and separated
+        using
+
+            E_up_s = (E_s - H_p / Y_s) / 2      E_up_p = (E_p + H_s / Y_p) / 2
+
+        which is `E_up = (E_t - (n_hat x H_t) / Y) / 2` written out in that
+        basis. In 2D the wavevector lies along one axis, so the rotation is the
+        identity and (u, v) are already (s, p) up to the ordering below.
 
         Returns:
             `(up, down)`, each a dict mapping polarization to a
             (num frequencies, num kt) array of tangential electric field
             amplitudes at the monitor plane.
         """
-        up, down = {}, {}
-        admittance = self._admittances[0]
-        for polarization, e_values, h_values, sign in self._polarization_terms(fields):
-            e_spectrum = self._transform(e_values)
-            h_spectrum = self._transform(h_values)
-            # `sign` already carries the orientation of n_hat x H_t; `fields.sign`
-            # flips which branch counts as outgoing for a downward-facing monitor.
-            scaled = fields.sign * sign * h_spectrum / admittance[polarization]
-            up[polarization] = 0.5 * (e_spectrum + scaled)
-            down[polarization] = 0.5 * (e_spectrum - scaled)
-        if not up:
-            raise ValueError(
-                "No tangential field components were supplied; nothing to " "propagate."
-            )
+        electric_u, magnetic_v, electric_v, magnetic_u = self._tangential_spectra(
+            fields
+        )
+        azimuth = self._azimuth()
+        admittance_s, admittance_p = self._admittances[0]
+        # `fields.sign` flips which branch counts as outgoing, for a monitor
+        # facing down into a substrate.
+        outgoing = fields.sign
+
+        if azimuth is None:
+            # One transverse direction, so there is no azimuth and the
+            # right-handed axes are already a valid s/p pair: u_hat is
+            # perpendicular to the wavevector, v_hat lies along it. Using
+            # (n_hat x H)_u = -H_v and (n_hat x H)_v = +H_u directly,
+            #
+            #     E_up_u = (E_u + H_v / Y_s) / 2   E_up_v = (E_v - H_u / Y_p) / 2
+            #
+            # Note the signs are *not* those of the rotated case below: the 3D
+            # convention puts s_hat along -u_hat here, since the wavevector runs
+            # along v_hat, and the two bases therefore differ by a sign.
+            electric_s, magnetic_s = electric_u, magnetic_u
+            electric_p, magnetic_p = electric_v, magnetic_v
+            cross_s = -outgoing * magnetic_p / admittance_s
+            cross_p = outgoing * magnetic_s / admittance_p
+        else:
+            cosine, sine = azimuth
+            electric_s = -electric_u * sine + electric_v * cosine
+            electric_p = electric_u * cosine + electric_v * sine
+            magnetic_s = -magnetic_u * sine + magnetic_v * cosine
+            magnetic_p = magnetic_u * cosine + magnetic_v * sine
+            cross_s = outgoing * magnetic_p / admittance_s
+            cross_p = -outgoing * magnetic_s / admittance_p
+
+        up = {
+            S_POLARIZATION: 0.5 * (electric_s - cross_s),
+            P_POLARIZATION: 0.5 * (electric_p - cross_p),
+        }
+        down = {
+            S_POLARIZATION: 0.5 * (electric_s + cross_s),
+            P_POLARIZATION: 0.5 * (electric_p + cross_p),
+        }
         return up, down
 
     def _transmission(self, polarization: int):
@@ -617,11 +766,18 @@ class AngularSpectrum:
     def _spectral_measure(self) -> float:
         """The dk / 2pi factor that turns a spectral sum into a real-space integral."""
         if self._uniform:
-            return (2 * onp.pi / (self._padded * self.pitch)) / (2 * onp.pi)
-        spacing = jnp.diff(self._kt)
-        # Trapezoid weights would be more careful, but a chosen kt set is
-        # normally uniform; require that rather than silently mis-weighting.
-        return jnp.mean(spacing) / (2 * onp.pi)
+            measure = 1.0
+            for padded, pitch in zip(self._padded, self.pitch):
+                measure *= (2 * onp.pi / (padded * pitch)) / (2 * onp.pi)
+            return measure
+        # A chosen set of wavevectors is assumed uniform along each axis;
+        # trapezoid weights would be more careful but the set is normally a grid.
+        measure = 1.0
+        for axis in range(self._kt.shape[-1]):
+            values = onp.unique(onp.asarray(self._kt[:, axis]))
+            spacing = onp.mean(onp.diff(values)) if values.size > 1 else 1.0
+            measure *= spacing / (2 * onp.pi)
+        return measure
 
     def power(self, fields: TangentialFields, distance: Optional[float] = None):
         """Outgoing power through the target plane, one value per frequency."""
@@ -658,15 +814,16 @@ class AngularSpectrum:
             A (num frequencies,) array.
         """
         result = self.spectrum(fields, distance)
-        weights = self._weights(result)[..., mode.polarization]
-        field_amplitude = result.amplitudes[..., mode.polarization]
-        mode_amplitude = mode.spectrum(result.kt, self._k0, result.index)
+        weights = self._weights(result)
+        field_amplitude = result.amplitudes
+        mode_amplitude = mode.spectrum(self, result.kt, self._k0, result.index)
 
-        cross = jnp.sum(weights * field_amplitude * jnp.conj(mode_amplitude), axis=-1)
-        mode_norm = jnp.sum(weights * jnp.abs(mode_amplitude) ** 2, axis=-1)
+        axes = (1, 2)
+        cross = jnp.sum(weights * field_amplitude * jnp.conj(mode_amplitude), axis=axes)
+        mode_norm = jnp.sum(weights * jnp.abs(mode_amplitude) ** 2, axis=axes)
         coupled = jnp.abs(cross) ** 2 / mode_norm
         if incident_power is None:
-            incident_power = jnp.sum(weights * jnp.abs(field_amplitude) ** 2, axis=-1)
+            incident_power = jnp.sum(weights * jnp.abs(field_amplitude) ** 2, axis=axes)
         return coupled / incident_power
 
     def report(self, fields: TangentialFields) -> Dict[str, jnp.ndarray]:
@@ -707,11 +864,20 @@ class AngularSpectrum:
         up_propagating = spectral_power(up, propagating)
 
         edges = []
-        for _, e_values, _, _ in self._polarization_terms(fields):
-            magnitude = jnp.abs(e_values)
-            peak = jnp.max(magnitude, axis=-1)
-            edge = jnp.maximum(magnitude[..., 0], magnitude[..., -1])
-            edges.append(edge / jnp.where(peak > 0, peak, 1.0))
+        for values in list(fields.E.values()):
+            magnitude = jnp.abs(jnp.asarray(values))
+            axes = tuple(range(-self.transverse_dimensions, 0))
+            peak = jnp.max(magnitude, axis=axes)
+            border = jnp.zeros_like(peak)
+            for axis in axes:
+                border = jnp.maximum(
+                    border,
+                    jnp.max(
+                        jnp.take(magnitude, jnp.array([0, -1]), axis=axis),
+                        axis=axes,
+                    ),
+                )
+            edges.append(border / jnp.where(peak > 0, peak, 1.0))
 
         total = up_power + down_power
         return {
@@ -721,35 +887,53 @@ class AngularSpectrum:
             "edge_amplitude": jnp.max(jnp.stack(edges, axis=0), axis=0),
         }
 
-    def propagate(
-        self, fields: TangentialFields, distance: float, coordinates=None
-    ) -> Dict[int, jnp.ndarray]:
+    def propagate(self, fields: TangentialFields, distance: float, coordinates=None):
         """The tangential electric field at the target plane, in real space.
 
         Args:
             fields: the monitor fields.
             distance: distance from the monitor to the target plane.
-            coordinates: where to evaluate. Defaults to the monitor's own
-                coordinates; pass a wider range to see a beam that has spread.
+            coordinates: where to evaluate, as one array per transverse
+                dimension. Defaults to the monitor's own coordinates; pass a
+                wider range to see a beam that has spread.
 
         Returns:
-            A dict mapping each tangential electric component to a
-            (num frequencies, num coordinates) array.
+            A dict mapping each tangential electric component to an array of
+            shape (num frequencies,) + the coordinate shape.
         """
         result = self.spectrum(fields, distance)
         if coordinates is None:
-            coordinates = self.coordinates()
-        coordinates = jnp.asarray(coordinates)
-        measure = self._spectral_measure()
-        phase = jnp.exp(1j * result.kt[None, :] * coordinates[:, None])
-        outputs = {}
-        for e_component, _, _, polarization in _DECOMPOSITION[self.normal]:
-            if not jnp.any(result.amplitudes[..., polarization]):
-                continue
-            outputs[e_component] = (
-                jnp.einsum("xk,fk->fx", phase, result.amplitudes[..., polarization])
-                * measure
+            axes = self._coordinate_axes()
+        else:
+            axes = (
+                [onp.asarray(coordinates)]
+                if self.transverse_dimensions == 1
+                else [onp.asarray(a) for a in coordinates]
             )
+        grids = onp.meshgrid(*axes, indexing="ij")
+        positions = jnp.asarray(onp.stack([g.ravel() for g in grids], axis=-1))
+
+        rotation = self._azimuth()
+        amplitude_s = result.amplitudes[..., S_POLARIZATION]
+        amplitude_p = result.amplitudes[..., P_POLARIZATION]
+        if rotation is None:
+            amplitude_u, amplitude_v = amplitude_s, amplitude_p
+        else:
+            cosine, sine = rotation
+            # The rotation into (s, p) is a reflection, hence its own inverse.
+            amplitude_u = -amplitude_s * sine + amplitude_p * cosine
+            amplitude_v = amplitude_s * cosine + amplitude_p * sine
+
+        phase = jnp.exp(1j * jnp.einsum("xd,kd->xk", positions, result.kt))
+        measure = self._spectral_measure()
+        (e_u, e_v), _ = _PLANE_AXES[self.normal]
+        shape = tuple(len(a) for a in axes)
+        outputs = {}
+        for component, amplitude in ((e_u, amplitude_u), (e_v, amplitude_v)):
+            if not jnp.any(amplitude):
+                continue
+            values = jnp.einsum("xk,fk->fx", phase, amplitude) * measure
+            outputs[component] = values.reshape(values.shape[:1] + shape)
         return outputs
 
     # ---------------------------------------------------------------- Meep glue
@@ -761,27 +945,43 @@ class AngularSpectrum:
 
     @staticmethod
     def _plane_geometry(simulation: mp.Simulation, volume: mp.Volume):
-        """Infers the normal, sample pitch, and sample count of a planar volume."""
+        """Infers the normal, sample pitch, and sample counts of a planar volume."""
         size = [volume.size.x, volume.size.y, volume.size.z]
-        zero = [i for i, extent in enumerate(size) if extent == 0]
-        if simulation.dimensions != 2:
+        dimensions = simulation.dimensions
+        if dimensions not in (2, 3):
             raise NotImplementedError(
-                "Angular-spectrum propagation currently supports 2D "
-                f"simulations only, but this one is {simulation.dimensions}D."
+                "Angular-spectrum propagation supports 2D and 3D Cartesian "
+                f"simulations, not {dimensions}D."
             )
-        if len(zero) != 2 or 2 not in zero:
+        in_plane = [0, 1] if dimensions == 2 else [0, 1, 2]
+        flat = [axis for axis in in_plane if size[axis] == 0]
+        if len(flat) != 1:
             raise ValueError(
-                "The monitor must be a line normal to x or y, i.e. a Volume "
-                f"with exactly one nonzero in-plane size; got size={size}."
+                "The monitor must be a plane normal to one coordinate axis, "
+                f"i.e. a Volume with exactly one zero size; got size={size} in "
+                f"{dimensions}D."
             )
-        normal = mp.X if zero[0] == 0 else mp.Y
-        coordinates = simulation.get_array_metadata(vol=volume)
-        axis = 1 if normal == mp.X else 0
-        samples = onp.asarray(coordinates[axis])
-        if samples.size < 2:
-            raise ValueError("The monitor needs at least two sample points.")
-        pitch = float(onp.mean(onp.diff(samples)))
-        return normal, pitch, int(samples.size)
+        normal = (mp.X, mp.Y, mp.Z)[flat[0]]
+        tangential = [axis for axis in in_plane if axis != flat[0]]
+        metadata = simulation.get_array_metadata(vol=volume)
+
+        pitches, counts = [], []
+        for axis in tangential:
+            samples = onp.asarray(metadata[axis])
+            if samples.size < 2:
+                raise ValueError(
+                    "The monitor needs at least two sample points along every "
+                    f"tangential axis, but has {samples.size} along axis {axis}."
+                )
+            pitches.append(float(onp.mean(onp.diff(samples))))
+            counts.append(int(samples.size))
+
+        # Meep orders the array axes x, y, z; the propagator wants them in the
+        # right-handed (u, v) order of the plane, which for a y-normal plane is
+        # (z, x) rather than (x, z).
+        if normal == mp.Y and dimensions == 3:
+            pitches, counts = pitches[::-1], counts[::-1]
+        return normal, tuple(pitches), tuple(counts)
 
     @staticmethod
     def _assert_homogeneous(
@@ -852,12 +1052,11 @@ class AngularSpectrum:
             set(registered[0])
             if registered
             else {
-                component
-                for pair in _DECOMPOSITION[self.normal]
-                for component in pair[:2]
+                component for group in _PLANE_AXES[self.normal] for component in group
             }
         )
-        for e_component, h_component, _, _ in _DECOMPOSITION[self.normal]:
+        (e_u, e_v), (h_u, h_v) = _PLANE_AXES[self.normal]
+        for e_component, h_component in ((e_u, h_u), (e_v, h_v)):
             for component, target in (
                 (e_component, electric),
                 (h_component, magnetic),
@@ -870,9 +1069,9 @@ class AngularSpectrum:
                         for i in range(len(self.frequencies))
                     ]
                 )
-                if values.shape[-1] != self.num_points:
+                if values.shape[1:] != self.num_points:
                     raise ValueError(
-                        f"The monitor returned {values.shape[-1]} samples for "
+                        f"The monitor returned {values.shape[1:]} samples for "
                         f"{mp.component_name(component)} but the propagator was "
                         f"built for {self.num_points}. The volume Meep actually "
                         "used may have been snapped to the grid; build the "
@@ -920,9 +1119,7 @@ class AngularSpectrum:
         from . import FourierFields
 
         self._objective_components = [
-            component
-            for e_component, h_component, _, _ in _DECOMPOSITION[self.normal]
-            for component in (e_component, h_component)
+            component for group in _PLANE_AXES[self.normal] for component in group
         ]
         return [
             FourierFields(simulation, volume, component, yee_grid=False, **kwargs)
@@ -951,4 +1148,4 @@ class AngularSpectrum:
 
     def __len__(self) -> int:
         """How many leading objective arguments `take` consumes."""
-        return len(_DECOMPOSITION[self.normal]) * 2
+        return 4
