@@ -245,6 +245,7 @@ pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
 adjointdir = $(pkgpythondir)/adjoint
 adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
+                  $(srcdir)/adjoint/angular_spectrum.py      \
                   $(srcdir)/adjoint/basis.py                 \
                   $(srcdir)/adjoint/objective.py             \
                   $(srcdir)/adjoint/optimization_problem.py  \
