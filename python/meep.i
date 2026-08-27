@@ -1102,7 +1102,8 @@ void _get_gradient(PyObject *grad, double scalegrad,
 }
 %apply std::complex<double>* grid_vals {
      std::complex<double>* eigfreq, std::complex<double>* coeffs,
-     std::complex<double>* dJ, std::complex<double>* amp_arr
+     std::complex<double>* dJ, std::complex<double>* amp_arr,
+     std::complex<double>* grad
 };
 
 // typemaps for diffractedplanewave
@@ -1796,6 +1797,7 @@ PyObject *_get_array_metadata(meep::fields *f, const meep::volume &where);
         with_prefix
     )
     from .source import (
+        ArraySource,
         ContinuousSource,
         CustomSource,
         EigenModeSource,

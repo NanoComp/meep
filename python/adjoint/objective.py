@@ -115,6 +115,39 @@ class ObjectiveQuantity(abc.ABC):
                 "evaluation of an objective quantity."
             )
 
+    def _adj_src_phase(self, src=None, y=None, dt=None):
+        """The unit-modulus phase `_adj_src_scale` divides out of an adjoint source.
+
+        Placing an adjoint source and taking a gradient with respect to a
+        *source* amplitude are transposes of one another, so the source
+        gradient has to multiply this factor back in. It is exposed separately
+        so that the two cannot drift apart.
+        """
+        if dt is None:
+            dt = self.sim.fields.dt
+        if src is None:
+            src = self._create_time_profile()
+        if y is None:
+            T = self.sim.meep_time()
+            y = np.array([src.swigobj.current(t, dt) for t in np.arange(0, T, dt)])
+
+        src_center_dtft = (
+            np.matmul(
+                np.exp(
+                    1j
+                    * 2
+                    * np.pi
+                    * np.array([src.frequency])[:, np.newaxis]
+                    * np.arange(y.size)
+                    * dt
+                ),
+                y,
+            )
+            * dt
+            / np.sqrt(2 * np.pi)
+        )
+        return np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
+
     def _adj_src_scale(self, include_resolution=True):
         """Calculates the scale for the adjoint sources."""
         T = self.sim.meep_time()
@@ -157,22 +190,7 @@ class ObjectiveQuantity(abc.ABC):
         #
         # Note: for some reason, there seems to be an additional phase factor at
         # the center frequency that needs to be applied to *all* frequencies...
-        src_center_dtft = (
-            np.matmul(
-                np.exp(
-                    1j
-                    * 2
-                    * np.pi
-                    * np.array([src.frequency])[:, np.newaxis]
-                    * np.arange(y.size)
-                    * dt
-                ),
-                y,
-            )
-            * dt
-            / np.sqrt(2 * np.pi)
-        )
-        adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
+        adj_src_phase = self._adj_src_phase(src=src, y=y, dt=dt)
 
         if self._frequencies.size == 1:
             # Single-frequency simulations. Requires a time profile.
