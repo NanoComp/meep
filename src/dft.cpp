@@ -349,17 +349,8 @@ double dft_chunk::norm2(grid_volume fgv) const {
   if (persist) {
     grid_volume subgv = fgv.subvolume(is, ie, c);
     LOOP_OVER_IVECS(subgv, is_old, ie_old, idx) {
-      /* index by position: the loop counter is not a valid dft[] index here,
-         because the persist pad can leave `is` off this component's yee lattice
-         and only grid_volume::index() accounts for the yee shift. Getting this
-         wrong makes dft_norm() -- and hence stop_when_dft_decayed() -- depend on
-         the chunk division, which is exactly what the comment above promises it
-         does not. */
-      IVEC_LOOP_ILOC(subgv, ip);
-      ptrdiff_t didx = subgv.index(c, ip);
-      if (didx < 0 || (size_t)didx >= N) continue;
       for (size_t i = 0; i < Nomega; ++i)
-        sum += sqr(dft[Nomega * didx + i]);
+        sum += sqr(dft[Nomega * idx + i]);
     }
   }
   /* note we place the if outside of the
