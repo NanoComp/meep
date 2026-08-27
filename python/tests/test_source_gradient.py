@@ -131,7 +131,7 @@ class TestDifferentiableFlag(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "grid points the source occupies"):
                 self._src(differentiable=[name])
 
-    def test_unimplemented_parameter_is_not_reported_as_unknown(self):
+    def test_class_specific_parameters_are_scoped_to_their_class(self):
         beam = dict(
             src=mp.GaussianSource(FCEN, fwidth=0.2),
             center=SRC_C,
@@ -140,9 +140,9 @@ class TestDifferentiableFlag(unittest.TestCase):
             beam_w0=1.0,
             beam_E0=mp.Vector3(0, 0, 1),
         )
-        with self.assertRaises(NotImplementedError):
-            mp.GaussianBeam3DSource(differentiable=["beam_w0"], **beam)
-        # ... but it is still rejected as unknown on a class that lacks it
+        accepted = mp.GaussianBeam3DSource(differentiable=["beam_w0"], **beam)
+        self.assertEqual(accepted.differentiable, ("beam_w0",))
+        # ... but rejected on a class that has no such parameter
         with self.assertRaises(ValueError):
             self._src(differentiable=["beam_w0"])
 
@@ -218,70 +218,33 @@ class TestTranspose(unittest.TestCase):
         self.assertAlmostEqual(abs(lhs - rhs) / abs(lhs), 0.0, places=12)
 
 
-class TestArraySource(unittest.TestCase):
-    def _field(self, source):
-        sim = mp.Simulation(
-            cell_size=CELL,
-            resolution=RES,
-            boundary_layers=[mp.PML(1.0)],
-            sources=[source],
-            force_complex_fields=True,
-        )
-        mon = sim.add_dft_fields(
-            [mp.Ez],
-            [FCEN],
-            where=mp.Volume(center=MON_C, size=mp.Vector3(0.2, 0.2)),
-        )
-        sim.run(until_after_sources=60)
-        return np.asarray(sim.get_dft_array(mon, mp.Ez, 0)).ravel()
+class TestAmpData(unittest.TestCase):
+    """Per-point amplitudes supplied as an array."""
 
-    def test_one_point_matches_an_ordinary_source(self):
-        # Pins both conversions in ArraySource.add_source: the -1 the scatter
-        # applies to electric components, and the fact that it places a current
-        # density rather than a point amplitude.
-        #
-        # Both an electric and a magnetic component are checked, because the
-        # scatter negates electric components and only those. Undoing that
-        # negation for magnetic ones too leaves each component individually
-        # plausible but flips the relative sign of the two sheets of an
-        # equivalent-current pair, which reverses the direction such a pair
-        # radiates in without producing anything that looks like an error.
-        t = lambda: mp.GaussianSource(FCEN, fwidth=0.2)
-        for component in (mp.Ez, mp.Hz):
-            with self.subTest(component=mp.component_name(component)):
-                plain = self._field(
-                    mp.Source(t(), component=component, center=SRC_C, amplitude=1.0)
-                )
-                array = self._field(
-                    mp.ArraySource(
-                        t(),
-                        component,
-                        amplitudes=np.array([1.0 + 0j]),
-                        frequency=FCEN,
-                        center=SRC_C,
-                        size=mp.Vector3(0, 0),
-                    )
-                )
-                np.testing.assert_allclose(array, plain, rtol=2e-6)
+    def test_rejects_amp_data_when_absent(self):
+        with self.assertRaisesRegex(ValueError, "this source has none"):
+            mp.Source(
+                mp.GaussianSource(FCEN, fwidth=0.2),
+                component=mp.Ez,
+                center=SRC_C,
+                differentiable=["amp_data"],
+            )
 
-    def test_rejects_wrong_length(self):
-        src = mp.ArraySource(
+    def test_rejects_amp_func(self):
+        # An amp_func is evaluated inside Meep, so there is no array for the
+        # caller to apply a cotangent to.
+        src = mp.Source(
             mp.GaussianSource(FCEN, fwidth=0.2),
-            mp.Ez,
-            amplitudes=np.ones(3, dtype=complex),
-            frequency=FCEN,
+            component=mp.Ez,
             center=SRC_C,
-            size=mp.Vector3(0, 0.4),
+            size=mp.Vector3(0, 1.0),
+            amp_func=lambda p: 1.0,
+            differentiable=["currents"],
+            name="drive",
         )
-        sim = mp.Simulation(
-            cell_size=CELL,
-            resolution=RES,
-            boundary_layers=[mp.PML(1.0)],
-            sources=[src],
-            force_complex_fields=True,
-        )
-        with self.assertRaisesRegex(ValueError, "grid points"):
-            sim.init_sim()
+        _, opt = _problem(src)
+        with self.assertRaises(NotImplementedError):
+            opt([RHO])
 
 
 class TestSourceGradient(unittest.TestCase):
@@ -346,38 +309,40 @@ class TestSourceGradient(unittest.TestCase):
                     f"{label}: adjoint {adjoint} vs finite difference {reference}",
                 )
 
-    def test_currents_gradient(self):
-        size = mp.Vector3(0, 0.4)
-        npts = _num_source_points(SRC_C, size)
-        rng = np.random.default_rng(7)
-        amps = rng.standard_normal(npts) + 1j * rng.standard_normal(npts)
+    def test_amp_data_gradient(self):
+        # Perturbing individual entries exercises the transpose of the
+        # trilinear interpolation `amp_file_func` performs, on top of the
+        # per-point cotangent.
+        size = mp.Vector3(0, 1.5)
+        n = 5
+        rng = np.random.default_rng(5)
+        data = rng.standard_normal(n) + 1j * rng.standard_normal(n)
 
-        def make(a):
-            return mp.ArraySource(
+        def make(values):
+            return mp.Source(
                 mp.GaussianSource(FCEN, fwidth=0.2),
-                mp.Ez,
-                amplitudes=a,
-                frequency=FCEN,
+                component=mp.Ez,
                 center=SRC_C,
                 size=size,
-                differentiable=["currents"],
+                amp_data=np.asarray(values, dtype=np.complex128).reshape(1, n, 1),
+                differentiable=["amp_data"],
                 name="sheet",
             )
 
-        _, opt = _problem(make(amps))
+        _, opt = _problem(make(data))
         _, grad = opt([RHO])
-        adjoint = np.ravel(grad["sheet"]["currents"])
-        self.assertEqual(adjoint.size, npts)
+        adjoint = np.ravel(grad["sheet"]["amp_data"])
+        self.assertEqual(adjoint.size, n)
 
-        def evaluate(a):
-            _, o = _problem(make(a))
+        def evaluate(values):
+            _, o = _problem(make(values))
             return np.asarray(o([RHO], need_gradient=False)[0]).item()
 
-        for j in (0, npts // 2, npts - 1):
-            with self.subTest(point=j):
+        for j in (0, n // 2, n - 1):
+            with self.subTest(entry=j):
 
                 def perturb(delta, j=j):
-                    out = amps.copy()
+                    out = data.copy()
                     out[j] += delta
                     return out
 
@@ -385,8 +350,120 @@ class TestSourceGradient(unittest.TestCase):
                 self.assertLess(
                     abs(adjoint[j] - reference) / abs(reference),
                     1e-5,
-                    f"point {j}: adjoint {adjoint[j]} vs {reference}",
+                    f"entry {j}: adjoint {adjoint[j]} vs {reference}",
                 )
+
+
+class TestGaussianBeamParameters(unittest.TestCase):
+    """Derivatives with respect to a Gaussian beam's own parameters.
+
+    Obtained by finite-differencing Meep's beam construction and contracting
+    against the per-point cotangent, so they cost no FDTD runs.
+    """
+
+    BEAM = dict(
+        beam_x0=mp.Vector3(0, 1.0),
+        beam_kdir=mp.Vector3(0, 1),
+        beam_w0=1.5,
+        beam_E0=mp.Vector3(0, 0, 1),
+    )
+
+    def _problem(self, names, **overrides):
+        params = dict(self.BEAM)
+        params.update(overrides)
+        src = mp.GaussianBeam3DSource(
+            mp.GaussianSource(FCEN, fwidth=0.2),
+            center=mp.Vector3(0, -1.5),
+            size=mp.Vector3(6, 0),
+            differentiable=list(names),
+            name="beam",
+            **params,
+        )
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(10, 8),
+            resolution=RES,
+            boundary_layers=[mp.PML(1.0)],
+            sources=[src],
+            force_complex_fields=True,
+        )
+        dr = _design_region(sim)
+        mon = mpa.FourierFields(
+            sim, mp.Volume(center=mp.Vector3(0.8, 1.5), size=mp.Vector3(0, 0)), mp.Ez
+        )
+        return mpa.OptimizationProblem(
+            simulation=sim,
+            objective_functions=[lambda f: npa.sum(npa.abs(f) ** 2)],
+            objective_arguments=[mon],
+            design_regions=[dr],
+            frequencies=[FCEN],
+            minimum_run_time=RUN,
+            maximum_run_time=RUN,
+        )
+
+    def _value(self, **overrides):
+        opt = self._problem(["beam_w0"], **overrides)
+        return float(np.asarray(opt([RHO], need_gradient=False)[0]).item())
+
+    def test_polarization_amplitude_is_exact(self):
+        # Every field the beam places is linear in beam_E0, so the objective is
+        # exactly quadratic in it and dJ/d(E0.z) is exactly 2J. No finite
+        # difference is involved, which makes this the sharpest check available.
+        opt = self._problem(["beam_E0"])
+        value, grad = opt([RHO])
+        objective = float(np.asarray(value).item())
+        adjoint = float(np.real(grad["beam"]["beam_E0"][2]))
+        self.assertLess(abs(adjoint - 2 * objective) / (2 * objective), 1e-5)
+
+    def test_waist_and_focus(self):
+        for name, index, base in (
+            ("beam_w0", None, self.BEAM["beam_w0"]),
+            ("beam_x0", 0, self.BEAM["beam_x0"]),
+            ("beam_x0", 1, self.BEAM["beam_x0"]),
+        ):
+            with self.subTest(parameter=name, component=index):
+                opt = self._problem([name])
+                _, grad = opt([RHO])
+                entry = grad["beam"][name]
+                adjoint = float(np.real(entry if index is None else entry[index]))
+
+                if index is None:
+                    step = {name: base + FD_STEP}, {name: base - FD_STEP}
+                else:
+                    delta = mp.Vector3(**{"xyz"[index]: FD_STEP})
+                    step = {name: base + delta}, {name: base - delta}
+                reference = (self._value(**step[0]) - self._value(**step[1])) / (
+                    2 * FD_STEP
+                )
+                self.assertLess(
+                    abs(adjoint - reference) / max(abs(reference), 1e-12),
+                    1e-3,
+                    f"{name}[{index}]: adjoint {adjoint} vs {reference}",
+                )
+
+    def test_direction_is_projected_onto_its_tangent_space(self):
+        # beam_kdir's length is ignored, so only the direction is meaningful and
+        # the component along it is not a derivative of anything.
+        opt = self._problem(["beam_kdir"])
+        _, grad = opt([RHO])
+        adjoint = np.real(grad["beam"]["beam_kdir"])
+
+        base = self.BEAM["beam_kdir"]
+        axis = np.array([base.x, base.y, base.z], float)
+        axis /= np.linalg.norm(axis)
+        self.assertLess(
+            abs(float(np.dot(axis, adjoint))), 1e-6 * np.linalg.norm(adjoint) + 1e-9
+        )
+
+        tangent = np.array([1.0, 0.0, 0.0])
+        tangent = tangent - axis * np.dot(axis, tangent)
+        tangent /= np.linalg.norm(tangent)
+        step = mp.Vector3(*(tangent * FD_STEP))
+        reference = (
+            self._value(beam_kdir=base + step) - self._value(beam_kdir=base - step)
+        ) / (2 * FD_STEP)
+        self.assertLess(
+            abs(float(np.dot(adjoint, tangent)) - reference) / abs(reference), 1e-3
+        )
 
 
 try:
@@ -402,7 +479,7 @@ except ImportError:
 
 @unittest.skipUnless(_HAVE_JAX, "JAX is an optional dependency")
 class TestJaxRoundTrip(unittest.TestCase):
-    """`jax.grad` through an `ArraySource` must match a finite difference.
+    """`jax.grad` through a source's `amp_data` must match a finite difference.
 
     This is what pins the cotangent convention. Meep returns
     `dJ/d(Re a) - i dJ/d(Im a)`, which is what JAX and autograd both produce
@@ -411,17 +488,16 @@ class TestJaxRoundTrip(unittest.TestCase):
     """
 
     def test_gradient_chains_through_jax(self):
-        size = mp.Vector3(0, 0.4)
-        npts = _num_source_points(SRC_C, size)
+        size = mp.Vector3(0, 1.5)
+        npts = 5
 
         def wrapper():
-            src = mp.ArraySource(
+            src = mp.Source(
                 mp.GaussianSource(FCEN, fwidth=0.2),
-                mp.Ez,
-                amplitudes=np.ones(npts, dtype=complex),
-                frequency=FCEN,
+                component=mp.Ez,
                 center=SRC_C,
                 size=size,
+                amp_data=np.ones((1, npts, 1), dtype=np.complex128),
                 name="sheet",
             )
             sim = mp.Simulation(

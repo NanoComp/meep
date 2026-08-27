@@ -448,10 +448,27 @@ class OptimizationProblem:
         ]
 
         grads = {}
-        if other_names:
+        plain = [n for n in other_names if n != "amp_data"]
+        if plain:
             currents = monitors[0].gather(self.sim, scale)
             everything = source_gradient.contract(src, currents)
-            grads.update({name: everything[name] for name in other_names})
+            grads.update({name: everything[name] for name in plain})
+        if "amp_data" in other_names:
+            # the transpose of the trilinear interpolation amp_file_func does
+            currents = monitors[0].gather(self.sim, scale)
+            grads["amp_data"] = np.squeeze(
+                np.array(
+                    [
+                        source_gradient.amp_data_gradient(
+                            self.sim,
+                            src,
+                            monitors[0].positions(self.sim),
+                            np.asarray(currents)[f_index],
+                        )
+                        for f_index in range(len(np.atleast_1d(self.frequencies)))
+                    ]
+                )
+            )
 
         if beam_names:
             # Contract the per-point cotangents onto the beam's own parameters,
