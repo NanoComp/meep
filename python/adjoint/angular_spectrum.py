@@ -487,6 +487,7 @@ class AngularSpectrum:
             self._kt = jnp.asarray(kt.reshape(kt.shape[0], -1))
             self._uniform = False
             self._padded = None
+        self._cached_forward_phase = None
 
         # Regularizing the index keeps kz off the light line, where its
         # derivative is unbounded; see DEFAULT_LOSS_REGULARIZATION.
@@ -547,6 +548,21 @@ class AngularSpectrum:
         grids = onp.meshgrid(*self._coordinate_axes(), indexing="ij")
         return onp.stack([g.ravel() for g in grids], axis=-1)
 
+    def _forward_phase(self) -> jnp.ndarray:
+        """The transform kernel for an explicit set of wavevectors, cached.
+
+        It depends only on the wavevectors and the sample positions, both fixed
+        at construction, so rebuilding it per call is pure waste -- and it
+        dominates: the kernel is (num wavevectors, num samples) complex
+        exponentials, which for a few thousand wavevectors over a plane costs
+        more than an FFT over a grid a hundred times larger.
+        """
+        if self._cached_forward_phase is None:
+            self._cached_forward_phase = jnp.exp(
+                -1j * jnp.einsum("kd,xd->kx", self._kt, self._sample_positions())
+            )
+        return self._cached_forward_phase
+
     def _transform(self, values: jnp.ndarray) -> jnp.ndarray:
         """Transforms monitor samples to (num frequencies, num kt)."""
         values = jnp.asarray(values)
@@ -554,10 +570,7 @@ class AngularSpectrum:
         measure = float(onp.prod(self.pitch))
         if not self._uniform:
             flat = values.reshape(values.shape[: transverse[0]] + (-1,))
-            phase = jnp.exp(
-                -1j * jnp.einsum("kd,xd->kx", self._kt, self._sample_positions())
-            )
-            return jnp.einsum("kx,...x->...k", phase, flat) * measure
+            return jnp.einsum("kx,...x->...k", self._forward_phase(), flat) * measure
         padded = jnp.zeros(
             values.shape[: transverse[0]] + self._padded, dtype=jnp.complex128
         )
