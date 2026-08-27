@@ -29,7 +29,14 @@ import meep as mp
 # Parameters this module can currently evaluate.  `source.differentiable` is
 # validated against a wider list at construction time; see
 # `meep.source._validate_differentiable`.
-IMPLEMENTED_PARAMS = ("currents", "amplitude")
+IMPLEMENTED_PARAMS = (
+    "currents",
+    "amplitude",
+    "beam_x0",
+    "beam_kdir",
+    "beam_w0",
+    "beam_E0",
+)
 
 
 def differentiable_sources(sim: mp.Simulation) -> List:
@@ -63,9 +70,12 @@ class SourceGradientMonitor:
         source,
         frequencies: np.ndarray,
         decimation_factor: Optional[int] = 0,
+        component: Optional[int] = None,
     ):
         self.source = source
-        self.component = source.component
+        # A Gaussian beam has no single component: it places four, so each gets
+        # its own monitor and the caller says which one this is.
+        self.component = source.component if component is None else component
         self._frequencies = np.asarray(frequencies)
 
         if getattr(source, "amp_func", None) is not None or getattr(
@@ -135,13 +145,23 @@ class SourceGradientMonitor:
             decimation_factor=self.decimation_factor,
         )
 
-    def shape(self, sim: mp.Simulation):
-        """(nfreq,) + the monitor's spatial shape, with trailing 1s dropped."""
-        dims = sim.fields.dft_monitor_size(
+    def num_points(self, sim: mp.Simulation) -> int:
+        """How many grid points this source actually drives.
+
+        The *unreduced* count. A zero-width source volume straddles two Yee
+        planes of a magnetic component, each carrying half the current, and
+        collapsing that direction would merge them -- preserving the total
+        weight but losing how the amplitude varies between the two, which is
+        exactly what distinguishes a beam from a uniform sheet.
+        """
+        dims = sim.fields.dft_monitor_full_size(
             self._monitor.swigobj, self.volume.swigobj, self.component
         )
-        dims = [d for d in dims if d > 1] or [1]
-        return (len(self._frequencies), *dims)
+        return int(np.prod(dims))
+
+    def shape(self, sim: mp.Simulation):
+        """(nfreq, num points)."""
+        return (len(self._frequencies), self.num_points(sim))
 
     def gather(self, sim: mp.Simulation, scale: np.ndarray) -> np.ndarray:
         """Return dJ_obj/d(currents), summed over all processes.
@@ -149,19 +169,43 @@ class SourceGradientMonitor:
         `scale` is the per-frequency factor relating a current amplitude to the
         adjoint field, broadcast over the spatial axes.
         """
-        dims = sim.fields.dft_monitor_size(
-            self._monitor.swigobj, self.volume.swigobj, self.component
-        )
-        num_points = int(np.prod(dims))
+        num_points = self.num_points(sim)
         grad = np.zeros(num_points * len(self._frequencies), dtype=np.complex128)
 
-        self._monitor.swigobj.fourier_sourcegradient(
+        self._monitor.swigobj.volume_source_gradient(
             self.volume.swigobj, self.component, sim.fields, grad
         )
 
         grad = grad.reshape(len(self._frequencies), num_points)
-        grad *= np.asarray(scale).reshape(-1, 1)
+        # volume_source_gradient negates nothing, while the calibration that
+        # fixed `scale` was done against an electric source. Electric and
+        # magnetic components therefore differ by a sign here -- getting this
+        # wrong leaves each component individually plausible but silently
+        # subtracts one contribution from the other where a source drives
+        # several, as a Gaussian beam does.
+        sign = -1.0 if mp.is_electric(self.component) else 1.0
+        # No half-timestep phase correction here, despite step.cpp evaluating
+        # magnetic sources at t and electric ones at t + dt/2. Applying one
+        # breaks the single-component checks by exactly 1/cos(w dt/2), so
+        # whatever absorbs that offset is already accounted for in the
+        # calibrated adjoint source phase.
+        grad *= sign * np.asarray(scale).reshape(-1, 1)
         return grad.reshape(self.shape(sim))
+
+    def positions(self, sim: mp.Simulation) -> np.ndarray:
+        """(num points, 3) positions matching `gather`'s ordering.
+
+        Emitted from the same C++ loop as the cotangent rather than
+        reconstructed here, so the two cannot disagree about which point is
+        which -- which is exactly the kind of half-pixel mismatch that produces
+        a smooth, plausible, wrong gradient.
+        """
+        num_points = self.num_points(sim)
+        out = np.zeros(3 * num_points, dtype=np.float64)
+        self._monitor.swigobj.monitor_positions(
+            self.volume.swigobj, self.component, sim.fields, out
+        )
+        return out.reshape(num_points, 3)
 
 
 def install_source_gradient_monitors(
@@ -171,12 +215,74 @@ def install_source_gradient_monitors(
     decimation_factor: Optional[int] = 0,
 ) -> List[SourceGradientMonitor]:
     """Install a DFT monitor over each differentiable source's support."""
-    monitors = [
-        SourceGradientMonitor(sim, s, frequencies, decimation_factor) for s in sources
-    ]
-    for m in monitors:
-        m.register(sim)
+    monitors = []
+    for source in sources:
+        # one monitor per component the source actually drives; a Gaussian beam
+        # places four
+        group = [
+            SourceGradientMonitor(
+                sim, source, frequencies, decimation_factor, component=component
+            )
+            for component in source_components(source, sim.dimensions)
+        ]
+        for m in group:
+            m.register(sim)
+        monitors.append(group)
     return monitors
+
+
+def is_gaussian_beam(source) -> bool:
+    return hasattr(source, "beam_w0") and hasattr(source, "beam_kdir")
+
+
+def normal_index(source) -> int:
+    """Which axis the source plane is normal to, as 0, 1 or 2."""
+    size = [source.size.x, source.size.y, source.size.z]
+    zeros = [i for i, s in enumerate(size) if s == 0]
+    if not zeros:
+        raise ValueError(
+            "A Gaussian beam source must be a plane (a line in 2D), so one of "
+            "its size components has to be zero."
+        )
+    return zeros[0]
+
+
+def beam_places(source, component, dimensions: int) -> bool:
+    """Whether `add_volume_source_check` actually places this component.
+
+    It declines several, and contracting a sensitivity for a source that was
+    never placed is silently wrong rather than an error:
+
+      - components along the plane normal;
+      - in 2D, whichever parity the beam does not excite.
+
+    Mirrors sources.cpp:495.
+    """
+    normal = normal_index(source)
+    axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[mp.component_direction(component)]
+    if axis == normal:
+        return False
+    if dimensions == 2:
+        e0 = source.beam_E0
+        has_tm = abs(complex(e0.z)) > 0
+        has_te = abs(complex(e0.x)) > 0 or abs(complex(e0.y)) > 0
+        tm = component in (mp.Ez, mp.Hx, mp.Hy)
+        if has_te and tm:
+            return False
+        if has_tm and not tm:
+            return False
+    return True
+
+
+def source_components(source, dimensions: int = 3):
+    """Which field components a source actually drives."""
+    if is_gaussian_beam(source):
+        return [
+            component
+            for component, _, _ in beam_component_map(normal_index(source))
+            if beam_places(source, component, dimensions)
+        ]
+    return [source.component]
 
 
 def time_profile_dtft(
@@ -221,17 +327,177 @@ def source_grad_scale(
     # discrete-time derivative, matching _adj_src_scale
     iomega = (1.0 - np.exp(-1j * (2 * np.pi * frequencies) * dt)) * (1.0 / dt)
 
+    # src_vol_chunkloop multiplies the amplitude by gv.a once per *zero-width*
+    # direction, to keep the integrated current fixed as a delta function is
+    # resolved (`data.amp *= gv.a` in sources.cpp). That is a factor of the
+    # resolution per delta direction, not per dimension: a point source in 2D
+    # carries a^2 and a line source a^1. Using 1/dV here instead would be right
+    # for the point and wrong by a factor of the resolution for the line.
     num_dims = sim._infer_dimensions(sim.k_point)
-    dV = 1 / sim.resolution**num_dims
+    size = [source.size.x, source.size.y, source.size.z][:num_dims]
+    num_delta = sum(1 for extent in size if extent == 0)
 
     fwd_dtft = time_profile_dtft(sim, source.src, frequencies)
 
-    scale = np.asarray(adj_src_phase) * fwd_dtft / (dV * iomega)
+    # The component-dependent sign is applied in `SourceGradientMonitor.gather`,
+    # since it differs between electric and magnetic components and this scale
+    # is shared across all the components one source drives.
+    scale = np.asarray(adj_src_phase) * fwd_dtft * sim.resolution**num_delta / iomega
 
     if sim.using_real_fields():
         # real fields keep only Re[J], halving the amplitude at +omega
         scale *= 2
     return scale
+
+
+# The four component sources `fields::add_volume_source(src, where, beam)`
+# places, as (source component, amplitude sign, which beam field is evaluated).
+# With n the index of the plane normal and np1/np2 the two tangential axes:
+#   K = n x H  goes on the electric components, N = -n x E on the magnetic ones.
+_E_COMPONENTS = (mp.Ex, mp.Ey, mp.Ez)
+_H_COMPONENTS = (mp.Hx, mp.Hy, mp.Hz)
+
+
+def beam_component_map(normal_index: int):
+    """Which sources a Gaussian beam places, mirroring sources.cpp:526."""
+    np1 = (normal_index + 1) % 3
+    np2 = (normal_index + 2) % 3
+    return (
+        (_E_COMPONENTS[np2], +1.0, _H_COMPONENTS[np1]),
+        (_E_COMPONENTS[np1], -1.0, _H_COMPONENTS[np2]),
+        (_H_COMPONENTS[np2], -1.0, _E_COMPONENTS[np1]),
+        (_H_COMPONENTS[np1], +1.0, _E_COMPONENTS[np2]),
+    )
+
+
+def _beam_at(sim, source, positions, overrides=None, center=None):
+    """Evaluate a Gaussian beam's six field components at each position.
+
+    Rebuilt from the source's own parameters so that a perturbed copy can be
+    evaluated without touching the simulation, which is what makes the
+    parameter derivatives cost no FDTD runs at all.
+    """
+    values = {
+        "beam_x0": source.beam_x0,
+        "beam_kdir": source.beam_kdir,
+        "beam_w0": source.beam_w0,
+        "beam_E0": source.beam_E0,
+    }
+    values.update(overrides or {})
+
+    dims, cyl = sim.dimensions, sim.is_cylindrical
+    # add_volume_source measures positions from the centre of the volume Meep
+    # actually used, which grid snapping can move off source.center by up to
+    # half a pixel. Using the wrong one shifts every sensitivity.
+    origin = source.center if center is None else center
+    beam = mp.gaussianbeam(
+        mp.py_v3_to_vec(dims, values["beam_x0"], cyl),
+        mp.py_v3_to_vec(dims, values["beam_kdir"], cyl),
+        float(values["beam_w0"]),
+        source.src.swigobj.frequency().real,
+        sim.fields.get_eps(mp.py_v3_to_vec(dims, source.center, cyl)).real,
+        sim.fields.get_mu(mp.py_v3_to_vec(dims, source.center, cyl)).real,
+        np.array(
+            [values["beam_E0"].x, values["beam_E0"].y, values["beam_E0"].z],
+            dtype=np.complex128,
+        ),
+    )
+
+    out = np.zeros((len(positions), 6), dtype=np.complex128)
+    buffer = np.zeros(6, dtype=np.complex128)
+    for i, position in enumerate(positions):
+        # gaussianbeam_ampfunc is handed the position relative to the source
+        # volume's center, so the same offset has to be applied here.
+        relative = mp.Vector3(*position) - origin
+        beam.get_fields(buffer, mp.py_v3_to_vec(dims, relative, cyl))
+        out[i] = buffer
+    return out
+
+
+def _perturbations(name, value, step):
+    """The plus and minus variations of one beam parameter.
+
+    Vector parameters are varied one component at a time, so the derivative
+    comes back with the shape of the parameter.
+    """
+    if name == "beam_w0":
+        yield (), value + step, value - step
+        return
+    for axis, letter in enumerate("xyz"):
+        delta = mp.Vector3(**{letter: step})
+        yield (axis,), value + delta, value - delta
+
+
+def beam_parameter_gradients(
+    sim: mp.Simulation,
+    source,
+    names,
+    cotangents: dict,
+    normal_index: int,
+    step: float = 1e-6,
+    center=None,
+) -> dict:
+    """Contract per-point cotangents onto a Gaussian beam's own parameters.
+
+    The map from a beam's parameters to the currents it places is an analytic
+    function Meep evaluates itself, so a central difference over it is both
+    appropriate and cheap: it costs no FDTD runs, only re-evaluating the beam.
+    Meep already takes the same approach one level up, finite-differencing the
+    material grid inside `material_grids_addgradient`.
+
+    Only `J^T lambda` is ever needed, so each directional derivative is
+    contracted as soon as it is formed and no dense Jacobian is built. For a
+    source plane with many points that matters.
+
+    Args:
+        cotangents: maps a source component to (positions, cotangent), where
+            cotangent is dJ/d(amplitude) at each of those positions.
+        normal_index: 0, 1 or 2 for a plane normal to x, y or z.
+    """
+    mapping = beam_component_map(normal_index)
+    field_index = {c: i for i, c in enumerate(_E_COMPONENTS + _H_COMPONENTS)}
+
+    out = {}
+    for name in names:
+        value = {
+            "beam_x0": source.beam_x0,
+            "beam_kdir": source.beam_kdir,
+            "beam_w0": source.beam_w0,
+            "beam_E0": source.beam_E0,
+        }[name]
+
+        entries = {}
+        for key, plus, minus in _perturbations(name, value, step):
+            total = 0.0 + 0.0j
+            for component, sign, evaluated in mapping:
+                # skipped when add_volume_source_check declined to place it
+                if component not in cotangents:
+                    continue
+                positions, cotangent = cotangents[component]
+                if not len(positions):
+                    continue
+                column = field_index[evaluated]
+                high = _beam_at(sim, source, positions, {name: plus}, center)[:, column]
+                low = _beam_at(sim, source, positions, {name: minus}, center)[:, column]
+                sensitivity = sign * (high - low) / (2 * step)
+                total += np.sum(np.asarray(cotangent).ravel() * sensitivity)
+            entries[key] = total
+
+        if name == "beam_w0":
+            out[name] = entries[()]
+        else:
+            gradient = np.array([entries[(axis,)] for axis in range(3)])
+            if name == "beam_kdir":
+                # Only the direction of beam_kdir is meaningful -- its length is
+                # ignored -- so the component along it is not a derivative of
+                # anything. Projecting it out leaves the part that is.
+                axis = np.array([value.x, value.y, value.z], dtype=float)
+                norm = np.linalg.norm(axis)
+                if norm > 0:
+                    axis = axis / norm
+                    gradient = gradient - axis * np.dot(axis, gradient)
+            out[name] = gradient
+    return out
 
 
 def contract(source, currents_grad: np.ndarray, source_amplitudes=None) -> dict:

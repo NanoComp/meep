@@ -422,7 +422,7 @@ class OptimizationProblem:
         out = {}
         for ar in range(len(self.objective_functions)):
             for si, src in enumerate(self.differentiable_sources):
-                monitor = self.adjoint_source_monitors[ar][si]
+                monitors = self.adjoint_source_monitors[ar][si]
                 # the adjoint field carries the normalization the objective
                 # quantity applied when it placed the adjoint source, so the
                 # transpose has to use that same quantity's phase
@@ -432,14 +432,54 @@ class OptimizationProblem:
                     self.frequencies,
                     self.objective_arguments[0]._adj_src_phase(),
                 )
-                currents = monitor.gather(self.sim, scale)
-                grads = source_gradient.contract(src, currents)
+                grads = self._source_gradient_for(src, monitors, scale)
                 key = source_gradient.source_key(src, si)
                 if len(self.objective_functions) == 1:
                     out[key] = grads
                 else:
                     out.setdefault(key, []).append(grads)
         return out
+
+    def _source_gradient_for(self, src, monitors, scale):
+        """Gradients for one differentiable source, keyed by parameter name."""
+        beam_names = [name for name in src.differentiable if name.startswith("beam_")]
+        other_names = [
+            name for name in src.differentiable if not name.startswith("beam_")
+        ]
+
+        grads = {}
+        if other_names:
+            currents = monitors[0].gather(self.sim, scale)
+            everything = source_gradient.contract(src, currents)
+            grads.update({name: everything[name] for name in other_names})
+
+        if beam_names:
+            # Contract the per-point cotangents onto the beam's own parameters,
+            # one frequency at a time so the rows stay separable.
+            cotangents_by_frequency = []
+            for f_index in range(len(np.atleast_1d(self.frequencies))):
+                cotangents = {}
+                for monitor in monitors:
+                    values = monitor.gather(self.sim, scale)
+                    cotangents[monitor.component] = (
+                        monitor.positions(self.sim),
+                        np.asarray(values)[f_index].ravel(),
+                    )
+                cotangents_by_frequency.append(
+                    source_gradient.beam_parameter_gradients(
+                        self.sim,
+                        src,
+                        beam_names,
+                        cotangents,
+                        source_gradient.normal_index(src),
+                        center=monitors[0].volume.center,
+                    )
+                )
+            for name in beam_names:
+                grads[name] = np.squeeze(
+                    np.array([row[name] for row in cotangents_by_frequency])
+                )
+        return grads
 
     def calculate_gradient(self):
         self.source_gradient = self.calculate_source_gradient()
