@@ -1491,6 +1491,33 @@ std::vector<size_t> fields::dft_monitor_size(dft_fields fdft, const volume &wher
   return reduced_dims_vec;
 }
 
+/* The monitor's size *without* collapsing zero-extent directions.
+
+   dft_monitor_size above reduces them away, which is right for reading a field
+   on a plane. It is wrong for the source transpose: a zero-width source volume
+   straddles two Yee planes of a magnetic component, each carrying half the
+   current, and reducing maps both onto one index. The total weight survives
+   that but the spatial distribution does not, so a source whose amplitude
+   varies across the two planes -- a beam, as opposed to a uniform sheet --
+   loses the difference between them. */
+std::vector<size_t> fields::dft_monitor_full_size(dft_fields fdft, const volume &where,
+                                                  component c) {
+  ivec min_corner, max_corner;
+  int rank;
+  direction dirs[3];
+  size_t array_size, bufsz, dims[3] = {1, 1, 1};
+  dft_chunk *chunklists[1];
+  chunklists[0] = fdft.chunks;
+  (void)where;
+
+  get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs,
+                         dims);
+  std::vector<size_t> out = {1, 1, 1};
+  for (int i = 0; i < rank; ++i)
+    out[i] = dims[i];
+  return out;
+}
+
 std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, component c,
                                                               fields &f,
                                                               const std::complex<double> *dJ) {
@@ -1695,6 +1722,169 @@ void dft_fields::fourier_sourcegradient(const volume &where, component c, fields
   }
 
   sum_to_all(local.data(), grad, int(Nfreq * reduced_grid_size));
+}
+
+/* Cotangent with respect to the per-point amplitudes of a *volume* source.
+
+   fourier_sourcegradient above is the transpose of fourier_sourcedata, which is
+   how adjoint sources are placed. Ordinary sources -- anything built with an
+   amp_func, an amp_data array, or a Gaussian beam -- take a different route:
+   add_volume_source hands an amplitude function to src_vol_chunkloop, which
+   applies its own weights. This is the transpose of *that* path, so that a
+   derivative with respect to whatever parameterizes such a source can be
+   obtained by contracting this against the sensitivity of its amplitude
+   function.
+
+   Positions come out alongside the DFT values by rebuilding the chunk's grid
+   volume, the same way material_grids_addgradient walks the adjoint fields:
+
+       gv_sub = gv.subvolume(chunk->is, chunk->ie, c)
+       LOOP_OVER_IVECS(gv_sub, chunk->is_old, chunk->ie_old, idx)
+
+   which gives `idx` indexing chunk->dft directly and IVEC_LOOP_LOC giving the
+   point it belongs to.
+
+   `grad` receives freq.size() * (monitor size) elements in the monitor's own
+   ordering, summed across all processes. */
+void dft_fields::volume_source_gradient(const volume &where, component c, fields &f,
+                                        std::complex<double> *grad) {
+  const size_t Nfreq = freq.size();
+
+  ivec min_corner, max_corner;
+  int rank, reduced_rank;
+  direction dirs[3], reduced_dirs[3];
+  size_t array_size, bufsz, dims[3], reduced_dims[3], reduced_stride[3], stride[3];
+  dft_chunk *chunklists[1];
+  chunklists[0] = chunks;
+
+  f.get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs,
+                           dims);
+  /* Deliberately *not* reduce_array_dimensions here. Collapsing a zero-extent
+     direction merges the two Yee planes a magnetic component straddles, which
+     keeps the total weight but discards how the amplitude varies between them.
+     Keeping the full layout leaves the restriction loop_in_chunks already
+     performs intact, weights and all. */
+  size_t reduced_grid_size = 1;
+  for (int i = 0; i < rank; ++i)
+    reduced_grid_size *= dims[i];
+
+  std::vector<std::complex<double> > local(Nfreq * reduced_grid_size, std::complex<double>(0, 0));
+
+  for (dft_chunk *fdc = chunks; fdc; fdc = fdc->next_in_dft) {
+    component cc = component(fdc->c);
+    direction cd = component_direction(cc);
+    grid_volume gv_sub = f.gv.subvolume(fdc->is, fdc->ie, cc);
+    // is_old/ie_old only hold the unpadded bounds when the chunk was created
+    // with persist set; otherwise they were never assigned and is/ie are
+    // already the range wanted.
+    ivec loop_is = fdc->persist ? fdc->is_old : fdc->is;
+    ivec loop_ie = fdc->persist ? fdc->ie_old : fdc->ie;
+
+    int position_array[3] = {0, 0, 0};
+
+    LOOP_OVER_IVECS(gv_sub, loop_is, loop_ie, idx) {
+      IVEC_LOOP_ILOC(gv_sub, iloc);
+      // the loop runs in the chunk's own frame; the monitor's array index is
+      // defined in the untransformed frame, so undo the symmetry and shift
+      // before locating this point in it
+      iloc = fdc->S.transform(iloc, fdc->sn) + fdc->shift;
+      for (int i = 0; i < rank; ++i)
+        position_array[i] =
+            int((iloc.in_direction(dirs[i]) - min_corner.in_direction(dirs[i])) / 2);
+      size_t idx_1d = 0;
+      for (int i = 0; i < rank; ++i)
+        idx_1d = idx_1d * dims[i] + position_array[i];
+      if (idx_1d >= reduced_grid_size) continue;
+
+      /* src_vol_chunkloop weights every point by IVEC_LOOP_WEIGHT, which is
+         how a source volume keeps its integrated current fixed as the grid
+         changes. The transpose has to apply the same weight.
+
+         Omitting it is invisible for a grid-aligned electric source, where the
+         weight is 1, and shows up as exactly (1/2)^(zero-width directions) for
+         a component whose Yee points straddle the source plane -- Hz in 2D
+         sits at half-integer positions in both transverse axes, so a
+         zero-width volume centred on a grid point splits evenly between two
+         of them in each such direction. */
+      double w = IVEC_LOOP_WEIGHT(fdc->s0, fdc->s1, fdc->e0, fdc->e1, 1);
+      if (is_D(cc) && fdc->fc->s->chi1inv[cc - Dx + Ex][cd])
+        w /= fdc->fc->s->chi1inv[cc - Dx + Ex][cd][idx];
+      if (is_B(cc) && fdc->fc->s->chi1inv[cc - Bx + Hx][cd])
+        w /= fdc->fc->s->chi1inv[cc - Bx + Hx][cd][idx];
+
+      for (size_t i = 0; i < Nfreq; ++i) {
+        std::complex<realnum> EH = fdc->dft[Nfreq * idx + i];
+        local[reduced_grid_size * i + idx_1d] +=
+            w * std::complex<double>(double(EH.real()), double(EH.imag()));
+      }
+    }
+  }
+
+  sum_to_all(local.data(), grad, int(Nfreq * reduced_grid_size));
+}
+
+/* The position of every point volume_source_gradient reports, in the same
+   order.
+
+   Contracting a cotangent onto a source's own parameters means re-evaluating
+   that source's amplitude function at the points the cotangent belongs to, so
+   the two have to agree exactly about which point is which. Emitting the
+   positions from the same loop is the only way to be sure they do.
+
+   `positions` receives 3 * (monitor size) doubles, x, y and z per point. */
+void dft_fields::monitor_positions(const volume &where, component c, fields &f, double *positions) {
+  ivec min_corner, max_corner;
+  int rank, reduced_rank;
+  direction dirs[3], reduced_dirs[3];
+  size_t array_size, bufsz, dims[3], reduced_dims[3], reduced_stride[3], stride[3];
+  dft_chunk *chunklists[1];
+  chunklists[0] = chunks;
+
+  f.get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs,
+                           dims);
+  /* Deliberately *not* reduce_array_dimensions here. Collapsing a zero-extent
+     direction merges the two Yee planes a magnetic component straddles, which
+     keeps the total weight but discards how the amplitude varies between them.
+     Keeping the full layout leaves the restriction loop_in_chunks already
+     performs intact, weights and all. */
+  size_t reduced_grid_size = 1;
+  for (int i = 0; i < rank; ++i)
+    reduced_grid_size *= dims[i];
+
+  std::vector<double> local(3 * reduced_grid_size, 0.0);
+
+  for (dft_chunk *fdc = chunks; fdc; fdc = fdc->next_in_dft) {
+    component cc = component(fdc->c);
+    grid_volume gv_sub = f.gv.subvolume(fdc->is, fdc->ie, cc);
+    // is_old/ie_old only hold the unpadded bounds when the chunk was created
+    // with persist set; otherwise they were never assigned and is/ie are
+    // already the range wanted.
+    ivec loop_is = fdc->persist ? fdc->is_old : fdc->is;
+    ivec loop_ie = fdc->persist ? fdc->ie_old : fdc->ie;
+
+    int position_array[3] = {0, 0, 0};
+
+    LOOP_OVER_IVECS(gv_sub, loop_is, loop_ie, idx) {
+      IVEC_LOOP_ILOC(gv_sub, iloc);
+      IVEC_LOOP_LOC(gv_sub, loc);
+      iloc = fdc->S.transform(iloc, fdc->sn) + fdc->shift;
+      loc = fdc->S.transform(loc, fdc->sn) + vec(fdc->shift * (0.5 * fdc->fc->gv.inva));
+
+      for (int i = 0; i < rank; ++i)
+        position_array[i] =
+            int((iloc.in_direction(dirs[i]) - min_corner.in_direction(dirs[i])) / 2);
+      size_t idx_1d = 0;
+      for (int i = 0; i < rank; ++i)
+        idx_1d = idx_1d * dims[i] + position_array[i];
+      if (idx_1d >= reduced_grid_size) continue;
+
+      local[3 * idx_1d + 0] = loc.in_direction(X);
+      local[3 * idx_1d + 1] = loc.in_direction(Y);
+      local[3 * idx_1d + 2] = (gv_sub.dim == D3) ? loc.in_direction(Z) : 0.0;
+    }
+  }
+
+  sum_to_all(local.data(), positions, int(3 * reduced_grid_size));
 }
 
 } // namespace meep

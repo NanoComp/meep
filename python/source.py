@@ -48,7 +48,6 @@ def _validate_differentiable(src, differentiable):
     valid = tuple(_DIFFERENTIABLE_ALWAYS) + tuple(
         getattr(src, "_differentiable_params", ())
     )
-    implemented = set(_DIFFERENTIABLE_ALWAYS)
 
     names = []
     for name in differentiable:
@@ -64,15 +63,6 @@ def _validate_differentiable(src, differentiable):
                 f"'{name}' is not a differentiable parameter of "
                 f"{type(src).__name__}. Valid choices are: "
                 f"{', '.join(sorted(valid))}."
-            )
-        if name not in implemented:
-            raise NotImplementedError(
-                f"'{name}' is a differentiable parameter of "
-                f"{type(src).__name__}, but its sensitivity requires the "
-                "finite-difference contraction over Meep's own source "
-                "construction, which is not implemented yet. Use 'currents' "
-                "and apply the chain rule yourself, or parameterize the "
-                "source from JAX."
             )
         names.append(name)
 
@@ -802,10 +792,11 @@ class GaussianBeam3DSource(Source):
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.
     """
 
-    # `beam_kdir` is deliberately absent: its length is ignored, so only its
-    # direction is meaningful and a component-wise derivative would report a
-    # spurious radial sensitivity.  It needs a tangent-space projection first.
-    _differentiable_params = ("beam_x0", "beam_w0", "beam_E0")
+    # `beam_kdir`'s length is ignored, so only its direction is meaningful; the
+    # derivative is projected onto the tangent space of that direction rather
+    # than reported component-wise, which would show a spurious radial
+    # sensitivity.  See source_gradient.beam_parameter_gradients.
+    _differentiable_params = ("beam_x0", "beam_kdir", "beam_w0", "beam_E0")
 
     def __init__(
         self,
