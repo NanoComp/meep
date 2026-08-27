@@ -1425,6 +1425,9 @@ public:
   dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
   std::vector<sourcedata> fourier_sourcedata(const volume &where, component c, fields &f,
                                              const std::complex<double> *dJ);
+  // transpose of fourier_sourcedata; see dft.cpp
+  void fourier_sourcegradient(const volume &where, component c, fields &f,
+                              std::complex<double> *grad);
   void scale_dfts(std::complex<double> scale);
 
   void remove();

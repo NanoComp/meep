@@ -24,6 +24,7 @@ except ImportError:
 import numpy as np
 from meep.geom import GeometricObject, Medium, Vector3, init_do_averaging
 from meep.source import (
+    ArraySource,
     EigenModeSource,
     GaussianBeamSource,
     IndexedSource,

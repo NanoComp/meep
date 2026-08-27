@@ -212,6 +212,18 @@ class MeepJaxWrapper:
         self.until_after_sources = until_after_sources
         self.finite_difference_step = finite_difference_step
 
+        # Sources whose amplitudes are supplied from JAX are differentiated
+        # with respect to their currents automatically: the parameters live
+        # upstream in JAX, so there is nothing for Meep to name.
+        self.differentiable_sources = [
+            s for s in sources if isinstance(s, mp.ArraySource)
+        ]
+        for s in self.differentiable_sources:
+            if "currents" not in getattr(s, "differentiable", ()):
+                s.differentiable = tuple(getattr(s, "differentiable", ())) + (
+                    "currents",
+                )
+
         self._simulate_fn = self._initialize_callable()
 
     def __call__(

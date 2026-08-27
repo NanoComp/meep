@@ -1612,4 +1612,89 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
   return temp;
 }
 
+/* Transpose of fourier_sourcedata.
+
+   fourier_sourcedata scatters a user-ordered array dJ onto the grid points of
+   this monitor, weighting each point by w(x).  This routine performs the
+   adjoint of that operation: it gathers the DFT fields recorded by this
+   monitor -- normally an adjoint run -- back into the same user ordering,
+   applying the same w(x).  The two walk the same points in the same order, so
+   that <y, S dJ> == <S^T y, dJ> to roundoff.
+
+   Two conventions make this simpler than it first appears.  The weights are
+   real, because chi1inv is a realnum, so no conjugation is involved.  And the
+   0.25 four-point split that fourier_sourcedata applies when yee_grid is false
+   needs no counterpart here: update_dft already averages those same four
+   sites, which is precisely the transpose of the split.
+
+   `grad` must have room for freq.size() * (monitor size) elements.  It is
+   summed across all processes before returning. */
+void dft_fields::fourier_sourcegradient(const volume &where, component c, fields &f,
+                                        std::complex<double> *grad) {
+  const size_t Nfreq = freq.size();
+
+  ivec min_corner, max_corner;
+  int rank, reduced_rank;
+  direction dirs[3], reduced_dirs[3];
+  size_t array_size, bufsz, dims[3], reduced_dims[3], reduced_stride[3], stride[3];
+  dft_chunk *chunklists[1];
+  chunklists[0] = chunks;
+
+  f.get_dft_component_dims(chunklists, 1, c, min_corner, max_corner, array_size, bufsz, rank, dirs,
+                           dims);
+  reduce_array_dimensions(where, rank, dims, dirs, stride, reduced_rank, reduced_dims, reduced_dirs,
+                          reduced_stride);
+  size_t reduced_grid_size = reduced_dims[0] * reduced_dims[1] * reduced_dims[2];
+
+  std::vector<std::complex<double> > local(Nfreq * reduced_grid_size, std::complex<double>(0, 0));
+
+  for (dft_chunk *fdc = chunks; fdc; fdc = fdc->next_in_dft) {
+    assert(Nfreq == fdc->omega.size());
+    vec rshift(fdc->shift * (0.5 * fdc->fc->gv.inva));
+
+    component cc = component(fdc->c);
+    direction cd = component_direction(cc);
+
+    int position_array[3] = {0, 0, 0}; // position of a point relative to the monitor's min corner
+
+    LOOP_OVER_IVECS(fdc->fc->gv, fdc->is, fdc->ie, idx) {
+      IVEC_LOOP_LOC(fdc->fc->gv, x0);
+      IVEC_LOOP_ILOC(fdc->fc->gv, ix0);
+      size_t idx_dft = IVEC_LOOP_COUNTER; // how update_dft indexes fdc->dft
+      x0 = fdc->S.transform(x0, fdc->sn) + rshift;
+      ix0 = fdc->S.transform(ix0, fdc->sn) + fdc->shift;
+
+      double dJ_weight = 1; // weight for linear interpolation
+      int nd = 0;
+      LOOP_OVER_DIRECTIONS(fdc->fc->gv.dim, d) {
+        if (where.in_direction(d) > 0)
+          position_array[nd++] = int((ix0.in_direction(d) - min_corner.in_direction(d)) / 2);
+        else
+          dJ_weight *= (1 - abs(x0.in_direction(d) - where.in_direction_min(d)) /
+                                (fdc->fc->gv.inva)); // based on distances
+      }
+
+      // index when the gradient is flattened to a one-dimensional array
+      size_t idx_1d = (position_array[0] * reduced_dims[1] + position_array[1]) * reduced_dims[2] +
+                      position_array[2];
+
+      double w = dJ_weight;
+      if (is_electric(cc)) w *= -1;
+      if (is_D(cc) && fdc->fc->s->chi1inv[cc - Dx + Ex][cd])
+        w /= -fdc->fc->s->chi1inv[cc - Dx + Ex][cd][idx];
+      if (is_B(cc) && fdc->fc->s->chi1inv[cc - Bx + Hx][cd])
+        w /= fdc->fc->s->chi1inv[cc - Bx + Hx][cd][idx];
+      w /= fdc->S.multiplicity(ix0);
+
+      for (size_t i = 0; i < Nfreq; ++i) {
+        std::complex<realnum> EH = fdc->dft[Nfreq * idx_dft + i];
+        local[reduced_grid_size * i + idx_1d] +=
+            w * std::complex<double>(double(EH.real()), double(EH.imag()));
+      }
+    }
+  }
+
+  sum_to_all(local.data(), grad, int(Nfreq * reduced_grid_size));
+}
+
 } // namespace meep
