@@ -104,8 +104,12 @@ class SourceGradientMonitor:
             return
 
         half_cell = np.array([sim.cell_size.x, sim.cell_size.y, sim.cell_size.z]) / 2
-        center = np.array([self.volume.center.x, self.volume.center.y, self.volume.center.z])
-        half_size = np.array([self.volume.size.x, self.volume.size.y, self.volume.size.z]) / 2
+        center = np.array(
+            [self.volume.center.x, self.volume.center.y, self.volume.center.z]
+        )
+        half_size = (
+            np.array([self.volume.size.x, self.volume.size.y, self.volume.size.z]) / 2
+        )
 
         for i, dim in enumerate("xyz"):
             if half_cell[i] == 0:

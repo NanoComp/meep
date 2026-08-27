@@ -362,6 +362,122 @@ parallel monitors, each with its own stack, and flip `sign` on the lower one.
 is a worked two-etch grating coupler radiating through a thick superstrate into a
 fiber, with a forward-only mode and an optimization mode.
 
+Differentiating With Respect To Sources
+---------------------------------------
+
+The design region is not the only differentiable input. A source can be one too,
+and it is nearly free: writing Maxwell's equations as $A(\rho) E = -i\omega J$
+gives $\partial J_{obj}/\partial J = -i\omega\lambda$, so the derivative with
+respect to a source is just the adjoint field sampled where that source sits. It
+needs no simulation beyond the adjoint run already being performed.
+
+A source opts in by naming the parameters it should be differentiated with
+respect to:
+
+```py
+src = mp.Source(
+    mp.GaussianSource(fcen, fwidth=df),
+    component=mp.Ez,
+    center=mp.Vector3(-1, 0),
+    differentiable=["amplitude"],
+    name="drive",
+)
+
+opt = mpa.OptimizationProblem(
+    simulation=sim,
+    objective_functions=[objective],
+    objective_arguments=[monitor],
+    design_regions=[design_region],
+    frequencies=frequencies,
+)
+
+value, grad = opt([rho])
+grad["design"]                # exactly as before
+grad["drive"]["amplitude"]    # one entry per frequency
+```
+
+The names given in `differentiable` are the keys of the resulting subtree, so the
+flag and the gradient cannot drift apart. With no flagged source the return value
+is unchanged, so nothing existing is affected.
+
+Every source accepts `'amplitude'` and `'currents'`. The first is the scalar that
+scales the whole source; the second is the per-point complex amplitude array,
+which is the general case and the one that composes with a propagator. Names that
+a source class does define but whose sensitivity is not yet implemented —
+`beam_w0` on a Gaussian beam, for instance — raise `NotImplementedError` rather
+than being reported as unknown, so the two situations are distinguishable.
+
+`'center'` and `'size'` are rejected outright. They move the grid points the
+source occupies rather than the amplitudes applied to them, and the adjoint
+formulation for sources gathers the cotangent over a *fixed* set of points, so a
+derivative there is outside the formulation rather than merely missing.
+
+### Supplying the currents yourself
+
+`mp.ArraySource` takes the per-point amplitudes directly, which is what a source
+computed somewhere else — by a mode solver, a propagator, or JAX — naturally
+produces:
+
+```py
+src = mp.ArraySource(
+    mp.GaussianSource(fcen, fwidth=df),
+    mp.Ez,
+    amplitudes=amplitudes,     # one complex number per grid point
+    frequency=fcen,
+    center=mp.Vector3(-1, 0),
+    size=mp.Vector3(0, 4),
+    differentiable=["currents"],
+    name="sheet",
+)
+```
+
+The array is indexed exactly like `Simulation.get_dft_array` over the same region
+and component, which is also the ordering the gradient comes back in. That is not
+a coincidence: injection and measurement are implemented as a scatter and its
+exact transpose, so an array can be handed in and its cotangent read back with no
+bookkeeping in between.
+
+### With JAX
+
+An `ArraySource` given to `MeepJaxWrapper` is differentiated automatically. There
+is nothing to flag, because the parameters that produced the currents live
+upstream in JAX rather than in Meep — Meep returns the cotangent with respect to
+the current array and JAX carries it the rest of the way:
+
+```py
+def loss(rho, beam_params):
+    currents = build_beam(beam_params)          # pure JAX
+    (dft,) = wrapped_meep([rho], [currents])
+    return jnp.sum(jnp.abs(dft) ** 2)
+
+value, (d_rho, d_beam) = jax.value_and_grad(loss, argnums=(0, 1))(rho, beam_params)
+```
+
+This is the objective-side protocol run backwards. There, Meep returns monitor
+values and JAX owns the post-processing; here JAX supplies currents and Meep
+returns their cotangent. The cotangent follows the convention JAX and autograd
+both use for a real function of a complex input, $dJ/d(\mathrm{Re}\,a) - i\,
+dJ/d(\mathrm{Im}\,a)$, so it chains without adjustment.
+
+### Checking a source gradient
+
+Two cautions, both of which produce a wrong answer that looks like a bug in the
+gradient rather than like noise.
+
+Fix the run length. `stop_when_dft_decayed` is adaptive, so a perturbed run stops
+at a different time and that difference scales with the perturbation; the ratio
+of the adjoint gradient to the finite difference then settles at a fixed wrong
+value instead of converging as the step shrinks.
+
+Give the adjoint run enough time. In a lossless background the adjoint DFT rings
+considerably longer than the forward one, and the source gradient *is* the
+adjoint field, so an under-converged adjoint hits it directly. In the calibration
+for this feature the error was 16% at one run length and vanished entirely once
+the run was doubled.
+
+Finally, a source inside or near a PML is rejected: its adjoint field is absorbed,
+so the gradient would come back finite, smooth, and wrong.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 

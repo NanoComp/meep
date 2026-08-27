@@ -2,6 +2,18 @@
 
 ## Meep 1.35.0 (in progress)
 
+* Adjoint solver: sources can now be differentiated alongside the design
+  regions. A source opts in with `differentiable=['amplitude']` or
+  `differentiable=['currents']`, and its gradient appears in the returned
+  dictionary under the source's `name`. It costs no extra simulation: the
+  derivative with respect to a source is the adjoint field sampled over that
+  source's support, which the existing adjoint run already produces. The new
+  `mp.ArraySource` supplies per-point amplitudes directly, indexed exactly as
+  `get_dft_array` returns them over the same region, which is also the ordering
+  the gradient comes back in. An `ArraySource` passed to `MeepJaxWrapper` is
+  differentiated automatically, so a source computed in JAX backpropagates to
+  whatever produced it.
+
 * Adjoint solver: `meep.adjoint.AngularSpectrum` propagates the tangential DFT
   fields on a planar monitor through an arbitrary stratified medium
   analytically, in JAX. Unlike `add_near2far`, which requires a homogeneous
