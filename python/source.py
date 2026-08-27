@@ -1215,6 +1215,7 @@ class ArraySource(Source):
         center=None,
         volume=None,
         size=Vector3(),
+        yee_grid=True,
         differentiable=None,
         name=None,
     ):
@@ -1223,6 +1224,13 @@ class ArraySource(Source):
         + **`amplitudes` [`numpy.ndarray`]** — Complex amplitude for each point
           of the source region, shaped like `get_dft_array` over that region.
         + **`frequency` [`number`]** — The frequency the amplitudes refer to.
+        + **`yee_grid` [`boolean`]** — Whether the amplitudes are given at the
+          Yee points of `component` (the default) or at voxel centers. Voxel
+          centers are what several components sharing one plane need, since
+          each component's Yee points sit at a different half-pixel offset and
+          the arrays would otherwise have different lengths. Meep spreads a
+          centered value across the neighbouring Yee points, and the adjoint
+          gathers it back the same way, so the gradient stays exact either way.
         """
         super().__init__(
             src,
@@ -1235,6 +1243,7 @@ class ArraySource(Source):
         )
         self.amplitudes = np.ascontiguousarray(amplitudes, dtype=np.complex128)
         self.frequency = float(frequency)
+        self.yee_grid = yee_grid
         self._monitor = None
 
     def add_source(self, sim):
@@ -1249,7 +1258,7 @@ class ArraySource(Source):
         sim.fields.require_component(self.component)
 
         mon = sim.add_dft_fields(
-            [self.component], [self.frequency], where=vol, yee_grid=True
+            [self.component], [self.frequency], where=vol, yee_grid=self.yee_grid
         )
         # add_dft_fields defers construction; the scatter needs it now
         sim._evaluate_dft_objects()
@@ -1263,14 +1272,21 @@ class ArraySource(Source):
             )
 
         # Two conversions, so that one entry of `amplitudes` means exactly what
-        # `Source.amplitude` means for a point source at that grid point:
-        # fourier_sourcedata negates electric components (it was written to
-        # place adjoint sources), and it places a current *density*, whose
-        # integral over a voxel is the amplitude times dV.
+        # `Source.amplitude` means for a point source at that grid point.
+        #
+        # fourier_sourcedata negates *electric* components and only those, since
+        # it was written to place adjoint sources; undoing it for magnetic
+        # components too would flip the relative sign of the two sheets of an
+        # equivalent-current pair, which silently reverses the direction such a
+        # pair radiates in.
+        #
+        # It also places a current *density*, whose integral over a voxel is the
+        # amplitude times dV.
         num_dims = sim._infer_dimensions(sim.k_point)
         dV = 1 / sim.resolution**num_dims
+        sign = -1.0 if mp.is_electric(self.component) else 1.0
         flat = np.ascontiguousarray(
-            self.amplitudes.ravel() * complex(self.amplitude) * (-1.0 / dV),
+            self.amplitudes.ravel() * complex(self.amplitude) * (sign / dV),
             dtype=np.complex128,
         )
         srcdata = mon.swigobj.fourier_sourcedata(

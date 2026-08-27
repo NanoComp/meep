@@ -239,21 +239,30 @@ class TestArraySource(unittest.TestCase):
         # Pins both conversions in ArraySource.add_source: the -1 the scatter
         # applies to electric components, and the fact that it places a current
         # density rather than a point amplitude.
+        #
+        # Both an electric and a magnetic component are checked, because the
+        # scatter negates electric components and only those. Undoing that
+        # negation for magnetic ones too leaves each component individually
+        # plausible but flips the relative sign of the two sheets of an
+        # equivalent-current pair, which reverses the direction such a pair
+        # radiates in without producing anything that looks like an error.
         t = lambda: mp.GaussianSource(FCEN, fwidth=0.2)
-        plain = self._field(
-            mp.Source(t(), component=mp.Ez, center=SRC_C, amplitude=1.0)
-        )
-        array = self._field(
-            mp.ArraySource(
-                t(),
-                mp.Ez,
-                amplitudes=np.array([1.0 + 0j]),
-                frequency=FCEN,
-                center=SRC_C,
-                size=mp.Vector3(0, 0),
-            )
-        )
-        np.testing.assert_allclose(array, plain, rtol=2e-6)
+        for component in (mp.Ez, mp.Hz):
+            with self.subTest(component=mp.component_name(component)):
+                plain = self._field(
+                    mp.Source(t(), component=component, center=SRC_C, amplitude=1.0)
+                )
+                array = self._field(
+                    mp.ArraySource(
+                        t(),
+                        component,
+                        amplitudes=np.array([1.0 + 0j]),
+                        frequency=FCEN,
+                        center=SRC_C,
+                        size=mp.Vector3(0, 0),
+                    )
+                )
+                np.testing.assert_allclose(array, plain, rtol=2e-6)
 
     def test_rejects_wrong_length(self):
         src = mp.ArraySource(
