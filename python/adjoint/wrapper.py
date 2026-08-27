@@ -213,16 +213,18 @@ class MeepJaxWrapper:
         self.until_after_sources = until_after_sources
         self.finite_difference_step = finite_difference_step
 
-        # Sources whose amplitudes are supplied from JAX are differentiated
-        # with respect to their currents automatically: the parameters live
-        # upstream in JAX, so there is nothing for Meep to name.
+        # A source whose amplitudes come from JAX is differentiated
+        # automatically: the parameters that produced them live upstream in
+        # JAX, so there is nothing for Meep to name. `amp_data` is the array
+        # Meep interpolates onto the grid, so that is the cut point.
+        self._source_shapes = []
         self.differentiable_sources = [
-            s for s in sources if isinstance(s, mp.ArraySource)
+            s for s in sources if getattr(s, "amp_data", None) is not None
         ]
         for s in self.differentiable_sources:
-            if "currents" not in getattr(s, "differentiable", ()):
+            if "amp_data" not in getattr(s, "differentiable", ()):
                 s.differentiable = tuple(getattr(s, "differentiable", ())) + (
-                    "currents",
+                    "amp_data",
                 )
 
         self._simulate_fn = self._initialize_callable()
@@ -233,10 +235,11 @@ class MeepJaxWrapper:
         """Performs a Meep simulation, taking designs and returning monitor values.
 
         Args:
-          sources: amplitudes for each `mp.ArraySource` passed to the constructor,
-            in that order. These are differentiated automatically -- there is no
-            need to flag them, because the parameters that produced them live
-            upstream in JAX rather than in Meep. Omit when there are none.
+          sources: an `amp_data` array for each source given to the constructor
+            that has one, in that order. These are differentiated automatically
+            -- there is no need to flag them, because the parameters that
+            produced them live upstream in JAX rather than in Meep. Omit when
+            there are none.
           designs: a list of design variables as 1D, 2D, or 3D JAX arrays. Valid shapes for
           design variables are (Nx, Ny, Nz) where Nx{y,z} match the elements of the
           `grid_size` constructor argument of Meep's `MaterialGrid` used for the
@@ -268,8 +271,14 @@ class MeepJaxWrapper:
                 f"Got {len(source_variables)} source arrays but "
                 f"{len(self.differentiable_sources)} differentiable sources."
             )
+        # Meep wants amp_data as a 3D array, but the caller may hand in any
+        # shape with the same number of entries; the cotangent has to go back
+        # in the shape they used, so remember it.
+        self._source_shapes = [onp.shape(a) for a in source_variables]
         for src, amps in zip(self.differentiable_sources, source_variables):
-            src.amplitudes = onp.asarray(amps, dtype=onp.complex128)
+            src.amp_data = onp.asarray(amps, dtype=onp.complex128).reshape(
+                onp.shape(src.amp_data)
+            )
 
     def _run_fwd_simulation(
         self,
@@ -352,17 +361,31 @@ class MeepJaxWrapper:
             return []
         phase = self.monitors[0]._adj_src_phase()
         out = []
-        for src, monitor in zip(self.differentiable_sources, self.adj_source_monitors):
+        for src, group in zip(self.differentiable_sources, self.adj_source_monitors):
+            # one monitor per component the source drives; an amp_data source
+            # drives exactly one
+            monitor = group[0]
             scale = source_gradient.source_grad_scale(
                 self.simulation, src, self.frequencies, phase
             )
-            grad = monitor.gather(self.simulation, scale)
-            shape = src.amplitudes.shape
+            currents = monitor.gather(self.simulation, scale)
+            positions = monitor.positions(self.simulation)
+            shape = self._source_shapes[len(out)]
+            # one row per frequency, each carried back through the trilinear
+            # interpolation Meep applies to amp_data
+            rows = onp.stack(
+                [
+                    source_gradient.amp_data_gradient(
+                        self.simulation, src, positions, currents[f_index]
+                    )
+                    for f_index in range(currents.shape[0])
+                ]
+            )
             if sum_freq_partials:
                 # the amplitudes are shared across the band, as design weights are
-                out.append(onp.sum(grad, axis=0).reshape(shape))
+                out.append(onp.sum(rows, axis=0).reshape(shape))
             else:
-                out.append(grad.reshape((grad.shape[0], *shape)))
+                out.append(rows.reshape((rows.shape[0], *shape)))
         return out
 
     def _calculate_vjps(

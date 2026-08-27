@@ -32,6 +32,7 @@ import meep as mp
 IMPLEMENTED_PARAMS = (
     "currents",
     "amplitude",
+    "amp_data",
     "beam_x0",
     "beam_kdir",
     "beam_w0",
@@ -87,8 +88,9 @@ class SourceGradientMonitor:
             # apply it to, and `amplitude` would silently ignore the profile.
             raise NotImplementedError(
                 "Differentiating a source defined by `amp_func` or "
-                "`amp_func_file` is not supported; supply the amplitudes as an "
-                "array (`amp_data`) or drive the source from JAX instead."
+                "`amp_func_file` is not supported: the profile is evaluated "
+                "inside Meep, so there is no array for the caller to apply a "
+                "cotangent to. Use `amp_data` instead."
             )
 
         self.volume = sim._fit_volume_to_simulation(
@@ -498,6 +500,75 @@ def beam_parameter_gradients(
                     gradient = gradient - axis * np.dot(axis, gradient)
             out[name] = gradient
     return out
+
+
+def _mirrorindex(i: np.ndarray, n: int) -> np.ndarray:
+    """`mirrorindex` from fields.cpp:755."""
+    return np.where(i >= n, 2 * n - 1 - i, np.where(i < 0, -1 - i, i))
+
+
+def _map_coordinates(r: np.ndarray, n: int):
+    """`map_coordinates` from fields.cpp:759, vectorized over points.
+
+    Returns the two bracketing indices and the weight of the second, matching
+    the `do_fabs` behaviour `linear_interpolate` relies on.
+    """
+    if n == 1:
+        zero = np.zeros(r.shape, dtype=int)
+        return zero, zero, np.zeros(r.shape)
+    r = np.where(r < 0.0, -r, np.where(r > 1.0, 1.0 - r, r))
+    i1 = _mirrorindex(np.floor(r * n).astype(int), n)
+    d = r * n - i1 - 0.5
+    i2 = _mirrorindex(np.where(d >= 0.0, i1 + 1, i1 - 1), n)
+    return i1, i2, np.abs(d)
+
+
+def amp_data_gradient(
+    sim: mp.Simulation,
+    source,
+    positions: np.ndarray,
+    cotangent: np.ndarray,
+) -> np.ndarray:
+    """Contract a per-point cotangent onto a source's `amp_data` array.
+
+    `Source(amp_data=...)` reaches the grid through `amp_file_func`, which
+    trilinearly interpolates the user's array at each grid point. This is the
+    transpose of that interpolation: each point's cotangent is scattered back
+    onto the (at most) eight array entries that fed it, with the same weights.
+
+    It is a plain scatter rather than anything new in C++, because the hard
+    part -- the cotangent with respect to the amplitude Meep actually applied
+    at each grid point, together with where that point is -- is already done by
+    `volume_source_gradient`.
+    """
+    data = np.asarray(source.amp_data)
+    shape = tuple(data.shape) + (1,) * (3 - data.ndim)
+    nx, ny, nz = shape
+
+    positions = np.asarray(positions, dtype=float)
+    relative = positions - np.array(
+        [source.center.x, source.center.y, source.center.z], dtype=float
+    )
+    extent = np.array([source.size.x, source.size.y, source.size.z], dtype=float)
+    # `amp_file_func` maps a position onto [0, 1] across the source volume, and
+    # pins the coordinate to the centre in any direction of zero extent.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        r = np.where(
+            extent > 0, 0.5 + relative / np.where(extent > 0, extent, 1.0), 0.0
+        )
+
+    ix1, ix2, wx = _map_coordinates(r[:, 0], nx)
+    iy1, iy2, wy = _map_coordinates(r[:, 1], ny)
+    iz1, iz2, wz = _map_coordinates(r[:, 2], nz)
+
+    grad = np.zeros(nx * ny * nz, dtype=np.complex128)
+    values = np.asarray(cotangent).ravel()
+    for ix, fx in ((ix1, 1.0 - wx), (ix2, wx)):
+        for iy, fy in ((iy1, 1.0 - wy), (iy2, wy)):
+            for iz, fz in ((iz1, 1.0 - wz), (iz2, wz)):
+                flat = (ix * ny + iy) * nz + iz
+                np.add.at(grad, flat, values * fx * fy * fz)
+    return grad.reshape(data.shape)
 
 
 def contract(source, currents_grad: np.ndarray, source_amplitudes=None) -> dict:
