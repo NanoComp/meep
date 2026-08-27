@@ -15,6 +15,72 @@ def check_positive(prop, val):
         raise ValueError(f"{prop} must be positive. Got {val}")
 
 
+# Parameters every source can be differentiated with respect to.  "currents" is
+# the cotangent with respect to the per-point complex current amplitudes Meep
+# actually applies to the Yee grid; it is the universal representation, and the
+# one the JAX bridge uses.  "amplitude" is exact and needs no finite difference,
+# since it scales those currents linearly.
+_DIFFERENTIABLE_ALWAYS = ("currents", "amplitude")
+
+# Parameters that move the source's support rather than change its amplitudes.
+# The adjoint machinery gathers the cotangent at a *fixed* set of grid points
+# (see dft_fields::fourier_sourcegradient), so a derivative here is not merely
+# unimplemented -- it is outside the formulation.
+_DIFFERENTIABLE_MOVES_SUPPORT = ("center", "size", "volume")
+
+
+def _validate_differentiable(src, differentiable):
+    """Check and normalize a source's `differentiable` argument.
+
+    Returns a tuple of parameter names.  Raises `ValueError` for a name the
+    source does not have, and `NotImplementedError` for a name that is
+    meaningful but whose sensitivity is not yet implemented, so that the two
+    cases are not confused with one another.
+    """
+    if differentiable is None:
+        return ()
+    if isinstance(differentiable, str):
+        raise ValueError(
+            "`differentiable` takes a list of parameter names, not a bare "
+            f"string; use ['{differentiable}'] instead."
+        )
+
+    valid = tuple(_DIFFERENTIABLE_ALWAYS) + tuple(
+        getattr(src, "_differentiable_params", ())
+    )
+    implemented = set(_DIFFERENTIABLE_ALWAYS)
+
+    names = []
+    for name in differentiable:
+        if name in _DIFFERENTIABLE_MOVES_SUPPORT:
+            raise ValueError(
+                f"'{name}' changes which grid points the source occupies, not "
+                "the amplitudes it applies to them, so its derivative is not "
+                "defined by the adjoint formulation Meep uses for sources. "
+                "Parameterize the amplitudes instead, e.g. with 'currents'."
+            )
+        if name not in valid:
+            raise ValueError(
+                f"'{name}' is not a differentiable parameter of "
+                f"{type(src).__name__}. Valid choices are: "
+                f"{', '.join(sorted(valid))}."
+            )
+        if name not in implemented:
+            raise NotImplementedError(
+                f"'{name}' is a differentiable parameter of "
+                f"{type(src).__name__}, but its sensitivity requires the "
+                "finite-difference contraction over Meep's own source "
+                "construction, which is not implemented yet. Use 'currents' "
+                "and apply the chain rule yourself, or parameterize the "
+                "source from JAX."
+            )
+        names.append(name)
+
+    if len(set(names)) != len(names):
+        raise ValueError(f"`differentiable` contains duplicate names: {names}")
+    return tuple(names)
+
+
 class Source:
     """
     The `Source` class is used to specify the current sources via the `Simulation.sources`
@@ -49,6 +115,8 @@ class Source:
         amp_func=None,
         amp_func_file="",
         amp_data=None,
+        differentiable=None,
+        name=None,
     ):
         """
         Construct a `Source`.
@@ -98,6 +166,22 @@ class Source:
           For a 2d simulation, just pass 1 for the third dimension, e.g., `arr =
           np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
+        + **`differentiable` [`list of string`]** — Names of the parameters this
+          source should be differentiated with respect to by the adjoint solver
+          (see [Adjoint Solver](Python_Tutorials/Adjoint_Solver.md)). Every source
+          accepts `'currents'`, the per-point complex current amplitudes, and
+          `'amplitude'`; individual source classes may accept more. The names given
+          here are exactly the keys of the corresponding gradient, so they cannot
+          drift apart. `'center'` and `'size'` are rejected: they move the grid
+          points the source occupies rather than the amplitudes applied to them,
+          which the adjoint formulation for sources does not cover. Defaults to
+          `None`, meaning the source is not differentiated.
+
+        + **`name` [`string`]** — An optional label used as the key for this
+          source's entry in the gradient returned by `OptimizationProblem`. Defaults
+          to `None`, in which case the source's position in `Simulation.sources` is
+          used instead.
+
         As described in Section 4.2 ("Incident Fields and Equivalent Currents") in
         [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source
         Conditions") of the book [Advances in FDTD Computational Electrodynamics:
@@ -131,6 +215,8 @@ class Source:
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
+        self.name = name
+        self.differentiable = _validate_differentiable(self, differentiable)
 
     def add_source(self, sim):
         where = mp.Volume(
@@ -716,6 +802,11 @@ class GaussianBeam3DSource(Source):
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.
     """
 
+    # `beam_kdir` is deliberately absent: its length is ignored, so only its
+    # direction is meaningful and a component-wise derivative would report a
+    # spurious radial sensitivity.  It needs a tangent-space projection first.
+    _differentiable_params = ("beam_x0", "beam_w0", "beam_E0")
+
     def __init__(
         self,
         src,
@@ -1098,15 +1189,124 @@ class GaussianBeamSource(GaussianBeam3DSource):
         super().add_source(sim)
 
 
+class ArraySource(Source):
+    """A volume source whose per-point complex amplitudes are given as an array.
+
+    Ordinary `Source` objects take a single `amplitude` and, optionally, an
+    `amp_func` that Meep evaluates internally. This class instead takes the
+    amplitudes directly, one per grid point, which is what a source computed
+    somewhere else -- by a mode solver, a propagator, or JAX -- naturally
+    produces.
+
+    The array is indexed exactly like `Simulation.get_dft_array` over the same
+    volume and component. That is deliberate: it is also the ordering the
+    adjoint solver returns `differentiable=['currents']` gradients in, so an
+    array can be handed in and its cotangent read back with no bookkeeping in
+    between. Injection and measurement share one convention because they are
+    implemented as a scatter and its exact transpose.
+    """
+
+    def __init__(
+        self,
+        src,
+        component,
+        amplitudes,
+        frequency,
+        center=None,
+        volume=None,
+        size=Vector3(),
+        differentiable=None,
+        name=None,
+    ):
+        """Construct an `ArraySource`.
+
+        + **`amplitudes` [`numpy.ndarray`]** — Complex amplitude for each point
+          of the source region, shaped like `get_dft_array` over that region.
+        + **`frequency` [`number`]** — The frequency the amplitudes refer to.
+        """
+        super().__init__(
+            src,
+            component,
+            center=center,
+            volume=volume,
+            size=size,
+            differentiable=differentiable,
+            name=name,
+        )
+        self.amplitudes = np.ascontiguousarray(amplitudes, dtype=np.complex128)
+        self.frequency = float(frequency)
+        self._monitor = None
+
+    def add_source(self, sim):
+        vol = sim._fit_volume_to_simulation(
+            mp.Volume(center=self.center, size=self.size)
+        )
+        # The monitor is created only for its chunk decomposition and array
+        # ordering; its DFT storage is never read.
+        # A DFT object cannot be added before the field components exist, and
+        # components are normally allocated only once every source has been
+        # added. Ask for this one up front.
+        sim.fields.require_component(self.component)
+
+        mon = sim.add_dft_fields(
+            [self.component], [self.frequency], where=vol, yee_grid=True
+        )
+        # add_dft_fields defers construction; the scatter needs it now
+        sim._evaluate_dft_objects()
+        dims = sim.fields.dft_monitor_size(mon.swigobj, vol.swigobj, self.component)
+        npts = int(np.prod(dims))
+
+        if self.amplitudes.size != npts:
+            raise ValueError(
+                f"`amplitudes` has {self.amplitudes.size} elements but the "
+                f"source region holds {npts} grid points (shape {tuple(dims)})."
+            )
+
+        # Two conversions, so that one entry of `amplitudes` means exactly what
+        # `Source.amplitude` means for a point source at that grid point:
+        # fourier_sourcedata negates electric components (it was written to
+        # place adjoint sources), and it places a current *density*, whose
+        # integral over a voxel is the amplitude times dV.
+        num_dims = sim._infer_dimensions(sim.k_point)
+        dV = 1 / sim.resolution**num_dims
+        flat = np.ascontiguousarray(
+            self.amplitudes.ravel() * complex(self.amplitude) * (-1.0 / dV),
+            dtype=np.complex128,
+        )
+        srcdata = mon.swigobj.fourier_sourcedata(
+            vol.swigobj, self.component, sim.fields, flat
+        )
+
+        sim.fields.register_src_time(self.src.swigobj)
+        for sd in srcdata:
+            amp = np.asarray(sd.amp_arr, dtype=np.complex128)
+            if amp.size == 0:
+                continue  # this process owns no part of the source
+            sim.fields.add_srcdata(sd, self.src.swigobj, amp.size, amp, False)
+
+        # the DFT storage is dead weight for a plane with many points
+        mon.remove()
+
+
 class IndexedSource(Source):
     """
     created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
     """
 
-    def __init__(self, src, srcdata, amp_arr, needs_boundary_fix=False):
+    def __init__(
+        self,
+        src,
+        srcdata,
+        amp_arr,
+        needs_boundary_fix=False,
+        differentiable=None,
+        name=None,
+    ):
         self.src = src
         self.num_pts = len(amp_arr)
         self.srcdata = srcdata
+        self.name = name
+        self.differentiable = _validate_differentiable(self, differentiable)
         self.amp_arr = amp_arr
         self.needs_boundary_fix = needs_boundary_fix
 
