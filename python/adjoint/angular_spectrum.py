@@ -924,17 +924,49 @@ class AngularSpectrum:
             amplitude_u = -amplitude_s * sine + amplitude_p * cosine
             amplitude_v = amplitude_s * cosine + amplitude_p * sine
 
-        phase = jnp.exp(1j * jnp.einsum("xd,kd->xk", positions, result.kt))
         measure = self._spectral_measure()
         (e_u, e_v), _ = _PLANE_AXES[self.normal]
-        shape = tuple(len(a) for a in axes)
         outputs = {}
         for component, amplitude in ((e_u, amplitude_u), (e_v, amplitude_v)):
             if not jnp.any(amplitude):
                 continue
-            values = jnp.einsum("xk,fk->fx", phase, amplitude) * measure
-            outputs[component] = values.reshape(values.shape[:1] + shape)
+            if coordinates is None and self._uniform:
+                outputs[component] = self._inverse_transform(amplitude)
+            else:
+                outputs[component] = self._evaluate_at(amplitude, axes, measure)
         return outputs
+
+    def _inverse_transform(self, amplitude: jnp.ndarray) -> jnp.ndarray:
+        """Inverts the forward transform back onto the monitor samples.
+
+        The exact inverse of `_transform`, and the only affordable route in 3D:
+        evaluating the sum directly would need a dense (num samples, num
+        wavevectors) matrix, which for a 64x64 monitor padded eightfold is 17 GB.
+        """
+        origins = jnp.asarray([axis[0] for axis in self._coordinate_axes()])
+        spectrum = amplitude * jnp.exp(1j * (self._kt @ origins))
+        spectrum = spectrum.reshape(spectrum.shape[:1] + self._padded)
+        transverse = tuple(range(-self.transverse_dimensions, 0))
+        values = jnp.fft.ifftn(spectrum, axes=transverse) / float(onp.prod(self.pitch))
+        return values[(slice(None),) + tuple(slice(0, n) for n in self.num_points)]
+
+    def _evaluate_at(self, amplitude, axes, measure, max_entries=2**26):
+        """Sums the spectrum at arbitrary coordinates, in bounded-size chunks.
+
+        The dense phase matrix is (num coordinates, num wavevectors), so it has
+        to be chunked or it will exhaust memory well before it is slow.
+        """
+        grids = onp.meshgrid(*axes, indexing="ij")
+        positions = onp.stack([g.ravel() for g in grids], axis=-1)
+        shape = tuple(len(axis) for axis in axes)
+        chunk = max(1, int(max_entries // max(1, self._kt.shape[0])))
+        pieces = []
+        for start in range(0, positions.shape[0], chunk):
+            block = jnp.asarray(positions[start : start + chunk])
+            phase = jnp.exp(1j * jnp.einsum("xd,kd->xk", block, self._kt))
+            pieces.append(jnp.einsum("xk,fk->fx", phase, amplitude) * measure)
+        values = jnp.concatenate(pieces, axis=-1)
+        return values.reshape(values.shape[:1] + shape)
 
     # ---------------------------------------------------------------- Meep glue
     #

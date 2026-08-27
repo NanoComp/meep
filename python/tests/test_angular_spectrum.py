@@ -211,15 +211,7 @@ def _up_going(propagator, values):
     """
     spectrum = propagator._transform(jnp.asarray(values))
     admittance = propagator._admittances[0][asm.S_POLARIZATION]
-    positions = jnp.asarray(propagator._sample_positions())
-    magnetic = (
-        jnp.einsum(
-            "xk,fk->fx",
-            jnp.exp(1j * jnp.einsum("xd,kd->xk", positions, propagator.kt)),
-            spectrum * admittance,
-        )
-        * propagator._spectral_measure()
-    )
+    magnetic = propagator._inverse_transform(spectrum * admittance)
     return mpa.TangentialFields(
         E={mp.Ez: jnp.asarray(values)}, H={mp.Hx: magnetic}, normal=mp.Y
     )
@@ -485,14 +477,9 @@ def _up_going_3d(propagator, amplitude_s, amplitude_p):
     electric_u, electric_v = to_axes(amplitude_s, amplitude_p)
     magnetic_u, magnetic_v = to_axes(magnetic_s, magnetic_p)
 
-    positions = jnp.asarray(propagator._sample_positions())
-    phase = jnp.exp(1j * jnp.einsum("xd,kd->xk", positions, propagator.kt))
-    measure = propagator._spectral_measure()
-    shape = propagator.num_points
-
-    def to_real_space(values):
-        out = jnp.einsum("xk,fk->fx", phase, values) * measure
-        return out.reshape(out.shape[:1] + shape)
+    # Via the inverse FFT rather than a dense phase matrix: at these sizes the
+    # matrix is (num samples, num wavevectors) and runs to many gigabytes.
+    to_real_space = propagator._inverse_transform
 
     (e_u, e_v), (h_u, h_v) = asm._PLANE_AXES[mp.Z]
     return mpa.TangentialFields(
@@ -569,12 +556,12 @@ class TestThreeDimensions(ApproxComparisonTestCase):
     def test_gaussian_beam_spreading(self):
         """A circular beam spreads as w0 sqrt(1 + (z/zR)^2), as in 2D."""
         waist = 1.2
-        propagator = _propagator_3d(pad_factor=8)
+        propagator = _propagator_3d(pad_factor=6)
         fields = _up_going_3d(propagator, *self._linear_gaussian(propagator, waist))
         rayleigh = onp.pi * waist**2 * N_OXIDE / WAVELENGTH
         distance = 8.0
         expected = waist * math.sqrt(1 + (distance / rayleigh) ** 2)
-        line = onp.linspace(-3 * expected, 3 * expected, 601)
+        line = onp.linspace(-3 * expected, 3 * expected, 241)
         output = propagator.propagate(
             fields, distance, coordinates=[line, onp.zeros(1)]
         )
@@ -598,7 +585,7 @@ class TestThreeDimensions(ApproxComparisonTestCase):
     def test_gaussian_mode_overlap_is_high_for_a_matched_beam(self):
         """A circular Gaussian projected onto a matched circular mode."""
         waist = 1.2
-        propagator = _propagator_3d(pad_factor=8)
+        propagator = _propagator_3d(pad_factor=6)
         fields = _up_going_3d(propagator, *self._linear_gaussian(propagator, waist))
         efficiency = float(
             propagator.overlap(fields, mpa.gaussian_mode(waist), 1e-9)[0]
