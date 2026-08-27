@@ -1798,7 +1798,6 @@ PyObject *_get_array_metadata(meep::fields *f, const meep::volume &where);
         with_prefix
     )
     from .source import (
-        ArraySource,
         ContinuousSource,
         CustomSource,
         EigenModeSource,

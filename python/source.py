@@ -20,7 +20,7 @@ def check_positive(prop, val):
 # actually applies to the Yee grid; it is the universal representation, and the
 # one the JAX bridge uses.  "amplitude" is exact and needs no finite difference,
 # since it scales those currents linearly.
-_DIFFERENTIABLE_ALWAYS = ("currents", "amplitude")
+_DIFFERENTIABLE_ALWAYS = ("currents", "amplitude", "amp_data")
 
 # Parameters that move the source's support rather than change its amplitudes.
 # The adjoint machinery gathers the cotangent at a *fixed* set of grid points
@@ -48,6 +48,11 @@ def _validate_differentiable(src, differentiable):
     valid = tuple(_DIFFERENTIABLE_ALWAYS) + tuple(
         getattr(src, "_differentiable_params", ())
     )
+    if "amp_data" in differentiable and getattr(src, "amp_data", None) is None:
+        raise ValueError(
+            "'amp_data' was requested but this source has none; pass "
+            "amp_data=<array> to differentiate with respect to it."
+        )
 
     names = []
     for name in differentiable:
@@ -1178,121 +1183,6 @@ class GaussianBeamSource(GaussianBeam3DSource):
                 DeprecationWarning,
             )
         super().add_source(sim)
-
-
-class ArraySource(Source):
-    """A volume source whose per-point complex amplitudes are given as an array.
-
-    Ordinary `Source` objects take a single `amplitude` and, optionally, an
-    `amp_func` that Meep evaluates internally. This class instead takes the
-    amplitudes directly, one per grid point, which is what a source computed
-    somewhere else -- by a mode solver, a propagator, or JAX -- naturally
-    produces.
-
-    The array is indexed exactly like `Simulation.get_dft_array` over the same
-    volume and component. That is deliberate: it is also the ordering the
-    adjoint solver returns `differentiable=['currents']` gradients in, so an
-    array can be handed in and its cotangent read back with no bookkeeping in
-    between. Injection and measurement share one convention because they are
-    implemented as a scatter and its exact transpose.
-    """
-
-    def __init__(
-        self,
-        src,
-        component,
-        amplitudes,
-        frequency,
-        center=None,
-        volume=None,
-        size=Vector3(),
-        yee_grid=True,
-        differentiable=None,
-        name=None,
-    ):
-        """Construct an `ArraySource`.
-
-        + **`amplitudes` [`numpy.ndarray`]** — Complex amplitude for each point
-          of the source region, shaped like `get_dft_array` over that region.
-        + **`frequency` [`number`]** — The frequency the amplitudes refer to.
-        + **`yee_grid` [`boolean`]** — Whether the amplitudes are given at the
-          Yee points of `component` (the default) or at voxel centers. Voxel
-          centers are what several components sharing one plane need, since
-          each component's Yee points sit at a different half-pixel offset and
-          the arrays would otherwise have different lengths. Meep spreads a
-          centered value across the neighbouring Yee points, and the adjoint
-          gathers it back the same way, so the gradient stays exact either way.
-        """
-        super().__init__(
-            src,
-            component,
-            center=center,
-            volume=volume,
-            size=size,
-            differentiable=differentiable,
-            name=name,
-        )
-        self.amplitudes = np.ascontiguousarray(amplitudes, dtype=np.complex128)
-        self.frequency = float(frequency)
-        self.yee_grid = yee_grid
-        self._monitor = None
-
-    def add_source(self, sim):
-        vol = sim._fit_volume_to_simulation(
-            mp.Volume(center=self.center, size=self.size)
-        )
-        # The monitor is created only for its chunk decomposition and array
-        # ordering; its DFT storage is never read.
-        # A DFT object cannot be added before the field components exist, and
-        # components are normally allocated only once every source has been
-        # added. Ask for this one up front.
-        sim.fields.require_component(self.component)
-
-        mon = sim.add_dft_fields(
-            [self.component], [self.frequency], where=vol, yee_grid=self.yee_grid
-        )
-        # add_dft_fields defers construction; the scatter needs it now
-        sim._evaluate_dft_objects()
-        dims = sim.fields.dft_monitor_size(mon.swigobj, vol.swigobj, self.component)
-        npts = int(np.prod(dims))
-
-        if self.amplitudes.size != npts:
-            raise ValueError(
-                f"`amplitudes` has {self.amplitudes.size} elements but the "
-                f"source region holds {npts} grid points (shape {tuple(dims)})."
-            )
-
-        # Two conversions, so that one entry of `amplitudes` means exactly what
-        # `Source.amplitude` means for a point source at that grid point.
-        #
-        # fourier_sourcedata negates *electric* components and only those, since
-        # it was written to place adjoint sources; undoing it for magnetic
-        # components too would flip the relative sign of the two sheets of an
-        # equivalent-current pair, which silently reverses the direction such a
-        # pair radiates in.
-        #
-        # It also places a current *density*, whose integral over a voxel is the
-        # amplitude times dV.
-        num_dims = sim._infer_dimensions(sim.k_point)
-        dV = 1 / sim.resolution**num_dims
-        sign = -1.0 if mp.is_electric(self.component) else 1.0
-        flat = np.ascontiguousarray(
-            self.amplitudes.ravel() * complex(self.amplitude) * (sign / dV),
-            dtype=np.complex128,
-        )
-        srcdata = mon.swigobj.fourier_sourcedata(
-            vol.swigobj, self.component, sim.fields, flat
-        )
-
-        sim.fields.register_src_time(self.src.swigobj)
-        for sd in srcdata:
-            amp = np.asarray(sd.amp_arr, dtype=np.complex128)
-            if amp.size == 0:
-                continue  # this process owns no part of the source
-            sim.fields.add_srcdata(sd, self.src.swigobj, amp.size, amp, False)
-
-        # the DFT storage is dead weight for a plane with many points
-        mon.remove()
 
 
 class IndexedSource(Source):
