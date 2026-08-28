@@ -33,6 +33,11 @@ import meep as mp
 # curvature rather than a derivative.
 DEFAULT_STEP_PIXELS = 0.02
 
+# How far past an object the gradient monitor reaches, in pixels. The support of
+# d(epsilon)/d(parameter) is the shell of voxels the boundary sweeps through, so
+# it extends outside the object itself.
+MONITOR_PAD_PIXELS = 2.0
+
 # Indices `geometry_addgradient` uses, matching the geom_param enumeration in
 # meepgeom.cpp.
 PARAMETER_INDEX = {
@@ -114,8 +119,20 @@ def install_geometry_monitors(
 
     monitors = []
     for _, obj in objects:
+        # Pad beyond the object. Moving a boundary changes the smoothed
+        # permittivity in every voxel the boundary passes through, and that
+        # includes voxels whose centres lie *outside* the original extent. A
+        # monitor covering only the object misses them, which costs little
+        # where the field is continuous across the boundary and a great deal
+        # where it is not -- the normal E field jumps by the index contrast.
+        pad = MONITOR_PAD_PIXELS / sim.resolution
+        padded = mp.Vector3(
+            obj.size.x + 2 * pad if obj.size.x else 0.0,
+            obj.size.y + 2 * pad if obj.size.y else 0.0,
+            obj.size.z + 2 * pad if obj.size.z else 0.0,
+        )
         volume = sim._fit_volume_to_simulation(
-            mp.Volume(center=obj.center, size=obj.size)
+            mp.Volume(center=obj.center, size=padded)
         )
         monitors.append(
             [
