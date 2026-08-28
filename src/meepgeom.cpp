@@ -3070,6 +3070,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
 
   std::vector<double> local(nf * nparams, 0.0);
   double fill_worst = 0.0, fill_scale = 0.0;
+  int fill_printed = 0;
   size_t fill_checked = 0;
   /* `fill` is dimensionless and O(1) and `delta` is linear in it, so this step
      is well conditioned -- unlike a step in a length, which has to be compared
@@ -3278,6 +3279,15 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                   fill_checked++;
                   fill_scale = std::max(fill_scale, std::abs(numeric));
                   fill_worst = std::max(fill_worst, std::abs(numeric - dfill_dp));
+                  if (std::abs(numeric - dfill_dp) > 1e-9 && fill_printed < 12) {
+                    fill_printed++;
+                    master_printf("  BAD p%d at (%.4f,%.4f) fill=%.4f ov=(%.4f,%.4f,%.4f) "
+                                  "dc=(%.2f,%.2f,%.2f) ds=(%.2f,%.2f,%.2f) vol=%.5f "
+                                  "analytic=%.4f numeric=%.4f\n",
+                                  which, p_node.x(), p_node.y(), fill, overlap[0], overlap[1],
+                                  overlap[2], d_dc[0], d_dc[1], d_dc[2], d_ds[0], d_ds[1], d_ds[2],
+                                  pixel_volume, dfill_dp, numeric);
+                  }
                 }
 
                 /* the leading minus matches get_material_gradient's convention,
