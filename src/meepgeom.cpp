@@ -2972,19 +2972,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
             double cyl_scale;
             IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
-            /* Index the DFT array by position, NOT by the LOOP_OVER_IVECS counter.
-               The `persist` pad clamps is/ie to fc->gv, whose corners live on the
-               centered grid, so `is` can land off this component's yee lattice.
-               update_dft() and grid_volume::index() both absorb that consistently
-               (index() subtracts iyee_shift, see vec.cpp:476), but the loop
-               counter's idx0 does not, so when (is_old - is) is odd it is off by a
-               whole stride. The clamp only bites where the monitor meets a chunk
-               boundary, which is what made the gradient depend on the chunk
-               division. */
-            ptrdiff_t adj_idx = gv_adj.index(adjoint_c, ip);
-            std::complex<meep::realnum> adj = (adj_idx >= 0 && (size_t)adj_idx < adj_chunk->N)
-                                                  ? adj_chunk->dft[nf * adj_idx + f_i]
-                                                  : std::complex<meep::realnum>(0, 0);
+            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
             material_type md;
             geps->get_material_pt(md, p);
             /* if we have conductivities (e.g. for damping)
