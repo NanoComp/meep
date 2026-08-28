@@ -3071,6 +3071,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
   std::vector<double> local(nf * nparams, 0.0);
   double fill_worst = 0.0, fill_scale = 0.0;
   int fill_printed = 0;
+  int dchi_printed = 0;
   size_t fill_checked = 0;
   /* `fill` is dimensionless and O(1) and `delta` is linear in it, so this step
      is well conditioned -- unlike a step in a length, which has to be compared
@@ -3236,6 +3237,18 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
               const double actual_dfill = std::min(1.0, fill + dfill) - std::max(0.0, fill - dfill);
               if (actual_dfill <= 0) continue;
               const double dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
+
+            if (f_i == 0 && node == 0 && getenv("MEEP_CHECK_DCHI") && dchi_printed < 14) {
+              /* Kottke assembles the normal component harmonically, so
+                 chi1inv_nn = fill/eps1 + (1-fill)/eps2 is linear in fill and
+                 its derivative is exactly 1/eps1 - 1/eps2, independent of
+                 fill. The tangential component is arithmetic in eps, giving
+                 -(eps1-eps2)/eps_avg^2. Both are known in closed form, so this
+                 validates the instrument rather than assuming it. */
+              dchi_printed++;
+              master_printf("  DCHI c=%s dir=%d fill=%.4f dchi_dfill=%.6f\n",
+                            meep::component_name(adjoint_c), dir_idx, fill, dchi_dfill);
+            }
 
               const std::complex<double> pair =
                   std::complex<double>(double(adj.real()), double(adj.imag())) *
