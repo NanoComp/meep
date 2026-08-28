@@ -3022,12 +3022,21 @@ static void axis_overlap(double lo, double hi, double c, double s, double &overl
     return;
   }
   /* Moving the centre moves both faces together; growing the size moves them
-     apart by half each. A face only contributes where it lies strictly inside
-     the pixel -- outside, the clamp pins the overlap and the derivative is
-     zero. This is what makes the derivative one-sided exactly on a pixel
-     edge. */
-  const double lower_inside = (blo > lo) ? 1.0 : 0.0;
-  const double upper_inside = (bhi < hi) ? 1.0 : 0.0;
+     apart by half each. A face contributes only in the pixel that contains it.
+
+     The comparisons are half-open on purpose. With strict inequalities on both
+     sides, a face lying exactly on a pixel boundary belongs to neither
+     neighbour and its contribution vanishes -- silently, and for every pixel
+     along that face, which zeroes the whole derivative for that axis. Round
+     geometry on a round grid hits this constantly: a block of width 1.0 at
+     resolution 20 has faces exactly 10 pixels from its centre.
+
+     Half-open assigns such a face to exactly one of the two pixels, so nothing
+     is dropped and nothing is double counted. The derivative is then one-sided
+     there, which is the truth: the smoothed permittivity has a kink at a pixel
+     boundary and no two-sided derivative exists. */
+  const double lower_inside = (blo >= lo && blo < hi) ? 1.0 : 0.0;
+  const double upper_inside = (bhi > lo && bhi <= hi) ? 1.0 : 0.0;
   d_dcenter = upper_inside - lower_inside;
   d_dsize = 0.5 * (upper_inside + lower_inside);
 }
@@ -3080,7 +3089,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
           if ((num_f == 0) || ((size_t)cur >= num_f)) continue;
           meep::dft_chunk *fwd_chunk = forward_chunks[ci_forward][cur];
           meep::component forward_c = fwd_chunk->c;
-          if (forward_c != adjoint_c) continue; // diagonal; see note below
+          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
 
           int dir_idx;
           switch (meep::component_direction(forward_c)) {
@@ -3096,112 +3105,155 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
           meep::ivec loop_ie = adj_chunk->persist ? adj_chunk->ie_old : adj_chunk->ie;
 
           LOOP_OVER_IVECS(gv_adj, loop_is, loop_ie, idx_adj) {
+            IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
-            std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
-            if (adj == 0.0 || fwd == 0.0) continue;
+            if (adj == 0.0) continue;
 
-            meep::volume voxel(p);
-            LOOP_OVER_DIRECTIONS(gv.dim, d) {
-              voxel.set_direction_min(d, p.in_direction(d) - 0.5 * gv.inva);
-              voxel.set_direction_max(d, p.in_direction(d) + 0.5 * gv.inva);
+            /* The smoothed tensor is diagonal in Cartesian axes only where the
+               interface normal lies along an axis, which for a block is true on
+               a face and false on an edge or corner. Those pixels are O(N) of
+               the O(N^2) on the boundary, so their share falls with resolution
+               -- which is the signature of the residual error here. Contracting
+               them needs the forward field of another component, restricted to
+               the two epsilon nodes between the pair. */
+            std::complex<meep::realnum> fwd;
+            meep::vec eps_at = p;
+            double node_weight = 1.0;
+            int num_nodes = 1;
+            meep::vec node_pos[2];
+            std::complex<meep::realnum> node_fwd[2];
+            if (forward_c == adjoint_c) {
+              node_pos[0] = p;
+              node_fwd[0] = fwd_chunk->dft[nf * idx_adj + f_i];
             }
-
-            /* Skip pixels that do not straddle the boundary: d(fill)/d(param)
-               is zero there, so they contribute nothing. */
-            /* `fill` is the fraction of the pixel inside whichever object
-               get_front_object selected. If that is not the object being
-               differentiated, d(fill)/d(our parameters) is not what this pixel
-               responds to -- and taking it anyway gets the sign wrong wherever
-               the front object is the background instead. */
-            double fill;
-            const geometric_object *front = NULL;
-            vector3 shiftby = {0, 0, 0};
-            if (!geps->interface_fill(voxel, geps->tol, geps->maxeval, fill, &front, &shiftby))
-              continue;
-            if (front != obj) continue;
-            if (fill <= 0.0 || fill >= 1.0) continue;
-
-            /* d(fill)/d(parameter), analytic and separable. */
-            double overlap[3], d_dc[3], d_ds[3], extent[3];
-            bool degenerate = false;
-            for (int ax = 0; ax < 3; ax++) {
-              meep::direction dd = (ax == 0) ? meep::X : (ax == 1) ? meep::Y : meep::Z;
-              const bool resolved = (gv.dim == meep::D3) || (gv.dim == meep::D2 && ax < 2) ||
-                                    (gv.dim == meep::D1 && ax == 2);
-              if (!resolved) {
-                /* A dimension the simulation does not resolve. The block is
-                   effectively infinite along it, so it contributes a factor of
-                   one to the overlap and nothing to the derivative -- note the
-                   block's own size along such an axis is typically zero, so
-                   using it here would make every pixel degenerate. */
-                extent[ax] = 1.0;
-                overlap[ax] = 1.0;
-                d_dc[ax] = d_ds[ax] = 0.0;
-                continue;
+            else {
+              num_nodes = 2;
+              node_weight = 0.5;
+              meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
+              meep::ivec unit_a = unit_ivec(gv.dim, component_direction(adjoint_c));
+              meep::ivec unit_f = unit_ivec(gv.dim, component_direction(forward_c));
+              meep::ivec pl[2] = {fwd_p, fwd_p + unit_a * 2};
+              meep::ivec pr[2] = {fwd_p - unit_f * 2, fwd_p + unit_a * 2 - unit_f * 2};
+              for (int nd = 0; nd < 2; nd++) {
+                ptrdiff_t i1 = gv_fwd.index(forward_c, pl[nd]);
+                ptrdiff_t i2 = gv_fwd.index(forward_c, pr[nd]);
+                std::complex<meep::realnum> f1 =
+                    ((i1 >= fwd_chunk->N) || (i1 < 0)) ? 0 : fwd_chunk->dft[nf * i1 + f_i];
+                std::complex<meep::realnum> f2 =
+                    ((i2 >= fwd_chunk->N) || (i2 < 0)) ? 0 : fwd_chunk->dft[nf * i2 + f_i];
+                node_fwd[nd] = std::complex<meep::realnum>(0.5, 0) * (f1 + f2);
+                node_pos[nd] = gv[(pl[nd] + pr[nd]) / 2];
               }
-              const double sh = (ax == 0) ? shiftby.x : (ax == 1) ? shiftby.y : shiftby.z;
-              const double lo = voxel.in_direction_min(dd) - sh;
-              const double hi = voxel.in_direction_max(dd) - sh;
-              extent[ax] = hi - lo;
-              axis_overlap(lo, hi, centers[ax], sizes[ax], overlap[ax], d_dc[ax], d_ds[ax]);
-              if (overlap[ax] <= 0) degenerate = true;
             }
-            if (degenerate) continue;
 
-            double pixel_volume = 1.0;
-            for (int ax = 0; ax < 3; ax++)
-              pixel_volume *= extent[ax];
+            for (int node = 0; node < num_nodes; node++) {
+              fwd = node_fwd[node];
+              if (fwd == 0.0) continue;
+              const meep::vec p_node = node_pos[node];
 
-            /* d(chi1inv)/d(fill), from meep's own tensor assembly. */
-            bool fb_lo = false, fb_hi = false;
-            symm_matrix m_lo, m_hi;
-            geps->eff_chi1inv_matrix(adjoint_c, &m_lo, voxel, geps->tol, geps->maxeval, fb_lo,
-                                     std::max(0.0, fill - dfill));
-            geps->eff_chi1inv_matrix(adjoint_c, &m_hi, voxel, geps->tol, geps->maxeval, fb_hi,
-                                     std::min(1.0, fill + dfill));
-            if (fb_lo || fb_hi) continue;
+              meep::volume voxel(p_node);
+              LOOP_OVER_DIRECTIONS(gv.dim, d) {
+                voxel.set_direction_min(d, p_node.in_direction(d) - 0.5 * gv.inva);
+                voxel.set_direction_max(d, p_node.in_direction(d) + 0.5 * gv.inva);
+              }
 
-            const double lo_row[3] = {m_lo.m00, m_lo.m01, m_lo.m02};
-            const double hi_row[3] = {m_hi.m00, m_hi.m01, m_hi.m02};
-            const double lo_row1[3] = {m_lo.m01, m_lo.m11, m_lo.m12};
-            const double hi_row1[3] = {m_hi.m01, m_hi.m11, m_hi.m12};
-            const double lo_row2[3] = {m_lo.m02, m_lo.m12, m_lo.m22};
-            const double hi_row2[3] = {m_hi.m02, m_hi.m12, m_hi.m22};
-            int row_of = 0;
-            switch (meep::component_direction(adjoint_c)) {
-              case meep::X:
-              case meep::R: row_of = 0; break;
-              case meep::Y:
-              case meep::P: row_of = 1; break;
-              case meep::Z: row_of = 2; break;
-              default: continue;
-            }
-            const double *lo_r = (row_of == 0) ? lo_row : (row_of == 1) ? lo_row1 : lo_row2;
-            const double *hi_r = (row_of == 0) ? hi_row : (row_of == 1) ? hi_row1 : hi_row2;
-            const double actual_dfill = std::min(1.0, fill + dfill) - std::max(0.0, fill - dfill);
-            if (actual_dfill <= 0) continue;
-            const double dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
+              /* Skip pixels that do not straddle the boundary: d(fill)/d(param)
+                 is zero there, so they contribute nothing. */
+              /* `fill` is the fraction of the pixel inside whichever object
+                 get_front_object selected. If that is not the object being
+                 differentiated, d(fill)/d(our parameters) is not what this pixel
+                 responds to -- and taking it anyway gets the sign wrong wherever
+                 the front object is the background instead. */
+              double fill;
+              const geometric_object *front = NULL;
+              vector3 shiftby = {0, 0, 0};
+              if (!geps->interface_fill(voxel, geps->tol, geps->maxeval, fill, &front, &shiftby))
+                continue;
+              if (front != obj) continue;
+              if (fill <= 0.0 || fill >= 1.0) continue;
 
-            const std::complex<double> pair =
-                std::complex<double>(double(adj.real()), double(adj.imag())) *
-                std::complex<double>(double(fwd.real()), double(fwd.imag()));
-            const double cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r() : 1;
+              /* d(fill)/d(parameter), analytic and separable. */
+              double overlap[3], d_dc[3], d_ds[3], extent[3];
+              bool degenerate = false;
+              for (int ax = 0; ax < 3; ax++) {
+                meep::direction dd = (ax == 0) ? meep::X : (ax == 1) ? meep::Y : meep::Z;
+                const bool resolved = (gv.dim == meep::D3) || (gv.dim == meep::D2 && ax < 2) ||
+                                      (gv.dim == meep::D1 && ax == 2);
+                if (!resolved) {
+                  /* A dimension the simulation does not resolve. The block is
+                     effectively infinite along it, so it contributes a factor of
+                     one to the overlap and nothing to the derivative -- note the
+                     block's own size along such an axis is typically zero, so
+                     using it here would make every pixel degenerate. */
+                  extent[ax] = 1.0;
+                  overlap[ax] = 1.0;
+                  d_dc[ax] = d_ds[ax] = 0.0;
+                  continue;
+                }
+                const double sh = (ax == 0) ? shiftby.x : (ax == 1) ? shiftby.y : shiftby.z;
+                const double lo = voxel.in_direction_min(dd) - sh;
+                const double hi = voxel.in_direction_max(dd) - sh;
+                extent[ax] = hi - lo;
+                axis_overlap(lo, hi, centers[ax], sizes[ax], overlap[ax], d_dc[ax], d_ds[ax]);
+                if (overlap[ax] <= 0) degenerate = true;
+              }
+              if (degenerate) continue;
 
-            for (size_t ip = 0; ip < nparams; ip++) {
-              const int which = params[ip];
-              const int ax = which % 3;
-              double dfill_dp = (which < 3) ? d_dc[ax] : d_ds[ax];
-              if (dfill_dp == 0.0) continue;
-              for (int other = 0; other < 3; other++)
-                if (other != ax) dfill_dp *= overlap[other];
-              dfill_dp /= pixel_volume;
+              double pixel_volume = 1.0;
+              for (int ax = 0; ax < 3; ax++)
+                pixel_volume *= extent[ax];
 
-              /* the leading minus matches get_material_gradient's convention,
-                 which returns -(d row/d parameter) */
-              local[nparams * f_i + ip] -=
-                  scalegrad * cyl_scale * dchi_dfill * dfill_dp * std::real(pair);
-            }
+              /* d(chi1inv)/d(fill), from meep's own tensor assembly. */
+              bool fb_lo = false, fb_hi = false;
+              symm_matrix m_lo, m_hi;
+              geps->eff_chi1inv_matrix(adjoint_c, &m_lo, voxel, geps->tol, geps->maxeval, fb_lo,
+                                       std::max(0.0, fill - dfill));
+              geps->eff_chi1inv_matrix(adjoint_c, &m_hi, voxel, geps->tol, geps->maxeval, fb_hi,
+                                       std::min(1.0, fill + dfill));
+              if (fb_lo || fb_hi) continue;
+
+              const double lo_row[3] = {m_lo.m00, m_lo.m01, m_lo.m02};
+              const double hi_row[3] = {m_hi.m00, m_hi.m01, m_hi.m02};
+              const double lo_row1[3] = {m_lo.m01, m_lo.m11, m_lo.m12};
+              const double hi_row1[3] = {m_hi.m01, m_hi.m11, m_hi.m12};
+              const double lo_row2[3] = {m_lo.m02, m_lo.m12, m_lo.m22};
+              const double hi_row2[3] = {m_hi.m02, m_hi.m12, m_hi.m22};
+              int row_of = 0;
+              switch (meep::component_direction(adjoint_c)) {
+                case meep::X:
+                case meep::R: row_of = 0; break;
+                case meep::Y:
+                case meep::P: row_of = 1; break;
+                case meep::Z: row_of = 2; break;
+                default: continue;
+              }
+              const double *lo_r = (row_of == 0) ? lo_row : (row_of == 1) ? lo_row1 : lo_row2;
+              const double *hi_r = (row_of == 0) ? hi_row : (row_of == 1) ? hi_row1 : hi_row2;
+              const double actual_dfill = std::min(1.0, fill + dfill) - std::max(0.0, fill - dfill);
+              if (actual_dfill <= 0) continue;
+              const double dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
+
+              const std::complex<double> pair =
+                  std::complex<double>(double(adj.real()), double(adj.imag())) *
+                  std::complex<double>(double(fwd.real()), double(fwd.imag()));
+              const double cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p_node.r() : 1;
+
+              for (size_t ip = 0; ip < nparams; ip++) {
+                const int which = params[ip];
+                const int ax = which % 3;
+                double dfill_dp = (which < 3) ? d_dc[ax] : d_ds[ax];
+                if (dfill_dp == 0.0) continue;
+                for (int other = 0; other < 3; other++)
+                  if (other != ax) dfill_dp *= overlap[other];
+                dfill_dp /= pixel_volume;
+
+                /* the leading minus matches get_material_gradient's convention,
+                   which returns -(d row/d parameter) */
+                local[nparams * f_i + ip] -=
+                    node_weight * scalegrad * cyl_scale * dchi_dfill * dfill_dp * std::real(pair);
+              }
+            } // node
           }
         }
       }
