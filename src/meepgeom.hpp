@@ -212,8 +212,23 @@ public:
   virtual bool is_thread_safe() const { return !has_user_materials; }
   bool has_user_materials;
 
+  /* `fill_override >= 0` substitutes that filling fraction for the one this
+     routine would compute from the geometry. The shape derivative uses it: the
+     smoothed tensor depends on the geometry only through `fill` and the
+     interface normal, so d(chi1inv)/d(parameter) factors into
+     d(chi1inv)/d(fill) -- obtained by varying `fill` here, which is pure local
+     algebra with no quadrature -- times d(fill)/d(parameter), which is
+     analytic for an axis-aligned block. Differencing the geometry directly
+     instead means differencing box_overlap_with_object, an adaptive
+     quadrature, which amplifies its tolerance by 1/step. */
   void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix, const meep::volume &v,
-                          double tol, int maxeval, bool &fallback);
+                          double tol, int maxeval, bool &fallback, double fill_override = -1.0);
+
+  /* The filling fraction and interface normal this pixel would smooth with,
+     or fill < 0 if the pixel does not straddle an interface (so the shape
+     derivative is zero there and the pixel can be skipped). */
+  bool interface_fill(const meep::volume &v, double tol, int maxeval, double &fill,
+                      const geometric_object **which = NULL, vector3 *shift = NULL);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                             double tol, int maxeval);
