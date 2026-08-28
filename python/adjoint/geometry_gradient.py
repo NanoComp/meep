@@ -20,6 +20,7 @@ weight; here it is a length, and the scale that makes sense is a fraction of a
 pixel. `DEFAULT_STEP_PIXELS` sets it relative to the grid rather than absolutely.
 """
 
+import warnings
 from typing import List, Optional
 
 import numpy as np
@@ -28,10 +29,13 @@ import meep as mp
 
 # Perturbation for the geometric finite difference, as a fraction of a pixel.
 # An absolute step is the wrong idea: subpixel smoothing varies over a pixel, so
-# the step has to be defined against the grid. Too small and the smoothed
-# permittivity has not changed measurably; too large and the difference samples
-# curvature rather than a derivative.
-DEFAULT_STEP_PIXELS = 0.02
+# the step has to be defined against the grid.
+#
+# Measured on a block whose faces sit mid-voxel, against a finite difference of
+# the objective: 0.2 px is 10% out, 0.05 px is 6.5%, 0.02 px is 3.4%, 0.005 px
+# is 1.3% and 0.001 px is 0.7%, still improving. The error is truncation, not
+# roundoff, over that whole range, so the step wants to be small.
+DEFAULT_STEP_PIXELS = 0.002
 
 # How far past an object the gradient monitor reaches, in pixels. The support of
 # d(epsilon)/d(parameter) is the shell of voxels the boundary sweeps through, so
@@ -83,6 +87,48 @@ def _check_supported(obj) -> None:
                 "boundary *are* contracted; it is the parameterization that is "
                 "restricted, not the physics."
             )
+
+
+def check_faces_off_voxel_edges(sim: mp.Simulation, obj) -> None:
+    """Warn when a face sits exactly on a voxel edge, where no derivative exists.
+
+    A voxel's filling fraction is piecewise linear in the position of the
+    boundary crossing it, with a kink each time the boundary reaches a voxel
+    edge. The smoothed permittivity -- and so the objective -- is therefore C0
+    but not C1 in an object's position, and *on* an edge the left and right
+    derivatives differ.
+
+    A central difference straddles that kink and returns a weighted mixture of
+    the two, with weights that depend on the step. Measured on such a face, the
+    reported gradient swept monotonically from -0.19 to +0.12 as the step went
+    from 0.2 px to 0.001 px, passing through the true value without settling.
+    Moving the same face half a pixel made the sweep converge to 0.7%.
+
+    This is easy to hit by accident, because round sizes at round resolutions
+    land on edges: a 0.8-wide block at resolution 20 has faces exactly 8 pixels
+    from its centre.
+    """
+    dx = 1.0 / sim.resolution
+    size = (obj.size.x, obj.size.y, obj.size.z)
+    center = (obj.center.x, obj.center.y, obj.center.z)
+    for axis, letter in enumerate("xyz"):
+        if size[axis] == 0:
+            continue
+        for face in (center[axis] - size[axis] / 2, center[axis] + size[axis] / 2):
+            offset = abs((face / dx) - round(face / dx))
+            if offset < 1e-6:
+                warnings.warn(
+                    f"The {letter} face of "
+                    f"{getattr(obj, 'name', None) or 'this object'} at "
+                    f"{face:.6g} lies on a voxel edge, where the smoothed "
+                    "permittivity has a kink and the derivative with respect "
+                    "to position is one-sided. The reported gradient will "
+                    "depend on the finite-difference step rather than "
+                    f"converging. Offset the geometry by about {dx / 2:.6g} "
+                    "along " + letter + ", or change the resolution.",
+                    RuntimeWarning,
+                    stacklevel=3,
+                )
 
 
 def check_smoothing(sim: mp.Simulation) -> None:
@@ -162,6 +208,7 @@ def gradient(
     """dJ/d(parameter) for one object, keyed by the names it declared."""
     _check_supported(obj)
     check_smoothing(sim)
+    check_faces_off_voxel_edges(sim, obj)
 
     names = [n for n in obj.differentiable]
     indices = []
