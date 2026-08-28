@@ -2940,6 +2940,232 @@ static std::complex<meep::realnum> forward_dft_value(const meep::dft_chunk *ch,
     if (i >= 0 && (size_t)i < ch->N) return ch->dft[nf * i + f_i];
   }
   return 0;
+
+/* ------------------------------------------------------------------ */
+/* Gradients with respect to a geometric object's centre and size.      */
+/* ------------------------------------------------------------------ */
+
+/* The design gradient finite-differences eff_chi1inv_row with respect to a
+   design weight. eff_chi1inv_row is a function of the *geometry*, so
+   perturbing an object's centre or size instead gives dA/d(parameter) from the
+   same machinery, with no additional timestepping.
+
+   One structural difference. A design weight is local, so the design gradient
+   perturbs it inside the point loop. A centre or a size is global, so the
+   perturbation hoists out: the geometry is moved once, every point is visited,
+   and the geometry is restored. That is twelve passes for six parameters, not
+   twelve perturbations per point.
+
+   The perturbation cannot simply mutate the object, because geom_box_tree
+   caches bounding boxes (`geom_box b, b1, b2` per node, plus one per object).
+   Stale bounds would misreport which object owns a point near the moved
+   boundary -- exactly where a shape derivative lives -- so the tree is rebuilt
+   around each perturbation. */
+
+// Which scalar of an object is being perturbed.
+enum geom_param {
+  GEOM_CENTER_X = 0,
+  GEOM_CENTER_Y,
+  GEOM_CENTER_Z,
+  GEOM_SIZE_X,
+  GEOM_SIZE_Y,
+  GEOM_SIZE_Z
+};
+
+static double *geom_param_slot(geometric_object *o, int which) {
+  switch (which) {
+    case GEOM_CENTER_X: return &o->center.x;
+    case GEOM_CENTER_Y: return &o->center.y;
+    case GEOM_CENTER_Z: return &o->center.z;
+    default: break;
+  }
+  if (o->which_subclass != geometric_object::BLOCK) return NULL;
+  switch (which) {
+    case GEOM_SIZE_X: return &o->subclass.block_data->size.x;
+    case GEOM_SIZE_Y: return &o->subclass.block_data->size.y;
+    case GEOM_SIZE_Z: return &o->subclass.block_data->size.z;
+    default: return NULL;
+  }
+}
+
+/* Rebuild the box tree after the geometry underneath it has moved. */
+static void geom_rebuild_tree(geom_epsilon *geps, const meep::grid_volume &gv) {
+  if (geps->restricted_tree && geps->restricted_tree != geps->geometry_tree)
+    destroy_geom_box_tree(geps->restricted_tree);
+  destroy_geom_box_tree(geps->geometry_tree);
+  geom_fix_object_list(geps->geometry);
+  geom_box box = gv2box(gv.surroundings());
+  geps->geometry_tree = create_geom_box_tree0(geps->geometry, box);
+  geps->restricted_tree = geps->geometry_tree;
+}
+
+/* One point's contribution: the smoothed chi1inv row at `r`, contracted with
+   the adjoint and forward fields. */
+static std::complex<double> geom_chi1inv_term(geom_epsilon *geps, const meep::grid_volume &gv,
+                                              meep::component adjoint_c, int dir_idx,
+                                              const meep::vec &r, double scale,
+                                              std::complex<meep::realnum> adj,
+                                              std::complex<meep::realnum> fwd) {
+  meep::volume voxel(r);
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    voxel.set_direction_min(d, r.in_direction(d) - 0.5 * gv.inva);
+    voxel.set_direction_max(d, r.in_direction(d) + 0.5 * gv.inva);
+  }
+  double row[3];
+  geps->eff_chi1inv_row(adjoint_c, row, voxel, geps->tol, geps->maxeval);
+  return scale * row[dir_idx] * std::complex<double>(double(adj.real()), double(adj.imag())) *
+         std::complex<double>(double(fwd.real()), double(fwd.imag()));
+}
+
+/* Contract the adjoint and forward fields against the *current* geometry,
+   accumulating one number per frequency. Called twice per parameter, on either
+   side of the perturbation. */
+static void geom_contract(std::complex<double> *out, size_t nf,
+                          std::vector<meep::dft_chunk *> *adjoint_chunks,
+                          std::vector<meep::dft_chunk *> *forward_chunks, double scalegrad,
+                          meep::grid_volume &gv, geom_epsilon *geps) {
+  for (size_t f_i = 0; f_i < nf; f_i++) {
+    for (int ci_adjoint = 0; ci_adjoint < 3; ci_adjoint++) {
+      int num_chunks = adjoint_chunks[ci_adjoint].size();
+      if (num_chunks == 0) continue;
+
+      for (int cur = 0; cur < num_chunks; cur++) {
+        meep::dft_chunk *adj_chunk = adjoint_chunks[ci_adjoint][cur];
+        meep::component adjoint_c = adj_chunk->c;
+        meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is, adj_chunk->ie, adjoint_c);
+
+        for (int ci_forward = 0; ci_forward < 3; ci_forward++) {
+          size_t num_f = forward_chunks[ci_forward].size();
+          if ((num_f == 0) || ((size_t)cur >= num_f)) continue;
+          meep::dft_chunk *fwd_chunk = forward_chunks[ci_forward][cur];
+          meep::component forward_c = fwd_chunk->c;
+          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
+
+          int dir_idx;
+          switch (meep::component_direction(forward_c)) {
+            case meep::X:
+            case meep::R: dir_idx = 0; break;
+            case meep::Y:
+            case meep::P: dir_idx = 1; break;
+            case meep::Z: dir_idx = 2; break;
+            default: continue;
+          }
+
+          LOOP_OVER_IVECS(gv_adj, adj_chunk->is_old, adj_chunk->ie_old, idx_adj) {
+            IVEC_LOOP_ILOC(gv_adj, ip);
+            IVEC_LOOP_LOC(gv_adj, p);
+            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
+            if (adj == 0.0) continue;
+
+            if (forward_c == adjoint_c) {
+              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
+              double cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r() : 1;
+              out[f_i] += geom_chi1inv_term(geps, gv, adjoint_c, dir_idx, p, scalegrad * cyl_scale,
+                                            adj, fwd);
+            }
+            else {
+              /* Subpixel smoothing is second order because it builds an
+                 effective *tensor*: harmonic averaging for the field component
+                 normal to the interface, arithmetic for the tangential ones.
+                 The off-diagonal entries that produces are non-zero wherever
+                 the interface normal is not along an axis -- which for a shape
+                 derivative is the whole of the signal, since the derivative
+                 lives entirely at the boundary.
+
+                 Contracting them needs the forward field of a different
+                 component, which sits at a different Yee location, so it is
+                 restricted to the two epsilon nodes between the pair and
+                 interpolated there. This mirrors material_grids_addgradient. */
+              meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
+              meep::ivec unit_a = unit_ivec(gv.dim, component_direction(adjoint_c));
+              meep::ivec unit_f = unit_ivec(gv.dim, component_direction(forward_c));
+              meep::ivec fwd_pa = fwd_p + unit_a * 2;
+              meep::ivec fwd_pf = fwd_p - unit_f * 2;
+              meep::ivec fwd_paf = fwd_p + unit_a * 2 - unit_f * 2;
+
+              meep::ivec fwd_pl[2] = {fwd_p, fwd_pa};
+              meep::ivec fwd_pr[2] = {fwd_pf, fwd_paf};
+              meep::ivec ieps[2] = {(fwd_p + fwd_pf) / 2, (fwd_pa + fwd_paf) / 2};
+
+              for (int node = 0; node < 2; node++) {
+                ptrdiff_t i1 = gv_fwd.index(forward_c, fwd_pl[node]);
+                ptrdiff_t i2 = gv_fwd.index(forward_c, fwd_pr[node]);
+                std::complex<meep::realnum> fwd1 =
+                    ((i1 >= fwd_chunk->N) || (i1 < 0)) ? 0 : fwd_chunk->dft[nf * i1 + f_i];
+                std::complex<meep::realnum> fwd2 =
+                    ((i2 >= fwd_chunk->N) || (i2 < 0)) ? 0 : fwd_chunk->dft[nf * i2 + f_i];
+                std::complex<meep::realnum> fwd_avg =
+                    std::complex<meep::realnum>(0.5, 0) * (fwd1 + fwd2);
+                meep::vec eps1 = gv[ieps[node]];
+                double cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
+                out[f_i] +=
+                    geom_chi1inv_term(geps, gv, adjoint_c, dir_idx, eps1, scalegrad * cyl_scale,
+                                      std::complex<meep::realnum>(0.5, 0) * adj, fwd_avg);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/* dJ/d(parameter) for one geometric object.
+
+   `v` receives nf * nparams doubles, frequency-major. `params` names which
+   scalars to differentiate, using the geom_param enumeration.
+
+   Both the diagonal and the off-diagonal terms of the smoothed tensor are
+   contracted; see geom_contract for why the second matters here more than it
+   does for a density gradient. */
+void geometry_addgradient(double *v, size_t nparams, size_t nf,
+                          std::vector<meep::dft_fields *> fields_a,
+                          std::vector<meep::dft_fields *> fields_f, double *frequencies,
+                          double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
+                          int object_index, int *params, double du) {
+  (void)frequencies;
+  if (object_index < 0 || object_index >= geps->geometry.num_items)
+    meep::abort("geometry_addgradient: object index %d out of range (%d objects)", object_index,
+                geps->geometry.num_items);
+  geometric_object *obj = &geps->geometry.items[object_index];
+
+  std::vector<meep::dft_chunk *> adjoint_chunks[3], forward_chunks[3];
+  for (int i = 0; i < 3; i++) {
+    for (meep::dft_chunk *c = fields_a[i]->chunks; c; c = c->next_in_dft)
+      adjoint_chunks[i].push_back(c);
+    for (meep::dft_chunk *c = fields_f[i]->chunks; c; c = c->next_in_dft)
+      forward_chunks[i].push_back(c);
+  }
+
+  std::vector<std::complex<double> > plus(nf), minus(nf);
+  std::vector<double> local(nf * nparams, 0.0);
+
+  for (size_t ip = 0; ip < nparams; ip++) {
+    double *slot = geom_param_slot(obj, params[ip]);
+    if (!slot)
+      meep::abort("geometry_addgradient: parameter %d is not available on this object", params[ip]);
+    double original = *slot;
+
+    std::fill(minus.begin(), minus.end(), std::complex<double>(0, 0));
+    std::fill(plus.begin(), plus.end(), std::complex<double>(0, 0));
+
+    *slot = original - du;
+    geom_rebuild_tree(geps, gv);
+    geom_contract(minus.data(), nf, adjoint_chunks, forward_chunks, scalegrad, gv, geps);
+
+    *slot = original + du;
+    geom_rebuild_tree(geps, gv);
+    geom_contract(plus.data(), nf, adjoint_chunks, forward_chunks, scalegrad, gv, geps);
+
+    *slot = original;
+    geom_rebuild_tree(geps, gv);
+
+    // (row_1 - row_2) / 2du, matching get_material_gradient's sign convention
+    for (size_t f_i = 0; f_i < nf; f_i++)
+      local[nparams * f_i + ip] = std::real(minus[f_i] - plus[f_i]) / (2 * du);
+  }
+
+  meep::sum_to_all(local.data(), v, int(nf * nparams));
 }
 
 void material_grids_addgradient(double *v, size_t ng, size_t nf,

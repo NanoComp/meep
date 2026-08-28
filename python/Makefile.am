@@ -256,6 +256,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/filter_source.py         \
                   $(srcdir)/adjoint/connectivity.py         \
                   $(srcdir)/adjoint/unfilter_design.py        \
+                  $(srcdir)/adjoint/geometry_gradient.py     \
                   $(srcdir)/adjoint/source_gradient.py       \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py

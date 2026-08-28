@@ -294,6 +294,12 @@ meep::vec material_grid_grad(vector3 p, material_data *md, const geometric_objec
 double matgrid_val(vector3 p, geom_box_tree tp, int oi, material_data *md);
 double material_grid_val(vector3 p, material_data *md);
 geom_box_tree calculate_tree(const meep::volume &v, geometric_object_list g);
+void geometry_addgradient(double *v, size_t nparams, size_t nf,
+                          std::vector<meep::dft_fields *> fields_a,
+                          std::vector<meep::dft_fields *> fields_f, double *frequencies,
+                          double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
+                          int object_index, int *params, double du);
+
 void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
                                 std::vector<meep::dft_fields *> fields_f, double *frequencies,
