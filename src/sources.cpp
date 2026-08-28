@@ -108,12 +108,30 @@ complex<double> gaussian_src_time::dipole(double time) const {
 
 // (1/\sqrt{2*pi}) \int e^{i\omega t} G(t) dt
 // where G(t) is the *current* envelope, i.e. the time derivative
-// of the dipole envelope
-std::complex<double> gaussian_src_time::fourier_transform(const double f) {
+// of the dipole envelope.
+//
+// For dt == 0 (the default) this is the continuous-time transform of the
+// idealized envelope e^{-(t-t_0)^2/2w^2} e^{-i\omega_0 (t-t_0)}, which is only
+// an approximation to the current that is actually injected by the simulation.
+// For dt != 0 (the timestep, = Courant/resolution) the transform of the
+// *discrete* current is returned instead, referenced to the field times at
+// which the DFT is accumulated.  For a non-integrated source the injected
+// current is the centered difference [p(t+dt/2) - p(t-dt/2)]/dt of the dipole
+// envelope p(t) (src_time::curent evaluated a half timestep before the field
+// time; see fields::step), whose transform is -i\omega sinc(\omega dt/2) times
+// that of p(t).  An integrated source instead adds p(t) directly at the field
+// time, so it only picks up the exact -i\omega derivative factor.
+std::complex<double> gaussian_src_time::fourier_transform(const double f, const double dt) {
   double omega = 2.0 * pi * f;
   double omega0 = 2.0 * pi * freq;
   double delta = (omega - omega0) * width;
-  return width * polar(1.0, omega * peak_time) * exp(-0.5 * delta * delta);
+  complex<double> ft = width * polar(1.0, omega * peak_time) * exp(-0.5 * delta * delta);
+  ft *= f / freq;                  // exact time derivative and i/omega_0 normalization
+  if (dt != 0 && !is_integrated) { // discrete-time (centered-difference) derivative
+    double x = 0.5 * omega * dt;
+    ft *= (x == 0) ? 1.0 : sin(x) / x;
+  }
+  return ft;
 }
 
 bool gaussian_src_time::is_equal(const src_time &t) const {
