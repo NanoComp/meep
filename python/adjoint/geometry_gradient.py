@@ -147,17 +147,24 @@ def check_faces_off_voxel_edges(sim: mp.Simulation, obj) -> None:
         if size[axis] == 0:
             continue
         for face in (center[axis] - size[axis] / 2, center[axis] + size[axis] / 2):
+            # Pixel centres sit at integer multiples of dx, so pixel *edges*
+            # are at half-integers. A face at a pixel centre is straddled by
+            # that pixel and smooths normally; a face at a pixel edge is
+            # straddled by nothing, every neighbouring pixel is full or empty,
+            # and the derivative there is one-sided.
             offset = abs((face / dx) - round(face / dx))
-            if offset < 1e-6:
+            if abs(offset - 0.5) < 1e-6:
                 warnings.warn(
                     f"The {letter} face of "
                     f"{getattr(obj, 'name', None) or 'this object'} at "
-                    f"{face:.6g} lies on a voxel edge, where the smoothed "
+                    f"{face:.6g} lies on a pixel edge, where the smoothed "
                     "permittivity has a kink and the derivative with respect "
                     "to position is one-sided. The reported gradient will "
                     "depend on the finite-difference step rather than "
-                    f"converging. Offset the geometry by about {dx / 2:.6g} "
-                    "along " + letter + ", or change the resolution.",
+                    f"converging. Shift it by about {dx / 2:.6g} along "
+                    + letter
+                    + " so the face lands on a pixel centre, or change the "
+                    "resolution.",
                     RuntimeWarning,
                     stacklevel=3,
                 )
