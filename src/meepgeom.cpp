@@ -3069,10 +3069,6 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
   }
 
   std::vector<double> local(nf * nparams, 0.0);
-  double fill_worst = 0.0, fill_scale = 0.0;
-  int fill_printed = 0;
-  int dchi_printed = 0;
-  size_t fill_checked = 0;
   /* `fill` is dimensionless and O(1) and `delta` is linear in it, so this step
      is well conditioned -- unlike a step in a length, which has to be compared
      against the pixel. */
@@ -3238,18 +3234,6 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
               if (actual_dfill <= 0) continue;
               const double dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
 
-            if (f_i == 0 && node == 0 && getenv("MEEP_CHECK_DCHI") && dchi_printed < 14) {
-              /* Kottke assembles the normal component harmonically, so
-                 chi1inv_nn = fill/eps1 + (1-fill)/eps2 is linear in fill and
-                 its derivative is exactly 1/eps1 - 1/eps2, independent of
-                 fill. The tangential component is arithmetic in eps, giving
-                 -(eps1-eps2)/eps_avg^2. Both are known in closed form, so this
-                 validates the instrument rather than assuming it. */
-              dchi_printed++;
-              master_printf("  DCHI c=%s dir=%d fill=%.4f dchi_dfill=%.6f\n",
-                            meep::component_name(adjoint_c), dir_idx, fill, dchi_dfill);
-            }
-
               const std::complex<double> pair =
                   std::complex<double>(double(adj.real()), double(adj.imag())) *
                   std::complex<double>(double(fwd.real()), double(fwd.imag()));
@@ -3264,45 +3248,6 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                   if (other != ax) dfill_dp *= overlap[other];
                 dfill_dp /= pixel_volume;
 
-                if (f_i == 0 && node == 0 && getenv("MEEP_CHECK_DFILL")) {
-                  /* Measure d(fill)/dp directly. box_overlap_with_object takes
-                     the object, so it needs no geometry tree and cannot be
-                     tripped by the stale bounding boxes that moving an object
-                     leaves behind. */
-                  const double hh = 0.01 / gv.a;
-                  double *slot = (which < 3) ? ((ax == 0)   ? &obj->center.x
-                                                : (ax == 1) ? &obj->center.y
-                                                            : &obj->center.z)
-                                             : ((ax == 0)   ? &obj->subclass.block_data->size.x
-                                                : (ax == 1) ? &obj->subclass.block_data->size.y
-                                                            : &obj->subclass.block_data->size.z);
-                  const double orig = *slot;
-                  const geom_box pixbox = gv2box(voxel);
-                  *slot = orig + hh;
-                  geom_fix_object_list(geps->geometry);
-                  const double f_hi =
-                      box_overlap_with_object(pixbox, *obj, geps->tol, geps->maxeval);
-                  *slot = orig - hh;
-                  geom_fix_object_list(geps->geometry);
-                  const double f_lo =
-                      box_overlap_with_object(pixbox, *obj, geps->tol, geps->maxeval);
-                  *slot = orig;
-                  geom_fix_object_list(geps->geometry);
-                  const double numeric = (f_hi - f_lo) / (2 * hh);
-                  fill_checked++;
-                  fill_scale = std::max(fill_scale, std::abs(numeric));
-                  fill_worst = std::max(fill_worst, std::abs(numeric - dfill_dp));
-                  if (std::abs(numeric - dfill_dp) > 1e-9 && fill_printed < 12) {
-                    fill_printed++;
-                    master_printf("  BAD p%d at (%.4f,%.4f) fill=%.4f ov=(%.4f,%.4f,%.4f) "
-                                  "dc=(%.2f,%.2f,%.2f) ds=(%.2f,%.2f,%.2f) vol=%.5f "
-                                  "analytic=%.4f numeric=%.4f\n",
-                                  which, p_node.x(), p_node.y(), fill, overlap[0], overlap[1],
-                                  overlap[2], d_dc[0], d_dc[1], d_dc[2], d_ds[0], d_ds[1], d_ds[2],
-                                  pixel_volume, dfill_dp, numeric);
-                  }
-                }
-
                 /* the leading minus matches get_material_gradient's convention,
                    which returns -(d row/d parameter) */
                 local[nparams * f_i + ip] -=
@@ -3315,9 +3260,6 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
     }
   }
 
-  if (getenv("MEEP_CHECK_DFILL"))
-    master_printf("DFILL checked=%zu worst_abs_err=%.6e scale=%.6e\n", fill_checked, fill_worst,
-                  fill_scale);
   meep::sum_to_all(local.data(), v, int(nf * nparams));
 }
 

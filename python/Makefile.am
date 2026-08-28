@@ -37,6 +37,7 @@ ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_adjoint_symmetry.py       \
     $(TEST_DIR)/test_adjoint_protocol.py       \
     $(TEST_DIR)/test_angular_spectrum.py       \
+    $(TEST_DIR)/test_geometry_gradient.py      \
     $(TEST_DIR)/test_source_gradient.py        \
     $(TEST_DIR)/test_adjoint_jax.py
 
@@ -101,6 +102,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_simulation.py             \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
+    $(TEST_DIR)/test_geometry_gradient.py      \
     $(TEST_DIR)/test_source_gradient.py        \
     $(TEST_DIR)/test_stop_when_flux_decayed.py \
     $(TEST_DIR)/test_subpixel_3d.py            \
