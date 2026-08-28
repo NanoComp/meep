@@ -18,6 +18,38 @@ perturbations per point.
 And the step has units. `utils.FD_DEFAULT` is a dimensionless perturbation of a
 weight; here it is a length, and the scale that makes sense is a fraction of a
 pixel. `DEFAULT_STEP_PIXELS` sets it relative to the grid rather than absolutely.
+
+Accuracy: a shape derivative is one order worse than the fields
+------------------------------------------------------------------
+Subpixel smoothing makes the permittivity -- and so the objective -- a
+second-order accurate, *continuous* function of an object's position. Measured
+on a block of index 2.5 at resolution 20, turning smoothing off makes the
+objective piecewise constant in position, swinging 77% across a single pixel;
+turning it on makes it continuous, swinging 14%.
+
+But second-order accuracy in the value is only first-order accuracy in the
+derivative. Writing the discretization error as a function of the sub-pixel
+phase,
+
+    J(p) = J_exact(p) + Delta^2 E(p / Delta)
+
+with E an O(1) oscillatory function -- which is why the residual has a period of
+exactly one pixel -- differentiating gives
+
+    dJ/dp = dJ_exact/dp + Delta^2 (1/Delta) E'(p / Delta)
+          = dJ_exact/dp + O(Delta)
+
+Measured: the per-pixel swing falls 9.9% -> 4.0% -> 1.9% at resolutions
+20 -> 40 -> 80, halving with each doubling rather than quartering. This is
+inherent to differentiating a smoothed staircase and cannot be recovered by
+improving the adjoint, because the error is in the function being
+differentiated, not in how it is differentiated.
+
+Two consequences for testing. The adjoint should be checked against a finite
+difference of the *discrete* objective, since both differentiate the same
+smoothed function and should agree closely; that is a statement about the
+implementation. Agreement with the physically intended derivative is limited to
+O(Delta) and is a statement about the discretization.
 """
 
 import warnings
