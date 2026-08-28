@@ -3069,6 +3069,8 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
   }
 
   std::vector<double> local(nf * nparams, 0.0);
+  double fill_worst = 0.0, fill_scale = 0.0;
+  size_t fill_checked = 0;
   /* `fill` is dimensionless and O(1) and `delta` is linear in it, so this step
      is well conditioned -- unlike a step in a length, which has to be compared
      against the pixel. */
@@ -3248,6 +3250,36 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                   if (other != ax) dfill_dp *= overlap[other];
                 dfill_dp /= pixel_volume;
 
+                if (f_i == 0 && node == 0 && getenv("MEEP_CHECK_DFILL")) {
+                  /* Measure d(fill)/dp directly. box_overlap_with_object takes
+                     the object, so it needs no geometry tree and cannot be
+                     tripped by the stale bounding boxes that moving an object
+                     leaves behind. */
+                  const double hh = 0.01 / gv.a;
+                  double *slot = (which < 3) ? ((ax == 0)   ? &obj->center.x
+                                                : (ax == 1) ? &obj->center.y
+                                                            : &obj->center.z)
+                                             : ((ax == 0)   ? &obj->subclass.block_data->size.x
+                                                : (ax == 1) ? &obj->subclass.block_data->size.y
+                                                            : &obj->subclass.block_data->size.z);
+                  const double orig = *slot;
+                  const geom_box pixbox = gv2box(voxel);
+                  *slot = orig + hh;
+                  geom_fix_object_list(geps->geometry);
+                  const double f_hi =
+                      box_overlap_with_object(pixbox, *obj, geps->tol, geps->maxeval);
+                  *slot = orig - hh;
+                  geom_fix_object_list(geps->geometry);
+                  const double f_lo =
+                      box_overlap_with_object(pixbox, *obj, geps->tol, geps->maxeval);
+                  *slot = orig;
+                  geom_fix_object_list(geps->geometry);
+                  const double numeric = (f_hi - f_lo) / (2 * hh);
+                  fill_checked++;
+                  fill_scale = std::max(fill_scale, std::abs(numeric));
+                  fill_worst = std::max(fill_worst, std::abs(numeric - dfill_dp));
+                }
+
                 /* the leading minus matches get_material_gradient's convention,
                    which returns -(d row/d parameter) */
                 local[nparams * f_i + ip] -=
@@ -3260,6 +3292,9 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
     }
   }
 
+  if (getenv("MEEP_CHECK_DFILL"))
+    master_printf("DFILL checked=%zu worst_abs_err=%.6e scale=%.6e\n", fill_checked, fill_worst,
+                  fill_scale);
   meep::sum_to_all(local.data(), v, int(nf * nparams));
 }
 
