@@ -1066,7 +1066,7 @@ void geom_epsilon::eff_chi1inv_row(meep::component c, double chi1inv_row[3], con
 
 void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix,
                                       const meep::volume &v, double tol, int maxeval,
-                                      bool &fallback) {
+                                      bool &fallback, double fill_override) {
   const geometric_object *o;
   material_type mat, mat_behind;
   symm_matrix meps;
@@ -1107,7 +1107,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
   pixel.low = vector3_minus(pixel.low, shiftby);
   pixel.high = vector3_minus(pixel.high, shiftby);
 
-  double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+  double fill =
+      fill_override >= 0.0 ? fill_override : box_overlap_with_object(pixel, *o, tol, maxeval);
 
   material_epsmu(meep::type(c), mat, &meps, chi1inv_matrix);
   symm_matrix eps2, epsinv2;
@@ -1196,6 +1197,29 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
 #endif
 
   sym_matrix_invert(chi1inv_matrix, &meps);
+}
+
+/* The filling fraction this pixel would smooth with. Returns false when the
+   pixel does not straddle an interface between two distinct materials, in
+   which case the shape derivative vanishes there and the caller can skip it --
+   which is what restricts the gradient loop to the boundary shell. */
+bool geom_epsilon::interface_fill(const meep::volume &v, double tol, int maxeval, double &fill,
+                                  const geometric_object **which, vector3 *shift) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p, shiftby;
+  fill = -1.0;
+
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) return false;
+  if (material_type_equal(mat, mat_behind)) return false;
+
+  geom_box pixel = gv2box(v);
+  pixel.low = vector3_minus(pixel.low, shiftby);
+  pixel.high = vector3_minus(pixel.high, shiftby);
+  fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+  if (which) *which = o;
+  if (shift) *shift = shiftby;
+  return true;
 }
 
 static int eps_ever_negative = 0;
@@ -2945,24 +2969,37 @@ static std::complex<meep::realnum> forward_dft_value(const meep::dft_chunk *ch,
 /* Gradients with respect to a geometric object's centre and size.      */
 /* ------------------------------------------------------------------ */
 
-/* The design gradient finite-differences eff_chi1inv_row with respect to a
-   design weight. eff_chi1inv_row is a function of the *geometry*, so
-   perturbing an object's centre or size instead gives dA/d(parameter) from the
-   same machinery, with no additional timestepping.
+/* The smoothed permittivity depends on the geometry only through two things:
+   the filling fraction of each pixel and the interface normal. So
 
-   One structural difference. A design weight is local, so the design gradient
-   perturbs it inside the point loop. A centre or a size is global, so the
-   perturbation hoists out: the geometry is moved once, every point is visited,
-   and the geometry is restored. That is twelve passes for six parameters, not
-   twelve perturbations per point.
+       d(chi1inv)/d(parameter) = d(chi1inv)/d(fill) * d(fill)/d(parameter)
 
-   The perturbation cannot simply mutate the object, because geom_box_tree
-   caches bounding boxes (`geom_box b, b1, b2` per node, plus one per object).
-   Stale bounds would misreport which object owns a point near the moved
-   boundary -- exactly where a shape derivative lives -- so the tree is rebuilt
-   around each perturbation. */
+   with the second factor analytic for an axis-aligned block, since the block
+   is an intersection of three slabs and the overlap volume factorizes:
 
-// Which scalar of an object is being perturbed.
+       |pixel ∩ block| = prod_i overlap_i(c_i, s_i)
+       overlap_i = clamp(min(c_i + s_i/2, hi_i) - max(c_i - s_i/2, lo_i), 0, dx)
+
+   d(overlap_i)/d(c_i) is -1, 0 or +1 depending on which face lies inside the
+   pixel, and d(overlap_i)/d(s_i) is 0 or +/-1/2. Everything else is a product
+   of the other axes' overlaps.
+
+   The first factor comes from varying `fill` through eff_chi1inv_matrix rather
+   than re-deriving Kottke's algebra here, which keeps this consistent with
+   whatever meep actually does. That variation is pure local algebra: `delta`
+   is linear in fill by construction, and only the final delta -> chi1inv map
+   is nonlinear.
+
+   Perturbing the geometry and re-differencing instead -- which is what this
+   routine used to do -- means differencing box_overlap_with_object, an
+   adaptive quadrature, so its tolerance is amplified by 1/step. That produced
+   a gradient with no stable step regime at all.
+
+   Only pixels straddling the boundary contribute, since d(fill)/d(parameter)
+   vanishes wherever a pixel is wholly inside or wholly outside. That is the
+   discrete form of a shape derivative being a surface integral, and it is why
+   the loop below skips interior pixels. */
+
 enum geom_param {
   GEOM_CENTER_X = 0,
   GEOM_CENTER_Y,
@@ -2972,58 +3009,62 @@ enum geom_param {
   GEOM_SIZE_Z
 };
 
-static double *geom_param_slot(geometric_object *o, int which) {
-  switch (which) {
-    case GEOM_CENTER_X: return &o->center.x;
-    case GEOM_CENTER_Y: return &o->center.y;
-    case GEOM_CENTER_Z: return &o->center.z;
-    default: break;
+/* Overlap of [lo, hi] with the block's extent along one axis, and its
+   derivatives with respect to that axis's centre and half-size. */
+static void axis_overlap(double lo, double hi, double c, double s, double &overlap,
+                         double &d_dcenter, double &d_dsize) {
+  const double blo = c - 0.5 * s, bhi = c + 0.5 * s;
+  const double left = std::max(lo, blo), right = std::min(hi, bhi);
+  overlap = right - left;
+  if (overlap <= 0) {
+    overlap = 0;
+    d_dcenter = d_dsize = 0;
+    return;
   }
-  if (o->which_subclass != geometric_object::BLOCK) return NULL;
-  switch (which) {
-    case GEOM_SIZE_X: return &o->subclass.block_data->size.x;
-    case GEOM_SIZE_Y: return &o->subclass.block_data->size.y;
-    case GEOM_SIZE_Z: return &o->subclass.block_data->size.z;
-    default: return NULL;
-  }
+  /* Moving the centre moves both faces together; growing the size moves them
+     apart by half each. A face only contributes where it lies strictly inside
+     the pixel -- outside, the clamp pins the overlap and the derivative is
+     zero. This is what makes the derivative one-sided exactly on a pixel
+     edge. */
+  const double lower_inside = (blo > lo) ? 1.0 : 0.0;
+  const double upper_inside = (bhi < hi) ? 1.0 : 0.0;
+  d_dcenter = upper_inside - lower_inside;
+  d_dsize = 0.5 * (upper_inside + lower_inside);
 }
 
-/* Rebuild the box tree after the geometry underneath it has moved. */
-static void geom_rebuild_tree(geom_epsilon *geps, const meep::grid_volume &gv) {
-  if (geps->restricted_tree && geps->restricted_tree != geps->geometry_tree)
-    destroy_geom_box_tree(geps->restricted_tree);
-  destroy_geom_box_tree(geps->geometry_tree);
-  geom_fix_object_list(geps->geometry);
-  geom_box box = gv2box(gv.surroundings());
-  geps->geometry_tree = create_geom_box_tree0(geps->geometry, box);
-  geps->restricted_tree = geps->geometry_tree;
-}
+void geometry_addgradient(double *v, size_t nparams, size_t nf,
+                          std::vector<meep::dft_fields *> fields_a,
+                          std::vector<meep::dft_fields *> fields_f, double *frequencies,
+                          double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
+                          int object_index, int *params, double du) {
+  (void)frequencies;
+  (void)du;
+  if (object_index < 0 || object_index >= geps->geometry.num_items)
+    meep::abort("geometry_addgradient: object index %d out of range (%d objects)", object_index,
+                geps->geometry.num_items);
+  geometric_object *obj = &geps->geometry.items[object_index];
+  if (obj->which_subclass != geometric_object::BLOCK)
+    meep::abort("geometry_addgradient: only blocks are supported");
 
-/* One point's contribution: the smoothed chi1inv row at `r`, contracted with
-   the adjoint and forward fields. */
-static std::complex<double> geom_chi1inv_term(geom_epsilon *geps, const meep::grid_volume &gv,
-                                              meep::component adjoint_c, int dir_idx,
-                                              const meep::vec &r, double scale,
-                                              std::complex<meep::realnum> adj,
-                                              std::complex<meep::realnum> fwd) {
-  meep::volume voxel(r);
-  LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    voxel.set_direction_min(d, r.in_direction(d) - 0.5 * gv.inva);
-    voxel.set_direction_max(d, r.in_direction(d) + 0.5 * gv.inva);
+  const vector3 bc = obj->center;
+  const vector3 bs = obj->subclass.block_data->size;
+  const double centers[3] = {bc.x, bc.y, bc.z};
+  const double sizes[3] = {bs.x, bs.y, bs.z};
+
+  std::vector<meep::dft_chunk *> adjoint_chunks[3], forward_chunks[3];
+  for (int i = 0; i < 3; i++) {
+    for (meep::dft_chunk *c = fields_a[i]->chunks; c; c = c->next_in_dft)
+      adjoint_chunks[i].push_back(c);
+    for (meep::dft_chunk *c = fields_f[i]->chunks; c; c = c->next_in_dft)
+      forward_chunks[i].push_back(c);
   }
-  double row[3];
-  geps->eff_chi1inv_row(adjoint_c, row, voxel, geps->tol, geps->maxeval);
-  return scale * row[dir_idx] * std::complex<double>(double(adj.real()), double(adj.imag())) *
-         std::complex<double>(double(fwd.real()), double(fwd.imag()));
-}
 
-/* Contract the adjoint and forward fields against the *current* geometry,
-   accumulating one number per frequency. Called twice per parameter, on either
-   side of the perturbation. */
-static void geom_contract(std::complex<double> *out, size_t nf,
-                          std::vector<meep::dft_chunk *> *adjoint_chunks,
-                          std::vector<meep::dft_chunk *> *forward_chunks, double scalegrad,
-                          meep::grid_volume &gv, geom_epsilon *geps) {
+  std::vector<double> local(nf * nparams, 0.0);
+  /* `fill` is dimensionless and O(1) and `delta` is linear in it, so this step
+     is well conditioned -- unlike a step in a length, which has to be compared
+     against the pixel. */
+  const double dfill = 1e-6;
+
   for (size_t f_i = 0; f_i < nf; f_i++) {
     for (int ci_adjoint = 0; ci_adjoint < 3; ci_adjoint++) {
       int num_chunks = adjoint_chunks[ci_adjoint].size();
@@ -3039,7 +3080,7 @@ static void geom_contract(std::complex<double> *out, size_t nf,
           if ((num_f == 0) || ((size_t)cur >= num_f)) continue;
           meep::dft_chunk *fwd_chunk = forward_chunks[ci_forward][cur];
           meep::component forward_c = fwd_chunk->c;
-          meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
+          if (forward_c != adjoint_c) continue; // diagonal; see note below
 
           int dir_idx;
           switch (meep::component_direction(forward_c)) {
@@ -3051,118 +3092,120 @@ static void geom_contract(std::complex<double> *out, size_t nf,
             default: continue;
           }
 
-          LOOP_OVER_IVECS(gv_adj, adj_chunk->is_old, adj_chunk->ie_old, idx_adj) {
-            IVEC_LOOP_ILOC(gv_adj, ip);
+          meep::ivec loop_is = adj_chunk->persist ? adj_chunk->is_old : adj_chunk->is;
+          meep::ivec loop_ie = adj_chunk->persist ? adj_chunk->ie_old : adj_chunk->ie;
+
+          LOOP_OVER_IVECS(gv_adj, loop_is, loop_ie, idx_adj) {
             IVEC_LOOP_LOC(gv_adj, p);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
-            if (adj == 0.0) continue;
+            std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
+            if (adj == 0.0 || fwd == 0.0) continue;
 
-            if (forward_c == adjoint_c) {
-              std::complex<meep::realnum> fwd = fwd_chunk->dft[nf * idx_adj + f_i];
-              double cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r() : 1;
-              out[f_i] += geom_chi1inv_term(geps, gv, adjoint_c, dir_idx, p, scalegrad * cyl_scale,
-                                            adj, fwd);
+            meep::volume voxel(p);
+            LOOP_OVER_DIRECTIONS(gv.dim, d) {
+              voxel.set_direction_min(d, p.in_direction(d) - 0.5 * gv.inva);
+              voxel.set_direction_max(d, p.in_direction(d) + 0.5 * gv.inva);
             }
-            else {
-              /* Subpixel smoothing is second order because it builds an
-                 effective *tensor*: harmonic averaging for the field component
-                 normal to the interface, arithmetic for the tangential ones.
-                 The off-diagonal entries that produces are non-zero wherever
-                 the interface normal is not along an axis -- which for a shape
-                 derivative is the whole of the signal, since the derivative
-                 lives entirely at the boundary.
 
-                 Contracting them needs the forward field of a different
-                 component, which sits at a different Yee location, so it is
-                 restricted to the two epsilon nodes between the pair and
-                 interpolated there. This mirrors material_grids_addgradient. */
-              meep::ivec fwd_p = ip + gv.iyee_shift(forward_c) - gv.iyee_shift(adjoint_c);
-              meep::ivec unit_a = unit_ivec(gv.dim, component_direction(adjoint_c));
-              meep::ivec unit_f = unit_ivec(gv.dim, component_direction(forward_c));
-              meep::ivec fwd_pa = fwd_p + unit_a * 2;
-              meep::ivec fwd_pf = fwd_p - unit_f * 2;
-              meep::ivec fwd_paf = fwd_p + unit_a * 2 - unit_f * 2;
+            /* Skip pixels that do not straddle the boundary: d(fill)/d(param)
+               is zero there, so they contribute nothing. */
+            /* `fill` is the fraction of the pixel inside whichever object
+               get_front_object selected. If that is not the object being
+               differentiated, d(fill)/d(our parameters) is not what this pixel
+               responds to -- and taking it anyway gets the sign wrong wherever
+               the front object is the background instead. */
+            double fill;
+            const geometric_object *front = NULL;
+            vector3 shiftby = {0, 0, 0};
+            if (!geps->interface_fill(voxel, geps->tol, geps->maxeval, fill, &front, &shiftby))
+              continue;
+            if (front != obj) continue;
+            if (fill <= 0.0 || fill >= 1.0) continue;
 
-              meep::ivec fwd_pl[2] = {fwd_p, fwd_pa};
-              meep::ivec fwd_pr[2] = {fwd_pf, fwd_paf};
-              meep::ivec ieps[2] = {(fwd_p + fwd_pf) / 2, (fwd_pa + fwd_paf) / 2};
-
-              for (int node = 0; node < 2; node++) {
-                ptrdiff_t i1 = gv_fwd.index(forward_c, fwd_pl[node]);
-                ptrdiff_t i2 = gv_fwd.index(forward_c, fwd_pr[node]);
-                std::complex<meep::realnum> fwd1 =
-                    ((i1 >= fwd_chunk->N) || (i1 < 0)) ? 0 : fwd_chunk->dft[nf * i1 + f_i];
-                std::complex<meep::realnum> fwd2 =
-                    ((i2 >= fwd_chunk->N) || (i2 < 0)) ? 0 : fwd_chunk->dft[nf * i2 + f_i];
-                std::complex<meep::realnum> fwd_avg =
-                    std::complex<meep::realnum>(0.5, 0) * (fwd1 + fwd2);
-                meep::vec eps1 = gv[ieps[node]];
-                double cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
-                out[f_i] +=
-                    geom_chi1inv_term(geps, gv, adjoint_c, dir_idx, eps1, scalegrad * cyl_scale,
-                                      std::complex<meep::realnum>(0.5, 0) * adj, fwd_avg);
+            /* d(fill)/d(parameter), analytic and separable. */
+            double overlap[3], d_dc[3], d_ds[3], extent[3];
+            bool degenerate = false;
+            for (int ax = 0; ax < 3; ax++) {
+              meep::direction dd = (ax == 0) ? meep::X : (ax == 1) ? meep::Y : meep::Z;
+              const bool resolved = (gv.dim == meep::D3) || (gv.dim == meep::D2 && ax < 2) ||
+                                    (gv.dim == meep::D1 && ax == 2);
+              if (!resolved) {
+                /* A dimension the simulation does not resolve. The block is
+                   effectively infinite along it, so it contributes a factor of
+                   one to the overlap and nothing to the derivative -- note the
+                   block's own size along such an axis is typically zero, so
+                   using it here would make every pixel degenerate. */
+                extent[ax] = 1.0;
+                overlap[ax] = 1.0;
+                d_dc[ax] = d_ds[ax] = 0.0;
+                continue;
               }
+              const double sh = (ax == 0) ? shiftby.x : (ax == 1) ? shiftby.y : shiftby.z;
+              const double lo = voxel.in_direction_min(dd) - sh;
+              const double hi = voxel.in_direction_max(dd) - sh;
+              extent[ax] = hi - lo;
+              axis_overlap(lo, hi, centers[ax], sizes[ax], overlap[ax], d_dc[ax], d_ds[ax]);
+              if (overlap[ax] <= 0) degenerate = true;
+            }
+            if (degenerate) continue;
+
+            double pixel_volume = 1.0;
+            for (int ax = 0; ax < 3; ax++)
+              pixel_volume *= extent[ax];
+
+            /* d(chi1inv)/d(fill), from meep's own tensor assembly. */
+            bool fb_lo = false, fb_hi = false;
+            symm_matrix m_lo, m_hi;
+            geps->eff_chi1inv_matrix(adjoint_c, &m_lo, voxel, geps->tol, geps->maxeval, fb_lo,
+                                     std::max(0.0, fill - dfill));
+            geps->eff_chi1inv_matrix(adjoint_c, &m_hi, voxel, geps->tol, geps->maxeval, fb_hi,
+                                     std::min(1.0, fill + dfill));
+            if (fb_lo || fb_hi) continue;
+
+            const double lo_row[3] = {m_lo.m00, m_lo.m01, m_lo.m02};
+            const double hi_row[3] = {m_hi.m00, m_hi.m01, m_hi.m02};
+            const double lo_row1[3] = {m_lo.m01, m_lo.m11, m_lo.m12};
+            const double hi_row1[3] = {m_hi.m01, m_hi.m11, m_hi.m12};
+            const double lo_row2[3] = {m_lo.m02, m_lo.m12, m_lo.m22};
+            const double hi_row2[3] = {m_hi.m02, m_hi.m12, m_hi.m22};
+            int row_of = 0;
+            switch (meep::component_direction(adjoint_c)) {
+              case meep::X:
+              case meep::R: row_of = 0; break;
+              case meep::Y:
+              case meep::P: row_of = 1; break;
+              case meep::Z: row_of = 2; break;
+              default: continue;
+            }
+            const double *lo_r = (row_of == 0) ? lo_row : (row_of == 1) ? lo_row1 : lo_row2;
+            const double *hi_r = (row_of == 0) ? hi_row : (row_of == 1) ? hi_row1 : hi_row2;
+            const double actual_dfill = std::min(1.0, fill + dfill) - std::max(0.0, fill - dfill);
+            if (actual_dfill <= 0) continue;
+            const double dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
+
+            const std::complex<double> pair =
+                std::complex<double>(double(adj.real()), double(adj.imag())) *
+                std::complex<double>(double(fwd.real()), double(fwd.imag()));
+            const double cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r() : 1;
+
+            for (size_t ip = 0; ip < nparams; ip++) {
+              const int which = params[ip];
+              const int ax = which % 3;
+              double dfill_dp = (which < 3) ? d_dc[ax] : d_ds[ax];
+              if (dfill_dp == 0.0) continue;
+              for (int other = 0; other < 3; other++)
+                if (other != ax) dfill_dp *= overlap[other];
+              dfill_dp /= pixel_volume;
+
+              /* the leading minus matches get_material_gradient's convention,
+                 which returns -(d row/d parameter) */
+              local[nparams * f_i + ip] -=
+                  scalegrad * cyl_scale * dchi_dfill * dfill_dp * std::real(pair);
             }
           }
         }
       }
     }
-  }
-}
-
-/* dJ/d(parameter) for one geometric object.
-
-   `v` receives nf * nparams doubles, frequency-major. `params` names which
-   scalars to differentiate, using the geom_param enumeration.
-
-   Both the diagonal and the off-diagonal terms of the smoothed tensor are
-   contracted; see geom_contract for why the second matters here more than it
-   does for a density gradient. */
-void geometry_addgradient(double *v, size_t nparams, size_t nf,
-                          std::vector<meep::dft_fields *> fields_a,
-                          std::vector<meep::dft_fields *> fields_f, double *frequencies,
-                          double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
-                          int object_index, int *params, double du) {
-  (void)frequencies;
-  if (object_index < 0 || object_index >= geps->geometry.num_items)
-    meep::abort("geometry_addgradient: object index %d out of range (%d objects)", object_index,
-                geps->geometry.num_items);
-  geometric_object *obj = &geps->geometry.items[object_index];
-
-  std::vector<meep::dft_chunk *> adjoint_chunks[3], forward_chunks[3];
-  for (int i = 0; i < 3; i++) {
-    for (meep::dft_chunk *c = fields_a[i]->chunks; c; c = c->next_in_dft)
-      adjoint_chunks[i].push_back(c);
-    for (meep::dft_chunk *c = fields_f[i]->chunks; c; c = c->next_in_dft)
-      forward_chunks[i].push_back(c);
-  }
-
-  std::vector<std::complex<double> > plus(nf), minus(nf);
-  std::vector<double> local(nf * nparams, 0.0);
-
-  for (size_t ip = 0; ip < nparams; ip++) {
-    double *slot = geom_param_slot(obj, params[ip]);
-    if (!slot)
-      meep::abort("geometry_addgradient: parameter %d is not available on this object", params[ip]);
-    double original = *slot;
-
-    std::fill(minus.begin(), minus.end(), std::complex<double>(0, 0));
-    std::fill(plus.begin(), plus.end(), std::complex<double>(0, 0));
-
-    *slot = original - du;
-    geom_rebuild_tree(geps, gv);
-    geom_contract(minus.data(), nf, adjoint_chunks, forward_chunks, scalegrad, gv, geps);
-
-    *slot = original + du;
-    geom_rebuild_tree(geps, gv);
-    geom_contract(plus.data(), nf, adjoint_chunks, forward_chunks, scalegrad, gv, geps);
-
-    *slot = original;
-    geom_rebuild_tree(geps, gv);
-
-    // (row_1 - row_2) / 2du, matching get_material_gradient's sign convention
-    for (size_t f_i = 0; f_i < nf; f_i++)
-      local[nparams * f_i + ip] = std::real(minus[f_i] - plus[f_i]) / (2 * du);
   }
 
   meep::sum_to_all(local.data(), v, int(nf * nparams));
