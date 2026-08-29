@@ -306,6 +306,33 @@ std::complex<realnum> lorentzian_susceptibility::chi1(realnum freq, realnum sigm
   }
 }
 
+/* Frequency response of the recurrence in update_P(),
+
+     P'(1 + g dt/2) = P (2 - w0^2 dt^2) - P_prev (1 - g dt/2) + w0^2 dt^2 sigma E
+
+   with g = 2 pi gamma and w0 = 2 pi omega_0.  Substituting P ~ exp(-i w n dt)
+   and dividing through by P^n gives a denominator
+
+     w0^2 dt^2 - 4 sin^2(w dt/2) - i g dt sin(w dt)
+
+   so relative to the continuum lineshape the discretization replaces
+
+     freq^2       ->  [sin(pi freq dt) / (pi dt)]^2
+     gamma*freq   ->  gamma sin(2 pi freq dt) / (2 pi dt)
+
+   and leaves the numerator alone.  Both corrections are O((freq*dt)^2). */
+std::complex<realnum> lorentzian_susceptibility::chi1_discrete(realnum freq, realnum sigma,
+                                                               realnum dt) {
+  if (dt <= 0) return chi1(freq, sigma);
+
+  realnum freq_eff = std::sin(pi * freq * dt) / (pi * dt);
+  realnum damping = gamma * std::sin(2 * pi * freq * dt) / (2 * pi * dt);
+  realnum resonance = no_omega_0_denominator ? 0 : omega_0 * omega_0;
+
+  return sigma * omega_0 * omega_0 /
+         std::complex<realnum>(resonance - freq_eff * freq_eff, -damping);
+}
+
 void lorentzian_susceptibility::dump_params(h5file *h5f, size_t *start) {
   size_t num_params = 5;
   size_t params_dims[1] = {num_params};
