@@ -110,6 +110,20 @@ public:
   // Returns the 1st order (linear) susceptibility (generic)
   virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
 
+  // Frequency response of the recurrence that update_P() actually timesteps,
+  // rather than of the continuous-time model it approximates.  Reduces to
+  // chi1() as dt -> 0, and is called with dt = 0 to mean exactly that.
+  //
+  // The adjoint solver needs this: differentiating the continuum lineshape
+  // gives the exact derivative of an operator slightly different from the one
+  // being simulated, so the gradient disagrees with a finite difference of the
+  // discrete objective at O((freq*dt)^2).  Reporting material properties to
+  // the user is the opposite case and should keep using chi1().
+  virtual std::complex<realnum> chi1_discrete(realnum freq, realnum sigma, realnum dt) {
+    (void)dt;
+    return chi1(freq, sigma);
+  }
+
   // update all of the internal polarization state given the W field
   // at the current time step, possibly the previous field W_prev, etc.
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
@@ -252,6 +266,7 @@ public:
 
   // Returns the 1st order nonlinear susceptibility
   virtual std::complex<realnum> chi1(realnum freq, realnum sigma = 1);
+  virtual std::complex<realnum> chi1_discrete(realnum freq, realnum sigma, realnum dt);
 
   virtual void update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
                         realnum *W_prev[NUM_FIELD_COMPONENTS][2], realnum dt, const grid_volume &gv,
