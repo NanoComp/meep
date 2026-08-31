@@ -84,8 +84,11 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   if (persist) {
     is_old = is_;
     ie_old = ie_;
-    is = max(is - one_ivec(fc->gv.dim) * 2, fc->gv.little_corner());
-    ie = min(ie + one_ivec(fc->gv.dim) * 2, fc->gv.big_corner());
+    /* Clamp to this component's persist-padded grid, which is one cell bigger than the
+       usual "owned" grid given by big_owned_corner(). */
+    const ivec shift_c = fc->gv.iyee_shift(c);
+    is = max(is - one_ivec(fc->gv.dim) * 2, fc->gv.little_corner() + shift_c);
+    ie = min(ie + one_ivec(fc->gv.dim) * 2, fc->gv.big_corner() + shift_c);
   }
 
   if (use_centered_grid)
