@@ -84,13 +84,8 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   if (persist) {
     is_old = is_;
     ie_old = ie_;
-    /* Clamp to this component's own grid, not to the centered grid. Component c
-       runs from little_corner()+iyee_shift(c) to big_corner()+iyee_shift(c) (cf.
-       LOOP_OVER_VOL), so clamping to the bare corners truncates the topmost node
-       of a yee-shifted direction -- precisely the ghost node that the adjoint
-       restriction stencil reaches for, and which step_boundaries() already keeps
-       current. It also left `is` off the component lattice, which desynchronized
-       the LOOP_OVER_IVECS counter from grid_volume::index(). */
+    /* Clamp to this component's persist-padded grid, which is one cell bigger than the
+       usual "owned" grid given by big_owned_corner(). */
     const ivec shift_c = fc->gv.iyee_shift(c);
     is = max(is - one_ivec(fc->gv.dim) * 2, fc->gv.little_corner() + shift_c);
     ie = min(ie + one_ivec(fc->gv.dim) * 2, fc->gv.big_corner() + shift_c);
