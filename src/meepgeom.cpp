@@ -2863,6 +2863,7 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     do {
       material_data *mg_cur = (material_data *)tpc->objects[oic].o->material;
       if (owner_grid_id < 0 || mg_cur->grid_id == owner_grid_id) {
+        if (udatas.empty()) sz = mg_cur->grid_size;
         udatas.push_back(mg_cur->weights);
         pbs.push_back(to_geom_box_coords(p, &tpc->objects[oic]));
       }
