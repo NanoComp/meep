@@ -211,10 +211,20 @@ def install_geometry_monitors(
         # where the field is continuous across the boundary and a great deal
         # where it is not -- the normal E field jumps by the index contrast.
         pad = MONITOR_PAD_PIXELS / sim.resolution
+
+        # `mp.inf` is how one writes "spans the cell", and is the natural way to
+        # describe a layer -- but it is 1e20, not a flag, and
+        # `_fit_volume_to_simulation` passes it straight through. A DFT volume
+        # of that extent fails inside meep with "impossible(?) looping
+        # boundaries", so clamp to the cell before fitting.
+        cell = sim.cell_size
         padded = mp.Vector3(
-            obj.size.x + 2 * pad if obj.size.x else 0.0,
-            obj.size.y + 2 * pad if obj.size.y else 0.0,
-            obj.size.z + 2 * pad if obj.size.z else 0.0,
+            *(
+                min(s + 2 * pad, c) if s else 0.0
+                for s, c in zip(
+                    (obj.size.x, obj.size.y, obj.size.z), (cell.x, cell.y, cell.z)
+                )
+            )
         )
         volume = sim._fit_volume_to_simulation(
             mp.Volume(center=obj.center, size=padded)
