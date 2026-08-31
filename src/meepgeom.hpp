@@ -239,6 +239,8 @@ public:
                             double tol, int maxeval);
 
   virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
+  virtual void eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v);
+  void material_sigma_row(meep::component c, double sigrow[3], material_type mat);
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 

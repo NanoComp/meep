@@ -1698,6 +1698,109 @@ static bool susceptibility_equiv(const susceptibility &o0, const susceptibility 
   return true;
 }
 
+/* Sum the amplitudes of `mat`'s poles equivalent to the one being registered,
+   into the c'th row of its sigma tensor.  Factored out of sigma_row() so that
+   eff_sigma_row() can ask the same question of two materials at once. */
+void geom_epsilon::material_sigma_row(meep::component c, double sigrow[3], material_type mat) {
+  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
+  if (!current_pol) return;
+
+  if (mat->which_subclass != material_data::MATERIAL_USER &&
+      mat->which_subclass != material_data::MATERIAL_GRID &&
+      mat->which_subclass != material_data::MEDIUM)
+    return;
+
+  const susceptibility_list &slist =
+      type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
+  /* Accumulate rather than stopping at the first match.  A material grid's
+     list is the concatenation of its two constituents' poles, so when both
+     media carry the same pole -- same frequency and damping, different
+     strength -- two entries are equivalent to the one being registered and
+     the mixture's amplitude is their sum.  This is also the right answer for
+     a plain medium that happens to list a pole twice, since identical poles
+     superpose. */
+  for (const susceptibility &susc : slist) {
+    if (!susceptibility_equiv(susc, current_pol->user_s)) continue;
+    switch (meep::component_index(c)) { // which row of the sigma tensor to return
+      case 0:
+        sigrow[0] += susc.sigma_diag.x;
+        sigrow[1] += susc.sigma_offdiag.x;
+        sigrow[2] += susc.sigma_offdiag.y;
+        break;
+      case 1:
+        sigrow[0] += susc.sigma_offdiag.x;
+        sigrow[1] += susc.sigma_diag.y;
+        sigrow[2] += susc.sigma_offdiag.z;
+        break;
+      default: // case 2:
+        sigrow[0] += susc.sigma_offdiag.y;
+        sigrow[1] += susc.sigma_offdiag.z;
+        sigrow[2] += susc.sigma_diag.z;
+        break;
+    }
+  }
+}
+
+/* Volume-average sigma across a geometric interface.
+
+   The permittivity has always been subpixel-smoothed while sigma was point
+   sampled, so a dispersive object's response switched on a whole pixel at a
+   time as it moved.  Taper each medium's pole amplitude by the pixel's filling
+   fraction instead, using the same front object, shift and fill that
+   eff_chi1inv_matrix uses, so the two describe the same interface.
+
+   Linear in fill rather than Kottke, deliberately.  Kottke's normal component
+   is a harmonic average of a permittivity; there is no analogous exact result
+   for a resonant amplitude, and a harmonic average against a medium without
+   the pole would be zero in every boundary pixel.  Scaling each medium's whole
+   sigma tensor by a non-negative weight and adding keeps the result positive
+   semidefinite -- which is what passivity depends on -- and makes the
+   amplitude exactly linear in fill, so the shape derivative is a constant.
+
+   Material grids and user materials are point sampled as before: their
+   material varies continuously in space already, and mixing a level set with a
+   geometric filling fraction is a separate question. */
+void geom_epsilon::eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p, shiftby;
+
+  // No smoothing requested: match what the permittivity is doing.
+  if (maxeval == 0 || !current_pol) return sigma_row(c, sigrow, v.center());
+
+  /* Out of scope, point sample instead.  A multilevel atom carries per-pixel
+     level populations with their own nonlinear dynamics, so there is no reason
+     to think scaling an amplitude by a filling fraction gives the response of
+     a partially filled pixel the way it does for a linear pole.  A gyrotropic
+     sigma is antisymmetric, so the argument that a non-negative combination
+     stays positive semidefinite does not apply to it either. */
+  const susceptibility &pole = current_pol->user_s;
+  if (!pole.transitions.empty() || !pole.initial_populations.empty() || pole.saturated_gyrotropy ||
+      pole.bias.x != 0 || pole.bias.y != 0 || pole.bias.z != 0)
+    return sigma_row(c, sigrow, v.center());
+
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind))
+    return sigma_row(c, sigrow, v.center());
+
+  if (material_type_equal(mat, mat_behind) || is_variable(mat) || is_variable(mat_behind)) {
+    material_gc(mat);
+    return sigma_row(c, sigrow, v.center());
+  }
+
+  geom_box pixel = gv2box(v);
+  pixel.low = vector3_minus(pixel.low, shiftby);
+  pixel.high = vector3_minus(pixel.high, shiftby);
+  double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+
+  double front[3], behind[3];
+  material_sigma_row(c, front, mat);
+  material_sigma_row(c, behind, mat_behind);
+  for (int i = 0; i < 3; ++i)
+    sigrow[i] = fill * front[i] + (1 - fill) * behind[i];
+
+  material_gc(mat);
+}
+
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::vec &r) {
 
   vector3 p = vec_to_vector3(r);
@@ -1724,44 +1827,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     mat->medium.check_offdiag_im_zero_or_abort();
   }
 
-  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
-
-  if (mat->which_subclass == material_data::MATERIAL_USER ||
-      mat->which_subclass == material_data::MATERIAL_GRID ||
-      mat->which_subclass == material_data::MEDIUM) {
-
-    const susceptibility_list &slist =
-        type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
-    /* Accumulate rather than stopping at the first match.  A material grid's
-       list is the concatenation of its two constituents' poles, so when both
-       media carry the same pole -- same frequency and damping, different
-       strength -- two entries are equivalent to the one being registered and
-       the mixture's amplitude is their sum.  This is also the right answer for
-       a plain medium that happens to list a pole twice, since identical poles
-       superpose. */
-    for (const susceptibility &susc : slist) {
-      if (susceptibility_equiv(susc, current_pol->user_s)) {
-        int ic = meep::component_index(c);
-        switch (ic) { // which row of the sigma tensor to return
-          case 0:
-            sigrow[0] += susc.sigma_diag.x;
-            sigrow[1] += susc.sigma_offdiag.x;
-            sigrow[2] += susc.sigma_offdiag.y;
-            break;
-          case 1:
-            sigrow[0] += susc.sigma_offdiag.x;
-            sigrow[1] += susc.sigma_diag.y;
-            sigrow[2] += susc.sigma_offdiag.z;
-            break;
-          default: // case 2:
-            sigrow[0] += susc.sigma_offdiag.y;
-            sigrow[1] += susc.sigma_offdiag.z;
-            sigrow[2] += susc.sigma_diag.z;
-            break;
-        }
-      }
-    }
-  }
+  material_sigma_row(c, sigrow, mat);
   material_gc(mat);
 }
 
