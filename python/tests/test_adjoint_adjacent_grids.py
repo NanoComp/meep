@@ -164,6 +164,16 @@ class TestAdjacentDesignGrids(unittest.TestCase):
         )
         self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
 
+    def test_overlapping_grids_unequal_sizes(self):
+        """An overlapping grid must not supply the owner's interpolation size."""
+        # Keep the owner larger than the top grid so the regression is a wrong
+        # derivative rather than a test that relies on an out-of-bounds access.
+        shapes = [(8, 13), (8, 8)]
+        ratio = _directional_ratio(
+            _problem(shapes, overlap=True, grid_type="U_MEAN"), shapes, n_regions=1
+        )
+        self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
+
 
 if __name__ == "__main__":
     unittest.main()
