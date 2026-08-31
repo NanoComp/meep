@@ -550,6 +550,18 @@ public:
     sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
   }
 
+  /* Volume-averaged sigma over a pixel, standing to sigma_row as
+     eff_chi1inv_row stands to chi1p1.  The instantaneous permittivity has been
+     subpixel-averaged since forever while sigma was point sampled, which makes
+     a dispersive material switch on a whole pixel at a time as an object moves
+     -- a staircase, and a staircase has no derivative.
+
+     The default reproduces the point sample exactly, so a subclass that does
+     not override this behaves as it always has. */
+  virtual void eff_sigma_row(component c, double sigrow[3], const volume &v) {
+    sigma_row(c, sigrow, v.center());
+  }
+
   // Nonlinear susceptibilities
   virtual bool has_chi3(component c) {
     (void)c;
