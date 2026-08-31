@@ -172,7 +172,10 @@ class TestAdjacentDesignGrids(unittest.TestCase):
         ratio = _directional_ratio(
             _problem(shapes, overlap=True, grid_type="U_MEAN"), shapes, n_regions=1
         )
-        self.assertAlmostEqual(ratio, 1.0, delta=self.tol)
+        # Single precision loses accuracy to cancellation in the outer
+        # objective finite difference; keep the double-precision bound unchanged.
+        tol = 5e-3 if mp.is_single_precision() else self.tol
+        self.assertAlmostEqual(ratio, 1.0, delta=tol)
 
 
 if __name__ == "__main__":
