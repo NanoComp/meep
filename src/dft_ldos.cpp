@@ -16,6 +16,7 @@
  */
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 using namespace std;
@@ -104,44 +105,53 @@ void dft_ldos::update(fields &f) {
   // ...don't worry about the tiny inefficiency of recomputing this repeatedly
   Jsum = 0.0;
 
+  /* If no fast point-read is available, fall back to a single up-front
+   * sync so the direct array reads (via read_field_at) see fresh data. */
+  if (!meep_backend.read_point) sync_host_if_needed(&f);
+
   for (int ic = 0; ic < f.num_chunks; ic++)
     if (f.chunks[ic]->is_mine()) {
-      for (const src_vol &sv : f.chunks[ic]->get_sources(D_stuff)) {
+      fields_chunk *fc = f.chunks[ic];
+      for (const src_vol &sv : fc->get_sources(D_stuff)) {
         component c = direction_component(Ex, component_direction(sv.c));
-        realnum *fr = f.chunks[ic]->f[c][0];
-        realnum *fi = f.chunks[ic]->f[c][1];
+        realnum *fr = fc->f[c][0];
+        realnum *fi = fc->f[c][1];
         if (fr && fi) // complex E
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            EJ += complex<double>(fr[idx], fi[idx]) * conj(A);
+            EJ += complex<double>(read_field_at(&f, fc, c, 0, idx),
+                                  read_field_at(&f, fc, c, 1, idx)) *
+                  conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // E is purely real
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            EJ += double(fr[idx]) * conj(A);
+            EJ += double(read_field_at(&f, fc, c, 0, idx)) * conj(A);
             Jsum += abs(A);
           }
         }
       }
-      for (const src_vol &sv : f.chunks[ic]->get_sources(B_stuff)) {
+      for (const src_vol &sv : fc->get_sources(B_stuff)) {
         component c = direction_component(Hx, component_direction(sv.c));
-        realnum *fr = f.chunks[ic]->f[c][0];
-        realnum *fi = f.chunks[ic]->f[c][1];
+        realnum *fr = fc->f[c][0];
+        realnum *fi = fc->f[c][1];
         if (fr && fi) // complex H
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            HJ += complex<double>(fr[idx], fi[idx]) * conj(A);
+            HJ += complex<double>(read_field_at(&f, fc, c, 0, idx),
+                                  read_field_at(&f, fc, c, 1, idx)) *
+                  conj(A);
             Jsum += abs(A);
           }
         else if (fr) { // H is purely real
           for (size_t j = 0; j < sv.num_points(); j++) {
             const ptrdiff_t idx = sv.index_at(j);
             const complex<double> &A = sv.amplitude_at(j);
-            HJ += double(fr[idx]) * conj(A);
+            HJ += double(read_field_at(&f, fc, c, 0, idx)) * conj(A);
             Jsum += abs(A);
           }
         }

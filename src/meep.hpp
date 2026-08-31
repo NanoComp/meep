@@ -1496,6 +1496,11 @@ public:
   const char *outdir;
   int chunk_idx;
 
+  /* Opaque per-chunk slot owned by an external backend (see
+   * meep/backend_hooks.hpp).  Default null; backends allocate in
+   * `backend_hooks::init` and free in `backend_hooks::cleanup`. */
+  void *backend_state = nullptr;
+
   fields_chunk(structure_chunk *, const char *outdir, double m, double beta,
                bool zero_fields_near_cylorigin, int chunkidx, int loop_tile_base_db,
                std::vector<double> bfast_scaled_k);
@@ -1735,6 +1740,15 @@ public:
   char *outdir;
   bool components_allocated;
   size_t loop_tile_base_db, loop_tile_base_eh;
+
+  /* Opaque per-sim slot owned by an external backend (see
+   * meep/backend_hooks.hpp).  Default null. */
+  void *backend_state = nullptr;
+
+  /* When true, the backend's `step` hook is bypassed and the in-tree
+   * CPU step path runs instead.  Used by the CW solver, which iterates
+   * directly against host arrays. */
+  bool backend_suspended = false;
 
   // fields.cpp methods:
   fields(structure *, double m = 0, double beta = 0, bool zero_fields_near_cylorigin = true,
