@@ -46,6 +46,7 @@ def loss(x):
 value, grad = jax.value_and_grad(loss)(x)
 ```
 """
+
 from typing import Callable, Iterable, List, Tuple
 
 import jax
@@ -53,6 +54,7 @@ import jax.numpy as jnp
 import numpy as onp
 
 import meep as mp
+from meep.simulation import stop_when_dft_pade_converged
 
 from . import DesignRegion, EigenmodeCoefficient, utils
 
@@ -88,6 +90,10 @@ class MeepJaxWrapper:
           `until_after_sources` is used. See
           https://meep.readthedocs.io/en/latest/Python_User_Interface/#Simulation
           for more information. The default is true.
+        pade_samples: number of recent DFT samples retained for bounded-memory Padé
+          extrapolation. Zero disables extrapolation.
+        pade_tolerance: optional experimental monitor-level convergence tolerance.
+          Requires `pade_samples >= 4` and finite-duration sources.
     """
 
     _log_fn = print
@@ -104,6 +110,8 @@ class MeepJaxWrapper:
         maximum_run_time: float = onp.inf,
         until_after_sources: bool = True,
         finite_difference_step: float = utils.FD_DEFAULT,
+        pade_samples: int = 0,
+        pade_tolerance: float = None,
     ):
         self.simulation = simulation
         self.sources = sources
@@ -115,8 +123,38 @@ class MeepJaxWrapper:
         self.maximum_run_time = maximum_run_time
         self.until_after_sources = until_after_sources
         self.finite_difference_step = finite_difference_step
+        self.pade_samples = utils.validate_pade_options(pade_samples, pade_tolerance)
+        self.pade_tolerance = pade_tolerance
+        self.pade_diagnostics = []
 
         self._simulate_fn = self._initialize_callable()
+
+    def _run_simulation(self, monitors, leg):
+        run_keyword = "until_after_sources" if self.until_after_sources else "until"
+        if self.pade_tolerance is None:
+            condition = mp.stop_when_dft_decayed(
+                self.dft_threshold, self.minimum_run_time, self.maximum_run_time
+            )
+        else:
+            utils.validate_finite_sources(self.simulation.sources)
+            condition = stop_when_dft_pade_converged(
+                monitors,
+                self.pade_tolerance,
+                self.pade_samples,
+                raw_decay_tol=self.dft_threshold,
+                minimum_run_time=self.minimum_run_time,
+                maximum_run_time=self.maximum_run_time,
+                monitor_only=True,
+            )
+        self.simulation.run(**{run_keyword: condition})
+        if self.pade_tolerance is not None:
+            diagnostics = condition.finalize(self.simulation)
+            diagnostics["leg"] = leg
+            self.pade_diagnostics.append(diagnostics)
+            if diagnostics["exit_reason"] == "maximum_time":
+                raise RuntimeError(
+                    "automatic Padé convergence was not reached before maximum_run_time"
+                )
 
     def __call__(self, designs: List[jnp.ndarray]) -> jnp.ndarray:
         """Performs a Meep simulation, taking a list of designs and returning mode overlaps.
@@ -144,21 +182,23 @@ class MeepJaxWrapper:
         utils.validate_and_update_design(self.design_regions, design_variables)
         self.simulation.reset_meep()
         self.simulation.change_sources(self.sources)
-        utils.register_monitors(self.monitors, self.frequencies)
+        utils.register_monitors(
+            self.monitors, self.frequencies, pade_samples=self.pade_samples
+        )
         fwd_design_region_monitors = utils.install_design_region_monitors(
             self.simulation,
             self.design_regions,
             self.frequencies,
+            pade_samples=self.pade_samples,
         )
         self.simulation.init_sim()
-        sim_run_args = {
-            "until_after_sources"
-            if self.until_after_sources
-            else "until": mp.stop_when_dft_decayed(
-                self.dft_threshold, self.minimum_run_time, self.maximum_run_time
-            )
-        }
-        self.simulation.run(**sim_run_args)
+        self._run_simulation(
+            [
+                [monitor._monitor for monitor in self.monitors],
+                fwd_design_region_monitors,
+            ],
+            "forward_monitor_only",
+        )
 
         monitor_values = utils.gather_monitor_values(self.monitors)
         return (jnp.asarray(monitor_values), fwd_design_region_monitors)
@@ -184,16 +224,10 @@ class MeepJaxWrapper:
             self.simulation,
             self.design_regions,
             self.frequencies,
+            pade_samples=self.pade_samples,
         )
         self.simulation.init_sim()
-        sim_run_args = {
-            "until_after_sources"
-            if self.until_after_sources
-            else "until": mp.stop_when_dft_decayed(
-                self.dft_threshold, self.minimum_run_time, self.maximum_run_time
-            )
-        }
-        self.simulation.run(**sim_run_args)
+        self._run_simulation(adj_design_region_monitors, "adjoint_monitor_only")
 
         return adj_design_region_monitors
 

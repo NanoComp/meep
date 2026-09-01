@@ -2405,8 +2405,15 @@ void fragment_stats::compute_dft_stats() {
         // Note: Since geom_boxes_intersect returns true if two planes share a line or two volumes
         // share a line or plane, there are cases where some pixels are counted multiple times.
         size_t overlap_pixels = get_pixels_in_box(&overlap_box, 2);
-        num_dft_pixels +=
-            overlap_pixels * dft_data_list[i].num_freqs * dft_data_list[i].num_components;
+        const size_t num_freqs = dft_data_list[i].num_freqs;
+        const size_t pade_samples = dft_data_list[i].pade_samples;
+        // A Padé-enabled DFT chunk stores a bounded N*pade_samples history. Its
+        // corrected value and previous-diagnostic caches can each add N*num_freqs
+        // entries. Count all possible allocations so pre-run chunk balancing and
+        // memory estimates do not depend on when or how often diagnostics are read.
+        const size_t entries_per_component =
+            num_freqs + (pade_samples ? pade_samples + 2 * num_freqs : 0);
+        num_dft_pixels += overlap_pixels * entries_per_component * dft_data_list[i].num_components;
       }
     }
   }
@@ -2480,7 +2487,11 @@ void fragment_stats::print_stats() const {
 }
 
 dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes)
-    : num_freqs(freqs), num_components(components), vols(volumes) {}
+    : dft_data(freqs, components, volumes, 0) {}
+
+dft_data::dft_data(int freqs, int components, std::vector<meep::volume> volumes,
+                   size_t pade_samples)
+    : num_freqs(freqs), num_components(components), pade_samples(pade_samples), vols(volumes) {}
 
 /***************************************************************/
 // Gradient calculation routines needed for material grid
@@ -2885,12 +2896,13 @@ static meep::dft_chunk *matching_dft_chunk(const std::vector<meep::dft_chunk *> 
    which step_boundaries() keeps current, so a lookup should only fall outside
    it at the cell boundary, where zero is the right answer. */
 static std::complex<meep::realnum> forward_dft_value(const meep::dft_chunk *ch,
+                                                     const std::complex<meep::realnum> *values,
                                                      const meep::grid_volume &gv_fwd,
                                                      meep::grid_volume &gv, const meep::ivec &p,
                                                      size_t nf, size_t f_i) {
   if (ivec_in_box(p, ch->is, ch->ie, gv.dim)) {
     ptrdiff_t i = gv_fwd.index(ch->c, p);
-    if (i >= 0 && (size_t)i < ch->N) return ch->dft[nf * i + f_i];
+    if (i >= 0 && (size_t)i < ch->N) return values[nf * i + f_i];
   }
   return 0;
 }
@@ -2913,6 +2925,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
   /* ------------------------------------------------------------ */
   std::vector<std::vector<meep::dft_chunk *> > adjoint_dft_chunks;
   std::vector<std::vector<meep::dft_chunk *> > forward_dft_chunks;
+  std::vector<std::vector<const std::complex<meep::realnum> *> > adjoint_dft_values;
   for (int i = 0; i < 3; i++) {
     std::vector<meep::dft_chunk *> c_adjoint_dft_chunks;
     std::vector<meep::dft_chunk *> c_forward_dft_chunks;
@@ -2937,6 +2950,11 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
        chunks are paired spatially below, so this is not an error. */
     adjoint_dft_chunks.push_back(c_adjoint_dft_chunks);
     forward_dft_chunks.push_back(c_forward_dft_chunks);
+
+    std::vector<const std::complex<meep::realnum> *> c_adjoint_dft_values;
+    for (const meep::dft_chunk *chunk : c_adjoint_dft_chunks)
+      c_adjoint_dft_values.push_back(chunk->dft_values());
+    adjoint_dft_values.push_back(c_adjoint_dft_values);
   }
 
   /* ------------------------------------------------------------ */
@@ -2954,6 +2972,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
       // loop over each chunk
       for (int cur_chunk = 0; cur_chunk < num_chunks; cur_chunk++) {
         meep::dft_chunk *adj_chunk = adjoint_dft_chunks[ci_adjoint][cur_chunk];
+        const std::complex<meep::realnum> *adj_values = adjoint_dft_values[ci_adjoint][cur_chunk];
         meep::component adjoint_c = adj_chunk->c;
         meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is, adj_chunk->ie, adjoint_c);
 
@@ -2964,6 +2983,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
           meep::dft_chunk *fwd_chunk =
               matching_dft_chunk(forward_dft_chunks[ci_forward], adj_chunk);
           if (!fwd_chunk) continue;
+          const std::complex<meep::realnum> *fwd_values = fwd_chunk->dft_values();
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
 
@@ -2972,7 +2992,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
             double cyl_scale;
             IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
-            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
+            std::complex<meep::realnum> adj = adj_values[nf * idx_adj + f_i];
             material_type md;
             geps->get_material_pt(md, p);
             /* if we have conductivities (e.g. for damping)
@@ -2992,7 +3012,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                  idx_adj is an index into gv_adj and is only valid here because
                  the paired chunks share a fields chunk */
               std::complex<meep::realnum> fwd =
-                  forward_dft_value(fwd_chunk, gv_fwd, gv, ip, nf, f_i);
+                  forward_dft_value(fwd_chunk, fwd_values, gv_fwd, gv, ip, nf, f_i);
               cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p.r()
                                                  : 1; // the pi is already factored in near2far.cpp
               material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
@@ -3031,8 +3051,8 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
 // operate on the each eps node
 #pragma unroll
               for (int node = 0; node < 2; node++) { // two nodes
-                fwd1 = forward_dft_value(fwd_chunk, gv_fwd, gv, fwd_pl[node], nf, f_i);
-                fwd2 = forward_dft_value(fwd_chunk, gv_fwd, gv, fwd_pr[node], nf, f_i);
+                fwd1 = forward_dft_value(fwd_chunk, fwd_values, gv_fwd, gv, fwd_pl[node], nf, f_i);
+                fwd2 = forward_dft_value(fwd_chunk, fwd_values, gv_fwd, gv, fwd_pr[node], nf, f_i);
                 fwd_avg = std::complex<meep::realnum>(0.5, 0) * (fwd1 + fwd2);
                 meep::vec eps1 = gv[ieps[node]];
                 cyl_scale = (gv.dim == meep::Dcyl) ? eps1.r() : 1;
@@ -3062,11 +3082,13 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
   // clear the array used for local sum to all
   delete[] v_local;
 
-  // clear all the dft data structures
+  // material_grids_addgradient consumes the adjoint DFT chunks.  Remove them
+  // through their owning dft_fields objects so the owners' chunk heads are
+  // cleared as well.  Deleting the copied pointers above left fields_a with
+  // dangling chunk lists, causing a subsequent dft_fields::remove() (as used
+  // by streamed Padé adjoints) to delete the same chunks a second time.
   for (int i = 0; i < 3; i++) {
-    for (int ii = 0; ii < adjoint_dft_chunks[i].size(); ii++) {
-      delete adjoint_dft_chunks[i][ii];
-    }
+    fields_a[i]->remove();
   }
 
 } // material_grids_addgradient
