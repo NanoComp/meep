@@ -2641,6 +2641,17 @@ def load_structure(fname=None, single_parallel_file=True):
 
 Loads a structure from the file `fname`.
 
+The structure must already be initialized: the raw material data in `fname` is
+read into the existing grid rather than used to build a new one. This means the
+`Simulation` doing the loading must be constructed with the same `cell_size`,
+`resolution`, `dimensions`, and `geometry_center` as the one that called
+`dump_structure`, and with a chunk decomposition that matches (same
+`chunk_layout`, `boundary_layers`, `symmetries`, and number of MPI processes).
+Note in particular that a cell which is not an integer number of pixels is
+rounded to the nearest pixel when the grid is created, so it is the *rounded*
+grid that has to agree. `fname` records the grid it was dumped with, and a
+mismatch raises a `RuntimeError` rather than silently loading the wrong data.
+
 </div>
 
 </div>

@@ -57,6 +57,62 @@ void structure::write_susceptibility_params(h5file *file, bool single_parallel_f
   }
 }
 
+/* The grid_volume is *not* reconstructed from the dump file: structure::load reads
+   into the chunks of an already-created structure, whose gv was rebuilt by the
+   caller from the cell_size and resolution and rounded to the nearest pixel (see
+   volone/voltwo/vol3d/volcyl in vec.cpp).  We record the gv here so that load can
+   report a mismatch instead of silently reading the data into an incompatible grid.
+   Layout (all doubles):
+     [0]    dims
+     [1]    a (resolution)
+     [2..4] num_direction(d), indexed by (int)d % 3 as elsewhere, so R/P are covered
+     [5..7] origin_in_direction(d), same indexing */
+static const size_t gv_metadata_size = 8;
+
+static void pack_gv_metadata(const grid_volume &gv, double *meta) {
+  for (size_t i = 0; i < gv_metadata_size; ++i)
+    meta[i] = 0;
+  meta[0] = (double)gv.dim;
+  meta[1] = gv.a;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    meta[2 + ((int)d % 3)] = gv.num_direction(d);
+    meta[5 + ((int)d % 3)] = gv.origin_in_direction(d);
+  }
+}
+
+static void check_gv_metadata(const double *file_meta, const grid_volume &gv,
+                              const char *filename) {
+  double meta[gv_metadata_size];
+  pack_gv_metadata(gv, meta);
+
+  if ((int)file_meta[0] != (int)meta[0])
+    meep::abort("grid_volume mismatch in structure::load: the dump file \"%s\" has "
+                "dimensionality %d but the simulation has %d",
+                filename, (int)file_meta[0], (int)meta[0]);
+
+  if (fabs(file_meta[1] - meta[1]) > 1e-12 * fabs(meta[1]))
+    meep::abort("grid_volume mismatch in structure::load: the dump file \"%s\" was written"
+                "at resolution %g but the simulation was created with resolution %g",
+                filename, file_meta[1], meta[1]);
+
+  for (int i = 0; i < 3; ++i)
+    if ((int)file_meta[2 + i] != (int)meta[2 + i])
+      meep::abort("grid_volume mismatch in structure::load: the dump file \"%s\" has a cell "
+                  "of %d x %d x %d pixels but the simulation has %d x %d x %d; check "
+                  "cell_size and resolution",
+                  filename, (int)file_meta[2], (int)file_meta[3], (int)file_meta[4], (int)meta[2],
+                  (int)meta[3], (int)meta[4]);
+
+  // A difference far below one pixel cannot be meaningful.
+  const double origin_tol = 1e-9 / meta[1];
+  for (int i = 0; i < 3; ++i)
+    if (fabs(file_meta[5 + i] - meta[5 + i]) > origin_tol)
+      meep::abort("grid_volume mismatch in structure::load: the dump file \"%s\" has grid "
+                  "origin (%g, %g, %g) but the simulation has (%g, %g, %g) check "
+                  "geometry_center",
+                  filename, file_meta[5], file_meta[6], file_meta[7], meta[5], meta[6], meta[7]);
+}
+
 void structure::dump_chunk_layout(const char *filename) {
   // Write grid_volume info for each chunk so we can reconstruct chunk division from split_by_cost
   size_t sz = num_chunks * 3;
@@ -134,6 +190,20 @@ void structure::dump(const char *filename, bool single_parallel_file) {
   }
 
   h5file file(filename, h5file::WRITE, single_parallel_file, !single_parallel_file);
+
+  // Record the grid_volume so that structure::load can detect a mismatch.
+  {
+    size_t meta_len = gv_metadata_size;
+    double meta[gv_metadata_size];
+    pack_gv_metadata(gv, meta);
+    file.create_data("gv_metadata", 1, &meta_len, false /* append_data */,
+                     false /* single_precision */);
+    if (am_master() || !single_parallel_file) {
+      size_t meta_start = 0;
+      file.write_chunk(1, &meta_start, &meta_len, meta);
+    }
+  }
+
   size_t dims[3] = {(size_t)my_num_chunks, NUM_FIELD_COMPONENTS, 5};
   size_t start[3] = {0, 0, 0};
   file.create_data("num_chi1inv", 3, dims);
@@ -557,6 +627,27 @@ void structure::load(const char *filename, bool single_parallel_file) {
 
   if (verbosity > 0)
     printf("reading epsilon from file \"%s\" (%d)...\n", filename, single_parallel_file);
+
+  // Check that our grid_volume is the one that was dumped.  Files written by
+  // older versions of Meep have no gv_metadata dataset; skip the check for those.
+  if (file.dataset_exists("gv_metadata")) {
+    int meta_rank = 0;
+    size_t meta_dims[3] = {0, 0, 0};
+    file.read_size("gv_metadata", &meta_rank, meta_dims, 1);
+    if (meta_rank != 1 || meta_dims[0] != gv_metadata_size)
+      meep::abort("inconsistent data size for gv_metadata in structure::load");
+    double file_meta[gv_metadata_size] = {0};
+    if (am_master() || !single_parallel_file) {
+      size_t meta_start = 0;
+      size_t meta_count = gv_metadata_size;
+      file.read_chunk(1, &meta_start, &meta_count, file_meta);
+    }
+    if (single_parallel_file) {
+      file.prevent_deadlock();
+      broadcast(0, file_meta, gv_metadata_size);
+    }
+    check_gv_metadata(file_meta, gv, filename);
+  }
 
   /*
    * make/save a num_chunks x NUM_FIELD_COMPONENTS x 5 array counting

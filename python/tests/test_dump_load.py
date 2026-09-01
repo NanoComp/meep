@@ -17,6 +17,18 @@ except NameError:
     unicode = str
 
 
+def _gv_signature(gv):
+    """Everything about a grid_volume that a dump/load round trip must preserve."""
+    dirs = (mp.X, mp.Y, mp.Z, mp.R, mp.P)
+    return (
+        int(gv.dim),
+        gv.a,
+        tuple(gv.num_direction(d) for d in dirs),
+        tuple(gv.origin_in_direction(d) for d in dirs),
+        int(gv.ntot()),
+    )
+
+
 class TestLoadDump(ApproxComparisonTestCase):
 
     fname_base = re.sub(r"\.py$", "", os.path.split(sys.argv[0])[1])
@@ -522,6 +534,102 @@ class TestLoadDump(ApproxComparisonTestCase):
             RuntimeError, "meep: non-null polarization_state in fields::dump"
         ):
             sim.dump(dump_dirname, dump_structure=True, dump_fields=True)
+
+    def _init_gv_sim(self, resolution, cell_size, **kwargs):
+        # A non-trivial geometry, so the dumped chi1inv arrays are not all empty.
+        geometry = [
+            mp.Block(
+                material=mp.Medium(index=2.0),
+                center=mp.Vector3(),
+                size=mp.Vector3(1, 1, 1),
+            )
+        ]
+        sim = mp.Simulation(
+            resolution=resolution,
+            cell_size=cell_size,
+            geometry=geometry,
+            **kwargs,
+        )
+        sim.init_sim()
+        return sim
+
+    def _gv_dump_dir(self, name):
+        dirname = os.path.join(self.temp_dir, name)
+        os.makedirs(dirname, exist_ok=True)
+        return dirname
+
+    # The cell is rounded to the nearest whole pixel when the grid_volume is
+    # created (volone/voltwo/vol3d/volcyl in src/vec.cpp), so check that a
+    # dump/load round trip lands on exactly the same grid at resolutions where
+    # the cell is *not* an integer number of pixels.
+    def test_dump_load_grid_volume_matches(self):
+        cases = [
+            ("1d", mp.Vector3(z=5), {"dimensions": 1}),
+            ("2d", mp.Vector3(5, 5), {}),
+            ("3d", mp.Vector3(2.3, 2.1, 2.7), {}),
+            ("cylindrical", mp.Vector3(2.3, 0, 3.1), {"dimensions": mp.CYLINDRICAL}),
+        ]
+        dump_dirname = self._gv_dump_dir("test_dump_load_grid_volume")
+
+        for label, cell, kwargs in cases:
+            for resolution in [10, 13, 17.5, 21.3, 33]:
+                with self.subTest(cell=label, resolution=resolution):
+                    fname = os.path.join(dump_dirname, f"{label}-{resolution}.h5")
+                    sim1 = self._init_gv_sim(resolution, cell, **kwargs)
+                    sim1.dump_structure(fname)
+
+                    sim2 = self._init_gv_sim(resolution, cell, **kwargs)
+                    before_load = _gv_signature(sim2.structure.gv)
+                    sim2.load_structure(fname)
+
+                    self.assertEqual(_gv_signature(sim1.structure.gv), before_load)
+                    self.assertEqual(before_load, _gv_signature(sim2.structure.gv))
+
+    # meep::abort only raises (rather than calling MPI_Abort) on a single
+    # process, so assertRaisesRegex cannot be used with more than one.
+    @unittest.skipIf(mp.count_processors() > 1, "single-process test")
+    def test_load_structure_resolution_mismatch(self):
+        dump_dirname = self._gv_dump_dir("test_load_structure_mismatch")
+        fname = os.path.join(dump_dirname, "resolution.h5")
+
+        self._init_gv_sim(20, mp.Vector3(5, 5)).dump_structure(fname)
+
+        sim = self._init_gv_sim(30, mp.Vector3(5, 5))
+        with self.assertRaisesRegex(RuntimeError, "grid_volume_mismatch"):
+            sim.load_structure(fname)
+
+    # A transposed cell has the same total number of pixels, so the array-size
+    # checks in structure::load do not catch it; only the grid_volume recorded
+    # in the dump file does.
+    @unittest.skipIf(mp.count_processors() > 1, "single-process test")
+    def test_load_structure_cell_size_mismatch(self):
+        dump_dirname = self._gv_dump_dir("test_load_structure_mismatch")
+        fname = os.path.join(dump_dirname, "cell_size.h5")
+
+        self._init_gv_sim(50, mp.Vector3(5, 4)).dump_structure(fname)
+
+        sim = self._init_gv_sim(50, mp.Vector3(4, 5))
+        with self.assertRaisesRegex(RuntimeError, "grid_volume_mismatch"):
+            sim.load_structure(fname)
+
+    # Dump files written before structure::dump recorded the grid_volume have no
+    # gv_metadata dataset and must still load.
+    def test_load_structure_without_gv_mismatch(self):
+        dump_dirname = self._gv_dump_dir("test_load_structure_legacy")
+        fname = os.path.join(dump_dirname, "legacy.h5")
+
+        sim1 = self._init_gv_sim(20, mp.Vector3(5, 5))
+        sim1.dump_structure(fname)
+        if mp.am_master():
+            with h5py.File(fname, "a") as f:
+                del f["gv_metadata"]
+        mp.all_wait()
+
+        sim2 = self._init_gv_sim(20, mp.Vector3(5, 5))
+        sim2.load_structure(fname)
+        self.assertEqual(
+            _gv_signature(sim1.structure.gv), _gv_signature(sim2.structure.gv)
+        )
 
 
 if __name__ == "__main__":
