@@ -51,9 +51,12 @@ const double TINY = 1e-20;
 struct dft_data {
   int num_freqs;
   int num_components;
+  size_t pade_samples;
   std::vector<meep::volume> vols;
 
   dft_data(int freqs, int components, std::vector<meep::volume> volumes);
+  dft_data(int freqs, int components, std::vector<meep::volume> volumes,
+           size_t pade_samples);
 };
 
 struct fragment_stats {

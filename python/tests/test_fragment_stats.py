@@ -61,6 +61,7 @@ class TestFragmentStats(unittest.TestCase):
         sym=[],
         geom=None,
         pml=[],
+        pade_samples=0,
     ):
         mat = mp.Medium(
             epsilon=12,
@@ -91,11 +92,29 @@ class TestFragmentStats(unittest.TestCase):
 
         if dft_vecs:
             if dft_vecs["flux_regions"]:
-                sim.add_flux(1, 0.5, 5, *dft_vecs["flux_regions"])
+                sim.add_flux(
+                    1,
+                    0.5,
+                    5,
+                    *dft_vecs["flux_regions"],
+                    pade_samples=pade_samples,
+                )
             if dft_vecs["n2f_regions"]:
-                sim.add_near2far(1, 0.5, 7, *dft_vecs["n2f_regions"])
+                sim.add_near2far(
+                    1,
+                    0.5,
+                    7,
+                    *dft_vecs["n2f_regions"],
+                    pade_samples=pade_samples,
+                )
             if dft_vecs["force_regions"]:
-                sim.add_force(1, 0.5, 9, *dft_vecs["force_regions"])
+                sim.add_force(
+                    1,
+                    0.5,
+                    9,
+                    *dft_vecs["force_regions"],
+                    pade_samples=pade_samples,
+                )
             if dft_vecs["fields_components"]:
                 sim.add_dft_fields(
                     dft_vecs["fields_components"],
@@ -105,6 +124,7 @@ class TestFragmentStats(unittest.TestCase):
                     where=dft_vecs["fields_where"],
                     center=dft_vecs["fields_center"],
                     size=dft_vecs["fields_size"],
+                    pade_samples=pade_samples,
                 )
 
         gv = sim._create_grid_volume(False)
@@ -195,6 +215,31 @@ class TestFragmentStats(unittest.TestCase):
             mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs
         )
         self.assertEqual(fs.num_dft_pixels, 4000)
+
+    def test_1d_dft_fields_pade_memory_is_bounded(self):
+        dft_vecs = make_dft_vecs(
+            fldc=mp.Vector3(z=-10),
+            flds=mp.Vector3(z=10),
+            fld_cmp=[mp.X, mp.Y],
+        )
+        raw = self.get_fragment_stats(
+            mp.Vector3(z=10), mp.Vector3(z=30), 1, dft_vecs=dft_vecs
+        )
+        pade = self.get_fragment_stats(
+            mp.Vector3(z=10),
+            mp.Vector3(z=30),
+            1,
+            dft_vecs=dft_vecs,
+            pade_samples=8,
+        )
+
+        # Each spatial point/component has 5 raw-frequency entries. Padé adds
+        # 8 bounded history entries and two possible 5-frequency diagnostic
+        # caches, independently of the eventual simulation duration.
+        self.assertEqual(raw.num_dft_pixels, 4000)
+        self.assertEqual(
+            pade.num_dft_pixels, raw.num_dft_pixels * (8 + 3 * 5) // 5
+        )
 
     def _test_2d(self, sym, pml=[]):
         # A 30 x 30 cell, with a 10 x 10 block in the middle
