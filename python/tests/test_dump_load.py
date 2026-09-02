@@ -595,7 +595,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         self._init_gv_sim(20, mp.Vector3(5, 5)).dump_structure(fname)
 
         sim = self._init_gv_sim(30, mp.Vector3(5, 5))
-        with self.assertRaisesRegex(RuntimeError, "grid_volume_mismatch"):
+        with self.assertRaisesRegex(RuntimeError, "grid_volume mismatch"):
             sim.load_structure(fname)
 
     # A transposed cell has the same total number of pixels, so the array-size
@@ -609,7 +609,7 @@ class TestLoadDump(ApproxComparisonTestCase):
         self._init_gv_sim(50, mp.Vector3(5, 4)).dump_structure(fname)
 
         sim = self._init_gv_sim(50, mp.Vector3(4, 5))
-        with self.assertRaisesRegex(RuntimeError, "grid_volume_mismatch"):
+        with self.assertRaisesRegex(RuntimeError, "grid_volume mismatch"):
             sim.load_structure(fname)
 
     # Dump files written before structure::dump recorded the grid_volume have no

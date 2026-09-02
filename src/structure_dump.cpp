@@ -91,7 +91,7 @@ static void check_gv_metadata(const double *file_meta, const grid_volume &gv,
                 filename, (int)file_meta[0], (int)meta[0]);
 
   if (fabs(file_meta[1] - meta[1]) > 1e-12 * fabs(meta[1]))
-    meep::abort("grid_volume mismatch in structure::load: the dump file \"%s\" was written"
+    meep::abort("grid_volume mismatch in structure::load: the dump file \"%s\" was written "
                 "at resolution %g but the simulation was created with resolution %g",
                 filename, file_meta[1], meta[1]);
 
