@@ -91,10 +91,12 @@ static void stress_sum(size_t Nfreq, double *F, const dft_chunk *F1, const dft_c
   for (const dft_chunk *curF1 = F1, *curF2 = F2; curF1 && curF2;
        curF1 = curF1->next_in_dft, curF2 = curF2->next_in_dft) {
     complex<double> extra_weight(real(curF1->extra_weight), imag(curF1->extra_weight));
+    const complex<realnum> *F1_values = curF1->dft_values();
+    const complex<realnum> *F2_values = curF2->dft_values();
     for (size_t k = 0; k < curF1->N; ++k)
       for (size_t i = 0; i < Nfreq; ++i)
-        F[i] += real(extra_weight * complex<double>(curF1->dft[k * Nfreq + i]) *
-                     conj(complex<double>(curF2->dft[k * Nfreq + i])));
+        F[i] += real(extra_weight * complex<double>(F1_values[k * Nfreq + i]) *
+                     conj(complex<double>(F2_values[k * Nfreq + i])));
   }
 }
 
@@ -151,7 +153,7 @@ void dft_force::scale_dfts(complex<double> scale) {
    force to be computed, so they should be vector components (such as
    Ex, Ey, ... or Sx, ...)  rather than pseudovectors (like Hx, ...). */
 dft_force fields::add_dft_force(const volume_list *where, const double *freq, size_t Nfreq,
-                                int decimation_factor) {
+                                int decimation_factor, size_t pade_samples) {
   dft_chunk *offdiag1 = 0, *offdiag2 = 0, *diag = 0;
 
   // copy where_ and add cc (conjugate-component) info for symmetry reduction
@@ -176,21 +178,21 @@ dft_force fields::add_dft_force(const volume_list *where, const double *freq, si
 
     if (fd != nd) { // off-diagonal stress-tensor terms
       offdiag1 = add_dft(direction_component(Ex, fd), w->v, freq, Nfreq, true, w->weight, offdiag1,
-                         false, 1.0, true, 0, decimation_factor);
+                         false, 1.0, true, 0, decimation_factor, false, pade_samples);
       offdiag2 = add_dft(direction_component(Ex, nd), w->v, freq, Nfreq, false, 1.0, offdiag2,
-                         false, 1.0, true, 0, decimation_factor);
+                         false, 1.0, true, 0, decimation_factor, false, pade_samples);
       offdiag1 = add_dft(direction_component(Hx, fd), w->v, freq, Nfreq, true, w->weight, offdiag1,
-                         false, 1.0, true, 0, decimation_factor);
+                         false, 1.0, true, 0, decimation_factor, false, pade_samples);
       offdiag2 = add_dft(direction_component(Hx, nd), w->v, freq, Nfreq, false, 1.0, offdiag2,
-                         false, 1.0, true, 0, decimation_factor);
+                         false, 1.0, true, 0, decimation_factor, false, pade_samples);
     }
     else // diagonal stress-tensor terms
       LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
         complex<double> weight1 = w->weight * (d == fd ? +0.5 : -0.5);
         diag = add_dft(direction_component(Ex, d), w->v, freq, Nfreq, true, 1.0, diag, true,
-                       weight1, false, 0, decimation_factor);
+                       weight1, false, 0, decimation_factor, false, pade_samples);
         diag = add_dft(direction_component(Hx, d), w->v, freq, Nfreq, true, 1.0, diag, true,
-                       weight1, false, 0, decimation_factor);
+                       weight1, false, 0, decimation_factor, false, pade_samples);
       }
     everywhere = everywhere | w->v;
   }
