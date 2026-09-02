@@ -72,6 +72,8 @@ public:
   // Requirement: other.num_points() == this->num_points().
   // It is recommended to use `combinable` before calling this method.
   void add_amplitudes_from(const src_vol &other);
+  // Removes entries that no longer deposit a source after boundary relocation.
+  void remove_zero_amplitudes();
 
   const component c;       // field component the source applies to
   bool needs_boundary_fix; // whether fix_boundary_sources needs calling
