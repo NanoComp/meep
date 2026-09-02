@@ -8,8 +8,12 @@
 # both halves at once. A finite difference confirms both halves of that: the
 # gradient really is zero down there, and really is doubled up here.
 #
-# What is a bug is the scaling when the *objective* sits on the symmetry plane,
-# which these tests pin down rather than paper over.
+# What was a bug is the scaling when the *objective* sits on or spans the
+# symmetry plane. `fourier_sourcedata` divided each quarter of an interpolated
+# adjoint source by the multiplicity of the voxel *centre* rather than of the
+# Yee site it was written to. Those differ exactly on a symmetry plane, where a
+# point is its own image and so has multiplicity 1 while the centre half a pixel
+# away has 2, leaving the source short there. The last two tests cover it.
 
 import unittest
 
@@ -169,14 +173,13 @@ class TestAdjointMirrorSymmetry(unittest.TestCase):
         without = finite_difference(w, False, *CROSSING, ix, iy)
         self.assertAlmostEqual(with_sym / without, 2.0, places=3)
 
-    @unittest.expectedFailure
     def test_gradient_matches_finite_difference_on_plane(self):
-        """Known wrong: an objective on the symmetry plane gives 3/4 the gradient.
+        """An objective sitting on the symmetry plane.
 
-        Exactly 0.7500 at resolution 40 and 0.7484 at 20, so this is a scaling
-        error and not discretization. Everything else in this file passes, which
-        places it in how the adjoint source is weighted at the plane rather than
-        in the gradient accumulation.
+        This gave exactly 3/4 of the correct gradient while the adjoint source
+        was divided by the voxel centre's multiplicity: of the source's three Yee
+        rows, the one on the plane carries half the weight and was the one being
+        halved, so 1/4 of the total went missing regardless of resolution.
         """
         w = self.weights
         ix, iy = 8, 15
@@ -184,14 +187,12 @@ class TestAdjointMirrorSymmetry(unittest.TestCase):
         fd = finite_difference(w, True, *ON_PLANE, ix, iy)
         self.assertAlmostEqual(g[ix, iy] / fd, 1.0, places=2)
 
-    @unittest.expectedFailure
     def test_gradient_matches_finite_difference_crossing_plane(self):
-        """Known wrong: a monitor spanning the plane is low by one row's worth.
+        """An extended monitor spanning the plane -- the usual arrangement.
 
-        4.0% at resolution 20, 2.9% at 30, 1.8% at 40 -- first order in the grid
-        spacing, consistent with the single row on the plane being mishandled out
-        of the O(1/dy) rows the monitor covers. Same root cause as the on-plane
-        case above; this is how it shows up in a realistic objective.
+        Same cause as the on-plane case, diluted over the rows the monitor
+        covers, so it used to show up as a first-order error: 4.0% at resolution
+        20, 2.9% at 30, 1.8% at 40.
         """
         w = self.weights
         ix, iy = 8, 15
