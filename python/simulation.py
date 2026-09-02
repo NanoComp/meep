@@ -11,6 +11,7 @@ import re
 import signal
 import subprocess
 import sys
+import time
 import warnings
 from collections import OrderedDict, namedtuple
 from typing import Callable, List, NamedTuple, Optional, Tuple, Union
@@ -66,7 +67,34 @@ FluxData = namedtuple("FluxData", ["E", "H"])
 ForceData = namedtuple("ForceData", ["offdiag1", "offdiag2", "diag"])
 NearToFarData = namedtuple("NearToFarData", ["F"])
 
+
+class PadeError(NamedTuple):
+    """Convergence diagnostics for a Padé-enabled DFT monitor."""
+
+    relative_correction: np.ndarray
+    relative_estimate: np.ndarray
+    drift: np.ndarray
+    samples: int
+    ready: bool
+    invalid_fits: int
+    generation: int
+    magnitude: np.ndarray
+
+
 Vector3Type = Union[Vector3, Tuple[float, ...]]
+
+
+def _validate_pade_samples(pade_samples):
+    if isinstance(pade_samples, (bool, np.bool_)) or not isinstance(
+        pade_samples, numbers.Integral
+    ):
+        raise TypeError("pade_samples must be an integer")
+    pade_samples = int(pade_samples)
+    if pade_samples < 0 or 0 < pade_samples < 4:
+        raise ValueError(
+            "pade_samples must be 0 or an integer greater than or equal to 4"
+        )
+    return pade_samples
 
 
 def fix_dft_args(args, i):
@@ -653,11 +681,48 @@ class DftObj:
         self.func = func
         self.args = args
         self.swigobj = None
+        self.pade_samples = 0
+        self._pade_warned_generation = None
 
     def swigobj_attr(self, attr):
         if self.swigobj is None:
             self.swigobj = self.func(*self.args)
         return getattr(self.swigobj, attr)
+
+    def get_pade_error(self):
+        """Return fixed-frequency Padé convergence diagnostics for this monitor."""
+        if self.swigobj is None:
+            self.swigobj = self.func(*self.args)
+        status = mp._get_dft_pade_error(self.swigobj)
+        (
+            relative_correction,
+            relative_estimate,
+            drift,
+            samples,
+            ready,
+            invalid_fits,
+            generation,
+            magnitude,
+        ) = status
+        result = PadeError(
+            relative_correction=np.asarray(relative_correction, dtype=float),
+            relative_estimate=np.asarray(relative_estimate, dtype=float),
+            drift=np.asarray(drift, dtype=float),
+            samples=int(samples),
+            ready=bool(ready),
+            invalid_fits=int(invalid_fits),
+            generation=int(generation),
+            magnitude=np.asarray(magnitude, dtype=float),
+        )
+        if result.invalid_fits and result.generation != self._pade_warned_generation:
+            warnings.warn(
+                "Padé extrapolation rejected one or more DFT fits; raw accumulated "
+                "values are used for those fits.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            self._pade_warned_generation = result.generation
+        return result
 
     @property
     def save_hdf5(self):
@@ -693,6 +758,7 @@ class DftFlux(DftObj):
         self.nfreqs = len(args[0])
         self.regions = args[1]
         self.num_components = 4
+        self.pade_samples = args[-1]
 
     @property
     def flux(self):
@@ -736,6 +802,7 @@ class DftForce(DftObj):
         self.nfreqs = len(args[0])
         self.regions = args[1]
         self.num_components = 6
+        self.pade_samples = args[-1]
 
     @property
     def force(self):
@@ -768,6 +835,7 @@ class DftNear2Far(DftObj):
         self.nperiods = args[1]
         self.regions = args[2]
         self.num_components = 4
+        self.pade_samples = args[-1]
 
     @property
     def farfield(self):
@@ -815,6 +883,7 @@ class DftEnergy(DftObj):
         self.nfreqs = len(args[0])
         self.regions = args[1]
         self.num_components = 12
+        self.pade_samples = args[-1]
 
     @property
     def electric(self):
@@ -842,6 +911,7 @@ class DftFields(DftObj):
         self.nfreqs = len(args[4])
         self.regions = [FieldsRegion(where=args[1], center=args[2], size=args[3])]
         self.num_components = len(args[0])
+        self.pade_samples = args[-1]
 
     @property
     def chunks(self):
@@ -1947,7 +2017,7 @@ class Simulation:
             return volumes
 
         dft_data_list = [
-            mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o))
+            mp.dft_data(o.nfreqs, o.num_components, convert_volumes(o), o.pade_samples)
             for o in self.dft_objects
         ]
 
@@ -3047,7 +3117,7 @@ class Simulation:
 
     def add_dft_fields(self, *args, **kwargs):
         """
-        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0, persist=False)` ##sig
+        `add_dft_fields(cs, fcen, df, nfreq, freq, where=None, center=None, size=None, yee_grid=False, decimation_factor=0, persist=False, pade_samples=0)` ##sig
 
         Given a list of field components `cs`, compute the Fourier transform of these
         fields for `nfreq` equally spaced frequencies covering the frequency range
@@ -3075,6 +3145,7 @@ class Simulation:
         yee_grid = kwargs.get("yee_grid", False)
         decimation_factor = kwargs.get("decimation_factor", 0)
         persist = kwargs.get("persist", False)
+        pade_samples = _validate_pade_samples(kwargs.get("pade_samples", 0))
         center_v3 = Vector3(*center) if center is not None else None
         size_v3 = Vector3(*size) if size is not None else None
         use_centered_grid = not yee_grid
@@ -3089,6 +3160,7 @@ class Simulation:
                 use_centered_grid,
                 decimation_factor,
                 persist,
+                pade_samples,
             ],
         )
         self.dft_objects.append(dftf)
@@ -3104,6 +3176,7 @@ class Simulation:
         use_centered_grid,
         decimation_factor,
         persist,
+        pade_samples,
     ):
         if self.fields is None:
             self.init_sim()
@@ -3112,7 +3185,13 @@ class Simulation:
         except ValueError:
             where = self.fields.total_volume()
         return self.fields.add_dft_fields(
-            components, where, freq, use_centered_grid, decimation_factor, persist
+            components,
+            where,
+            freq,
+            use_centered_grid,
+            decimation_factor,
+            persist,
+            pade_samples,
         )
 
     def output_dft(self, dft_fields: DftFields, fname: str):
@@ -3144,7 +3223,7 @@ class Simulation:
 
     def add_near2far(self, *args, **kwargs):
         """
-        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=0)`  ##sig
+        `add_near2far(fcen, df, nfreq, freq, Near2FarRegions, nperiods=1, decimation_factor=0, pade_samples=0)`  ##sig
 
         Add a bunch of `Near2FarRegion`s to the current simulation (initializing the
         fields if they have not yet been initialized), telling Meep to accumulate the
@@ -3165,22 +3244,29 @@ class Simulation:
         near2fars = args[1:]
         nperiods = kwargs.get("nperiods", 1)
         decimation_factor = kwargs.get("decimation_factor", 0)
+        pade_samples = _validate_pade_samples(kwargs.get("pade_samples", 0))
         n2f = DftNear2Far(
-            self._add_near2far, [freq, nperiods, near2fars, decimation_factor]
+            self._add_near2far,
+            [freq, nperiods, near2fars, decimation_factor, pade_samples],
         )
         self.dft_objects.append(n2f)
         return n2f
 
-    def _add_near2far(self, freq, nperiods, near2fars, decimation_factor):
+    def _add_near2far(self, freq, nperiods, near2fars, decimation_factor, pade_samples):
         if self.fields is None:
             self.init_sim()
         return self._add_fluxish_stuff(
-            self.fields.add_dft_near2far, freq, near2fars, decimation_factor, nperiods
+            self.fields.add_dft_near2far,
+            freq,
+            near2fars,
+            decimation_factor,
+            pade_samples,
+            nperiods,
         )
 
     def add_energy(self, *args, **kwargs):
         """
-        `add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=0)`  ##sig
+        `add_energy(fcen, df, nfreq, freq, EnergyRegions, decimation_factor=0, pade_samples=0)`  ##sig
 
         Add a bunch of `EnergyRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -3200,15 +3286,22 @@ class Simulation:
         freq = args[0]
         energys = args[1:]
         decimation_factor = kwargs.get("decimation_factor", 0)
-        en = DftEnergy(self._add_energy, [freq, energys, decimation_factor])
+        pade_samples = _validate_pade_samples(kwargs.get("pade_samples", 0))
+        en = DftEnergy(
+            self._add_energy, [freq, energys, decimation_factor, pade_samples]
+        )
         self.dft_objects.append(en)
         return en
 
-    def _add_energy(self, freq, energys, decimation_factor):
+    def _add_energy(self, freq, energys, decimation_factor, pade_samples):
         if self.fields is None:
             self.init_sim()
         return self._add_fluxish_stuff(
-            self.fields.add_dft_energy, freq, energys, decimation_factor
+            self.fields.add_dft_energy,
+            freq,
+            energys,
+            decimation_factor,
+            pade_samples,
         )
 
     def _display_energy(self, name, func, energys):
@@ -3440,7 +3533,7 @@ class Simulation:
 
     def add_force(self, *args, **kwargs):
         """
-        `add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=0)`  ##sig
+        `add_force(fcen, df, nfreq, freq, ForceRegions, decimation_factor=0, pade_samples=0)`  ##sig
 
         Add a bunch of `ForceRegion`s to the current simulation (initializing the fields
         if they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -3460,15 +3553,22 @@ class Simulation:
         freq = args[0]
         forces = args[1:]
         decimation_factor = kwargs.get("decimation_factor", 0)
-        force = DftForce(self._add_force, [freq, forces, decimation_factor])
+        pade_samples = _validate_pade_samples(kwargs.get("pade_samples", 0))
+        force = DftForce(
+            self._add_force, [freq, forces, decimation_factor, pade_samples]
+        )
         self.dft_objects.append(force)
         return force
 
-    def _add_force(self, freq, forces, decimation_factor):
+    def _add_force(self, freq, forces, decimation_factor, pade_samples):
         if self.fields is None:
             self.init_sim()
         return self._add_fluxish_stuff(
-            self.fields.add_dft_force, freq, forces, decimation_factor
+            self.fields.add_dft_force,
+            freq,
+            forces,
+            decimation_factor,
+            pade_samples,
         )
 
     def display_forces(self, *forces):
@@ -3553,7 +3653,7 @@ class Simulation:
 
     def add_flux(self, *args, **kwargs):
         """
-        `add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=0)` ##sig
+        `add_flux(fcen, df, nfreq, freq, FluxRegions, decimation_factor=0, pade_samples=0)` ##sig
 
         Add a bunch of `FluxRegion`s to the current simulation (initializing the fields if
         they have not yet been initialized), telling Meep to accumulate the appropriate
@@ -3575,20 +3675,27 @@ class Simulation:
         freq = args[0]
         fluxes = args[1:]
         decimation_factor = kwargs.get("decimation_factor", 0)
-        flux = DftFlux(self._add_flux, [freq, fluxes, decimation_factor])
+        pade_samples = _validate_pade_samples(kwargs.get("pade_samples", 0))
+        flux = DftFlux(self._add_flux, [freq, fluxes, decimation_factor, pade_samples])
         self.dft_objects.append(flux)
         return flux
 
-    def _add_flux(self, freq, fluxes, decimation_factor):
+    def _add_flux(self, freq, fluxes, decimation_factor, pade_samples):
         if self.fields is None:
             self.init_sim()
         return self._add_fluxish_stuff(
-            self.fields.add_dft_flux, freq, fluxes, decimation_factor
+            self.fields.add_dft_flux,
+            freq,
+            fluxes,
+            decimation_factor,
+            pade_samples,
+            True,
+            True,
         )
 
     def add_mode_monitor(self, *args, **kwargs):
         """
-        `add_mode_monitor(fcen, df, nfreq, freq, ModeRegions, decimation_factor=0)`  ##sig
+        `add_mode_monitor(fcen, df, nfreq, freq, ModeRegions, decimation_factor=0, pade_samples=0)`  ##sig
 
         Similar to `add_flux`, but for use with `get_eigenmode_coefficients`.
         """
@@ -3597,13 +3704,17 @@ class Simulation:
         fluxes = args[1:]
         decimation_factor = kwargs.get("decimation_factor", 0)
         yee_grid = kwargs.get("yee_grid", False)
+        pade_samples = _validate_pade_samples(kwargs.get("pade_samples", 0))
         flux = DftFlux(
-            self._add_mode_monitor, [freq, fluxes, yee_grid, decimation_factor]
+            self._add_mode_monitor,
+            [freq, fluxes, yee_grid, decimation_factor, pade_samples],
         )
         self.dft_objects.append(flux)
         return flux
 
-    def _add_mode_monitor(self, freq, fluxes, yee_grid, decimation_factor):
+    def _add_mode_monitor(
+        self, freq, fluxes, yee_grid, decimation_factor, pade_samples
+    ):
         if self.fields is None:
             self.init_sim()
 
@@ -3626,7 +3737,12 @@ class Simulation:
         d = self.fields.normal_direction(v.swigobj) if d0 < 0 else d0
 
         return self.fields.add_mode_monitor(
-            d, v.swigobj, freq, centered_grid, decimation_factor
+            d,
+            v.swigobj,
+            freq,
+            centered_grid,
+            decimation_factor,
+            pade_samples,
         )
 
     def display_fluxes(self, *fluxes):
@@ -3862,7 +3978,7 @@ class Simulation:
         return eigfreq.item()
 
     def _add_fluxish_stuff(
-        self, add_dft_stuff, freq, stufflist, decimation_factor, *args
+        self, add_dft_stuff, freq, stufflist, decimation_factor, pade_samples, *args
     ):
         vol_list = None
 
@@ -3883,7 +3999,7 @@ class Simulation:
                 is_cylindrical=self.is_cylindrical,
             ).swigobj
             vol_list = mp.make_volume_list(v2, c, s.weight, vol_list)
-        stuff = add_dft_stuff(vol_list, freq, decimation_factor, *args)
+        stuff = add_dft_stuff(vol_list, freq, decimation_factor, *args, pade_samples)
         vol_list.__swig_destroy__(vol_list)
 
         return stuff
@@ -5645,6 +5761,198 @@ def stop_when_dft_decayed(tol=1e-11, minimum_run_time=0, maximum_run_time=None):
                 change / closure["maxchange"]
             ) <= tol and _sim.round_time() >= minimum_run_time
 
+    return _stop
+
+
+def stop_when_dft_pade_converged(
+    monitors,
+    tol,
+    pade_samples,
+    raw_decay_tol=1e-11,
+    minimum_run_time=0,
+    maximum_run_time=None,
+    confirmation=None,
+    monitor_only=False,
+):
+    """Stop after two separated, valid Padé convergence checks.
+
+    This condition is intended for finite-duration-source adjoint runs. ``monitors``
+    may be nested and must contain chunk-backed DFT monitor objects. The existing raw
+    DFT-decay criterion remains active as a fallback. ``confirmation``, when provided,
+    is called at field-level convergence candidates and must return the objective values
+    and derivatives that should also be stable.
+    """
+    pade_samples = _validate_pade_samples(pade_samples)
+    if pade_samples == 0:
+        raise ValueError("pade_samples must be at least 4 for Padé stopping")
+    if not np.isscalar(tol) or not np.isfinite(tol) or tol <= 0:
+        raise ValueError("tol must be a positive finite scalar")
+
+    def _flatten(items):
+        for item in items:
+            if isinstance(item, (list, tuple)):
+                yield from _flatten(item)
+            elif item is not None:
+                yield item
+
+    flat_monitors = list(_flatten(monitors))
+    if not flat_monitors:
+        raise ValueError("at least one Padé-enabled DFT monitor is required")
+
+    raw_stop = stop_when_dft_decayed(
+        raw_decay_tol, minimum_run_time, maximum_run_time=None
+    )
+    check_stride = max(1, math.ceil(pade_samples / 2))
+    state = {
+        "exit_reason": None,
+        "last_generations": None,
+        "last_check_timestep": None,
+        "first_confirmation": None,
+        "passing_checks": 0,
+        "confirmation_count": 0,
+        "confirmation_wall_time": 0.0,
+        "pade_wall_time": 0.0,
+        "samples": 0,
+        "relative_correction": math.inf,
+        "relative_estimate": math.inf,
+        "drift": math.inf,
+        "invalid_fits": 0,
+        "ready": False,
+        "monitor_only": bool(monitor_only),
+    }
+
+    def _confirmation_values():
+        start = time.perf_counter()
+        values = np.asarray(confirmation()).ravel()
+        state["confirmation_wall_time"] += time.perf_counter() - start
+        state["confirmation_count"] += 1
+        if not np.all(np.isfinite(values)):
+            return None
+        return values
+
+    def _status():
+        start = time.perf_counter()
+        statuses = [monitor.get_pade_error() for monitor in flat_monitors]
+        state["pade_wall_time"] += time.perf_counter() - start
+        state["samples"] = min(status.samples for status in statuses)
+        state["ready"] = all(status.ready for status in statuses)
+        state["invalid_fits"] = sum(status.invalid_fits for status in statuses)
+        # Combine monitors by the field they carry, not by taking a max of
+        # ratios.  Each monitor reports ||tail|| / ||dft|| for itself, so a
+        # component that is zero by symmetry -- Ey under a y-mirror, say --
+        # reports a large ratio from a numerator and denominator that are both
+        # negligible, and a max lets it veto convergence at any tolerance.
+        # Weighting by ||dft|| and dividing once recovers the honest aggregate
+        # sqrt(sum ||tail||^2 / sum ||dft||^2).
+        def combine(attr):
+            num = 0.0
+            den = 0.0
+            saw = False
+            for status in statuses:
+                ratios = np.asarray(getattr(status, attr), dtype=float).ravel()
+                weights = np.asarray(status.magnitude, dtype=float).ravel()
+                if ratios.size == 0:
+                    continue
+                if weights.size != ratios.size:
+                    # No magnitude to weight with; fall back to the max so the
+                    # criterion stays conservative rather than optimistic.
+                    return max(ratios.max(), 0.0)
+                finite = np.isfinite(ratios)
+                if not finite.all():
+                    return math.inf
+                saw = True
+                num += float(np.sum((ratios * weights) ** 2))
+                den += float(np.sum(weights**2))
+            if not saw or den <= 0:
+                return math.inf
+            return math.sqrt(num / den)
+
+        state["relative_correction"] = combine("relative_correction")
+        state["relative_estimate"] = combine("relative_estimate")
+        state["drift"] = combine("drift")
+        return statuses
+
+    def _stop(sim):
+        # Evaluate on every invocation so the legacy condition initializes its
+        # sampling interval at t=0, but do not honor it before a full post-source
+        # history is available.
+        raw_converged = raw_stop(sim)
+        current_time = sim.round_time()
+        post_source_window = pade_samples * sim.fields.max_decimation() * sim.fields.dt
+        eligible = (
+            current_time >= minimum_run_time
+            and current_time >= sim.fields.last_source_time() + post_source_window
+        )
+        if eligible and raw_converged:
+            state["exit_reason"] = "raw_decay_fallback"
+            return True
+        if maximum_run_time is not None and current_time >= maximum_run_time:
+            state["exit_reason"] = "maximum_time"
+            return True
+        if not eligible:
+            return False
+
+        current_timestep = sim.timestep()
+        timestep_stride = check_stride * max(1, sim.fields.max_decimation())
+        if (
+            state["last_check_timestep"] is not None
+            and current_timestep - state["last_check_timestep"] < timestep_stride
+        ):
+            return False
+        state["last_check_timestep"] = current_timestep
+
+        statuses = _status()
+        generations = tuple(status.generation for status in statuses)
+        if state["last_generations"] is not None and any(
+            generation - previous < check_stride
+            for generation, previous in zip(generations, state["last_generations"])
+        ):
+            return False
+        state["last_generations"] = generations
+
+        field_pass = (
+            state["ready"]
+            and state["invalid_fits"] == 0
+            and np.isfinite(state["relative_estimate"])
+            and np.isfinite(state["drift"])
+            and state["relative_estimate"] <= tol
+            and state["drift"] <= tol
+        )
+        if not field_pass:
+            state["first_confirmation"] = None
+            state["passing_checks"] = 0
+            return False
+
+        if confirmation is None:
+            state["passing_checks"] += 1
+            converged = state["passing_checks"] >= 2
+        else:
+            values = _confirmation_values()
+            if values is None:
+                state["first_confirmation"] = None
+                return False
+            if state["first_confirmation"] is None:
+                state["first_confirmation"] = values.copy()
+                return False
+            converged = np.allclose(
+                values, state["first_confirmation"], rtol=tol, atol=tol
+            )
+            state["first_confirmation"] = None if not converged else values.copy()
+
+        if converged:
+            state["exit_reason"] = "pade_converged"
+            return True
+        return False
+
+    def _finalize(sim):
+        if state["exit_reason"] is None:
+            state["exit_reason"] = "maximum_time"
+        state["simulated_time"] = sim.meep_time()
+        state["timesteps"] = sim.timestep()
+        return dict(state)
+
+    _stop.diagnostics = state
+    _stop.finalize = _finalize
     return _stop
 
 

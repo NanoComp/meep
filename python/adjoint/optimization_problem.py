@@ -2,7 +2,9 @@ from collections import namedtuple
 from typing import Callable, List, Union, Optional, Tuple
 
 import numpy as np
+
 import meep as mp
+from meep.simulation import stop_when_dft_pade_converged
 
 from . import LDOS, DesignRegion, utils, ObjectiveQuantity
 from . import source_gradient
@@ -38,8 +40,9 @@ class OptimizationProblem:
         maximum_run_time: Optional[float] = None,
         finite_difference_step: Optional[float] = utils.FD_DEFAULT,
         step_funcs: Optional[List[Callable]] = None,
+        pade_samples: int = 0,
+        pade_tolerance: Optional[float] = None,
     ):
-
         """Initialize an instance of OptimizationProblem.
 
         Args:
@@ -77,6 +80,10 @@ class OptimizationProblem:
           finite_difference_step: the step size for calculation of the
             finite-difference gradients.
           step_funcs: list of step functions to be called at each timestep.
+          pade_samples: number of recent DFT samples retained for bounded-memory
+            Padé extrapolation. Zero (the default) disables extrapolation.
+          pade_tolerance: optional convergence tolerance for automatic Padé stopping.
+            Requires `pade_samples >= 4` and finite-duration sources.
         """
 
         self.step_funcs = step_funcs if step_funcs is not None else []
@@ -141,6 +148,13 @@ class OptimizationProblem:
         self.decimation_factor = decimation_factor
         self.minimum_run_time = minimum_run_time
         self.maximum_run_time = maximum_run_time
+        self.pade_samples = utils.validate_pade_options(pade_samples, pade_tolerance)
+        self.pade_tolerance = pade_tolerance
+        if self.pade_samples and any(
+            isinstance(m, LDOS) for m in self.objective_arguments
+        ):
+            raise ValueError("Padé extrapolation does not support LDOS objectives")
+        self.pade_diagnostics = []
         self.finite_difference_step = (
             finite_difference_step  # step size used in Aᵤ computation
         )
@@ -274,12 +288,21 @@ class OptimizationProblem:
 
         # register user specified monitors
         self.forward_monitors = [
-            m.register_monitors(self.frequencies) for m in self.objective_arguments
+            (
+                m.register_monitors(self.frequencies, pade_samples=self.pade_samples)
+                if self.pade_samples
+                else m.register_monitors(self.frequencies)
+            )
+            for m in self.objective_arguments
         ]
 
         # register design region
         self.forward_design_region_monitors = utils.install_design_region_monitors(
-            self.sim, self.design_regions, self.frequencies, self.decimation_factor
+            self.sim,
+            self.design_regions,
+            self.frequencies,
+            self.decimation_factor,
+            self.pade_samples,
         )
         # an ordinary object has no monitor of its own, so its fields have to be
         # recorded in both runs
@@ -289,6 +312,74 @@ class OptimizationProblem:
             self.frequencies,
             self.decimation_factor,
         )
+
+    @staticmethod
+    def _flatten_confirmation_values(values):
+        flattened = []
+        for value in values:
+            array = np.asarray(value).ravel()
+            flattened.extend(np.real(array))
+            flattened.extend(np.imag(array))
+        return np.asarray(flattened, dtype=float)
+
+    def _forward_confirmation(self):
+        """Values the Padé criterion requires to be stable, not just the fields.
+
+        Uses the same backend dispatch as the adjoint itself rather than
+        autograd's `jacobian` directly.  Hardcoding autograd here silently
+        undid the framework-agnostic objective support: an objective written
+        with `jax.numpy` got traced with autograd's ArrayBox, which JAX then
+        refuses as an argument.  Going through `objective_vjp` also confirms
+        stability of exactly the cotangents that drive the adjoint sources,
+        which is the quantity the gradient actually depends on.
+        """
+        results = [monitor() for monitor in self.objective_arguments]
+        values = list(results)
+        for ar, objective in enumerate(self.objective_functions):
+            value = objective(*results)
+            values.append(value)
+            values.extend(
+                utils.objective_vjp(
+                    objective,
+                    results,
+                    self._cotangent_for(value, ar),
+                    value=value,
+                )
+            )
+        return self._flatten_confirmation_values(values)
+
+    def _run_with_stopping(
+        self, monitors, confirmation=None, monitor_only=False, leg=None
+    ):
+        if self.pade_tolerance is None:
+            self.sim.run(
+                *self.step_funcs,
+                until_after_sources=mp.stop_when_dft_decayed(
+                    self.decay_by, self.minimum_run_time, self.maximum_run_time
+                ),
+            )
+            return None
+
+        utils.validate_finite_sources(self.sim.sources)
+        condition = stop_when_dft_pade_converged(
+            monitors,
+            self.pade_tolerance,
+            self.pade_samples,
+            raw_decay_tol=self.decay_by,
+            minimum_run_time=self.minimum_run_time,
+            maximum_run_time=self.maximum_run_time,
+            confirmation=confirmation,
+            monitor_only=monitor_only,
+        )
+        self.sim.run(*self.step_funcs, until_after_sources=condition)
+        diagnostics = condition.finalize(self.sim)
+        diagnostics["leg"] = leg
+        self.pade_diagnostics.append(diagnostics)
+        if diagnostics["exit_reason"] == "maximum_time":
+            raise RuntimeError(
+                "automatic Padé convergence was not reached before maximum_run_time"
+            )
+        return diagnostics
 
     def forward_run(self):
         # set up monitors
@@ -304,11 +395,14 @@ class OptimizationProblem:
                 ),
             )
         else:
-            self.sim.run(
-                *self.step_funcs,
-                until_after_sources=mp.stop_when_dft_decayed(
-                    self.decay_by, self.minimum_run_time, self.maximum_run_time
+            self._run_with_stopping(
+                [self.forward_monitors, self.forward_design_region_monitors],
+                confirmation=(
+                    self._forward_confirmation
+                    if self.pade_tolerance is not None
+                    else None
                 ),
+                leg="forward",
             )
 
         # record objective quantities from user specified monitors
@@ -328,6 +422,9 @@ class OptimizationProblem:
         self.current_state = "FWD"
 
     def _objective_cotangent(self, ar: int) -> np.ndarray:
+        return self._cotangent_for(self._objective_values[ar], ar)
+
+    def _cotangent_for(self, value, ar: int) -> np.ndarray:
         """Builds the reverse-pass seed for one objective function.
 
         Meep runs a single adjoint simulation per objective function and recovers
@@ -337,7 +434,6 @@ class OptimizationProblem:
         adjoint sources need -- the frequency diagonal of the Jacobian -- is the
         pullback of a cotangent of ones.
         """
-        value = self._objective_values[ar]
         if np.ndim(value) == 0:
             return np.ones((), dtype=np.asarray(value).dtype)
         value = np.asarray(value)
@@ -370,71 +466,106 @@ class OptimizationProblem:
         # set up adjoint sources and monitors
         self.prepare_adjoint_run()
 
-        # flip the m number
-        if utils._check_if_cylindrical(self.sim):
-            self.sim.change_m(-self.sim.m)
-
-        # flip the k point
-        if self.sim.k_point:
-            self.sim.change_k_point(-1 * self.sim.k_point)
-
+        is_cylindrical = utils._check_if_cylindrical(self.sim)
+        original_m = self.sim.m if is_cylindrical else None
+        original_k_point = self.sim.k_point
+        current_adjoint_monitors = None
+        completed = False
         self.adjoint_design_region_monitors = []
+        self._streamed_gradients = []
         self.adjoint_source_monitors = []
         self.adjoint_geometry_monitors = []
-        for ar in range(len(self.objective_functions)):
-            # Reset the fields
-            self.sim.restart_fields()
-            self.sim.clear_dft_monitors()
+        try:
+            if is_cylindrical:
+                self.sim.change_m(-original_m)
+            if original_k_point:
+                self.sim.change_k_point(-1 * original_k_point)
 
-            # Update the sources
-            self.sim.change_sources(self.adjoint_sources[ar])
+            for ar in range(len(self.objective_functions)):
+                # Reset the fields
+                self.sim.restart_fields()
+                self.sim.clear_dft_monitors()
+                current_adjoint_monitors = None
 
-            # register design dft fields
-            self.adjoint_design_region_monitors.append(
-                utils.install_design_region_monitors(
+                # Update the sources
+                self.sim.change_sources(self.adjoint_sources[ar])
+
+                # register design dft fields
+                current_adjoint_monitors = utils.install_design_region_monitors(
                     self.sim,
                     self.design_regions,
                     self.frequencies,
                     self.decimation_factor,
+                    self.pade_samples,
                 )
-            )
+                self.adjoint_design_region_monitors.append(current_adjoint_monitors)
 
-            # register a monitor over each differentiable source's support; the
-            # adjoint field there is the gradient with respect to its currents
-            self.adjoint_geometry_monitors.append(
-                geometry_gradient.install_geometry_monitors(
+                # A monitor over each differentiable object's support, and over
+                # each differentiable source's. These carry the shape and source
+                # derivatives, so they get the same Padé treatment as the design
+                # region -- and they are handed to the stopping condition below,
+                # or the run could stop before *they* have converged.
+                geometry_monitors = geometry_gradient.install_geometry_monitors(
                     self.sim,
                     self.differentiable_objects,
                     self.frequencies,
                     self.decimation_factor,
+                    self.pade_samples,
                 )
-            )
+                self.adjoint_geometry_monitors.append(geometry_monitors)
 
-            self.adjoint_source_monitors.append(
-                source_gradient.install_source_gradient_monitors(
+                source_monitors = source_gradient.install_source_gradient_monitors(
                     self.sim,
                     self.differentiable_sources,
                     self.frequencies,
                     self.decimation_factor,
+                    self.pade_samples,
                 )
-            )
-            self.sim._evaluate_dft_objects()
+                self.adjoint_source_monitors.append(source_monitors)
+                self.sim._evaluate_dft_objects()
 
-            # Adjoint run
-            self.sim.run(
-                *self.step_funcs,
-                until_after_sources=mp.stop_when_dft_decayed(
-                    self.decay_by, self.minimum_run_time, self.maximum_run_time
-                ),
-            )
+                # Adjoint run
+                self._run_with_stopping(
+                    current_adjoint_monitors
+                    + list(geometry_monitors)
+                    + list(source_monitors),
+                    leg=f"adjoint_{ar}",
+                    monitor_only=True,
+                )
 
-        # reset the m number
-        if utils._check_if_cylindrical(self.sim):
-            self.sim.change_m(-self.sim.m)
-
-        # reset the k point
-        if self.sim.k_point:
-            self.sim.change_k_point(-1 * self.sim.k_point)
+                if self.pade_samples:
+                    self._streamed_gradients.append(
+                        [
+                            dr.get_gradient(
+                                self.sim,
+                                current_adjoint_monitors[dri],
+                                self.forward_design_region_monitors[dri],
+                                self.frequencies,
+                                self.finite_difference_step,
+                            )
+                            for dri, dr in enumerate(self.design_regions)
+                        ]
+                    )
+                    # Only the design-region monitors can be released here; the
+                    # geometry and source monitors are read after the loop.
+                    for monitor_set in current_adjoint_monitors:
+                        for monitor in monitor_set:
+                            monitor.remove()
+                    self.adjoint_design_region_monitors[-1] = None
+                    current_adjoint_monitors = None
+            completed = True
+        finally:
+            try:
+                if not completed and current_adjoint_monitors is not None:
+                    for monitor_set in current_adjoint_monitors:
+                        for monitor in monitor_set:
+                            if monitor.swigobj is not None:
+                                monitor.remove()
+            finally:
+                if is_cylindrical:
+                    self.sim.change_m(original_m)
+                if original_k_point:
+                    self.sim.change_k_point(original_k_point)
 
         # update optimizer's state
         self.current_state = "ADJ"
@@ -554,19 +685,22 @@ class OptimizationProblem:
         self.geometry_gradient = self.calculate_geometry_gradient()
 
         # Iterate through all design regions and calculate gradient
-        self.gradient = [
-            [
-                dr.get_gradient(
-                    self.sim,
-                    self.adjoint_design_region_monitors[ar][dri],
-                    self.forward_design_region_monitors[dri],
-                    self.frequencies,
-                    self.finite_difference_step,
-                )
-                for dri, dr in enumerate(self.design_regions)
+        if self.pade_samples:
+            self.gradient = self._streamed_gradients
+        else:
+            self.gradient = [
+                [
+                    dr.get_gradient(
+                        self.sim,
+                        self.adjoint_design_region_monitors[ar][dri],
+                        self.forward_design_region_monitors[dri],
+                        self.frequencies,
+                        self.finite_difference_step,
+                    )
+                    for dri, dr in enumerate(self.design_regions)
+                ]
+                for ar in range(len(self.objective_functions))
             ]
-            for ar in range(len(self.objective_functions))
-        ]
 
         for dri in range(self.num_design_regions):
             for i in range(3):
@@ -658,7 +792,14 @@ class OptimizationProblem:
 
             # initialize design monitors
             self.forward_monitors = [
-                m.register_monitors(self.frequencies) for m in self.objective_arguments
+                (
+                    m.register_monitors(
+                        self.frequencies, pade_samples=self.pade_samples
+                    )
+                    if self.pade_samples
+                    else m.register_monitors(self.frequencies)
+                )
+                for m in self.objective_arguments
             ]
 
             if any(isinstance(m, LDOS) for m in self.objective_arguments):
@@ -692,7 +833,14 @@ class OptimizationProblem:
 
             # initialize design monitors
             self.forward_monitors = [
-                m.register_monitors(self.frequencies) for m in self.objective_arguments
+                (
+                    m.register_monitors(
+                        self.frequencies, pade_samples=self.pade_samples
+                    )
+                    if self.pade_samples
+                    else m.register_monitors(self.frequencies)
+                )
+                for m in self.objective_arguments
             ]
 
             # add monitor used to track dft convergence

@@ -359,6 +359,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
 
   for (dft_chunk *f = F; f; f = f->next_in_dft) {
     assert(Nfreq == f->omega.size());
+    const std::complex<realnum> *dft_values = f->dft_values();
 
     component c0 = component(f->vc); /* equivalent source component */
 
@@ -383,10 +384,10 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
             double phase = phase0 + i1 * periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
             if (x.dim == Dcyl)
-              greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m,
+              greencyl(EH6, x, freq[i], eps, mu, xs, c0, dft_values[Nfreq * idx_dft + i], f->fc->m,
                        greencyl_tol);
             else
-              green(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i]);
+              green(EH6, x, freq[i], eps, mu, xs, c0, dft_values[Nfreq * idx_dft + i]);
             for (int j = 0; j < 6; ++j)
               EH[i * 6 + j] += EH6[j] * cphase;
           }
@@ -567,7 +568,7 @@ double *dft_near2far::flux(direction df, const volume &where, double resolution)
 static double approxeq(double a, double b) { return fabs(a - b) < 0.5e-11 * (fabs(a) + fabs(b)); }
 
 dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
-                                      int decimation_factor, int Nperiods) {
+                                      int decimation_factor, int Nperiods, size_t pade_samples) {
 
   dft_chunk *F = 0; /* E and H chunks*/
   double eps = 0, mu = 0;
@@ -643,7 +644,7 @@ dft_near2far fields::add_dft_near2far(const volume_list *where, const double *fr
         if (is_electric(c)) s = -s;
 
         F = add_dft(c, w->v, freq, Nfreq, true, s * w->weight, F, false, 1.0, false, c0,
-                    decimation_factor);
+                    decimation_factor, false, pade_samples);
       }
     }
   }

@@ -1,3 +1,5 @@
+import math
+import numbers
 from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as onp
@@ -22,6 +24,45 @@ _Z_AXIS = 1
 
 # default finite difference step size when calculating Aᵤ
 FD_DEFAULT = 1e-3
+
+
+def validate_pade_options(pade_samples: int, pade_tolerance) -> int:
+    """Validate the shared adjoint Padé controls and return a plain int."""
+    if isinstance(pade_samples, (bool, onp.bool_)) or not isinstance(
+        pade_samples, numbers.Integral
+    ):
+        raise TypeError("pade_samples must be an integer")
+    pade_samples = int(pade_samples)
+    if pade_samples < 0 or 0 < pade_samples < 4:
+        raise ValueError("pade_samples must be 0 or at least 4")
+    if pade_tolerance is not None:
+        if pade_samples < 4:
+            raise ValueError("pade_tolerance requires pade_samples >= 4")
+        if (
+            not onp.isscalar(pade_tolerance)
+            or not onp.isfinite(pade_tolerance)
+            or pade_tolerance <= 0
+        ):
+            raise ValueError("pade_tolerance must be a positive finite scalar")
+    return pade_samples
+
+
+def validate_finite_sources(sources: Iterable[mp.Source]) -> None:
+    """Reject sources that cannot provide a complete post-source Padé window."""
+    for source in sources:
+        time_profile = source.src
+        if isinstance(time_profile, mp.GaussianSource):
+            end_time = (
+                time_profile.start_time + 2 * time_profile.width * time_profile.cutoff
+            )
+        else:
+            end_time = getattr(time_profile, "end_time", None)
+        try:
+            finite_end_time = math.isfinite(end_time)
+        except TypeError:
+            finite_end_time = False
+        if not finite_end_time or end_time >= 1e19:
+            raise ValueError("automatic Padé stopping requires finite-duration sources")
 
 
 class DesignRegion:
@@ -133,10 +174,14 @@ def calculate_vjps(
 def register_monitors(
     monitors: List[ObjectiveQuantity],
     frequencies: List[float],
+    pade_samples: int = 0,
 ) -> None:
     """Registers a list of monitors."""
     for monitor in monitors:
-        monitor.register_monitors(frequencies)
+        if pade_samples:
+            monitor.register_monitors(frequencies, pade_samples=pade_samples)
+        else:
+            monitor.register_monitors(frequencies)
 
 
 def install_design_region_monitors(
@@ -144,6 +189,7 @@ def install_design_region_monitors(
     design_regions: List[DesignRegion],
     frequencies: List[float],
     decimation_factor: int = 0,
+    pade_samples: int = 0,
 ) -> List[List[mp.DftFields]]:
     """Installs DFT field monitors at the design regions of the simulation."""
     return [
@@ -155,6 +201,7 @@ def install_design_region_monitors(
                 yee_grid=True,
                 decimation_factor=decimation_factor,
                 persist=True,
+                pade_samples=pade_samples,
             )
             for comp in _compute_components(simulation)
         ]
@@ -346,5 +393,13 @@ def create_adjoint_sources(
     for monitor, dj in zip(monitors, cotangents):
         if onp.any(dj):
             adjoint_sources += monitor.place_adjoint_source(dj)
-    assert adjoint_sources
+
+    # An empty list here is not an error under MPI.  `fourier_sourcedata`
+    # returns one entry per *local* chunk that intersects the monitor, and
+    # `IndexedSource` is inherently per-chunk, so a rank whose chunks miss the
+    # monitor legitimately places nothing -- which is every rank but one for a
+    # point monitor.  The condition worth checking is global and is already
+    # checked above: the cotangents are identical on every rank, so if the
+    # objective really is disconnected from the monitors, the RuntimeError
+    # fires everywhere at once with a message that says so.
     return adjoint_sources
