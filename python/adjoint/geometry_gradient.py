@@ -190,6 +190,7 @@ def install_geometry_monitors(
     objects,
     frequencies,
     decimation_factor: int = 0,
+    pade_samples: int = 0,
 ) -> List[List[mp.DftFields]]:
     """DFT monitors over each differentiable object's support.
 
@@ -234,6 +235,7 @@ def install_geometry_monitors(
                     yee_grid=True,
                     decimation_factor=decimation_factor,
                     persist=True,
+                    pade_samples=pade_samples,
                 )
                 for component in utils._compute_components(sim)
             ]
