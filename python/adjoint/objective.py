@@ -2,6 +2,7 @@
 A collection of objects and helper methods for defining objective functions
 used in topology optimization.
 """
+
 import abc
 import warnings
 from collections import namedtuple
@@ -74,6 +75,7 @@ class ObjectiveQuantity(abc.ABC):
         self.sim = sim
         self._eval = None
         self._frequencies = None
+        self._pade_samples = 0
 
     @property
     def frequencies(self):
@@ -88,7 +90,7 @@ class ObjectiveQuantity(abc.ABC):
         """Evaluates the objective quantity."""
 
     @abc.abstractmethod
-    def register_monitors(self, frequencies):
+    def register_monitors(self, frequencies, pade_samples=0):
         """Registers monitors in the forward simulation."""
 
     @abc.abstractmethod
@@ -150,9 +152,15 @@ class ObjectiveQuantity(abc.ABC):
 
     def _adj_src_scale(self, include_resolution=True):
         """Calculates the scale for the adjoint sources."""
-        T = self.sim.meep_time()
         dt = self.sim.fields.dt
         src = self._create_time_profile()
+        # A shortened Padé run must not change adjoint-source normalization.
+        # Preserve the historical integration interval when Padé is disabled.
+        T = (
+            src.start_time + 2 * src.width * src.cutoff
+            if self._pade_samples
+            else self.sim.meep_time()
+        )
 
         if include_resolution:
             num_dims = self.sim._infer_dimensions(self.sim.k_point)
@@ -284,13 +292,15 @@ class EigenmodeCoefficient(ObjectiveQuantity):
         self.decimation_factor = decimation_factor
         self.subtracted_dft_fields = subtracted_dft_fields
 
-    def register_monitors(self, frequencies):
+    def register_monitors(self, frequencies, pade_samples=0):
         self._frequencies = np.asarray(frequencies)
+        self._pade_samples = pade_samples
         self._monitor = self.sim.add_mode_monitor(
             frequencies,
             mp.ModeRegion(center=self.volume.center, size=self.volume.size),
             yee_grid=True,
             decimation_factor=self.decimation_factor,
+            pade_samples=pade_samples,
         )
         if self.subtracted_dft_fields is not None:
             self.sim.load_minus_flux_data(
@@ -411,14 +421,16 @@ class FourierFields(ObjectiveQuantity):
         self.decimation_factor = decimation_factor
         self.subtracted_dft_fields = subtracted_dft_fields
 
-    def register_monitors(self, frequencies):
+    def register_monitors(self, frequencies, pade_samples=0):
         self._frequencies = np.asarray(frequencies)
+        self._pade_samples = pade_samples
         self._monitor = self.sim.add_dft_fields(
             [self.component],
             self._frequencies,
             where=self.volume,
             yee_grid=self.yee_grid,
             decimation_factor=self.decimation_factor,
+            pade_samples=pade_samples,
         )
         if self.subtracted_dft_fields is not None:
             self.sim.load_minus_flux_data(
@@ -534,13 +546,15 @@ class Near2FarFields(ObjectiveQuantity):
         self.nperiods = nperiods
         self.greencyl_tol = greencyl_tol
 
-    def register_monitors(self, frequencies):
+    def register_monitors(self, frequencies, pade_samples=0):
         self._frequencies = np.asarray(frequencies)
+        self._pade_samples = pade_samples
         self._monitor = self.sim.add_near2far(
             self._frequencies,
             *self.Near2FarRegions,
             nperiods=self.nperiods,
             decimation_factor=self.decimation_factor,
+            pade_samples=pade_samples,
         )
         if self.norm_near_fields is not None:
             self.sim.load_minus_near2far_data(
@@ -616,8 +630,11 @@ class LDOS(ObjectiveQuantity):
         super().__init__(sim)
         self.srckwarg = kwargs
 
-    def register_monitors(self, frequencies):
+    def register_monitors(self, frequencies, pade_samples=0):
+        if pade_samples:
+            raise ValueError("Padé extrapolation does not support LDOS objectives")
         self._frequencies = np.asarray(frequencies)
+        self._pade_samples = pade_samples
         self._forward_src = self.sim.sources
         return
 
