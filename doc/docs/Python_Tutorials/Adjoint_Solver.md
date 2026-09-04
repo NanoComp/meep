@@ -492,6 +492,72 @@ the run was doubled.
 Finally, a source inside or near a PML is rejected: its adjoint field is absorbed,
 so the gradient would come back finite, smooth, and wrong.
 
+Differentiating With Respect To Geometry
+----------------------------------------
+
+The design region is not the only thing that can move. An ordinary geometric
+object can be differentiated too — where a reflector sits, how long a spacer is
+— by naming the parameters on the object itself:
+
+```py
+reflector = mp.Block(
+    center=mp.Vector3(0, 2.0),
+    size=mp.Vector3(4, 0.3),
+    material=silicon,
+    differentiable=["center", "size"],
+    name="reflector",
+)
+
+value, grad = opt([rho])
+grad["design"]                # as before
+grad["reflector"]["center"]   # (3,), or (nfreq, 3) for several frequencies
+grad["reflector"]["size"]
+```
+
+This is the same pattern as the design weights and the Gaussian beam
+parameters: finite-difference a cheap analytic map and contract it against the
+adjoint field, at no cost in extra timestepping. Subpixel smoothing makes the
+permittivity depend on the geometry only through each pixel's filling fraction
+and the interface normal, so
+
+$$\frac{\partial \chi^{-1}}{\partial p} = \frac{\partial \chi^{-1}}{\partial f}\,\frac{\partial f}{\partial p}$$
+
+with $\partial f/\partial p$ analytic — a block is an intersection of slabs, so
+the pixel overlap factorizes — and only pixels the boundary passes through
+contributing anything. That is the discrete form of a shape derivative being a
+surface integral.
+
+`'center'` and `'size'` are accepted here and rejected on a *source*. That is
+not an inconsistency: a source's cotangent is gathered over a fixed set of grid
+points, so moving it changes which points it occupies rather than the
+amplitudes applied to them, whereas the permittivity is a function of position
+and moving an object is exactly what a derivative with respect to position
+means.
+
+### Two things to get right
+
+**Subpixel smoothing must be on.** It is on by default (`eps_averaging=True`),
+and the gradient refuses to run without it rather than returning a number.
+Without smoothing the permittivity is a step function of position — nothing
+changes until a boundary crosses a pixel edge, then it changes by the full
+material contrast — and a finite difference of that is not a derivative.
+
+**Keep object faces off the pixel edges.** Pixel centres lie at integer
+multiples of the pixel, so pixel edges lie at half-integers, and Yee components
+sit half a pixel apart from one another. A face at a pixel centre for one field
+component therefore lies exactly on a pixel edge for another, where no pixel
+straddles it and the derivative is one-sided. A **quarter-pixel** offset clears
+both, so every component straddles every face:
+
+```py
+offset = 0.25 / resolution
+block = mp.Block(center=mp.Vector3(0, y0 + offset), ...)
+```
+
+Round geometry on a round grid lands on edges constantly — a block 1.0 wide at
+resolution 20 has faces exactly 10 pixels from its centre — so this is worth
+doing deliberately. A warning is issued when a face is detected on an edge.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 
