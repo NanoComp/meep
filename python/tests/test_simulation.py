@@ -2,6 +2,7 @@ import itertools
 import os
 import re
 import sys
+import tempfile
 import unittest
 import warnings
 
@@ -284,6 +285,38 @@ class TestSimulation(unittest.TestCase):
         sim.require_dimensions()
         sim._init_structure(k=mp.Vector3())
         self.assertEqual(sim.structure.gv.dim, mp.D2)
+
+    # volcyl used to test isinteger(rsize) rather than isinteger(rsize * a), so
+    # it warned about cells that are an exact number of pixels and stayed quiet
+    # about ones that are not.  The warning is printed by the master process
+    # only, hence the single-process guard.
+    @unittest.skipIf(mp.count_processors() > 1, "single-process test")
+    def test_volcyl_pixel_rounding_warning(self):
+        def build(rsize, zsize, resolution):
+            sys.stderr.flush()
+            saved_stderr = os.dup(2)
+            try:
+                with tempfile.TemporaryFile(mode="w+") as tmp:
+                    os.dup2(tmp.fileno(), 2)
+                    try:
+                        gv = mp.volcyl(rsize, zsize, resolution)
+                    finally:
+                        sys.stderr.flush()
+                        os.dup2(saved_stderr, 2)
+                    tmp.seek(0)
+                    return gv, tmp.read()
+            finally:
+                os.close(saved_stderr)
+
+        # exactly 5 pixels in r
+        gv, err = build(2.5, 0, 2)
+        self.assertEqual(gv.num_direction(mp.R), 5)
+        self.assertNotIn("integer number of pixels", err)
+
+        # 7.5 pixels in r, rounded up to 8
+        gv, err = build(3, 0, 2.5)
+        self.assertEqual(gv.num_direction(mp.R), 8)
+        self.assertIn("integer number of pixels", err)
 
     def test_infer_dimensions(self):
         sim = self.init_simple_simulation()

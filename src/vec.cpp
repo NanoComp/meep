@@ -930,7 +930,7 @@ grid_volume vol3d(double xsize, double ysize, double zsize, double a) {
 }
 
 grid_volume volcyl(double rsize, double zsize, double a) {
-  if (!isinteger(rsize) || !isinteger(zsize))
+  if (!isinteger(rsize * a) || !isinteger(zsize * a))
     master_printf_stderr("Warning: grid volume is not an integer number of pixels; cell size will "
                          "be rounded to nearest pixel.\n");
 
