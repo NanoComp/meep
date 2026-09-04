@@ -800,7 +800,14 @@ class History:
 
     def add(self, **kw):
         for k, v in kw.items():
-            self.rows[k].append(np.asarray(v))
+            # `np.array`, not `np.asarray`: asarray hands back the *same* object
+            # for an ndarray input, and the arrays arriving here are views into
+            # nlopt's parameter buffer, which it reuses and frees between
+            # callbacks.  Storing those accumulates dangling views, so the rows
+            # slowly stop describing the iterations they are labelled with and
+            # `save()` eventually memcpys from freed memory -- a SIGSEGV inside
+            # numpy, several iterations after the damage was done.
+            self.rows[k].append(np.array(v, copy=True))
 
     def save(self):
         if not mp.am_master():
@@ -1047,9 +1054,13 @@ class Coupler:
 
     # The optimizer sees one flat vector; these two keep the packing in one place.
     def unpack(self, x):
+        # Copy rather than view.  `x` is nlopt's parameter buffer, which it
+        # reuses and frees between callbacks, so anything that outlives the
+        # callback -- a history row, a MaterialGrid's weights -- must own its
+        # memory.  Two megabytes against a four hundred second solve.
         n = self.nx * self.ny
-        latent = np.asarray(x[:n]).reshape(self.nx, self.ny)
-        fiber = np.asarray(x[n : n + 2])
+        latent = np.array(x[:n], dtype=np.float64).reshape(self.nx, self.ny)
+        fiber = np.array(x[n : n + 2], dtype=np.float64)
         z_mirror = float(x[n + 2])
         return latent, fiber, z_mirror
 
