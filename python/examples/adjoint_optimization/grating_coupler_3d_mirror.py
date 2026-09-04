@@ -136,6 +136,24 @@ FIBER_HEIGHT = 2.0  # facet above the top of the ARC
 
 # ------------------------------------------------------------------- solver
 WP_DT_MAX = 0.95  # headroom below the measured Drude stability limit
+
+# A Mirror(Y) halves the cell, and the structure is symmetric, so it is worth
+# declaring -- but only with the right eigenvalue.  A mirror in y maps y -> -y
+# *and* flips the sign of y-components, so a mode whose Ey is even in y has
+# mirror eigenvalue -1, not +1.  The guided mode here is quasi-TE with Ey even,
+# so phase = -1.  Declaring +1 instead projects onto the orthogonal sector and
+# symmetry-forbids the very mode the objective measures.
+#
+# It is worth being concrete about how that presented, because it looks like a
+# solver bug and is not.  On an identical structure at resolution 8, phase = +1
+# gave a mode coefficient 1.51x the unsymmetrised answer and a design gradient
+# 16.8x too large against a converged finite difference; phase = -1 reproduces
+# the unsymmetrised answer to 5e-6.  The inflated gradient is what wrecked the
+# optimization: MMA sizes its first step from it, so every density went onto a
+# bound immediately and SSP's projection derivative then vanished, leaving the
+# run to move only the three scalars.
+MIRROR_PHASE = -1
+USE_SYMMETRY = True
 PADE_SAMPLES = 12
 PADE_TOL = 1e-2
 LOG_FLOOR = 1e-30  # keeps log finite if a monitor reads exactly zero
@@ -313,7 +331,7 @@ def length_penalties(latent, beta, resolution):
     )
 
 
-def seed_grating(nx: int, ny: int, margin: float = 0.02) -> np.ndarray:
+def seed_grating(nx: int, ny: int, margin: float = 0.3) -> np.ndarray:
     """A uniform grating at the phase-matched period, as a starting point.
 
     period = lambda / (n_eff - n_clad sin(theta)), with n_eff ~ 2.7 for a
@@ -338,9 +356,14 @@ def seed_grating(nx: int, ny: int, margin: float = 0.02) -> np.ndarray:
     # Starting infeasible makes MMA spend its budget reaching feasibility and
     # the efficiency falls while it does.
     line = (np.cos(2 * math.pi * x / period) > 0).astype(float)
-    # Held `margin` inside the box.  Exactly 0 and 1 sit *on* the bounds, and
-    # MMA then has no interior direction to move in: measured, three successive
-    # iterations returned a bit-identical design, objective and gradient.
+    # Held `margin` inside the box, and `margin` has to be *wide*, not merely
+    # nonzero.  Exactly 0 and 1 sit on the bounds and MMA has no interior
+    # direction to move in -- measured, three successive iterations returned a
+    # bit-identical design.  But 0.02 of clearance failed the same way for a
+    # subtler reason: MMA's steps here are about 0.019 per iteration, so one
+    # step put every density back on the bound and the design never moved
+    # again, leaving the run to optimize only the three scalars.  A grey seed
+    # costs nothing, because SSP drives the projection binary as beta rises.
     line = margin + (1 - 2 * margin) * line
     return np.repeat(line[:, None], ny, axis=1)  # ny is already the half
 
@@ -367,9 +390,15 @@ def build(resolution: float, z_mirror: float, weights: np.ndarray):
             size=mp.Vector3(WG_LENGTH + 1.0, WG_WIDTH, T_SI),
             material=SI,
         ),
+        # The reflector stops clear of the PML in *both* transverse directions.
+        # A Drude metal has negative real permittivity, and PML is unstable
+        # against that, so a mirror running through the boundary seeds a slow
+        # exponential growth: short runs finish before it shows, and a long
+        # cavity ring-down ends in "fields are NaN or Inf" tens of thousands of
+        # steps in.  MARGIN of clearance on each side, matching x.
         mp.Block(
             center=mp.Vector3(0, 0, z_mirror),
-            size=mp.Vector3(APERTURE_X + 2 * WG_LENGTH, inf, T_AL),
+            size=mp.Vector3(APERTURE_X + 2 * WG_LENGTH, APERTURE_Y, T_AL),
             material=AL,
             differentiable=["center"],
             name="mirror",
@@ -402,7 +431,7 @@ def build(resolution: float, z_mirror: float, weights: np.ndarray):
         geometry=geometry,
         boundary_layers=[mp.PML(DPML)],
         # Ex is even about y = 0 for the TE mode this couples into.
-        symmetries=[mp.Mirror(mp.Y, phase=+1)],
+        symmetries=[mp.Mirror(mp.Y, phase=MIRROR_PHASE)] if USE_SYMMETRY else [],
         sources=[],
         # Real fields: 1.95x, and the adjoint only needs complex DFT monitors.
         force_complex_fields=False,
@@ -489,7 +518,7 @@ def launched_power(args, params, frequencies) -> float:
         geometry=[],
         default_material=OXIDE,
         boundary_layers=[mp.PML(DPML)],
-        symmetries=[mp.Mirror(mp.Y, phase=+1)],
+        symmetries=[mp.Mirror(mp.Y, phase=MIRROR_PHASE)] if USE_SYMMETRY else [],
         sources=[],
         force_complex_fields=False,
     )
@@ -970,13 +999,24 @@ class Coupler:
 
         grad_mirror = float(np.real(np.atleast_1d(grads["mirror"]["center"])[2]))
 
+        # What the optimizer maximizes is log(efficiency), not the efficiency.
+        # The gradients above are derivatives of log|a|^2 -- that is the whole
+        # point of the log objective, and the fiber term already has
+        # d log(P_in) subtracted -- so handing nlopt the linear efficiency
+        # alongside them describes a function whose value is 3e-5 and whose
+        # slope is 18.  MMA believes the linear model, and one step puts every
+        # variable on a bound; the densities never come back, because SSP's
+        # projection derivative vanishes once the filtered field saturates.
+        # Report the efficiency, optimize its logarithm.
+        log_value = float(np.log(max(value, LOG_FLOOR)))
+
         cs, cv = length_penalties(jnp.asarray(latent), self.beta, self.args.resolution)
         projected = self._weights(latent)
 
         history.add(
             iteration=iteration,
             efficiency=value,
-            objective=value,
+            objective=log_value,
             latent=latent,
             projected=projected,
             grad_design=grad_latent,
@@ -1003,7 +1043,7 @@ class Coupler:
             f"tilt={fiber[1]:.3f}deg  offset={fiber[0]:+.4f}um  "
             f"beta={self.beta:g}  steps={steps}  {wall:.0f}s"
         )
-        return value, self.pack_gradient(grad_latent, grad_fiber, grad_mirror)
+        return log_value, self.pack_gradient(grad_latent, grad_fiber, grad_mirror)
 
     # The optimizer sees one flat vector; these two keep the packing in one place.
     def unpack(self, x):
@@ -1118,9 +1158,51 @@ def run_optimize(args):
             f"\n--- stage {stage + 1}/{len(args.beta_schedule)}: beta = {beta:g}, "
             f"lengthscale constraints {'on' if constrained else 'off'} ---"
         )
-        opt = nlopt.opt(nlopt.LD_MMA, x.size)
-        opt.set_lower_bounds(lo)
-        opt.set_upper_bounds(hi)
+        # CCSAQ rather than MMA: MMA's first subproblem is effectively linear
+        # in the densities, so it drives every one of them onto a bound in a
+        # single step and the design then cannot move -- measured, the latent
+        # went from the seed's 0.02 margin to 0.0014 from the bound on step one
+        # and never changed again, leaving only the three scalars free.  CCSAQ's
+        # quadratic penalty keeps the first step finite.
+        # A trust region on the densities, re-centred every few evaluations.
+        #
+        # MMA's subproblem is near-linear in the densities on the first step, so
+        # left to itself it puts every one of them on a bound immediately --
+        # measured at both 0.02 and 0.3 of seed clearance, with steps of 0.019
+        # and 0.402 respectively, so the seed margin is not what decides it.
+        # Saturation is fatal here rather than merely untidy: SSP's projection
+        # derivative collapses once the filtered field is hard against 0 or 1
+        # (median |dJ/drho| fell to 2.4e-5), the design then cannot come back,
+        # and the run silently reduces to optimizing the three scalars.
+        #
+        # The log objective is what makes the step so large: at an efficiency of
+        # 1e-4, d/drho log|a|^2 carries a factor 1/eff over a linear objective.
+        # That amplification is wanted -- it is what gets the optimizer moving
+        # early -- so bound the step instead of removing the amplifier.  nlopt
+        # 2.11 exposes no move limit for MMA (`num_params` is 0, and
+        # `set_initial_step` applies only to derivative-free algorithms), so the
+        # limit has to be imposed through the bounds.
+        # One MMA per stage, with the densities confined to a band around the
+        # design this stage starts from.
+        #
+        # MMA's first subproblem is near-linear in the densities, so with the
+        # full [0,1] box it puts every one of them on a bound in a single step,
+        # and SSP's projection derivative vanishes once the filtered field
+        # saturates -- after that the design never moves again and only the
+        # three scalars are being optimized.  Clipping the box keeps the
+        # projection differentiable.  Re-centring the band mid-stage was worse:
+        # it means restarting MMA, which throws away its asymptote history and
+        # stalls the scalars, so the band is set once and widens with each
+        # stage as the design firms up.
+        n_des = coupler.nx * coupler.ny
+        lo_s, hi_s = lo.copy(), hi.copy()
+        if args.trust_delta > 0:
+            delta = args.trust_delta * (stage + 1)
+            lo_s[:n_des] = np.maximum(lo[:n_des], x[:n_des] - delta)
+            hi_s[:n_des] = np.minimum(hi[:n_des], x[:n_des] + delta)
+        opt = nlopt.opt(getattr(nlopt, args.optimizer), x.size)
+        opt.set_lower_bounds(lo_s)
+        opt.set_upper_bounds(hi_s)
         opt.set_max_objective(objective)
         if constrained:
             opt.add_inequality_constraint(solid_constraint, 1e-8)
@@ -1218,6 +1300,20 @@ def main():
     p.add_argument(
         "--outdir", default=None, help="run folder; defaults to run_<timestamp>"
     )
+    p.add_argument(
+        "--optimizer",
+        default="LD_MMA",
+        choices=["LD_CCSAQ", "LD_MMA"],
+        help="nlopt algorithm; MMA saturates the densities on its first step",
+    )
+    p.add_argument(
+        "--trust-delta",
+        type=float,
+        default=0.05,
+        help="per-step move limit on the densities; 0 disables the trust region",
+    )
+    p.add_argument("--trust-evals", type=int, default=3,
+                   help="evaluations before the trust region is re-centred")
     p.add_argument("--history", default="history.npz")
     args = p.parse_args()
 
