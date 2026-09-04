@@ -39,6 +39,7 @@ ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_angular_spectrum.py       \
     $(TEST_DIR)/test_geometry_gradient.py      \
     $(TEST_DIR)/test_source_gradient.py        \
+    $(TEST_DIR)/test_adjoint_dispersion.py     \
     $(TEST_DIR)/test_adjoint_jax.py
 
 TESTS =                                        \
