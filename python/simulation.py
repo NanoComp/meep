@@ -5052,6 +5052,10 @@ class Simulation:
             - `resolution=None`: the resolution of the $\\varepsilon$ grid. Defaults to the
               `resolution` of the `Simulation` object.
             - `colorbar=False`: whether to add a colorbar to the plot's parent Figure based on epsilon values.
+            - `pec_color='dimgrey'`: the color used to draw perfect metals / perfect
+              electric conductors, whose permittivity is $-\\infty$. Drawing these
+              separately keeps them from saturating the color scale of the
+              finite-permittivity materials.
         * `boundary_parameters`: a `dict` of optional plotting parameters that override
           the default parameters for the boundary layers.
             - `alpha=1.0`: transparency of boundary layers

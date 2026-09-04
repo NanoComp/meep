@@ -14,6 +14,7 @@ from meep.simulation import Simulation, Volume
 
 ## Typing imports
 from matplotlib.axes import Axes
+from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from typing import Callable, Union, Any, Tuple, List, Optional
 
@@ -61,6 +62,7 @@ default_eps_parameters = {
     "frequency": None,
     "resolution": None,
     "colorbar": False,
+    "pec_color": "dimgrey",
 }
 
 default_colorbar_parameters = {
@@ -556,9 +558,21 @@ def plot_volume(
     return ax
 
 
+def _get_colormap(cmap: Union[str, Colormap]) -> Colormap:
+    """Return a Colormap object given a colormap name or Colormap object."""
+    import matplotlib as mpl
+
+    if isinstance(cmap, Colormap):
+        return cmap
+    try:
+        return mpl.colormaps[cmap]  # matplotlib >= 3.5
+    except AttributeError:
+        return mpl.cm.get_cmap(cmap)  # matplotlib < 3.5
+
+
 def _add_colorbar(
     ax: Axes,
-    cmap: str,
+    cmap: Union[str, Colormap],
     vmin: float,
     vmax: float,
     default_label: Optional[str] = None,
@@ -578,10 +592,9 @@ def _add_colorbar(
         colorbar_parameters["label"] = default_label
 
     # Create a map between field/eps values and colors in the colormap.
-    # Note: cm.get_cmap() is deprecated for matplotlib>=3.6, use mpl.colormaps[cmap] instead if necessary.
     sm = mpl.cm.ScalarMappable(
         norm=mpl.colors.Normalize(vmin, vmax),
-        cmap=mpl.cm.get_cmap(cmap),
+        cmap=_get_colormap(cmap),
     )
 
     # Pop specific values out of colorbar params so user can add any kwargs to plt.colorbar
@@ -607,7 +620,7 @@ def plot_eps(
 ) -> Union[Axes, Any]:
     # consolidate plotting parameters
     if eps_parameters is None:
-        eps_parameters = default_eps_parameters
+        eps_parameters = copy.deepcopy(default_eps_parameters)
     else:
         eps_parameters = dict(default_eps_parameters, **eps_parameters)
 
@@ -676,11 +689,22 @@ def plot_eps(
         if not ax:
             return eps_data
 
+        # Metals / perfect electric conductors have eps = -inf (see python/meep.i,
+        # where mp.inf is the sentinal 1e20), which would otherwise saturate the
+        # color scale. Mask them out so that the scale is set by the finite
+        # permittivities, and draw them in `pec_color` instead.
+        eps_data = np.ma.masked_where(
+            ~np.isfinite(eps_data) | (eps_data <= -mp.inf), eps_data
+        )
+        cmap = copy.copy(_get_colormap(eps_parameters["cmap"]))
+        cmap.set_bad(color=eps_parameters["pec_color"])
+        eps_parameters["cmap"] = cmap
+
         if eps_parameters["contour"]:
             ax.contour(
                 eps_data,
                 0,
-                levels=np.unique(eps_data),
+                levels=np.unique(eps_data.compressed()),
                 colors="black",
                 origin="upper",
                 extent=extent,
@@ -690,11 +714,12 @@ def plot_eps(
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
 
         if eps_parameters["colorbar"]:
+            finite_eps = eps_data.compressed()
             _add_colorbar(
                 ax=ax,
                 cmap=eps_parameters["cmap"],
-                vmin=np.amin(eps_data),
-                vmax=np.amax(eps_data),
+                vmin=np.amin(finite_eps) if finite_eps.size else 0.0,
+                vmax=np.amax(finite_eps) if finite_eps.size else 1.0,
                 default_label=r"$\epsilon_r$",
                 colorbar_parameters=colorbar_parameters,
             )
