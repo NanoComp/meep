@@ -620,7 +620,7 @@ def plot_eps(
 ) -> Union[Axes, Any]:
     # consolidate plotting parameters
     if eps_parameters is None:
-        eps_parameters = copy.deepcopy(default_eps_parameters)
+        eps_parameters = copy.copy(default_eps_parameters)
     else:
         eps_parameters = dict(default_eps_parameters, **eps_parameters)
 
