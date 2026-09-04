@@ -3085,9 +3085,17 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
         meep::grid_volume gv_adj = gv.subvolume(adj_chunk->is, adj_chunk->ie, adjoint_c);
 
         for (int ci_forward = 0; ci_forward < 3; ci_forward++) {
-          size_t num_f = forward_chunks[ci_forward].size();
-          if ((num_f == 0) || ((size_t)cur >= num_f)) continue;
-          meep::dft_chunk *fwd_chunk = forward_chunks[ci_forward][cur];
+          /* Pair the forward chunk with this adjoint chunk *spatially*.
+             Indexing both lists by `cur` assumes they are the same length and
+             in the same order, and they need not be -- which is why
+             matching_dft_chunk exists a few functions up, for exactly this
+             purpose in material_grids_addgradient.  A foreign chunk here does
+             not merely mix the gradient up: it then gets indexed with this
+             chunk's offsets and read past the end of its array. */
+          if (forward_chunks[ci_forward].empty()) continue;
+          meep::dft_chunk *fwd_chunk =
+              matching_dft_chunk(forward_chunks[ci_forward], adj_chunk);
+          if (!fwd_chunk) continue;
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
 
@@ -3125,7 +3133,11 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
             std::complex<meep::realnum> node_fwd[2];
             if (forward_c == adjoint_c) {
               node_pos[0] = p;
-              node_fwd[0] = fwd_chunk->dft[nf * idx_adj + f_i];
+              /* `idx_adj` is an offset into gv_adj, so it cannot be used to
+                 index the forward chunk.  Look the value up by location, which
+                 bounds-checks it as the two lookups below already did. */
+              node_fwd[0] =
+                  forward_dft_value(fwd_chunk, fwd_chunk->dft, gv_fwd, gv, ip, nf, f_i);
             }
             else {
               num_nodes = 2;
