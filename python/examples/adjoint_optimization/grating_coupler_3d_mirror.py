@@ -1309,8 +1309,11 @@ def main():
     p.add_argument(
         "--trust-delta",
         type=float,
-        default=0.05,
-        help="per-step move limit on the densities; 0 disables the trust region",
+        default=0.0,
+        help="band the densities to x0 +/- delta per stage; 0 (default) leaves "
+        "the full [0,1] box.  Measured at resolution 8, banding keeps the "
+        "design off its bounds but stalls the three scalars and ended 19x "
+        "worse (2.7e-4 against 5.1e-3), so it is off unless asked for.",
     )
     p.add_argument("--trust-evals", type=int, default=3,
                    help="evaluations before the trust region is re-centred")
