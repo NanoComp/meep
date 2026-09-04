@@ -581,6 +581,15 @@ void epsilon_material_grid(material_data *md, double u) {
                   &mm->epsilon_diag, &mm->epsilon_offdiag, u);
 
   // Interpolate resonant strength from d.p.
+  //
+  // mm->E_susceptibilities is the concatenation of the two constituents' pole
+  // lists, assembled when the grid is created (python/typemap_utils.cpp).  The
+  // indexing below relies on that and never resizes, so check it rather than
+  // writing past the end for a grid built through some other path.
+  if (mm->E_susceptibilities.size() !=
+      m1->E_susceptibilities.size() + m2->E_susceptibilities.size())
+    meep::abort("material grid susceptibility list was not initialized!");
+
   vector3 zero_vec;
   zero_vec.x = zero_vec.y = zero_vec.z = 0;
   for (size_t i = 0; i < m1->E_susceptibilities.size(); i++) {
@@ -1715,27 +1724,33 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
 
     const susceptibility_list &slist =
         type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
+    /* Accumulate rather than stopping at the first match.  A material grid's
+       list is the concatenation of its two constituents' poles, so when both
+       media carry the same pole -- same frequency and damping, different
+       strength -- two entries are equivalent to the one being registered and
+       the mixture's amplitude is their sum.  This is also the right answer for
+       a plain medium that happens to list a pole twice, since identical poles
+       superpose. */
     for (const susceptibility &susc : slist) {
       if (susceptibility_equiv(susc, current_pol->user_s)) {
         int ic = meep::component_index(c);
         switch (ic) { // which row of the sigma tensor to return
           case 0:
-            sigrow[0] = susc.sigma_diag.x;
-            sigrow[1] = susc.sigma_offdiag.x;
-            sigrow[2] = susc.sigma_offdiag.y;
+            sigrow[0] += susc.sigma_diag.x;
+            sigrow[1] += susc.sigma_offdiag.x;
+            sigrow[2] += susc.sigma_offdiag.y;
             break;
           case 1:
-            sigrow[0] = susc.sigma_offdiag.x;
-            sigrow[1] = susc.sigma_diag.y;
-            sigrow[2] = susc.sigma_offdiag.z;
+            sigrow[0] += susc.sigma_offdiag.x;
+            sigrow[1] += susc.sigma_diag.y;
+            sigrow[2] += susc.sigma_offdiag.z;
             break;
           default: // case 2:
-            sigrow[0] = susc.sigma_offdiag.y;
-            sigrow[1] = susc.sigma_offdiag.z;
-            sigrow[2] = susc.sigma_diag.z;
+            sigrow[0] += susc.sigma_offdiag.y;
+            sigrow[1] += susc.sigma_offdiag.z;
+            sigrow[2] += susc.sigma_diag.z;
             break;
         }
-        break;
       }
     }
   }
@@ -1843,6 +1858,32 @@ static pol *add_pols(pol *pols, const susceptibility_list &slist) {
   return pols;
 }
 
+/* Collect the susceptibilities a material can contribute.
+
+   is_medium() is true only for a plain MEDIUM, but a material grid resolves at
+   each point to a mixture of its two constituents (see epsilon_material_grid),
+   so both of their pole lists have to be registered here.  Without this a
+   dispersive material grid is silently non-dispersive: nothing ever calls
+   sigma_row() for its poles, so the interpolated amplitudes go nowhere, even
+   though the adjoint side reads medium.E_susceptibilities directly and does
+   see them. */
+static pol *add_material_pols(pol *pols, void *m, meep::field_type ft) {
+  medium_struct *mm;
+  if (is_medium(m, &mm))
+    return add_pols(pols, ft == meep::E_stuff ? mm->E_susceptibilities : mm->H_susceptibilities);
+
+  material_type mat = (material_type)m;
+  if (is_material_grid(mat) && ft == meep::E_stuff) {
+    /* Only the electric side: epsilon_material_grid does not interpolate the
+       magnetic response, and MaterialGrid.__init__ refuses a constituent that
+       carries one, so registering H poles here would allocate polarizations
+       that sigma_row can only ever report as zero. */
+    pols = add_pols(pols, mat->medium_1.E_susceptibilities);
+    pols = add_pols(pols, mat->medium_2.E_susceptibilities);
+  }
+  return pols;
+}
+
 void geom_epsilon::add_susceptibilities(meep::structure *s) {
   add_susceptibilities(meep::E_stuff, s);
   add_susceptibilities(meep::H_stuff, s);
@@ -1850,19 +1891,14 @@ void geom_epsilon::add_susceptibilities(meep::structure *s) {
 
 void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s) {
   pol *pols = 0;
-  medium_struct *mm;
-
   // construct a list of the unique susceptibilities in the geometry:
   for (int i = 0; i < geometry.num_items; ++i)
-    if (is_medium(geometry.items[i].material, &mm))
-      pols = add_pols(pols, ft == meep::E_stuff ? mm->E_susceptibilities : mm->H_susceptibilities);
+    pols = add_material_pols(pols, geometry.items[i].material, ft);
 
   for (int i = 0; i < extra_materials.num_items; ++i)
-    if (is_medium(extra_materials.items[i], &mm))
-      pols = add_pols(pols, ft == meep::E_stuff ? mm->E_susceptibilities : mm->H_susceptibilities);
+    pols = add_material_pols(pols, extra_materials.items[i], ft);
 
-  if (is_medium(default_material, &mm))
-    pols = add_pols(pols, ft == meep::E_stuff ? mm->E_susceptibilities : mm->H_susceptibilities);
+  pols = add_material_pols(pols, default_material, ft);
 
   for (struct pol *p = pols; p; p = p->next) {
 
