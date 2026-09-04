@@ -3223,6 +3223,61 @@ static void axis_overlap(double lo, double hi, double c, double s, double &overl
   d_dsize = 0.5 * (upper_inside + lower_inside);
 }
 
+/* Is the point p inside the box [lo,hi] in *every* direction?
+
+   grid_volume::index() is a flat inner product of the per-direction offsets
+   with the strides, so a point that leaves the box in a single direction can
+   still produce an index inside [0,N): in 3d, stepping one pixel off the end
+   in y lands on an unrelated voxel of the next z slab. Guarding only the flat
+   index therefore silently substitutes a neighboring field value. Check each
+   direction separately instead. */
+static bool ivec_in_box(const meep::ivec &p, const meep::ivec &lo, const meep::ivec &hi,
+                        meep::ndim dim) {
+  LOOP_OVER_DIRECTIONS(dim, d) {
+    if (p.in_direction(d) < lo.in_direction(d) || p.in_direction(d) > hi.in_direction(d))
+      return false;
+  }
+  return true;
+}
+
+/* Find the dft_chunk in `chunks` covering the same region as `adj`.
+
+   loop_in_chunks() emits one dft_chunk per (fields_chunk, symmetry image,
+   lattice shift) triple, so that triple identifies a chunk uniquely. It is
+   *not* safe to pair chunks by position in the next_in_dft list: a fields
+   chunk contributes a dft_chunk for a given component only if the monitor
+   overlaps that component's owned grid there, and the yee shifts differ
+   between components, so the per-component lists can have different lengths
+   and different orderings near the edges of the monitor. Returns NULL when
+   this fields chunk holds no data for the requested component. */
+static meep::dft_chunk *matching_dft_chunk(const std::vector<meep::dft_chunk *> &chunks,
+                                           const meep::dft_chunk *adj) {
+  for (size_t i = 0; i < chunks.size(); ++i)
+    if (chunks[i]->fc == adj->fc && chunks[i]->sn == adj->sn && chunks[i]->shift == adj->shift)
+      return chunks[i];
+  return NULL;
+}
+
+/* Look up the forward DFT at point p, or zero if p is outside this chunk.
+
+   The restriction stencil reaches half a pixel (unit_a*2 cancels against the yee
+   shift), so it wants the four forward nodes around the adjoint node. With the
+   persist pad clamped to the component's own grid (see dft.cpp) those all lie
+   inside this chunk's box, the outermost of them being the chunk's ghost layer,
+   which step_boundaries() keeps current, so a lookup should only fall outside
+   it at the cell boundary, where zero is the right answer. */
+static std::complex<meep::realnum> forward_dft_value(const meep::dft_chunk *ch,
+                                                     const std::complex<meep::realnum> *values,
+                                                     const meep::grid_volume &gv_fwd,
+                                                     meep::grid_volume &gv, const meep::ivec &p,
+                                                     size_t nf, size_t f_i) {
+  if (ivec_in_box(p, ch->is, ch->ie, gv.dim)) {
+    ptrdiff_t i = gv_fwd.index(ch->c, p);
+    if (i >= 0 && (size_t)i < ch->N) return values[nf * i + f_i];
+  }
+  return 0;
+}
+
 void geometry_addgradient(double *v, size_t nparams, size_t nf,
                           std::vector<meep::dft_fields *> fields_a,
                           std::vector<meep::dft_fields *> fields_f, double *frequencies,
@@ -3479,61 +3534,6 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
   }
 
   meep::sum_to_all(local.data(), v, int(nf * nparams));
-}
-
-/* Is the point p inside the box [lo,hi] in *every* direction?
-
-   grid_volume::index() is a flat inner product of the per-direction offsets
-   with the strides, so a point that leaves the box in a single direction can
-   still produce an index inside [0,N): in 3d, stepping one pixel off the end
-   in y lands on an unrelated voxel of the next z slab. Guarding only the flat
-   index therefore silently substitutes a neighboring field value. Check each
-   direction separately instead. */
-static bool ivec_in_box(const meep::ivec &p, const meep::ivec &lo, const meep::ivec &hi,
-                        meep::ndim dim) {
-  LOOP_OVER_DIRECTIONS(dim, d) {
-    if (p.in_direction(d) < lo.in_direction(d) || p.in_direction(d) > hi.in_direction(d))
-      return false;
-  }
-  return true;
-}
-
-/* Find the dft_chunk in `chunks` covering the same region as `adj`.
-
-   loop_in_chunks() emits one dft_chunk per (fields_chunk, symmetry image,
-   lattice shift) triple, so that triple identifies a chunk uniquely. It is
-   *not* safe to pair chunks by position in the next_in_dft list: a fields
-   chunk contributes a dft_chunk for a given component only if the monitor
-   overlaps that component's owned grid there, and the yee shifts differ
-   between components, so the per-component lists can have different lengths
-   and different orderings near the edges of the monitor. Returns NULL when
-   this fields chunk holds no data for the requested component. */
-static meep::dft_chunk *matching_dft_chunk(const std::vector<meep::dft_chunk *> &chunks,
-                                           const meep::dft_chunk *adj) {
-  for (size_t i = 0; i < chunks.size(); ++i)
-    if (chunks[i]->fc == adj->fc && chunks[i]->sn == adj->sn && chunks[i]->shift == adj->shift)
-      return chunks[i];
-  return NULL;
-}
-
-/* Look up the forward DFT at point p, or zero if p is outside this chunk.
-
-   The restriction stencil reaches half a pixel (unit_a*2 cancels against the yee
-   shift), so it wants the four forward nodes around the adjoint node. With the
-   persist pad clamped to the component's own grid (see dft.cpp) those all lie
-   inside this chunk's box, the outermost of them being the chunk's ghost layer,
-   which step_boundaries() keeps current, so a lookup should only fall outside
-   it at the cell boundary, where zero is the right answer. */
-static std::complex<meep::realnum> forward_dft_value(const meep::dft_chunk *ch,
-                                                     const std::complex<meep::realnum> *values,
-                                                     const meep::grid_volume &gv_fwd,
-                                                     meep::grid_volume &gv, const meep::ivec &p,
-                                                     size_t nf, size_t f_i) {
-  if (ivec_in_box(p, ch->is, ch->ie, gv.dim)) {
-    ptrdiff_t i = gv_fwd.index(ch->c, p);
-    if (i >= 0 && (size_t)i < ch->N) return values[nf * i + f_i];
-  }
-  return 0;
 }
 
 void material_grids_addgradient(double *v, size_t ng, size_t nf,
