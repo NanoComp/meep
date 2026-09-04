@@ -15,6 +15,7 @@
 */
 
 #include <algorithm>
+#include <set>
 #include <vector>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
@@ -2640,7 +2641,8 @@ get_material_gradient(const meep::vec &r,              // current point
                       geom_epsilon *geps,              // material
                       meep::grid_volume &gv,           // simulation grid volume
                       double du,                       // step size
-                      double *u,                       // matgrid
+                      const std::vector<double *> &us, // matgrid weights, one per
+                                                       // copy of this design grid
                       int idx                          // matgrid index
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
@@ -2686,23 +2688,36 @@ get_material_gradient(const meep::vec &r,              // current point
       v.set_direction_max(d, r.in_direction(d) + 0.5 * gv.inva * sd);
     }
     double row_1[3], row_2[3];
-    double orig = u[idx];
-    u[idx] -= du;
+    /* One design variable may back several copies of the same grid (the way a
+       symmetry is imposed), so it has to be perturbed in every copy at once --
+       perturbing one copy answers a different question. */
+    std::vector<double> orig(us.size());
+    for (size_t k = 0; k < us.size(); ++k) {
+      orig[k] = us[k][idx];
+      us[k][idx] -= du;
+    }
     geps->eff_chi1inv_row(adjoint_c, row_1, v, geps->tol, geps->maxeval);
-    u[idx] += 2 * du;
+    for (size_t k = 0; k < us.size(); ++k)
+      us[k][idx] = orig[k] + du;
     geps->eff_chi1inv_row(adjoint_c, row_2, v, geps->tol, geps->maxeval);
-    u[idx] = orig;
+    for (size_t k = 0; k < us.size(); ++k)
+      us[k][idx] = orig[k];
     return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du);
   }
   // materials have some dispersion
   else {
-    double orig = u[idx];
+    std::vector<double> orig(us.size());
     std::complex<double> row_1[3], row_2[3], dA_du[3];
-    u[idx] -= du;
+    for (size_t k = 0; k < us.size(); ++k) {
+      orig[k] = us[k][idx];
+      us[k][idx] -= du;
+    }
     eff_chi1inv_row_disp(adjoint_c, row_1, r, freq, geps);
-    u[idx] += 2 * du;
+    for (size_t k = 0; k < us.size(); ++k)
+      us[k][idx] = orig[k] + du;
     eff_chi1inv_row_disp(adjoint_c, row_2, r, freq, geps);
-    u[idx] = orig;
+    for (size_t k = 0; k < us.size(); ++k)
+      us[k][idx] = orig[k];
 
     return fields_f * (row_1[dir_idx] - row_2[dir_idx]) / (2 * du) *
            cond_cmp(forward_c, r, freq, geps);
@@ -2716,58 +2731,66 @@ With the addition of subpixel smoothing, however, the vJp became
 much more complicated and it is easier to calculate the entire gradient
 using finite differences (at the cost of slightly less accurate gradients
 due to floating-point roundoff errors). */
-void add_interpolate_weights(double rx, double ry, double rz, double *data, int nx, int ny, int nz,
-                             int stride, double scaleby, double *udata, int ukind, double uval,
-                             meep::vec r, geom_epsilon *geps, meep::component adjoint_c,
-                             meep::component forward_c, std::complex<double> fwd,
-                             std::complex<double> adj, double freq, meep::grid_volume &gv,
-                             double du) {
-  int x1, y1, z1, x2, y2, z2;
-  double dx, dy, dz, u;
+void add_interpolate_weights(const std::vector<double *> &udatas, const std::vector<vector3> &pbs,
+                             double *data, int nx, int ny, int nz, int stride, double scaleby,
+                             int ukind, double uval, meep::vec r, geom_epsilon *geps,
+                             meep::component adjoint_c, meep::component forward_c,
+                             std::complex<double> fwd, std::complex<double> adj, double freq,
+                             meep::grid_volume &gv, double du) {
+  /* `udatas`/`pbs` are the copies of *one* design grid that cover this point,
+     with the box coordinates of each. A design variable is shared across all of
+     them, so it is differentiated once, with every copy perturbed together, and
+     the union of the copies' interpolation stencils is the set of variables this
+     point touches. */
 
-  meep::map_coordinates(rx, ry, rz, nx, ny, nz, x1, y1, z1, x2, y2, z2, dx, dy, dz);
-  int x_list[2] = {x1, x2}, y_list[2] = {y1, y2}, z_list[2] = {z1, z2};
-  int lx = (x1 == x2) ? 1 : 2;
-  int ly = (y1 == y2) ? 1 : 2;
-  int lz = (z1 == z2) ? 1 : 2;
-
-/* define a macro to give us data(x,y,z) on the grid,
-in row-major order (the order used by HDF5): */
 #define IDX(x, y, z) (((x)*ny + (y)) * nz + (z)) * stride
-#define D(x, y, z) (data[IDX(x, y, z)])
-#define U(x, y, z) (udata[IDX(x, y, z)])
 
-  u = (((U(x1, y1, z1) * (1.0 - dx) + U(x2, y1, z1) * dx) * (1.0 - dy) +
-        (U(x1, y2, z1) * (1.0 - dx) + U(x2, y2, z1) * dx) * dy) *
-           (1.0 - dz) +
-       ((U(x1, y1, z2) * (1.0 - dx) + U(x2, y1, z2) * dx) * (1.0 - dy) +
-        (U(x1, y2, z2) * (1.0 - dx) + U(x2, y2, z2) * dx) * dy) *
-           dz);
+  std::set<int> touched;
+  for (size_t k = 0; k < pbs.size(); ++k) {
+    int x1, y1, z1, x2, y2, z2;
+    double dx, dy, dz;
+    meep::map_coordinates(pbs[k].x, pbs[k].y, pbs[k].z, nx, ny, nz, x1, y1, z1, x2, y2, z2, dx, dy,
+                          dz);
+    int x_list[2] = {x1, x2}, y_list[2] = {y1, y2}, z_list[2] = {z1, z2};
+    int lx = (x1 == x2) ? 1 : 2;
+    int ly = (y1 == y2) ? 1 : 2;
+    int lz = (z1 == z2) ? 1 : 2;
 
-  if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
-  if (ukind == material_data::U_PROD) scaleby *= uval / u;
-
-  for (int xi = 0; xi < lx; xi++) {
-    for (int yi = 0; yi < ly; yi++) {
-      for (int zi = 0; zi < lz; zi++) {
-        int x = x_list[xi], y = y_list[yi], z = z_list[zi];
-        int u_idx = IDX(x, y, z);
-        std::complex<double> prod = adj * get_material_gradient(r, adjoint_c, forward_c, fwd, freq,
-                                                                geps, gv, du, udata, u_idx);
-        D(x, y, z) += prod.real() * scaleby;
-      }
+    if (k == 0 && (ukind == material_data::U_MIN || ukind == material_data::U_PROD)) {
+      /* U_MIN and U_PROD carry adjustments defined in terms of the interpolated
+         value at this point. Overlapping grids of these kinds are rejected by
+         the caller, so there is exactly one copy and this is unchanged. */
+      const double *U = udatas[k];
+      double u = (((U[IDX(x1, y1, z1)] * (1.0 - dx) + U[IDX(x2, y1, z1)] * dx) * (1.0 - dy) +
+                   (U[IDX(x1, y2, z1)] * (1.0 - dx) + U[IDX(x2, y2, z1)] * dx) * dy) *
+                      (1.0 - dz) +
+                  ((U[IDX(x1, y1, z2)] * (1.0 - dx) + U[IDX(x2, y1, z2)] * dx) * (1.0 - dy) +
+                   (U[IDX(x1, y2, z2)] * (1.0 - dx) + U[IDX(x2, y2, z2)] * dx) * dy) *
+                      dz);
+      if (ukind == material_data::U_MIN && u != uval) return; // TODO look into this
+      if (ukind == material_data::U_PROD) scaleby *= uval / u;
     }
+
+    for (int xi = 0; xi < lx; xi++)
+      for (int yi = 0; yi < ly; yi++)
+        for (int zi = 0; zi < lz; zi++)
+          touched.insert(IDX(x_list[xi], y_list[yi], z_list[zi]));
+  }
+
+  for (std::set<int>::const_iterator it = touched.begin(); it != touched.end(); ++it) {
+    std::complex<double> prod =
+        adj * get_material_gradient(r, adjoint_c, forward_c, fwd, freq, geps, gv, du, udatas, *it);
+    data[*it] += prod.real() * scaleby;
   }
 
 #undef IDX
-#undef D
-#undef U
 }
 
 void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, geom_epsilon *geps,
                                       meep::component adjoint_c, meep::component forward_c,
                                       std::complex<double> fwd, std::complex<double> adj,
-                                      double freq, meep::grid_volume &gv, double tol) {
+                                      double freq, meep::grid_volume &gv, double tol,
+                                      long owner_grid_id) {
   geom_box_tree tp;
   int oi, ois;
   material_data *mg, *mg_sum;
@@ -2794,7 +2817,10 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
       ++matgrid_val_count;
       if (tp_sum) mg_sum = (material_data *)tp_sum->objects[ois].o->material;
     } while (tp_sum && is_material_grid(mg_sum));
-    scalegrad /= matgrid_val_count;
+    /* No scalegrad /= matgrid_val_count here: the finite difference in
+       get_material_gradient() runs through matgrid_val(), so the 1/N of the
+       U_MEAN average is already contained in the result. */
+    (void)matgrid_val_count;
   }
   else if ((tp) && ((mg->material_grid_kinds == material_data::U_MIN) ||
                     (mg->material_grid_kinds == material_data::U_PROD))) {
@@ -2817,26 +2843,47 @@ void material_grids_addgradient_point(double *v, vector3 p, double scalegrad, ge
     fashion. Since we aren't checking if each design grid is unique, however,
     it's up to the user to only have one unique design grid in this volume.*/
     vector3 sz = mg->grid_size;
-    double *vcur = v;
-    double *ucur = mg->weights;
     uval = tanh_projection(matgrid_val(p, tp, oi, mg), mg->beta, mg->eta);
+
+    /* Collect the copies of this design region's own grid that cover the point.
+
+       Only the owner's copies: v[] is sized and indexed by the owner's
+       parameterization, so a contribution from any other grid is mis-attributed,
+       and an out-of-bounds write when that grid is larger. That happens whenever
+       two grids abut, because the design region's DFT monitor is snapped outward
+       to enclosing grid nodes and so covers nodes shared with the neighbour. The
+       neighbouring design region visits them on its own pass, so nothing is
+       lost. All copies of one grid share a grid_id, so a grid overlapped with
+       transformed copies of itself -- the documented way to impose a symmetry --
+       still contributes through every copy. */
+    std::vector<double *> udatas;
+    std::vector<vector3> pbs;
+    geom_box_tree tpc = tp;
+    int oic = oi;
     do {
-      vector3 pb = to_geom_box_coords(p, &tp->objects[oi]);
-      add_interpolate_weights(pb.x, pb.y, pb.z, vcur, sz.x, sz.y, sz.z, 1, scalegrad, ucur, kind,
-                              uval, vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq,
-                              gv, tol);
+      material_data *mg_cur = (material_data *)tpc->objects[oic].o->material;
+      if (owner_grid_id < 0 || mg_cur->grid_id == owner_grid_id) {
+        if (udatas.empty()) sz = mg_cur->grid_size;
+        udatas.push_back(mg_cur->weights);
+        pbs.push_back(to_geom_box_coords(p, &tpc->objects[oic]));
+      }
       if (kind == material_data::U_DEFAULT) break;
-      tp = geom_tree_search_next(p, tp, &oi);
-    } while (tp && is_material_grid((material_data *)tp->objects[oi].o->material));
+      tpc = geom_tree_search_next(p, tpc, &oic);
+    } while (tpc && is_material_grid((material_data *)tpc->objects[oic].o->material));
+
+    if (!udatas.empty())
+      add_interpolate_weights(udatas, pbs, v, sz.x, sz.y, sz.z, 1, scalegrad, kind, uval,
+                              vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq, gv,
+                              tol);
   }
   // no object tree -- the whole domain is the material grid
   if (!tp && is_material_grid(default_material)) {
     map_lattice_coordinates(p.x, p.y, p.z);
     vector3 sz = mg->grid_size;
-    double *vcur = v;
-    double *ucur = mg->weights;
     uval = tanh_projection(material_grid_val(p, mg), mg->beta, mg->eta);
-    add_interpolate_weights(p.x, p.y, p.z, vcur, sz.x, sz.y, sz.z, 1, scalegrad, ucur, kind, uval,
+    std::vector<double *> udatas(1, mg->weights);
+    std::vector<vector3> pbs(1, p);
+    add_interpolate_weights(udatas, pbs, v, sz.x, sz.y, sz.z, 1, scalegrad, kind, uval,
                             vector3_to_vec(p), geps, adjoint_c, forward_c, fwd, adj, freq, gv, tol);
   }
 }
@@ -2899,7 +2946,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                 std::vector<meep::dft_fields *> fields_a,
                                 std::vector<meep::dft_fields *> fields_f, double *frequencies,
                                 double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
-                                double du) {
+                                long owner_grid_id, double du) {
   /* ------------------------------------------------------------ */
   // initialize local gradient array
   /* ------------------------------------------------------------ */
@@ -2997,7 +3044,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                                                  : 1; // the pi is already factored in near2far.cpp
               material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(p),
                                                scalegrad * cyl_scale, geps, adjoint_c, forward_c,
-                                               fwd, adj, frequencies[f_i], gv, du);
+                                               fwd, adj, frequencies[f_i], gv, du, owner_grid_id);
               /* more complicated case requires interpolation/restriction */
             }
             else if ((md->do_averaging) ||             /* account for subpixel smoothing     */
@@ -3039,7 +3086,7 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
                 material_grids_addgradient_point(v_local + ng * f_i, vec_to_vector3(eps1),
                                                  scalegrad * cyl_scale, geps, adjoint_c, forward_c,
                                                  fwd_avg, std::complex<meep::realnum>(0.5, 0) * adj,
-                                                 frequencies[f_i], gv, du);
+                                                 frequencies[f_i], gv, du, owner_grid_id);
               }
             }
             /********* compute λᵀbᵤ ***************/
