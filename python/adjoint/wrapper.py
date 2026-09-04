@@ -88,7 +88,7 @@ values, grads = mpa.value_and_jacobian(loss, argnums=(0, 1, 2))(rho, 1.8, 8.0)
 """
 import contextlib
 import warnings
-from typing import Callable, Iterable, List, Sequence, Tuple, Union
+from typing import Callable, Iterable, List, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
@@ -97,6 +97,7 @@ import numpy as onp
 import meep as mp
 
 from . import DesignRegion, ObjectiveQuantity, utils
+from . import source_gradient
 
 _warned_about_precision = False
 
@@ -212,14 +213,33 @@ class MeepJaxWrapper:
         self.until_after_sources = until_after_sources
         self.finite_difference_step = finite_difference_step
 
+        # A source whose amplitudes come from JAX is differentiated
+        # automatically: the parameters that produced them live upstream in
+        # JAX, so there is nothing for Meep to name. `amp_data` is the array
+        # Meep interpolates onto the grid, so that is the cut point.
+        self._source_shapes = []
+        self.differentiable_sources = [
+            s for s in sources if getattr(s, "amp_data", None) is not None
+        ]
+        for s in self.differentiable_sources:
+            if "amp_data" not in getattr(s, "differentiable", ()):
+                s.differentiable = tuple(getattr(s, "differentiable", ())) + (
+                    "amp_data",
+                )
+
         self._simulate_fn = self._initialize_callable()
 
     def __call__(
-        self, designs: List[jnp.ndarray]
+        self, designs: List[jnp.ndarray], sources: Optional[List[jnp.ndarray]] = None
     ) -> Union[jnp.ndarray, Tuple[jnp.ndarray, ...]]:
         """Performs a Meep simulation, taking designs and returning monitor values.
 
         Args:
+          sources: an `amp_data` array for each source given to the constructor
+            that has one, in that order. These are differentiated automatically
+            -- there is no need to flag them, because the parameters that
+            produced them live upstream in JAX rather than in Meep. Omit when
+            there are none.
           designs: a list of design variables as 1D, 2D, or 3D JAX arrays. Valid shapes for
           design variables are (Nx, Ny, Nz) where Nx{y,z} match the elements of the
           `grid_size` constructor argument of Meep's `MaterialGrid` used for the
@@ -239,14 +259,35 @@ class MeepJaxWrapper:
           monitors were given.
         """
         if _active_recorder is not None:
-            return _active_recorder(self, designs)
-        return self._simulate_fn(designs)
+            return _active_recorder(self, designs, sources)
+        return self._simulate_fn(designs, sources)
+
+    def _update_sources(self, source_variables) -> None:
+        """Push JAX-supplied amplitudes into the differentiable sources."""
+        if source_variables is None:
+            return
+        if len(source_variables) != len(self.differentiable_sources):
+            raise ValueError(
+                f"Got {len(source_variables)} source arrays but "
+                f"{len(self.differentiable_sources)} differentiable sources."
+            )
+        # Meep wants amp_data as a 3D array, but the caller may hand in any
+        # shape with the same number of entries; the cotangent has to go back
+        # in the shape they used, so remember it.
+        self._source_shapes = [onp.shape(a) for a in source_variables]
+        for src, amps in zip(self.differentiable_sources, source_variables):
+            src.amp_data = onp.asarray(amps, dtype=onp.complex128).reshape(
+                onp.shape(src.amp_data)
+            )
 
     def _run_fwd_simulation(
-        self, design_variables: Iterable[onp.ndarray]
+        self,
+        design_variables: Iterable[onp.ndarray],
+        source_variables: Optional[Iterable[onp.ndarray]] = None,
     ) -> Tuple[Union[jnp.ndarray, Tuple[jnp.ndarray, ...]], List[List[mp.DftFields]]]:
         """Runs forward simulation, returning monitor values and design region fields."""
         utils.validate_and_update_design(self.design_regions, design_variables)
+        self._update_sources(source_variables)
         self.simulation.reset_meep()
         self.simulation.change_sources(self.sources)
         utils.register_monitors(self.monitors, self.frequencies)
@@ -293,6 +334,11 @@ class MeepJaxWrapper:
             self.design_regions,
             self.frequencies,
         )
+        self.adj_source_monitors = source_gradient.install_source_gradient_monitors(
+            self.simulation,
+            self.differentiable_sources,
+            self.frequencies,
+        )
         self.simulation.init_sim()
         sim_run_args = {
             "until_after_sources"
@@ -304,6 +350,43 @@ class MeepJaxWrapper:
         self.simulation.run(**sim_run_args)
 
         return adj_design_region_monitors
+
+    def _source_vjps(self, sum_freq_partials: bool = True) -> List[onp.ndarray]:
+        """Cotangents with respect to each differentiable source's currents.
+
+        With `sum_freq_partials` false the frequency axis is kept, which is what
+        `value_and_jacobian` needs to keep its rows separable.
+        """
+        if not self.differentiable_sources:
+            return []
+        phase = self.monitors[0]._adj_src_phase()
+        out = []
+        for src, group in zip(self.differentiable_sources, self.adj_source_monitors):
+            # one monitor per component the source drives; an amp_data source
+            # drives exactly one
+            monitor = group[0]
+            scale = source_gradient.source_grad_scale(
+                self.simulation, src, self.frequencies, phase
+            )
+            currents = monitor.gather(self.simulation, scale)
+            positions = monitor.positions(self.simulation)
+            shape = self._source_shapes[len(out)]
+            # one row per frequency, each carried back through the trilinear
+            # interpolation Meep applies to amp_data
+            rows = onp.stack(
+                [
+                    source_gradient.amp_data_gradient(
+                        self.simulation, src, positions, currents[f_index]
+                    )
+                    for f_index in range(currents.shape[0])
+                ]
+            )
+            if sum_freq_partials:
+                # the amplitudes are shared across the band, as design weights are
+                out.append(onp.sum(rows, axis=0).reshape(shape))
+            else:
+                out.append(rows.reshape((rows.shape[0], *shape)))
+        return out
 
     def _calculate_vjps(
         self,
@@ -328,14 +411,16 @@ class MeepJaxWrapper:
         """Initializes the callable JAX function and registers its VJP."""
 
         @jax.custom_vjp
-        def simulate(design_variables: List[jnp.ndarray]):
-            monitor_values, _ = self._run_fwd_simulation(design_variables)
+        def simulate(design_variables: List[jnp.ndarray], source_variables):
+            monitor_values, _ = self._run_fwd_simulation(
+                design_variables, source_variables
+            )
             return monitor_values
 
-        def _simulate_fwd(design_variables):
+        def _simulate_fwd(design_variables, source_variables):
             """Runs forward simulation, returning monitor values and fields."""
             monitor_values, self.fwd_design_region_monitors = self._run_fwd_simulation(
-                design_variables
+                design_variables, source_variables
             )
             design_variable_shapes = [x.shape for x in design_variables]
             return monitor_values, (design_variable_shapes)
@@ -351,7 +436,11 @@ class MeepJaxWrapper:
                 self.adj_design_region_monitors,
                 design_variable_shapes,
             )
-            return ([jnp.asarray(vjp) for vjp in vjps],)
+            source_vjps = [jnp.asarray(v) for v in self._source_vjps()]
+            return (
+                [jnp.asarray(vjp) for vjp in vjps],
+                source_vjps if self.differentiable_sources else None,
+            )
 
         simulate.defvjp(_simulate_fwd, _simulate_rev)
 
@@ -376,10 +465,11 @@ class _WrapperCallRecorder:
         self.design_shapes = None
         self.monitor_values = None
         self.fwd_monitors = None
+        self.sources = None
         self.num_calls = 0
         self.substitute = None
 
-    def __call__(self, wrapper: "MeepJaxWrapper", designs):
+    def __call__(self, wrapper: "MeepJaxWrapper", designs, sources=None):
         self.num_calls += 1
         if self.wrapper is None:
             self.wrapper = wrapper
@@ -394,10 +484,11 @@ class _WrapperCallRecorder:
         # the traced passes it holds tracers, which is what the design mapping's
         # pullback is recovered from.
         self.designs = list(designs)
+        self.sources = None if sources is None else list(sources)
         if self.monitor_values is None:
             self.design_shapes = [onp.shape(design) for design in designs]
             self.monitor_values, self.fwd_monitors = wrapper._run_fwd_simulation(
-                designs
+                designs, sources
             )
         return self.monitor_values if self.substitute is None else self.substitute
 
@@ -543,13 +634,20 @@ def value_and_jacobian(loss: Callable, argnums=0) -> Callable:
             rows = [jnp.moveaxis(jnp.asarray(row), -1, 0) for row in rows]
 
             # (4) Carry each row back through whatever produced the design
-            # weights. Pure JAX, so `vmap` over the frequency axis is free.
-            def designs_from(*values_to_differentiate):
-                loss(*rebuild(values_to_differentiate))
-                return recorder.designs
+            # weights, and the source amplitudes if any came from JAX. Pure
+            # JAX, so `vmap` over the frequency axis is free.
+            source_rows = [
+                jnp.asarray(v) for v in wrapper._source_vjps(sum_freq_partials=False)
+            ]
 
-            _, pull_designs = jax.vjp(designs_from, *differentiated)
-            implicit = jax.vmap(pull_designs)(rows)
+            def inputs_from(*values_to_differentiate):
+                loss(*rebuild(values_to_differentiate))
+                return recorder.designs, recorder.sources
+
+            _, pull_inputs = jax.vjp(inputs_from, *differentiated)
+            implicit = jax.vmap(pull_inputs)(
+                (rows, source_rows if recorder.sources is not None else None)
+            )
 
         if isinstance(argnums, int):
             implicit = implicit[0]
