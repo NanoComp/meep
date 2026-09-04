@@ -224,36 +224,6 @@ class TestShapeDerivative(unittest.TestCase):
         for name in ("center", "size"):
             self.assertEqual(np.shape(np.atleast_1d(gradient[name])), (3,))
 
-    def test_object_with_an_infinite_extent(self):
-        # `mp.inf` is the idiomatic way to write a layer that spans the cell,
-        # and it is 1e20 rather than a flag. A monitor built around one without
-        # clamping fails inside meep with "impossible(?) looping boundaries",
-        # which is what a stratified stack -- a metal reflector under a grating,
-        # say -- runs into immediately.
-        offset = quarter_pixel(RES)
-
-        def slab(dy, differentiable=None):
-            return mp.Block(
-                center=mp.Vector3(0, dy + offset),
-                size=mp.Vector3(mp.inf, 0.4),
-                material=mp.Medium(index=2.5),
-                differentiable=differentiable,
-                name="slab",
-            )
-
-        opt = _problem(slab(0.0, differentiable=["center"]))
-        _, grad = opt([RHO])
-        adjoint = float(np.real(np.atleast_1d(grad["slab"]["center"])[1]))
-
-        def value(dy):
-            return float(
-                np.asarray(_problem(slab(dy))([RHO], need_gradient=False)[0]).item()
-            )
-
-        reference = (value(FD_STEP) - value(-FD_STEP)) / (2 * FD_STEP)
-        self.assertGreater(abs(reference), 1e-6, "objective must respond to the move")
-        self.assertLess(abs(adjoint - reference) / abs(reference), 2e-2)
-
     def test_dispersive_object(self):
         # A metal reflector's position is the motivating case.  Before the
         # dispersive branch was routed, `geometry_addgradient` contracted only
@@ -295,6 +265,36 @@ class TestShapeDerivative(unittest.TestCase):
             2e-2,
             f"adjoint {adjoint} vs finite difference {reference}",
         )
+
+    def test_object_with_an_infinite_extent(self):
+        # `mp.inf` is the idiomatic way to write a layer that spans the cell,
+        # and it is 1e20 rather than a flag. A monitor built around one without
+        # clamping fails inside meep with "impossible(?) looping boundaries",
+        # which is what a stratified stack -- a metal reflector under a grating,
+        # say -- runs into immediately.
+        offset = quarter_pixel(RES)
+
+        def slab(dy, differentiable=None):
+            return mp.Block(
+                center=mp.Vector3(0, dy + offset),
+                size=mp.Vector3(mp.inf, 0.4),
+                material=mp.Medium(index=2.5),
+                differentiable=differentiable,
+                name="slab",
+            )
+
+        opt = _problem(slab(0.0, differentiable=["center"]))
+        _, grad = opt([RHO])
+        adjoint = float(np.real(np.atleast_1d(grad["slab"]["center"])[1]))
+
+        def value(dy):
+            return float(
+                np.asarray(_problem(slab(dy))([RHO], need_gradient=False)[0]).item()
+            )
+
+        reference = (value(FD_STEP) - value(-FD_STEP)) / (2 * FD_STEP)
+        self.assertGreater(abs(reference), 1e-6, "objective must respond to the move")
+        self.assertLess(abs(adjoint - reference) / abs(reference), 2e-2)
 
     def test_no_flagged_object_leaves_the_return_shape_alone(self):
         opt = _problem(_block(mp.Vector3(), self.SIZE))
