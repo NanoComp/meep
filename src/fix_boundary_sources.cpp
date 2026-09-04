@@ -86,9 +86,15 @@ void fields::fix_boundary_sources() {
               src.set_amplitude(ipt, 0.0); // will no longer be needed
             }
           }
+          src.remove_zero_amplitudes();
           src.needs_boundary_fix = false;
         }
     }
+  }
+
+  if (sum_to_all(boundarysources.size()) == 0) {
+    finished_working();
+    return;
   }
 
   // we need each process's data to be contiguous
