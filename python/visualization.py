@@ -690,7 +690,7 @@ def plot_eps(
             return eps_data
 
         # Metals / perfect electric conductors have eps = -inf (see python/meep.i,
-        # where mp.inf is the sentinal 1e20), which would otherwise saturate the
+        # where mp.inf is the sentinel 1e20), which would otherwise saturate the
         # color scale. Mask them out so that the scale is set by the finite
         # permittivities, and draw them in `pec_color` instead.
         eps_data = np.ma.masked_where(
