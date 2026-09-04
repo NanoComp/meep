@@ -1221,7 +1221,8 @@ void geom_epsilon::eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_ma
    which case the shape derivative vanishes there and the caller can skip it --
    which is what restricts the gradient loop to the boundary shell. */
 bool geom_epsilon::interface_fill(const meep::volume &v, double tol, int maxeval, double &fill,
-                                  const geometric_object **which, vector3 *shift) {
+                                  const geometric_object **which, vector3 *shift,
+                                  material_type *front_mat, material_type *behind_mat) {
   const geometric_object *o;
   material_type mat, mat_behind;
   vector3 p, shiftby;
@@ -1236,6 +1237,8 @@ bool geom_epsilon::interface_fill(const meep::volume &v, double tol, int maxeval
   fill = box_overlap_with_object(pixel, *o, tol, maxeval);
   if (which) *which = o;
   if (shift) *shift = shiftby;
+  if (front_mat) *front_mat = mat;
+  if (behind_mat) *behind_mat = mat_behind;
   return true;
 }
 
@@ -1698,6 +1701,109 @@ static bool susceptibility_equiv(const susceptibility &o0, const susceptibility 
   return true;
 }
 
+/* Sum the amplitudes of `mat`'s poles equivalent to the one being registered,
+   into the c'th row of its sigma tensor.  Factored out of sigma_row() so that
+   eff_sigma_row() can ask the same question of two materials at once. */
+void geom_epsilon::material_sigma_row(meep::component c, double sigrow[3], material_type mat) {
+  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
+  if (!current_pol) return;
+
+  if (mat->which_subclass != material_data::MATERIAL_USER &&
+      mat->which_subclass != material_data::MATERIAL_GRID &&
+      mat->which_subclass != material_data::MEDIUM)
+    return;
+
+  const susceptibility_list &slist =
+      type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
+  /* Accumulate rather than stopping at the first match.  A material grid's
+     list is the concatenation of its two constituents' poles, so when both
+     media carry the same pole -- same frequency and damping, different
+     strength -- two entries are equivalent to the one being registered and
+     the mixture's amplitude is their sum.  This is also the right answer for
+     a plain medium that happens to list a pole twice, since identical poles
+     superpose. */
+  for (const susceptibility &susc : slist) {
+    if (!susceptibility_equiv(susc, current_pol->user_s)) continue;
+    switch (meep::component_index(c)) { // which row of the sigma tensor to return
+      case 0:
+        sigrow[0] += susc.sigma_diag.x;
+        sigrow[1] += susc.sigma_offdiag.x;
+        sigrow[2] += susc.sigma_offdiag.y;
+        break;
+      case 1:
+        sigrow[0] += susc.sigma_offdiag.x;
+        sigrow[1] += susc.sigma_diag.y;
+        sigrow[2] += susc.sigma_offdiag.z;
+        break;
+      default: // case 2:
+        sigrow[0] += susc.sigma_offdiag.y;
+        sigrow[1] += susc.sigma_offdiag.z;
+        sigrow[2] += susc.sigma_diag.z;
+        break;
+    }
+  }
+}
+
+/* Volume-average sigma across a geometric interface.
+
+   The permittivity has always been subpixel-smoothed while sigma was point
+   sampled, so a dispersive object's response switched on a whole pixel at a
+   time as it moved.  Taper each medium's pole amplitude by the pixel's filling
+   fraction instead, using the same front object, shift and fill that
+   eff_chi1inv_matrix uses, so the two describe the same interface.
+
+   Linear in fill rather than Kottke, deliberately.  Kottke's normal component
+   is a harmonic average of a permittivity; there is no analogous exact result
+   for a resonant amplitude, and a harmonic average against a medium without
+   the pole would be zero in every boundary pixel.  Scaling each medium's whole
+   sigma tensor by a non-negative weight and adding keeps the result positive
+   semidefinite -- which is what passivity depends on -- and makes the
+   amplitude exactly linear in fill, so the shape derivative is a constant.
+
+   Material grids and user materials are point sampled as before: their
+   material varies continuously in space already, and mixing a level set with a
+   geometric filling fraction is a separate question. */
+void geom_epsilon::eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v) {
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p, shiftby;
+
+  // No smoothing requested: match what the permittivity is doing.
+  if (maxeval == 0 || !current_pol) return sigma_row(c, sigrow, v.center());
+
+  /* Out of scope, point sample instead.  A multilevel atom carries per-pixel
+     level populations with their own nonlinear dynamics, so there is no reason
+     to think scaling an amplitude by a filling fraction gives the response of
+     a partially filled pixel the way it does for a linear pole.  A gyrotropic
+     sigma is antisymmetric, so the argument that a non-negative combination
+     stays positive semidefinite does not apply to it either. */
+  const susceptibility &pole = current_pol->user_s;
+  if (!pole.transitions.empty() || !pole.initial_populations.empty() || pole.saturated_gyrotropy ||
+      pole.bias.x != 0 || pole.bias.y != 0 || pole.bias.z != 0)
+    return sigma_row(c, sigrow, v.center());
+
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind))
+    return sigma_row(c, sigrow, v.center());
+
+  if (material_type_equal(mat, mat_behind) || is_variable(mat) || is_variable(mat_behind)) {
+    material_gc(mat);
+    return sigma_row(c, sigrow, v.center());
+  }
+
+  geom_box pixel = gv2box(v);
+  pixel.low = vector3_minus(pixel.low, shiftby);
+  pixel.high = vector3_minus(pixel.high, shiftby);
+  double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+
+  double front[3], behind[3];
+  material_sigma_row(c, front, mat);
+  material_sigma_row(c, behind, mat_behind);
+  for (int i = 0; i < 3; ++i)
+    sigrow[i] = fill * front[i] + (1 - fill) * behind[i];
+
+  material_gc(mat);
+}
+
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::vec &r) {
 
   vector3 p = vec_to_vector3(r);
@@ -1724,44 +1830,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     mat->medium.check_offdiag_im_zero_or_abort();
   }
 
-  sigrow[0] = sigrow[1] = sigrow[2] = 0.0;
-
-  if (mat->which_subclass == material_data::MATERIAL_USER ||
-      mat->which_subclass == material_data::MATERIAL_GRID ||
-      mat->which_subclass == material_data::MEDIUM) {
-
-    const susceptibility_list &slist =
-        type(c) == meep::E_stuff ? mat->medium.E_susceptibilities : mat->medium.H_susceptibilities;
-    /* Accumulate rather than stopping at the first match.  A material grid's
-       list is the concatenation of its two constituents' poles, so when both
-       media carry the same pole -- same frequency and damping, different
-       strength -- two entries are equivalent to the one being registered and
-       the mixture's amplitude is their sum.  This is also the right answer for
-       a plain medium that happens to list a pole twice, since identical poles
-       superpose. */
-    for (const susceptibility &susc : slist) {
-      if (susceptibility_equiv(susc, current_pol->user_s)) {
-        int ic = meep::component_index(c);
-        switch (ic) { // which row of the sigma tensor to return
-          case 0:
-            sigrow[0] += susc.sigma_diag.x;
-            sigrow[1] += susc.sigma_offdiag.x;
-            sigrow[2] += susc.sigma_offdiag.y;
-            break;
-          case 1:
-            sigrow[0] += susc.sigma_offdiag.x;
-            sigrow[1] += susc.sigma_diag.y;
-            sigrow[2] += susc.sigma_offdiag.z;
-            break;
-          default: // case 2:
-            sigrow[0] += susc.sigma_offdiag.y;
-            sigrow[1] += susc.sigma_offdiag.z;
-            sigrow[2] += susc.sigma_diag.z;
-            break;
-        }
-      }
-    }
-  }
+  material_sigma_row(c, sigrow, mat);
   material_gc(mat);
 }
 
@@ -2679,6 +2748,86 @@ void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, do
   }
 }
 
+/* Does this material contribute anything the non-dispersive tensor misses? */
+bool is_dispersive(material_type m) {
+  if (!m) return false;
+  const medium_struct *mm = &m->medium;
+  return !mm->E_susceptibilities.empty() || mm->D_conductivity_diag.x != 0 ||
+         mm->D_conductivity_diag.y != 0 || mm->D_conductivity_diag.z != 0;
+}
+
+/* The effective dispersive tensor of a pixel straddling an interface, at a
+   filling fraction supplied by the caller.
+
+   This is the dispersive counterpart of the `fill_override` on
+   eff_chi1inv_matrix, and it exists for the same reason: a shape derivative
+   needs d(chi1inv)/d(fill), and getting it from meep's own assembly is better
+   than re-deriving it.  eff_chi1inv_row_disp cannot serve, because it resolves
+   the material at a *point* and so knows nothing about a filling fraction.
+
+   The construction matches what the forward solve is actually running.  The
+   instantaneous part is Kottke-smoothed, exactly as structure_chunk::set_chi1inv
+   does it; each pole's amplitude is taken linearly in fill from whichever
+   medium carries it, exactly as eff_sigma_row now writes into the sigma arrays.
+   Because chi1 is linear in sigma, a pole contributes L(freq) * weight * sigma
+   and the two media's pole lists never have to be matched against each other --
+   the same reason epsilon_material_grid can concatenate rather than blend. */
+static bool eff_chi1inv_row_disp_fill(meep::component c, std::complex<double> chi1inv_row[3],
+                                      const meep::volume &v, double freq, geom_epsilon *geps,
+                                      double fill, material_type front, material_type behind) {
+  bool fallback = false;
+  symm_matrix chi1inv_inf, eps_inf;
+  geps->eff_chi1inv_matrix(c, &chi1inv_inf, v, geps->tol, geps->maxeval, fallback, fill);
+  if (fallback) return false;
+  sym_matrix_invert(&eps_inf, &chi1inv_inf);
+
+  std::complex<double> tensor[9], tensor_inv[9];
+  const double inf[9] = {eps_inf.m00, eps_inf.m01, eps_inf.m02, eps_inf.m01, eps_inf.m11,
+                         eps_inf.m12, eps_inf.m02, eps_inf.m12, eps_inf.m22};
+  for (int i = 0; i < 9; i++)
+    tensor[i] = std::complex<double>(inf[i], 0);
+
+  const struct {
+    material_type m;
+    double w;
+  } side[2] = {{front, fill}, {behind, 1.0 - fill}};
+
+  for (int sd = 0; sd < 2; sd++) {
+    if (!side[sd].m) continue;
+    for (const auto &su : side[sd].m->medium.E_susceptibilities) {
+      meep::lorentzian_susceptibility sus(su.frequency, su.gamma, su.drude);
+      // chi1 is linear in sigma, so evaluate the lineshape once at unit
+      // amplitude and scale.
+      std::complex<double> lineshape = sus.chi1_discrete(freq, 1.0, geps->dt);
+      for (int i = 0; i < 9; i++)
+        tensor[i] += lineshape * side[sd].w * vec_to_value(su.sigma_diag, su.sigma_offdiag, i);
+    }
+  }
+
+  vector3 zero = {0.0, 0.0, 0.0};
+  for (int i = 0; i < 9; i++) {
+    double cond = 0;
+    for (int sd = 0; sd < 2; sd++)
+      if (side[sd].m)
+        cond += side[sd].w * vec_to_value(side[sd].m->medium.D_conductivity_diag, zero, i);
+    tensor[i] *= conductivity_factor(cond, freq, geps->dt);
+  }
+
+  invert_tensor(tensor_inv, tensor);
+  int row = 0;
+  switch (component_direction(c)) {
+    case meep::X:
+    case meep::R: row = 0; break;
+    case meep::Y:
+    case meep::P: row = 1; break;
+    case meep::Z: row = 2; break;
+    case meep::NO_DIRECTION: return false;
+  }
+  for (int i = 0; i < 3; i++)
+    chi1inv_row[i] = tensor_inv[3 * row + i];
+  return true;
+}
+
 void eff_chi1inv_row_disp(meep::component c, std::complex<double> chi1inv_row[3],
                           const meep::vec &r, double freq, geom_epsilon *geps) {
   std::complex<double> tensor[9], tensor_inv[9];
@@ -3117,7 +3266,6 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                           std::vector<meep::dft_fields *> fields_f, double *frequencies,
                           double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
                           int object_index, int *params, double du) {
-  (void)frequencies;
   (void)du;
   if (object_index < 0 || object_index >= geps->geometry.num_items)
     meep::abort("geometry_addgradient: object index %d out of range (%d objects)", object_index,
@@ -3251,7 +3399,9 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
               double fill;
               const geometric_object *front = NULL;
               vector3 shiftby = {0, 0, 0};
-              if (!geps->interface_fill(voxel, geps->tol, geps->maxeval, fill, &front, &shiftby))
+              material_type mat_front = NULL, mat_behind = NULL;
+              if (!geps->interface_fill(voxel, geps->tol, geps->maxeval, fill, &front, &shiftby,
+                                        &mat_front, &mat_behind))
                 continue;
               if (front != obj) continue;
               if (fill <= 0.0 || fill >= 1.0) continue;
@@ -3287,21 +3437,11 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
               for (int ax = 0; ax < 3; ax++)
                 pixel_volume *= extent[ax];
 
-              /* d(chi1inv)/d(fill), from meep's own tensor assembly. */
-              bool fb_lo = false, fb_hi = false;
-              symm_matrix m_lo, m_hi;
-              geps->eff_chi1inv_matrix(adjoint_c, &m_lo, voxel, geps->tol, geps->maxeval, fb_lo,
-                                       std::max(0.0, fill - dfill));
-              geps->eff_chi1inv_matrix(adjoint_c, &m_hi, voxel, geps->tol, geps->maxeval, fb_hi,
-                                       std::min(1.0, fill + dfill));
-              if (fb_lo || fb_hi) continue;
+              const double fill_lo = std::max(0.0, fill - dfill);
+              const double fill_hi = std::min(1.0, fill + dfill);
+              const double actual_dfill = fill_hi - fill_lo;
+              if (actual_dfill <= 0) continue;
 
-              const double lo_row[3] = {m_lo.m00, m_lo.m01, m_lo.m02};
-              const double hi_row[3] = {m_hi.m00, m_hi.m01, m_hi.m02};
-              const double lo_row1[3] = {m_lo.m01, m_lo.m11, m_lo.m12};
-              const double hi_row1[3] = {m_hi.m01, m_hi.m11, m_hi.m12};
-              const double lo_row2[3] = {m_lo.m02, m_lo.m12, m_lo.m22};
-              const double hi_row2[3] = {m_hi.m02, m_hi.m12, m_hi.m22};
               int row_of = 0;
               switch (meep::component_direction(adjoint_c)) {
                 case meep::X:
@@ -3311,11 +3451,44 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                 case meep::Z: row_of = 2; break;
                 default: continue;
               }
-              const double *lo_r = (row_of == 0) ? lo_row : (row_of == 1) ? lo_row1 : lo_row2;
-              const double *hi_r = (row_of == 0) ? hi_row : (row_of == 1) ? hi_row1 : hi_row2;
-              const double actual_dfill = std::min(1.0, fill + dfill) - std::max(0.0, fill - dfill);
-              if (actual_dfill <= 0) continue;
-              const double dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
+
+              /* d(chi1inv)/d(fill), from meep's own tensor assembly.
+
+                 Which assembly depends on the materials at *this* interface,
+                 not on md->trivial of the front object: a plain dielectric
+                 sitting in front of a metal would otherwise take the
+                 non-dispersive branch and drop the entire contribution at
+                 exactly the pixels that carry the derivative. */
+              std::complex<double> dchi_dfill;
+              if (is_dispersive(mat_front) || is_dispersive(mat_behind)) {
+                std::complex<double> lo_d[3], hi_d[3];
+                if (!eff_chi1inv_row_disp_fill(adjoint_c, lo_d, voxel, frequencies[f_i], geps,
+                                               fill_lo, mat_front, mat_behind))
+                  continue;
+                if (!eff_chi1inv_row_disp_fill(adjoint_c, hi_d, voxel, frequencies[f_i], geps,
+                                               fill_hi, mat_front, mat_behind))
+                  continue;
+                dchi_dfill = (hi_d[dir_idx] - lo_d[dir_idx]) / actual_dfill;
+              }
+              else {
+                bool fb_lo = false, fb_hi = false;
+                symm_matrix m_lo, m_hi;
+                geps->eff_chi1inv_matrix(adjoint_c, &m_lo, voxel, geps->tol, geps->maxeval, fb_lo,
+                                         fill_lo);
+                geps->eff_chi1inv_matrix(adjoint_c, &m_hi, voxel, geps->tol, geps->maxeval, fb_hi,
+                                         fill_hi);
+                if (fb_lo || fb_hi) continue;
+
+                const double lo_row[3] = {m_lo.m00, m_lo.m01, m_lo.m02};
+                const double hi_row[3] = {m_hi.m00, m_hi.m01, m_hi.m02};
+                const double lo_row1[3] = {m_lo.m01, m_lo.m11, m_lo.m12};
+                const double hi_row1[3] = {m_hi.m01, m_hi.m11, m_hi.m12};
+                const double lo_row2[3] = {m_lo.m02, m_lo.m12, m_lo.m22};
+                const double hi_row2[3] = {m_hi.m02, m_hi.m12, m_hi.m22};
+                const double *lo_r = (row_of == 0) ? lo_row : (row_of == 1) ? lo_row1 : lo_row2;
+                const double *hi_r = (row_of == 0) ? hi_row : (row_of == 1) ? hi_row1 : hi_row2;
+                dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
+              }
 
               const std::complex<double> pair =
                   std::complex<double>(double(adj.real()), double(adj.imag())) *
@@ -3334,7 +3507,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                 /* the leading minus matches get_material_gradient's convention,
                    which returns -(d row/d parameter) */
                 local[nparams * f_i + ip] -=
-                    node_weight * scalegrad * cyl_scale * dchi_dfill * dfill_dp * std::real(pair);
+                    node_weight * scalegrad * cyl_scale * dfill_dp * std::real(dchi_dfill * pair);
               }
             } // node
           }

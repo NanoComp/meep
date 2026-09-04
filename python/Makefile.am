@@ -64,6 +64,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \
+    $(TEST_DIR)/test_dispersive_smoothing.py   \
     $(DIFFRACTED_PLANEWAVE_TEST)               \
     $(DISPERSIVE_EIGENMODE_TEST)               \
     $(TEST_DIR)/test_divide_mpi_processes.py   \

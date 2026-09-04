@@ -233,12 +233,15 @@ public:
      or fill < 0 if the pixel does not straddle an interface (so the shape
      derivative is zero there and the pixel can be skipped). */
   bool interface_fill(const meep::volume &v, double tol, int maxeval, double &fill,
-                      const geometric_object **which = NULL, vector3 *shift = NULL);
+                      const geometric_object **which = NULL, vector3 *shift = NULL,
+                      material_type *front_mat = NULL, material_type *behind_mat = NULL);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                             double tol, int maxeval);
 
   virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
+  virtual void eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v);
+  void material_sigma_row(meep::component c, double sigrow[3], material_type mat);
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
