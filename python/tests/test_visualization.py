@@ -372,7 +372,7 @@ class TestVisualization(unittest.TestCase):
             # ...and drawn in the (opaque) `pec_color` instead.
             self.assertTrue(
                 np.allclose(
-                    im.get_cmap().get_bad(), matplotlib.colors.to_rgba("dimgray")
+                    im.get_cmap().get_bad(), matplotlib.colors.to_rgba("darkred")
                 )
             )
             self.assertTrue(np.any(im.get_array().mask))

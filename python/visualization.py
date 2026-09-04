@@ -62,7 +62,7 @@ default_eps_parameters = {
     "frequency": None,
     "resolution": None,
     "colorbar": False,
-    "pec_color": "dimgrey",
+    "pec_color": "darkred",
 }
 
 default_colorbar_parameters = {
