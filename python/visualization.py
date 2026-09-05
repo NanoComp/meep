@@ -583,7 +583,7 @@ def _add_colorbar(
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     if colorbar_parameters is None:
-        colorbar_parameters = copy.deepcopy(default_colorbar_parameters)
+        colorbar_parameters = copy.copy(default_colorbar_parameters)
     else:
         colorbar_parameters = dict(default_colorbar_parameters, **colorbar_parameters)
 
@@ -692,7 +692,10 @@ def plot_eps(
         # Metals / perfect electric conductors have eps = -inf (see python/meep.i,
         # where mp.inf is the sentinel 1e20), which would otherwise saturate the
         # color scale. Mask them out so that the scale is set by the finite
-        # permittivities, and draw them in `pec_color` instead.
+        # permittivities, and draw them in `pec_color` instead. Note that the
+        # default `pec_color` is deliberately not a gray: the default `cmap`
+        # ('binary') spans every gray, so a gray would be indistinguishable from
+        # some finite permittivity.
         eps_data = np.ma.masked_where(
             ~np.isfinite(eps_data) | (eps_data <= -mp.inf), eps_data
         )
@@ -1097,7 +1100,7 @@ def plot_1d_index(
 ) -> Union[Axes, Any]:
     """Plots the refractive-index profile n(z) of a 1D simulation."""
     if index_parameters is None:
-        index_parameters = default_1d_index_parameters
+        index_parameters = copy.copy(default_1d_index_parameters)
     else:
         index_parameters = dict(default_1d_index_parameters, **index_parameters)
 
