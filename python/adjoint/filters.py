@@ -5,7 +5,7 @@ transforms.
 """
 
 import sys
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from autograd import numpy as npa
@@ -714,6 +714,9 @@ def smoothed_projection(
     beta: float,
     eta: float,
     resolution: float,
+    resolution_simulation: Optional[float] = None,
+    erosion_dilation: float = 0.0,
+
 ):
     """Project using subpixel smoothing, which allows for β→∞.
 
@@ -749,6 +752,10 @@ def smoothed_projection(
         eta: The threshold point in the range [0, 1].
         resolution: resolution of the design grid (not the Meep grid
             resolution).
+        resolution_simulation: resolution of the meep grid.
+        erosion_dilation: erosion (negative) or dilation (positive) transform to
+            apply to the final projected design in "meep units"; The resolution
+            scaling is applied automatically.
     Returns:
         The projected and smoothed output.
 
@@ -765,12 +772,13 @@ def smoothed_projection(
         >>> rho_filtered = conic_filter(rho, filter_radius, Lx, Ly, resolution)
         >>> rho_projected = smoothed_projection(rho_filtered, beta, eta_i, resolution)
     """
+    if resolution_simulation is None:
+        resolution_simulation = resolution
+    
     # Note that currently, the underlying assumption is that the smoothing
     # kernel is a circle, which means dx = dy.
     dx = dy = 1 / resolution
     R_smoothing = 0.55 * dx
-
-    rho_projected = tanh_projection(rho_filtered, beta=beta, eta=eta)
 
     # Compute the spatial gradient (using finite differences) of the *filtered*
     # field, which will always be smooth and is the key to our approach. This
@@ -793,6 +801,11 @@ def smoothed_projection(
         npa.where(nonzero_norm, rho_filtered_grad_helper, 1)
     )
     rho_filtered_grad_norm_eff = npa.where(nonzero_norm, rho_filtered_grad_norm, 1)
+
+    # Account for an erosion or dilation
+    rho_filtered = rho_filtered - erosion_dilation * npa.where(nonzero_norm, rho_filtered_grad_norm, 0)
+    
+    rho_projected = tanh_projection(rho_filtered, beta=beta, eta=eta)
 
     # The distance for the center of the pixel to the nearest interface
     d = (eta - rho_filtered) / rho_filtered_grad_norm_eff
