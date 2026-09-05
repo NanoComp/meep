@@ -3,6 +3,7 @@
 # boundary conditions. Checks for subdomain plots.
 #
 # Also tests the animation run function, mp4 output, jshtml output, and git output.
+import importlib.util
 import os
 import unittest
 from subprocess import call
@@ -18,6 +19,7 @@ matplotlib.use("agg")  # Set backend for consistency and to pull pixels quickly
 import io
 
 from matplotlib import pyplot as plt
+from matplotlib.contour import ContourSet
 
 
 def hash_figure(fig):
@@ -326,6 +328,94 @@ class TestVisualization(unittest.TestCase):
         if mp.am_master():
             hash_figure(f)
             # self.assertAlmostEqual(hash_figure(f),68926258)
+
+    @staticmethod
+    def setup_pec_sim():
+        return mp.Simulation(
+            cell_size=mp.Vector3(6, 6),
+            resolution=20,
+            geometry=[
+                mp.Block(
+                    size=mp.Vector3(2, 2),
+                    center=mp.Vector3(-1.2),
+                    material=mp.Medium(epsilon=12),
+                ),
+                mp.Block(
+                    size=mp.Vector3(2, 2),
+                    center=mp.Vector3(1.2),
+                    material=mp.metal,
+                ),
+            ],
+            sources=[
+                mp.Source(
+                    src=mp.ContinuousSource(frequency=0.15),
+                    component=mp.Ez,
+                    center=mp.Vector3(0, -2),
+                )
+            ],
+        )
+
+    def test_plot2D_pec(self):
+        # Metals have eps = -inf, which must not saturate the color scale of
+        # the finite-permittivity materials plotted alongside them.
+        sim = self.setup_pec_sim()
+
+        f = plt.figure()
+        ax = sim.plot2D(ax=f.gca(), eps_parameters={"colorbar": True})
+        if mp.am_master():
+            im = ax.get_images()[0]
+
+            # The metal pixels are masked out of the color scale...
+            self.assertTrue(np.all(np.isfinite(im.get_clim())))
+            self.assertAlmostEqual(im.get_clim()[0], 1)
+            self.assertAlmostEqual(im.get_clim()[1], 12)
+
+            # ...and drawn in the (opaque) `pec_color` instead.
+            self.assertTrue(
+                np.allclose(
+                    im.get_cmap().get_bad(), matplotlib.colors.to_rgba("darkred")
+                )
+            )
+            self.assertTrue(np.any(im.get_array().mask))
+
+            # The default pec_color must not coincide with any color of the
+            # default colormap, which is grayscale and therefore spans every
+            # gray; otherwise metals look like some finite permittivity.
+            ramp = im.get_cmap()(np.linspace(0, 1, 256))[:, :3]
+            pec_rgb = np.array(matplotlib.colors.to_rgb("darkred"))
+            self.assertGreater(np.min(np.linalg.norm(ramp - pec_rgb, axis=1)), 0.25)
+
+            # The module-level defaults must not have been mutated.
+            self.assertEqual(mp.visualization.default_eps_parameters["cmap"], "binary")
+
+        # A user-specified color is honored.
+        f = plt.figure()
+        ax = sim.plot2D(ax=f.gca(), eps_parameters={"pec_color": "red"})
+        if mp.am_master():
+            self.assertTrue(
+                np.allclose(
+                    ax.get_images()[0].get_cmap().get_bad(),
+                    matplotlib.colors.to_rgba("red"),
+                )
+            )
+
+    @unittest.skipIf(
+        importlib.util.find_spec("contourpy") is None, "contourpy is not installed"
+    )
+    def test_plot2D_pec_contour(self):
+        # The contour path must not emit the metal's -inf as a contour level:
+        # the geometry only has the two finite permittivities 1 and 12, so the
+        # smallest level is 1. Without masking the metal it would be -mp.inf.
+        sim = self.setup_pec_sim()
+        f = plt.figure()
+        ax = sim.plot2D(ax=f.gca(), eps_parameters={"contour": True})
+        if mp.am_master():
+            contours = [c for c in ax.collections if isinstance(c, ContourSet)]
+            self.assertEqual(len(contours), 1)
+            levels = contours[0].levels
+            self.assertTrue(np.all(np.isfinite(levels)))
+            self.assertGreaterEqual(np.min(levels), 1)
+            self.assertLessEqual(np.max(levels), 12)
 
     @unittest.skipIf(call(["which", "ffmpeg"]) != 0, "ffmpeg is not installed")
     def test_animation_output(self):
