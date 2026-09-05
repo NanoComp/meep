@@ -19,6 +19,7 @@
 #include <map>
 #include <stdlib.h>
 #include <complex>
+#include <vector>
 
 #include "meep.hpp"
 #include "meep/mympi.hpp"
@@ -407,9 +408,30 @@ void fields::connect_the_chunks() {
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
   finished_working();
 
+  /* In the common case with no periodic boundaries or symmetry transforms,
+     only chunks intersecting i's one-pixel halo can own one of its not-owned
+     boundary points.  Keep the original all-pairs scan for the more subtle
+     periodic and symmetry-reduced cases. */
+  bool prune_chunk_pairs = S.multiplicity() == 1;
+  LOOP_OVER_DIRECTIONS(gv.dim, d) {
+    if (boundaries[High][d] == Periodic) prune_chunk_pairs = false;
+  }
+  std::vector<std::vector<int> > chunk_candidates(num_chunks);
+  std::vector<bool> chunk_needed(num_chunks, false);
+  for (int i = 0; i < num_chunks; ++i) {
+    const grid_volume padded_i = chunks[i]->gv.pad();
+    for (int j = 0; j < num_chunks; ++j) {
+      if (!prune_chunk_pairs || padded_i.intersect_with(chunks[j]->gv)) {
+        chunk_candidates[i].push_back(j);
+        if (chunks[i]->is_mine() || chunks[j]->is_mine()) chunk_needed[i] = true;
+      }
+    }
+  }
+
   comm_sizes.clear();
   const size_t num_reals_per_voxel = is_real ? 1 : 2;
   for (int i = 0; i < num_chunks; i++) {
+    if (!chunk_needed[i]) continue;
     // First count the border elements...
     const grid_volume vi = chunks[i]->gv;
     FOR_COMPONENTS(corig) {
@@ -419,7 +441,7 @@ void fields::connect_the_chunks() {
           // We're looking at a border element...
           complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here))
-            for (int j = 0; j < num_chunks; j++) {
+            for (const int j : chunk_candidates[i]) {
               const std::pair<int, int> pair_j_to_i{j, i};
               if ((chunks[i]->is_mine() || chunks[j]->is_mine()) && chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
@@ -478,6 +500,7 @@ void fields::connect_the_chunks() {
 
   // Next start setting up the connections...
   for (int i = 0; i < num_chunks; i++) {
+    if (!chunk_needed[i]) continue;
     const grid_volume &vi = chunks[i]->gv;
 
     FOR_COMPONENTS(corig) {
@@ -487,7 +510,7 @@ void fields::connect_the_chunks() {
           // We're looking at a border element...
           std::complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here)) {
-            for (int j = 0; j < num_chunks; j++) {
+            for (const int j : chunk_candidates[i]) {
               const std::pair<int, int> pair_j_to_i{j, i};
               const bool i_is_mine = chunks[i]->is_mine();
               const bool j_is_mine = chunks[j]->is_mine();
