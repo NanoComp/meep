@@ -24,6 +24,8 @@
 #include <assert.h>
 #include "config.h"
 #include <math.h>
+#include <algorithm>
+#include <vector>
 
 using namespace std;
 
@@ -123,6 +125,61 @@ void dft_near2far::scale_dfts(complex<double> scale) {
 
 typedef void (*greenfunc)(std::complex<double> *EH, const vec &x, double freq, double eps,
                           double mu, const vec &x0, component c0, std::complex<double> f0);
+
+/* Far-field approximation of green3d, valid when |x| >> |x0| and |x| >> wavelength.
+   Uses the approximation r = |x - x0| ≈ R - x_hat·x0, rhat ≈ x_hat, 1/r ≈ 1/R,
+   where R = |x| and x_hat = x/R. Near-field terms (1/r^2, 1/r^3) are dropped.
+
+   Precomputed per far-field point: xhat (unit vector), R (distance from origin),
+   k (wavevenumber), n (refractive index), Z (impedance), expfac_base = k*n/(4*pi*R) *
+   exp(i*(kR+pi/2)). Per source point, only a dot product and phase factor are needed. */
+static void green3d_farfield(std::complex<double> *EH, double xhat_x, double xhat_y, double xhat_z,
+                             double k, double impedance, const std::complex<double> &expfac_phase,
+                             const vec &x0, component c0, std::complex<double> f0, double eps,
+                             double mu) {
+  double dot = xhat_x * x0.x() + xhat_y * x0.y() + xhat_z * x0.z();
+  std::complex<double> expfac = expfac_phase * f0 * std::polar(1.0, -k * dot);
+
+  double px = 0, py = 0, pz = 0;
+  direction d = component_direction(c0);
+  if (d == meep::X)
+    px = 1;
+  else if (d == meep::Y)
+    py = 1;
+  else if (d == meep::Z)
+    pz = 1;
+  else
+    meep::abort("invalid source direction in green3d_farfield");
+
+  double pdotxhat = px * xhat_x + py * xhat_y + pz * xhat_z;
+  double tx = px - pdotxhat * xhat_x;
+  double ty = py - pdotxhat * xhat_y;
+  double tz = pz - pdotxhat * xhat_z;
+  double crx = xhat_y * pz - xhat_z * py;
+  double cry = xhat_z * px - xhat_x * pz;
+  double crz = xhat_x * py - xhat_y * px;
+
+  if (is_electric(c0)) {
+    std::complex<double> ef = expfac / eps;
+    EH[0] = ef * tx;
+    EH[1] = ef * ty;
+    EH[2] = ef * tz;
+    EH[3] = ef * crx / impedance;
+    EH[4] = ef * cry / impedance;
+    EH[5] = ef * crz / impedance;
+  }
+  else if (is_magnetic(c0)) {
+    std::complex<double> hf = expfac / mu;
+    EH[0] = -hf * crx * impedance;
+    EH[1] = -hf * cry * impedance;
+    EH[2] = -hf * crz * impedance;
+    EH[3] = hf * tx;
+    EH[4] = hf * ty;
+    EH[5] = hf * tz;
+  }
+  else
+    meep::abort("unrecognized source type in green3d_farfield");
+}
 
 /* Given the field f0 correponding to current-source component c0 at
    x0, compute the E/H fields EH[6] (6 components) at x for a frequency
@@ -348,14 +405,113 @@ void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, d
   }
 }
 
-void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, double greencyl_tol) {
+static int next_pow2(int n) {
+  int p = 1;
+  while (p < n)
+    p *= 2;
+  return p;
+}
+
+static void fft1d_inplace(std::complex<double> *data, int n, int sign) {
+  for (int i = 1, j = 0; i < n; i++) {
+    int bit = n >> 1;
+    while (j & bit) {
+      j ^= bit;
+      bit >>= 1;
+    }
+    j ^= bit;
+    if (i < j) std::swap(data[i], data[j]);
+  }
+  for (int len = 2; len <= n; len *= 2) {
+    double ang = sign * 2 * pi / len;
+    std::complex<double> wn(cos(ang), sin(ang));
+    for (int i = 0; i < n; i += len) {
+      std::complex<double> w(1.0);
+      for (int j = 0; j < len / 2; j++) {
+        std::complex<double> u = data[i + j];
+        std::complex<double> v = data[i + j + len / 2] * w;
+        data[i + j] = u + v;
+        data[i + j + len / 2] = u - v;
+        w *= wn;
+      }
+    }
+  }
+}
+
+static void fft2d_inplace(std::complex<double> *data, int n1, int n2, int sign) {
+  for (int i = 0; i < n1; i++)
+    fft1d_inplace(data + i * n2, n2, sign);
+  std::vector<std::complex<double> > col(n1);
+  for (int j = 0; j < n2; j++) {
+    for (int i = 0; i < n1; i++)
+      col[i] = data[i * n2 + j];
+    fft1d_inplace(col.data(), n1, sign);
+    for (int i = 0; i < n1; i++)
+      data[i * n2 + j] = col[i];
+  }
+}
+
+// 1d cubic-convolution (Catmull-Rom) interpolation between p1 and p2, with p0,p3
+// the neighboring samples and t the fractional position in [0,1].
+static std::complex<double> catmull_rom(const std::complex<double> &p0,
+                                        const std::complex<double> &p1,
+                                        const std::complex<double> &p2,
+                                        const std::complex<double> &p3, double t) {
+  return 0.5 * ((2.0 * p1) + (-p0 + p2) * t + (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3) * (t * t) +
+                (-p0 + 3.0 * p1 - 3.0 * p2 + p3) * (t * t * t));
+}
+
+// Bicubic interpolation of the (periodic) 2d DFT array at fractional frequency
+// (f1,f2).  Bicubic error scales as O((1/oversample)^4), vs O((1/oversample)^2)
+// for bilinear, so the oversampled FFT can be evaluated off-grid much more
+// accurately at the same oversampling.
+static std::complex<double> fft2d_interp(const std::complex<double> *data, int n1, int n2,
+                                         double f1, double f2) {
+  f1 = fmod(f1, (double)n1);
+  if (f1 < 0) f1 += n1;
+  f2 = fmod(f2, (double)n2);
+  if (f2 < 0) f2 += n2;
+  int i0 = (int)floor(f1), j0 = (int)floor(f2);
+  double t1 = f1 - i0, t2 = f2 - j0;
+  std::complex<double> col[4];
+  for (int di = -1; di <= 2; ++di) {
+    int ii = ((i0 + di) % n1 + n1) % n1;
+    const std::complex<double> *row = data + ii * n2;
+    int j_1 = ((j0 - 1) % n2 + n2) % n2;
+    int j_0 = j0 % n2;
+    int j_p1 = (j0 + 1) % n2;
+    int j_p2 = (j0 + 2) % n2;
+    col[di + 1] = catmull_rom(row[j_1], row[j_0], row[j_p1], row[j_p2], t2);
+  }
+  return catmull_rom(col[0], col[1], col[2], col[3], t1);
+}
+
+static double xhat_component(double xhat_x, double xhat_y, double xhat_z, direction d) {
+  if (d == meep::X) return xhat_x;
+  if (d == meep::Y) return xhat_y;
+  if (d == meep::Z) return xhat_z;
+  return 0;
+}
+
+void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, double greencyl_tol,
+                                     bool far_field_approx) {
   if (x.dim != D3 && x.dim != D2 && x.dim != Dcyl)
     meep::abort("only 2d or 3d or cylindrical far-field computation is supported");
+  if (far_field_approx && x.dim != D3) meep::abort("far_field_approx is only supported for 3D");
   greenfunc green = x.dim == D2 ? green2d : green3d;
 
   const size_t Nfreq = freq.size();
   for (size_t i = 0; i < 6 * Nfreq; ++i)
     EH[i] = 0.0;
+
+  double R = 0, xhat_x = 0, xhat_y = 0, xhat_z = 0;
+  if (far_field_approx) {
+    R = abs(x);
+    double Rinv = 1.0 / R;
+    xhat_x = x.x() * Rinv;
+    xhat_y = x.y() * Rinv;
+    xhat_z = x.z() * Rinv;
+  }
 
   for (dft_chunk *f = F; f; f = f->next_in_dft) {
     assert(Nfreq == f->omega.size());
@@ -368,6 +524,16 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
 #endif
     for (size_t i = 0; i < Nfreq; ++i) {
       std::complex<double> EH6[6];
+
+      double k_ff = 0, impedance_ff = 0;
+      std::complex<double> expfac_base;
+      if (far_field_approx) {
+        double n_ref = sqrt(eps * mu);
+        k_ff = 2 * pi * freq[i] * n_ref;
+        impedance_ff = sqrt(mu / eps);
+        expfac_base = std::polar(k_ff * n_ref / (4 * pi * R), k_ff * R + pi * 0.5);
+      }
+
       size_t idx_dft = 0;
       LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
         IVEC_LOOP_LOC(f->fc->gv, x0);
@@ -382,7 +548,10 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
               xs.set_direction(periodic_d[1], x0.in_direction(periodic_d[1]) + i1 * period[1]);
             double phase = phase0 + i1 * periodic_k[1];
             std::complex<double> cphase = std::polar(1.0, phase);
-            if (x.dim == Dcyl)
+            if (far_field_approx)
+              green3d_farfield(EH6, xhat_x, xhat_y, xhat_z, k_ff, impedance_ff, expfac_base, xs, c0,
+                               f->dft[Nfreq * idx_dft + i], eps, mu);
+            else if (x.dim == Dcyl)
               greencyl(EH6, x, freq[i], eps, mu, xs, c0, f->dft[Nfreq * idx_dft + i], f->fc->m,
                        greencyl_tol);
             else
@@ -397,11 +566,12 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
   }
 }
 
-std::complex<double> *dft_near2far::farfield(const vec &x, double greencyl_tol) {
+std::complex<double> *dft_near2far::farfield(const vec &x, double greencyl_tol,
+                                             bool far_field_approx) {
   std::complex<double> *EH, *EH_local;
   const size_t Nfreq = freq.size();
   EH_local = new std::complex<double>[6 * Nfreq];
-  farfield_lowlevel(EH_local, x, greencyl_tol);
+  farfield_lowlevel(EH_local, x, greencyl_tol, far_field_approx);
   EH = new std::complex<double>[6 * Nfreq];
   sum_to_all(EH_local, EH, 6 * Nfreq);
   delete[] EH_local;
@@ -409,7 +579,8 @@ std::complex<double> *dft_near2far::farfield(const vec &x, double greencyl_tol) 
 }
 
 double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t *dims, size_t &N,
-                                          double resolution, double greencyl_tol) {
+                                          double resolution, double greencyl_tol,
+                                          bool far_field_approx) {
   /* compute output grid size etc. */
   double dx[3] = {0, 0, 0};
   direction dirs[3] = {X, Y, Z};
@@ -435,6 +606,260 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
   double *EH = new double[6 * 2 * N * Nfreq];
   double *EH_ = new double[6 * 2 * N * Nfreq]; // temp array for sum_to_all
 
+  bool use_fft = far_field_approx && where.dim == D3 && periodic_n[0] == 0 && periodic_n[1] == 0;
+
+  struct chunk_fft {
+    direction normal_d, d[2];
+    double face_pos, origin[2], spacing[2];
+    int n[2], nf[2];
+    component c0;
+    std::vector<std::complex<double> > fft_data;
+  };
+  std::vector<chunk_fft> cffts;
+
+  if (use_fft) {
+    const int oversample = 8;
+
+    for (dft_chunk *f = F; f && use_fft; f = f->next_in_dft) {
+      double inva = f->fc->gv.inva;
+      vec rshift(f->shift * (0.5 * inva));
+      component c0 = component(f->vc);
+
+      /* number of grid points along each Cartesian direction */
+      int nd[3];
+      for (int di = 0; di < 3; di++) {
+        direction d = direction(X + di);
+        nd[di] = (f->ie.in_direction(d) - f->is.in_direction(d)) / 2 + 1;
+      }
+
+      /* The near-field surface normal is the thinnest direction.  Note that a
+         near2far DFT chunk is generally 2 grid points thick along its normal,
+         because the tangential field component is offset by half a pixel on the
+         Yee grid.  We therefore cannot assume the normal has a single layer;
+         instead we treat the two remaining (in-plane) directions as transverse
+         and handle each normal layer as a separate planar "slice" (a current
+         sheet at its own normal coordinate, summed in the output loop below). */
+      int ni = 0;
+      for (int di = 1; di < 3; di++)
+        if (nd[di] < nd[ni]) ni = di;
+      direction normal_d = direction(X + ni);
+      direction d[2] = {NO_DIRECTION, NO_DIRECTION};
+      int n[2] = {1, 1};
+      for (int di = 0; di < 3; di++) {
+        if (di == ni) continue;
+        if (d[0] == NO_DIRECTION) {
+          d[0] = direction(X + di);
+          n[0] = nd[di];
+        }
+        else {
+          d[1] = direction(X + di);
+          n[1] = nd[di];
+        }
+      }
+
+      /* A near2far chunk is a full rectangular box, so slicing over the normal
+         (the thinnest direction) and FFT-ing the two transverse directions is
+         exact for any chunk shape, including thin edge slivers shared between
+         adjacent faces (e.g. a component tangential to two perpendicular
+         surfaces).  The only requirement for efficiency is that the normal be
+         thin; near2far surfaces are planar so this is always 1 or 2 layers.
+         Fall back to the exact direct summation only for the (unexpected) case
+         of a thick chunk, where slicing would not be faster. */
+      int n_normal = nd[ni];
+      if (n_normal > 8) {
+        use_fft = false;
+        break;
+      }
+
+      /* transverse origin (position of the is-corner) after symmetry transform */
+      vec pos0 = f->S.transform(f->fc->gv[f->is], f->sn) + rshift;
+      double origin[2] = {pos0.in_direction(d[0]), pos0.in_direction(d[1])};
+
+      /* transverse grid spacings (signed) after symmetry transform */
+      double spacing[2] = {inva, inva};
+      for (int i = 0; i < 2; i++) {
+        vec pos1(D3);
+        for (int di = 0; di < 3; di++) {
+          double val = f->is.in_direction(direction(X + di)) * 0.5 * inva;
+          if (direction(X + di) == d[i]) val += inva;
+          pos1.set_direction(direction(X + di), val);
+        }
+        pos1 = f->S.transform(pos1, f->sn) + rshift;
+        spacing[i] = pos1.in_direction(d[i]) - origin[i];
+      }
+
+      int nf[2] = {next_pow2(std::max(oversample * n[0], 2)),
+                   next_pow2(std::max(oversample * n[1], 2))};
+
+      /* one planar FFT per normal layer (slice) */
+      std::vector<chunk_fft> slices(n_normal);
+      for (int s = 0; s < n_normal; s++) {
+        chunk_fft &cf = slices[s];
+        cf.c0 = c0;
+        cf.normal_d = normal_d;
+        for (int i = 0; i < 2; i++) {
+          cf.d[i] = d[i];
+          cf.n[i] = n[i];
+          cf.nf[i] = nf[i];
+          cf.origin[i] = origin[i];
+          cf.spacing[i] = spacing[i];
+        }
+
+        /* normal coordinate of this slice after symmetry transform */
+        vec posN(D3);
+        for (int di = 0; di < 3; di++) {
+          double val = f->is.in_direction(direction(X + di)) * 0.5 * inva;
+          if (direction(X + di) == normal_d) val += s * inva;
+          posN.set_direction(direction(X + di), val);
+        }
+        posN = f->S.transform(posN, f->sn) + rshift;
+        cf.face_pos = posN.in_direction(normal_d);
+
+        cf.fft_data.assign((size_t)nf[0] * nf[1] * Nfreq, 0.0);
+      }
+
+      /* Scatter the chunk's DFT data into the per-slice transverse arrays using
+         the actual grid indices, so the mapping is independent of the
+         LOOP_OVER_IVECS iteration order. */
+      size_t idx_dft = 0;
+      LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
+        IVEC_LOOP_ILOC(f->fc->gv, iloc);
+        int s = (iloc.in_direction(normal_d) - f->is.in_direction(normal_d)) / 2;
+        int i[2] = {(iloc.in_direction(d[0]) - f->is.in_direction(d[0])) / 2,
+                    (iloc.in_direction(d[1]) - f->is.in_direction(d[1])) / 2};
+        std::complex<double> *base = slices[s].fft_data.data();
+        for (size_t fi = 0; fi < Nfreq; fi++)
+          base[fi * nf[0] * nf[1] + i[0] * nf[1] + i[1]] = f->dft[Nfreq * idx_dft + fi];
+        idx_dft++;
+      }
+
+      /* forward FFT each slice/frequency and store */
+      for (int s = 0; s < n_normal; s++) {
+        for (size_t fi = 0; fi < Nfreq; fi++)
+          fft2d_inplace(slices[s].fft_data.data() + fi * nf[0] * nf[1], nf[0], nf[1], -1);
+        cffts.push_back(std::move(slices[s]));
+      }
+    }
+  }
+
+  if (use_fft) {
+    for (size_t flat_idx = 0; flat_idx < N; flat_idx++) {
+      size_t fi2 = flat_idx % dims[2];
+      size_t fi1 = (flat_idx / dims[2]) % dims[1];
+      size_t fi0 = flat_idx / (dims[2] * dims[1]);
+
+      vec x_pt(where.dim);
+      x_pt.set_direction(dirs[0], where.in_direction_min(dirs[0]) + fi0 * dx[0]);
+      x_pt.set_direction(dirs[1], where.in_direction_min(dirs[1]) + fi1 * dx[1]);
+      x_pt.set_direction(dirs[2], where.in_direction_min(dirs[2]) * fi2 * dx[2]);
+
+      double R = abs(x_pt);
+      double Rinv = 1.0 / R;
+      double xhat_x = x_pt.x() * Rinv, xhat_y = x_pt.y() * Rinv, xhat_z = x_pt.z() * Rinv;
+
+      for (size_t fi = 0; fi < Nfreq; fi++) {
+        double n_ref = sqrt(eps * mu);
+        double k = 2 * pi * freq[fi] * n_ref;
+        double impedance = sqrt(mu / eps);
+        std::complex<double> expfac_base = std::polar(k * n_ref / (4 * pi * R), k * R + pi * 0.5);
+
+        std::complex<double> EH1[6] = {};
+        for (size_t ci = 0; ci < cffts.size(); ci++) {
+          const chunk_fft &cf = cffts[ci];
+          double xh_d1 = xhat_component(xhat_x, xhat_y, xhat_z, cf.d[0]);
+          double xh_d2 = xhat_component(xhat_x, xhat_y, xhat_z, cf.d[1]);
+          double xh_n = xhat_component(xhat_x, xhat_y, xhat_z, cf.normal_d);
+
+          double f1 = k * xh_d1 * cf.spacing[0] * cf.nf[0] / (2 * pi);
+          double f2 = k * xh_d2 * cf.spacing[1] * cf.nf[1] / (2 * pi);
+
+          const std::complex<double> *arr = cf.fft_data.data() + fi * cf.nf[0] * cf.nf[1];
+          std::complex<double> J_tilde = fft2d_interp(arr, cf.nf[0], cf.nf[1], f1, f2);
+
+          J_tilde *= std::polar(
+              1.0, -(k * xh_d1 * cf.origin[0] + k * xh_d2 * cf.origin[1] + k * xh_n * cf.face_pos));
+
+          double px = 0, py = 0, pz = 0;
+          direction d = component_direction(cf.c0);
+          if (d == meep::X)
+            px = 1;
+          else if (d == meep::Y)
+            py = 1;
+          else
+            pz = 1;
+
+          double pdotxhat = px * xhat_x + py * xhat_y + pz * xhat_z;
+          double tx = px - pdotxhat * xhat_x;
+          double ty = px - pdotxhat * xhat_y;
+          double tz = px - pdotxhat * xhat_z;
+          double crx = xhat_y * pz - xhat_z * py;
+          double cry = xhat_z * px - xhat_x * pz;
+          double crz = xhat_x * py - xhat_y * px;
+
+          if (is_electric(cf.c0)) {
+            std::complex<double> ef = J_tilde * expfac_base / eps;
+            EH1[0] += ef * tx;
+            EH1[1] += ef * ty;
+            EH1[2] += ef * tz;
+            EH1[3] += ef * crx / impedance;
+            EH1[4] += ef * cry / impedance;
+            EH1[5] += ef * crz / impedance;
+          }
+          else {
+            std::complex<double> hf = J_tilde * expfac_base / mu;
+            EH1[0] += -hf * crx * impedance;
+            EH1[1] += -hf * cry * impedance;
+            EH1[2] += -hf * crz * impedance;
+            EH1[3] += hf * tx;
+            EH1[4] += hf * ty;
+            EH1[5] += hf * tz;
+          }
+        }
+        ptrdiff_t idx = (fi0 * dims[1] + fi1) * dims[2] + fi2;
+        for (int kk = 0; kk < 6; ++kk) {
+          EH_[((kk * 2 + 0) * N + idx) * Nfreq + fi] = real(EH1[kk]);
+          EH_[((kk * 2 + 1) * N + idx) * Nfreq + fi] = imag(EH1[kk]);
+        }
+      }
+    }
+  }
+  else {
+    std::complex<double> *EH1 = new std::complex<double>[6 * Nfreq];
+
+    double start = wall_time();
+    size_t last_point = 0;
+
+    vec x(where.dim);
+    for (size_t i0 = 0; i0 < dims[0]; ++i0) {
+      x.set_direction(dirs[0], where.in_direction_min(dirs[0]) + i0 * dx[0]);
+      for (size_t i1 = 0; i1 < dims[1]; ++i1) {
+        x.set_direction(dirs[1], where.in_direction_min(dirs[1]) + i1 * dx[1]);
+        for (size_t i2 = 0; i2 < dims[2]; ++i2) {
+          x.set_direction(dirs[2], where.in_direction_min(dirs[2]) + i2 * dx[2]);
+          double t;
+          if (verbosity < 0 && (t = wall_time()) > start + MEEP_MIN_OUTPUT_TIME) {
+            size_t this_point = (dims[1] * i0 + i1) * dims[2] + i2 + 1;
+            master_printf(
+                "get_farfields_array working on point %zu of %zu (%d%% done), %g s/point\n",
+                this_point, N, (int)((double)this_point / N * 100),
+                (t - start) / (std::max(1, (int)(this_point - last_point))));
+            start = t;
+            last_point = this_point;
+          }
+          farfield_lowlevel(EH1, x, greencyl_tol, far_field_approx);
+          if (verbosity > 1) all_wait();
+          ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
+          for (size_t i = 0; i < Nfreq; ++i)
+            for (int k = 0; k < 6; ++k) {
+              EH_[((k * 2 + 0) * N + idx) * Nfreq + i] = real(EH1[i * 6 + k]);
+              EH_[((k * 2 + 1) * N + idx) * Nfreq + i] = imag(EH1[i * 6 + k]);
+            }
+        }
+      }
+    }
+    delete[] EH1;
+  }
+
   /* fields for farfield_lowlevel for a single output point x */
   std::complex<double> *EH1 = new std::complex<double>[6 * Nfreq];
 
@@ -457,7 +882,7 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
           start = t;
           last_point = this_point;
         }
-        farfield_lowlevel(EH1, x, greencyl_tol);
+        farfield_lowlevel(EH1, x, greencyl_tol, far_field_approx);
         if (verbosity > 1) all_wait(); // Allow consistent progress updates from master
         ptrdiff_t idx = (i0 * dims[1] + i1) * dims[2] + i2;
         for (size_t i = 0; i < Nfreq; ++i)
@@ -478,7 +903,6 @@ double *dft_near2far::get_farfields_array(const volume &where, int &rank, size_t
   rank = ireduced;
 
   delete[] EH_;
-  delete[] EH1;
   return EH;
 }
 
