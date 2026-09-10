@@ -1797,7 +1797,8 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         Animate2D
     )
     from .verbosity_mgr import (
-        Verbosity
+        Verbosity,
+        VerbosityLevel,
     )
 
     if with_mpi():

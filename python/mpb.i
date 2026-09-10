@@ -365,8 +365,8 @@ const int MPB_VERSION_PATCH;
 %pythoncode %{
     __version__ = (_mpb.cvar.MPB_VERSION_MAJOR, _mpb.cvar.MPB_VERSION_MINOR, _mpb.cvar.MPB_VERSION_PATCH)
 
-    from meep.verbosity_mgr import Verbosity
-    verbosity = Verbosity(_mpb.cvar, 'mpb', 1)
+    from meep.simulation import verbosity
+    verbosity.add_verbosity_var(_mpb.cvar, 'mpb', 1)
 
     from .solver import (
         MPBArray,

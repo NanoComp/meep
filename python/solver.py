@@ -9,8 +9,7 @@ import time
 import h5py
 import numpy as np
 from meep.geom import init_do_averaging
-from meep.simulation import get_num_args
-from meep.verbosity_mgr import Verbosity
+from meep.simulation import get_num_args, verbosity
 
 import meep as mp
 
@@ -24,8 +23,6 @@ except NameError:
 U_MIN = 0
 U_PROD = 1
 U_MEAN = 2
-
-verbosity = Verbosity(mp.cvar, "meep", 1)
 
 
 class MPBArray(np.ndarray):
