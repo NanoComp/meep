@@ -7820,26 +7820,9 @@ accessible as `meep.verbosity`. The `meep.mpb` package also has a verbosity
 flag in its C library, and it can also be managed via the `Verbosity` class
 after `meep.mpb` is imported.
 
-Each of those flags is reached through a `cvar` object, which is what SWIG
-calls the proxy it generates for a wrapped library's global variables.
-Reading or assigning `cvar.verbosity` reads or writes the corresponding
-C/C++ global directly, which is how this class controls the output of the
-compiled libraries from Python:
-
-* `meep.cvar.verbosity` is the C++ global `meep::verbosity`, declared in
-  `src/meep.hpp` and defined in `src/mympi.cpp`.
-* `meep.mpb.cvar.verbosity` is MPB's C global `mpb_verbosity`, which is
-  exposed under the shorter name by `%rename(verbosity) mpb_verbosity` in
-  `python/mpb.i`.
-
-Those `cvar` objects are exactly what gets passed to `Verbosity()` or to
-`add_verbosity_var()`.
-
 Note that this class is a Singleton, meaning that each call to create a new
 `Verbosity` actually gives you the same instance. Calling `Verbosity()` with
-no arguments simply returns that instance; passing a `cvar` or a `name` adds
-a new C `verbosity` flag to the list of flags managed by this class. New
-flags can also be added explicitly with `add_verbosity_var()`.
+no arguments simply returns that instance.
 
 The `Verbosity` instance can be used as a global verbosity controller, and
 assignments to any instance of `Verbosity` will set the global verbosity
