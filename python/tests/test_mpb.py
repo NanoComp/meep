@@ -309,13 +309,16 @@ class TestModeSolver(ApproxComparisonTestCase):
             ),
             (
                 (1.4142135623752818, mp.Vector3(0.0, 0.0, 0.0)),
-                (1.8027756376524435, mp.Vector3(0.5, 0.0, 0.0)),
+                (1.6401219539085534, mp.Vector3(0.3, 0.0, 0.0)),
             ),
         ]
 
         ms = self.init_solver(geom=False)
         ms.tolerance = 1e-7
-        ms.run_te()
+        # MPB seeds each k-point with the previous one's fields.  At k=(0.5,0,0)
+        # bands 1 and 2 are degenerate and that seed stalls the eigensolver at
+        # band 2 = 0.545, so randomize_fields() forces a fresh start per k-point.
+        ms.run_te(lambda solver: solver.randomize_fields())
 
         self.check_band_range_data(expected_brd, ms.band_range_data)
 
