@@ -230,11 +230,25 @@ class TestModeSolver(ApproxComparisonTestCase):
     def compare_h5_files(self, ref_path, res_path, tol=1e-3):
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, "r") as res:
-                for k in ref.keys():
+                keys = list(ref.keys())
+                # MPB splits a complex field into ".r"/".i" datasets because
+                # HDF5 has no complex type.  Compare the pair as one array: a
+                # phase-fixed field leaves ".i" a roundoff residual, and a
+                # relative tolerance on that alone compares noise to noise.
+                paired = {
+                    k[:-2] for k in keys if k.endswith(".r") and k[:-2] + ".i" in keys
+                }
+                for base in sorted(paired):
+                    x = ref[base + ".r"][()] + 1j * ref[base + ".i"][()]
+                    y = res[base + ".r"][()] + 1j * res[base + ".i"][()]
+                    self.assertClose(x, y, epsilon=tol, msg=f"dataset {base}")
+                for k in keys:
+                    if k[-2:] in (".r", ".i") and k[:-2] in paired:
+                        continue
                     if k == "description":
                         self.assertEqual(ref[k][()], res[k][()])
                     else:
-                        self.assertClose(ref[k][()], res[k][()], epsilon=1e-3)
+                        self.assertClose(ref[k][()], res[k][()], epsilon=tol)
 
     def test_update_band_range_data(self):
         brd = []
