@@ -2080,8 +2080,14 @@ material_type make_file_material(const char *eps_input_file) {
   if (eps_input_file && eps_input_file[0]) { // file specified
     char *fname = new char[strlen(eps_input_file) + 1];
     strcpy(fname, eps_input_file);
-    // parse epsilon-input-file as "fname.h5:dataname"
-    char *dataname = strrchr(fname, ':');
+    // parse epsilon-input-file as "fname.h5:dataname" (or "fname.hdf5:dataname").
+    // Splitting after the extension, not at any colon, keeps colons in the path
+    // (e.g. a Windows drive letter, "C:\dir\eps.h5") part of the filename.
+    char *dataname = NULL;
+    for (const char *ext : {".h5:", ".hdf5:"}) {
+      char *sep = strstr(fname, ext);
+      if (sep && (!dataname || sep < dataname)) dataname = sep + strlen(ext) - 1;
+    }
     if (dataname) *(dataname++) = 0;
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims

@@ -109,7 +109,7 @@ else
 endif
 
 TEST_EXTENSIONS = .py
-TESTS_ENVIRONMENT = export PYTHONPATH=$(abs_top_builddir)/python:$$PYTHONPATH;
+TESTS_ENVIRONMENT = export PYTHONPATH="`$(PYPATH_CONV) $(abs_top_builddir)/python`$(PYPATH_SEP)$$PYTHONPATH";
 
 ######################################################################
 # instructions for building the _meep binary library that implements
@@ -130,7 +130,7 @@ SWIG_WARN_FLAGS = -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-
 
 _meep_la_SOURCES = meep-python.cxx
 _meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
-_meep_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
+_meep_la_LDFLAGS = -module -no-undefined -avoid-version
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
 _meep_la_CXXFLAGS = -O1
 
@@ -148,8 +148,8 @@ if WITH_MPB
   pympb_PYTHON = mpb.py solver.py mpb_data.py
   pympb_LTLIBRARIES = _mpb.la
   _mpb_la_SOURCES = mpb-python.cxx
-  _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la
-  _mpb_la_LDFLAGS = -module -version-info @SHARED_VERSION_INFO@
+  _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la $(LIBMEEP)
+  _mpb_la_LDFLAGS = -module -no-undefined -avoid-version
   _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
   _mpb_la_CXXFLAGS = -O1
 
@@ -250,15 +250,16 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py
 
-PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
+PY_PKG_FILES = $(INIT_PY) $(HL_IFACE)
 
 meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
 	mkdir -p meep/adjoint
 	cp $(PY_PKG_FILES) meep
+	cp .libs/_meep$(PYMODULE_BUILT_EXT) meep/_meep$(PYMODULE_EXT)
 	cp $(adjoint_PYTHON) meep/adjoint
 if WITH_MPB
 	mkdir -p meep/mpb
-	cp .libs/_mpb.so meep/mpb
+	cp .libs/_mpb$(PYMODULE_BUILT_EXT) meep/mpb/_mpb$(PYMODULE_EXT)
 	cp $(MPB_PY_PATH) meep/mpb/__init__.py
 	cp $(srcdir)/solver.py $(srcdir)/mpb_data.py meep/mpb
 endif
