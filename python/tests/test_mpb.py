@@ -47,8 +47,7 @@ class TestModeSolver(ApproxComparisonTestCase):
     def tearDownClass(cls):
         mp.delete_directory(cls.temp_dir)
 
-    def init_solver(self, geom=True):
-        num_bands = 8
+    def init_solver(self, geom=True, num_bands=8):
         k_points = [mp.Vector3(), mp.Vector3(0.5), mp.Vector3(0.5, 0.5), mp.Vector3()]
 
         geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))] if geom else []
@@ -574,7 +573,10 @@ class TestModeSolver(ApproxComparisonTestCase):
         self.assertAlmostEqual(expected3, res3, places=3)
 
     def test_output_efield_z(self):
-        ms = self.init_solver()
+        # Bands 8 and 9 are degenerate at Gamma, so requesting exactly 8 bands
+        # leaves band 8 defined only up to mixing with band 9, and the field
+        # written below irreproducible.  Ten bands ends the block at a real gap.
+        ms = self.init_solver(num_bands=10)
         ms.run_tm()
         mpb.fix_efield_phase(ms, 8)
         mpb.output_efield_z(ms, 8)
