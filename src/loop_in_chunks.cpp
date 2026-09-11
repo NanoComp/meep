@@ -21,6 +21,7 @@
 #include <climits>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 /* This file contains a generic function for looping over all of the
@@ -338,6 +339,11 @@ void compute_boundary_weights(grid_volume gv, const volume &where, ivec &is, ive
 
 void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, const volume &where,
                             component cgrid, bool use_symmetry, bool snap_empty_dimensions) {
+  /* If a backend is steering this sim, make sure the host-side `f[c][cmp]`
+   * arrays the chunkloop will read are up-to-date.  No-op when no backend
+   * is loaded. */
+  sync_host_if_needed(this);
+
   if (coordinate_mismatch(gv.dim, cgrid))
     meep::abort("Invalid fields::loop_in_chunks grid type %s for dimensions %s\n",
                 component_name(cgrid), dimension_name(gv.dim));

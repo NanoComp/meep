@@ -23,6 +23,7 @@
 #include <complex>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 using namespace std;
@@ -83,6 +84,9 @@ fields::fields(structure *s, double m, double beta, bool zero_fields_near_cylori
         s->user_volume.num_direction(d) == 1)
       use_bloch(d, 0.0);
   }
+
+  // Notify any installed backend that this fields object is ready.
+  if (meep_backend.init) meep_backend.init(this);
 }
 
 fields::fields(const fields &thef)
@@ -125,9 +129,15 @@ fields::fields(const fields &thef)
     FOR_DIRECTIONS(d) { boundaries[b][d] = thef.boundaries[b][d]; }
   chunk_connections_valid = false;
   changed_materials = true;
+
+  // Notify any installed backend about the copied-in fields.
+  if (meep_backend.init) meep_backend.init(this);
 }
 
 fields::~fields() {
+  // Let the backend release per-sim and per-chunk state while the chunks
+  // are still alive (the backend may want to read fields_chunk::backend_state).
+  if (meep_backend.cleanup) meep_backend.cleanup(this);
   for (int i = 0; i < num_chunks; i++)
     delete chunks[i];
   delete[] chunks;
