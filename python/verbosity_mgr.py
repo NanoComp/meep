@@ -50,9 +50,8 @@ class Verbosity:
     flag in its C library, and it can also be managed via the `Verbosity` class
     after `meep.mpb` is imported.
 
-    Note that this class is a Singleton, meaning that each call to create a new
-    `Verbosity` actually gives you the same instance. Calling `Verbosity()` with
-    no arguments simply returns that instance.
+    Note that this class is a Singleton: every `Verbosity()` gives you the same
+    instance, the one already available as `meep.verbosity`.
 
     The `Verbosity` instance can be used as a global verbosity controller, and
     assignments to any instance of `Verbosity` will set the global verbosity

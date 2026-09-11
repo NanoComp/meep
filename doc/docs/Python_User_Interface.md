@@ -7820,9 +7820,8 @@ accessible as `meep.verbosity`. The `meep.mpb` package also has a verbosity
 flag in its C library, and it can also be managed via the `Verbosity` class
 after `meep.mpb` is imported.
 
-Note that this class is a Singleton, meaning that each call to create a new
-`Verbosity` actually gives you the same instance. Calling `Verbosity()` with
-no arguments simply returns that instance.
+Note that this class is a Singleton: every `Verbosity()` gives you the same
+instance, the one already available as `meep.verbosity`.
 
 The `Verbosity` instance can be used as a global verbosity controller, and
 assignments to any instance of `Verbosity` will set the global verbosity
@@ -7851,52 +7850,6 @@ overridden to one level quieter than the `meep` flag (see the RAII class
 `meep::adjust_mpb_verbosity` in `src/adjust_verbosity.hpp`). That adjustment
 is undone as soon as the call returns, so it is not observable from Python;
 it only affects how chatty MPB is during Meep's own eigenmode calculations.
-
-</div>
-
-
----
-
-<a id="Verbosity.__init__"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def __init__(cvar=None, name=None, initial_level=1):
-```
-
-<div class="method_docstring" markdown="1">
-
-See `add_verbosity_var()`
-
-</div>
-
-</div>
-
-
----
-
-<a id="Verbosity.add_verbosity_var"></a>
-
-<div class="class_members" markdown="1">
-
-```python
-def add_verbosity_var(cvar=None, name=None, initial_level=1):
-```
-
-<div class="method_docstring" markdown="1">
-
-Add a new verbosity flag to be managed. `cvar` is a SWIG `cvar` proxy
-for a wrapped library's global variables, such as `meep.cvar` or
-`meep.mpb.cvar` (see the class docstring for what those map onto in
-C/C++). Any object with a mutable `verbosity` attribute will do.
-
-The new flag is set to `initial_level` if it is the first one to be
-registered, and otherwise to the current global level, so that a flag
-registered late (for example by a deferred `import meep.mpb`) does not
-quietly ignore a verbosity level that has already been chosen.
-
-</div>
 
 </div>
 

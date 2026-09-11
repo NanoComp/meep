@@ -869,8 +869,6 @@ The following classes are available directly via the `meep` package.
 @@ PadeDFT[methods-with-docstrings] @@
 
 @@ Verbosity @@
-@@ Verbosity.__init__ @@
-@@ Verbosity.add_verbosity_var @@
 @@ Verbosity.get @@
 @@ Verbosity.set @@
 @@ Verbosity.temporary @@
