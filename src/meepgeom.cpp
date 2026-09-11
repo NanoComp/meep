@@ -14,6 +14,7 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+#include <ctype.h>
 #include <algorithm>
 #include <vector>
 #include "meepgeom.hpp"
@@ -2082,6 +2083,11 @@ material_type make_file_material(const char *eps_input_file) {
     strcpy(fname, eps_input_file);
     // parse epsilon-input-file as "fname.h5:dataname"
     char *dataname = strrchr(fname, ':');
+#ifdef _WIN32
+    // An absolute Windows path begins with a drive letter, e.g. "C:\dir\eps.h5";
+    // that colon is part of the path, not the "file.h5:dataname" separator.
+    if (dataname == fname + 1 && isalpha((unsigned char)fname[0])) dataname = NULL;
+#endif
     if (dataname) *(dataname++) = 0;
     meep::h5file eps_file(fname, meep::h5file::READONLY, false);
     int rank; // ignored since rank < 3 is equivalent to singleton dims

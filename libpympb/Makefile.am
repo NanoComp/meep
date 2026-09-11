@@ -10,5 +10,5 @@ pkginclude_HEADERS = pympb.hpp
 
 libpympb_la_SOURCES = pympb.cpp pympb.hpp
 libpympb_la_LIBADD = $(LIBMEEP)
-libpympb_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+libpympb_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@
 libpympb_la_CPPFLAGS = $(AM_CPPFLAGS)

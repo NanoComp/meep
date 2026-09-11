@@ -9,6 +9,14 @@
 #include <meep.hpp>
 #include "meep_internals.hpp"
 #include "config.h"
+
+#ifdef _WIN32
+/* POSIX sync() has no Windows equivalent; the HDF5 file is closed before it is
+   reopened below, so flushing the C streams is sufficient here. */
+#include <io.h>
+#define sync() _flushall()
+#endif
+
 using namespace meep;
 using std::complex;
 using std::max;
