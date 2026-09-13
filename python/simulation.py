@@ -5149,24 +5149,75 @@ class Simulation:
         return vis.plot_fields(self, **kwargs)
 
     def plot3D(
-        self, save_to_image: bool = False, image_name: str = "sim.png", **kwargs
+        self,
+        save_to_image: bool = False,
+        image_name: str = "sim.png",
+        backend: str = "native",
+        html_name: Optional[str] = None,
+        **kwargs,
     ):
         """
-        Uses vispy to render a 3D scene of the simulation object. The simulation object must be 3D.
-        Can also be embedded in Jupyter notebooks.
+        Renders a 3D scene of the simulation object. The simulation object must be 3D.
 
-        Args:
-            save_to_image: if True, saves the image to a file
-            image_name: the name of the image file to save to
+        Two backends are available:
 
-        kwargs: Camera settings.
-            scale_factor: float, camera zoom factor
-            azimuth: float, azimuthal angle in degrees
-            elevation: float, elevation angle in degrees
+        * `"native"` (default) uses [vispy](https://vispy.org) to open an interactive
+          OpenGL window on the desktop, and is the only backend that supports
+          `save_to_image`.
+
+        * `"html"` uses [plotly](https://plotly.com/python) to build a viewer that
+          supports rotate (left-drag), pan (right-drag), and zoom (scroll) inside a
+          browser. Individual classes of object — each material, the sources, the
+          monitors, the PML, and the cell — can be toggled from the legend. Passing
+          `html_name` writes a self-contained HTML document that can be opened
+          directly or embedded in a page using an `iframe` object, and implies
+          `backend="html"`. Without `html_name` the figure is displayed inline when
+          running under Jupyter and in a new browser tab otherwise.
+
+        **Parameters:**
+
+        * `save_to_image`: if True, saves the image to a file. `"native"` backend only.
+        * `image_name`: the name of the image file to save to.
+        * `backend`: `"native"` or `"html"`.
+        * `html_name`: path of the HTML document to write. Implies `backend="html"`.
+
+        **kwargs for the `"native"` backend: Camera settings.**
+
+        * `scale_factor`: float, camera zoom factor
+        * `azimuth`: float, azimuthal angle in degrees
+        * `elevation`: float, elevation angle in degrees
+
+        **kwargs for the `"html"` backend:**
+
+        * `grid_resolution`: float, samples per unit length used to extract the
+            material isosurfaces. Defaults to the simulation resolution.
+        * `max_grid_points`: int, upper bound on the total number of samples. The
+            sampling grid is scaled down uniformly if `grid_resolution` would
+            exceed it, since every vertex is serialized into the document.
+        * `opacity`: float, opacity of the material isosurfaces. Note that plotly
+            depth-sorts translucent surfaces per-trace rather than per-fragment,
+            so pass 1.0 if overlapping materials render incorrectly.
+        * `azimuth`: float, azimuthal angle in degrees
+        * `elevation`: float, elevation angle in degrees,
+        * `zoom`: float, camera zoom factor; larger is closer
+        * `title`: str, title drawn above the scene
+        * `include_plotlyjs`: bool or str, how plotly.js is bundled into the HTML.
+            True (default) inlines it, making the document self-contained but
+            adding several MB; `"cdn"` loads it from the network instead.
+        * `show`: bool, whether to display the figure when `html_name` is not given
+
+        Returns the vispy canvas or the plotly `Figure`, depending on the backend.
         """
         import meep.visualization as vis
 
-        return vis.plot3D(self, save_to_image, image_name, **kwargs)
+        return vis.plot3D(
+            self,
+            save_to_image,
+            image_name,
+            backend=backend,
+            html_name=html_name,
+            **kwargs,
+        )
 
     def visualize_chunks(self):
         """

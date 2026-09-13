@@ -504,6 +504,70 @@ class TestVisualization(unittest.TestCase):
         )  # Check gif output
         Animate_xz.to_jshtml(10)  # Check jshtml output
 
+    @unittest.skipIf(
+        importlib.util.find_spec("plotly") is None
+        or importlib.util.find_spec("skimage") is None,
+        "plot3D's html backend requires plotly and scikit-image",
+    )
+    def test_plot3D_html(self):
+        # The html backend renders offscreen, so unlike the native (vispy)
+        # backend it can be exercised without a display.
+        sim = setup_sim(8)
+        fig = sim.plot3D(backend="html", show=False)
+
+        # One trace per material isosurface, plus the sources, the monitors,
+        # the PML, and the cell.
+        self.assertEqual(
+            {trace.name for trace in fig.data},
+            {"ε = 12", "sources", "monitors", "PML", "cell"},
+        )
+
+        # Boxes of the same class share a legend entry so they toggle together.
+        self.assertEqual(sum(trace.showlegend for trace in fig.data), 5)
+
+        # Every vertex must lie inside the cell.
+        xmin, xmax, ymin, ymax, zmin, zmax = mp.visualization.box_vertices(
+            sim.geometry_center, sim.cell_size, sim.is_cylindrical
+        )
+        for trace in fig.data:
+            for coords, lo, hi in (
+                (trace.x, xmin, xmax),
+                (trace.y, ymin, ymax),
+                (trace.z, zmin, zmax),
+            ):
+                # wireframe traces separate their segments with None
+                finite = [c for c in coords if c is not None]
+                self.assertGreaterEqual(min(finite), lo)
+                self.assertLessEqual(max(finite), hi)
+
+        # The sampling grid is scaled down to respect max_grid_points.
+        def vertex_count(**kwargs):
+            data = sim.plot3D(backend="html", show=False, **kwargs).data
+            return sum(len(t.x) for t in data if t.type == "mesh3d")
+
+        self.assertLess(vertex_count(max_grid_points=16**3), vertex_count())
+
+        if mp.am_master():
+            html_name = os.path.join(self.temp_dir, "test_plot3D.html")
+            sim.plot3D(html_name=html_name)
+            with open(html_name) as f:
+                html = f.read()
+            # a self-contained document: plotly.js is inlined rather than
+            # pulled from the network by a <script src=...> tag
+            self.assertIn("Plotly.newPlot", html)
+            self.assertNotIn("<script src=", html)
+
+        def test_plot3D_bad_arguments(self):
+            sim = setup_sim(8)
+            with self.assertRaises(ValueError):
+                sim.plot3D(backend="not-a-backend")
+            with self.assertRaises(ValueError):
+                # save_to_image is native-only
+                sim.plot3D(backend="html", save_to_image=True)
+            with self.assertRaises(ValueError):
+                # a 2D cell would render as a flattened, misleading scene
+                setup_sim(0).plot3D(backend="html")
+
     """
     Travis does not play well with Mayavi
     def test_3D_mayavi(self):
