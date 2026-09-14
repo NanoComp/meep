@@ -120,8 +120,13 @@ EXTRA_DIST = $(BUILT_SOURCES) meep.i meep-python.hpp typemap_utils.cpp materials
 CLEANFILES = .coverage
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)
 
+# -I$(top_builddir)/src finds the generated meep/meep-config.h in a VPATH
+# build. It is listed in src/Makefile.am's pkginclude_HEADERS, so a release
+# tarball ships a copy next to the sources and $(top_srcdir)/src is enough;
+# a Git checkout has no such copy.
 AM_CPPFLAGS = -I$(top_srcdir)/src               \
-              -I$(top_srcdir)/libpympb		\
+              -I$(top_builddir)/src             \
+              -I$(top_srcdir)/libpympb          \
               -I$(top_builddir) # for config.h
 
 LIBMEEP = $(top_builddir)/src/libmeep.la
