@@ -1,0 +1,106 @@
+name: build wheels
+
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - setup.py
+      - tools/wheels/**
+      - .github/workflows/wheels.yml
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+
+concurrency:
+  group: wheels-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheels:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: manylinux x86_64
+            os: ubuntu-latest
+            archs: x86_64
+          - name: manylinux aarch64
+            os: ubuntu-24.04-arm
+            archs: aarch64
+          # No Intel macOS job: macos-13 has been retired, and the oldest Intel
+          # image still offered is macOS 15, which would force a 15.0 deployment
+          # floor, excluding exactly the older Intel machines that would want
+          # the wheel. Those users have the Conda package.
+          - name: macOS arm64
+            os: macos-14
+            archs: arm64
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # version.sh reads the Git history for alpha builds
+      - uses: pypa/cibuildwheel@v3.2.0
+        env:
+          CIBW_ARCHS: ${{ matrix.archs }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.archs }}
+          path: wheelhouse/*.whl
+
+  sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install build-time tools
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install autoconf automake libtool swig
+      - run: pipx run build --sdist
+
+      # Building the tarball only proves it can be created. Check that it
+      # actually carries what setup.py reaches for, or a missing file ships
+      # silently and only breaks for whoever runs `pip install --no-binary`.
+      - name: Check the sdist is complete
+        run: |
+          python - <<'PY'
+          import glob, sys, tarfile
+          sdist = glob.glob("dist/*.tar.gz")[0]
+          names = {n.split("/", 1)[1] for n in tarfile.open(sdist).getnames() if "/" in n}
+          required = [
+              "configure.ac", "Makefile.am", "autogen.sh", "version.sh",
+              "setup.py", "pyproject.toml", "README.md", "LICENSE", "COPYRIGHT",
+              "src/Makefile.am", "python/Makefile.am", "python/meep.i",
+              "libpympb/Makefile.am", "scheme/Makefile.am", "tests/Makefile.am",
+              "tools/wheels/build_deps.sh", "tools/wheels/smoke_test.py",
+              "tools/wheels/_dispatch.py",
+          ]
+          missing = [f for f in required if f not in names]
+          if missing:
+              sys.exit("sdist is missing: " + ", ".join(missing))
+          print(f"{sdist}: {len(names)} files, all required inputs present")
+          PY
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  publish:
+    name: publish to PyPI
+    needs: [wheels, sdist]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # trusted publishing; no API token stored in the repo
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1

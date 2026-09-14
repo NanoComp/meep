@@ -116,6 +116,21 @@ This will show something like `1.11.0-1-g415bc8eb` where the first three digits 
 
 To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), using the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) will *not* work without the dependencies. A possible workaround is [Conda-Pack](https://github.com/conda/conda-pack).
 
+PyPI Packages
+-------------
+
+Binary wheels are published to PyPI under the name [pymeep](https://pypi.org/project/pymeep/) (the import name is still `meep`), so Meep can be installed into an existing Python environment without Conda:
+
+```bash
+pip install pymeep
+```
+
+Wheels are available on CPython 3.10 and later for Linux (x86-64 and aarch64) and for Apple silicon macOS (14 and later). They bundle their own copies of MPB, Harminv, libctlgeom, HDF5, FFTW, GSL and LAPACK, so nothing else has to be installed first.
+
+There is no Intel macOS wheel: the vendored Homebrew bottles fix how old a macOS the wheel may claim, and the oldest Intel runner still available would put that floor at macOS 15 â€” past the point where the machines wanting it are still supported. Intel Macs are served by the [Conda package](#conda-packages) or a [build from source](Build_From_Source.md).
+
+The wheels do **not** include the Scheme interface, which must be [built from source](Build_From_Source.md). This matches the Conda packages.
+
 Installation on Linux
 -------------------------
 
@@ -138,8 +153,8 @@ The first steps are:
 -   Run the following commands in the terminal to compile and install the prerequisites. This may take a while to complete because it will install lots of other stuff first
 
 ```sh
-brew doctor
-brew install hdf5 guile fftw gsl libpng autoconf automake libtool swig
+brewÂ doctor
+brewÂ installÂ hdf5Â guileÂ fftw gsl libpng autoconf automake libtool swig
 ```
 If you don't have your own Python installation (e.g. via [miniforge](https://github.com/conda-forge/miniforge)), you should install `numpy` and `matplotlib` and other packages used by Meep and its tests:
 ```sh
@@ -149,7 +164,7 @@ HDF5_DIR="$(brew --prefix hdf5)" pip3 install numpy matplotlib scipy autograd ja
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
 ```sh
-./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" PYTHON=python3 && make && sudo make install
+./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib"Â PYTHON=python3 &&Â makeÂ &&Â sudo makeÂ install
 ```
 
 Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).  Note that if you are installing from a `git clone` rather than from a release `.tar.gz` file, you will need to first run `sh autogen.sh`, and you should add `--enable-maintainer-mode` to the `configure` arguments.

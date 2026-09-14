@@ -1,0 +1,124 @@
+# PEP 517 packaging for the Meep Python interface.
+#
+# The distribution is named `pymeep` (matching the Conda package); the import
+# name stays `meep`. The PyPI name `meep` belongs to an unrelated project.
+#
+# This file drives binary wheel builds only; the canonical build system is
+# still autotools.  setup.py shells out to ./configure && make and packages the
+# `python/meep` tree that python/Makefile.am already assembles.
+
+[build-system]
+# numpy is a *build* requirement, not just a runtime one: Meep's configure
+# probes for numpy/arrayobject.h and silently disables the Python wrappers
+# without it ("configure: WARNING: disabling Python wrappers"), producing a
+# wheel with no extension modules in it.  The wrappers use the numpy C API, so
+# the runtime floor below matches the version built against.
+requires = ["setuptools>=77", "wheel", "numpy>=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pymeep"
+dynamic = ["version"]
+description = "Free finite-difference time-domain (FDTD) software for electromagnetic simulations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE", "COPYRIGHT"]
+authors = [{ name = "Simpetus and the Meep contributors" }]
+keywords = ["FDTD", "electromagnetism", "photonics", "nanophotonics", "simulation"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS :: MacOS X",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+# `import meep` pulls in numpy, scipy and matplotlib at module scope
+# (python/simulation.py), so these are hard requirements, not extras.
+dependencies = [
+  "numpy>=2.0,<3",
+  "scipy",
+  "matplotlib",
+  # h5py vendors its own libhdf5 and so does this wheel, so two different HDF5
+  # major versions end up mapped into one process.  auditwheel/delocate mangle
+  # each SONAME and extension modules are dlopened RTLD_LOCAL, which keeps the
+  # symbol namespaces apart; verified on manylinux_2_28 with h5py's HDF5 2.0.0
+  # against Meep's 1.14, running test_dump_load.
+  "h5py",
+]
+
+[project.optional-dependencies]
+adjoint = ["autograd", "jax", "jaxlib", "nlopt"]
+test = ["pytest", "parameterized", "trimesh"]
+
+[project.urls]
+Homepage = "https://meep.readthedocs.io"
+Documentation = "https://meep.readthedocs.io"
+Source = "https://github.com/NanoComp/meep"
+Issues = "https://github.com/NanoComp/meep/issues"
+
+# ---------------------------------------------------------------------------
+# Binary wheel builds (cibuildwheel)
+# ---------------------------------------------------------------------------
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+# musllinux would need the whole dependency stack rebuilt against musl, and the
+# 32-bit/big-endian targets have no realistic FDTD users.
+skip = "*-musllinux_* *_i686 *_ppc64le *_s390x"
+build-frontend = "build"
+test-requires = ["pytest", "parameterized"]
+test-command = "python {project}/tools/wheels/smoke_test.py"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "bash {project}/tools/wheels/build_deps.sh"
+# mpi4py and mpich let the smoke test exercise the parallel build under a real
+# launcher, which is the only way to catch ranks that never join one communicator.
+# No --strip: setup.py strips our binaries before patchelf touches them, and
+# stripping after patchelf can leave a library the loader refuses to map.
+repair-wheel-command = "LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:/tmp/meep-wheel-libs auditwheel repair -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.linux.environment]
+MEEP_DEPS_PREFIX = "/usr/local"
+MEEP_WHEEL_LIBS = "/tmp/meep-wheel-libs"
+# Each interpreter builds in its own tree, so without these two the compile
+# command and the -g working directory differ every time and ccache never hits.
+# With them, src/ is compiled once per variant and reused: measured 77 of 81
+# compiles served from cache on the second interpreter.
+CCACHE_BASEDIR = "/project"
+CCACHE_NOHASHDIR = "1"
+CPPFLAGS = "-I/usr/local/include"
+LDFLAGS = "-L/usr/local/lib -L/usr/local/lib64"
+PKG_CONFIG_PATH = "/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig"
+LD_LIBRARY_PATH = "/usr/local/lib:/usr/local/lib64"
+
+[tool.cibuildwheel.macos]
+before-all = "bash {project}/tools/wheels/build_deps.sh"
+repair-wheel-command = "DYLD_LIBRARY_PATH=$HOME/meep-deps/lib:/tmp/meep-wheel-libs delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
+
+[tool.cibuildwheel.macos.environment]
+MEEP_DEPS_PREFIX = "$HOME/meep-deps"
+MEEP_WHEEL_LIBS = "/tmp/meep-wheel-libs"
+CPPFLAGS = "-I$HOME/meep-deps/include -I/opt/homebrew/include -I/usr/local/include"
+LDFLAGS = "-L$HOME/meep-deps/lib -L/opt/homebrew/lib -L/usr/local/lib"
+PKG_CONFIG_PATH = "$HOME/meep-deps/lib/pkgconfig:/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig"
+
+# What macOS a wheel can claim is decided by the Homebrew bottles it vendors: a
+# bottle is built for the exact macOS of the machine that poured it, and delocate
+# refuses to put a dylib into a wheel whose tag promises an older OS than the
+# dylib's own LC_BUILD_VERSION.  The floor below is therefore a property of the
+# runner image in .github/workflows/wheels.yml, macos-14, and has to move with
+# it.  A newer image raises the floor for everyone installing the wheel, so the
+# oldest image that still builds arm64 is the one to use.
+#
+# Nothing cheaper is on offer: libgfortran and libquadmath come from the `gcc`
+# bottle, so a lower floor would mean rebuilding the vendored stack from
+# source, GCC's runtime libraries included.
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx_arm64"
+inherit.environment = "append"
+environment.MACOSX_DEPLOYMENT_TARGET = "14.0"
