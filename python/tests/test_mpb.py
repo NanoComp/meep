@@ -47,8 +47,7 @@ class TestModeSolver(ApproxComparisonTestCase):
     def tearDownClass(cls):
         mp.delete_directory(cls.temp_dir)
 
-    def init_solver(self, geom=True):
-        num_bands = 8
+    def init_solver(self, geom=True, num_bands=8):
         k_points = [mp.Vector3(), mp.Vector3(0.5), mp.Vector3(0.5, 0.5), mp.Vector3()]
 
         geometry = [mp.Cylinder(0.2, material=mp.Medium(epsilon=12))] if geom else []
@@ -230,11 +229,25 @@ class TestModeSolver(ApproxComparisonTestCase):
     def compare_h5_files(self, ref_path, res_path, tol=1e-3):
         with h5py.File(ref_path) as ref:
             with h5py.File(res_path, "r") as res:
-                for k in ref.keys():
+                keys = list(ref.keys())
+                # MPB splits a complex field into ".r"/".i" datasets because
+                # HDF5 has no complex type.  Compare the pair as one array: a
+                # phase-fixed field leaves ".i" a roundoff residual, and a
+                # relative tolerance on that alone compares noise to noise.
+                paired = {
+                    k[:-2] for k in keys if k.endswith(".r") and k[:-2] + ".i" in keys
+                }
+                for base in sorted(paired):
+                    x = ref[base + ".r"][()] + 1j * ref[base + ".i"][()]
+                    y = res[base + ".r"][()] + 1j * res[base + ".i"][()]
+                    self.assertClose(x, y, epsilon=tol, msg=f"dataset {base}")
+                for k in keys:
+                    if k[-2:] in (".r", ".i") and k[:-2] in paired:
+                        continue
                     if k == "description":
                         self.assertEqual(ref[k][()], res[k][()])
                     else:
-                        self.assertClose(ref[k][()], res[k][()], epsilon=1e-3)
+                        self.assertClose(ref[k][()], res[k][()], epsilon=tol)
 
     def test_update_band_range_data(self):
         brd = []
@@ -563,7 +576,10 @@ class TestModeSolver(ApproxComparisonTestCase):
         self.assertAlmostEqual(expected3, res3, places=3)
 
     def test_output_efield_z(self):
-        ms = self.init_solver()
+        # Bands 8 and 9 are degenerate at Gamma, so requesting exactly 8 bands
+        # leaves band 8 defined only up to mixing with band 9, and the field
+        # written below irreproducible.  Ten bands ends the block at a real gap.
+        ms = self.init_solver(num_bands=10)
         ms.run_tm()
         mpb.fix_efield_phase(ms, 8)
         mpb.output_efield_z(ms, 8)
