@@ -6,7 +6,12 @@ fields, and that the MPB-backed eigenmode machinery is present, the part
 most likely to go missing if libmpb was not picked up at configure time.
 """
 
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -87,5 +92,57 @@ assert np.isfinite(forward), alpha
 assert forward > 0, "eigenmode decomposition returned no forward power"
 
 print(f"|alpha+|^2 = {forward ** 2:.4g}")
+
+# If this wheel carries the MPI build, check it actually runs in parallel.
+# Loading it in-process is not enough: the failure worth catching is ranks that
+# each get their own MPI_COMM_WORLD and silently run the whole simulation N
+# times, which only shows up under a real launcher.
+parallel_so = Path(mp.__file__).parent / "_parallel" / "_meep.so"
+if not parallel_so.exists():
+    print("no parallel build in this wheel; skipping the MPI check")
+else:
+    mpiexec = shutil.which("mpiexec")
+    if mpiexec is None:
+        print("parallel build present but no mpiexec on PATH; skipping")
+    else:
+        probe = "import meep as mp; print(mp.MEEP_PARALLEL, mp.count_processors())"
+        out = subprocess.run(
+            [mpiexec, "-np", "2", sys.executable, "-m", "mpi4py", "-c", probe],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "MEEP_MPI": "1"},
+        )
+        # stderr carries the RuntimeWarning naming *why* the parallel build was
+        # skipped, which is the only useful thing when this fails in CI.
+        detail = f"stdout: {out.stdout!r}\nstderr: {out.stderr!r}"
+        assert out.returncode == 0, f"parallel run failed:\n{detail}"
+        assert (
+            "True 2" in out.stdout
+        ), f"expected the parallel build with 2 ranks\n{detail}"
+        print("parallel build: 2 ranks in one communicator")
+
+        # The opposite failure: MPI unavailable under a multi-rank launcher.
+        # Falling back to the serial build there would hand every rank the whole
+        # simulation, so Meep must refuse instead of warning. Simulated by
+        # putting a module that raises ImportError ahead of the real mpi4py.
+        with tempfile.TemporaryDirectory() as blocked:
+            Path(blocked, "mpi4py.py").write_text(
+                'raise ImportError("mpi4py blocked by the smoke test")\n'
+            )
+            out = subprocess.run(
+                [mpiexec, "-np", "2", sys.executable, "-c", "import meep"],
+                capture_output=True,
+                text=True,
+                env={**os.environ, "PYTHONPATH": blocked},
+            )
+            detail = f"stdout: {out.stdout!r}\nstderr: {out.stderr!r}"
+            assert out.returncode != 0, (
+                "a 2-rank job without mpi4py silently fell back to the serial "
+                f"build instead of failing\n{detail}"
+            )
+            assert (
+                "refusing" in out.stderr
+            ), f"expected Meep to refuse the silent serial fallback\n{detail}"
+        print("serial fallback under a multi-rank launcher: refused")
 
 print("smoke test passed")

@@ -51,6 +51,11 @@ dependencies = [
 
 [project.optional-dependencies]
 adjoint = ["autograd", "jax", "jaxlib", "nlopt"]
+# The parallel build needs mpi4py to locate libmpi, and an MPICH-ABI
+# runtime to link against. On a cluster, install mpi4py against the site
+# MPI instead: any MPICH derivative (MVAPICH, Intel MPI, HPE Cray MPICH)
+# provides the libmpi.so.12 the wheel expects.
+mpi = ["mpi4py", "mpich"]
 test = ["pytest", "parameterized", "trimesh"]
 
 [project.urls]
@@ -77,10 +82,12 @@ manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 before-all = "bash {project}/tools/wheels/build_deps.sh"
 # mpi4py and mpich let the smoke test exercise the parallel build under a real
-# launcher, which is the only way to catch ranks that never join one communicator.
+# launcher, which is the only way to catch ranks that never join one
+# communicator. The macOS table requires them for the same reason.
+test-requires = ["pytest", "parameterized", "mpi4py", "mpich"]
 # No --strip: setup.py strips our binaries before patchelf touches them, and
 # stripping after patchelf can leave a library the loader refuses to map.
-repair-wheel-command = "LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:/tmp/meep-wheel-libs auditwheel repair -w {dest_dir} {wheel}"
+repair-wheel-command = "LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:/tmp/meep-wheel-libs auditwheel repair --exclude libmpi.so.12 -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.linux.environment]
 MEEP_DEPS_PREFIX = "/usr/local"
@@ -91,6 +98,8 @@ MEEP_WHEEL_LIBS = "/tmp/meep-wheel-libs"
 # compiles served from cache on the second interpreter.
 CCACHE_BASEDIR = "/project"
 CCACHE_NOHASHDIR = "1"
+# Build the second, MPI-enabled copy of the extensions on Linux only.
+MEEP_BUILD_MPI = "1"
 CPPFLAGS = "-I/usr/local/include"
 LDFLAGS = "-L/usr/local/lib -L/usr/local/lib64"
 PKG_CONFIG_PATH = "/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig"
@@ -98,11 +107,23 @@ LD_LIBRARY_PATH = "/usr/local/lib:/usr/local/lib64"
 
 [tool.cibuildwheel.macos]
 before-all = "bash {project}/tools/wheels/build_deps.sh"
-repair-wheel-command = "DYLD_LIBRARY_PATH=$HOME/meep-deps/lib:/tmp/meep-wheel-libs delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
+test-requires = ["pytest", "parameterized", "mpi4py", "mpich"]
+# The -e flags keep MPICH out of the wheel, the same bargain as the Linux
+# --exclude. Both are needed: macOS mpicc links -lmpi -lpmpi, and "libpmpi" does
+# not contain the substring "libmpi", so one rule does not cover the other.
+# What is left behind is an @rpath reference with no rpath to resolve it, since
+# delocate strips the build tree's, and that is deliberate: meep/_dispatch.py
+# imports mpi4py.MPI first, which dlopens the launcher's libmpi (and libpmpi
+# with it), and dyld then matches the already-loaded images by install name.
+repair-wheel-command = "DYLD_LIBRARY_PATH=$HOME/meep-deps/lib:/tmp/meep-wheel-libs delocate-wheel -e libmpi -e libpmpi --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
 
 [tool.cibuildwheel.macos.environment]
 MEEP_DEPS_PREFIX = "$HOME/meep-deps"
 MEEP_WHEEL_LIBS = "/tmp/meep-wheel-libs"
+MEEP_BUILD_MPI = "1"
+# Unlike Linux, the dependency prefix is not already on PATH, and the MPI build
+# needs the mpicc that build_deps.sh installed there from the `mpich` wheel.
+PATH = "$HOME/meep-deps/bin:$PATH"
 CPPFLAGS = "-I$HOME/meep-deps/include -I/opt/homebrew/include -I/usr/local/include"
 LDFLAGS = "-L$HOME/meep-deps/lib -L/opt/homebrew/lib -L/usr/local/lib"
 PKG_CONFIG_PATH = "$HOME/meep-deps/lib/pkgconfig:/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig"

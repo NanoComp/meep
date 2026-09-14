@@ -95,6 +95,17 @@ def configure_fingerprint(args) -> str:
     return hashlib.sha256("\0".join(material).encode()).hexdigest()
 
 
+def want_mpi() -> bool:
+    """Whether to build the second, MPI-enabled copy of the extensions."""
+    return os.environ.get("MEEP_BUILD_MPI", "") not in ("", "0", "no", "false")
+
+
+# ELF and Mach-O solve the same problem, "which library is this, and what does
+# it load?", with different load commands and different tools, so the handful
+# of helpers below are the only places that care which one is underfoot.
+MACHO = sys.platform == "darwin"
+
+
 def patchelf(*args) -> str:
     out = subprocess.run(
         ["patchelf", *[str(a) for a in args]],
@@ -105,16 +116,110 @@ def patchelf(*args) -> str:
     return out.stdout.strip()
 
 
-def read_soname(lib: Path) -> str:
-    """The library's SONAME, or "" when it cannot be read.
+def otool(*args) -> str:
+    out = subprocess.run(
+        ["otool", *[str(a) for a in args]],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return out.stdout
 
-    OSError covers platforms with no patchelf at all; the caller falls back to
-    the file name, which is right for Mach-O where there is no SONAME anyway.
+
+def install_name_tool(*args) -> None:
+    """Rewrite Mach-O load commands, then restore the ad-hoc signature.
+
+    Editing a Mach-O file invalidates its code signature, and arm64 refuses to
+    map an image whose signature does not match its contents. delocate re-signs
+    whatever it rewrites during repair, but these edits happen before repair and
+    for the staged libraries they are the last edit before the loader sees them.
+    """
+    subprocess.run(
+        ["install_name_tool", *[str(a) for a in args]],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        ["codesign", "--force", "--sign", "-", str(args[-1])],
+        check=False,
+        capture_output=True,
+    )
+
+
+def read_install_id(lib: Path) -> str:
+    """The Mach-O install name (LC_ID_DYLIB), or "" for a bundle that has none.
+
+    `otool -D` echoes the file name first and then the id, so a one-line answer
+    means there was no id to print, which is the case for the .so bundles that
+    CPython loads as extension modules.
+    """
+    lines = otool("-D", lib).splitlines()
+    return lines[1].strip() if len(lines) > 1 else ""
+
+
+def read_soname(lib: Path) -> str:
+    """The name a consumer uses to ask for this library, or "" if unreadable.
+
+    ELF records a bare SONAME. Mach-O records an install name that is normally a
+    full path, but only its last component survives into the wheel, which is
+    what delocate names the copy it drops in .dylibs, so the basename is the
+    Mach-O answer to the same question.
+
+    OSError covers a platform with neither tool; the caller falls back to the
+    file name.
     """
     try:
+        if MACHO:
+            return Path(read_install_id(lib)).name
         return patchelf("--print-soname", lib)
     except (subprocess.CalledProcessError, OSError):
         return ""
+
+
+def suffixed(soname: str, suffix: str) -> str:
+    """Insert `suffix` into a library name, before the version and extension.
+
+    libmeep.so.38 -> libmeep_mpi.so.38, and libmeep.38.dylib -> libmeep_mpi.38
+    .dylib. Keyed on the name rather than the platform because macOS uses .so
+    for the extension-module bundles and .dylib for the libraries they link.
+    """
+    if ".dylib" in soname:
+        stem, dot, rest = soname.partition(".")
+    else:
+        stem, dot, rest = soname.partition(".so")
+    return f"{stem}{suffix}{dot}{rest}"
+
+
+def set_soname(lib: Path, name: str) -> None:
+    """Rename a staged library from the loader's point of view."""
+    if not MACHO:
+        patchelf("--set-soname", name, lib)
+        return
+    # A Mach-O id is a path into a build tree that will not exist at runtime and
+    # that delocate overwrites during repair anyway; only the basename carries
+    # meaning here, so keep the directory the build gave it and swap the name.
+    old = read_install_id(lib)
+    install_name_tool("-id", str(Path(old).with_name(name)) if old else name, lib)
+
+
+def read_needed(consumer: Path) -> list:
+    """The libraries a binary asks the loader for.
+
+    ELF gives bare SONAMEs; Mach-O gives the full path recorded in each
+    LC_LOAD_DYLIB. `otool -L` leads with the file's own install name, which is
+    not a dependency.
+    """
+    if not MACHO:
+        return patchelf("--print-needed", consumer).split()
+
+    install_id = read_install_id(consumer)
+    needed = []
+    for line in otool("-L", consumer).splitlines()[1:]:
+        path = line.split("(", 1)[0].strip()
+        if path and path != install_id:
+            needed.append(path)
+    return needed
 
 
 def strip_binaries(paths) -> None:
@@ -130,6 +235,30 @@ def strip_binaries(paths) -> None:
     for path in paths:
         if path.is_file() and not path.is_symlink():
             subprocess.run(["strip", "--strip-unneeded", str(path)], check=False)
+
+
+def retarget_needed(consumers, mapping: dict) -> None:
+    """Repoint each consumer at the renamed MPI libraries.
+
+    Both variants build a libmeep under the same name, and both loaders resolve
+    by name, so without this the two extension modules would bind to whichever
+    copy was found first.
+    """
+    for consumer in consumers:
+        for needed in read_needed(consumer):
+            new_name = mapping.get(Path(needed).name if MACHO else needed)
+            if not new_name:
+                continue
+            if MACHO:
+                # Keep the directory. It points into a build tree that is gone
+                # by the time anything loads this, but so does the serial
+                # build's: delocate resolves either one by basename through the
+                # DYLD_LIBRARY_PATH the repair command sets.
+                install_name_tool(
+                    "-change", needed, str(Path(needed).with_name(new_name)), consumer
+                )
+            else:
+                patchelf("--replace-needed", needed, new_name, consumer)
 
 
 def run(cmd, cwd, env=None) -> None:
@@ -149,24 +278,89 @@ class build_ext(_build_ext):
     """
 
     def run(self):
-        package_dir = self.build_meep()
+        package_dir = self.build_meep("serial")
 
         target = Path(self.build_lib) / "meep"
         if target.exists():
             shutil.rmtree(target)
         # copy2 keeps the executable bit on the .so files.
         shutil.copytree(package_dir, target, copy_function=shutil.copy2)
+        # Stripped here, as each binary lands and before anything rewrites it.
+        # The staged libraries and the MPI copies are stripped the same way at
+        # their own copy sites, so nothing is stripped twice or after patching.
+        strip_binaries(list(target.rglob("*.so")))
         self.stage_shared_libraries(package_dir.parent.parent)
 
-        # Everything we ship, stripped before repair rather than during it.
-        strip_binaries(list(target.rglob("*.so")) + list(WHEEL_LIBS.glob("*.so*")))
+        if want_mpi():
+            self.add_parallel_build(target)
+
+        self.install_dispatch(target)
 
     # internals -------------------------------------------------------------
 
-    def build_meep(self) -> Path:
+    def add_parallel_build(self, target: Path) -> None:
+        """Build a second, MPI-enabled copy and place it under meep/_parallel.
+
+        Both builds produce a libmeep under the same name, and neither repair
+        tool can hold two of those in one wheel: auditwheel resolves DT_NEEDED
+        by name, and delocate copies into .dylibs by basename and refuses a
+        collision outright. Renaming here, before repair, keeps the whole
+        thing inside cibuildwheel's ordinary one-build-one-repair flow.
+        """
+        if not (sys.platform.startswith("linux") or MACHO):
+            raise SystemExit(
+                f"error: MEEP_BUILD_MPI is supported on Linux and macOS, not "
+                f"{sys.platform}. Unset it, or build against your own MPI with "
+                "MEEP_CONFIGURE_ARGS='--with-mpi'."
+            )
+
+        package_dir = self.build_meep("mpi")
+        builddir = package_dir.parent.parent
+
+        parallel = target / "_parallel"
+        parallel.mkdir(parents=True, exist_ok=True)
+        # The file name stays _meep.so: the init symbol is PyInit__meep, so the
+        # module cannot simply be renamed. See tools/wheels/_dispatch.py.
+        shutil.copy2(package_dir / "_meep.so", parallel / "_meep.so")
+        mpb_src = package_dir / "mpb" / "_mpb.so"
+        if mpb_src.exists():
+            (parallel / "mpb").mkdir(exist_ok=True)
+            shutil.copy2(mpb_src, parallel / "mpb" / "_mpb.so")
+
+        # Before retarget_needed rewrites them, never after.
+        strip_binaries(list(parallel.rglob("*.so")))
+
+        if MACHO:
+            require("install_name_tool", "Install the Xcode command line tools.")
+        else:
+            require("patchelf", "Install patchelf (present in the manylinux images).")
+        renamed = self.stage_shared_libraries(builddir, suffix="_mpi")
+        # The staged MPI libs depend on each other too (libpympb needs libmeep),
+        # so they are consumers of the rename as much as the extensions are.
+        consumers = list(parallel.rglob("*.so"))
+        consumers += [WHEEL_LIBS / new for new in renamed.values()]
+        retarget_needed(consumers, renamed)
+
+    def install_dispatch(self, target: Path) -> None:
+        """Add the import-time serial/MPI selector to the package."""
+        shutil.copy2(
+            HERE / "tools" / "wheels" / "_dispatch.py", target / "_dispatch.py"
+        )
+
+        # meep/__init__.py is SWIG output with a version line appended by
+        # python/Makefile.am. Prepending here rather than changing that rule
+        # keeps the MPI wheel logic out of the autotools build entirely.
+        init = target / "__init__.py"
+        prelude = (
+            "from . import _dispatch as _meep_dispatch\n"
+            "MEEP_PARALLEL = _meep_dispatch.install()\n"
+        )
+        init.write_text(prelude + init.read_text(encoding="utf-8"), encoding="utf-8")
+
+    def build_meep(self, variant: str) -> Path:
         # The build is Python-ABI specific (Python.h, libpython), so cibuildwheel
         # reusing one container for several interpreters must not reuse one tree.
-        tag = f"{sysconfig.get_platform()}-{sys.implementation.cache_tag}"
+        tag = f"{sysconfig.get_platform()}-{sys.implementation.cache_tag}-{variant}"
         builddir = HERE / "build" / f"autotools-{tag}"
         builddir.mkdir(parents=True, exist_ok=True)
 
@@ -179,7 +373,7 @@ class build_ext(_build_ext):
                 cwd=HERE,
             )
 
-        configure_args = self.configure_args(builddir)
+        configure_args = self.configure_args(builddir, variant)
         fingerprint = configure_fingerprint(configure_args)
         stamp = builddir / ".meep-configure-stamp"
         configured = (
@@ -191,7 +385,13 @@ class build_ext(_build_ext):
             require(
                 "swig", "Install SWIG 4.x (needed to generate the Python bindings)."
             )
-            run([HERE / "configure", *configure_args], cwd=builddir)
+            env = None
+            if variant == "mpi":
+                # mpicc/mpicxx come from whatever MPI is on PATH; the `mpich`
+                # wheel installs them, and so does a system MPICH.
+                require("mpicc", "Install MPICH (pip install mpich) for the MPI build.")
+                env = {**os.environ, "CC": "mpicc", "CXX": "mpicxx"}
+            run([HERE / "configure", *configure_args], cwd=builddir, env=env)
             stamp.write_text(fingerprint)
 
         jobs = os.environ.get("MEEP_BUILD_JOBS") or str(os.cpu_count() or 1)
@@ -210,13 +410,14 @@ class build_ext(_build_ext):
             )
         return package_dir
 
-    def configure_args(self, builddir: Path) -> list:
+    def configure_args(self, builddir: Path, variant: str = "serial") -> list:
         args = [
             "--enable-maintainer-mode",  # regenerate the SWIG wrappers
             "--enable-shared",
             "--disable-static",
             "--without-scheme",  # no Guile inside a wheel
-            "--without-mpi",  # wheels cannot portably ship an MPI runtime
+            # libmpi is never vendored: it must be the one the launcher uses.
+            "--with-mpi" if variant == "mpi" else "--without-mpi",
             f"--prefix={builddir / 'install'}",
             f"PYTHON={sys.executable}",
         ]
@@ -245,17 +446,20 @@ class build_ext(_build_ext):
         return shlex.split(os.environ.get("MEEP_CONFIGURE_ARGS", ""))
 
     @staticmethod
-    def stage_shared_libraries(builddir: Path) -> None:
+    def stage_shared_libraries(builddir: Path, suffix: str = "") -> dict:
         """Copy libmeep/libpympb somewhere auditwheel and delocate can see.
 
-        Staged files are named by their SONAME, not by their on-disk name: a
-        consumer's DT_NEEDED says `libmeep.so.38` while libtool's .libs holds
-        that only as a symlink to libmeep.so.38.0.0, and symlinks are skipped
-        here.  Naming by SONAME is what lets the loader resolve against this
-        directory instead of relying on the RPATH into the build tree.
+        Staged files are named the way consumers ask for them, not the way
+        libtool left them on disk: a DT_NEEDED says `libmeep.so.38` while
+        .libs holds that only as a symlink to libmeep.so.38.0.0, and symlinks
+        are skipped here.  That naming is what lets the repair step resolve
+        against this directory instead of an RPATH into the build tree.
 
+        `suffix` distinguishes the MPI copies, whose names are otherwise
+        identical to the serial ones.  Returns {old name: new name}.
         """
         WHEEL_LIBS.mkdir(parents=True, exist_ok=True)
+        renamed = {}
         for subdir in ("src/.libs", "libpympb/.libs"):
             source = builddir / subdir
             if not source.is_dir():
@@ -265,8 +469,19 @@ class build_ext(_build_ext):
                     r"\.(so|dylib)(\.\d+)*$", lib.name
                 ):
                     continue
-                name = read_soname(lib) or lib.name
-                shutil.copy2(lib, WHEEL_LIBS / name)
+                soname = read_soname(lib) or lib.name
+                name = soname
+                if suffix:
+                    name = suffixed(soname, suffix)
+                    renamed[soname] = name
+                dest = WHEEL_LIBS / name
+                shutil.copy2(lib, dest)
+                # Strip first: set_soname rewrites the file, and stripping a
+                # rewritten one is the hazard strip_binaries describes.
+                strip_binaries([dest])
+                if suffix:
+                    set_soname(dest, name)
+        return renamed
 
 
 class egg_info(_egg_info):

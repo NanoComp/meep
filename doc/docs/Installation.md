@@ -127,9 +127,38 @@ pip install pymeep
 
 Wheels are available on CPython 3.10 and later for Linux (x86-64 and aarch64) and for Apple silicon macOS (14 and later). They bundle their own copies of MPB, Harminv, libctlgeom, HDF5, FFTW, GSL and LAPACK, so nothing else has to be installed first.
 
-There is no Intel macOS wheel: the vendored Homebrew bottles fix how old a macOS the wheel may claim, and the oldest Intel runner still available would put that floor at macOS 15 â€” past the point where the machines wanting it are still supported. Intel Macs are served by the [Conda package](#conda-packages) or a [build from source](Build_From_Source.md).
+There is no Intel macOS wheel: the vendored Homebrew bottles fix how old a macOS the wheel may claim, and the oldest Intel runner still available would put that floor at macOS 15 — past the point where the machines wanting it are still supported. Intel Macs are served by the [Conda package](#conda-packages) or a [build from source](Build_From_Source.md).
 
 The wheels do **not** include the Scheme interface, which must be [built from source](Build_From_Source.md). This matches the Conda packages.
+
+### Parallel (MPI) simulations
+
+The Linux and macOS wheels carry a second, MPI-enabled copy of the extension modules alongside the serial one, and pick between them when `meep` is imported. The parallel copy is built against the [MPICH ABI](https://www.mpich.org/abi/), so it works with MPICH itself or any ABI-compatible derivative: MVAPICH, Intel MPI, HPE Cray MPICH. `libmpi` is deliberately *not* bundled: it has to be the same one your launcher uses.
+
+```bash
+pip install "pymeep[mpi]"
+mpiexec -np 4 python -m mpi4py foo.py
+```
+
+Meep loads the parallel build when it detects that the job was launched under an MPI launcher with more than one process, or when `MEEP_MPI=1` is set explicitly. Plain `python foo.py` runs the serial build in a single process. `meep.MEEP_PARALLEL` reports which of the two is active.
+
+The `-m mpi4py` above is worth keeping for a separate reason: it makes an unhandled exception in one rank call `MPI_Abort` instead of leaving the other ranks deadlocked. See [Parallel Meep](Parallel_Meep.md).
+
+Open MPI is **not** ABI-compatible with MPICH. Launching the wheel under Open MPI's `mpirun` would otherwise give every rank its own `MPI_COMM_WORLD` and run the whole simulation N times over; Meep detects that mismatch and raises rather than letting it pass silently. On such a system, build against your own MPI:
+
+```bash
+MEEP_CONFIGURE_ARGS="--with-mpi" CC=mpicc CXX=mpicxx   pip install --no-binary pymeep pymeep
+```
+
+That is also the recommended route on clusters generally, where a fabric-tuned or GPU-aware site MPI will outperform a generic wheel.
+
+The optional adjoint-solver dependencies are not installed by default:
+
+```bash
+pip install "pymeep[adjoint]"
+```
+
+Installing the source distribution (`pip install --no-binary pymeep pymeep`) runs the ordinary Autotools build and therefore needs the full set of prerequisites described under [Building from Source](#building-from-source), plus SWIG.
 
 Installation on Linux
 -------------------------
@@ -153,8 +182,8 @@ The first steps are:
 -   Run the following commands in the terminal to compile and install the prerequisites. This may take a while to complete because it will install lots of other stuff first
 
 ```sh
-brewÂ doctor
-brewÂ installÂ hdf5Â guileÂ fftw gsl libpng autoconf automake libtool swig
+brew doctor
+brew install hdf5 guile fftw gsl libpng autoconf automake libtool swig
 ```
 If you don't have your own Python installation (e.g. via [miniforge](https://github.com/conda-forge/miniforge)), you should install `numpy` and `matplotlib` and other packages used by Meep and its tests:
 ```sh
@@ -164,7 +193,7 @@ HDF5_DIR="$(brew --prefix hdf5)" pip3 install numpy matplotlib scipy autograd ja
 Now, install the Harminv, libctl, MPB, and Meep packages from source. Download [Harminv](https://github.com/NanoComp/harminv/blob/master/README.md) and, in the `harminv` directory, do:
 
 ```sh
-./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib"Â PYTHON=python3 &&Â makeÂ &&Â sudo makeÂ install
+./configure CPPFLAGS="-I$(brew --prefix)/include" LDFLAGS="-L$(brew --prefix)/lib" PYTHON=python3 && make && sudo make install
 ```
 
 Use the same commands for [libctl](https://libctl.readthedocs.io), [MPB](https://mpb.readthedocs.io), (optionally) [h5utils](https://github.com/NanoComp/h5utils), (optionally) [libGDSII](https://github.com/HomerReid/libGDSII), and Meep. For more detailed information, see [Build From Source](Build_From_Source.md).  Note that if you are installing from a `git clone` rather than from a release `.tar.gz` file, you will need to first run `sh autogen.sh`, and you should add `--enable-maintainer-mode` to the `configure` arguments.
