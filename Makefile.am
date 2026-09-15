@@ -21,7 +21,7 @@ endif
 # after libpympb/python lets those directories start sooner with make -j
 SUBDIRS += tests
 
-EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh
+EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh pyproject.toml setup.py MANIFEST.in tools/wheels
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
