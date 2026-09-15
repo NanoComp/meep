@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 #include <complex>
 #include <vector>
 
@@ -35,6 +36,14 @@ vector3 v3(double x, double y = 0.0, double z = 0.0) {
 /* set_materials_from_geometry                                 */
 /***************************************************************/
 double dummy_eps(const vec &) { return 1.0; }
+
+// Use the same relative-error criterion as python/tests/utils.py.
+bool is_close(double x, double y, double epsilon) {
+  return fabs(x - y) <= epsilon * std::max(fabs(x), fabs(y));
+}
+bool is_close(std::complex<double> x, std::complex<double> y, double epsilon) {
+  return abs(x - y) <= epsilon * std::max(abs(x), abs(y));
+}
 
 /***************************************************************/
 /***************************************************************/
@@ -137,16 +146,53 @@ int main(int argc, char *argv[]) {
   std::complex<double> ref_amp[4] = {
       std::complex<double>(-6.40e-03, -2.81e-03), std::complex<double>(-1.42e-04, +6.78e-04),
       std::complex<double>(+3.99e-02, +4.09e-02), std::complex<double>(-1.98e-03, -1.43e-02)};
-  if (bands != ref_bands) meep::abort("harminv found only %i/%i bands\n", bands, ref_bands);
-  for (int nb = 0; nb < bands; nb++)
-    if ((fabs(freq_re[nb] - ref_freq_re[nb]) > 1.0e-2 * fabs(ref_freq_re[nb]) ||
-         fabs(freq_im[nb] - ref_freq_im[nb]) > 1.0e-2 * fabs(ref_freq_im[nb]) ||
-         abs(amp[nb] - ref_amp[nb]) > 1.0e-2 * abs(ref_amp[nb])) &&
-        (err[nb] < err_tol))
+  // Harminv fits frequency more reliably than decay constant and amplitude, so use
+  // separate relative tolerances for each quantity.
+  double freq_tol = 1.0e-2;
+  double amp_tol = 5.0e-2;
+  double decay_tol = 5.0e-1;
+
+  // This mode is close to a much stronger mode.  Small fitting differences can lower
+  // its estimated Q below do_harminv's acceptance threshold, leaving it unreported.
+  bool ref_required[4] = {true, false, true, true};
+
+  // Match by frequency rather than index: an absent marginal mode shifts later indexes.
+  // Reserve each match so overlapping frequency tolerances cannot hide a missing band.
+  bool matched[MAXBANDS] = {false};
+  for (int nr = 0; nr < ref_bands; nr++) {
+    int nb_match = -1;
+    for (int nb = 0; nb < bands; nb++)
+      if (!matched[nb] && is_close(freq_re[nb], ref_freq_re[nr], freq_tol) &&
+          (nb_match < 0 ||
+           fabs(freq_re[nb] - ref_freq_re[nr]) < fabs(freq_re[nb_match] - ref_freq_re[nr])))
+        nb_match = nb;
+
+    if (nb_match < 0) {
+      if (ref_required[nr]) meep::abort("harminv did not find the %e band\n", ref_freq_re[nr]);
+      continue;
+    }
+    matched[nb_match] = true;
+
+    if ((!is_close(amp[nb_match], ref_amp[nr], amp_tol) ||
+         !is_close(freq_im[nb_match], ref_freq_im[nr], decay_tol)) &&
+        err[nb_match] < err_tol)
       meep::abort("harminv band %i disagrees with ref: {re f, im f, re A, im A}={%e,%e,%e,%e}!= "
                   "{%e,%e,%e,%e}\n",
-                  nb, freq_re[nb], freq_im[nb], real(amp[nb]), imag(amp[nb]), ref_freq_re[nb],
-                  ref_freq_im[nb], real(ref_amp[nb]), imag(ref_amp[nb]));
+                  nb_match, freq_re[nb_match], freq_im[nb_match], real(amp[nb_match]),
+                  imag(amp[nb_match]), ref_freq_re[nr], ref_freq_im[nr], real(ref_amp[nr]),
+                  imag(ref_amp[nr]));
+  }
+
+  // Reject confident bands that do not match a reference.
+  for (int nb = 0; nb < bands; nb++) {
+    if (err[nb] >= err_tol) continue;
+    int nr;
+    for (nr = 0; nr < ref_bands; nr++)
+      if (is_close(freq_re[nb], ref_freq_re[nr], freq_tol)) break;
+    if (nr == ref_bands)
+      meep::abort("harminv found unexpected band %i at freq %e (err %e)\n", nb, freq_re[nb],
+                  err[nb]);
+  }
 
   master_printf("all harminv results match reference values\n");
 
