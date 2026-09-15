@@ -586,8 +586,6 @@ class Medium:
         return np.squeeze(epsmu)
 
 
-_material_grid_counter = itertools.count()
-
 _MATGRID_UNSUPPORTED = (
     ("mu_diag", (1, 1, 1)),
     ("mu_offdiag", (0, 0, 0)),
@@ -623,6 +621,8 @@ def _check_matgrid_medium(medium, name):
             f"set on {name}. It mixes only epsilon, E_susceptibilities and "
             "D_conductivity_diag; anything else would be silently ignored."
         )
+
+_material_grid_counter = itertools.count()
 
 
 class MaterialGrid:
