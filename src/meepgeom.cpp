@@ -741,6 +741,14 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
   extra_materials = geps1.extra_materials;
   current_pol = NULL;
 
+  // Parameters stashed for the gradient calculation.  Silently reverting these
+  // to their defaults in a copy would not fail, it would just quietly compute
+  // against a different operator than the original was built with.
+  u_p = geps1.u_p;
+  tol = geps1.tol;
+  maxeval = geps1.maxeval;
+  dt = geps1.dt;
+
   FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = geps1.cond[d][b].prof; }
 }
 geom_epsilon::~geom_epsilon() {
@@ -2085,6 +2093,7 @@ void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
   // through would make get_material_gradient() finite-difference a *smoothed*
   // operator that the forward solve never saw, so the adjoint gradient would not
   // be the derivative of the simulation being run.
+  geps->dt = s->dt;
   geps->tol = tol;
   geps->maxeval = use_anisotropic_averaging ? maxeval : 0;
 
@@ -2611,6 +2620,35 @@ void invert_tensor(std::complex<double> t_inv[9], std::complex<double> t[9]) {
 #undef minv
 }
 
+/* The factor by which D-conductivity scales the permittivity at `freq`.
+
+   Continuum: Ampere's law reads D(-i w + sigma) = curl, so factoring out the
+   time derivative gives 1 + i sigma / w.
+
+   The D update actually timestepped is
+
+     D' = ((1 - sigma dt/2) D + dcurl) / (1 + sigma dt/2)
+
+   (step_db.cpp, with condinv from structure.cpp).  Substituting
+   D ~ exp(-i w t) and dividing by exp(-i w dt/2) turns the bracket into
+
+     -(2/dt) sin(w dt/2) i + sigma cos(w dt/2)
+
+   i.e. w -> (2/dt) sin(w dt/2) and sigma -> sigma cos(w dt/2), so the factor
+   becomes 1 + i sigma (dt/2) cot(pi freq dt).  That differs from the continuum
+   form at O((freq*dt)^2); `dt = 0` selects the continuum form. */
+static std::complex<double> conductivity_factor(double sigma, double freq, double dt) {
+  if (sigma == 0) return std::complex<double>(1.0, 0.0);
+
+  double inv_omega;
+  if (dt > 0) {
+    double half_phase = meep::pi * freq * dt;
+    inv_omega = 0.5 * dt / std::tan(half_phase);
+  }
+  else { inv_omega = 1.0 / (2 * meep::pi * freq); }
+  return std::complex<double>(1.0, sigma * inv_omega);
+}
+
 void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, double freq,
                           geom_epsilon *geps) {
   // locate the proper material
@@ -2625,7 +2663,7 @@ void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, do
     vector3 dummy;
     dummy.x = dummy.y = dummy.z = 0.0;
     double conductivityCur = vec_to_value(mm->D_conductivity_diag, dummy, i);
-    a = std::complex<double>(1.0, conductivityCur / (2 * meep::pi * freq));
+    a = conductivity_factor(conductivityCur, freq, geps->dt);
 
     // compute lorentzian component including the instantaneous ε
     b = cvec_to_value(mm->epsilon_diag, mm->epsilon_offdiag, i);
@@ -2633,7 +2671,7 @@ void get_chi1_tensor_disp(std::complex<double> tensor[9], const meep::vec &r, do
       meep::lorentzian_susceptibility sus =
           meep::lorentzian_susceptibility(mm_susc.frequency, mm_susc.gamma, mm_susc.drude);
       double sigma = vec_to_value(mm_susc.sigma_diag, mm_susc.sigma_offdiag, i);
-      b += sus.chi1(freq, sigma);
+      b += sus.chi1_discrete(freq, sigma, geps->dt);
     }
 
     // elementwise multiply
@@ -2681,13 +2719,10 @@ std::complex<double> cond_cmp(meep::component c, const meep::vec &r, double freq
   // get the row we care about
   switch (component_direction(c)) {
     case meep::X:
-    case meep::R:
-      return std::complex<double>(1.0, mm->D_conductivity_diag.x / (2 * meep::pi * freq));
+    case meep::R: return conductivity_factor(mm->D_conductivity_diag.x, freq, geps->dt);
     case meep::Y:
-    case meep::P:
-      return std::complex<double>(1.0, mm->D_conductivity_diag.y / (2 * meep::pi * freq));
-    case meep::Z:
-      return std::complex<double>(1.0, mm->D_conductivity_diag.z / (2 * meep::pi * freq));
+    case meep::P: return conductivity_factor(mm->D_conductivity_diag.y, freq, geps->dt);
+    case meep::Z: return conductivity_factor(mm->D_conductivity_diag.z, freq, geps->dt);
     case meep::NO_DIRECTION: meep::abort("Invalid adjoint field component");
   }
 }

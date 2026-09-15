@@ -179,6 +179,11 @@ public:
   cond_profile cond[5][2]; // [direction][side]
   double tol = DEFAULT_SUBPIXEL_TOL;
   int maxeval = DEFAULT_SUBPIXEL_MAXEVAL;
+  /* Timestep of the structure these materials were installed in, so that the
+     adjoint solver can evaluate the dispersive response of the recurrence
+     actually being timestepped rather than of the continuum model.  Zero means
+     "not known", which selects the continuum form. */
+  double dt = 0;
 
   geom_epsilon(geometric_object_list g, material_type_list mlist, const meep::volume &v);
   geom_epsilon(const geom_epsilon &geps1); // copy constructor
