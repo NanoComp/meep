@@ -1,0 +1,199 @@
+name: run tests (windows)
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: 0 2 * * * # run at 2 AM UTC
+  workflow_dispatch:
+
+# Native Windows build via MSYS2/mingw-w64.  Notes on the choices here:
+#
+#  * UCRT64, not MINGW64: CPython 3.5+ links ucrtbase.dll, and mixing CRTs
+#    across a DLL boundary corrupts FILE*, errno and malloc/free.
+#
+#  * lt_cv_deplibs_check_method=pass_all is required.  Without it libtool goes
+#    looking for a *shared* -lmingw32, fails to find one, and silently
+#    downgrades every DLL to a static archive -- with make still exiting 0.
+#
+#  * libctl comes from a release tarball rather than git.  Its libctlgeom
+#    sources include geom-ctl-io.c, which a git checkout generates with the
+#    Guile-based gen-ctl-io; there is no native-Windows Guile, and the tarball
+#    ships that file pre-generated.  (Never run `make distclean` in the
+#    extracted tarball -- libctl's clean-local deletes geom-ctl-io.c.)
+#
+#  * The Scheme interface is not built (--without-scheme) for the same reason.
+#
+#  * libGDSII is omitted: it uses strcasestr, a GNU extension mingw-w64 does
+#    not provide, so GDSII import is unavailable here.
+
+env:
+  # Pinned so a libctl release cannot change the build underneath us.
+  LIBCTL_VERSION: 4.7.1
+
+jobs:
+  build:
+    name: "native windows (mingw-w64 UCRT64)"
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: 'msys2 {0}'
+
+    steps:
+    - name: Set up MSYS2 (UCRT64)
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        release: false
+        install: >-
+          make
+          patch
+          m4
+          curl
+          tar
+          autoconf-wrapper
+          autoconf2.72
+          automake-wrapper
+          automake1.18
+          libtool
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-gcc-fortran
+          mingw-w64-ucrt-x86_64-pkgconf
+          mingw-w64-ucrt-x86_64-hdf5
+          mingw-w64-ucrt-x86_64-gsl
+          mingw-w64-ucrt-x86_64-fftw
+          mingw-w64-ucrt-x86_64-openblas
+          mingw-w64-ucrt-x86_64-swig
+          mingw-w64-ucrt-x86_64-python
+          mingw-w64-ucrt-x86_64-python-numpy
+          mingw-w64-ucrt-x86_64-python-scipy
+          mingw-w64-ucrt-x86_64-python-matplotlib
+          mingw-w64-ucrt-x86_64-python-h5py
+          mingw-w64-ucrt-x86_64-python-pip
+          mingw-w64-ucrt-x86_64-python-parameterized
+          mingw-w64-ucrt-x86_64-python-pytest
+          mingw-w64-ucrt-x86_64-python-trimesh
+
+    - name: Checkout Meep repository
+      uses: actions/checkout@v7
+      with:
+        path: meep-src
+
+    # Everything else in python/requirements.txt is installed above as a native
+    # mingw package.  autograd is not packaged but is pure Python.  jax/jaxlib
+    # are deliberately absent: they publish no Windows wheels, and the only
+    # tests needing them live in ADJOINT_TESTS, which "make check" does not run.
+    - name: Install remaining Python test dependencies
+      run: python -m pip install --break-system-packages autograd
+
+    - name: Define common environment variables
+      run: |
+        echo "PREFIX=$(pwd)/local" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I$(pwd)/local/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L$(pwd)/local/lib" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=$(pwd)/local/lib/pkgconfig:${MINGW_PREFIX}/lib/pkgconfig" >> $GITHUB_ENV
+
+    - name: Checkout harminv repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/harminv
+        path: harminv-src
+
+    - name: Checkout MPB repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/mpb
+        path: mpb-src
+
+    - name: Record dependency revisions for the cache key
+      id: deps
+      run: |
+        echo "sha=$(cat harminv-src/.git/HEAD mpb-src/.git/HEAD | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache dependency builds
+      uses: actions/cache@v6
+      id: deps-cache
+      with:
+        path: local
+        key: deps-windows-ucrt64-libctl${{ env.LIBCTL_VERSION }}-${{ steps.deps.outputs.sha }}-${{ hashFiles('meep-src/.github/workflows/build-ci-windows.yml') }}
+
+    # harminv is built static on purpose: only libmeep links it, so it needs no
+    # DLL, and its configure.ac defaults shared libraries off anyway.
+    - name: Build and install harminv
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        cd harminv-src
+        sh autogen.sh --prefix=${PREFIX} --disable-shared --enable-static \
+          --with-blas=openblas --with-lapack=openblas
+        make -j $(nproc) && make install
+
+    # libctlgeom must be a DLL (libpympb and libmeep both use it; linking the
+    # static archive into both produces duplicate-symbol errors).  Upstream
+    # libctl omits -no-undefined from libctlgeom_la_LDFLAGS, so supply it on
+    # the make command line rather than patching the tree.
+    - name: Build and install libctl
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        curl -fsSL -o libctl.tar.gz \
+          "https://github.com/NanoComp/libctl/releases/download/v${LIBCTL_VERSION}/libctl-${LIBCTL_VERSION}.tar.gz"
+        tar xzf libctl.tar.gz
+        cd libctl-${LIBCTL_VERSION}
+        ./configure --prefix=${PREFIX} --without-guile --without-python \
+          --enable-shared --disable-static lt_cv_deplibs_check_method=pass_all
+        make -j $(nproc) libctlgeom_la_LDFLAGS="-no-undefined -avoid-version"
+        make install libctlgeom_la_LDFLAGS="-no-undefined -avoid-version"
+
+    # MPB already carries -no-undefined, so it needs no override.
+    - name: Build and install MPB
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: |
+        cd mpb-src
+        sh autogen.sh --prefix=${PREFIX} --without-libctl --without-hdf5 \
+          --enable-shared --disable-static lt_cv_deplibs_check_method=pass_all
+        make -j $(nproc) && make install
+
+    - name: Run configure
+      run: |
+        cd meep-src
+        sh autogen.sh --prefix=${PREFIX} --without-scheme \
+          --enable-shared --disable-static lt_cv_deplibs_check_method=pass_all
+
+    - name: Run make
+      run: cd meep-src && make -j $(nproc)
+
+    # Windows resolves a DLL's dependencies from the directory of the module
+    # that needs them, and Python 3.8+ ignores PATH for extension modules.
+    # Placing the runtime DLLs beside _meep.pyd is what a Windows wheel does,
+    # and it lets the test suite run with no environment fixup at all.
+    - name: Vendor runtime DLLs beside the extension modules
+      run: |
+        cd meep-src
+        for d in python/meep python/meep/mpb; do
+          test -d "$d" || continue
+          cp src/.libs/*.dll libpympb/.libs/*.dll ${PREFIX}/bin/*.dll "$d"/
+        done
+
+    - name: Run make check (C++)
+      run: cd meep-src/tests && make check
+
+    - name: Run make check (Python)
+      env:
+        MPLBACKEND: Agg
+        PYTHONUTF8: 1 # tests print "μm"; cp1252 cannot encode it
+      run: cd meep-src/python && make check
+
+    - name: Archive C++ test logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: cpp-tests-windows-log
+        path: ${{ github.workspace }}/meep-src/tests/test-suite.log
+
+    - name: Archive Python test logs
+      if: failure()
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-tests-windows-log
+        path: ${{ github.workspace }}/meep-src/python/test-suite.log
