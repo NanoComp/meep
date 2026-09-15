@@ -2,6 +2,21 @@
 
 ## Meep 1.35.0 (in progress)
 
+* Adjoint solver: sources can now be differentiated alongside the design
+  regions. A source opts in by naming parameters, as in
+  `differentiable=['beam_w0', 'beam_x0']`, and its gradient appears in the
+  returned dictionary under the source's `name`. It costs no extra simulation:
+  the derivative with respect to a source is the adjoint field sampled over that
+  source's support, which the existing adjoint run already produces.
+  `GaussianBeam3DSource` supports `beam_x0`, `beam_kdir`, `beam_w0` and
+  `beam_E0`, obtained by finite-differencing Meep's own beam construction, which
+  needs no additional FDTD runs. Any source's `amp_data` array is differentiable
+  too, with the adjoint applying the transpose of the trilinear interpolation
+  Meep uses to place it, so the gradient lands on the array the user supplied. A
+  source with `amp_data` passed to `MeepJaxWrapper` is differentiated
+  automatically, so a source computed in JAX backpropagates to whatever produced
+  it.
+
 * Adjoint solver: `meep.adjoint.AngularSpectrum` propagates the tangential DFT
   fields on a planar monitor through an arbitrary stratified medium
   analytically, in JAX. Unlike `add_near2far`, which requires a homogeneous

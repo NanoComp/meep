@@ -1425,6 +1425,14 @@ public:
   dft_fields(dft_chunk *chunks, const double *freq_, size_t Nfreq, const volume &where);
   std::vector<sourcedata> fourier_sourcedata(const volume &where, component c, fields &f,
                                              const std::complex<double> *dJ);
+  // transpose of fourier_sourcedata; see dft.cpp
+  void fourier_sourcegradient(const volume &where, component c, fields &f,
+                              std::complex<double> *grad);
+  // transpose of the add_volume_source / src_vol_chunkloop path; see dft.cpp
+  void volume_source_gradient(const volume &where, component c, fields &f,
+                              std::complex<double> *grad);
+  // the positions volume_source_gradient reports, in the same order
+  void monitor_positions(const volume &where, component c, fields &f, double *positions);
   void scale_dfts(std::complex<double> scale);
 
   void remove();
@@ -2185,6 +2193,7 @@ public:
   std::complex<double> get_field(component c, const vec &loc, bool parallel = true) const;
   double get_field(derived_component c, const vec &loc, bool parallel = true) const;
   std::vector<size_t> dft_monitor_size(dft_fields fdft, const volume &where, component c);
+  std::vector<size_t> dft_monitor_full_size(dft_fields fdft, const volume &where, component c);
   void get_dft_component_dims(dft_chunk **chunklists, int num_chunklists, component c,
                               ivec &min_corner, ivec &max_corner, size_t &array_size, size_t &bufsz,
                               int &rank, direction *ds, size_t *dims, int *array_rank = 0,
