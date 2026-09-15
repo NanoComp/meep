@@ -361,7 +361,10 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
       realnum *s0 = newsus->sigma[c][d0];
       realnum *s1 = newsus->sigma[c][d1];
       realnum *s2 = newsus->sigma[c][d2];
-      vec shift1(gv[unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1)]);
+      // Same half-pixel offdiagonal convention, and same one-pixel smoothing
+      // diameter, as the chi1inv loop in set_chi1inv() above.
+      const double smoothing_diameter = 1.0;
+      ivec shift1(unit_ivec(gv.dim, component_direction(c)) * (ft == E_stuff ? 1 : -1));
       // Use OpenMP parallelization when the material function is thread-safe
       // (i.e., pure C++ geometry, not a Python callback). The trivial[] flags
       // need a reduction since each thread computes its local subset.
@@ -371,9 +374,9 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
                            gv.big_corner() + gv.iyee_shift(c), i,
                            "omp parallel for collapse(3) reduction(&:trivial0,trivial1,trivial2)") {
           double sigrow[3], sigrow_offdiag[3];
-          IVEC_LOOP_LOC(gv, here);
-          sigma.sigma_row(c, sigrow, here);
-          sigma.sigma_row(c, sigrow_offdiag, here - shift1);
+          IVEC_LOOP_ILOC(gv, here);
+          sigma.eff_sigma_row(c, sigrow, gv.dV(here, smoothing_diameter));
+          sigma.eff_sigma_row(c, sigrow_offdiag, gv.dV(here - shift1, smoothing_diameter));
           sigrow[(idiag + 1) % 3] = sigrow_offdiag[(idiag + 1) % 3];
           sigrow[(idiag + 2) % 3] = sigrow_offdiag[(idiag + 2) % 3];
           if (s0) trivial0 &= (s0[i] = sigrow[0]) == 0.;
@@ -388,9 +391,9 @@ void structure_chunk::add_susceptibility(material_function &sigma, field_type ft
         // Serial path for non-thread-safe material functions (Python callbacks)
         LOOP_OVER_VOL(gv, c, i) {
           double sigrow[3], sigrow_offdiag[3];
-          IVEC_LOOP_LOC(gv, here);
-          sigma.sigma_row(c, sigrow, here);
-          sigma.sigma_row(c, sigrow_offdiag, here - shift1);
+          IVEC_LOOP_ILOC(gv, here);
+          sigma.eff_sigma_row(c, sigrow, gv.dV(here, smoothing_diameter));
+          sigma.eff_sigma_row(c, sigrow_offdiag, gv.dV(here - shift1, smoothing_diameter));
           sigrow[(idiag + 1) % 3] = sigrow_offdiag[(idiag + 1) % 3];
           sigrow[(idiag + 2) % 3] = sigrow_offdiag[(idiag + 2) % 3];
           if (s0 && (s0[i] = sigrow[0]) != 0.) trivial[0] = false;
