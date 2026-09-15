@@ -72,6 +72,7 @@ class SourceGradientMonitor:
         frequencies: np.ndarray,
         decimation_factor: Optional[int] = 0,
         component: Optional[int] = None,
+        pade_samples: int = 0,
     ):
         self.source = source
         # A Gaussian beam has no single component: it places four, so each gets
@@ -98,6 +99,7 @@ class SourceGradientMonitor:
         )
         self._check_not_in_pml(sim)
         self.decimation_factor = decimation_factor
+        self.pade_samples = pade_samples
         self._monitor = None
 
     def _check_not_in_pml(self, sim: mp.Simulation) -> None:
@@ -145,7 +147,22 @@ class SourceGradientMonitor:
             where=self.volume,
             yee_grid=True,
             decimation_factor=self.decimation_factor,
+            pade_samples=self.pade_samples,
         )
+
+    def get_pade_error(self):
+        """Delegate to the underlying DFT monitor.
+
+        The adjoint stopping criterion is handed every monitor whose
+        convergence the gradient depends on, including this one -- otherwise a
+        run could stop before the source cotangent has settled. This class wraps
+        a `DftFields` rather than being one, so forward the query.
+        """
+        if self._monitor is None:
+            raise RuntimeError(
+                "the monitor has not been registered yet; call register() first"
+            )
+        return self._monitor.get_pade_error()
 
     def num_points(self, sim: mp.Simulation) -> int:
         """How many grid points this source actually drives.
@@ -215,6 +232,7 @@ def install_source_gradient_monitors(
     sources: List,
     frequencies: np.ndarray,
     decimation_factor: Optional[int] = 0,
+    pade_samples: int = 0,
 ) -> List[SourceGradientMonitor]:
     """Install a DFT monitor over each differentiable source's support."""
     monitors = []
@@ -223,7 +241,12 @@ def install_source_gradient_monitors(
         # places four
         group = [
             SourceGradientMonitor(
-                sim, source, frequencies, decimation_factor, component=component
+                sim,
+                source,
+                frequencies,
+                decimation_factor,
+                component=component,
+                pade_samples=pade_samples,
             )
             for component in source_components(source, sim.dimensions)
         ]

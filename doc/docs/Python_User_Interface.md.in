@@ -104,6 +104,17 @@ Meep supports a large number of functions to perform computations on the fields.
 @@ Simulation.get_epsilon_grid @@
 @@ Simulation.initialize_field @@
 @@ Simulation.add_dft_fields @@
+
+All chunk-backed DFT monitor constructors (`add_dft_fields`, `add_flux`,
+`add_mode_monitor`, `add_force`, `add_energy`, and `add_near2far`) accept an
+optional `pade_samples` argument. A value of zero preserves ordinary DFT
+accumulation. A value of at least four retains that many recent samples in a
+bounded ring and adds a Padé estimate of the uncomputed future tail when the
+monitor is read. Call `monitor.get_pade_error()` to inspect the per-frequency
+relative correction, full-versus-half-history estimate, temporal drift,
+readiness, retained sample count, and rejected-fit count. A rejected fit falls
+back to the ordinary accumulated DFT value.
+
 @@ Simulation.flux_in_box @@
 @@ Simulation.electric_energy_in_box @@
 @@ Simulation.magnetic_energy_in_box @@
@@ -498,6 +509,7 @@ In particular, a useful value for `until_after_sources` or `until` is often `sto
 @@ stop_when_fields_decayed @@
 @@ stop_when_energy_decayed @@
 @@ stop_when_dft_decayed @@
+@@ stop_when_dft_pade_converged @@
 @@ stop_when_flux_decayed @@
 @@ stop_after_walltime @@
 @@ stop_on_interrupt @@

@@ -137,5 +137,43 @@ class TestAdjointChunks(unittest.TestCase):
         )
 
 
+class TestAdjointSourcePlacement(unittest.TestCase):
+    """`create_adjoint_sources` must tolerate a rank that places nothing.
+
+    `fourier_sourcedata` returns one entry per *local* chunk intersecting the
+    monitor and `IndexedSource` is inherently per-chunk, so under MPI every rank
+    but one places nothing for a point monitor. A bare `assert adjoint_sources`
+    therefore made a point objective fail outright on more than one process.
+
+    This is a unit test rather than a simulation because the condition cannot be
+    reproduced serially: forcing many chunks does not help, since one rank still
+    owns all of them. The contract is what matters -- an empty *local* list is
+    legitimate, while a globally zero cotangent is not.
+    """
+
+    class _Monitor:
+        def __init__(self, sources):
+            self._sources = sources
+
+        def place_adjoint_source(self, dJ):
+            return list(self._sources)
+
+    def test_empty_local_placement_is_allowed(self):
+        monitor = self._Monitor([])
+        out = mpa.utils.create_adjoint_sources([monitor], [np.ones(3)])
+        self.assertEqual(out, [])
+
+    def test_placements_from_several_monitors_are_concatenated(self):
+        a, b = self._Monitor(["a"]), self._Monitor([])
+        out = mpa.utils.create_adjoint_sources([a, b], [np.ones(2), np.ones(2)])
+        self.assertEqual(out, ["a"])
+
+    def test_globally_zero_cotangent_still_raises(self):
+        # The condition that is a real user error is unchanged, and it is global:
+        # the cotangents are identical on every rank.
+        with self.assertRaisesRegex(RuntimeError, "gradient of all monitor values"):
+            mpa.utils.create_adjoint_sources([self._Monitor(["a"])], [np.zeros(3)])
+
+
 if __name__ == "__main__":
     unittest.main()

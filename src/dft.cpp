@@ -51,8 +51,157 @@ struct dft_chunk_data { // for passing to field::loop_in_chunks as void*
   bool empty_dim[5];
   dft_chunk *dft_chunks;
   int decimation_factor;
+  size_t pade_samples;
   bool persist;
 };
+
+namespace {
+
+typedef std::complex<double> pade_complex;
+
+// Padé evaluation is deliberately performed in double precision in every
+// Meep build.  These fixed, scale-relative limits therefore make acceptance
+// deterministic across single- and double-precision field storage.
+const double pade_min_relative_denominator = 1.0e-8;
+const double pade_max_tail_amplification = 1.0e6;
+
+bool finite_complex(const pade_complex &z) {
+  return std::isfinite(z.real()) && std::isfinite(z.imag());
+}
+
+// Solve A x = b in place using partial pivoting.  Padé histories are small
+// (normally around 20 entries), so an in-tree dense solver avoids imposing a
+// new LAPACK dependency.  All scratch arithmetic is double precision even in
+// single-precision Meep builds.
+bool solve_pade_system(std::vector<pade_complex> &A, std::vector<pade_complex> &b, size_t n) {
+  double matrix_scale = 0.0;
+  for (size_t i = 0; i < A.size(); ++i) {
+    if (!finite_complex(A[i])) return false;
+    matrix_scale = std::max(matrix_scale, std::abs(A[i]));
+  }
+  if (matrix_scale == 0.0) return false;
+  const double pivot_threshold = 128.0 * std::numeric_limits<double>::epsilon() * matrix_scale;
+
+  for (size_t col = 0; col < n; ++col) {
+    size_t pivot = col;
+    double pivot_abs = std::abs(A[col * n + col]);
+    for (size_t row = col + 1; row < n; ++row) {
+      const double candidate = std::abs(A[row * n + col]);
+      if (candidate > pivot_abs) {
+        pivot = row;
+        pivot_abs = candidate;
+      }
+    }
+    if (!(pivot_abs > pivot_threshold) || !std::isfinite(pivot_abs)) return false;
+    if (pivot != col) {
+      for (size_t j = col; j < n; ++j)
+        std::swap(A[col * n + j], A[pivot * n + j]);
+      std::swap(b[col], b[pivot]);
+    }
+
+    const pade_complex diagonal = A[col * n + col];
+    for (size_t row = col + 1; row < n; ++row) {
+      const pade_complex factor = A[row * n + col] / diagonal;
+      A[row * n + col] = 0.0;
+      for (size_t j = col + 1; j < n; ++j)
+        A[row * n + j] -= factor * A[col * n + j];
+      b[row] -= factor * b[col];
+    }
+  }
+
+  for (size_t ii = n; ii-- > 0;) {
+    pade_complex rhs = b[ii];
+    for (size_t j = ii + 1; j < n; ++j)
+      rhs -= A[ii * n + j] * b[j];
+    b[ii] = rhs / A[ii * n + ii];
+    if (!finite_complex(b[ii])) return false;
+  }
+  return true;
+}
+
+// Evaluate the infinite Padé sum and remove the samples which have already
+// been accumulated by the ordinary DFT.  If the nominal near-diagonal fit is
+// rank deficient, progressively lower denominator orders are tried.  This is
+// essential for exact low-mode signals, whose Hankel systems are intentionally
+// low rank.
+bool pade_future_tail(const std::vector<pade_complex> &a, double omega, double t0,
+                      double sample_period, pade_complex &tail) {
+  tail = 0.0;
+  const size_t L = a.size();
+  if (L < 2 || !(sample_period > 0.0) || !std::isfinite(sample_period) || !std::isfinite(t0))
+    return false;
+
+  double signal_scale = 0.0;
+  for (size_t i = 0; i < L; ++i) {
+    if (!finite_complex(a[i])) return false;
+    signal_scale = std::max(signal_scale, std::abs(a[i]));
+  }
+  // A zero history has an exactly zero future tail.  Treating it as a valid
+  // fit avoids spurious singular-fit failures after a field has fully decayed.
+  if (signal_scale <= std::numeric_limits<double>::min()) return true;
+
+  const pade_complex z = std::polar(1.0, omega * sample_period);
+  for (size_t q = L / 2; q != 0; --q) {
+    const size_t p = L - q - 1;
+    std::vector<pade_complex> A(q * q), rhs(q);
+    for (size_t row = 0; row < q; ++row) {
+      const size_t k = p + 1 + row;
+      rhs[row] = -a[k];
+      for (size_t j = 1; j <= q; ++j)
+        A[row * q + (j - 1)] = a[k - j];
+    }
+    if (!solve_pade_system(A, rhs, q)) continue;
+
+    std::vector<pade_complex> Q(q + 1, 0.0);
+    Q[0] = 1.0;
+    for (size_t j = 1; j <= q; ++j)
+      Q[j] = rhs[j - 1];
+    std::vector<pade_complex> P(p + 1, 0.0);
+    for (size_t k = 0; k <= p; ++k)
+      for (size_t j = 0; j <= std::min(k, q); ++j)
+        P[k] += Q[j] * a[k - j];
+
+    pade_complex numerator = P[p];
+    for (size_t k = p; k-- > 0;)
+      numerator = numerator * z + P[k];
+    pade_complex denominator = Q[q];
+    double denominator_scale = std::abs(Q[q]);
+    for (size_t k = q; k-- > 0;) {
+      denominator = denominator * z + Q[k];
+      denominator_scale += std::abs(Q[k]);
+    }
+    const double denominator_threshold =
+        std::max(128.0 * std::numeric_limits<double>::epsilon(), pade_min_relative_denominator) *
+        denominator_scale;
+    if (!(std::abs(denominator) > denominator_threshold) || !finite_complex(denominator)) continue;
+
+    pade_complex partial = a[L - 1];
+    for (size_t k = L - 1; k-- > 0;)
+      partial = partial * z + a[k];
+    const pade_complex candidate =
+        std::polar(1.0, omega * t0) * (numerator / denominator - partial);
+    double history_scale = 0.0;
+    for (size_t k = 0; k < L; ++k)
+      history_scale += std::abs(a[k]);
+    const double tail_amplification = std::abs(candidate) / history_scale;
+    if (!std::isfinite(history_scale) || !finite_complex(candidate) ||
+        !(tail_amplification <= pade_max_tail_amplification))
+      continue;
+    tail = candidate;
+    return true;
+  }
+  return false;
+}
+
+double relative_norm(double numerator2, double denominator2) {
+  if (numerator2 == 0.0) return 0.0;
+  if (!(std::isfinite(numerator2) && std::isfinite(denominator2)))
+    return std::numeric_limits<double>::infinity();
+  const double floor2 = std::numeric_limits<double>::min();
+  return std::sqrt(numerator2 / std::max(denominator2, floor2));
+}
+
+} // namespace
 
 dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, vec e0_, vec e1_,
                      double dV0_, double dV1_, component c_, bool use_centered_grid,
@@ -113,6 +262,18 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   sn = sn_;
   vc = data->vc;
   decimation_factor = data->decimation_factor;
+  pade_samples = data->pade_samples;
+  pade_count = 0;
+  pade_head = 0;
+  pade_last_time = 0.0;
+  pade_sample_period = 0.0;
+  pade_history = NULL;
+  effective_dft = NULL;
+  previous_effective_dft = NULL;
+  pade_generation = 0;
+  pade_cached_generation = std::numeric_limits<unsigned long long>::max();
+  pade_previous_generation = std::numeric_limits<unsigned long long>::max();
+  pade_diagnostic_generation = std::numeric_limits<unsigned long long>::max();
 
   const int Nomega = data->omega.size();
   omega = data->omega;
@@ -123,6 +284,7 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
   dft = new complex<realnum>[N * Nomega];
   for (size_t i = 0; i < N * Nomega; ++i)
     dft[i] = 0.0;
+  if (pade_samples) pade_history = new complex<realnum>[N * pade_samples]();
   for (int i = 0; i < 5; ++i)
     empty_dim[i] = data->empty_dim[i];
 
@@ -134,6 +296,9 @@ dft_chunk::dft_chunk(fields_chunk *fc_, ivec is_, ivec ie_, vec s0_, vec s1_, ve
 dft_chunk::~dft_chunk() {
   delete[] dft;
   delete[] dft_phase;
+  delete[] pade_history;
+  delete[] effective_dft;
+  delete[] previous_effective_dft;
 
   // delete from fields_chunk list
   dft_chunk *cur = fc->dft_chunks;
@@ -180,7 +345,19 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
                            dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
                            complex<double> extra_weight, bool use_centered_grid, int vc,
                            int decimation_factor, bool persist) {
+  return add_dft(c, where, freq, Nfreq, include_dV_and_interp_weights, stored_weight, chunk_next,
+                 sqrt_dV_and_interp_weights, extra_weight, use_centered_grid, vc, decimation_factor,
+                 persist, 0);
+}
+
+dft_chunk *fields::add_dft(component c, const volume &where, const double *freq, size_t Nfreq,
+                           bool include_dV_and_interp_weights, complex<double> stored_weight,
+                           dft_chunk *chunk_next, bool sqrt_dV_and_interp_weights,
+                           complex<double> extra_weight, bool use_centered_grid, int vc,
+                           int decimation_factor, bool persist, size_t pade_samples) {
   if (coordinate_mismatch(gv.dim, c)) return NULL;
+  if (pade_samples != 0 && pade_samples < 4)
+    meep::abort("pade_samples must be zero or at least four in add_dft");
 
   /* If you call add_dft before adding sources, it will do nothing
      since no fields will be found.   This is almost certainly not
@@ -219,6 +396,7 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
     decimation_factor = min_to_all(decimation_factor);
   }
   data.decimation_factor = decimation_factor;
+  data.pade_samples = pade_samples;
 
   data.omega.resize(Nfreq);
   for (size_t i = 0; i < Nfreq; ++i)
@@ -239,12 +417,17 @@ dft_chunk *fields::add_dft(component c, const volume &where, const double *freq,
 
 dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> &freq,
                            bool include_dV_and_interp_weights, bool persist) {
+  return add_dft(where, freq, include_dV_and_interp_weights, persist, 0);
+}
+
+dft_chunk *fields::add_dft(const volume_list *where, const std::vector<double> &freq,
+                           bool include_dV_and_interp_weights, bool persist, size_t pade_samples) {
   dft_chunk *chunks = 0;
   while (where) {
     if (is_derived(where->c)) meep::abort("derived_component invalid for dft");
     complex<double> stored_weight = where->weight;
     chunks = add_dft(component(where->c), where->v, freq, include_dV_and_interp_weights,
-                     stored_weight, chunks, persist);
+                     stored_weight, chunks, false, 1.0, true, 0, 0, persist, pade_samples);
     where = where->next;
   }
   return chunks;
@@ -268,6 +451,31 @@ void fields_chunk::update_dfts(double timeE, double timeH, int current_step) {
 
 void dft_chunk::update_dft(double time) {
   if (!fc->f[c][0]) return;
+
+  size_t pade_slot = 0;
+  if (pade_samples) {
+    if (pade_count) {
+      const double delta = time - pade_last_time;
+      if (pade_count == 1 || !(pade_sample_period > 0.0)) {
+        if (delta > 0.0)
+          pade_sample_period = delta;
+        else
+          clear_pade_history();
+      }
+      else {
+        const double tolerance =
+            1e-8 * std::max(1.0, std::max(std::abs(delta), std::abs(pade_sample_period)));
+        if (!(delta > 0.0) || std::abs(delta - pade_sample_period) > tolerance)
+          clear_pade_history();
+      }
+    }
+    if (pade_count < pade_samples)
+      pade_slot = (pade_head + pade_count) % pade_samples;
+    else {
+      pade_slot = pade_head;
+      pade_head = (pade_head + 1) % pade_samples;
+    }
+  }
 
   const int Nomega = omega.size();
   for (int i = 0; i < Nomega; ++i)
@@ -297,17 +505,181 @@ void dft_chunk::update_dft(double time) {
         f[cmp] = w * fc->f[c][cmp][idx];
 
     if (numcmp == 2) {
-      complex<realnum> fc(f[0], f[1]);
+      complex<realnum> field_value(f[0], f[1]);
       for (int i = 0; i < Nomega; ++i)
-        dft[Nomega * idx_dft + i] += dft_phase[i] * fc;
+        dft[Nomega * idx_dft + i] += dft_phase[i] * field_value;
+      if (pade_samples)
+        pade_history[idx_dft * pade_samples + pade_slot] = complex<realnum>(scale) * field_value;
     }
     else {
       realnum fr = f[0];
       for (int i = 0; i < Nomega; ++i)
         dft[Nomega * idx_dft + i] +=
             std::complex<realnum>{fr * dft_phase[i].real(), fr * dft_phase[i].imag()};
+      if (pade_samples)
+        pade_history[idx_dft * pade_samples + pade_slot] = complex<realnum>(scale) * fr;
     }
   }
+
+  if (pade_samples) {
+    if (pade_count < pade_samples) ++pade_count;
+    pade_last_time = time;
+    ++pade_generation;
+  }
+}
+
+void dft_chunk::invalidate_pade_cache() {
+  pade_cached_generation = std::numeric_limits<unsigned long long>::max();
+  pade_previous_generation = std::numeric_limits<unsigned long long>::max();
+  pade_diagnostic_generation = std::numeric_limits<unsigned long long>::max();
+  pade_error_cache = dft_pade_error();
+}
+
+void dft_chunk::clear_pade_history() {
+  if (!pade_samples) return;
+  pade_count = 0;
+  pade_head = 0;
+  pade_last_time = 0.0;
+  pade_sample_period = 0.0;
+  ++pade_generation;
+  invalidate_pade_cache();
+}
+
+void dft_chunk::prepare_dft_values() const {
+  if (!pade_samples || pade_cached_generation == pade_generation) return;
+
+  const size_t Nomega = omega.size();
+  const size_t Ndft = N * Nomega;
+  if (!effective_dft) effective_dft = new complex<realnum>[Ndft];
+
+  std::copy(dft, dft + Ndft, effective_dft);
+
+  dft_pade_error info;
+  info.samples = pade_count;
+  info.ready = pade_count >= 4 && pade_sample_period > 0.0;
+  info.generation = pade_generation;
+  info.relative_correction.assign(Nomega, 0.0);
+  info.relative_estimate.assign(Nomega, std::numeric_limits<double>::infinity());
+  info.drift.assign(Nomega, std::numeric_limits<double>::infinity());
+  if (!info.ready) {
+    pade_error_cache = info;
+    pade_cached_generation = pade_generation;
+    return;
+  }
+
+  std::vector<double> correction2(Nomega, 0.0), corrected2(Nomega, 0.0);
+  std::vector<double> estimate2(Nomega, 0.0);
+  std::vector<bool> estimate_valid(Nomega, true);
+  const size_t half_count = pade_count / 2;
+  const double full_t0 = pade_last_time - (pade_count - 1) * pade_sample_period;
+  const double half_t0 = pade_last_time - (half_count - 1) * pade_sample_period;
+
+  std::vector<pade_complex> full(pade_count), half(half_count);
+  for (size_t point = 0; point < N; ++point) {
+    for (size_t j = 0; j < pade_count; ++j) {
+      const size_t ring_index = (pade_head + j) % pade_samples;
+      full[j] = pade_complex(pade_history[point * pade_samples + ring_index]);
+    }
+    std::copy(full.end() - half_count, full.end(), half.begin());
+
+    for (size_t i = 0; i < Nomega; ++i) {
+      pade_complex full_tail, half_tail;
+      const bool full_valid =
+          pade_future_tail(full, omega[i], full_t0, pade_sample_period, full_tail);
+      const bool half_valid =
+          pade_future_tail(half, omega[i], half_t0, pade_sample_period, half_tail);
+      const size_t idx = point * Nomega + i;
+      if (!full_valid) {
+        ++info.invalid_fits;
+        estimate_valid[i] = false;
+      }
+      else {
+        const pade_complex corrected = pade_complex(dft[idx]) + full_tail;
+        const double realnum_max = std::numeric_limits<realnum>::max();
+        if (!finite_complex(corrected) || std::abs(corrected.real()) > realnum_max ||
+            std::abs(corrected.imag()) > realnum_max) {
+          ++info.invalid_fits;
+          estimate_valid[i] = false;
+        }
+        else {
+          effective_dft[idx] = complex<realnum>(corrected);
+          correction2[i] += std::norm(full_tail);
+          if (half_valid)
+            estimate2[i] += std::norm(full_tail - half_tail);
+          else {
+            ++info.invalid_fits;
+            estimate_valid[i] = false;
+          }
+        }
+      }
+      corrected2[i] += std::norm(pade_complex(effective_dft[idx]));
+    }
+  }
+
+  info.correction2.assign(Nomega, 0.0);
+  info.estimate2.assign(Nomega, 0.0);
+  info.magnitude2.assign(Nomega, 0.0);
+  for (size_t i = 0; i < Nomega; ++i) {
+    info.relative_correction[i] = relative_norm(correction2[i], corrected2[i]);
+    if (estimate_valid[i]) info.relative_estimate[i] = relative_norm(estimate2[i], corrected2[i]);
+    info.correction2[i] = correction2[i];
+    info.estimate2[i] = estimate_valid[i] ? estimate2[i] : std::numeric_limits<double>::infinity();
+    info.magnitude2[i] = corrected2[i];
+  }
+  pade_error_cache = info;
+  pade_cached_generation = pade_generation;
+}
+
+const complex<realnum> *dft_chunk::dft_values() const {
+  if (!pade_samples) return dft;
+  prepare_dft_values();
+  return effective_dft;
+}
+
+dft_pade_error dft_chunk::get_pade_error() const {
+  if (!pade_samples) {
+    dft_pade_error info;
+    info.samples = 0;
+    info.ready = false;
+    info.generation = pade_generation;
+    info.relative_correction.assign(omega.size(), 0.0);
+    info.relative_estimate.assign(omega.size(), std::numeric_limits<double>::infinity());
+    info.drift.assign(omega.size(), std::numeric_limits<double>::infinity());
+    info.correction2.assign(omega.size(), 0.0);
+    info.estimate2.assign(omega.size(), 0.0);
+    info.drift2.assign(omega.size(), 0.0);
+    info.magnitude2.assign(omega.size(), 0.0);
+    return info;
+  }
+  prepare_dft_values();
+  if (pade_diagnostic_generation != pade_generation) {
+    const size_t Nomega = omega.size();
+    const size_t Ndft = N * Nomega;
+    const unsigned long long no_generation = std::numeric_limits<unsigned long long>::max();
+    const bool have_previous = pade_previous_generation != no_generation;
+    if (have_previous) {
+      std::vector<double> drift2(Nomega, 0.0), current2(Nomega, 0.0), previous2(Nomega, 0.0);
+      for (size_t point = 0; point < N; ++point)
+        for (size_t i = 0; i < Nomega; ++i) {
+          const size_t idx = point * Nomega + i;
+          const pade_complex current(effective_dft[idx]);
+          const pade_complex previous(previous_effective_dft[idx]);
+          drift2[i] += std::norm(current - previous);
+          current2[i] += std::norm(current);
+          previous2[i] += std::norm(previous);
+        }
+      pade_error_cache.drift2.assign(Nomega, 0.0);
+      for (size_t i = 0; i < Nomega; ++i) {
+        pade_error_cache.drift[i] = relative_norm(drift2[i], std::max(current2[i], previous2[i]));
+        pade_error_cache.drift2[i] = drift2[i];
+      }
+    }
+    if (!previous_effective_dft) previous_effective_dft = new complex<realnum>[Ndft];
+    std::copy(effective_dft, effective_dft + Ndft, previous_effective_dft);
+    pade_previous_generation = pade_generation;
+    pade_diagnostic_generation = pade_generation;
+  }
+  return pade_error_cache;
 }
 
 /* Return the L2 norm of the DFTs themselves.  This is useful
@@ -405,6 +777,7 @@ double dft_chunk::maxomega() const {
 void dft_chunk::scale_dft(complex<double> scale) {
   for (size_t i = 0; i < N * omega.size(); ++i)
     dft[i] *= scale;
+  clear_pade_history();
   if (next_in_dft) next_in_dft->scale_dft(scale);
 }
 
@@ -412,8 +785,11 @@ void dft_chunk::operator-=(const dft_chunk &chunk) {
   if (c != chunk.c || N * omega.size() != chunk.N * chunk.omega.size())
     meep::abort("Mismatched chunks in dft_chunk::operator-=");
 
+  const complex<realnum> *lhs = dft_values();
+  const complex<realnum> *rhs = chunk.dft_values();
   for (size_t i = 0; i < N * omega.size(); ++i)
-    dft[i] -= chunk.dft[i];
+    dft[i] = lhs[i] - rhs[i];
+  clear_pade_history();
 
   if (next_in_dft) {
     if (!chunk.next_in_dft) meep::abort("Mismatched chunk lists in dft_chunk::operator-=");
@@ -459,7 +835,7 @@ void save_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
-    file->write_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    file->write_chunk(1, &istart, &Nchunk, (realnum *)cur->dft_values());
     istart += Nchunk;
   }
   file->done_writing_chunks();
@@ -490,6 +866,7 @@ void load_dft_hdf5(dft_chunk *dft_chunks, const char *name, h5file *file, const 
   for (dft_chunk *cur = dft_chunks; cur; cur = cur->next_in_dft) {
     size_t Nchunk = cur->N * cur->omega.size() * 2;
     file->read_chunk(1, &istart, &Nchunk, (realnum *)cur->dft);
+    cur->clear_pade_history();
     istart += Nchunk;
   }
 }
@@ -548,10 +925,13 @@ double *dft_flux::flux() {
   for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
   for (dft_chunk *curE = E, *curH = H; curE && curH;
-       curE = curE->next_in_dft, curH = curH->next_in_dft)
+       curE = curE->next_in_dft, curH = curH->next_in_dft) {
+    const complex<realnum> *Evalues = curE->dft_values();
+    const complex<realnum> *Hvalues = curH->dft_values();
     for (size_t k = 0; k < curE->N; ++k)
       for (size_t i = 0; i < Nfreq; ++i)
-        F[i] += real(curE->dft[k * Nfreq + i] * conj(curH->dft[k * Nfreq + i]));
+        F[i] += real(Evalues[k * Nfreq + i] * conj(Hvalues[k * Nfreq + i]));
+  }
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
@@ -564,10 +944,13 @@ std::vector<std::complex<double> > dft_flux::complexflux() {
   for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0.0;
   for (dft_chunk *curE = E, *curH = H; curE && curH;
-       curE = curE->next_in_dft, curH = curH->next_in_dft)
+       curE = curE->next_in_dft, curH = curH->next_in_dft) {
+    const complex<realnum> *Evalues = curE->dft_values();
+    const complex<realnum> *Hvalues = curH->dft_values();
     for (size_t k = 0; k < curE->N; ++k)
       for (size_t i = 0; i < Nfreq; ++i)
-        F[i] += curE->dft[k * Nfreq + i] * conj(curH->dft[k * Nfreq + i]);
+        F[i] += Evalues[k * Nfreq + i] * conj(Hvalues[k * Nfreq + i]);
+  }
   std::vector<std::complex<double> > Fsum(Nfreq);
   sum_to_all(&F[0], &Fsum[0], int(Nfreq));
   return Fsum;
@@ -602,8 +985,14 @@ void dft_flux::scale_dfts(complex<double> scale) {
   if (H) H->scale_dft(scale);
 }
 
-dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, size_t Nfreq,
+dft_flux fields::add_dft_flux(const volume_list *where, const double *freq, size_t Nfreq,
                               bool use_symmetry, bool centered_grid, int decimation_factor) {
+  return add_dft_flux(where, freq, Nfreq, use_symmetry, centered_grid, decimation_factor, 0);
+}
+
+dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, size_t Nfreq,
+                              bool use_symmetry, bool centered_grid, int decimation_factor,
+                              size_t pade_samples) {
   if (!where_) // handle empty list of volumes
     return dft_flux(Ex, Hy, NULL, NULL, freq, Nfreq, v, NO_DIRECTION, use_symmetry);
 
@@ -639,9 +1028,10 @@ dft_flux fields::add_dft_flux(const volume_list *where_, const double *freq, siz
 
     for (int i = 0; i < 2; ++i) {
       E = add_dft(cE[i], where->v, freq, Nfreq, true, where->weight * double(1 - 2 * i), E, false,
-                  std::complex<double>(1.0, 0), centered_grid, 0, decimation_factor);
+                  std::complex<double>(1.0, 0), centered_grid, 0, decimation_factor, false,
+                  pade_samples);
       H = add_dft(cH[i], where->v, freq, Nfreq, false, 1.0, H, false, std::complex<double>(1.0, 0),
-                  centered_grid, 0, decimation_factor);
+                  centered_grid, 0, decimation_factor, false, pade_samples);
     }
 
     where = where->next;
@@ -687,10 +1077,13 @@ double *dft_energy::electric() {
   for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
   for (dft_chunk *curE = E, *curD = D; curE && curD;
-       curE = curE->next_in_dft, curD = curD->next_in_dft)
+       curE = curE->next_in_dft, curD = curD->next_in_dft) {
+    const complex<realnum> *Evalues = curE->dft_values();
+    const complex<realnum> *Dvalues = curD->dft_values();
     for (size_t k = 0; k < curE->N; ++k)
       for (size_t i = 0; i < Nfreq; ++i)
-        F[i] += 0.5 * real(conj(curE->dft[k * Nfreq + i]) * curD->dft[k * Nfreq + i]);
+        F[i] += 0.5 * real(conj(Evalues[k * Nfreq + i]) * Dvalues[k * Nfreq + i]);
+  }
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
@@ -703,10 +1096,13 @@ double *dft_energy::magnetic() {
   for (size_t i = 0; i < Nfreq; ++i)
     F[i] = 0;
   for (dft_chunk *curH = H, *curB = B; curH && curB;
-       curH = curH->next_in_dft, curB = curB->next_in_dft)
+       curH = curH->next_in_dft, curB = curB->next_in_dft) {
+    const complex<realnum> *Hvalues = curH->dft_values();
+    const complex<realnum> *Bvalues = curB->dft_values();
     for (size_t k = 0; k < curH->N; ++k)
       for (size_t i = 0; i < Nfreq; ++i)
-        F[i] += 0.5 * real(conj(curH->dft[k * Nfreq + i]) * curB->dft[k * Nfreq + i]);
+        F[i] += 0.5 * real(conj(Hvalues[k * Nfreq + i]) * Bvalues[k * Nfreq + i]);
+  }
   double *Fsum = new double[Nfreq];
   sum_to_all(F, Fsum, int(Nfreq));
   delete[] F;
@@ -725,8 +1121,13 @@ double *dft_energy::total() {
   return F;
 }
 
-dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq,
+dft_energy fields::add_dft_energy(const volume_list *where, const double *freq, size_t Nfreq,
                                   int decimation_factor) {
+  return add_dft_energy(where, freq, Nfreq, decimation_factor, 0);
+}
+
+dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq, size_t Nfreq,
+                                  int decimation_factor, size_t pade_samples) {
 
   if (!where_) // handle empty list of volumes
     return dft_energy(NULL, NULL, NULL, NULL, freq, Nfreq, v);
@@ -738,13 +1139,13 @@ dft_energy fields::add_dft_energy(const volume_list *where_, const double *freq,
   while (where) {
     LOOP_OVER_FIELD_DIRECTIONS(gv.dim, d) {
       E = add_dft(direction_component(Ex, d), where->v, freq, Nfreq, true, 1.0, E, false, 1.0, true,
-                  0, decimation_factor);
+                  0, decimation_factor, false, pade_samples);
       D = add_dft(direction_component(Dx, d), where->v, freq, Nfreq, false, 1.0, D, false, 1.0,
-                  true, 0, decimation_factor);
+                  true, 0, decimation_factor, false, pade_samples);
       H = add_dft(direction_component(Hx, d), where->v, freq, Nfreq, true, 1.0, H, false, 1.0, true,
-                  0, decimation_factor);
+                  0, decimation_factor, false, pade_samples);
       B = add_dft(direction_component(Bx, d), where->v, freq, Nfreq, false, 1.0, B, false, 1.0,
-                  true, 0, decimation_factor);
+                  true, 0, decimation_factor, false, pade_samples);
     }
     where = where->next;
   }
@@ -837,17 +1238,30 @@ direction fields::normal_direction(const volume &where) const {
 
 dft_flux fields::add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
                               bool use_symmetry, bool centered_grid, int decimation_factor) {
+  return add_dft_flux(d, where, freq, Nfreq, use_symmetry, centered_grid, decimation_factor, 0);
+}
+
+dft_flux fields::add_dft_flux(direction d, const volume &where, const double *freq, size_t Nfreq,
+                              bool use_symmetry, bool centered_grid, int decimation_factor,
+                              size_t pade_samples) {
   if (d == NO_DIRECTION) d = normal_direction(where);
   volume_list vl(where, direction_component(Sx, d));
-  dft_flux flux = add_dft_flux(&vl, freq, Nfreq, use_symmetry, centered_grid, decimation_factor);
+  dft_flux flux =
+      add_dft_flux(&vl, freq, Nfreq, use_symmetry, centered_grid, decimation_factor, pade_samples);
   flux.normal_direction = d;
   return flux;
 }
 
 dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq,
                                   size_t Nfreq, bool centered_grid, int decimation_factor) {
+  return add_mode_monitor(d, where, freq, Nfreq, centered_grid, decimation_factor, 0);
+}
+
+dft_flux fields::add_mode_monitor(direction d, const volume &where, const double *freq,
+                                  size_t Nfreq, bool centered_grid, int decimation_factor,
+                                  size_t pade_samples) {
   return add_dft_flux(d, where, freq, Nfreq, /*use_symmetry=*/false, centered_grid,
-                      decimation_factor);
+                      decimation_factor, pade_samples);
 }
 
 dft_flux fields::add_dft_flux_box(const volume &where, double freq_min, double freq_max,
@@ -916,6 +1330,13 @@ void dft_fields::remove() {
 dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
                                   const double *freq, size_t Nfreq, bool use_centered_grid,
                                   int decimation_factor, bool persist) {
+  return add_dft_fields(components, num_components, where, freq, Nfreq, use_centered_grid,
+                        decimation_factor, persist, 0);
+}
+
+dft_fields fields::add_dft_fields(component *components, int num_components, const volume where,
+                                  const double *freq, size_t Nfreq, bool use_centered_grid,
+                                  int decimation_factor, bool persist, size_t pade_samples) {
   bool include_dV_and_interp_weights = false;
   bool sqrt_dV_and_interp_weights = false; // default option from meep.hpp (expose to user?)
   std::complex<double> extra_weight = 1.0; // default option from meep.hpp (expose to user?)
@@ -924,9 +1345,22 @@ dft_fields fields::add_dft_fields(component *components, int num_components, con
   for (int nc = 0; nc < num_components; nc++)
     chunks = add_dft(components[nc], where, freq, Nfreq, include_dV_and_interp_weights,
                      stored_weight, chunks, sqrt_dV_and_interp_weights, extra_weight,
-                     use_centered_grid, 0, decimation_factor, persist);
+                     use_centered_grid, 0, decimation_factor, persist, pade_samples);
 
   return dft_fields(chunks, freq, Nfreq, where);
+}
+
+// Keep the pre-Padé exported entry points available for applications linked
+// against an older libmeep.  The implementations with the appended history
+// size live in stress.cpp and near2far.cpp respectively.
+dft_force fields::add_dft_force(const volume_list *where, const double *freq, size_t Nfreq,
+                                int decimation_factor) {
+  return add_dft_force(where, freq, Nfreq, decimation_factor, 0);
+}
+
+dft_near2far fields::add_dft_near2far(const volume_list *where, const double *freq, size_t Nfreq,
+                                      int decimation_factor, int Nperiods) {
+  return add_dft_near2far(where, freq, Nfreq, decimation_factor, Nperiods, 0);
 }
 
 /***************************************************************/
@@ -943,6 +1377,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
     meep::abort("process_dft_component: frequency index %d is outside the range of the frequency "
                 "array of size %lu",
                 num_freq, omega.size());
+  const complex<realnum> *values = dft_values();
 
   /*****************************************************************/
   /* compute the size of the chunk we own and its strides etc.     */
@@ -1012,7 +1447,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
          : c_conjugate == Dielectric ? parent->get_eps(loc)
          : c_conjugate == Permeability
              ? parent->get_mu(loc)
-             : complex<double>(dft[omega.size() * (chunk_idx++) + num_freq]) / stored_weight);
+             : complex<double>(values[omega.size() * (chunk_idx++) + num_freq]) / stored_weight);
     if (include_dV_and_interp_weights && dft_val != 0.0)
       dft_val /= (sqrt_dV_and_interp_weights ? sqrt(w) : w);
 

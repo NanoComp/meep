@@ -34,12 +34,13 @@ ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_adjoint_solver.py         \
     $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
-    $(TEST_DIR)/test_adjoint_symmetry.py       \
-    $(TEST_DIR)/test_adjoint_protocol.py       \
-    $(TEST_DIR)/test_angular_spectrum.py       \
-    $(TEST_DIR)/test_geometry_gradient.py      \
-    $(TEST_DIR)/test_source_gradient.py        \
-    $(TEST_DIR)/test_adjoint_dispersion.py     \
+    $(TEST_DIR)/test_adjoint_dispersion.py             \
+    $(TEST_DIR)/test_adjoint_protocol.py               \
+    $(TEST_DIR)/test_angular_spectrum.py               \
+    $(TEST_DIR)/test_geometry_gradient.py              \
+    $(TEST_DIR)/test_source_gradient.py                \
+    $(TEST_DIR)/test_pade_adjoint.py                   \
+    $(TEST_DIR)/test_pade_api.py                       \
     $(TEST_DIR)/test_adjoint_jax.py
 
 TESTS =                                        \
@@ -47,8 +48,9 @@ TESTS =                                        \
     $(TEST_DIR)/test_absorber_1d.py            \
     $(TEST_DIR)/test_adjoint_adjacent_grids.py \
     $(TEST_DIR)/test_adjoint_chunks.py         \
-    $(TEST_DIR)/test_adjoint_symmetric_grids.py \
     $(TEST_DIR)/test_adjoint_protocol.py       \
+    $(TEST_DIR)/test_adjoint_symmetric_grids.py \
+    $(TEST_DIR)/test_adjoint_symmetry.py    \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
@@ -64,7 +66,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_cyl_ellipsoid.py          \
     $(TEST_DIR)/test_dft_energy.py             \
     $(TEST_DIR)/test_dft_fields.py             \
-    $(TEST_DIR)/test_dispersive_smoothing.py   \
+    $(TEST_DIR)/test_dispersive_smoothing.py           \
     $(DIFFRACTED_PLANEWAVE_TEST)               \
     $(DISPERSIVE_EIGENMODE_TEST)               \
     $(TEST_DIR)/test_divide_mpi_processes.py   \
@@ -104,10 +106,9 @@ TESTS =                                        \
     $(TEST_DIR)/test_simulation.py             \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
-    $(TEST_DIR)/test_geometry_gradient.py      \
-    $(TEST_DIR)/test_source_gradient.py        \
+    $(TEST_DIR)/test_geometry_gradient.py              \
+    $(TEST_DIR)/test_source_gradient.py                \
     $(TEST_DIR)/test_stop_when_flux_decayed.py \
-    $(TEST_DIR)/test_subpixel_3d.py            \
     $(TEST_DIR)/test_timing_measurements.py    \
     $(TEST_DIR)/test_user_defined_material.py  \
     $(TEST_DIR)/test_verbosity_mgr.py          \
@@ -252,7 +253,6 @@ pkgpython_PYTHON = __init__.py $(HL_IFACE)
 
 adjointdir = $(pkgpythondir)/adjoint
 adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
-                  $(srcdir)/adjoint/angular_spectrum.py      \
                   $(srcdir)/adjoint/basis.py                 \
                   $(srcdir)/adjoint/objective.py             \
                   $(srcdir)/adjoint/optimization_problem.py  \
@@ -260,8 +260,6 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
                   $(srcdir)/adjoint/filter_source.py         \
                   $(srcdir)/adjoint/connectivity.py         \
                   $(srcdir)/adjoint/unfilter_design.py        \
-                  $(srcdir)/adjoint/geometry_gradient.py     \
-                  $(srcdir)/adjoint/source_gradient.py       \
                   $(srcdir)/adjoint/wrapper.py               \
                   $(srcdir)/adjoint/utils.py
 

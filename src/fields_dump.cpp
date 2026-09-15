@@ -106,6 +106,14 @@ void fields::dump_fields_chunk_field(h5file *h5f, bool single_parallel_file,
 }
 
 void fields::dump(const char *filename, bool single_parallel_file) {
+  bool has_pade_dfts = false;
+  for (int i = 0; i < num_chunks; ++i)
+    if (chunks[i]->is_mine())
+      for (dft_chunk *cur = chunks[i]->dft_chunks; cur; cur = cur->next_in_chunk)
+        has_pade_dfts = has_pade_dfts || cur->pade_enabled();
+  if (or_to_all(has_pade_dfts))
+    meep::abort("fields::dump does not yet support resumable Padé DFT monitor state");
+
   if (verbosity > 0) {
     printf("creating fields output file \"%s\" (%d)...\n", filename, single_parallel_file);
   }
@@ -230,6 +238,14 @@ void fields::load_fields_chunk_field(h5file *h5f, bool single_parallel_file,
 }
 
 void fields::load(const char *filename, bool single_parallel_file) {
+  bool has_pade_dfts = false;
+  for (int i = 0; i < num_chunks; ++i)
+    if (chunks[i]->is_mine())
+      for (dft_chunk *cur = chunks[i]->dft_chunks; cur; cur = cur->next_in_chunk)
+        has_pade_dfts = has_pade_dfts || cur->pade_enabled();
+  if (or_to_all(has_pade_dfts))
+    meep::abort("fields::load does not yet support resumable Padé DFT monitor state");
+
   if (verbosity > 0)
     printf("reading fields from file \"%s\" (%d)...\n", filename, single_parallel_file);
 

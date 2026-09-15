@@ -1184,7 +1184,6 @@ def mode_converter_optimization(
 
     return opt
 
-
 if __name__ == "__main__":
     input_flux, input_flux_data = straight_waveguide()
 
@@ -1358,6 +1357,19 @@ if __name__ == "__main__":
         optimal_design_weights=optimal_design_weights,
     )
 ```
+
+Padé acceleration is opt-in for adjoint problems. Pass `pade_samples` to
+enable corrected objective and design-region DFT monitors, and optionally pass
+`pade_tolerance` to stop forward and adjoint runs after two separated,
+full-versus-half-history convergence checks. For example,
+`pade_samples=20, pade_tolerance=1e-4` is an experimental configuration that
+must be validated for the problem at hand. The existing `decay_by` criterion
+remains a fallback. Automatic stopping requires finite-duration sources and is
+not supported for non-finite source end times. Padé extrapolation is not
+supported for LDOS objectives, even without automatic stopping. Run diagnostics are recorded in
+`opt.pade_diagnostics`; a maximum-time exit raises instead of returning a known
+unconverged gradient. The JAX wrapper exposes the same options, but its stopping
+test is monitor-only because it cannot inspect the outer JAX objective.
 
 
 Derivatives with Respect to Shape Parameters

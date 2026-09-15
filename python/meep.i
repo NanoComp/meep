@@ -42,7 +42,9 @@
 /* this #define from Python's structmember.h, used by swig, conflicts with meep.hpp */
 #undef READONLY
 
+#include <algorithm>
 #include <complex>
+#include <limits>
 #include <string>
 
 #include "config.h"
@@ -500,8 +502,9 @@ void _get_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size) {
 
     for (meep::dft_chunk *cur = dc; cur; cur = cur->next_in_dft) {
         size_t Nchunk = cur->N * cur->omega.size();
+        const std::complex<meep::realnum> *values = cur->dft_values();
         for (size_t i = 0; i < Nchunk; ++i) {
-            cdata[i + istart] = cur->dft[i];
+            cdata[i + istart] = values[i];
         }
         istart += Nchunk;
     }
@@ -521,8 +524,123 @@ void _load_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size) 
         for (size_t i = 0; i < Nchunk; ++i) {
             cur->dft[i] = cdata[i + istart];
         }
+        cur->clear_pade_history();
         istart += Nchunk;
     }
+}
+
+static PyObject *_dft_pade_error_from_chunks(const std::vector<meep::dft_chunk *> &heads,
+                                             size_t nfreq) {
+    /* Accumulate the squared sums and divide once at the end.  Taking a max of
+       per-chunk ratios lets a chunk holding almost no field decide the answer,
+       because its denominator is tiny; summing first weights each chunk by the
+       field it actually carries. */
+    std::vector<double> correction2(nfreq, 0.0);
+    std::vector<double> estimate2(nfreq, 0.0);
+    std::vector<double> drift2(nfreq, 0.0);
+    std::vector<double> magnitude2(nfreq, 0.0);
+    std::vector<double> relative_correction(nfreq, 0.0);
+    std::vector<double> relative_estimate(nfreq, 0.0);
+    std::vector<double> drift(nfreq, 0.0);
+    bool enabled = false;
+    bool ready = true;
+    int samples = std::numeric_limits<int>::max();
+    size_t invalid_fits = 0;
+    double generation = 0;
+
+    for (meep::dft_chunk *head : heads) {
+        for (meep::dft_chunk *cur = head; cur; cur = cur->next_in_dft) {
+            if (!cur->pade_enabled()) continue;
+            enabled = true;
+            const meep::dft_pade_error err = cur->get_pade_error();
+            ready = ready && err.ready;
+            samples = std::min(samples, static_cast<int>(err.samples));
+            invalid_fits += err.invalid_fits;
+            generation = std::max(generation, static_cast<double>(err.generation));
+            const size_t error_nfreq = std::min(
+                nfreq, std::min(err.relative_correction.size(),
+                                std::min(err.relative_estimate.size(), err.drift.size())));
+            for (size_t i = 0; i < error_nfreq; ++i) {
+                if (i < err.correction2.size()) correction2[i] += err.correction2[i];
+                if (i < err.estimate2.size()) estimate2[i] += err.estimate2[i];
+                if (i < err.drift2.size()) drift2[i] += err.drift2[i];
+                if (i < err.magnitude2.size()) magnitude2[i] += err.magnitude2[i];
+            }
+        }
+    }
+
+    const bool any_enabled = meep::or_to_all(enabled);
+    ready = any_enabled && meep::and_to_all(!enabled || ready);
+    samples = meep::min_to_all(enabled ? samples : std::numeric_limits<int>::max());
+    invalid_fits = meep::sum_to_all(invalid_fits);
+    generation = meep::max_to_all(generation);
+    for (size_t i = 0; i < nfreq; ++i) {
+        correction2[i] = meep::sum_to_all(correction2[i]);
+        estimate2[i] = meep::sum_to_all(estimate2[i]);
+        drift2[i] = meep::sum_to_all(drift2[i]);
+        magnitude2[i] = meep::sum_to_all(magnitude2[i]);
+        const double denom = magnitude2[i] > 0 ? magnitude2[i]
+                                               : std::numeric_limits<double>::min();
+        relative_correction[i] = std::sqrt(correction2[i] / denom);
+        relative_estimate[i] = std::isfinite(estimate2[i])
+                                   ? std::sqrt(estimate2[i] / denom)
+                                   : std::numeric_limits<double>::infinity();
+        drift[i] = std::sqrt(drift2[i] / denom);
+    }
+    if (!any_enabled) {
+        samples = 0;
+        std::fill(relative_estimate.begin(), relative_estimate.end(),
+                  std::numeric_limits<double>::infinity());
+        std::fill(drift.begin(), drift.end(), std::numeric_limits<double>::infinity());
+    }
+
+    PyObject *correction_obj = PyList_New(nfreq);
+    PyObject *estimate_obj = PyList_New(nfreq);
+    PyObject *drift_obj = PyList_New(nfreq);
+    /* The field magnitude each ratio was divided by, so a caller combining
+       several monitors can weight them by the field they carry rather than
+       taking a max over ratios of wildly different denominators. */
+    PyObject *magnitude_obj = PyList_New(nfreq);
+    for (size_t i = 0; i < nfreq; ++i) {
+        PyList_SetItem(correction_obj, i, PyFloat_FromDouble(relative_correction[i]));
+        PyList_SetItem(estimate_obj, i, PyFloat_FromDouble(relative_estimate[i]));
+        PyList_SetItem(drift_obj, i, PyFloat_FromDouble(drift[i]));
+        PyList_SetItem(magnitude_obj, i, PyFloat_FromDouble(std::sqrt(magnitude2[i])));
+    }
+
+    PyObject *result = PyTuple_New(8);
+    PyTuple_SetItem(result, 0, correction_obj);
+    PyTuple_SetItem(result, 1, estimate_obj);
+    PyTuple_SetItem(result, 2, drift_obj);
+    PyTuple_SetItem(result, 3, PyLong_FromLong(samples));
+    PyTuple_SetItem(result, 4, PyBool_FromLong(ready));
+    PyTuple_SetItem(result, 5, PyLong_FromSize_t(invalid_fits));
+    PyTuple_SetItem(
+        result, 6, PyLong_FromUnsignedLongLong(static_cast<unsigned long long>(generation)));
+    PyTuple_SetItem(result, 7, magnitude_obj);
+    return result;
+}
+
+PyObject *_get_dft_pade_error(meep::dft_fields *monitor) {
+    return _dft_pade_error_from_chunks({monitor->chunks}, monitor->freq.size());
+}
+
+PyObject *_get_dft_pade_error(meep::dft_flux *monitor) {
+    return _dft_pade_error_from_chunks({monitor->E, monitor->H}, monitor->freq.size());
+}
+
+PyObject *_get_dft_pade_error(meep::dft_force *monitor) {
+    return _dft_pade_error_from_chunks(
+        {monitor->offdiag1, monitor->offdiag2, monitor->diag}, monitor->freq.size());
+}
+
+PyObject *_get_dft_pade_error(meep::dft_energy *monitor) {
+    return _dft_pade_error_from_chunks(
+        {monitor->E, monitor->H, monitor->D, monitor->B}, monitor->freq.size());
+}
+
+PyObject *_get_dft_pade_error(meep::dft_near2far *monitor) {
+    return _dft_pade_error_from_chunks({monitor->F}, monitor->freq.size());
 }
 
 struct kpoint_list {
@@ -690,6 +808,11 @@ PyObject *_get_dft_array(meep::fields *f, dft_type dft, meep::component c, int n
 size_t _get_dft_data_size(meep::dft_chunk *dc);
 void _get_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size);
 void _load_dft_data(meep::dft_chunk *dc, std::complex<double> *cdata, int size);
+PyObject *_get_dft_pade_error(meep::dft_fields *monitor);
+PyObject *_get_dft_pade_error(meep::dft_flux *monitor);
+PyObject *_get_dft_pade_error(meep::dft_force *monitor);
+PyObject *_get_dft_pade_error(meep::dft_energy *monitor);
+PyObject *_get_dft_pade_error(meep::dft_near2far *monitor);
 meep::volume_list *make_volume_list(const meep::volume &v, int c,
                                     std::complex<double> weight,
                                     meep::volume_list *next);
@@ -1713,6 +1836,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         PML,
         Rotate2,
         Rotate4,
+        PadeError,
         Simulation,
         Symmetry,
         DftObj,
@@ -1808,6 +1932,7 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
         stop_after_walltime,
         stop_on_interrupt,
         stop_when_dft_decayed,
+        stop_when_dft_pade_converged,
         stop_when_fields_decayed,
         stop_when_energy_decayed,
         stop_when_flux_decayed,
