@@ -1517,7 +1517,30 @@ CELL_COLOR_3D = None
 CELL_EDGE_COLOR_3D: tuple[float, float, float, float] = (0.75, 0.75, 0.75, 1)  # gray
 
 
-def plot3D(sim, save_to_image: bool = False, image_name: str = "sim.png", **kwargs):
+def plot3D(
+    sim,
+    save_to_image: bool = False,
+    image_name: str = "sim.png",
+    backend: str = "native",
+    html_name: Optional[str] = None,
+    **kwargs,
+):
+    if backend == "native" and html_name is not None:
+        backend = "html"
+
+    if backend == "html":
+        if save_to_image:
+            raise ValueError(
+                "save_to_image is only supported by the 'native' (vispy) backend. "
+                "Use html_name=... to write the interactive viewer to a file."
+            )
+        return _plot3D_plotly(sim, html_name=html_name, **kwargs)
+
+    if backend != "native":
+        raise ValueError(
+            f"unknown plot3D backend '{backend}': expected 'native' or 'html'."
+        )
+
     from vispy.scene.visuals import Box, Mesh
     from vispy.scene import SceneCanvas, transforms
 
@@ -1703,6 +1726,357 @@ def _build_3d_pml(width: Vector3, translate: Vector3):
     box.transform.translate(tuple(translate))
 
     return box
+
+
+# ------------------------------------------------------- #
+# Browser-embeddable 3D viewer (plotly backend for `plot3D`)
+# ------------------------------------------------------- #
+
+# vertices of a unit cube centered on the origin, ordered so that
+# 0-3 are the -z face (counterclockwise) and 4-7 the matching +z face.
+_UNIT_BOX_VERTICES = np.array(
+    [
+        [-0.5, -0.5, -0.5],
+        [+0.5, -0.5, -0.5],
+        [+0.5, +0.5, -0.5],
+        [-0.5, +0.5, -0.5],
+        [-0.5, -0.5, +0.5],
+        [+0.5, -0.5, +0.5],
+        [+0.5, +0.5, +0.5],
+        [-0.5, +0.5, +0.5],
+    ]
+)
+
+# the twelve triangles tiling the six faces of the cube above
+_UNIT_BOX_FACES = np.array(
+    [
+        [0, 1, 2],
+        [0, 2, 3],  # -z
+        [4, 6, 5],
+        [4, 7, 6],  # +z
+        [0, 5, 1],
+        [0, 4, 5],  # -y
+        [2, 6, 7],
+        [2, 7, 3],  # +y
+        [1, 5, 6],
+        [1, 6, 2],  # +x
+        [0, 3, 7],
+        [0, 7, 4],  # -x
+    ]
+)
+
+# the twelve edges of the cube above, as pairs of vertex indices
+_UNIT_BOX_EDGES = (
+    (0, 1),
+    (1, 2),
+    (2, 3),
+    (3, 0),
+    (4, 5),
+    (5, 6),
+    (6, 7),
+    (7, 4),
+    (0, 4),
+    (1, 5),
+    (2, 6),
+    (3, 7),
+)
+
+
+def _rgb_str(color: Tuple[float, ...]) -> str:
+    """Converts a normalized RGB(A) tuple to a plotly 'rgb(...)' string."""
+    r, g, b = (int(round(255 * component)) for component in color[:3])
+    return f"rgb({r}, {g}, {b})"
+
+
+def _box_corners(center, size) -> np.ndarray:
+    """Returns the eight corners of an axis-aligned box in physical units."""
+    # `tuple` rather than `np.asarray` because Vector3.__array__ takes no dtype
+    return _UNIT_BOX_VERTICES * np.array(tuple(size), dtype=float) + np.array(
+        tuple(center), dtype=float
+    )
+
+
+def _box_mesh_trace(
+    center,
+    size,
+    color,
+    label: str,
+    group: str,
+    showlegend: bool = True,
+    opacity: float = 1.0,
+):
+    """Builds a solid `Mesh3d` box. Degenerate (zero-thickness) boxes render as planes."""
+    import plotly.graph_objects as go
+
+    corners = _box_corners(center, size)
+
+    return go.Mesh3d(
+        x=corners[:, 0],
+        y=corners[:, 1],
+        z=corners[:, 2],
+        i=_UNIT_BOX_FACES[:, 0],
+        j=_UNIT_BOX_FACES[:, 1],
+        k=_UNIT_BOX_FACES[:, 2],
+        color=_rgb_str(color),
+        opacity=opacity,
+        flatshading=True,
+        # `name` labels the legend and `hovertext` the individual box, so that a
+        # cell with many monitors toggles them as one group but still identifies
+        # them separately on hover
+        name=group,
+        legendgroup=group,
+        showlegend=showlegend,
+        hovertext=label,
+        hoverinfo="text",
+    )
+
+
+def _box_wireframe_trace(boxes, color, name: str, width: float = 2.0, dash=None):
+    """
+    Draws the edges of one or more boxes as a single `Scatter3d` trace. Wireframes
+    avoid the depth-sorting artifacts that plotly exhibits when translucent surfaces
+    overlap, which is otherwise unavoidable for nested PML layers.
+    """
+    import plotly.graph_objects as go
+
+    x, y, z = [], [], []
+    for center, size in boxes:
+        corners = _box_corners(center, size)
+        for start, end in _UNIT_BOX_EDGES:
+            x += [corners[start, 0], corners[end, 0], None]
+            y += [corners[start, 1], corners[end, 1], None]
+            z += [corners[start, 2], corners[end, 2], None]
+
+    return go.Scatter3d(
+        x=x,
+        y=y,
+        z=z,
+        mode="lines",
+        line=dict(color=_rgb_str(color), width=width, dash=dash),
+        hoverinfo="skip",
+        name=name,
+        showlegend=True,
+        legendgroup=name,
+    )
+
+
+def _epsilon_isosurfaces(sim, grid_resolution: float, max_grid_points: int):
+    """
+    Extracts one isosurface per distinct permittivity in the cell, excluding the
+    background material. Returns a list of (eps, vertices, faces) with the vertices
+    in physical (not index) coordinates.
+
+    The sampling grid is capped at `max_grid_points` because, unlike the native
+    backend, every vertex is serialized into the HTML document.
+    """
+    try:
+        from skimage.measure import marching_cubes
+    except ImportError:
+        from skimage.measure import marching_cubes_lewiner as marching_cubes
+
+    xmin, xmax, ymin, ymax, zmin, zmax = mp.visualization.box_vertices(
+        sim.geometry_center, sim.cell_size, sim.is_cylindrical
+    )
+    extents = np.array([xmax - xmin, ymax - ymin, zmax - zmin], dtype=float)
+
+    counts = np.maximum(np.round(extents * grid_resolution).astype(int) + 1, 2)
+    if np.prod(counts.astype(float)) > max_grid_points:
+        # shrink every axis by a common factor so the aspect ratio is preserved
+        shrink = (max_grid_points / np.prod(counts.astype(float))) ** (1 / 3)
+        counts = np.maximum((counts * shrink).astype(int), 2)
+
+    tics = [
+        np.linspace(lo, hi, n)
+        for (lo, hi), n in zip(
+            ((xmin, xmax), (ymin, ymax), (zmin, zmax)),
+            counts,
+        )
+    ]
+    eps_data = np.round(np.real(sim.get_epsilon_grid(*tics)), 2)
+
+    # the background is drawn as empty space rather than as a solid. Materials
+    # without a scalar permittivity (a MaterialGrid, say) have no value to skip.
+    epsilon_diag = getattr(sim.default_material, "epsilon_diag", None)
+    background = None if epsilon_diag is None else round(abs(epsilon_diag.x), 2)
+    unique = [eps for eps in np.unique(np.abs(eps_data)).tolist() if eps != background]
+
+    # spacing between adjacent samples, so marching cubes emits physical lengths
+    spacing = tuple(extents / (counts - 1))
+    origin = np.array([xmin, ymin, zmin])
+
+    isosurfaces = []
+    for eps in unique:
+        mask = np.asarray(np.abs(eps_data) == eps).astype(float)
+        try:
+            vertices, faces = marching_cubes(mask, 0.5, spacing=spacing)[:2]
+        except (RuntimeError, ValueError):
+            # a material occupying fewer than two samples across yields no surface
+            continue
+        isosurfaces.append((eps, vertices + origin, faces))
+
+    return isosurfaces
+
+
+def _plot3D_plotly(
+    sim,
+    html_name: Optional[str] = None,
+    grid_resolution: Optional[float] = None,
+    max_grid_points: int = 96**3,
+    opacity: float = 0.85,
+    azimuth: float = 45,
+    elevation: float = 10,
+    zoom: float = 1.0,
+    title: Optional[str] = None,
+    include_plotlyjs: Union[bool, str] = True,
+    show: bool = True,
+):
+    """
+    Renders the simulation cell as an interactive plotly scene supporting rotate,
+    pan, and zoom in any browser. See `Simulation.plot3D` for the argument reference.
+    """
+    import plotly.graph_objects as go
+
+    if sim.structure is None:
+        sim.init_sim()
+
+    # A collapsed axis renders as a degenerate scene rather than failing: the
+    # isosurfaces are flattened into the plane (their sample spacing along that
+    # axis is zero) while the sources and monitors keep their own extents and
+    # stick out of the cell. Refused instead of drawing something misleading.
+    if any(extent == 0 for extent in sim.cell_size):
+        raise ValueError(
+            f"plot3D requires a 3D cell, but cell_size is {sim.cell_size}. "
+            "Use plot2D to plot a cell with a zero-length dimension."
+        )
+
+    traces = []
+
+    # Build geometry
+    isosurfaces = _epsilon_isosurfaces(
+        sim,
+        sim.resolution if grid_resolution is None else grid_resolution,
+        max_grid_points,
+    )
+    for i, (eps, vertices, faces) in enumerate(isosurfaces):
+        # Darker shades for the higher-index materials, as in the native backend,
+        # but bounded away from black: an unlit surface shows no shading at all,
+        # which is what conveys the shape of the geometry here.
+        shade = 0.7 if len(isosurfaces) == 1 else 0.7 - 0.5 * i / (len(isosurfaces) - 1)
+        traces.append(
+            go.Mesh3d(
+                x=vertices[:, 0],
+                y=vertices[:, 1],
+                z=vertices[:, 2],
+                i=faces[:, 0],
+                j=faces[:, 1],
+                k=faces[:, 2],
+                color=_rgb_str((shade, shade, shade)),
+                opacity=opacity,
+                flatshading=False,
+                lighting=dict(ambient=0.45, diffuse=0.8, specular=0.3, roughness=0.4),
+                lightposition=dict(x=0, y=0, z=-1e4),
+                hoverinfo="name",
+                name=f"ε = {eps:g}",
+                showlegend=True,
+            )
+        )
+
+    # Build sources
+    for i, source in enumerate(sim.sources):
+        traces.append(
+            _box_mesh_trace(
+                source.center,
+                source.size,
+                SOURCE_COLOR_3D,
+                f"source {i}" if len(sim.sources) > 1 else "source",
+                group="sources",
+                showlegend=(i == 0),
+            )
+        )
+
+    # Build monitors
+    regions = [reg for mon in sim.dft_objects for reg in mon.regions]
+    for i, reg in enumerate(regions):
+        traces.append(
+            _box_mesh_trace(
+                reg.center,
+                reg.size,
+                MONITOR_COLOR_3D,
+                f"monitor {i}" if len(regions) > 1 else "monitor",
+                group="monitors",
+                showlegend=(i == 0),
+            )
+        )
+
+    # Build boundary regions
+    import itertools
+
+    pml_boxes = []
+    for boundary in sim.boundary_layers:
+        if (
+            boundary.direction == mp.ALL and boundary.side == mp.ALL
+        ):  # same boundary everywhere
+            sides = itertools.product([mp.X, mp.Y, mp.Z], [mp.Low, mp.High])
+        elif boundary.side == mp.ALL:  # same boundary on both sides
+            sides = [(boundary.direction, side) for side in (mp.Low, mp.High)]
+        else:  # boundary on just one side
+            sides = [(boundary.direction, boundary.side)]
+
+        for direction, side in sides:
+            vol = get_boundary_volumes(sim, boundary.thickness, direction, side)
+            pml_boxes.append((vol.center, vol.size))
+
+    if pml_boxes:
+        traces.append(_box_wireframe_trace(pml_boxes, BOUNDARY_COLOR_3D, "PML"))
+
+    # Add simulation cell volume
+    traces.append(
+        _box_wireframe_trace(
+            [(sim.geometry_center, sim.cell_size)],
+            CELL_EDGE_COLOR_3D,
+            "cell",
+            width=3,
+        )
+    )
+
+    fig = go.Figure(data=traces)
+
+    # Camera options: convert the turntable angles used by the native backend into
+    # the normalized eye position that plotly expects.
+    radius = 2.2 / zoom
+    azimuth_rad, elevation_rad = np.radians(azimuth), np.radians(elevation)
+    eye = dict(
+        x=radius * np.cos(elevation_rad) * np.cos(azimuth_rad),
+        y=radius * np.cos(elevation_rad) * np.sin(azimuth_rad),
+        z=radius * np.sin(elevation_rad),
+    )
+
+    fig.update_layout(
+        title=title,
+        margin=dict(l=0, r=0, t=30 if title else 0, b=0),
+        # centered vertically so the top entry is not hidden by the modebar
+        legend=dict(itemsizing="constant", yanchor="middle", y=0.5),
+        scene=dict(
+            xaxis_title="x",
+            yaxis_title="y",
+            zaxis_title="z",
+            # 'data' keeps the cell from being stretched to a cube
+            aspectmode="data",
+            # left-drag orbits about the vertical axis; right-drag pans
+            dragmode="turntable",
+            camera=dict(eye=eye, up=dict(x=0, y=0, z=1)),
+        ),
+    )
+
+    if not mp.am_master():
+        return fig
+
+    if html_name is not None:
+        fig.write_html(html_name, include_plotlyjs=include_plotlyjs, auto_open=False)
+    elif show:
+        fig.show()
+
+    return fig
 
 
 def visualize_chunks(sim: Simulation):
