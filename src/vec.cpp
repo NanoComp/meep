@@ -1599,22 +1599,26 @@ const char *volume::str(char *buffer, size_t buflen) {
 
 const char *grid_volume::str(char *buffer, size_t buflen) {
   static char sbuf[1024]; // TODO: is this big enough?
-  int written = 0;
+  size_t written = 0;
   if (buffer == 0) {
     buffer = sbuf;
     buflen = sizeof(sbuf);
   }
+  if (buflen == 0) return buffer;
 
-  written += snprintf(buffer + written, buflen - written,
-                      "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
-                      dimension_name(dim), a, inva, num[0], num[1], num[2]);
+  int result =
+      snprintf(buffer, buflen, "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
+               dimension_name(dim), a, inva, num[0], num[1], num[2]);
+  if (result < 0 || static_cast<size_t>(result) >= buflen) return buffer;
+  written = static_cast<size_t>(result);
 
   // Adapted from the print() method
   LOOP_OVER_DIRECTIONS(dim, d) {
-    written += snprintf(buffer + written, buflen - written, "  %s =%5g - %5g (%5g) \t",
-                        direction_name(d), origin.in_direction(d),
-                        origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
-    if (buflen - written <= 0) break;
+    result = snprintf(buffer + written, buflen - written, "  %s =%5g - %5g (%5g) \t",
+                      direction_name(d), origin.in_direction(d),
+                      origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
+    if (result < 0 || static_cast<size_t>(result) >= buflen - written) return buffer;
+    written += static_cast<size_t>(result);
   }
   snprintf(buffer + written, buflen - written, "\n}");
   return buffer;
