@@ -3131,6 +3131,7 @@ def plot3D(save_to_image=False,
            image_name='sim.png',
            backend='native',
            html_name=None,
+           nlevels=None,
            **kwargs):
 ```
 
@@ -3159,6 +3160,9 @@ Two backends are available:
 * `image_name`: the name of the image file to save to.
 * `backend`: `"native"` or `"html"`.
 * `html_name`: path of the HTML document to write. Implies `backend="html"`.
+* `nlevels`: maximum number of material isosurfaces. If `None`, at most 10
+    evenly distributed material levels are rendered. Fewer are used when the
+    structure has fewer distinct non-background levels.
 
 **kwargs for the `"native"` backend: Camera settings.**
 

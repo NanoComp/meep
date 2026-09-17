@@ -513,7 +513,7 @@ class TestVisualization(unittest.TestCase):
         # The html backend renders offscreen, so unlike the native (vispy)
         # backend it can be exercised without a display.
         sim = setup_sim(8)
-        fig = sim.plot3D(backend="html", show=False)
+        fig = sim.plot3D(backend="html", show=False, nlevels=1)
 
         # One trace per material isosurface, plus the sources, the monitors,
         # the PML, and the cell.
@@ -567,6 +567,28 @@ class TestVisualization(unittest.TestCase):
             with self.assertRaises(ValueError):
                 # a 2D cell would render as a flattened, misleading scene
                 setup_sim(0).plot3D(backend="html")
+
+    def test_plot3D_nlevels(self):
+        eps_data = np.arange(1, 13, dtype=float)
+
+        default_levels = mp.visualization._epsilon_levels(eps_data, 1, None)
+        self.assertEqual(len(default_levels), 10)
+        self.assertEqual(default_levels[0], 2)
+        self.assertEqual(default_levels[-1], 12)
+
+        self.assertEqual(
+            mp.visualization._epsilon_levels(eps_data, 1, 20),
+            list(range(2, 13)),
+        )
+        self.assertEqual(
+            mp.visualization._epsilon_levels(eps_data, 1, 3),
+            [2, 7, 12],
+        )
+
+        for nlevels in (0, -1, 2.5, True):
+            with self.subTest(nlevels=nlevels):
+                with self.assertRaisesRegex(ValueError, "positive integer or None"):
+                    mp.visualization._epsilon_levels(eps_data, 1, nlevels)
 
     """
     Travis does not play well with Mayavi
