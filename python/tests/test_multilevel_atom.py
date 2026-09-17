@@ -1,15 +1,17 @@
 import math
 import unittest
 
+from utils import ApproxComparisonTestCase
+
 import meep as mp
 
 
-class TestMultiLevelAtom(unittest.TestCase):
+class TestMultiLevelAtom(ApproxComparisonTestCase):
     @unittest.skipIf(
         mp.is_single_precision(), "double-precision floating point specific test"
     )
     def test_multilevel_atom(self):
-        resolution = 40
+        resolution = 200
         ncav = 1.5
         Lcav = 1
         dpad = 1
@@ -66,15 +68,21 @@ class TestMultiLevelAtom(unittest.TestCase):
         def field_func(p):
             return 1 if p.z == (-0.5 * sz) + (0.5 * Lcav) else 0
 
-        def check_field(sim):
-            fp = sim.get_field_point(
-                mp.Ex, mp.Vector3(z=(-0.5 * sz) + Lcav + (0.5 * dpad))
-            ).real
-            self.assertAlmostEqual(fp, -2.7110969214986387)
+        boundary = mp.Vector3(z=(-0.5 * sz) + Lcav + (0.5 * dpad))
+        envelope = []
+
+        def record_field(sim):
+            envelope.append(abs(sim.get_field_point(mp.Ex, boundary).real))
 
         sim.init_sim()
         sim.initialize_field(mp.Ex, field_func)
-        sim.run(mp.at_end(check_field), until=7000)
+        # Let the laser settle, then measure the steady-state envelope at the
+        # cavity boundary, as Opt. Express 20, 474 (2012) does.  Steady-state
+        # lasing fixes the amplitude but leaves the phase free, so the envelope
+        # is reproducible where an instantaneous field sample is not.
+        sim.run(until=2400)
+        sim.run(record_field, until=100)
+        self.assertClose(max(envelope), 0.103733, epsilon=1e-4)
 
 
 if __name__ == "__main__":
