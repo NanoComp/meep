@@ -127,6 +127,55 @@ class TestDFTFields(ApproxComparisonTestCase):
         actual_dft = sim.get_dft_array(decimated_field, mp.Ez, 0)
         self.assertClose(expected_dft, actual_dft, epsilon=1e-3)
 
+    def test_get_dft_array_bad_num_freqs(self):
+        # An out-of-range index used to reach meep::abort inside the chunk loop,
+        # which under MPI only fires on the ranks owning a matching chunk.
+        sim = self.init()
+        sim.init_sim()
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 3)
+        sim.run(until_after_sources=10)
+
+        sim.get_dft_array(dft_fields, mp.Ez, 2)  # in range, no raise
+        for bad in (-1, 3, None, 1.5):
+            with self.assertRaises(ValueError):
+                sim.get_dft_array(dft_fields, mp.Ez, bad)
+
+    def test_get_dft_array_bad_args(self):
+        sim = self.init()
+        sim.init_sim()
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 3)
+        sim.run(until_after_sources=10)
+
+        with self.assertRaises(ValueError):
+            sim.get_dft_array(dft_fields, component=-3, num_freq=0)
+        with self.assertRaises(ValueError):
+            sim.get_dft_array(dft_obj=None, component=mp.Ez, num_freq=0)
+
+    def test_get_dft_array_before_run(self):
+        # DftObj.swigobj is created lazily; get_dft_array used to report
+        # "Invalid type of dft object: None" rather than initializing it.
+        sim = self.init()
+        sim.init_sim()
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1)
+        arr = sim.get_dft_array(dft_fields, mp.Ez, 0)
+        self.assertEqual(np.count_nonzero(arr), 0)
+
+    def test_get_dft_array_energy(self):
+        # add_energy monitors used to fall through to "Invalid type of dft
+        # object" because no C++ get_dft_array overload existed for them.
+        sim = self.init()
+        sim.init_sim()
+        # add_energy needs a region with a well-defined normal direction
+        where = mp.Volume(center=mp.Vector3(), size=mp.Vector3(0.5 * self.sxy, 0))
+        dft_energy = sim.add_energy(self.fcen, 0, 1, mp.EnergyRegion(volume=where))
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1, where=where)
+        sim.run(until_after_sources=50)
+
+        energy_ez = sim.get_dft_array(dft_energy, mp.Ez, 0)
+        fields_ez = sim.get_dft_array(dft_fields, mp.Ez, 0)
+        self.assertEqual(energy_ez.shape, fields_ez.shape)
+        self.assertGreater(np.count_nonzero(energy_ez), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
