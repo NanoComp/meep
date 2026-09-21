@@ -69,6 +69,46 @@ NearToFarData = namedtuple("NearToFarData", ["F"])
 Vector3Type = Union[Vector3, Tuple[float, ...]]
 
 
+class ArrayMetadata(NamedTuple):
+    """Geometry of a grid slice, as returned by `Simulation.get_array_metadata`.
+
+    This is a `tuple` subclass, so it still unpacks as `x, y, z, w = ...`.
+    """
+
+    x: np.ndarray
+    y: np.ndarray
+    z: np.ndarray
+    w: np.ndarray
+
+    @property
+    def points(self) -> np.ndarray:
+        """The grid points as an object array of `Vector3`s, shaped like `w`.
+
+        Built on access rather than stored, since a slice of the full cell has
+        one `Vector3` per voxel.
+        """
+        points = np.empty(self.w.shape, dtype=object)
+        flat = points.reshape(-1)
+        for n, (px, py, pz) in enumerate(
+            (px, py, pz) for px in self.x for py in self.y for pz in self.z
+        ):
+            flat[n] = Vector3(px, py, pz)
+        return points
+
+
+class SliceDimensions(NamedTuple):
+    """Shape and extent of a grid slice, as returned by
+    `Simulation.get_array_slice_dimensions`.
+
+    This is a `tuple` subclass, so it still unpacks as
+    `dim_sizes`, min_corner, max_corner = ...`.
+    """
+
+    dim_sizes: Tuple[int, ...]
+    min_corner: Vector3
+    max_corner: Vector3
+
+
 def fix_dft_args(args, i):
     if (
         len(args) > i + 2
@@ -100,6 +140,34 @@ def get_num_args(func):
         return func.__code__.co_argcount - 1  # remove 'self' from count
     else:
         return func.__code__.co_argcount
+
+
+def _check_component(component):
+    """Raise unless `component` is a `component` or `derived_component` constant.
+
+    The SWIG typemaps only test `value < 100` / `value >= 100` to pick an
+    overoad, so an out-of-range integer (e.g. a direction constant) is
+    silently reinterpreted as a component instead of being rejected.
+    """
+    if isinstance(component, bool) or not isinstance(component, (int, np.integer)):
+        raise TypeError(
+            f"component must be a component constant (e.g. mp.Ez), got {component!r}"
+        )
+    if not (mp.Ex <= component <= mp.NO_COMPONENT) and not (
+        mp.Sx <= component <= mp.H_EnergyDensity
+    ):
+        raise ValueError(f"{component} is not a valid component constant")
+
+
+# Maps the SWIG-wrapped DFT monitor type onto the corresponding
+# `get_dft_array<>` template instantiation from python/meep.i.
+_DFT_ARRAY_GETTERS = {
+    mp.dft_fields: mp.get_dft_fields_array,
+    mp.dft_flux: mp.get_dft_flux_array,
+    mp.dft_force: mp.get_dft_force_array,
+    mp.dft_near2far: mp.get_dft_near2far_array,
+    mp.dft_energy: mp.get_dft_energy_array,
+}
 
 
 def vec(*args):
@@ -654,10 +722,14 @@ class DftObj:
         self.args = args
         self.swigobj = None
 
-    def swigobj_attr(self, attr):
+    def ensure_swigobj(self):
+        """Create the wrapped C++ object if it has not been created yet."""
         if self.swigobj is None:
             self.swigobj = self.func(*self.args)
-        return getattr(self.swigobj, attr)
+        return self.swigobj
+
+    def swigobj_attr(self, attr):
+        return getattr(self.ensure_swigobj(), attr)
 
     @property
     def save_hdf5(self):
@@ -1614,6 +1686,25 @@ class Simulation:
             ).swigobj
         else:
             raise ValueError("Need either a Volume, or a size and center")
+
+    # The slicing routines all accept a region as either a `vol`, a
+    # `center`/`size` pair, or nothing at all (meaning the whole cell).
+    def _volume_or_total(
+        self, vol: Volume = None, center: Vector3Type = None, size: Vector3Type = None
+    ) -> Volume:
+        if vol is None and center is None and size is None:
+            return self.fields.total_volume()
+        if vol is not None and (center is not None or size is not None):
+            raise ValueError(
+                "Pass either a Volume as `vol` or a `center`/`size` pair, not both"
+            )
+        return self._volume_from_kwargs(vol, center, size)
+
+    def _require_not_cylindrical(self, what: str) -> None:
+        # The corresponding C++ routines call meep::abort() in cylindrical
+        # coordinates; raising here gives a recoverable Python exception.
+        if self.is_cylindrical or self.dimensions == mp.CYLINDRICAL:
+            raise ValueError(f"{what} does not support cylindrical coordinates")
 
     def _infer_dimensions(self, k: Vector3Type = None):
         if self.dimensions == 3:
@@ -3961,15 +4052,16 @@ class Simulation:
 
     def get_array(
         self,
-        component: int = None,
-        vol: Volume = None,
-        center: Vector3Type = None,
-        size: Vector3Type = None,
-        cmplx: bool = None,
+        component: int,
+        vol: Optional[Volume] = None,
+        center: Optional[Vector3Type] = None,
+        size: Optional[Vector3Type] = None,
+        *,
+        cmplx: Optional[bool] = None,
         arr: Optional[np.ndarray] = None,
         frequency: float = 0,
         snap: bool = False,
-    ):
+    ) -> np.ndarray:
         """
         Returns a slice of the materials or time-domain fields over a subregion of the cell at the
         current simulation time as a NumPy array. The materials/fields are centered on the Yee-grid voxels
@@ -4028,50 +4120,71 @@ class Simulation:
         parameter, or use the default, the slicing routines always give you the same-size
         array for all components. You should *not* try to predict the exact size of these
         arrays; rather, you should simply rely on Meep's output.
+
+        If `arr` is supplied, its dtype, shape, and memory layout must match the slice
+        exactly; otherwise a `ValueError` is raised. (The data are written into `arr`
+        in place by the C++ library, which cannot itself detect a mismatch.)
+
+        This routine is *collective*: it performs an MPI all-reduce internally and must
+        therefore be called by every process. Calling it from only one process (e.g.,
+        inside an `if meep.am_master():` block) will deadlock.
         """
-        if component is None:
-            raise ValueError("component is required")
-        if isinstance(component, mp.Volume) or isinstance(component, mp.volume):
-            raise ValueError("The first argument must be the component")
+        if isinstance(component, (mp.Volume, mp.volume)):
+            raise TypeError("The first argument must be the component")
+        _check_component(component)
+
+        # `frequency` is only consumed when evaluating chi1inv, so it is
+        # meaningless for anything but the material components. Silently
+        # ignoring it (and, worse, silently promoting the result to complex)
+        # hides a mistake in the caller's script.
+        if frequency != 0 and component not in (mp.Dielectric, mp.Permeability):
+            raise ValueError(
+                "frequency is only meaningful for mp.Dielectric and mp.Permeability, "
+                f"but component is {component}"
+            )
+
+        v = self._volume_or_total(vol, center, size)
 
         dim_sizes = np.zeros(3, dtype=np.uintp)
-
-        if vol is None and center is None and size is None:
-            v = self.fields.total_volume()
-        else:
-            v = self._volume_from_kwargs(vol, center, size)
-
-        _, dirs = mp._get_array_slice_dimensions(
+        rank, _ = mp._get_array_slice_dimensions(
             self.fields, v, dim_sizes, not snap, snap
         )
 
-        dims = [s for s in dim_sizes if s != 0]
+        dims = tuple(int(s) for s in dim_sizes[:rank])
 
         if cmplx is None:
             cmplx = frequency != 0 or (
                 component < mp.Dielectric and not self.fields.is_real
             )
 
-        if arr is not None:
-            if cmplx and not np.iscomplexobj(arr):
-                raise ValueError(
-                    "Requested a complex slice, but provided array of type {}.".format(
-                        arr.dtype
-                    )
-                )
-
-            for a, b in zip(arr.shape, dims):
-                if a != b:
-                    fmt = "Expected dimensions {}, but got {}"
-                    raise ValueError(fmt.format(dims, arr.shape))
-
-            arr = np.require(arr, requirements=["C", "W"])
-
+        if mp.is_single_precision():
+            dtype = np.dtype(np.complex64 if cmplx else np.float32)
         else:
-            if mp.is_single_precision():
-                arr = np.zeros(dims, dtype=np.complex64 if cmplx else np.float32)
-            else:
-                arr = np.zeros(dims, dtype=np.complex128 if cmplx else np.float64)
+            dtype = np.dtype(np.complex128 if cmplx else np.float64)
+
+        if arr is not None:
+            # The SWIG typemap for the slice buffer is a bare pointer cast with
+            # no dtype/shape/continuity check, so every one of these guards is
+            # load-bearing: getting any of them wrong corrupts the heap.
+            if not isinstance(arr, np.ndarray):
+                raise TypeError(
+                    f"arr must be a numpy.ndarray, got {type(arr).__name__}"
+                )
+            if arr.dtype != dtype:
+                raise ValueError(
+                    f"Expected an array of dtype {dtype}, but got {arr.dtype}."
+                )
+            if arr.shape != dims:
+                raise ValueError(
+                    f"Expected an array of shape {dims}, but got {arr.shape}."
+                )
+            if not arr.flags["C_CONTIGUOUS"] or not arr.flags["WRITEABLE"]:
+                raise ValueError(
+                    "arr must be a C-contiguous, writeable array; otherwise the "
+                    "field data cannot be written into it in place."
+                )
+        else:
+            arr = np.zeros(dims, dtype=dtype)
 
         if np.iscomplexobj(arr):
             self.fields.get_complex_array_slice(v, component, arr, frequency, snap)
@@ -4082,61 +4195,95 @@ class Simulation:
 
     def get_dft_array(
         self,
-        dft_obj: DftObj = None,
-        component: int = None,
-        num_freq: int = None,
-    ):
+        dft_obj: DftObj,
+        component: int,
+        num_freq: int,
+    ) -> np.ndarray:
         """
         Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
         or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays). The DFT fields are centered on the Yee-grid voxels using bilinear interpolation of the nearest Yee-grid points.
 
-        + **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
-          obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
+        + **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_energy`, `dft_fields`,
+          or `dft_near2far` object obtained from calling the appropriate `add` function
+          (e.g., `mp.add_flux`).
 
         + **`component` [ `component` constant ]**— The field component (e.g., `meep.Ez`).
 
         + **`num_freq` [ `int` ]** — The index of the frequency. An integer in the range `0...nfreq-1`,
           where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
           `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
+
+        If `component` vanishes everywhere by symmetry, the return value is a
+        zero-dimensional array containing zero.
+
+        This routine is *collective*: it performs an MPI all-reduce internally and
+        must therefore be called by every process. Calling it from only one process
+        (e.g., inside an `if meep.am_master():` block) will deadlock.
         """
-        if not self.dft_objects:
+        if self.fields is None:
             raise RuntimeError(
-                "DFT monitor dft_obj must be initialized before calling get_dft_array"
+                "Fields must be initialized before calling get_dft_array; "
+                "call Simulation.init_sim() or Simulation.run() first"
             )
+        if dft_obj is None:
+            raise ValueError("dft_obj is required")
+        _check_component(component)
 
-        if hasattr(dft_obj, "swigobj"):
-            dft_swigobj = dft_obj.swigobj
-        else:
-            dft_swigobj = dft_obj
+        # `DftObj.swigobj` is created lazily, so a monitor that has not been
+        # through `_evaluate_dft_objects` yet must be initialized here rather
+        # than reported as an "invalid dft object".
+        dft_swigobj = (
+            dft_obj.ensure_swigobj() if isinstance(dft_obj, DftObj) else dft_obj
+        )
 
-        if type(dft_swigobj) is mp.dft_fields:
-            return mp.get_dft_fields_array(
-                self.fields, dft_swigobj, component, num_freq
-            )
-        elif type(dft_swigobj) is mp.dft_flux:
-            return mp.get_dft_flux_array(self.fields, dft_swigobj, component, num_freq)
-        elif type(dft_swigobj) is mp.dft_force:
-            return mp.get_dft_force_array(self.fields, dft_swigobj, component, num_freq)
-        elif type(dft_swigobj) is mp.dft_near2far:
-            return mp.get_dft_near2far_array(
-                self.fields, dft_swigobj, component, num_freq
-            )
-        else:
+        getter = _DFT_ARRAY_GETTERS.get(type(dft_swigobj))
+        if getter is None:
             raise ValueError(f"Invalid type of dft object: {dft_swigobj}")
 
-    def get_source(self, component, vol=None, center=None, size=None):
+        # Evaluating the material at the DFT grid points goes through the
+        # collective fields::get_eps/get_mu once per locally owned point, which
+        # does not line up across processes. See the FIXME in
+        # fields::process_dft_component.
+        if component in (mp.Dielectric, mp.Permeability) and mp.count_processors() > 1:
+            raise ValueError(
+                f"get_dft_array for component {component} is not supported with "
+                "more than one MPI process; use "
+                "get_array(component, vol=dft_obj.where) instead"
+            )
+
+        # Validate `num_freq` here rather than letting it reach C++: the check in
+        # dft_chunk::process_dft_component calls meep::abort, and under MPI that
+        # only fires on the ranks that own a matching chunk, so the remaining
+        # ranks hang in the subsequent all-reduce.
+        nfreq = len(dft_swigobj.freq)
+        if not isinstance(num_freq, (int, np.integer)) or not 0 <= num_freq < nfreq:
+            raise ValueError(
+                f"num_freq must be an integer in the range of [0, {nfreq}], "
+                f"but got {num_freq!r}"
+            )
+
+        return getter(self.fields, dft_swigobj, component, num_freq)
+
+    def get_source(
+        self,
+        component: int,
+        vol: Optional[Volume] = None,
+        center: Optional[Vector3Type] = None,
+        size: Optional[Vector3Type] = None,
+    ) -> np.ndarray:
         """
         Return an array of complex values of the [source](#source) amplitude for
         `component` over the given `vol` or `center`/`size`. The array has the same
         dimensions as that returned by [`get_array`](#array-slices).
         Not supported for [cylindrical coordinates](Python_Tutorials/Cylindrical_Coordinates.md).
+
+        This routine is *collective* and must be called by every process.
         """
-        if vol is None and center is None and size is None:
-            v = self.fields.total_volume()
-        else:
-            v = self._volume_from_kwargs(vol, center, size)
+        _check_component(component)
+        self._require_not_cylindrical("get_source")
+        v = self._volume_or_total(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
-        mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True, False)
+        rank, _ = mp._get_array_slice_dimensions(self.fields, v, dim_sizes, True, False)
         dims = [s for s in dim_sizes if s != 0]
         arr = np.zeros(
             dims, dtype=np.complex64 if mp.is_single_precision() else np.complex128
@@ -4145,8 +4292,14 @@ class Simulation:
         return arr
 
     def get_array_metadata(
-        self, vol=None, center=None, size=None, dft_cell=None, return_pw=False
-    ):
+        self,
+        vol: Optional[Volume] = None,
+        center: Optional[Vector3Type] = None,
+        size: Optional[Vector3Type] = None,
+        *,
+        dft_cell: Optional[DftObj] = None,
+        return_pw: bool = False,
+    ) -> np.ndarray:
         """
         This routine provides geometric information useful for interpreting the arrays
         returned by `get_array` or `get_dft_array` for the spatial region defined by `vol`
@@ -4178,54 +4331,100 @@ class Simulation:
         the *two* elements corresponding to the nearest Yee grid points into a *single*
         element using linear interpolation.
 
-        If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
-        list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by
-        default the return value is a 4-tuple `(x,y,z,w)`.
+        The return value is an `ArrayMetadata` named tuple, so it can be unpacked as
+        `x, y, z, w = sim.get_array_metadata(...)` or accessed by name as `meta.w`.
+        It also carries a `points` property holding the grid points as an array of
+        `mp.Vector3`s shaped like `w`:
+
+        ```python
+        meta = sim.get_array_metadata(vol=box)
+        integral = np.sum(meta.w * f(meta.points))
+        ```
+
+        The `return_pw` argument is deprecated; when `True` the return value is instead
+        a 2-tuple `(p, w)`, equivalent to `(meta.points, meta.w)`.
+
+        Note that `w` always corresponds to the collapsed (`snap=False`) grid slice, so it
+        matches the array returned by `get_array(..., snap=False)` but not necessarily the
+        one returned by `get_array(..., snap=True)`.
+
+        This routine is *collective* and must be called by every process.
         """
-        if dft_cell:
+        self._require_not_cylindrical("get_array_metadata")
+        if dft_cell is not None:
             vol = dft_cell.where
-        if vol is None and center is None and size is None:
-            v = self.fields.total_volume()
-        else:
-            v = self._volume_from_kwargs(vol, center, size)
-        xyzw_vector = self.fields.get_array_metadata(v)
+            center = size = None
+        v = self._volume_or_total(vol, center, size)
+        # `_get_array_metadata` returns the packed [NX, xtics, NY, ytics, NZ, ztics,
+        # weights] vector as a float64 NumPy array, so the slices below are views.
+        xyzw_vector = mp._get_array_metadata(self.fields, v)
         offset, tics = 0, []
-        for n in range(3):
+        for _ in range(3):
             N = int(xyzw_vector[offset])
             tics.append(xyzw_vector[offset + 1 : offset + 1 + N])
             offset += 1 + N
         wshape = [len(t) for t in tics if len(t) > 1]
         weights = np.reshape(xyzw_vector[offset:], wshape)
+        metadata = ArrayMetadata(*tics, weights)
         if return_pw:
-            points = [
-                mp.Vector3(x, y, z) for x in tics[0] for y in tics[1] for z in tics[2]
-            ]
-            return points, weights
-        return tuple(tics) + (weights,)
+            warnings.warn(
+                "the return_pw argument of get_array_metadata is deprecated; "
+                "use the `points` and `w` attributes of the returned ArrayMetadata",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return metadata.points, metadata.w
+        return metadata
 
-    def get_array_slice_dimensions(self, component, vol=None, center=None, size=None):
+    def get_array_slice_dimensions(
+        self,
+        component: Optional[int] = None,
+        vol: Optional[Volume] = None,
+        center: Optional[Vector3Type] = None,
+        size: Optional[Vector3Type] = None,
+    ) -> SliceDimensions:
         """
-        Computes the dimensions of an array slice for a particular `component` (`mp.Ez`, `mp.Ey`, etc.).
+        Computes the dimensions of the array slice that [`get_array`](#array-slices)
+        would return for the given region, without fetching the field data.
 
         Accepts either a volume object (`vol`), or a `center` and `size` `Vector3` pair.
+        If none are given, the entire cell is used.
 
-        Returns a tuple containing the dimensions (`dim_sizes`), a `Vector3` object
-        corresponding to the minimum corner of the volume (`min_corner`),
-        and a `Vector3` object corresponding to the maximum corner (`max_corner`).
+        Returns a `SliceDimensions` named tuple containing the dimensions (`dim_sizes`),
+        a `Vector3` object corresponding to the minimum corner of the volume
+        (`min_corner`), and `Vector3` object corresponding to the maximum corner
+        (`max_corner`). Being a named tuple, it still unpacks as
+        `dim_sizes, min_corner, max_corner = ...`.
+
+        `dim_sizes` is a tuple equal to the `shape` of the corresponding `get_array`
+        result, so empty dimensions are collapsed away rather than reported as length
+        2, and the tuple is as long as the slice has non-singleton dimensions:
+
+        ```python
+        dims, _, _ = sim.get_array_slice_dimensions(vol=box)
+        assert dims == sim.get_array(mp.Ez, vol=box).shape
+        ```
+
+        Array slices are always interpolated onto the centered Yee-cell grid, so the
+        result does not depend on the field component; `component` is accepted for
+        backward compatibility and is validated but otherwise unused. For the same
+        reason `dim_sizes` is also independent of `get_array`'s `snap` argument.
+
+        This routine is *collective* and must be called by every process.
         """
-        if vol is None and center is None and size is None:
-            v = self.fields.total_volume()
-        else:
-            v = self._volume_from_kwargs(vol, center, size)
+        if component is not None:
+            _check_component(component)
+        v = self._volume_or_total(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
         corners = []
-        _, _ = mp._get_array_slice_dimensions(
+        # Mirror get_array exactly: the centered grid (`mp.Centered`) with empty
+        # dimensions collapsed, then truncated to the reported rank.
+        rank, _, _ = mp._get_array_slice_dimensions(
             self.fields, v, dim_sizes, False, False, component, corners
         )
-        dim_sizes[dim_sizes == 0] = 1
-        min_corner = corners[0]
-        max_corner = corners[1]
-        return dim_sizes, min_corner, max_corner
+        return SliceDimensions(
+            tuple(int(s) for s in dim_sizes[:rank]), corners[0], corners[1]
+        )
 
     def get_eigenmode_coefficients(
         self,

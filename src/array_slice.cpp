@@ -85,10 +85,10 @@ typedef struct {
   // these fields are filled in by get_array_slice_dimensions
   // if the data parameter is non-null
   ivec min_corner, max_corner;
-  int num_chunks;
-  int rank;
+  int num_chunks = 0;
+  int rank = 0;
   direction ds[3];
-  size_t slice_size;
+  size_t slice_size = 0;
 
   // if non-null, min_max_loc[0,1] are filled in by get_array_slice_dimensions_chunkloop
   // with the (coordinate-wise) minimum and maximum grid points encountered
@@ -482,8 +482,18 @@ int fields::get_array_slice_dimensions(const volume &where, size_t dims[3], dire
     }
   data->num_chunks = sum_to_all(data->num_chunks);
   finished_working();
-  if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner))
-    return 0; // no data to write;
+  if (data->num_chunks == 0 || !(data->min_corner <= data->max_corner)) {
+    // no data to write;  `rank` and `slice_size` must still be set: callers
+    // such as do_get_array_slice size their allocation from data->slice_size,
+    // and `data` is typically an uninitialized stack object.  the
+    // finished_working() balances the am_now_working_on(FieldOutput) at the top
+    // of this function, which otherwise leaks onto the timing stack and
+    // corrupts every subsequent time_spent_on() query.
+    data->rank = 0;
+    data->slice_size = 0;
+    finished_working();
+    return 0;
+  }
 
   int rank = 0;
   size_t slice_size = 1;
@@ -622,8 +632,10 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   int elem_size = complex_data ? 2 : 1;
   void *vslice_uncollapsed;
 
-  vslice_uncollapsed =
-      memset(new realnum[slice_size * elem_size], 0, slice_size * elem_size * sizeof(realnum));
+  // never hand back a zero-length buffer (slice_size == 0 means the subvolume
+  // misses the cell entirely); callers reasonably except at least one element.
+  size_t alloc_size = (slice_size ? slice_size : 1) * elem_size;
+  vslice_uncollapsed = memset(new realnum[alloc_size], 0, alloc_size * sizeof(realnum));
 
   data.vslice = vslice_uncollapsed;
   data.snap = snap;
@@ -677,8 +689,14 @@ void *fields::do_get_array_slice(const volume &where, std::vector<component> com
   if (!snap) {
     realnum *slice =
         collapse_array((realnum *)vslice_uncollapsed, &rank, dims, dirs, where, elem_size);
-    rank = get_array_slice_dimensions(where, dims, dirs, true, false, 0, &data);
-    slice_size = data.slice_size;
+    // collapse_array updates rank/dims in place, so the collapsed size can be
+    // computed locally.  (Calling get_array_slice_dimensions again to recover it
+    // would cost a second full round of MPI all-reductions per slice.)
+    if (slice_size != 0) {
+      slice_size = 1;
+      for (int r = 0; r < rank; r++)
+        slice_size *= dims[r];
+    }
     vslice_uncollapsed = (realnum *)slice;
   }
   if (vslice) {
@@ -747,28 +765,38 @@ complex<realnum> *fields::get_complex_array_slice(const volume &where, component
 
 complex<realnum> *fields::get_source_slice(const volume &where, component source_slice_component,
                                            complex<realnum> *slice) {
+  // the NY/NZ and slice_index arithmetic in get_source_slice_chunkloop is not
+  // valid in cylindrical coordinates; fail loudly rather than returning garbage.
+  if (where.dim == Dcyl) meep::abort("get_source_slice does not support cylindrical coordinates.");
+
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2];
   int rank = get_array_slice_dimensions(where, dims, dirs, false, false, min_max_loc);
-  size_t slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
+  // dims[] is only written for indices < rank, so guard before reading dims[0].
+  size_t slice_size =
+      rank == 0 ? 1 : dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
   source_slice_data data;
   data.source_component = source_slice_component;
   data.slice_imin = gv.round_vec(min_max_loc[0]);
   data.slice_imax = gv.round_vec(min_max_loc[1]);
-  data.slice = new complex<realnum>[slice_size];
-  if (!data.slice) meep::abort("%s:%i: out of memory (%zu)", __FILE__, __LINE__, slice_size);
+  // allocate as realnum[] (like do_get_array_slice) so that this buffer and the
+  // one collapse_array may replace it with are freed through the same type.
+  data.slice =
+      (complex<realnum> *)memset(new realnum[2 * slice_size], 0, 2 * slice_size * sizeof(realnum));
 
   loop_in_chunks(get_source_slice_chunkloop, (void *)&data, where, Centered, true, false);
 
   complex<realnum> *slice_collapsed = collapse_array(data.slice, &rank, dims, dirs, where);
   rank = get_array_slice_dimensions(where, dims, dirs, true, false);
-  slice_size = dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
+  slice_size = rank == 0 ? 1 : dims[0] * (rank >= 2 ? dims[1] : 1) * (rank == 3 ? dims[2] : 1);
 
   if (slice) {
     memcpy(slice, slice_collapsed, 2 * slice_size * sizeof(realnum));
-    delete[] (complex<realnum> *)slice_collapsed;
+    // collapse_array may have replaced the buffer with one allocated as
+    // `new realnum[]`, so free it through realnum* to match.
+    delete[] (realnum *)slice_collapsed;
   }
   else
     slice = slice_collapsed;
@@ -789,24 +817,29 @@ std::vector<double> fields::get_array_metadata(const volume &where) {
   size_t dims[3];
   direction dirs[3];
   vec min_max_loc[2]; // extremal points in subgrid
-  get_array_slice_dimensions(where, dims, dirs, true, false, min_max_loc);
+  int rank = get_array_slice_dimensions(where, dims, dirs, true, false, min_max_loc);
 
   realnum *weights = get_array_slice(where, NO_COMPONENT);
 
   /* get length and endpoints of x,y,z tics arrays */
   size_t nxyz[3] = {1, 1, 1};
   double xyzmin[3] = {0.0, 0.0, 0.0}, xyzmax[3] = {0.0, 0.0, 0.0};
-  for (int nd = 0, rr = 0; nd < 3; ++nd) {
+  for (int nd = 0; nd < 3; ++nd) {
     direction d = direction(nd);
-    if (where.in_direction(d) == 0.0) {
-      xyzmin[nd] = xyzmax[nd] = where.in_direction_min(d);
-      nxyz[nd] = 1;
-    }
-    else {
-      nxyz[nd] = dims[rr++];
-      xyzmin[nd] = min_max_loc[0].in_direction(d);
-      xyzmax[nd] = min_max_loc[1].in_direction(d);
-    }
+    xyzmin[nd] = xyzmax[nd] = where.in_direction_min(d);
+    nxyz[nd] = 1;
+    /* dirs[0..rank-1] names the direction owning each axis of the slice.  Pair
+       them up by direction rather than assuming one axis per non-empty
+       direction: a direction can be absent from dirs either because it is
+       empty (and was collapsed) or because it spans a single grid point, and
+       dims[] is only populated for indices < rank. */
+    for (int rr = 0; rr < rank; ++rr)
+      if (dirs[rr] == d) {
+        nxyz[nd] = dims[rr];
+        xyzmin[nd] = min_max_loc[0].in_direction(d);
+        xyzmax[nd] = min_max_loc[1].in_direction(d);
+        break;
+      }
   }
 
   /* pack all data into a single vector with each tics array preceded by its */
