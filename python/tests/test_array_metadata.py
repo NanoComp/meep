@@ -123,7 +123,7 @@ class TestArrayMetadata(ApproxComparisonTestCase):
         (X, Y, Z, W) = sim.get_array_metadata(dft_cell=dft_obj)
         Eps = sim.get_array(vol=nonpml_vol, component=mp.Dielectric)
         EpsE2 = np.real(Eps * np.conj(Ez) * Ez)
-        # W is indexed (x, y) so the meshgrid must "ij" indexing; the
+        # W is indexed (x, y), so the meshgrid must use "ij" indexing; the
         # default "xy" would transpose it relative to W.
         xm, ym = np.meshgrid(X, Y, indexing="ij")
         vec_func_sum = np.sum(W * (xm**2 + 2 * ym**2))

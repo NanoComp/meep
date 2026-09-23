@@ -4419,8 +4419,8 @@ class Simulation:
         corners = []
         # Mirror get_array exactly: the centered grid (`mp.Centered`) with empty
         # dimensions collapsed, then truncated to the reported rank.
-        rank, _, _ = mp._get_array_slice_dimensions(
-            self.fields, v, dim_sizes, False, False, component, corners
+        rank, _ = mp._get_array_slice_dimensions(
+            self.fields, v, dim_sizes, True, False, mp.Centered, corners
         )
         return SliceDimensions(
             tuple(int(s) for s in dim_sizes[:rank]), corners[0], corners[1]
