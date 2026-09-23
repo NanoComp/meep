@@ -108,6 +108,142 @@ class TestCavityArraySlice(ApproxComparisonTestCase):
             vol = mp.Volume(center=self.center_2d, size=self.size_2d)
             self.sim.get_array(mp.Hz, vol, cmplx=True, arr=arr)
 
+    def test_user_array_wrong_rank(self):
+        # A flat array must not be accepted for a 2d slice: zip()-based shape
+        # checking used to truncate to the shorter sequence and let this
+        # through, after which C++ wrote past the end of the buffer.
+        self.sim.run(until_after_sources=0)
+        dtype = np.float32 if mp.is_single_precision() else np.float64
+        vol = mp.Volume(center=self.center_2d, size=self.size_2d)
+
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol, arr=np.zeros(126, dtype=dtype))
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol, arr=np.zeros((126, 38, 1), dtype=dtype))
+
+    def test_user_array_wrong_dtype(self):
+        # The SWIG typemap is a bare pointer cast, so a mismatched float width
+        # would make C++ write 2x the bytes the buffer can hold.
+        self.sim.run(until_after_sources=0)
+        wrong = np.float64 if mp.is_single_precision() else np.float32
+        vol = mp.Volume(center=self.center_1d, size=self.size_1d)
+
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol, arr=np.zeros(126, dtype=wrong))
+        with self.assertRaises(ValueError):
+            # complex buffer for a real slice is equally unusable
+            self.sim.get_array(mp.Hz, vol, arr=np.zeros(126, dtype=np.complex128))
+
+    def test_user_array_not_contiguous(self):
+        # np.require() used to silently substitute a copy here, so the caller's
+        # array was never actually written to.
+        self.sim.run(until_after_sources=0)
+        dtype = np.float32 if mp.is_single_precision() else np.float64
+        vol = mp.Volume(center=self.center_2d, size=self.size_2d)
+
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol, arr=np.zeros((126, 76), dtype=dtype)[:, ::2])
+
+        readonly = np.zeros((126, 38), dtype=dtype)
+        readonly.flags.writeable = False
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol, arr=readonly)
+
+    def test_slice_outside_cell(self):
+        # A subvolume that intersects no chunk used to leave slice_size
+        # uninitialized in do_get_array_slice, so the allocation was sized from
+        # stack garbage.
+        self.sim.run(until_after_sources=0)
+        arr = self.sim.get_array(
+            mp.Hz, center=mp.Vector3(1000, 1000), size=mp.Vector3(1, 1)
+        )
+        self.assertEqual(np.count_nonzero(arr), 0)
+
+        # The same path also left an am_now_working_on(FieldOutput) push on the
+        # timing stack, which pauses the parent sink for the rest of the run.
+        before = sum(self.sim.time_spent_on(mp.Stepping))
+        self.sim.run(until=50)
+        self.assertGreater(sum(self.sim.time_spent_on(mp.Stepping)), before)
+
+        # ...and a normal slice must still work afterwards.
+        vol = mp.Volume(center=self.center_2d, size=self.size_2d)
+        self.assertEqual(self.sim.get_array(mp.Hz, vol).shape, (126, 38))
+
+    def test_invalid_component(self):
+        self.sim.run(until_after_sources=0)
+        # out of range -> a bad value
+        with self.assertRaises(ValueError):
+            self.sim.get_array(component=-3)
+        # wrong type -> a bad type
+        with self.assertRaises(TypeError):
+            self.sim.get_array(component="Hz")
+        with self.assertRaises(TypeError):
+            self.sim.get_array(mp.Volume(center=self.center_1d, size=self.size_1d))
+        # component has no default any more
+        with self.assertRaises(TypeError):
+            self.sim.get_array()
+
+    def test_volume_and_center_are_exclusive(self):
+        self.sim.run(until_after_sources=0)
+        vol = mp.Volume(center=self.center_2d, size=self.size_2d)
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol=vol, center=self.center_2d)
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, vol=vol, size=self.size_2d)
+
+    def test_slice_dimensions_named_tuple(self):
+        self.sim.run(until_after_sources=0)
+        vol = mp.Volume(center=self.center_2d, size=self.size_2d)
+        dims = self.sim.get_array_slice_dimensions(mp.Hz, vol=vol)
+
+        # still unpacks positionally
+        dim_sizes, min_corner, max_corner = dims
+        self.assertIs(dim_sizes, dims.dim_sizes)
+        self.assertIs(min_corner, dims.min_corner)
+        self.assertIs(max_corner, dims.max_corner)
+        self.assertIsInstance(dims.min_corner, mp.Vector3)
+
+    def test_slice_dimensions_match_get_array(self):
+        """dim_sizes must equal the shape get_array actually returns."""
+        self.sim.run(until_after_sources=0)
+        regions = {
+            "2d": mp.Volume(center=self.center_2d, size=self.size_2d),
+            "line": mp.Volume(center=self.center_1d, size=self.size_1d),
+            "point": mp.Volume(center=self.center_1d, size=mp.Vector3()),
+        }
+        for name, vol in regions.items():
+            for component in (mp.Hz, mp.Ex, mp.Ey, mp.Dielectric):
+                for snap in (False, True):
+                    with self.subTest(region=name, component=component, snap=snap):
+                        dims, _, _ = self.sim.get_array_slice_dimensions(
+                            component, vol=vol
+                        )
+                        actual = self.sim.get_array(component, vol=vol, snap=snap).shape
+                        self.assertEqual(dims, actual)
+
+        # whole cell, and the component argument is genuinely optional
+        self.assertEqual(
+            self.sim.get_array_slice_dimensions().dim_sizes,
+            self.sim.get_array(mp.Hz).shape,
+        )
+
+    def test_keyword_only_options(self):
+        """cmplx/arr/frequency/snap may no longer be passed positionally."""
+        self.sim.run(until_after_sources=0)
+        vol = mp.Volume(center=self.center_1d, size=self.size_1d)
+        with self.assertRaises(TypeError):
+            self.sim.get_array(mp.Hz, vol, None, None, True)
+        # the region arguments stay positional
+        self.assertEqual(self.sim.get_array(mp.Hz, vol).shape, (126,))
+
+    def test_frequency_only_for_materials(self):
+        # `frequency` is only consumed when evaluating chi1inv, so silently
+        # accepting it for a field component hid a mistake in the caller.
+        self.sim.run(until_after_sources=0)
+        with self.assertRaises(ValueError):
+            self.sim.get_array(mp.Hz, frequency=0.25)
+        self.sim.get_array(mp.Dielectric, frequency=0.25)  # no raise
+
     def test_1d_complex_slice(self):
         self.sim.run(until_after_sources=0)
         vol = mp.Volume(center=self.center_1d, size=self.size_1d)
