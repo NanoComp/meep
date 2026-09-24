@@ -101,7 +101,7 @@ class SliceDimensions(NamedTuple):
     `Simulation.get_array_slice_dimensions`.
 
     This is a `tuple` subclass, so it still unpacks as
-    `dim_sizes`, min_corner, max_corner = ...`.
+    `dim_sizes, min_corner, max_corner = ...`.
     """
 
     dim_sizes: Tuple[int, ...]
@@ -146,7 +146,7 @@ def _check_component(component):
     """Raise unless `component` is a `component` or `derived_component` constant.
 
     The SWIG typemaps only test `value < 100` / `value >= 100` to pick an
-    overoad, so an out-of-range integer (e.g. a direction constant) is
+    overload, so an out-of-range integer (e.g. a direction constant) is
     silently reinterpreted as a component instead of being rejected.
     """
     if isinstance(component, bool) or not isinstance(component, (int, np.integer)):
@@ -160,7 +160,7 @@ def _check_component(component):
 
 
 # Maps the SWIG-wrapped DFT monitor type onto the corresponding
-# `get_dft_array<>` template instantiation from python/meep.i.
+# `_get_dft_array<>` template instantiation from python/meep.i.
 _DFT_ARRAY_GETTERS = {
     mp.dft_fields: mp.get_dft_fields_array,
     mp.dft_flux: mp.get_dft_flux_array,
