@@ -698,9 +698,8 @@ public:
   double in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, double val) { t[d] = val; };
 
-  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which
-  // case not thread-safe)
-  const char *str(char *buffer = 0, size_t buflen = 0);
+  // pretty-print to a static internal buffer (not thread-safe)
+  const char *str(void);
 
   double project_to_boundary(direction, double boundary_loc);
   friend vec zero_vec(ndim);
@@ -889,9 +888,8 @@ public:
   int in_direction(direction d) const { return t[d]; };
   void set_direction(direction d, int val) { t[d] = val; };
 
-  // pretty-print to a user-supplied buffer (if provided) or to a static internal buffer (in which
-  // case not thread-safe)
-  const char *str(char *buffer = 0, size_t buflen = 0);
+  // pretty-print to a static internal buffer (not thread-safe)
+  const char *str(void);
 
   ivec round_down_to_even(void) const {
     ivec result(dim);
@@ -997,7 +995,7 @@ public:
   vec get_max_corner() const { return max_corner; };
   direction normal_direction() const;
 
-  const char *str(char *buffer = 0, size_t buflen = 0);
+  const char *str(void);
 
 private:
   vec min_corner, max_corner;
@@ -1154,7 +1152,7 @@ public:
   double origin_y() const { return origin.y(); }
   double origin_z() const { return origin.z(); }
 
-  const char *str(char *buffer = 0, size_t buflen = 0);
+  const char *str(void);
 
   std::complex<double> get_split_costs(direction d, int split_point, bool frag_cost) const;
   void tile_split(int &best_split_point, direction &best_split_direction) const;

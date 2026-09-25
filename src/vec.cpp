@@ -1555,16 +1555,14 @@ field_rfunction derived_component_func(derived_component c, const grid_volume &g
 /* number of str() calls with no arguments that may be appear              */
 /* simultaneously as e.g. arguments to a single invocation of printf().    */
 /***************************************************************************/
-#define BUFLEN 100
+#define BUFLEN 1024
 #define NUMBUFS 10
-const char *ivec::str(char *buffer, size_t buflen) {
+const char *ivec::str(void) {
   static char bufring[NUMBUFS][BUFLEN];
   static int nbuf = 0;
-  if (buffer == 0) {
-    buffer = bufring[nbuf];
-    buflen = BUFLEN;
-    nbuf = (nbuf + 1) % NUMBUFS;
-  }
+  char *buffer = bufring[nbuf];
+  size_t buflen = BUFLEN;
+  nbuf = (nbuf + 1) % NUMBUFS;
   if (dim == Dcyl)
     snprintf(buffer, buflen, "{%i,%i}", t[R], t[Z]);
   else
@@ -1572,14 +1570,12 @@ const char *ivec::str(char *buffer, size_t buflen) {
   return buffer;
 }
 
-const char *vec::str(char *buffer, size_t buflen) {
+const char *vec::str(void) {
   static char bufring[NUMBUFS][BUFLEN];
   static int nbuf = 0;
-  if (buffer == 0) {
-    buffer = bufring[nbuf];
-    buflen = BUFLEN;
-    nbuf = (nbuf + 1) % NUMBUFS;
-  }
+  char *buffer = bufring[nbuf];
+  size_t buflen = BUFLEN;
+  nbuf = (nbuf + 1) % NUMBUFS;
   if (dim == Dcyl)
     snprintf(buffer, buflen, "{%f,%f}", t[R], t[Z]);
   else
@@ -1587,34 +1583,31 @@ const char *vec::str(char *buffer, size_t buflen) {
   return buffer;
 }
 
-const char *volume::str(char *buffer, size_t buflen) {
-  static char sbuf[1024]; // TODO: Use a bufring like the above?
-  if (buffer == 0) {
-    buffer = sbuf;
-    buflen = sizeof(sbuf);
-  }
+const char *volume::str(void) {
+  static char buffer[1024];
+  size_t buflen = sizeof(buffer);
   snprintf(buffer, buflen, "min_corner:%s, max_corner:%s", min_corner.str(), max_corner.str());
   return buffer;
 }
 
-const char *grid_volume::str(char *buffer, size_t buflen) {
-  static char sbuf[1024]; // TODO: is this big enough?
-  int written = 0;
-  if (buffer == 0) {
-    buffer = sbuf;
-    buflen = sizeof(sbuf);
-  }
+const char *grid_volume::str(void) {
+  static char buffer[1024];
+  size_t buflen = sizeof(buffer);
+  size_t written = 0;
 
-  written += snprintf(buffer + written, buflen - written,
-                      "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
-                      dimension_name(dim), a, inva, num[0], num[1], num[2]);
+  int result =
+      snprintf(buffer, buflen, "grid_volume {\n  dim:%s, a:%f, inva:%f, num:{%d, %d, %d}\n",
+               dimension_name(dim), a, inva, num[0], num[1], num[2]);
+  if (result < 0 || static_cast<size_t>(result) >= buflen) return buffer;
+  written = static_cast<size_t>(result);
 
   // Adapted from the print() method
   LOOP_OVER_DIRECTIONS(dim, d) {
-    written += snprintf(buffer + written, buflen - written, "  %s =%5g - %5g (%5g) \t",
-                        direction_name(d), origin.in_direction(d),
-                        origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
-    if (buflen - written <= 0) break;
+    result = snprintf(buffer + written, buflen - written, "  %s =%5g - %5g (%5g) \t",
+                      direction_name(d), origin.in_direction(d),
+                      origin.in_direction(d) + num_direction(d) / a, num_direction(d) / a);
+    if (result < 0 || static_cast<size_t>(result) >= buflen - written) return buffer;
+    written += static_cast<size_t>(result);
   }
   snprintf(buffer + written, buflen - written, "\n}");
   return buffer;
