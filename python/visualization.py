@@ -1523,6 +1523,7 @@ def plot3D(
     image_name: str = "sim.png",
     backend: str = "native",
     html_name: Optional[str] = None,
+    nlevels: Optional[int] = None,
     **kwargs,
 ):
     if backend == "native" and html_name is not None:
@@ -1534,7 +1535,7 @@ def plot3D(
                 "save_to_image is only supported by the 'native' (vispy) backend. "
                 "Use html_name=... to write the interactive viewer to a file."
             )
-        return _plot3D_plotly(sim, html_name=html_name, **kwargs)
+        return _plot3D_plotly(sim, html_name=html_name, nlevels=nlevels, **kwargs)
 
     if backend != "native":
         raise ValueError(
@@ -1576,10 +1577,10 @@ def plot3D(
     # Get eps for geometry
     eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics)), 2)
 
-    unique = np.unique(np.abs(eps_data)).tolist()
-
-    # Remove background material
-    unique.remove(np.round(np.abs(np.asarray(sim.default_material.epsilon_diag)), 2)[0])
+    # Remove the background material and bound the number of surfaces for
+    # continuously varying (for example, grayscale MaterialGrid) structures.
+    background = np.round(np.abs(np.asarray(sim.default_material.epsilon_diag)), 2)[0]
+    unique = _epsilon_levels(eps_data, background, nlevels)
 
     mesh_midpoint = (sim_size[0] / 2, sim_size[1] / 2, sim_size[2] / 2)
 
@@ -1860,7 +1861,35 @@ def _box_wireframe_trace(boxes, color, name: str, width: float = 2.0, dash=None)
     )
 
 
-def _epsilon_isosurfaces(sim, grid_resolution: float, max_grid_points: int):
+def _epsilon_levels(
+    eps_data: np.ndarray, background: Optional[float], nlevels: Optional[int]
+) -> List[float]:
+    """Returns at most ``nlevels`` evenly distributed material values."""
+    if nlevels is None:
+        nlevels = 10
+    if (
+        isinstance(nlevels, (bool, np.bool_))
+        or not isinstance(nlevels, (int, np.integer))
+        or nlevels < 1
+    ):
+        raise ValueError("nlevels must be a positive integer or None")
+
+    levels = np.unique(np.abs(eps_data))
+    if background is not None:
+        levels = levels[levels != background]
+    if len(levels) <= nlevels:
+        return levels.tolist()
+
+    indices = np.rint(np.linspace(0, len(levels) - 1, nlevels)).astype(int)
+    return levels[indices].tolist()
+
+
+def _epsilon_isosurfaces(
+    sim,
+    grid_resolution: float,
+    max_grid_points: int,
+    nlevels: Optional[int] = None,
+):
     """
     Extracts one isosurface per distinct permittivity in the cell, excluding the
     background material. Returns a list of (eps, vertices, faces) with the vertices
@@ -1898,7 +1927,7 @@ def _epsilon_isosurfaces(sim, grid_resolution: float, max_grid_points: int):
     # without a scalar permittivity (a MaterialGrid, say) have no value to skip.
     epsilon_diag = getattr(sim.default_material, "epsilon_diag", None)
     background = None if epsilon_diag is None else round(abs(epsilon_diag.x), 2)
-    unique = [eps for eps in np.unique(np.abs(eps_data)).tolist() if eps != background]
+    unique = _epsilon_levels(eps_data, background, nlevels)
 
     # spacing between adjacent samples, so marching cubes emits physical lengths
     spacing = tuple(extents / (counts - 1))
@@ -1922,6 +1951,7 @@ def _plot3D_plotly(
     html_name: Optional[str] = None,
     grid_resolution: Optional[float] = None,
     max_grid_points: int = 96**3,
+    nlevels: Optional[int] = None,
     opacity: float = 0.85,
     azimuth: float = 45,
     elevation: float = 10,
@@ -1956,6 +1986,7 @@ def _plot3D_plotly(
         sim,
         sim.resolution if grid_resolution is None else grid_resolution,
         max_grid_points,
+        nlevels,
     )
     for i, (eps, vertices, faces) in enumerate(isosurfaces):
         # Darker shades for the higher-index materials, as in the native backend,
