@@ -1,0 +1,151 @@
+name: run tests (macos)
+
+on:
+  pull_request:
+  push:
+  schedule:
+    - cron: 0 2 * * * # run at 2 AM UTC
+  workflow_dispatch:
+
+# Apple silicon (arm64) build, addressing the "CI support" item of #1853.
+# Mirrors the serial double-precision Linux job, same dependency revisions and
+# configure flags, so a difference points at the architecture, not the build.
+
+jobs:
+  build:
+    name: "apple silicon (macos arm64)"
+    runs-on: macos-latest
+
+    steps:
+    - name: Install pre-compiled dependencies
+      # The Linux job's apt list, spelled for Homebrew.  autoconf/automake/
+      # libtool/swig are pinned so a runner image change cannot alter it.
+      run: brew install autoconf automake libtool swig fftw gsl hdf5 guile libpng
+
+    - name: Define common environment variables
+      # After the install above, so that brew --prefix hdf5 resolves.
+      run: |
+        echo "CPPFLAGS=-I${HOME}/local/include -I$(brew --prefix)/include -I$(brew --prefix hdf5)/include" >> $GITHUB_ENV
+        echo "LDFLAGS=-L${HOME}/local/lib -L$(brew --prefix)/lib -L$(brew --prefix hdf5)/lib" >> $GITHUB_ENV
+        echo "GEN_CTL_IO=${HOME}/local/bin/gen-ctl-io" >> $GITHUB_ENV
+        echo "NPROC=$(sysctl -n hw.ncpu)" >> $GITHUB_ENV
+
+    - name: Checkout libctl repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/libctl
+        path: libctl-src
+
+    - name: Record libctl revision for the cache key
+      id: libctl
+      run: echo "sha=$(git -C libctl-src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Checkout harminv repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/harminv
+        path: harminv-src
+
+    - name: Checkout MPB repository
+      uses: actions/checkout@v7
+      with:
+        repository: NanoComp/mpb
+        path: mpb-src
+
+    - name: Cache dependency builds
+      uses: actions/cache@v6
+      id: deps-cache
+      with:
+        path: ~/local
+        key: deps-${{ runner.os }}-${{ runner.arch }}-libctl-${{ steps.libctl.outputs.sha }}-${{ hashFiles('.github/workflows/build-ci-macos.yml') }}
+
+    - name: Build and install libctl
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd libctl-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j ${NPROC} && make install
+
+    - name: Build and install harminv
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd harminv-src && sh autogen.sh --prefix=${HOME}/local --enable-shared && make -j ${NPROC} && make install
+
+    - name: Build and install MPB
+      # No LIBS=-ldl here: on macOS dlopen lives in libSystem and there is no
+      # libdl to link against.
+      if: steps.deps-cache.outputs.cache-hit != 'true'
+      run: cd mpb-src && sh autogen.sh --prefix=${HOME}/local --enable-shared --with-libctl=${HOME}/local/share/libctl --with-hermitian-eps && make -j ${NPROC} && make install
+
+    - name: Checkout Meep repository
+      uses: actions/checkout@v7
+
+    - name: Set up Python (version 3.11)
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        python -m pip install --upgrade pip wheel
+        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
+    - name: pip cache
+      uses: actions/cache@v6
+      with:
+        path: ${{ steps.pip-cache.outputs.dir }}
+        key: ${{ runner.os }}-${{ runner.arch }}-py3.11-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-${{ runner.arch }}-py3.11-pip-
+
+    - name: Install Python dependencies
+      run: pip install -r python/requirements.txt
+
+    - name: Run autoreconf
+      run: |
+        autoreconf --verbose --install --symlink --force
+        MEEP_VERSION=$(./configure -V | grep meep | awk '{print $3}')
+        echo "MEEP_VERSION=${MEEP_VERSION}" >> $GITHUB_ENV
+
+    - name: Run configure
+      run: ./configure --enable-maintainer-mode --prefix=${HOME}/local --with-libctl=${HOME}/local/share/libctl --without-mpi
+
+    - name: Run make
+      id: build
+      run: make -j ${NPROC}
+
+    - name: Run make install
+      # The Python package is staged by copying .libs/_meep.so, which on macOS
+      # records libmeep's install_name instead of a build-tree RUNPATH as on
+      # Linux.  Until it is installed, that absolute path does not exist.
+      run: make install
+
+    - name: Run make check (C++)
+      id: cpp-check
+      run: cd tests && make -j ${NPROC} check
+
+    - name: Run make check (Python)
+      id: py-check
+      # Runs whenever the build succeeded, so that a C++ failure does not hide
+      # the Python results.
+      if: '!cancelled() && steps.build.outcome == ''success'''
+      run: cd python && make -j ${NPROC} check
+
+    - name: Print C++ test logs
+      # Put the failing assertion in the job output, not only in an artifact.
+      if: "!cancelled() && steps.cpp-check.outcome == 'failure'"
+      run: cat tests/test-suite.log
+
+    - name: Archive C++ test logs
+      if: "!cancelled() && steps.cpp-check.outcome == 'failure'"
+      uses: actions/upload-artifact@v7
+      with:
+        name: cpp-tests-macos-arm64-log
+        path: ${{ github.workspace }}/tests/test-suite.log
+
+    - name: Print Python test logs
+      if: "!cancelled() && steps.py-check.outcome == 'failure'"
+      run: cat python/test-suite.log
+
+    - name: Archive Python test logs
+      if: "!cancelled() && steps.py-check.outcome == 'failure'"
+      uses: actions/upload-artifact@v7
+      with:
+        name: python-tests-macos-arm64-log
+        path: ${{ github.workspace }}/python/test-suite.log
