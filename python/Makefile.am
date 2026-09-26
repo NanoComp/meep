@@ -120,8 +120,10 @@ EXTRA_DIST = $(BUILT_SOURCES) meep.i meep-python.hpp typemap_utils.cpp materials
 CLEANFILES = .coverage
 MAINTAINERCLEANFILES = $(BUILT_SOURCES)
 
+# $(top_builddir)/src is for the generated meep/meep-config.h in a VPATH build.
 AM_CPPFLAGS = -I$(top_srcdir)/src               \
-              -I$(top_srcdir)/libpympb		\
+              -I$(top_builddir)/src             \
+              -I$(top_srcdir)/libpympb          \
               -I$(top_builddir) # for config.h
 
 LIBMEEP = $(top_builddir)/src/libmeep.la

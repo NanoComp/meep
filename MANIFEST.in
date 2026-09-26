@@ -1,0 +1,19 @@
+# The sdist has to carry enough of the autotools tree for setup.py to run
+# autoreconf && configure && make: everything in AC_CONFIG_FILES needs its
+# Makefile.am, scheme/ included, though the wheel configures --without-scheme.
+
+include configure.ac autogen.sh version.sh meep-pkgconfig.in
+include Makefile.am
+include NEWS.md AUTHORS COPYRIGHT LICENSE
+recursive-include m4 *.m4
+recursive-include src *.cpp *.hpp *.h *.am
+recursive-include libpympb *.cpp *.hpp *.am
+recursive-include scheme *.cpp *.hpp *.scm *.scm.in *.am
+recursive-include python *.py *.i *.hpp *.cpp *.txt *.am
+recursive-include tests *.cpp *.hpp *.h *.am
+# The wheel build reads these; one missing breaks `pip install --no-binary`.
+recursive-include tools/wheels *.sh *.py
+
+prune python/examples
+prune tests/data
+global-exclude *.pyc __pycache__ .DS_Store

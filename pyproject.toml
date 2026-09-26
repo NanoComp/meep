@@ -1,0 +1,120 @@
+# PEP 517 packaging for binary wheels; autotools remains the canonical build.
+#
+# The distribution and the import name are both `meep`. The Conda package is
+# named `pymeep`.
+#
+# The extensions are compiled with MPI; in a single process Meep behaves the
+# same way a build without MPI does.
+
+[build-system]
+# numpy is a build requirement: without numpy/arrayobject.h, configure only
+# warns ("disabling Python wrappers") and yields a wheel with no extensions.
+requires = ["setuptools>=77", "wheel", "numpy>=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "meep"
+dynamic = ["version"]
+description = "Free finite-difference time-domain (FDTD) software for electromagnetic simulations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "GPL-2.0-or-later"
+license-files = ["LICENSE", "COPYRIGHT"]
+authors = [{ name = "Simpetus and the Meep contributors" }]
+keywords = ["FDTD", "electromagnetism", "photonics", "nanophotonics", "simulation"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Science/Research",
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS :: MacOS X",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Physics",
+]
+# `import meep` pulls in numpy, scipy and matplotlib at module scope
+# (python/simulation.py).
+dependencies = [
+  "numpy>=2.0,<3",
+  "scipy",
+  "matplotlib",
+  # h5py vendors its own libhdf5 and so does this wheel (an MPI-IO build): two
+  # HDF5s in one process, kept apart by the mangled SONAMEs and RTLD_LOCAL.
+  "h5py",
+  # libmpi is not vendored, so importing mpi4py is what loads it before
+  # _meep.so asks for it. mpi4py also performs MPI_Init.
+  "mpi4py",
+  # The MPICH-ABI runtime the extensions are built against. On a cluster,
+  # uninstall it and point mpi4py at the site MPI: any MPICH derivative
+  # (MVAPICH, Intel MPI, HPE Cray MPICH) provides the libmpi.so.12 expected.
+  "mpich",
+]
+
+[project.optional-dependencies]
+adjoint = ["autograd", "jax", "jaxlib", "nlopt"]
+test = ["pytest", "parameterized", "trimesh"]
+
+[project.urls]
+Homepage = "https://meep.readthedocs.io"
+Documentation = "https://meep.readthedocs.io"
+Source = "https://github.com/NanoComp/meep"
+Issues = "https://github.com/NanoComp/meep/issues"
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+# musllinux would need the whole dependency stack rebuilt against musl, and the
+# 32-bit/big-endian targets have no realistic FDTD users.
+skip = "*-musllinux_* *_i686 *_ppc64le *_s390x"
+build-frontend = "build"
+# mpiexec comes from the `mpich` dependency, so the smoke test can run the
+# wheel under a real launcher, the only way to catch ranks that never join one
+# communicator.
+test-command = "python {project}/tools/wheels/smoke_test.py"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "bash {project}/tools/wheels/build_deps.sh"
+# No --strip: setup.py strips our binaries before patchelf touches them, and
+# stripping after patchelf can leave a library the loader refuses to map.
+repair-wheel-command = "LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:/tmp/meep-wheel-libs auditwheel repair --exclude libmpi.so.12 -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.linux.environment]
+MEEP_DEPS_PREFIX = "/usr/local"
+MEEP_WHEEL_LIBS = "/tmp/meep-wheel-libs"
+# Each interpreter builds in its own tree, so without these two the compile
+# command and the -g working directory differ every time and ccache never hits.
+CCACHE_BASEDIR = "/project"
+CCACHE_NOHASHDIR = "1"
+CPPFLAGS = "-I/usr/local/include"
+LDFLAGS = "-L/usr/local/lib -L/usr/local/lib64"
+PKG_CONFIG_PATH = "/usr/local/lib/pkgconfig:/usr/local/lib64/pkgconfig"
+LD_LIBRARY_PATH = "/usr/local/lib:/usr/local/lib64"
+
+[tool.cibuildwheel.macos]
+before-all = "bash {project}/tools/wheels/build_deps.sh"
+# The -e flags keep MPICH out of the wheel, as --exclude does on Linux. Both
+# are needed: mpicc links -lmpi -lpmpi, and "libpmpi" does not contain the
+# substring "libmpi". That leaves an @rpath reference with nothing to resolve
+# it, which is deliberate: meep/__init__.py imports mpi4py first, and dyld
+# matches our reference against the libmpi it has already loaded.
+repair-wheel-command = "DYLD_LIBRARY_PATH=$HOME/meep-deps/lib:/tmp/meep-wheel-libs delocate-wheel -e libmpi -e libpmpi --require-archs {delocate_archs} -w {dest_dir} -v {wheel}"
+
+[tool.cibuildwheel.macos.environment]
+MEEP_DEPS_PREFIX = "$HOME/meep-deps"
+MEEP_WHEEL_LIBS = "/tmp/meep-wheel-libs"
+# Unlike Linux, the dependency prefix is not already on PATH, and the build
+# needs the mpicc that build_deps.sh installed there from the `mpich` wheel.
+PATH = "$HOME/meep-deps/bin:$PATH"
+CPPFLAGS = "-I$HOME/meep-deps/include -I/opt/homebrew/include -I/usr/local/include"
+LDFLAGS = "-L$HOME/meep-deps/lib -L/opt/homebrew/lib -L/usr/local/lib"
+PKG_CONFIG_PATH = "$HOME/meep-deps/lib/pkgconfig:/opt/homebrew/lib/pkgconfig:/usr/local/lib/pkgconfig"
+
+# The floor is set by the vendored Homebrew bottles: delocate refuses a dylib
+# whose LC_BUILD_VERSION is newer than the wheel's tag. It therefore tracks the
+# runner image in .github/workflows/wheels.yml (macos-14) and must move with
+# it; lowering it would mean building the whole stack, libgfortran included,
+# from source.
+[[tool.cibuildwheel.overrides]]
+select = "*-macosx_arm64"
+inherit.environment = "append"
+environment.MACOSX_DEPLOYMENT_TARGET = "14.0"
