@@ -1,6 +1,8 @@
 from autograd import numpy as npa
-from autograd import grad
+from autograd import value_and_grad
 from typing import Callable, List
+
+from scipy.optimize import minimize
 
 
 def unfilter_design(target: List[float], processing: Callable, maxiter: int = 100):
@@ -32,24 +34,23 @@ def unfilter_design(target: List[float], processing: Callable, maxiter: int = 10
     def design_diff(x):
         return npa.sum((processing(x) - target) ** 2)
 
-    def f(x, gradient):
-        gradient[:] = grad(design_diff, 0)(x)
-        return design_diff(x)
+    # scipy's `jac=True` takes the objective and its gradient from a single
+    # call, which also avoids evaluating `processing` twice per iteration.
+    f = value_and_grad(design_diff)
 
-    import nlopt
-
-    # Due to a potential bug in LD_MMA, we are switching to LD_CCSAQ
-    # See https://github.com/NanoComp/meep/issues/2400
-    algorithm = nlopt.LD_CCSAQ
     n = len(target)
     x = target
-    lb, ub = npa.zeros((n,)), npa.ones((n,))
     ftol = 1e-5
-    solver = nlopt.opt(algorithm, n)
-    solver.set_lower_bounds(lb)
-    solver.set_upper_bounds(ub)
-    solver.set_min_objective(f)
-    solver.set_maxeval(maxiter)
-    solver.set_ftol_rel(ftol)
-    x[:] = solver.optimize(x)
+    # L-BFGS-B is the gradient-based, box-constrained solver in scipy, and the
+    # design weights are bounded to [0,1]. Its `ftol` is the relative decrease
+    # in the objective, the same convergence criterion used previously.
+    result = minimize(
+        f,
+        x,
+        jac=True,
+        method="L-BFGS-B",
+        bounds=[(0.0, 1.0)] * n,
+        options={"maxiter": maxiter, "ftol": ftol},
+    )
+    x[:] = result.x
     return x
