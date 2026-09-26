@@ -652,6 +652,7 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 %feature("nothreadallow") py_do_harminv;
 %feature("nothreadallow") _get_array_slice_dimensions;
 %feature("nothreadallow") _get_gradient;
+%feature("nothreadallow") _get_geometry_gradient;
 %feature("nothreadallow") _get_dft_array;
 
 %numpy_typemaps(std::complex<double>, NPY_CDOUBLE, int);
@@ -865,6 +866,47 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 //--------------------------------------------------
 // typemaps needed for material grid
 //--------------------------------------------------
+
+%inline %{
+void _get_geometry_gradient(PyObject *grad, double scalegrad,
+                   meep::dft_fields *fields_a_0, meep::dft_fields *fields_a_1, meep::dft_fields *fields_a_2,
+                   meep::dft_fields *fields_f_0, meep::dft_fields *fields_f_1, meep::dft_fields *fields_f_2,
+                   meep::grid_volume *grid_volume, PyObject *frequencies,
+                   meep_geom::geom_epsilon *geps, int object_index, PyObject *params,
+                   double fd_step) {
+
+    PyArrayObject *pao_grad = (PyArrayObject *)grad;
+    if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_grad)) meep::abort("Numpy grad array must be C-style contiguous.");
+    if (PyArray_NDIM(pao_grad) != 2) meep::abort("Numpy grad array must have 2 dimensions.");
+    double *grad_c = (double *)PyArray_DATA(pao_grad);
+    npy_intp nparams = PyArray_DIMS(pao_grad)[1];
+
+    PyArrayObject *pao_params = (PyArrayObject *)params;
+    if (!PyArray_Check(pao_params)) meep::abort("params must be a numpy array.");
+    if (!PyArray_ISCARRAY(pao_params)) meep::abort("Numpy params array must be C-style contiguous.");
+    if (PyArray_DIMS(pao_params)[0] != nparams)
+        meep::abort("params has %td entries but grad is allocated for %td.",
+                    PyArray_DIMS(pao_params)[0], nparams);
+    int *params_c = (int *)PyArray_DATA(pao_params);
+
+    std::vector<meep::dft_fields *> adjoint_fields = {fields_a_0,fields_a_1,fields_a_2};
+    std::vector<meep::dft_fields *> forward_fields = {fields_f_0,fields_f_1,fields_f_2};
+
+    PyArrayObject *pao_freqs = (PyArrayObject *)frequencies;
+    if (!PyArray_Check(pao_freqs)) meep::abort("frequencies parameter must be numpy array.");
+    if (!PyArray_ISCARRAY(pao_freqs)) meep::abort("Numpy frequencies array must be C-style contiguous.");
+    double *frequencies_c = (double *)PyArray_DATA(pao_freqs);
+    npy_intp nf = PyArray_DIMS(pao_freqs)[0];
+    if (PyArray_DIMS(pao_grad)[0] != nf)
+        meep::abort("Numpy grad array is allocated for %td frequencies; it should be allocated for %td.",
+                    PyArray_DIMS(pao_grad)[0], nf);
+
+    meep_geom::geometry_addgradient(grad_c, nparams, nf, adjoint_fields, forward_fields,
+                                    frequencies_c, scalegrad, *grid_volume, geps,
+                                    object_index, params_c, fd_step);
+}
+%}
 
 %inline %{
 void _get_gradient(PyObject *grad, double scalegrad,

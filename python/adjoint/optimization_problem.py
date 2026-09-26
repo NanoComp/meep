@@ -6,6 +6,7 @@ import meep as mp
 
 from . import LDOS, DesignRegion, utils, ObjectiveQuantity
 from . import source_gradient
+from . import geometry_gradient
 
 
 class OptimizationProblem:
@@ -154,6 +155,12 @@ class OptimizationProblem:
         self.differentiable_sources = source_gradient.differentiable_sources(self.sim)
         self.source_gradient = {}
 
+        # Geometric objects flagged with `differentiable=[...]`: the shape
+        # derivative of the structure itself, as opposed to the density inside
+        # a design region.
+        self.differentiable_objects = geometry_gradient.differentiable_objects(self.sim)
+        self.geometry_gradient = {}
+
         # The optimizer has three allowable states : "INIT", "FWD", and "ADJ".
         #    INIT - The optimizer is initialized and ready to run a forward simulation
         #    FWD  - The optimizer has already run a forward simulation
@@ -227,10 +234,14 @@ class OptimizationProblem:
                     f"Incorrect solver state detected: {self.current_state}"
                 )
 
-        if self.differentiable_sources:
-            # Only change the return shape when the user asked for source
-            # gradients; without a flagged source this is exactly as before.
-            return self.f0, {"design": self.gradient, **self.source_gradient}
+        if self.differentiable_sources or self.differentiable_objects:
+            # Only change the return shape when something extra was flagged;
+            # otherwise this is exactly as before.
+            return self.f0, {
+                "design": self.gradient,
+                **self.source_gradient,
+                **self.geometry_gradient,
+            }
 
         return self.f0, self.gradient
 
@@ -269,6 +280,14 @@ class OptimizationProblem:
         # register design region
         self.forward_design_region_monitors = utils.install_design_region_monitors(
             self.sim, self.design_regions, self.frequencies, self.decimation_factor
+        )
+        # an ordinary object has no monitor of its own, so its fields have to be
+        # recorded in both runs
+        self.forward_geometry_monitors = geometry_gradient.install_geometry_monitors(
+            self.sim,
+            self.differentiable_objects,
+            self.frequencies,
+            self.decimation_factor,
         )
 
     def forward_run(self):
@@ -361,6 +380,7 @@ class OptimizationProblem:
 
         self.adjoint_design_region_monitors = []
         self.adjoint_source_monitors = []
+        self.adjoint_geometry_monitors = []
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.restart_fields()
@@ -381,6 +401,15 @@ class OptimizationProblem:
 
             # register a monitor over each differentiable source's support; the
             # adjoint field there is the gradient with respect to its currents
+            self.adjoint_geometry_monitors.append(
+                geometry_gradient.install_geometry_monitors(
+                    self.sim,
+                    self.differentiable_objects,
+                    self.frequencies,
+                    self.decimation_factor,
+                )
+            )
+
             self.adjoint_source_monitors.append(
                 source_gradient.install_source_gradient_monitors(
                     self.sim,
@@ -498,8 +527,31 @@ class OptimizationProblem:
                 )
         return grads
 
+    def calculate_geometry_gradient(self):
+        """Shape derivatives for each flagged geometric object."""
+        if not self.differentiable_objects:
+            return {}
+        out = {}
+        for ar in range(len(self.objective_functions)):
+            for oi, (object_index, obj) in enumerate(self.differentiable_objects):
+                grads = geometry_gradient.gradient(
+                    self.sim,
+                    obj,
+                    object_index,
+                    self.forward_geometry_monitors[oi],
+                    self.adjoint_geometry_monitors[ar][oi],
+                    self.frequencies,
+                )
+                key = geometry_gradient.object_key(obj, object_index)
+                if len(self.objective_functions) == 1:
+                    out[key] = grads
+                else:
+                    out.setdefault(key, []).append(grads)
+        return out
+
     def calculate_gradient(self):
         self.source_gradient = self.calculate_source_gradient()
+        self.geometry_gradient = self.calculate_geometry_gradient()
 
         # Iterate through all design regions and calculate gradient
         self.gradient = [
