@@ -22,15 +22,15 @@ vec.cpp step_generic.cpp meepgeom.cpp GDSIIgeom.cpp $(HDRS) $(BUILT_SOURCES)
 SUBDIRS = support
 libmeep_la_LIBADD = support/libsupport.la
 
-libmeep_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
+libmeep_la_LDFLAGS = -no-undefined -version-info @SHARED_VERSION_INFO@
 
 PRELUDE = "/* This file was automatically generated --- DO NOT EDIT */"
 
 noinst_PROGRAMS = sphere_quad
 sphere_quad_SOURCES = sphere-quad.cpp
-SPHERE_QUAD = $(top_builddir)/src/sphere_quad
+SPHERE_QUAD = $(top_builddir)/src/sphere_quad$(EXEEXT)
 sphere-quad.h:
-	make sphere_quad
+	$(MAKE) $(AM_MAKEFLAGS) sphere_quad$(EXEEXT)
 	(echo $(PRELUDE); echo; $(SPHERE_QUAD)) > $@
 
 step_generic_stride1.cpp: step_generic.cpp
