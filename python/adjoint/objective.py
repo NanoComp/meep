@@ -127,6 +127,8 @@ class ObjectiveQuantity(abc.ABC):
         else:
             # Multi-frequency simulations.
             scale = dV * iomega / adj_src_phase
+            # Compensate for the half-step phase relative to the source center frequency.
+            scale *= np.exp(1j * np.pi * (self._frequencies - src.frequency) * dt)
 
         # Cmpensate for the fact that real fields take the real part of the
         # current, which halves the Fourier amplitude at the positive frequency
