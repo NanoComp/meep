@@ -362,6 +362,136 @@ parallel monitors, each with its own stack, and flip `sign` on the lower one.
 is a worked two-etch grating coupler radiating through a thick superstrate into a
 fiber, with a forward-only mode and an optimization mode.
 
+Differentiating With Respect To Sources
+---------------------------------------
+
+The design region is not the only differentiable input. A source can be one too,
+and it is nearly free: writing Maxwell's equations as $A(\rho) E = -i\omega J$
+gives $\partial J_{obj}/\partial J = -i\omega\lambda$, so the derivative with
+respect to a source is just the adjoint field sampled where that source sits. It
+needs no simulation beyond the adjoint run already being performed.
+
+A source opts in by naming the parameters it should be differentiated with
+respect to:
+
+```py
+src = mp.Source(
+    mp.GaussianSource(fcen, fwidth=df),
+    component=mp.Ez,
+    center=mp.Vector3(-1, 0),
+    differentiable=["amplitude"],
+    name="drive",
+)
+
+opt = mpa.OptimizationProblem(
+    simulation=sim,
+    objective_functions=[objective],
+    objective_arguments=[monitor],
+    design_regions=[design_region],
+    frequencies=frequencies,
+)
+
+value, grad = opt([rho])
+grad["design"]                # exactly as before
+grad["drive"]["amplitude"]    # one entry per frequency
+```
+
+The names given in `differentiable` are the keys of the resulting subtree, so the
+flag and the gradient cannot drift apart. With no flagged source the return value
+is unchanged, so nothing existing is affected.
+
+Every source accepts `'amplitude'`, `'currents'` and `'amp_data'`. Individual
+source classes accept more: `GaussianBeam3DSource` takes `'beam_x0'`,
+`'beam_kdir'`, `'beam_w0'` and `'beam_E0'`, which are the parameters worth
+optimizing — the amplitude of a linear simulation is not one of them, since the
+fields scale with it by definition.
+
+Those beam derivatives are obtained by finite-differencing Meep's own beam
+construction and contracting the result against the per-point cotangent. That
+costs **no extra FDTD runs**, only re-evaluating the beam, and each directional
+derivative is contracted as it is formed so no dense Jacobian is ever built.
+Meep already takes the same approach one level up, finite-differencing the
+material grid inside `material_grids_addgradient`.
+
+Two of them come with a caveat. `beam_kdir`'s length is ignored, so only its
+direction is meaningful; the gradient is projected onto the tangent space of
+that direction, because the component along it is not a derivative of anything.
+And in 2D only the out-of-plane component of `beam_E0` is meaningful for a TM
+beam: perturbing the in-plane components makes the beam mixed TE/TM, and Meep
+then places no sources at all.
+
+`'center'` and `'size'` are rejected outright. They move the grid points the
+source occupies rather than the amplitudes applied to them, and the adjoint
+formulation for sources gathers the cotangent over a *fixed* set of points, so a
+derivative there is outside the formulation rather than merely missing.
+
+### Supplying the amplitudes yourself
+
+`amp_data` already lets a source take its profile from an array, which is what a
+source computed somewhere else — by a mode solver, a propagator, or JAX —
+naturally produces. It is now differentiable:
+
+```py
+src = mp.Source(
+    mp.GaussianSource(fcen, fwidth=df),
+    component=mp.Ez,
+    center=mp.Vector3(-1, 0),
+    size=mp.Vector3(0, 4),
+    amp_data=profile,          # trilinearly interpolated onto the grid
+    differentiable=["amp_data"],
+    name="sheet",
+)
+```
+
+The gradient has the shape of `amp_data`. Meep interpolates that array onto the
+grid, and the adjoint applies the transpose of the same interpolation, so the
+cotangent comes back on the array the user actually supplied rather than on the
+grid points underneath it.
+
+An `amp_func` cannot be differentiated: it is evaluated inside Meep at each grid
+point, so there is no array for a cotangent to land on.
+
+### With JAX
+
+A source with `amp_data` given to `MeepJaxWrapper` is differentiated
+automatically. There is nothing to flag, because the parameters that produced
+the array live upstream in JAX rather than in Meep — Meep returns the cotangent with respect to
+the current array and JAX carries it the rest of the way:
+
+```py
+def loss(rho, beam_params):
+    currents = build_beam(beam_params)          # pure JAX
+    (dft,) = wrapped_meep([rho], [currents])
+    return jnp.sum(jnp.abs(dft) ** 2)
+
+value, (d_rho, d_beam) = jax.value_and_grad(loss, argnums=(0, 1))(rho, beam_params)
+```
+
+This is the objective-side protocol run backwards. There, Meep returns monitor
+values and JAX owns the post-processing; here JAX supplies currents and Meep
+returns their cotangent. The cotangent follows the convention JAX and autograd
+both use for a real function of a complex input, $dJ/d(\mathrm{Re}\,a) - i\,
+dJ/d(\mathrm{Im}\,a)$, so it chains without adjustment.
+
+### Checking a source gradient
+
+Two cautions, both of which produce a wrong answer that looks like a bug in the
+gradient rather than like noise.
+
+Fix the run length. `stop_when_dft_decayed` is adaptive, so a perturbed run stops
+at a different time and that difference scales with the perturbation; the ratio
+of the adjoint gradient to the finite difference then settles at a fixed wrong
+value instead of converging as the step shrinks.
+
+Give the adjoint run enough time. In a lossless background the adjoint DFT rings
+considerably longer than the forward one, and the source gradient *is* the
+adjoint field, so an under-converged adjoint hits it directly. In the calibration
+for this feature the error was 16% at one run length and vanished entirely once
+the run was doubled.
+
+Finally, a source inside or near a PML is rejected: its adjoint field is absorbed,
+so the gradient would come back finite, smooth, and wrong.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 

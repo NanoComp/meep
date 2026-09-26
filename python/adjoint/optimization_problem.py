@@ -5,6 +5,7 @@ import numpy as np
 import meep as mp
 
 from . import LDOS, DesignRegion, utils, ObjectiveQuantity
+from . import source_gradient
 
 
 class OptimizationProblem:
@@ -146,6 +147,13 @@ class OptimizationProblem:
         # store sources for finite difference estimations
         self.forward_sources = self.sim.sources
 
+        # Sources flagged with `differentiable=[...]` are a second category of
+        # differentiable input alongside the design regions. Their gradient is
+        # the adjoint field sampled over the source's own support, so it needs
+        # no simulation beyond the adjoint run already being performed.
+        self.differentiable_sources = source_gradient.differentiable_sources(self.sim)
+        self.source_gradient = {}
+
         # The optimizer has three allowable states : "INIT", "FWD", and "ADJ".
         #    INIT - The optimizer is initialized and ready to run a forward simulation
         #    FWD  - The optimizer has already run a forward simulation
@@ -218,6 +226,11 @@ class OptimizationProblem:
                 raise ValueError(
                     f"Incorrect solver state detected: {self.current_state}"
                 )
+
+        if self.differentiable_sources:
+            # Only change the return shape when the user asked for source
+            # gradients; without a flagged source this is exactly as before.
+            return self.f0, {"design": self.gradient, **self.source_gradient}
 
         return self.f0, self.gradient
 
@@ -347,6 +360,7 @@ class OptimizationProblem:
             self.sim.change_k_point(-1 * self.sim.k_point)
 
         self.adjoint_design_region_monitors = []
+        self.adjoint_source_monitors = []
         for ar in range(len(self.objective_functions)):
             # Reset the fields
             self.sim.restart_fields()
@@ -360,6 +374,17 @@ class OptimizationProblem:
                 utils.install_design_region_monitors(
                     self.sim,
                     self.design_regions,
+                    self.frequencies,
+                    self.decimation_factor,
+                )
+            )
+
+            # register a monitor over each differentiable source's support; the
+            # adjoint field there is the gradient with respect to its currents
+            self.adjoint_source_monitors.append(
+                source_gradient.install_source_gradient_monitors(
+                    self.sim,
+                    self.differentiable_sources,
                     self.frequencies,
                     self.decimation_factor,
                 )
@@ -385,7 +410,97 @@ class OptimizationProblem:
         # update optimizer's state
         self.current_state = "ADJ"
 
+    def calculate_source_gradient(self):
+        """Gather the adjoint field over each differentiable source's support.
+
+        Returns a dict keyed by source name (or index), each holding a dict
+        keyed by the parameter names the source declared in `differentiable`.
+        """
+        if not self.differentiable_sources:
+            return {}
+
+        out = {}
+        for ar in range(len(self.objective_functions)):
+            for si, src in enumerate(self.differentiable_sources):
+                monitors = self.adjoint_source_monitors[ar][si]
+                # the adjoint field carries the normalization the objective
+                # quantity applied when it placed the adjoint source, so the
+                # transpose has to use that same quantity's phase
+                scale = source_gradient.source_grad_scale(
+                    self.sim,
+                    src,
+                    self.frequencies,
+                    self.objective_arguments[0]._adj_src_phase(),
+                )
+                grads = self._source_gradient_for(src, monitors, scale)
+                key = source_gradient.source_key(src, si)
+                if len(self.objective_functions) == 1:
+                    out[key] = grads
+                else:
+                    out.setdefault(key, []).append(grads)
+        return out
+
+    def _source_gradient_for(self, src, monitors, scale):
+        """Gradients for one differentiable source, keyed by parameter name."""
+        beam_names = [name for name in src.differentiable if name.startswith("beam_")]
+        other_names = [
+            name for name in src.differentiable if not name.startswith("beam_")
+        ]
+
+        grads = {}
+        plain = [n for n in other_names if n != "amp_data"]
+        if plain:
+            currents = monitors[0].gather(self.sim, scale)
+            everything = source_gradient.contract(src, currents)
+            grads.update({name: everything[name] for name in plain})
+        if "amp_data" in other_names:
+            # the transpose of the trilinear interpolation amp_file_func does
+            currents = monitors[0].gather(self.sim, scale)
+            grads["amp_data"] = np.squeeze(
+                np.array(
+                    [
+                        source_gradient.amp_data_gradient(
+                            self.sim,
+                            src,
+                            monitors[0].positions(self.sim),
+                            np.asarray(currents)[f_index],
+                        )
+                        for f_index in range(len(np.atleast_1d(self.frequencies)))
+                    ]
+                )
+            )
+
+        if beam_names:
+            # Contract the per-point cotangents onto the beam's own parameters,
+            # one frequency at a time so the rows stay separable.
+            cotangents_by_frequency = []
+            for f_index in range(len(np.atleast_1d(self.frequencies))):
+                cotangents = {}
+                for monitor in monitors:
+                    values = monitor.gather(self.sim, scale)
+                    cotangents[monitor.component] = (
+                        monitor.positions(self.sim),
+                        np.asarray(values)[f_index].ravel(),
+                    )
+                cotangents_by_frequency.append(
+                    source_gradient.beam_parameter_gradients(
+                        self.sim,
+                        src,
+                        beam_names,
+                        cotangents,
+                        source_gradient.normal_index(src),
+                        center=monitors[0].volume.center,
+                    )
+                )
+            for name in beam_names:
+                grads[name] = np.squeeze(
+                    np.array([row[name] for row in cotangents_by_frequency])
+                )
+        return grads
+
     def calculate_gradient(self):
+        self.source_gradient = self.calculate_source_gradient()
+
         # Iterate through all design regions and calculate gradient
         self.gradient = [
             [
