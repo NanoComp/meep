@@ -418,8 +418,11 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
       for (int i = 0; i < num_chunks; ++i) {
         if (!chunks[i]->is_mine()) continue;
         grid_volume gvu(chunks[i]->gv);
-        ivec _iscoS(S.transform(gvu.little_owned_corner(cS), sn));
-        ivec _iecoS(S.transform(gvu.big_owned_corner(cS), sn));
+        ivec _iscoS(S.transform(use_symmetry ? gvu.little_owned_corner(cS)
+                                             : gvu.little_corner() + gvu.iyee_shift(cS),
+                                sn));
+        ivec _iecoS(S.transform(
+            use_symmetry ? gvu.big_owned_corner(cS) : gvu.big_corner() + gvu.iyee_shift(cS), sn));
         ivec iscoS(max(user_volume.little_owned_corner(cgrid), min(_iscoS, _iecoS))),
             iecoS(max(_iscoS, _iecoS)); // fix ordering due to to transform
 
@@ -444,6 +447,18 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
             iecoS.set_direction(d, min(isym, iecoS).in_direction(d));
         }
         ivec iecS(min(ie - shifti, iecoS));
+
+        // A chunk origin may lie between points of the global component grid.
+        // For source loops (use_symmetry=false), keep the loop aligned with the
+        // global grid so that interpolation weights are independent of chunking.
+        if (!use_symmetry) {
+          LOOP_OVER_DIRECTIONS(gv.dim, d) {
+            const int parity = (iscS.in_direction(d) - (is - shifti).in_direction(d)) % 2;
+            if (parity) iscS.set_direction(d, iscS.in_direction(d) + 1);
+            if ((iecS.in_direction(d) - (is - shifti).in_direction(d)) % 2)
+              iecS.set_direction(d, iecS.in_direction(d) - 1);
+          }
+        }
 
         if (iscS <= iecS) { // non-empty intersection
           // Determine weights at chunk looping boundaries:
