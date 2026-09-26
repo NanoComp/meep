@@ -4093,10 +4093,11 @@ The output functions described above write the data for the fields and materials
 <div class="class_members" markdown="1">
 
 ```python
-def get_array(component=None,
+def get_array(component,
               vol=None,
               center=None,
               size=None,
+              *,
               cmplx=None,
               arr=None,
               frequency=0,
@@ -4163,6 +4164,14 @@ parameter, or use the default, the slicing routines always give you the same-siz
 array for all components. You should *not* try to predict the exact size of these
 arrays; rather, you should simply rely on Meep's output.
 
+If `arr` is supplied, its dtype, shape, and memory layout must match the slice
+exactly; otherwise a `ValueError` is raised. (The data are written into `arr`
+in place by the C++ library, which cannot itself detect a mismatch.)
+
+This routine is *collective*: it performs an MPI all-reduce internally and must
+therefore be called by every process. Calling it from only one process (e.g.,
+inside an `if meep.am_master():` block) will deadlock.
+
 </div>
 
 </div>
@@ -4175,7 +4184,7 @@ arrays; rather, you should simply rely on Meep's output.
 <div class="class_members" markdown="1">
 
 ```python
-def get_dft_array(dft_obj=None, component=None, num_freq=None):
+def get_dft_array(dft_obj, component, num_freq):
 ```
 
 <div class="method_docstring" markdown="1">
@@ -4183,14 +4192,22 @@ def get_dft_array(dft_obj=None, component=None, num_freq=None):
 Returns the Fourier-transformed fields as a NumPy array. The type is either `numpy.complex64`
 or `numpy.complex128` depending on the [floating-point precision of the fields](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays). The DFT fields are centered on the Yee-grid voxels using bilinear interpolation of the nearest Yee-grid points.
 
-+ **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_fields`, or `dft_near2far` object
-  obtained from calling the appropriate `add` function (e.g., `mp.add_flux`).
++ **`dft_obj` [ `DftObj` class ]** — A `dft_flux`, `dft_force`, `dft_energy`, `dft_fields`,
+  or `dft_near2far` object obtained from calling the appropriate `add` function
+  (e.g., `mp.add_flux`).
 
 + **`component` [ `component` constant ]**— The field component (e.g., `meep.Ez`).
 
 + **`num_freq` [ `int` ]** — The index of the frequency. An integer in the range `0...nfreq-1`,
   where `nfreq` is the number of frequencies stored in `dft_obj` as set by the
   `nfreq` parameter to `add_dft_fields`, `add_flux`, etc.
+
+If `component` vanishes everywhere by symmetry, the return value is a
+zero-dimensional array containing zero.
+
+This routine is *collective*: it performs an MPI all-reduce internally and
+must therefore be called by every process. Calling it from only one process
+(e.g., inside an `if meep.am_master():` block) will deadlock.
 
 </div>
 
@@ -4212,6 +4229,7 @@ Note that although the various field components are stored at different places i
 def get_array_metadata(vol=None,
                        center=None,
                        size=None,
+                       *,
                        dft_cell=None,
                        return_pw=False):
 ```
@@ -4248,9 +4266,24 @@ For empty dimensions of the grid slice `get_array_metadata` will collapse
 the *two* elements corresponding to the nearest Yee grid points into a *single*
 element using linear interpolation.
 
-If `return_pw=True`, the return value is a 2-tuple `(p,w)` where `p` (points) is a
-list of `mp.Vector3`s with the same dimensions as `w` (weights). Otherwise, by
-default the return value is a 4-tuple `(x,y,z,w)`.
+The return value is an `ArrayMetadata` named tuple, so it can be unpacked as
+`x, y, z, w = sim.get_array_metadata(...)` or accessed by name as `meta.w`.
+It also carries a `points` property holding the grid points as an array of
+`mp.Vector3`s shaped like `w`:
+
+```python
+meta = sim.get_array_metadata(vol=box)
+integral = np.sum(meta.w * f(meta.points))
+```
+
+The `return_pw` argument is deprecated; when `True` the return value is instead
+a 2-tuple `(p, w)`, equivalent to `(meta.points, meta.w)`.
+
+Note that `w` always corresponds to the collapsed (`snap=False`) grid slice, so it
+matches the array returned by `get_array(..., snap=False)` but not necessarily the
+one returned by `get_array(..., snap=True)`.
+
+This routine is *collective* and must be called by every process.
 
 </div>
 
@@ -4305,7 +4338,7 @@ plt.show()
   dft_cell       = sim.add_flux(freq, 0, 1, monitor)
   sim.run(...)    # timestep until DFTs converged
   (Ey,Ez,Hy,Hz)  = [sim.get_dft_array(dft_cell,c,0) for c in [mp.Ey, mp.Ez, mp.Hy, mp.Hz]]
-  (x,y,z,w)      = sim.get_array_metadata(dft=dft_cell)
+  (x,y,z,w)      = sim.get_array_metadata(dft_cell=dft_cell)
   flux_density   = np.real( np.conj(Ey)*Hz - np.conj(Ez)*Hy )    # array
   flux           = np.sum(w*flux_density)                        # scalar
 ```
@@ -4329,6 +4362,8 @@ Return an array of complex values of the [source](#source) amplitude for
 `component` over the given `vol` or `center`/`size`. The array has the same
 dimensions as that returned by [`get_array`](#array-slices).
 Not supported for [cylindrical coordinates](Python_Tutorials/Cylindrical_Coordinates.md).
+
+This routine is *collective* and must be called by every process.
 
 </div>
 

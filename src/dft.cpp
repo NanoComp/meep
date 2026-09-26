@@ -21,6 +21,7 @@
 #include <string.h>
 #include <algorithm>
 #include <assert.h>
+#include <limits>
 #include "meep.hpp"
 #include "meep_internals.hpp"
 
@@ -949,8 +950,10 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
   /*****************************************************************/
   size_t start[3] = {0, 0, 0};
   size_t file_count[3] = {1, 1, 1}, array_count[3] = {1, 1, 1};
-  int file_offset[3] = {0, 0, 0};
-  int file_stride[3] = {1, 1, 1};
+  // signed and pointer-width: file_stride is negated for reflected symmetry
+  // images, and the index space is size_t.
+  ptrdiff_t file_offset[3] = {0, 0, 0};
+  ptrdiff_t file_stride[3] = {1, 1, 1};
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
 
@@ -998,7 +1001,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
   /* loop over all grid points in our piece of the volume        */
   /***************************************************************/
   vec rshift(shift * (0.5 * fc->gv.inva));
-  int chunk_idx = 0;
+  size_t chunk_idx = 0;
   complex<double> integral = 0.0;
   component c_conjugate = (component)(ic_conjugate >= 0 ? ic_conjugate : -ic_conjugate);
   LOOP_OVER_IVECS(fc->gv, is, ie, idx) {
@@ -1021,9 +1024,10 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
     if (mode2_data) mode2val = eigenmode_amplitude(mode2_data, loc, S.transform(c, sn));
 
     if (file) {
-      int idx2 = ((((file_offset[0] + file_offset[1] + file_offset[2]) + loop_i1 * file_stride[0]) +
-                   loop_i2 * file_stride[1]) +
-                  loop_i3 * file_stride[2]);
+      ptrdiff_t idx2 =
+          ((((file_offset[0] + file_offset[1] + file_offset[2]) + loop_i1 * file_stride[0]) +
+            loop_i2 * file_stride[1]) +
+           loop_i3 * file_stride[2]);
 
       dft_val *= interp_w;
 
@@ -1040,8 +1044,9 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
       // (for a 2D array) n2 + n1*N2
       // (for a 3D array) n3 + n2*N3 + n1*N2*N3
       // where NI = number of points in Ith direction.
-      int idx2 = 0;
-      for (int i = rank - 1, stride = 1; i >= 0; stride *= array_count[i--])
+      size_t idx2 = 0;
+      size_t stride = 1;
+      for (int i = rank - 1; i >= 0; stride *= array_count[i--])
         idx2 += stride * (iloc.in_direction(ds[i]) / 2);
       field_array[idx2] = interp_w * dft_val;
     }
@@ -1168,9 +1173,41 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   /***************************************************************/
   int ic_conjugate = (int)c_conjugate;
   if (component_index(c) == -1) {
+    // c is Dielectric/Permeability/NO_COMPONENT, for which no DFT chunks exist;
+    // walk the chunks of one stored component instead, evaluating the material
+    // (or the integration weight) at those grid points.  chunklists[i] may be
+    // NULL on a process that owns no part of the monitor, so search for the
+    // first non-NULL list and reduce, to keep the choice -- and hence the
+    // collective dimension computation below -- identical on every process.
+    //
+    // FIXME: for Dielectric/Permeability the chunk loop calls fields::get_eps /
+    // get_mu once per *locally owned* grid point, and both of those are
+    // themselves collective (they end in sum_to_all).  Processes own different
+    // numbers of points, so the calls do not line up and the run deadlocks.
+    // Fail with an actionable message until that is restructured to evaluate
+    // chi1inv locally, the way get_array_slice_chunkloop does.  (NO_COMPONENT
+    // takes the same branch but only needs the local integration weights, so it
+    // is unaffected.)
+    if ((c == Dielectric || c == Permeability) && count_processors() > 1)
+      meep::abort("get_dft_array for %s is not supported with more than one MPI process; "
+                  "use fields::get_array_slice(where, %s) instead",
+                  component_name(c), component_name(c));
     ic_conjugate = -((int)c);
+    const int none = std::numeric_limits<int>::max();
+    int encoded = none;
+    for (int ncl = 0; ncl < num_chunklists; ncl++)
+      if (chunklists[ncl]) {
+        encoded = (ncl << 16) | (int)chunklists[ncl]->c;
+        break;
+      }
+    am_now_working_on(MpiAllTime);
+    encoded = -max_to_all(-encoded); // i.e., min_to_all
+    finished_working();
+    if (encoded == none)
+      meep::abort("process_dft_component: no DFT chunks for component %s", component_name(c));
+    chunklists += encoded >> 16;
     num_chunklists = 1;
-    c = chunklists[0]->c;
+    c = (component)(encoded & 0xffff);
   }
 
   ivec min_corner, max_corner;
@@ -1302,6 +1339,19 @@ complex<realnum> *fields::get_dft_array(dft_fields fdft, component c, int num_fr
   return collapse_array(array, rank, dims, dirs, fdft.where);
 }
 
+complex<realnum> *fields::get_dft_array(dft_energy energy, component c, int num_freq, int *rank,
+                                        size_t dims[3]) {
+  dft_chunk *chunklists[4];
+  chunklists[0] = energy.E;
+  chunklists[1] = energy.D;
+  chunklists[2] = energy.H;
+  chunklists[3] = energy.B;
+  complex<realnum> *array;
+  direction dirs[3];
+  process_dft_component(chunklists, 4, num_freq, c, 0, &array, rank, dims, dirs);
+  return collapse_array(array, rank, dims, dirs, energy.where);
+}
+
 /***************************************************************/
 /* wrapper around process_dft_component that writes HDF5       */
 /* datasets for all components at all frequencies stored in    */
@@ -1317,28 +1367,35 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
   // grid is two pixels thick in those directions, but we want the HDF5 output
   // to be just one pixel thick in those directions. solution: first get the
   // fields in array form (as get_dft_array), then collapse degenerate dimensions
-  // and export the collapsed array to HDF5. in this case the max_to_all() below
-  // is needed to make sure everybody agrees on how many frequencies there are,
-  // because some processes' field chunks may have no overlap with dft_volume,
-  // in which case those processes will think NumFreqs==0.
-  bool have_empty_dims = false;
+  // and export the collapsed array to HDF5.
+  //
+  // note that this gather-and-collapse path needs at least one *non*-empty
+  // dimension to produce an array (it bails out below when rank == 0), so the
+  // flag below asks whether such a dimension exists rather than whether an
+  // empty one does; a volume of zero thickness in every direction goes through
+  // the direct per-chunk write instead.
+  bool have_nonempty_dims = false;
   LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
-  if (dft_volume.in_direction(d) != 0.0) have_empty_dims = true;
+  if (dft_volume.in_direction(d) != 0.0) have_nonempty_dims = true;
 
   h5file *file = 0;
-  if (have_empty_dims && am_master()) {
+  if (have_nonempty_dims && am_master()) {
     char filename[100];
     snprintf(filename, 100, "%s%s", HDF5FileName, strstr("%.h5", HDF5FileName) ? "" : ".h5");
     file = new h5file(filename, h5file::WRITE, false /*parallel*/);
   }
+  // subtle! some processes' field chunks may have no overlap with dft_volume,
+  // in which case those processes see NumFreqs == 0 above.  they must still
+  // agree with everybody else, or they will skip the loop below and fail to
+  // join the collective operations inside process_dft_component.
   am_now_working_on(MpiAllTime);
-  if (have_empty_dims) NumFreqs = max_to_all(NumFreqs); // subtle!
+  NumFreqs = max_to_all(NumFreqs);
   finished_working();
 
   bool first_component = true;
   for (int num_freq = 0; num_freq < NumFreqs; num_freq++)
     FOR_COMPONENTS(c) {
-      if (!have_empty_dims) {
+      if (!have_nonempty_dims) {
         process_dft_component(chunklists, num_chunklists, num_freq, c, HDF5FileName, 0, 0, 0, 0, 0,
                               0, Ex, &first_component);
       }

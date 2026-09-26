@@ -602,6 +602,23 @@ PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where
     return rval;
 }
 
+/* Return fields::get_array_metadata's packed
+   [NX, xtics, NY, ytics, NZ, ztics, weights] vector as a numpy float64 array.
+   Going through the %template(DoubleVector) wrapper instead would marshal the
+   (potentially very large) weights array one Python float at a time. */
+PyObject *_get_array_metadata(meep::fields *f, const meep::volume &where) {
+    // Return value: New reference
+    std::vector<double> xyzw = f->get_array_metadata(where);
+
+    npy_intp size = static_cast<npy_intp>(xyzw.size());
+    PyObject *py_arr = PyArray_SimpleNew(1, &size, NPY_DOUBLE);
+    if (!py_arr) return NULL;
+    if (size > 0) {
+        memcpy(PyArray_DATA((PyArrayObject *)py_arr), xyzw.data(), xyzw.size() * sizeof(double));
+    }
+    return py_arr;
+}
+
 #ifdef HAVE_MPB
 meep::eigenmode_data *_get_eigenmode(meep::fields *f, double frequency, meep::direction d, const meep::volume where,
                                      const meep::volume eig_vol, int band_num, const meep::vec &_kpoint,
@@ -651,6 +668,7 @@ void _get_eigenmode(meep::fields *f, double frequency, meep::direction d, const 
 %feature("nothreadallow") _get_farfield;
 %feature("nothreadallow") py_do_harminv;
 %feature("nothreadallow") _get_array_slice_dimensions;
+%feature("nothreadallow") _get_array_metadata;
 %feature("nothreadallow") _get_gradient;
 %feature("nothreadallow") _get_dft_array;
 
@@ -1479,6 +1497,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
 %template(get_dft_fields_array) _get_dft_array<meep::dft_fields>;
 %template(get_dft_force_array) _get_dft_array<meep::dft_force>;
 %template(get_dft_near2far_array) _get_dft_array<meep::dft_near2far>;
+%template(get_dft_energy_array) _get_dft_array<meep::dft_energy>;
 
 %template(FragmentStatsVector) std::vector<meep_geom::fragment_stats>;
 %template(DftDataVector) std::vector<meep_geom::dft_data>;
@@ -1592,6 +1611,7 @@ kpoint_list get_eigenmode_coefficients_and_kpoints(meep::fields *f, meep::dft_fl
 PyObject *_get_array_slice_dimensions(meep::fields *f, const meep::volume &where, size_t dims[3],
                                       bool collapse_empty_dimensions, bool snap_empty_dimensions,
                                       meep::component cgrid = Centered, PyObject *min_max_loc = NULL);
+PyObject *_get_array_metadata(meep::fields *f, const meep::volume &where);
 
 %ignore eps_func;
 %ignore inveps_func;
