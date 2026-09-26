@@ -73,6 +73,7 @@ class DesignRegion:
             onp.array(frequencies),
             sim.geps,
             finite_difference_step,
+            getattr(self.design_parameters, "grid_id", -1),
         )
         return onp.squeeze(grad).T
 

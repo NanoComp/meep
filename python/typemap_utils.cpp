@@ -495,6 +495,16 @@ static int pymaterial_grid_to_material_grid(PyObject *po, material_data *md) {
   // initialize grid size
   if (!get_attr_v3(po, &md->grid_size, "grid_size")) { return 0; }
 
+  // carry the Python-level identity across, so the adjoint gradient of a design
+  // region can tell its own grid apart from a neighbouring one
+  {
+    PyObject *py_grid_id = PyObject_GetAttrString(po, "grid_id");
+    if (!py_grid_id) return 0;
+    md->grid_id = PyLong_AsLong(py_grid_id);
+    Py_DECREF(py_grid_id);
+    if (md->grid_id == -1 && PyErr_Occurred()) return 0;
+  }
+
   // initialize user specified materials
   PyObject *po_medium1 = PyObject_GetAttrString(po, "medium1");
   if (!po_medium1 || !pymedium_to_medium(po_medium1, &md->medium_1)) {
