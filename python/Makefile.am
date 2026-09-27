@@ -77,6 +77,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_material_grid.py          \
     $(TEST_DIR)/test_materials_library.py      \
     $(TEST_DIR)/test_medium_evaluations.py     \
+    $(TEST_DIR)/test_mesh.py                   \
     $(MPBPYTEST)                               \
     $(MODE_COEFFS_TEST)                        \
     $(MODE_DECOMPOSITION_TEST)                 \
@@ -252,7 +253,7 @@ adjoint_PYTHON  = $(srcdir)/adjoint/__init__.py              \
 
 PY_PKG_FILES = $(INIT_PY) $(HL_IFACE) .libs/_meep.so
 
-meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE)
+meep: _meep.la $(MPB_LA) __init__.py $(HL_IFACE) $(adjoint_PYTHON)
 	mkdir -p meep/adjoint
 	cp $(PY_PKG_FILES) meep
 	cp $(adjoint_PYTHON) meep/adjoint
