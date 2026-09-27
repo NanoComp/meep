@@ -28,7 +28,7 @@ def unfilter_design(target: List[float], processing: Callable, maxiter: int = 10
         maxiter: maximum number of iterations for the optimization
 
     Returns:
-        Optimized design variables x
+        Optimized design variables as a new double-precision array.
     """
 
     def design_diff(x):
@@ -39,18 +39,16 @@ def unfilter_design(target: List[float], processing: Callable, maxiter: int = 10
     f = value_and_grad(design_diff)
 
     n = len(target)
-    x = target
     ftol = 1e-5
     # L-BFGS-B is the gradient-based, box-constrained solver in scipy, and the
     # design weights are bounded to [0,1]. Its `ftol` is the relative decrease
     # in the objective, the same convergence criterion used previously.
     result = minimize(
         f,
-        x,
+        target,
         jac=True,
         method="L-BFGS-B",
         bounds=[(0.0, 1.0)] * n,
         options={"maxiter": maxiter, "ftol": ftol},
     )
-    x[:] = result.x
-    return x
+    return result.x
