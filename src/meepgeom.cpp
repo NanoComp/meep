@@ -18,6 +18,7 @@
 #include <vector>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
+#include "stability.hpp"
 
 namespace meep_geom {
 
@@ -1821,6 +1822,17 @@ static pol *add_pols(pol *pols, const susceptibility_list &slist) {
 void geom_epsilon::add_susceptibilities(meep::structure *s) {
   add_susceptibilities(meep::E_stuff, s);
   add_susceptibilities(meep::H_stuff, s);
+
+  // Check each distinct medium once: one material can be shared by several objects.
+  std::vector<const medium_struct *> checked;
+  medium_struct *mm;
+  for (int i = 0; i < geometry.num_items; ++i)
+    if (is_medium(geometry.items[i].material, &mm))
+      check_medium_stability_once(mm, s->gv, s->dt, checked);
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    if (is_medium(extra_materials.items[i], &mm))
+      check_medium_stability_once(mm, s->gv, s->dt, checked);
+  if (is_medium(default_material, &mm)) check_medium_stability_once(mm, s->gv, s->dt, checked);
 }
 
 void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s) {
