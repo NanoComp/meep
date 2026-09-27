@@ -1171,45 +1171,10 @@ complex<double> fields::process_dft_component(dft_chunk **chunklists, int num_ch
   /***************************************************************/
   /***************************************************************/
   /***************************************************************/
-  int ic_conjugate = (int)c_conjugate;
-  if (component_index(c) == -1) {
-    // c is Dielectric/Permeability/NO_COMPONENT, for which no DFT chunks exist;
-    // walk the chunks of one stored component instead, evaluating the material
-    // (or the integration weight) at those grid points.  chunklists[i] may be
-    // NULL on a process that owns no part of the monitor, so search for the
-    // first non-NULL list and reduce, to keep the choice -- and hence the
-    // collective dimension computation below -- identical on every process.
-    //
-    // FIXME: for Dielectric/Permeability the chunk loop calls fields::get_eps /
-    // get_mu once per *locally owned* grid point, and both of those are
-    // themselves collective (they end in sum_to_all).  Processes own different
-    // numbers of points, so the calls do not line up and the run deadlocks.
-    // Fail with an actionable message until that is restructured to evaluate
-    // chi1inv locally, the way get_array_slice_chunkloop does.  (NO_COMPONENT
-    // takes the same branch but only needs the local integration weights, so it
-    // is unaffected.)
-    if ((c == Dielectric || c == Permeability) && count_processors() > 1)
-      meep::abort("get_dft_array for %s is not supported with more than one MPI process; "
-                  "use fields::get_array_slice(where, %s) instead",
-                  component_name(c), component_name(c));
-    ic_conjugate = -((int)c);
-    const int none = std::numeric_limits<int>::max();
-    int encoded = none;
-    for (int ncl = 0; ncl < num_chunklists; ncl++)
-      if (chunklists[ncl]) {
-        encoded = (ncl << 16) | (int)chunklists[ncl]->c;
-        break;
-      }
-    am_now_working_on(MpiAllTime);
-    encoded = -max_to_all(-encoded); // i.e., min_to_all
-    finished_working();
-    if (encoded == none)
-      meep::abort("process_dft_component: no DFT chunks for component %s", component_name(c));
-    chunklists += encoded >> 16;
-    num_chunklists = 1;
-    c = (component)(encoded & 0xffff);
-  }
+  if (component_index(c) == -1)
+    meep::abort("get_dft_array for %s is not supported", component_name(c));
 
+  int ic_conjugate = (int)c_conjugate;
   ivec min_corner, max_corner;
   int rank;
   direction ds[3];
@@ -1375,8 +1340,9 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
   // empty one does; a volume of zero thickness in every direction goes through
   // the direct per-chunk write instead.
   bool have_nonempty_dims = false;
-  LOOP_OVER_DIRECTIONS(dft_volume.dim, d)
-  if (dft_volume.in_direction(d) != 0.0) have_nonempty_dims = true;
+  LOOP_OVER_DIRECTIONS(dft_volume.dim, d) {
+    if (dft_volume.in_direction(d) != 0.0) have_nonempty_dims = true;
+  }
 
   h5file *file = 0;
   if (have_nonempty_dims && am_master()) {
@@ -1384,10 +1350,8 @@ void fields::output_dft_components(dft_chunk **chunklists, int num_chunklists, v
     snprintf(filename, 100, "%s%s", HDF5FileName, strstr("%.h5", HDF5FileName) ? "" : ".h5");
     file = new h5file(filename, h5file::WRITE, false /*parallel*/);
   }
-  // subtle! some processes' field chunks may have no overlap with dft_volume,
-  // in which case those processes see NumFreqs == 0 above.  they must still
-  // agree with everybody else, or they will skip the loop below and fail to
-  // join the collective operations inside process_dft_component.
+  // synchronize NumFreqs, since some processes may not overlap with dft_volume
+  // but must still participate in collective operations below.
   am_now_working_on(MpiAllTime);
   NumFreqs = max_to_all(NumFreqs);
   finished_working();
