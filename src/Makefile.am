@@ -1,15 +1,16 @@
 lib_LTLIBRARIES = libmeep.la
 include_HEADERS = meep.hpp
-pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp meep/meep-config.h meepgeom.hpp material_data.hpp adjust_verbosity.hpp
+pkginclude_HEADERS = meep/mympi.hpp meep/vec.hpp meep/meep-config.h meep/backend_hooks.hpp meepgeom.hpp material_data.hpp adjust_verbosity.hpp
 
 AM_CPPFLAGS = -I$(top_srcdir)/src
 
 BUILT_SOURCES = sphere-quad.h step_generic_stride1.cpp meep/meep-config.h
 
-HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp	\
+HDRS = meep.hpp meep_internals.hpp meep/mympi.hpp meep/vec.hpp meep/backend_hooks.hpp	\
 bicgstab.hpp meepgeom.hpp material_data.hpp adjust_verbosity.hpp
 
 libmeep_la_SOURCES = array_slice.cpp anisotropic_averaging.cpp 		\
+backend_hooks.cpp	\
 bands.cpp boundaries.cpp bicgstab.cpp casimir.cpp 	\
 cw_fields.cpp dft.cpp dft_ldos.cpp energy_and_flux.cpp 	\
 fields.cpp fields_dump.cpp fix_boundary_sources.cpp loop_in_chunks.cpp h5fields.cpp h5file.cpp 	\

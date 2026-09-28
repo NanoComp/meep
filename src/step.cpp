@@ -22,6 +22,7 @@
 #include <math.h>
 
 #include "meep.hpp"
+#include "meep/backend_hooks.hpp"
 #include "meep_internals.hpp"
 
 #include "config.h"
@@ -39,6 +40,13 @@ void fields::step() {
     synchronized_magnetic_fields = 1; // reset synchronization count
     restore_magnetic_fields();
   }
+
+  // If a backend is installed and chooses to handle this step, hand off
+  // the entire timestep to it.  Backends that cannot handle the current
+  // configuration may return false to fall through to the CPU path.
+  // Callers that need to suppress the backend (e.g. solve_cw, which
+  // runs on the host arrays) set `backend_suspended = true`.
+  if (!backend_suspended && meep_backend.step && meep_backend.step(this)) return;
 
   am_now_working_on(Stepping);
 
