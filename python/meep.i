@@ -1020,6 +1020,7 @@ void _get_gradient(PyObject *grad, double scalegrad,
     $1 = (double *)array_data($input);
 }
 %apply double* xtics {
+    double* positions,
      double* ytics, double* ztics, double* weights,
      double* vgrp, double* cscale, double* farpt_list
 };
@@ -1084,7 +1085,8 @@ void _get_gradient(PyObject *grad, double scalegrad,
 }
 %apply std::complex<double>* grid_vals {
      std::complex<double>* eigfreq, std::complex<double>* coeffs,
-     std::complex<double>* dJ, std::complex<double>* amp_arr
+     std::complex<double>* dJ, std::complex<double>* amp_arr,
+     std::complex<double>* grad, std::complex<double>* EH
 };
 
 // typemaps for diffractedplanewave

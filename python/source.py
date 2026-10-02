@@ -15,6 +15,67 @@ def check_positive(prop, val):
         raise ValueError(f"{prop} must be positive. Got {val}")
 
 
+# Parameters every source can be differentiated with respect to.  "currents" is
+# the cotangent with respect to the per-point complex current amplitudes Meep
+# actually applies to the Yee grid; it is the universal representation, and the
+# one the JAX bridge uses.  "amplitude" is exact and needs no finite difference,
+# since it scales those currents linearly.
+_DIFFERENTIABLE_ALWAYS = ("currents", "amplitude", "amp_data")
+
+# Parameters that move the source's support rather than change its amplitudes.
+# The adjoint machinery gathers the cotangent at a *fixed* set of grid points
+# (see dft_fields::fourier_sourcegradient), so a derivative here is not merely
+# unimplemented -- it is outside the formulation.
+_DIFFERENTIABLE_MOVES_SUPPORT = ("center", "size", "volume")
+
+
+def _validate_differentiable(src, differentiable):
+    """Check and normalize a source's `differentiable` argument.
+
+    Returns a tuple of parameter names.  Raises `ValueError` for a name the
+    source does not have, and `NotImplementedError` for a name that is
+    meaningful but whose sensitivity is not yet implemented, so that the two
+    cases are not confused with one another.
+    """
+    if differentiable is None:
+        return ()
+    if isinstance(differentiable, str):
+        raise ValueError(
+            "`differentiable` takes a list of parameter names, not a bare "
+            f"string; use ['{differentiable}'] instead."
+        )
+
+    valid = tuple(_DIFFERENTIABLE_ALWAYS) + tuple(
+        getattr(src, "_differentiable_params", ())
+    )
+    if "amp_data" in differentiable and getattr(src, "amp_data", None) is None:
+        raise ValueError(
+            "'amp_data' was requested but this source has none; pass "
+            "amp_data=<array> to differentiate with respect to it."
+        )
+
+    names = []
+    for name in differentiable:
+        if name in _DIFFERENTIABLE_MOVES_SUPPORT:
+            raise ValueError(
+                f"'{name}' changes which grid points the source occupies, not "
+                "the amplitudes it applies to them, so its derivative is not "
+                "defined by the adjoint formulation Meep uses for sources. "
+                "Parameterize the amplitudes instead, e.g. with 'currents'."
+            )
+        if name not in valid:
+            raise ValueError(
+                f"'{name}' is not a differentiable parameter of "
+                f"{type(src).__name__}. Valid choices are: "
+                f"{', '.join(sorted(valid))}."
+            )
+        names.append(name)
+
+    if len(set(names)) != len(names):
+        raise ValueError(f"`differentiable` contains duplicate names: {names}")
+    return tuple(names)
+
+
 class Source:
     """
     The `Source` class is used to specify the current sources via the `Simulation.sources`
@@ -49,6 +110,8 @@ class Source:
         amp_func=None,
         amp_func_file="",
         amp_data=None,
+        differentiable=None,
+        name=None,
     ):
         """
         Construct a `Source`.
@@ -98,6 +161,22 @@ class Source:
           For a 2d simulation, just pass 1 for the third dimension, e.g., `arr =
           np.zeros((N, M, 1), dtype=np.complex128)`. Defaults to `None`.
 
+        + **`differentiable` [`list of string`]** — Names of the parameters this
+          source should be differentiated with respect to by the adjoint solver
+          (see [Adjoint Solver](Python_Tutorials/Adjoint_Solver.md)). Every source
+          accepts `'currents'`, the per-point complex current amplitudes, and
+          `'amplitude'`; individual source classes may accept more. The names given
+          here are exactly the keys of the corresponding gradient, so they cannot
+          drift apart. `'center'` and `'size'` are rejected: they move the grid
+          points the source occupies rather than the amplitudes applied to them,
+          which the adjoint formulation for sources does not cover. Defaults to
+          `None`, meaning the source is not differentiated.
+
+        + **`name` [`string`]** — An optional label used as the key for this
+          source's entry in the gradient returned by `OptimizationProblem`. Defaults
+          to `None`, in which case the source's position in `Simulation.sources` is
+          used instead.
+
         As described in Section 4.2 ("Incident Fields and Equivalent Currents") in
         [Chapter 4](http://arxiv.org/abs/arXiv:1301.5366) ("Electromagnetic Wave Source
         Conditions") of the book [Advances in FDTD Computational Electrodynamics:
@@ -131,6 +210,8 @@ class Source:
         self.amp_func = amp_func
         self.amp_func_file = amp_func_file
         self.amp_data = amp_data
+        self.name = name
+        self.differentiable = _validate_differentiable(self, differentiable)
 
     def add_source(self, sim):
         where = mp.Volume(
@@ -716,6 +797,12 @@ class GaussianBeam3DSource(Source):
     The `SourceTime` object (`Source.src`), which specifies the time dependence of the source, should normally be a narrow-band `ContinuousSource` or `GaussianSource`.  (For a `CustomSource`, the beam frequency is determined by the source's `center_frequency` parameter.
     """
 
+    # `beam_kdir`'s length is ignored, so only its direction is meaningful; the
+    # derivative is projected onto the tangent space of that direction rather
+    # than reported component-wise, which would show a spurious radial
+    # sensitivity.  See source_gradient.beam_parameter_gradients.
+    _differentiable_params = ("beam_x0", "beam_kdir", "beam_w0", "beam_E0")
+
     def __init__(
         self,
         src,
@@ -1103,10 +1190,20 @@ class IndexedSource(Source):
     created a source object using (SWIG-wrapped mp::srcdata*) srcdata.
     """
 
-    def __init__(self, src, srcdata, amp_arr, needs_boundary_fix=False):
+    def __init__(
+        self,
+        src,
+        srcdata,
+        amp_arr,
+        needs_boundary_fix=False,
+        differentiable=None,
+        name=None,
+    ):
         self.src = src
         self.num_pts = len(amp_arr)
         self.srcdata = srcdata
+        self.name = name
+        self.differentiable = _validate_differentiable(self, differentiable)
         self.amp_arr = amp_arr
         self.needs_boundary_fix = needs_boundary_fix
 
