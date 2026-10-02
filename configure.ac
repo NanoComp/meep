@@ -616,19 +616,23 @@ fi # with_python
 # Windows needs three adjustments for the Python interface:
 #
 #  * every symbol in a Windows DLL must resolve at link time, so the extension
-#    modules have to link against the Python library.  On Unix they must not,
-#    the symbols coming from the interpreter that dlopen()s them.
+#    modules have to link against the Python library and pass -no-undefined.
+#    On Unix they must not: the symbols come from the interpreter that
+#    dlopen()s them, and on macOS -no-undefined makes libtool drop
+#    "-undefined dynamic_lookup", so the link fails.
 #  * libtool builds a ".dll" there and a ".so" elsewhere, while Python imports
 #    ".pyd" on Windows and ".so" elsewhere.
 #  * the interpreter running the test suite is a native Windows one: it cannot
 #    read MSYS-style "/c/..." paths, and separates path lists with ";".
 PYTHON_LIBS=""
+PYMODULE_LDFLAGS=""
 PYMODULE_BUILT_EXT=".so"
 PYMODULE_EXT=".so"
 PYPATH_CONV="echo"
 PYPATH_SEP=":"
 case $host_os in
   cygwin* | mingw* | msys*)
+    PYMODULE_LDFLAGS="-no-undefined"
     PYMODULE_BUILT_EXT=".dll"
     PYMODULE_EXT=".pyd"
     PYPATH_CONV="cygpath -m"
@@ -644,6 +648,7 @@ case $host_os in
     ;;
 esac
 AC_SUBST(PYTHON_LIBS)
+AC_SUBST(PYMODULE_LDFLAGS)
 AC_SUBST(PYMODULE_BUILT_EXT)
 AC_SUBST(PYMODULE_EXT)
 AC_SUBST(PYPATH_CONV)
