@@ -41,6 +41,238 @@ demonstrated in several tutorials below.
 
 [TOC]
 
+Writing Objective Functions
+---------------------------
+
+An objective function passed to `OptimizationProblem` receives the values of the
+`objective_arguments`, in the order they were given, and returns either a scalar
+or one value per frequency. They are differentiated with
+[autograd](https://github.com/HIPS/autograd), so they must be written with
+`autograd.numpy` rather than plain `numpy`:
+
+```py
+from autograd import numpy as npa
+
+def objective(mode_coeff, dft_fields):
+    return npa.abs(mode_coeff)**2 + npa.sum(npa.abs(dft_fields)**2, axis=1)
+
+opt = mpa.OptimizationProblem(
+    simulation=sim,
+    objective_functions=[objective],
+    objective_arguments=[mode_monitor, dft_monitor],
+    design_regions=[design_region],
+    frequencies=frequencies,
+)
+
+value, gradient = opt([rho])
+```
+
+Each objective function costs one adjoint timestepping run, so a list of them
+costs one run each.
+
+### A gradient at each frequency
+
+A single adjoint run yields the gradient at *every* frequency, not just the
+gradient of some scalar reduction over them. That is what makes worst-case
+(minimax) formulations over a bandwidth affordable: `gradient` above is an array
+of design weights by frequencies, one column per frequency, and an optimizer such
+as nlopt can treat those columns as separate constraints. See
+[examples/adjoint_optimization/mode_converter.py](https://github.com/NanoComp/meep/blob/master/python/examples/adjoint_optimization/mode_converter.py)
+for a worked epigraph formulation.
+
+Those per-frequency gradients are only meaningful when entry $f$ of a
+frequency-vector-valued objective depends on the monitor values at frequency $f$
+alone. A single adjoint field cannot carry independent sensitivities for
+different frequencies, so an objective that mixes them — say, one that divides
+the transmission at one wavelength by the transmission at another — has to be
+split into separate entries of `objective_functions`, one adjoint run each.
+
+### Meep does not care which framework you use
+
+If [JAX](https://github.com/google/jax) is installed, an objective function may
+be written with `jax.numpy` instead. Nothing else changes — there is no wrapper
+or annotation, and the two kinds may be mixed in the same `objective_functions`
+list. Meep recognizes a JAX objective because it returns a JAX array, and
+differentiates it with `jax.vjp`:
+
+```py
+import jax
+import jax.numpy as jnp
+
+jax.config.update("jax_enable_x64", True)   # match Meep's double precision
+
+def objective(mode_coeff, dft_fields):
+    return jnp.abs(mode_coeff)**2 + jnp.sum(jnp.abs(dft_fields)**2, axis=1)
+```
+
+This is useful when the objective involves post-processing that is easier to
+express — or faster to evaluate — in JAX. Note that JAX defaults to 32-bit
+dtypes, so `jax_enable_x64` should be enabled to match a double-precision Meep
+build; Meep warns if it is not.
+
+For an analytic derivative, or a framework Meep does not recognize, an objective
+function may carry its own pullback as a `vjp(cotangent, *args)` attribute
+returning one cotangent per argument. It takes precedence over both of the above:
+
+```py
+def objective(mode_coeff):
+    return npa.abs(mode_coeff)**2
+
+objective.vjp = lambda cotangent, mode_coeff: (2 * cotangent * npa.conj(mode_coeff),)
+```
+
+Letting JAX Own the Optimization
+--------------------------------
+
+Everything above has Meep driving the optimization: it calls the objective
+function and hands back a gradient. `MeepJaxWrapper` inverts that. It turns a
+whole simulation into a JAX-differentiable callable, mapping design weights to
+monitor values, so that the design variables, the objective, and anything else in
+the loss are traced by JAX end to end:
+
+```py
+wrapped_meep = mpa.MeepJaxWrapper(
+    simulation, sources, monitors, design_regions, frequencies
+)
+
+def loss(rho):
+    s1p, _, s2p, _ = wrapped_meep([rho])       # -> monitor values
+    return jnp.mean(jnp.abs(s2p / s1p)**2)     # scalar
+
+value, gradient = jax.value_and_grad(loss)(rho)
+```
+
+The forward and adjoint simulations happen inside a `jax.custom_vjp`, so the
+gradient is the true adjoint gradient, not a numerical differentiation of the
+solver.
+
+The reason to reach for this is that **anything else in the loss is
+differentiated too**, for free, because it is just JAX. A filter and projection
+applied to the design weights, a propagator applied to the output fields, the
+angle of a fiber the field is coupled into — none of it is known to Meep, and all
+of it gets a gradient:
+
+```py
+def loss(rho, thickness, tilt):
+    (dft,) = wrapped_meep([rho])
+    return postprocess(dft, thickness, tilt)   # scalar
+
+value, (d_rho, d_thickness, d_tilt) = jax.value_and_grad(
+    loss, argnums=(0, 1, 2))(rho, 1.8, 8.0)
+```
+
+### A gradient at each frequency, with `MeepJaxWrapper`
+
+`jax.value_and_grad` requires a scalar loss, which rules out the minimax
+formulations described above. `meep.adjoint.value_and_jacobian` is its
+counterpart for a loss returning one value per frequency. The loss is written
+exactly as it would be for the scalar case:
+
+```py
+def loss(rho, thickness, tilt):
+    (dft,) = wrapped_meep([rho])
+    return postprocess(dft, thickness, tilt)   # (nfreq,)
+
+values, grads = mpa.value_and_jacobian(loss, argnums=(0, 1, 2))(rho, 1.8, 8.0)
+```
+
+Each gradient is the corresponding parameter's shape with a leading frequency
+axis, so `grads[1][f]` is the gradient of `values[f]` with respect to
+`thickness`:
+
+```
+values      (nfreq,)
+grads[0]    (nfreq,) + rho.shape
+grads[1]    (nfreq,)
+grads[2]    (nfreq,)
+```
+
+The whole Jacobian costs **one forward simulation and one adjoint simulation**,
+independent of the number of frequencies. `jax.jacrev` cannot achieve this: it
+evaluates the reverse pass once per output component, and here each evaluation
+would be a full timestepping run. That is why this is a transform rather than
+something a JAX transformation does for you.
+
+The loss must call a `MeepJaxWrapper` exactly once. That call is where the
+transform splits it into the part producing the design weights and the part
+post-processing the monitor values. The block-diagonality requirement from above
+applies to the second part only: entry $f$ may read the *monitor values* at
+frequency $f$ alone, while dependence on parameters that bypass the simulation is
+unrestricted, since those are differentiated directly.
+
+### Parameterizing with a pytree
+
+Realistic problems have more parameters than fit comfortably in a positional
+signature, and they fall into three groups: preprocessing that turns latent
+variables into design weights, the design degrees of freedom themselves, and
+post-processing applied to the fields. A pytree holds all three, and the Jacobian
+comes back as the *same tree* with a frequency axis added to each leaf:
+
+```py
+class Stack(NamedTuple):
+    thickness: jnp.ndarray     # (3,) oxide, antireflection coating, air
+    index: jnp.ndarray         # (3,)
+
+class Params(NamedTuple):
+    latent: jnp.ndarray        # (601,) design degrees of freedom
+    beta: float                # preprocessing: projection strength
+    stack: Stack               # post-processing: the layers above the chip
+    tilt: float                # post-processing: fiber tilt, in degrees
+
+def project(x, beta, eta=0.5):
+    """The usual tanh projection, written in jax.numpy -- see the note below."""
+    return (jnp.tanh(beta * eta) + jnp.tanh(beta * (x - eta))) / (
+        jnp.tanh(beta * eta) + jnp.tanh(beta * (1 - eta))
+    )
+
+def loss(p):
+    rho = project(conic_filter(p.latent), p.beta)   # preprocessing, in jax.numpy
+    (ez, hx) = wrapped_meep([rho])
+    field = propagate(ez, hx, p.stack)          # a stratified-media propagator, say
+    return fiber_overlap(field, p.tilt)         # (nfreq,)
+
+values, jacobian = mpa.value_and_jacobian(loss)(params)
+jax.tree_util.tree_map(lambda leaf: leaf.shape, jacobian)
+```
+
+```
+Params(latent=(5, 601),
+       beta=(5,),
+       stack=Stack(thickness=(5, 3), index=(5, 3)),
+       tilt=(5,))
+```
+
+Note that the mapping has to be written in the same framework as the rest of the
+loss. `mpa.conic_filter`, `mpa.tanh_projection`, and the other helpers in
+`meep.adjoint.filters` are written with `autograd.numpy`, so calling them inside
+a JAX loss raises `TracerArrayConversionError` — autograd's numpy cannot consume
+a JAX tracer. Write the filter and projection with `jax.numpy`, as above. This
+applies only to `MeepJaxWrapper` losses; the filters work normally in an
+`OptimizationProblem` objective, which is what the tutorials below use.
+
+`p.latent` and `p.beta` reach the simulation and are differentiated through the
+adjoint; `p.stack` and `p.tilt` never reach it and are differentiated directly.
+Nothing in the call distinguishes them. A parameter may also appear on both sides
+— `p.latent` could equally show up in a regularizer after the Meep call — in
+which case the two contributions are summed.
+
+The same holds in the scalar case: `jax.value_and_grad(loss)(params)` returns a
+gradient with the structure of `params`, without the frequency axis.
+
+To feed the result to an optimizer wanting a flat `(nfreq, num_parameters)`
+matrix — nlopt's `add_inequality_mconstraint`, for instance — flatten it with
+`jax.flatten_util.ravel_pytree`, which orders the columns consistently with the
+flattened parameters:
+
+```py
+flat_params, unravel = jax.flatten_util.ravel_pytree(params)
+jacobian = jax.vmap(lambda row: jax.flatten_util.ravel_pytree(row)[0])(jacobian)
+```
+
+JAX is an optional dependency throughout. If it is not installed, JAX objective
+functions are simply not recognized and `mpa.MeepJaxWrapper` and
+`mpa.value_and_jacobian` are absent; everything else works unchanged.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 

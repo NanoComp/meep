@@ -1,6 +1,7 @@
-from typing import Iterable, List, Tuple
+from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, Union
 
 import numpy as onp
+from autograd import make_vjp
 
 import meep as mp
 
@@ -90,11 +91,6 @@ def _compute_components(sim: mp.Simulation) -> List[int]:
     )
 
 
-def _make_at_least_nd(x: onp.ndarray, dims: int = 3) -> onp.ndarray:
-    """Makes an array have at least the specified number of dimensions."""
-    return onp.reshape(x, x.shape + onp.maximum(dims - x.ndim, 0) * (1,))
-
-
 def calculate_vjps(
     simulation: mp.Simulation,
     design_regions: List[DesignRegion],
@@ -116,6 +112,11 @@ def calculate_vjps(
         )
         for i, design_region in enumerate(design_regions)
     ]
+    # `DesignRegion.get_gradient` squeezes the frequency axis away when there is
+    # only one frequency, so restore it rather than indexing an axis that may not
+    # be there.
+    num_freqs = onp.asarray(frequencies).size
+    vjps = [vjp.reshape(-1, num_freqs) for vjp in vjps]
     if sum_freq_partials:
         vjps = [
             onp.sum(vjp, axis=_GRADIENT_FREQ_AXIS).reshape(shape)
@@ -161,22 +162,24 @@ def install_design_region_monitors(
     ]
 
 
-def gather_monitor_values(monitors: List[ObjectiveQuantity]) -> onp.ndarray:
-    """Gathers the mode monitor overlap values as a rank 2 ndarray.
+def gather_monitor_values(
+    monitors: Sequence[ObjectiveQuantity],
+) -> Union[onp.ndarray, Tuple[onp.ndarray, ...]]:
+    """Gathers the values of a list of objective quantities.
 
     Args:
-      monitors: the mode monitors.
+      monitors: the objective quantities.
 
     Returns:
-      a rank-2 ndarray, where the dimensions are (monitor, frequency), of dtype
-      complex128.  Note that these values refer to the mode as oriented (i.e. they
-      are unidirectional).
+      If every monitor yields one value per frequency -- as `EigenmodeCoefficient`
+      and `LDOS` do -- a rank-2 ndarray whose dimensions are (monitor,
+      frequency). Otherwise, for example when a `FourierFields` monitor
+      contributes a whole plane of values, a tuple with one array per monitor.
     """
-    monitor_values = [monitor() for monitor in monitors]
-    monitor_values = onp.array(monitor_values)
-    assert monitor_values.ndim in [1, 2]
-    monitor_values = _make_at_least_nd(monitor_values, 2)
-    return monitor_values
+    values = [onp.atleast_1d(onp.asarray(monitor())) for monitor in monitors]
+    shapes = {value.shape for value in values}
+    is_stackable = bool(values) and len(shapes) == 1 and values[0].ndim == 1
+    return onp.stack(values) if is_stackable else tuple(values)
 
 
 def validate_and_update_design(
@@ -219,14 +222,116 @@ def validate_and_update_design(
         design_region.update_design_parameters(design_variable.flatten())
 
 
+_VJP_BACKENDS: List[Tuple[Callable[[Any], bool], Callable]] = []
+
+
+def register_vjp_backend(
+    matches: Callable[[Any], bool],
+    vjp: Callable[[Callable, Tuple, Any], Sequence[onp.ndarray]],
+) -> None:
+    """Registers a way to differentiate objective functions of some flavor.
+
+    This is how support for an autodifferentiation framework other than autograd
+    is added without the rest of `meep.adjoint` importing it, and without the
+    user having to wrap or annotate their objective function. `wrapper` calls
+    this for JAX when it is imported, which happens only if JAX is installed.
+
+    Args:
+      matches: given the value an objective function returned, whether this
+        backend should differentiate that function. Recognizing the framework's
+        own array type is the intended test.
+      vjp: called as `vjp(objective_function, args, cotangent)` and returning one
+        cotangent per element of `args`, as plain NumPy arrays.
+    """
+    _VJP_BACKENDS.append((matches, vjp))
+
+
+def _select_vjp_backend(value) -> Optional[Callable]:
+    """Returns the backend that claims `value`, or None for autograd."""
+    if value is None:
+        return None
+    for matches, vjp in _VJP_BACKENDS:
+        if matches(value):
+            return vjp
+    return None
+
+
+def objective_vjp(
+    objective_function: Callable,
+    args: Sequence[onp.ndarray],
+    cotangent,
+    value=None,
+) -> Tuple[onp.ndarray, ...]:
+    """Pulls a cotangent back through an objective function.
+
+    This is a *single* reverse pass that yields the cotangent with respect to
+    every element of `args` at once.
+
+    Objective functions are differentiated with autograd by default. Two things
+    override that, in order:
+
+    1. a `vjp(cotangent, *args)` method on the objective function itself, for a
+       hand-written or analytic pullback;
+    2. a backend registered with `register_vjp_backend` whose predicate accepts
+       `value`, which is how an objective function written with another
+       autodifferentiation framework is differentiated by that framework without
+       the user having to declare anything. `wrapper` registers one for JAX.
+
+    Args:
+      objective_function: the objective function, called as
+        `objective_function(*args)`.
+      args: the values of the objective quantities, in registration order.
+      cotangent: the seed of the reverse pass, in the vector space of the
+        objective function's output.
+      value: what `objective_function(*args)` returned, used to select a backend.
+        If omitted, autograd is used.
+
+    Returns:
+      One cotangent per element of `args`, each with that element's shape.
+    """
+    args = tuple(args)
+    user_vjp = getattr(objective_function, "vjp", None)
+    if callable(user_vjp):
+        cotangents = tuple(user_vjp(cotangent, *args))
+    else:
+        backend = _select_vjp_backend(value)
+        if backend is not None:
+            cotangents = tuple(backend(objective_function, args, cotangent))
+        else:
+            vjp, _ = make_vjp(lambda packed: objective_function(*packed))(args)
+            cotangents = tuple(vjp(cotangent))
+    if len(cotangents) != len(args):
+        raise ValueError(
+            f"The objective function's vjp returned {len(cotangents)} "
+            f"cotangents for {len(args)} objective arguments."
+        )
+    return cotangents
+
+
 def create_adjoint_sources(
-    monitors: Iterable[ObjectiveQuantity], monitor_values_grad: onp.ndarray
+    monitors: Sequence[ObjectiveQuantity],
+    monitor_values_grad: Sequence[onp.ndarray],
 ) -> List[mp.Source]:
-    monitor_values_grad = onp.asarray(
-        monitor_values_grad,
-        dtype=onp.complex64 if mp.is_single_precision() else onp.complex128,
-    )
-    if not onp.any(monitor_values_grad):
+    """Places the adjoint sources for one adjoint simulation.
+
+    Args:
+      monitors: the objective quantities registered in the forward run.
+      monitor_values_grad: one cotangent per monitor, each with the shape of
+        that monitor's own value.
+
+    Returns:
+      The list of adjoint sources.
+    """
+    # Everything downstream -- `_adj_src_scale`, `FilteredSource`, and the
+    # `std::complex<double>` buffers the C++ source constructors read -- works in
+    # double precision, so upcast here rather than round-tripping through the
+    # field precision.
+    cotangents = [onp.asarray(dj, dtype=onp.complex128) for dj in monitor_values_grad]
+    if len(cotangents) != len(monitors):
+        raise ValueError(
+            f"Got {len(cotangents)} cotangents for {len(monitors)} monitors."
+        )
+    if not any(onp.any(dj) for dj in cotangents):
         raise RuntimeError(
             "The gradient of all monitor values is zero, which "
             "means that no adjoint sources can be placed to set "
@@ -238,12 +343,7 @@ def create_adjoint_sources(
             "objective function output."
         )
     adjoint_sources = []
-    for monitor_idx, monitor in enumerate(monitors):
-        # `dj` for each monitor will have a shape of (num frequencies,)
-        dj = onp.asarray(
-            monitor_values_grad[monitor_idx],
-            dtype=onp.complex64 if mp.is_single_precision() else onp.complex128,
-        )
+    for monitor, dj in zip(monitors, cotangents):
         if onp.any(dj):
             adjoint_sources += monitor.place_adjoint_source(dj)
     assert adjoint_sources
