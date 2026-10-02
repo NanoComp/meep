@@ -2,6 +2,17 @@
 
 ## Meep 1.35.0 (in progress)
 
+* Adjoint solver: geometric objects can be differentiated with respect to their
+  `center` and `size`, so an optimizer can be asked whether a reflector should
+  move or a spacer should lengthen. An object opts in with
+  `differentiable=['center', 'size']` and its gradient appears under its `name`.
+  It costs no extra simulation. Only pixels the object's boundary passes through
+  contribute, which is the discrete form of a shape derivative being a surface
+  integral. Requires subpixel smoothing, and refuses to run without it. Object
+  faces should be kept a quarter pixel clear of pixel edges, since Yee
+  components sit half a pixel apart and a face on some component's pixel edge
+  has only a one-sided derivative; a warning is issued when this is detected.
+
 * Adjoint solver: sources can now be differentiated alongside the design
   regions. A source opts in by naming parameters, as in
   `differentiable=['beam_w0', 'beam_x0']`, and its gradient appears in the
