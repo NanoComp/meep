@@ -1,6 +1,5 @@
 import math
 import os
-import re
 import sys
 import time
 import unittest
@@ -586,7 +585,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fname = "tutorial-e.k16.b08.z.tm.h5"
         ref_path = os.path.join(self.data_dir, ref_fname)
-        res_path = re.sub("tutorial", ms.filename_prefix, ref_fname)
+        res_path = ref_fname.replace("tutorial", ms.filename_prefix)
         self.compare_h5_files(ref_path, res_path)
 
     def test_output_dpwr_in_objects(self):
@@ -599,8 +598,8 @@ class TestModeSolver(ApproxComparisonTestCase):
         ref_path1 = os.path.join(self.data_dir, ref_fname1)
         ref_path2 = os.path.join(self.data_dir, ref_fname2)
 
-        res_path1 = re.sub("tutorial", ms.filename_prefix, ref_fname1)
-        res_path2 = re.sub("tutorial", ms.filename_prefix, ref_fname2)
+        res_path1 = ref_fname1.replace("tutorial", ms.filename_prefix)
+        res_path2 = ref_fname2.replace("tutorial", ms.filename_prefix)
 
         self.compare_h5_files(ref_path1, res_path1)
         self.compare_h5_files(ref_path2, res_path2)
@@ -807,7 +806,7 @@ class TestModeSolver(ApproxComparisonTestCase):
         ref_fn = "tutorial-C.k16.b08.te.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
 
-        res_path = re.sub("tutorial", ms.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("tutorial", ms.filename_prefix)
         self.compare_h5_files(ref_path, res_path)
 
     def test_bragg_sine(self):
@@ -867,7 +866,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "bragg-h.k01.b08.y.tm.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("bragg", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("bragg", self.filename_prefix)
 
         self.compare_h5_files(ref_path, res_path)
 
@@ -921,7 +920,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "diamond-dpwr.k06.b05.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("diamond", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("diamond", self.filename_prefix)
         self.compare_h5_files(ref_path, res_path)
 
         # Test MPBData.convert()
@@ -949,7 +948,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "hole-slab-h.k01.b09.z.zeven.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("hole-slab", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("hole-slab", self.filename_prefix)
         ms.display_eigensolver_stats()
         self.compare_h5_files(ref_path, res_path)
 
@@ -1084,7 +1083,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "line-defect-e.k04.b12.z.tm.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("line-defect", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("line-defect", self.filename_prefix)
         self.compare_h5_files(ref_path, res_path)
 
     def test_sq_rods(self):
@@ -1241,7 +1240,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "strip-flux.v.k01.b04.x.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("strip", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("strip", self.filename_prefix)
 
         self.compare_h5_files(ref_path, res_path)
 
@@ -1381,7 +1380,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "tri-rods-e.k11.b08.z.tm.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("tri-rods", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("tri-rods", self.filename_prefix)
 
         self.compare_h5_files(ref_path, res_path)
 
@@ -1533,7 +1532,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "subpixel_avg-epsilon.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("subpixel_avg", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("subpixel_avg", self.filename_prefix)
 
         self.compare_h5_files(ref_path, res_path)
         self.check_band_range_data(expected_brd, ms.band_range_data)
@@ -1587,7 +1586,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         fname = "tutorial-mu.h5"
         data_path = os.path.join(self.data_dir, fname)
-        res_path = re.sub("tutorial", self.filename_prefix, fname)
+        res_path = fname.replace("tutorial", self.filename_prefix)
         self.compare_h5_files(data_path, res_path)
 
         mu = ms.get_mu()
@@ -1602,7 +1601,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fname = "tutorial-tot.rpwr.k16.b08.te.h5"
         ref_path = os.path.join(self.data_dir, ref_fname)
-        res_path = re.sub("tutorial", self.filename_prefix, ref_fname)
+        res_path = ref_fname.replace("tutorial", self.filename_prefix)
 
         self.compare_h5_files(ref_path, res_path)
 
@@ -2100,7 +2099,7 @@ class TestModeSolver(ApproxComparisonTestCase):
 
         ref_fn = "tutorial-flux.v.k11.b08.te.h5"
         ref_path = os.path.join(self.data_dir, ref_fn)
-        res_path = re.sub("tutorial", self.filename_prefix, ref_fn)
+        res_path = ref_fn.replace("tutorial", self.filename_prefix)
 
         self.compare_h5_files(ref_path, res_path)
 

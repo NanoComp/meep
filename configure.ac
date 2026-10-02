@@ -3,6 +3,7 @@
 AC_INIT([meep],[m4_esyscmd(./version.sh 1.35.0-beta)])
 AC_CONFIG_SRCDIR(src/step.cpp)
 AC_CONFIG_AUX_DIR([build-aux])
+AC_CANONICAL_HOST
 
 # Shared-library version number; indicates api compatibility, and is
 # not the same as the "public" version number.  (Don't worry about this
@@ -611,6 +612,42 @@ else
 
   fi # enabled_shared
 fi # with_python
+
+# Windows needs three adjustments for the Python interface:
+#
+#  * every symbol in a Windows DLL must resolve at link time, so the extension
+#    modules have to link against the Python library.  On Unix they must not,
+#    the symbols coming from the interpreter that dlopen()s them.
+#  * libtool builds a ".dll" there and a ".so" elsewhere, while Python imports
+#    ".pyd" on Windows and ".so" elsewhere.
+#  * the interpreter running the test suite is a native Windows one: it cannot
+#    read MSYS-style "/c/..." paths, and separates path lists with ";".
+PYTHON_LIBS=""
+PYMODULE_BUILT_EXT=".so"
+PYMODULE_EXT=".so"
+PYPATH_CONV="echo"
+PYPATH_SEP=":"
+case $host_os in
+  cygwin* | mingw* | msys*)
+    PYMODULE_BUILT_EXT=".dll"
+    PYMODULE_EXT=".pyd"
+    PYPATH_CONV="cygpath -m"
+    PYPATH_SEP=";"
+    if test x"$have_python" = xyes; then
+      AC_MSG_CHECKING([for Python library to link extension modules against])
+      pyver=`$PYTHON -c "import sys; print('%d.%d' % sys.version_info[[:2]])" 2>/dev/null`
+      pylibdir=`$PYTHON -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR') or '')" 2>/dev/null`
+      test -n "$pylibdir" && PYTHON_LIBS="-L$pylibdir"
+      test -n "$pyver" && PYTHON_LIBS="$PYTHON_LIBS -lpython$pyver"
+      AC_MSG_RESULT([${PYTHON_LIBS:-none}])
+    fi
+    ;;
+esac
+AC_SUBST(PYTHON_LIBS)
+AC_SUBST(PYMODULE_BUILT_EXT)
+AC_SUBST(PYMODULE_EXT)
+AC_SUBST(PYPATH_CONV)
+AC_SUBST(PYPATH_SEP)
 
 AC_SUBST(PYTHON_INCLUDES)
 AM_CONDITIONAL(WITH_PYTHON, test x"$have_python" = "xyes")
