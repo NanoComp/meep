@@ -1523,12 +1523,25 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
     direction cd = component_direction(c);
     sourcedata temp_struct = {c, idx_arr, f->fc->chunk_idx, amp_arr};
 
+    /* The directions `yee2cent_offsets` averages over, in the order it picks
+       them, so that each of the four sites below can be turned back into a grid
+       location.  `ix0` is the voxel centre and the sites are its corners, half a
+       grid step away, i.e. +/-1 in ivec units.  The entries are only read when
+       the corresponding `avg1`/`avg2` is nonzero, which is exactly when the
+       loop above filled them. */
+    direction avg_d[2] = {X, X};
+    int n_avg = 0;
+    LOOP_OVER_DIRECTIONS(f->fc->gv.dim, d) {
+      if (!f->fc->gv.iyee_shift(c).in_direction(d) && n_avg < 2) avg_d[n_avg++] = d;
+    }
+
     int position_array[3] = {0, 0, 0}; // array indicating the position of a point relative to the
                                        // minimum corner of the monitor
 
     LOOP_OVER_IVECS(f->fc->gv, f->is, f->ie, idx) {
       IVEC_LOOP_LOC(f->fc->gv, x0);
       IVEC_LOOP_ILOC(f->fc->gv, ix0);
+      const ivec ix0_local(ix0);
       x0 = f->S.transform(x0, f->sn) + rshift;
       ix0 = f->S.transform(ix0, f->sn) + f->shift;
 
@@ -1577,7 +1590,18 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
             if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd])
               EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
 
-            EH0 /= f->S.multiplicity(ix0);
+            /* Take the multiplicity of the site this quarter is actually
+               written to, not of the voxel centre.  They differ exactly when a
+               site lands on a symmetry plane: such a point is its own image and
+               so has multiplicity 1, while the centre half a pixel away has 2.
+               Dividing it by 2 anyway leaves the adjoint source short on the
+               plane -- 3/4 of the correct gradient for an objective sitting on
+               it, and an O(dx) error for one merely spanning it. */
+            ivec isite(ix0_local);
+            if (f->avg1) isite += unit_ivec(f->fc->gv.dim, avg_d[0]) * ((j & 1) ? 1 : -1);
+            if (f->avg2) isite += unit_ivec(f->fc->gv.dim, avg_d[1]) * ((j & 2) ? 1 : -1);
+            ivec isiteS(f->S.transform(isite, f->sn) + f->shift);
+            EH0 /= f->S.multiplicity(isiteS);
             temp_struct.amp_arr.push_back(EH0);
           }
         }
