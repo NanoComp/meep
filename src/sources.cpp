@@ -205,6 +205,17 @@ void src_vol::add_amplitudes_from(const src_vol &other) {
   }
 }
 
+void src_vol::remove_zero_amplitudes() {
+  size_t dst = 0;
+  for (size_t src = 0; src < amp.size(); ++src)
+    if (amp[src] != 0.0) {
+      index[dst] = index[src];
+      amp[dst++] = amp[src];
+    }
+  index.resize(dst);
+  amp.resize(dst);
+}
+
 /*********************************************************************/
 
 // THIS VARIANT IS FOR BACKWARDS COMPATIBILITY, and is DEPRECATED:
@@ -326,7 +337,7 @@ static void src_vol_chunkloop(fields_chunk *fc, int ichunk, component c, ivec is
     meep::abort("add_volume_source: computed wrong npts (%zd vs. %zd)", npts, idx_vol);
 
   field_type ft = is_H_or_B(c) ? B_stuff : D_stuff;
-  fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array)));
+  fc->add_source(ft, src_vol(c, data->src, std::move(index_array), std::move(amps_array), true));
 }
 
 void fields::add_srcdata(struct sourcedata cur_data, src_time *src, size_t n,
@@ -501,8 +512,10 @@ void fields::add_volume_source(component c, const src_time &src, const volume &w
       data.amp *= gv.a; // correct units for J delta-function amplitude
   }
   sources = src.add_to(sources, &data.src);
+  register_src_time(data.src);
   data.center = (where.get_min_corner() + where.get_max_corner()) * 0.5;
   loop_in_chunks(src_vol_chunkloop, (void *)&data, where, c, false);
+  fix_boundary_sources();
   require_component(c);
 }
 
