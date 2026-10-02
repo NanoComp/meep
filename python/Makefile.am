@@ -131,7 +131,7 @@ SWIG_WARN_FLAGS = -Wno-unused-function -Wno-unused-parameter -Wno-missing-field-
 
 _meep_la_SOURCES = meep-python.cxx
 _meep_la_LIBADD = $(LIBMEEP) $(PYTHON_LIBS)
-_meep_la_LDFLAGS = -module -no-undefined -avoid-version
+_meep_la_LDFLAGS = -module $(PYMODULE_LDFLAGS) -avoid-version
 _meep_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
 _meep_la_CXXFLAGS = -O1
 
@@ -150,7 +150,7 @@ if WITH_MPB
   pympb_LTLIBRARIES = _mpb.la
   _mpb_la_SOURCES = mpb-python.cxx
   _mpb_la_LIBADD = $(PYTHON_LIBS) $(top_builddir)/libpympb/libpympb.la $(LIBMEEP)
-  _mpb_la_LDFLAGS = -module -no-undefined -avoid-version
+  _mpb_la_LDFLAGS = -module $(PYMODULE_LDFLAGS) -avoid-version
   _mpb_la_CPPFLAGS = $(PYTHON_INCLUDES) $(AM_CPPFLAGS) $(SWIG_WARN_FLAGS)
   _mpb_la_CXXFLAGS = -O1
 
