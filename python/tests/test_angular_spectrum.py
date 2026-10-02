@@ -832,3 +832,101 @@ class TestAdjointGradient(ApproxComparisonTestCase):
 
     def test_three_dimensions(self):
         self._check(3)
+
+
+class TestInjection(ApproxComparisonTestCase):
+    """Launching a mode into a simulation through the stack.
+
+    The time reverse of the measurement path: `incident_fields` carries a mode
+    back down to the monitor plane and `equivalent_sources` turns it into
+    currents Meep can apply.
+    """
+
+    FCEN = 1 / 1.55
+    RESOLUTION = 20
+    WAIST = 2.0
+    DISTANCE = 8.0
+    CELL = mp.Vector3(16, 14)
+    LINE = mp.Vector3(10, 0)
+    PML = 2.0
+
+    def _stack(self):
+        # one semi-infinite layer, so the check isolates the injection physics
+        return mpa.Stack([mpa.Layer(index=1.0, thickness=0.0), mpa.Layer(index=1.0)])
+
+    def _propagator(self, y=0.0, sign=1):
+        simulation = mp.Simulation(
+            cell_size=self.CELL,
+            resolution=self.RESOLUTION,
+            boundary_layers=[mp.PML(self.PML)],
+            force_complex_fields=True,
+        )
+        simulation.init_sim()
+        volume = simulation._fit_volume_to_simulation(
+            mp.Volume(center=mp.Vector3(0, y), size=self.LINE)
+        )
+        propagator = mpa.AngularSpectrum.from_volume(
+            simulation, volume, self._stack(), [self.FCEN], sign=sign, pad_factor=4
+        )
+        return propagator, volume
+
+    def test_incident_fields_are_purely_ingoing(self):
+        # `incident_fields` inverts `decompose` for a spectrum with no outgoing
+        # part, so feeding the result back through `decompose` must recover
+        # that: all of the power heading toward the structure, none away.
+        propagator, _ = self._propagator()
+        fields = propagator.incident_fields(
+            mpa.gaussian_mode(waist=self.WAIST), distance=self.DISTANCE
+        )
+        report = propagator.report(fields)
+        self.assertGreater(float(onp.ravel(report["downgoing_fraction"])[0]), 0.999)
+
+    def test_equivalent_sources_radiate_one_way(self):
+        # Both sheets of the equivalent-current pair are needed, with the right
+        # relative sign. With one sheet, or with the sign of either flipped, the
+        # beam appears in the other half-space instead -- at full strength, not
+        # as a small error.
+        propagator, _ = self._propagator()
+        fields = propagator.incident_fields(
+            mpa.gaussian_mode(waist=self.WAIST), distance=self.DISTANCE
+        )
+        sources = propagator.equivalent_sources(
+            fields,
+            mp.GaussianSource(self.FCEN, fwidth=0.1 * self.FCEN),
+            center=mp.Vector3(0, 0),
+            size=self.LINE,
+        )
+        self.assertTrue(sources)
+
+        simulation = mp.Simulation(
+            cell_size=self.CELL,
+            resolution=self.RESOLUTION,
+            boundary_layers=[mp.PML(self.PML)],
+            sources=sources,
+            force_complex_fields=True,
+        )
+        # sign=+1 means the outgoing direction is +y, so the mode arrives from
+        # +y and the beam should end up at negative y.
+        intended = mp.Volume(center=mp.Vector3(0, -3.0), size=self.LINE)
+        leaked = mp.Volume(center=mp.Vector3(0, 3.0), size=self.LINE)
+        toward = simulation.add_dft_fields(
+            [mp.Ez, mp.Hx], [self.FCEN], where=intended, yee_grid=False
+        )
+        away = simulation.add_dft_fields(
+            [mp.Ez, mp.Hx], [self.FCEN], where=leaked, yee_grid=False
+        )
+        simulation.run(until_after_sources=mp.stop_when_dft_decayed(1e-9))
+
+        strong = onp.max(
+            onp.abs(onp.asarray(simulation.get_dft_array(toward, mp.Ez, 0)))
+        )
+        weak = onp.max(onp.abs(onp.asarray(simulation.get_dft_array(away, mp.Ez, 0))))
+        self.assertLess(weak / strong, 0.02)
+
+        # and the beam that arrives is still travelling the way it was sent
+        downward = mpa.AngularSpectrum.from_monitor(
+            simulation, toward, self._stack(), intended, sign=-1, pad_factor=4
+        )
+        measured = downward.fields_from_monitor(simulation, toward)
+        report = downward.report(measured)
+        self.assertLess(float(onp.ravel(report["downgoing_fraction"])[0]), 0.01)
