@@ -1,8 +1,13 @@
 LIBMEEP = $(top_builddir)/src/libmeep.la
 
+# -I$(top_builddir)/src finds the generated meep/meep-config.h in a VPATH
+# build. It is listed in src/Makefile.am's pkginclude_HEADERS, so a release
+# tarball ships a copy next to the sources and $(top_srcdir)/src is enough;
+# a Git checkout has no such copy.
 AM_CPPFLAGS =                   \
     -Wfatal-errors              \
     -I$(top_srcdir)/src         \
+    -I$(top_builddir)/src       \
     -I$(top_builddir)
 
 lib_LTLIBRARIES = libpympb.la
