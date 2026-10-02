@@ -131,6 +131,7 @@ struct material_data {
   // these fields used only if which_subclass==MATERIAL_GRID
   vector3 grid_size;
   double *weights;
+  long grid_id;
   medium_struct medium_1;
   medium_struct medium_2;
   double beta;
