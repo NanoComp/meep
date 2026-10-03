@@ -522,8 +522,14 @@ class TestModeSolver(ApproxComparisonTestCase):
             mp.Vector3(0.0 + 0.0j, 0.0 + 0.0j, 1.0 + 0.0j),
         )
 
-        self.assertTrue(expected_fp.close(field_pt))
-        self.assertTrue(expected_bloch_fp.close(bloch_field_pt))
+        # (0.5, 0.5) is a near-node of band 8: |D| there is ~3e-6 of its peak
+        # (8.67), so the value depends on the eigensolver's convergence path.
+        # MPB picks exact vs. approximate line minimization from clock()
+        # timings, which are effectively random with a coarse clock (1 ms on
+        # Windows), shifting this value by up to ~7e-7.  Compare at a
+        # tolerance relative to the field scale rather than the default 1e-7.
+        self.assertTrue(expected_fp.close(field_pt, tol=2e-6))
+        self.assertTrue(expected_bloch_fp.close(bloch_field_pt, tol=2e-6))
         self.assertEqual(expected_eps_inv_tensor.c1, eps_inv_tensor.c1)
         self.assertEqual(expected_eps_inv_tensor.c2, eps_inv_tensor.c2)
         self.assertEqual(expected_eps_inv_tensor.c3, eps_inv_tensor.c3)
