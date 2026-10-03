@@ -2118,7 +2118,16 @@ public:
   void output_dft(dft_near2far n2f, const char *HDF5FileName);
   void output_dft(dft_fields fdft, const char *HDF5FileName);
 
-  // get array of DFT field values
+  // get array of DFT field values.
+  //
+  // these are *collective* calls: they perform an MPI all-reduce internally. so
+  // every process must call them (and every process gets the full array back).
+  //
+  // a new buffer is allocated and returned; it must eventually be
+  // caller-deallocated via delete[].  rank and dims[0..rank-1] are filled in with
+  // the dimensions of the returned array; dims[ranks..2] are left untouched.  a
+  // NULL return with *rank == 0 means the component is absent (e.g. it vanishes
+  // by symmetry); a non-NULL return with *rank == 0 is a single value.
   std::complex<realnum> *get_dft_array(dft_flux flux, component c, int num_freq, int *rank,
                                        size_t dims[3]);
   std::complex<realnum> *get_dft_array(dft_fields fdft, component c, int num_freq, int *rank,
@@ -2126,6 +2135,8 @@ public:
   std::complex<realnum> *get_dft_array(dft_force force, component c, int num_freq, int *rank,
                                        size_t dims[3]);
   std::complex<realnum> *get_dft_array(dft_near2far n2f, component c, int num_freq, int *rank,
+                                       size_t dims[3]);
+  std::complex<realnum> *get_dft_array(dft_energy energy, component c, int num_freq, int *rank,
                                        size_t dims[3]);
 
   // overlap integrals between eigenmode fields and DFT flux fields
