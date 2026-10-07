@@ -2763,9 +2763,9 @@ void add_interpolate_weights(const std::vector<double *> &udatas, const std::vec
     int lz = (z1 == z2) ? 1 : 2;
 
     if (k == 0 && (ukind == material_data::U_MIN || ukind == material_data::U_PROD)) {
-      /* U_MIN and U_PROD carry adjustments defined in terms of the interpolated
-         value at this point. Overlapping grids of these kinds are rejected by
-         the caller, so there is exactly one copy and this is unchanged. */
+      /* The adjoint does not support U_MIN or U_PROD with overlapping grids
+         (material_grids_addgradient_point aborts), so only one copy reaches
+         here and the adjustment is computed once, as for a single grid. */
       const double *U = udatas[k];
       double u = (((U[IDX(x1, y1, z1)] * (1.0 - dx) + U[IDX(x2, y1, z1)] * dx) * (1.0 - dy) +
                    (U[IDX(x1, y2, z1)] * (1.0 - dx) + U[IDX(x2, y2, z1)] * dx) * dy) *
