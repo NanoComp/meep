@@ -212,12 +212,12 @@ class TestCavityArraySlice(ApproxComparisonTestCase):
             "point": mp.Volume(center=self.center_1d, size=mp.Vector3()),
         }
         for name, vol in regions.items():
+            # get_array always interpolates onto the centered grid, so the
+            # default component (mp.Centered) must predict every component.
+            dims, _, _ = self.sim.get_array_slice_dimensions(vol=vol)
             for component in (mp.Hz, mp.Ex, mp.Ey, mp.Dielectric):
                 for snap in (False, True):
                     with self.subTest(region=name, component=component, snap=snap):
-                        dims, _, _ = self.sim.get_array_slice_dimensions(
-                            component, vol=vol
-                        )
                         actual = self.sim.get_array(component, vol=vol, snap=snap).shape
                         self.assertEqual(dims, actual)
 
@@ -226,6 +226,47 @@ class TestCavityArraySlice(ApproxComparisonTestCase):
             self.sim.get_array_slice_dimensions().dim_sizes,
             self.sim.get_array(mp.Hz).shape,
         )
+
+    def test_slice_dimensions_component_validation(self):
+        self.sim.run(until_after_sources=0)
+        vol = mp.Volume(center=self.center_2d, size=self.size_2d)
+        default = self.sim.get_array_slice_dimensions(vol=vol).dim_sizes
+
+        # aliases for the centered grid
+        for centered in (mp.Centered, mp.Dielectric, mp.Permeability):
+            self.assertEqual(
+                self.sim.get_array_slice_dimensions(centered, vol=vol).dim_sizes,
+                default,
+            )
+        # Er does not exist in 2d Cartesian: this used to reach meep::abort
+        # inside loop_in_chunks, which takes down every rank under MPI.
+        # NO_COMPONENT used to return a meaningless shape, and a derived
+        # component an opaque SWIG "wrong number or type of arguments" error.
+        for bad in (mp.Er, mp.NO_COMPONENT, mp.Sz):
+            with self.assertRaises(ValueError):
+                self.sim.get_array_slice_dimensions(bad, vol=vol)
+        with self.assertRaises(TypeError):
+            self.sim.get_array_slice_dimensions("Ez", vol=vol)
+
+    def test_slice_dimensions_component_absent_from_grid(self):
+        # Ez has no coordinate mismatch in 1d but the grid carries no Ez, so
+        # there cannot be Yee-grid data for it; Ex in cylindrical is a mismatch.
+        src = mp.GaussianSource(0.15, fwidth=0.1)
+        for cell, dims, bad, ok in (
+            (mp.Vector3(0, 0, 6), 1, mp.Ez, mp.Ex),
+            (mp.Vector3(3, 0, 4), mp.CYLINDRICAL, mp.Ex, mp.Er),
+        ):
+            sim = mp.Simulation(
+                cell_size=cell,
+                resolution=10,
+                dimensions=dims,
+                sources=[mp.Source(src, ok, mp.Vector3())],
+            )
+            sim.init_sim()
+            with self.subTest(dimensions=dims):
+                with self.assertRaises(ValueError):
+                    sim.get_array_slice_dimensions(bad)
+                sim.get_array_slice_dimensions(ok)  # no raise
 
     def test_keyword_only_options(self):
         """cmplx/arr/frequency/snap may no longer be passed positionally."""

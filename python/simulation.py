@@ -4378,17 +4378,39 @@ class Simulation:
 
     def get_array_slice_dimensions(
         self,
-        component: Optional[int] = None,
+        component: int = mp.Centered,
         vol: Optional[Volume] = None,
         center: Optional[Vector3Type] = None,
         size: Optional[Vector3Type] = None,
     ) -> SliceDimensions:
         """
-        Computes the dimensions of the array slice that [`get_array`](#array-slices)
-        would return for the given region, without fetching the field data.
+        Computes the dimensions of the array slice over the given region without
+        fetching the field data: by default, the shape of the array that
+        [`get_array`](#array-slices) or `get_dft_array` would return.
 
-        Accepts either a volume object (`vol`), or a `center` and `size` `Vector3` pair.
-        If none are given, the entire cell is used.
+        + **`component` [ `component` constant ]** — The grid on which the data
+          lives. Defaults to `mp.Centered`, the centered grid at the middle of each
+          Yee cell. **Leave this at its default unless you actually have data on the
+          Yee grid.** For Yee-grid data, pass the field component (e.g. `mp.Ey`) you
+          will fetch with `get_dft_array`: each component lives on its own Yee
+          sublattice, so the shapes can differ by one between components. Passing a
+          field component for centered data gives the *wrong* shape.
+
+          Data on the Yee grid come only from `get_dft_array` applied to a monitor
+          created by one of:
+            - `add_dft_fields(..., yee_grid=True)`
+            - `add_mode_monitor(..., yee_grid=True)`
+            - `add_near2far` (always)
+            - `add_force` with the force `direction` normal to the region (including
+              the default `mp.AUTOMATIC`); a tangential force uses the centered grid.
+
+          Everything else is on the centered grid: every `get_array` result, and the
+          DFT fields of `add_dft_fields` and `add_mode_monitor` without `yee_grid=True`,
+          `add_flux`, `add_energy`, and tangential `add_force` monitors.
+
+        + **`vol` [ `Volume` ]**, **`center`, `size` [ `Vector3` ]** — The region,
+          specified either as a `Volume` or as a `center`/`size` pair. If none are
+          given, the entire cell is used.
 
         Returns a `SliceDimensions` named tuple containing the dimensions (`dim_sizes`),
         a `Vector3` object corresponding to the minimum corner of the volume
@@ -4396,31 +4418,60 @@ class Simulation:
         (`max_corner`). Being a named tuple, it still unpacks as
         `dim_sizes, min_corner, max_corner = ...`.
 
-        `dim_sizes` is a tuple equal to the `shape` of the corresponding `get_array`
-        result, so empty dimensions are collapsed away rather than reported as length
-        2, and the tuple is as long as the slice has non-singleton dimensions:
+        `dim_sizes` is a tuple equal to the `shape` of the corresponding array, so empty
+        dimensions are collapsed away rather than reported as length 2, and the tuple is
+        as long as the slice has non-singleton dimensions:
 
         ```python
+        # centered grid: get_array, or a monitor from add_dft_fields(...)
         dims, _, _ = sim.get_array_slice_dimensions(vol=box)
         assert dims == sim.get_array(mp.Ez, vol=box).shape
+
+        # Yee grid: only for a monitor from add_dft_fields(..., yee_grid=True)
+        mon = sim.add_dft_fields([mp.Ey], fcen, 0, 1, where=box, yee_grid=True)
+        ...
+        dims, _, _ = sim.get_array_slice_dimensions(mp.Ey, vol=box)
+        assert dims == sim.get_dft_array(mon, mp.Ey, 0).shape
         ```
 
-        Array slices are always interpolated onto the centered Yee-cell grid, so the
-        result does not depend on the field component; `component` is accepted for
-        backward compatibility and is validated but otherwise unused. For the same
-        reason `dim_sizes` is also independent of `get_array`'s `snap` argument.
+        On the centered grid, `dim_sizes` does not depend on `get_array`'s `snap`
+        argument. `min_corner` and `max_corner` are the extreme grid points on the
+        chosen grid; in a collapsed (zero-thickness) direction they are the two grid
+        points the data were interpolated from, which bracket the plane rather than lie
+        on it. (The coordinates and weights from `get_array_metadata` describe the
+        centered grid only, so they do not apply to Yee-grid data.)
+
+        DFT monitors created the itnernal `persist=True` optoin of `add_dft_fields`
+        (used by the adjoint solver) are padded by one grid cell on every side, so their
+        arrays are larger than `dim_sizes`.
 
         This routine is *collective* and must be called by every process.
         """
-        if component is not None:
-            _check_component(component)
+        if self.fields is None:
+            raise RuntimeError(
+                "Fields must be initialized before calling get_array_slice_dimensions; "
+                "call Simulation.init_sim() or Simulation.run() first"
+            )
+        _check_component(component)
+        # The centered grid (Dielectric, alias Centered; Permeability maps onto the
+        # same grid in loop_in_chunks), or the Yee sublattice of a field component the
+        # grid actually carries. Anything else either aborts inside loop_in_chunks
+        # (e.g. mp.Er in 2d Cartesian) or silently returns a meaningless shape (e.g.
+        # mp.NO_COMPONENT, or mp.Ez in 1d).
+        if component not in (mp.Dielectric, mp.Permeability) and not (
+            mp.Ex <= component <= mp.Bz and self.fields.gv.has_field(component)
+        ):
+            raise ValueError(
+                f"component must be mp.Centered (the default) or a field component "
+                f"present in this simulation's grid, got {component}"
+            )
         v = self._volume_or_total(vol, center, size)
         dim_sizes = np.zeros(3, dtype=np.uintp)
         corners = []
-        # Mirror get_array exactly: the centered grid (`mp.Centered`) with empty
-        # dimensions collapsed, then truncated to the reported rank.
+        # Empty dimensions are collapsed exactly as get_array and get_dft_array do,
+        # then the result is truncated to the reported rank.
         rank, _ = mp._get_array_slice_dimensions(
-            self.fields, v, dim_sizes, True, False, mp.Centered, corners
+            self.fields, v, dim_sizes, True, False, component, corners
         )
         return SliceDimensions(
             tuple(int(s) for s in dim_sizes[:rank]), corners[0], corners[1]
