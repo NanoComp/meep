@@ -346,5 +346,8 @@ def create_adjoint_sources(
     for monitor, dj in zip(monitors, cotangents):
         if onp.any(dj):
             adjoint_sources += monitor.place_adjoint_source(dj)
-    assert adjoint_sources
+    # some monitors (e.g. FourierFields) place sources only on the processes that
+    # own part of the monitor, so a process may legitimately have none: check the
+    # total over all processes, so that every process agrees (and none deadlocks)
+    assert mp.sum_to_all(len(adjoint_sources)) > 0
     return adjoint_sources

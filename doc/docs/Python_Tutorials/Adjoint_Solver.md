@@ -273,6 +273,29 @@ JAX is an optional dependency throughout. If it is not installed, JAX objective
 functions are simply not recognized and `mpa.MeepJaxWrapper` and
 `mpa.value_and_jacobian` are absent; everything else works unchanged.
 
+### JAX and MPI
+
+If JAX is installed, `import meep.adjoint` imports it, but that alone costs
+nothing: JAX starts no threads and does no work until a JAX computation actually
+runs, i.e. only when an objective function (or a loss around a
+`MeepJaxWrapper`) uses `jax.numpy`. Objective functions written with autograd
+never run JAX.
+
+When JAX does run, its CPU backend uses every core the process is allowed to run
+on. Under MPI, each process therefore uses as many cores as its CPU binding
+permits. With one core per process (e.g. `mpirun --bind-to core` or
+`srun --cpu-bind=cores`), JAX stays on that core. Without binding, or when bound
+to a whole socket or NUMA domain (Open MPI's default for more than two
+processes), every process may use many of the node's cores while JAX is
+computing, oversubscribing the node. The XLA flags that used to limit this
+(`intra_op_parallelism_threads=1`, `--xla_cpu_multi_thread_eigen=false`) have no
+effect in recent JAX versions. The JAX work in an adjoint optimization —
+evaluating the objective and its vector-Jacobian product on the monitor values —
+is usually brief compared to the timestepping, so this rarely matters. If it
+does, bind each process to its own cores, or restrict each process's CPU
+affinity (e.g. with `os.sched_setaffinity` on Linux) before the first JAX
+computation.
+
 Broadband Waveguide Mode Converter with Minimum Feature Size
 ------------------------------------------------------------
 
