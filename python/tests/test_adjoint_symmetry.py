@@ -141,8 +141,9 @@ class TestAdjointMirrorSymmetry(unittest.TestCase):
         _, g = gradient(w, True, *OFF_PLANE)
         for ix, iy in ((8, 13), (8, 15)):
             fd = finite_difference(w, True, *OFF_PLANE, ix, iy)
-            self.assertAlmostEqual(g[ix, iy] / fd, 1.0, places=2,
-                                   msg=f"node ({ix},{iy})")
+            self.assertAlmostEqual(
+                g[ix, iy] / fd, 1.0, places=2, msg=f"node ({ix},{iy})"
+            )
 
     def test_mirrored_half_is_inert(self):
         """Weights below the plane are never read, so their gradient is zero.
