@@ -24,7 +24,7 @@ Two entry points, neither requiring the other:
     # Post-processing an ordinary forward run. NumPy in, NumPy out.
     monitor = sim.add_dft_fields([mp.Ez, mp.Hx], frequencies, where=plane)
     sim.run(...)
-    asp = mpa.AngularSpectrum.from_monitor(sim, monitor, stack)
+    asp = mpa.AngularSpectrum.from_monitor(sim, monitor, stack, plane)
     efficiency = asp.overlap_monitor(sim, monitor, fiber_mode, distance=300.0)
 
     # Inside an objective function, differentiated through the adjoint.
@@ -36,6 +36,7 @@ must lie in a homogeneous region. Cylindrical coordinates are not supported.
 """
 
 import math
+import warnings
 from typing import Callable, Dict, NamedTuple, Optional, Sequence, Tuple, Union
 
 import jax
@@ -76,11 +77,27 @@ class Layer(NamedTuple):
 
     @classmethod
     def from_medium(cls, medium: mp.Medium, thickness: Optional[float] = None):
-        """Builds a layer from a `meep.Medium`, evaluating its index per frequency."""
-        return cls(
-            index=lambda frequency: onp.sqrt(complex(medium.epsilon(frequency)[0][0])),
-            thickness=thickness,
-        )
+        """Builds a layer from a `meep.Medium`, evaluating its index per frequency.
+
+        The medium must be isotropic and non-magnetic, since a layer is described
+        by a single scalar index.
+        """
+
+        def index(frequency):
+            epsilon = onp.asarray(medium.epsilon(frequency))
+            mu = onp.asarray(medium.mu(frequency))
+            if not (
+                onp.allclose(epsilon, epsilon[0, 0] * onp.eye(3))
+                and onp.allclose(mu, onp.eye(3))
+            ):
+                raise ValueError(
+                    "Layer.from_medium needs an isotropic, non-magnetic medium, "
+                    f"but at frequency {frequency} epsilon is\n{epsilon}\nand mu "
+                    f"is\n{mu}."
+                )
+            return onp.sqrt(complex(epsilon[0, 0]))
+
+        return cls(index=index, thickness=thickness)
 
     def indices(self, frequencies: onp.ndarray) -> jnp.ndarray:
         """Returns the index at each frequency, as a (num frequencies,) array."""
@@ -149,15 +166,33 @@ def _as_concrete(value) -> Optional[float]:
         return None
 
 
-def _safe_sqrt(argument: jnp.ndarray) -> jnp.ndarray:
-    """Square root with the branch chosen so that the imaginary part is >= 0.
+def _kz_sqrt(argument: jnp.ndarray) -> jnp.ndarray:
+    """The principal square root, which is the physical branch of kz here.
 
-    Evanescent orders must decay away from the monitor rather than grow, which
-    fixes the branch. The caller is expected to have regularized the argument so
-    that it never lands exactly on zero; see DEFAULT_LOSS_REGULARIZATION.
+    Evanescent orders must decay away from the monitor, i.e. Im(kz) >= 0. Every
+    index is given a small loss (DEFAULT_LOSS_REGULARIZATION) and passive media
+    are checked for in `AngularSpectrum`, so the argument always has a positive
+    imaginary part and the principal branch is the decaying one.
     """
-    root = jnp.sqrt(jnp.asarray(argument, dtype=jnp.complex128))
-    return jnp.where(jnp.imag(root) < 0, -root, root)
+    return jnp.sqrt(jnp.asarray(argument, dtype=jnp.complex128))
+
+
+def _check_passive(index: jnp.ndarray, layer: int) -> None:
+    """Rejects an index with gain, usually a sign-convention mistake.
+
+    Meep uses exp(-i omega t), in which a passive medium has Im(n^2) >= 0. Skipped
+    for a traced index, whose value is not known.
+    """
+    try:
+        values = onp.asarray(index, dtype=complex)
+    except (TypeError, jax.errors.ConcretizationTypeError):
+        return
+    if onp.any(onp.imag(onp.square(values)) < 0):
+        raise ValueError(
+            f"Layer {layer} has an index with Im(n^2) < 0 ({values}), i.e. gain. "
+            "Meep uses the exp(-i omega t) convention, in which a lossy medium "
+            "has a *positive* imaginary index, n + i kappa."
+        )
 
 
 def _longitudinal_wavevector(
@@ -166,7 +201,7 @@ def _longitudinal_wavevector(
     """kz for each (frequency, transverse wavevector), shaped (nfreq, nkt)."""
     kt = jnp.asarray(kt)
     transverse = jnp.sum(jnp.square(kt.reshape(kt.shape[0], -1)), axis=-1)
-    return _safe_sqrt(
+    return _kz_sqrt(
         jnp.square(index)[:, None] * jnp.square(k0)[:, None] - transverse[None, :]
     )
 
@@ -465,6 +500,10 @@ class AngularSpectrum:
             )
         self.transverse_dimensions = len(self.num_points)
         _tangential_components(normal, self.transverse_dimensions + 1)
+        # In 2D, which of the (u, v) axes is out of the simulation plane, and so
+        # carries s polarization: z, which is u for a y-normal line and v for an
+        # x-normal one.
+        self._s_axis_2d = 0 if normal == mp.Y else 1
 
         self.stack = stack
         self.frequencies = onp.asarray(frequencies, dtype=float)
@@ -491,10 +530,18 @@ class AngularSpectrum:
 
         # Regularizing the index keeps kz off the light line, where its
         # derivative is unbounded; see DEFAULT_LOSS_REGULARIZATION.
+        if not jax.config.jax_enable_x64:
+            warnings.warn(
+                "jax_enable_x64 is disabled, so the angular-spectrum propagation "
+                "runs in single precision. Enable it with "
+                'jax.config.update("jax_enable_x64", True) to match Meep.',
+                stacklevel=2,
+            )
+        indices = [layer.indices(self.frequencies) for layer in stack.layers]
+        for i, index in enumerate(indices):
+            _check_passive(index, i)
         regularizer = 1 + 1j * self.stack.loss_regularization
-        self._indices = [
-            layer.indices(self.frequencies) * regularizer for layer in stack.layers
-        ]
+        self._indices = [index * regularizer for index in indices]
         self._wavevectors = [
             _longitudinal_wavevector(index, self._k0, self._kt)
             for index in self._indices
@@ -656,7 +703,8 @@ class AngularSpectrum:
 
         which is `E_up = (E_t - (n_hat x H_t) / Y) / 2` written out in that
         basis. In 2D the wavevector lies along one axis, so the rotation is the
-        identity and (u, v) are already (s, p) up to the ordering below.
+        identity and (u, v) are already (s, p), in an order that depends on
+        the normal.
 
         Returns:
             `(up, down)`, each a dict mapping polarization to a
@@ -674,19 +722,24 @@ class AngularSpectrum:
 
         if azimuth is None:
             # One transverse direction, so there is no azimuth and the
-            # right-handed axes are already a valid s/p pair: u_hat is
-            # perpendicular to the wavevector, v_hat lies along it. Using
-            # (n_hat x H)_u = -H_v and (n_hat x H)_v = +H_u directly,
+            # right-handed axes are already a valid s/p pair: s is whichever
+            # tangential axis is out of the simulation plane (u for a y-normal
+            # line, v for an x-normal one) and p is the one the wavevector runs
+            # along. Using (n_hat x H)_u = -H_v and (n_hat x H)_v = +H_u directly,
             #
-            #     E_up_u = (E_u + H_v / Y_s) / 2   E_up_v = (E_v - H_u / Y_p) / 2
+            #     E_up_u = (E_u + H_v / Y_u) / 2   E_up_v = (E_v - H_u / Y_v) / 2
             #
-            # Note the signs are *not* those of the rotated case below: the 3D
-            # convention puts s_hat along -u_hat here, since the wavevector runs
-            # along v_hat, and the two bases therefore differ by a sign.
-            electric_s, magnetic_s = electric_u, magnetic_u
-            electric_p, magnetic_p = electric_v, magnetic_v
-            cross_s = -outgoing * magnetic_p / admittance_s
-            cross_p = outgoing * magnetic_s / admittance_p
+            # with Y_u, Y_v the admittances of the polarizations the two axes
+            # carry. The signs are *not* those of the rotated case below, since
+            # that basis differs from (u, v) by a sign here.
+            if self._s_axis_2d == 0:
+                electric_s, electric_p = electric_u, electric_v
+                cross_s = -outgoing * magnetic_v / admittance_s
+                cross_p = outgoing * magnetic_u / admittance_p
+            else:
+                electric_s, electric_p = electric_v, electric_u
+                cross_s = outgoing * magnetic_u / admittance_s
+                cross_p = -outgoing * magnetic_v / admittance_p
         else:
             cosine, sine = azimuth
             electric_s = -electric_u * sine + electric_v * cosine
@@ -709,6 +762,9 @@ class AngularSpectrum:
     def _transmission(self, polarization: int):
         """Transmission and reflection of the stack for one polarization."""
         admittances = [pair[polarization] for pair in self._admittances]
+        if len(admittances) == 1:
+            # the monitor is already in the terminating layer: nothing to cross
+            return jnp.ones_like(admittances[0]), jnp.zeros_like(admittances[0])
         if len(admittances) == 2:
             return _single_interface_limit(admittances)
         return _stack_transmission(admittances, self._wavevectors, self._thicknesses)
@@ -840,7 +896,7 @@ class AngularSpectrum:
         return coupled / incident_power
 
     def report(self, fields: TangentialFields) -> Dict[str, jnp.ndarray]:
-        """Diagnostics for the four ways a monitor is usually placed wrongly.
+        """Diagnostics for the three ways a monitor is usually placed wrongly.
 
         Returns a dict with, per frequency:
 
@@ -930,7 +986,11 @@ class AngularSpectrum:
         amplitude_s = result.amplitudes[..., S_POLARIZATION]
         amplitude_p = result.amplitudes[..., P_POLARIZATION]
         if rotation is None:
-            amplitude_u, amplitude_v = amplitude_s, amplitude_p
+            amplitude_u, amplitude_v = (
+                (amplitude_s, amplitude_p)
+                if self._s_axis_2d == 0
+                else (amplitude_p, amplitude_s)
+            )
         else:
             cosine, sine = rotation
             # The rotation into (s, p) is a reflection, hence its own inverse.
@@ -941,7 +1001,9 @@ class AngularSpectrum:
         (e_u, e_v), _ = _PLANE_AXES[self.normal]
         outputs = {}
         for component, amplitude in ((e_u, amplitude_u), (e_v, amplitude_v)):
-            if not jnp.any(amplitude):
+            # In 2D only the supplied polarization is populated. Decided from the
+            # inputs rather than the values, so that this also works under jit.
+            if self.transverse_dimensions == 1 and component not in fields.E:
                 continue
             if coordinates is None and self._uniform:
                 outputs[component] = self._inverse_transform(amplitude)
@@ -985,7 +1047,7 @@ class AngularSpectrum:
     #
     # Two ways in. `from_monitor` post-processes an ordinary forward run and
     # deals in NumPy, so a user who only wants a far field never meets JAX.
-    # `for_design` builds the `FourierFields` an objective function needs, for
+    # `objective_arguments` builds the `FourierFields` an objective function needs, for
     # use inside `OptimizationProblem` or a `MeepJaxWrapper` loss.
 
     @staticmethod
@@ -1083,6 +1145,24 @@ class AngularSpectrum:
             **kwargs,
         )
 
+    def _to_plane_axes(self, values, component):
+        """Reorders a monitor array from Meep's (x, y, z) axis order to (u, v).
+
+        The two differ only for a y-normal plane in 3D, whose right-handed axes are
+        (z, x). The shape is checked against the propagator either way.
+        """
+        if self.transverse_dimensions == 2 and self.normal == mp.Y:
+            values = jnp.swapaxes(values, -1, -2)
+        if tuple(values.shape[-self.transverse_dimensions :]) != self.num_points:
+            raise ValueError(
+                f"The monitor has {tuple(values.shape[-self.transverse_dimensions:])} "
+                f"samples for {mp.component_name(component)}, in (u, v) order, but "
+                f"the propagator was built for {self.num_points}. The volume Meep "
+                "actually used may have been snapped to the grid; build the "
+                "propagator from the same volume that was registered."
+            )
+        return values
+
     def fields_from_monitor(
         self, simulation: mp.Simulation, monitor
     ) -> TangentialFields:
@@ -1114,15 +1194,7 @@ class AngularSpectrum:
                         for i in range(len(self.frequencies))
                     ]
                 )
-                if values.shape[1:] != self.num_points:
-                    raise ValueError(
-                        f"The monitor returned {values.shape[1:]} samples for "
-                        f"{mp.component_name(component)} but the propagator was "
-                        f"built for {self.num_points}. The volume Meep actually "
-                        "used may have been snapped to the grid; build the "
-                        "propagator from the same volume that was registered."
-                    )
-                target[component] = values
+                target[component] = onp.asarray(self._to_plane_axes(values, component))
         return TangentialFields(
             E=electric, H=magnetic, normal=self.normal, sign=self.sign
         )
@@ -1185,8 +1257,13 @@ class AngularSpectrum:
             )
         electric, magnetic = {}, {}
         for component, values in zip(self._objective_components, args):
+            values = jnp.asarray(values)
+            if values.ndim <= self.transverse_dimensions:
+                # a component the simulation does not store, e.g. Ex in a 2D run
+                # with only Ez, comes back without spatial axes: treat as absent
+                continue
             target = magnetic if mp.is_magnetic(component) else electric
-            target[component] = values
+            target[component] = self._to_plane_axes(values, component)
         return TangentialFields(
             E=electric, H=magnetic, normal=self.normal, sign=self.sign
         )

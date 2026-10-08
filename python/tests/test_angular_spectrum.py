@@ -683,10 +683,6 @@ class TestAgainstNearToFar(ApproxComparisonTestCase):
         self.assertLess(fine, coarse / 2, "did not converge with resolution")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 @unittest.skipIf(jax is None, "jax is not installed")
 class TestAdjointGradient(ApproxComparisonTestCase):
     """The adjoint gradient of an angular-spectrum objective, in 2D and 3D.
@@ -832,3 +828,302 @@ class TestAdjointGradient(ApproxComparisonTestCase):
 
     def test_three_dimensions(self):
         self._check(3)
+
+
+def _tilted_beam_2d(index, tilt_deg, waist, num_points, pitch):
+    """An up-going tilted Gaussian as an explicit sum of plane waves.
+
+    Returns the sample coordinates, the plane-wave amplitudes `a(kt)` on a dense
+    grid, the wavevectors, and a function giving the field `sum a(kt) w(kt)
+    exp(i kt x)` for any per-wavevector weight `w`, so that each test can build
+    the tangential E and H it needs independently of the propagator.
+    """
+    k0 = 2 * onp.pi / WAVELENGTH
+    x = (onp.arange(num_points) - (num_points - 1) / 2) * pitch
+    kt = onp.linspace(-0.95 * index * k0, 0.95 * index * k0, 1601)
+    center = index * k0 * math.sin(math.radians(tilt_deg))
+    amplitude = onp.exp(-(((kt - center) * waist) ** 2) / 4)
+    phase = onp.exp(1j * onp.outer(x, kt))
+
+    def field(weight=1.0):
+        return (phase @ (amplitude * weight))[None]
+
+    return kt, amplitude, field
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestTwoDimensionalOrientations(ApproxComparisonTestCase):
+    """Both polarizations on monitors normal to x and to y, against Fresnel.
+
+    In 2D the s polarization is whichever tangential axis is out of the
+    simulation plane, which is the first one for a y-normal line and the second
+    for an x-normal one. The fields here are built from Maxwell's equations
+    directly, not from the propagator's own conventions:
+
+        TE (E out of plane):  y-normal Hx = +Y_s Ez,  x-normal Hy = -Y_s Ez
+        TM (E in plane):      y-normal Hz = -Y_p Ex,  x-normal Hz = +Y_p Ey
+
+    for an up-going wave, with Y_s = kz / k0 and Y_p = n^2 k0 / kz.
+    """
+
+    CASES = {
+        ("y", "TE"): (mp.Y, mp.Ez, mp.Hx, asm.S_POLARIZATION, +1),
+        ("x", "TE"): (mp.X, mp.Ez, mp.Hy, asm.S_POLARIZATION, -1),
+        ("y", "TM"): (mp.Y, mp.Ex, mp.Hz, asm.P_POLARIZATION, -1),
+        ("x", "TM"): (mp.X, mp.Ey, mp.Hz, asm.P_POLARIZATION, +1),
+    }
+
+    def test_transmission_matches_fresnel(self):
+        num_points, pitch = 1024, 0.025
+        k0 = 2 * onp.pi / WAVELENGTH
+        kt, amplitude, field = _tilted_beam_2d(N_OXIDE, 30, 3.0, num_points, pitch)
+        kz_in = onp.sqrt((N_OXIDE * k0) ** 2 - kt**2 + 0j)
+        kz_out = onp.sqrt((N_AIR * k0) ** 2 - kt**2 + 0j)
+        stack = mpa.Stack([mpa.Layer(N_OXIDE, 0.5), mpa.Layer(N_AIR)])
+        for (name, polarization_name), case in self.CASES.items():
+            normal, e_component, h_component, polarization, sign = case
+            if polarization == asm.S_POLARIZATION:
+                y_in, y_out = kz_in / k0, kz_out / k0
+            else:
+                y_in, y_out = N_OXIDE**2 * k0 / kz_in, N_AIR**2 * k0 / kz_out
+            # exact: transmit each plane wave with the tangential-field Fresnel
+            # coefficient and compare the power carried along the normal
+            t = 2 * y_in / (y_in + y_out)
+            expected = onp.sum(onp.real(y_out) * onp.abs(amplitude * t) ** 2) / onp.sum(
+                onp.real(y_in) * onp.abs(amplitude) ** 2
+            )
+            fields = mpa.TangentialFields(
+                E={e_component: field()},
+                H={h_component: sign * field(y_in)},
+                normal=normal,
+            )
+            propagator = mpa.AngularSpectrum(
+                stack, [1 / WAVELENGTH], pitch, num_points, normal=normal
+            )
+            reference = mpa.AngularSpectrum(
+                mpa.Stack([mpa.Layer(N_OXIDE, 0.0), mpa.Layer(N_OXIDE)]),
+                [1 / WAVELENGTH],
+                pitch,
+                num_points,
+                normal=normal,
+            )
+            msg = f"{name}-normal {polarization_name}"
+            got = float(propagator.power(fields, 1.0)[0] / reference.power(fields)[0])
+            self.assertAlmostEqual(got, expected, places=5, msg=msg)
+            down = float(propagator.report(fields)["downgoing_fraction"][0])
+            self.assertLess(down, 1e-10, msg)
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestSpectralSampling(ApproxComparisonTestCase):
+    """How the transverse wavevectors are chosen without periodic boundaries.
+
+    The monitor is zero-padded by `pad_factor` before the FFT, which samples the
+    spectrum at a spacing of 2 pi / (pad_factor * width) and makes the implied
+    real-space period `pad_factor` monitor widths. A beam that spreads beyond
+    that period aliases, so the propagated field converges as `pad_factor` grows,
+    and agrees with an explicit, much finer set of wavevectors.
+    """
+
+    def test_converges_with_padding_and_matches_explicit_wavevectors(self):
+        num_points, pitch, distance = 256, 0.05, 60.0
+        k0 = 2 * onp.pi / WAVELENGTH
+        x = (onp.arange(num_points) - (num_points - 1) / 2) * pitch
+        values = onp.exp(-((x / 1.0) ** 2))[None] + 0j
+        samples = onp.linspace(-15, 15, 61)
+        fields = _up_going(
+            _uniform_propagator(num_points=num_points, pitch=pitch, pad_factor=16),
+            values,
+        )
+
+        def propagate(**kwargs):
+            propagator = mpa.AngularSpectrum(
+                mpa.Stack([mpa.Layer(N_OXIDE, 0.0), mpa.Layer(N_OXIDE)]),
+                [1 / WAVELENGTH],
+                pitch,
+                num_points,
+                normal=mp.Y,
+                **kwargs,
+            )
+            return onp.asarray(
+                propagator.propagate(fields, distance, coordinates=samples)[mp.Ez][0]
+            )
+
+        # A grid centered on kt = 0, like the FFT's, and stopping short of the
+        # light line, where the up/down split divides by an admittance of ~zero.
+        spacing = 2 * onp.pi / (64 * num_points * pitch)
+        last = math.floor(N_OXIDE * k0 / spacing)
+        reference = propagate(kt=onp.arange(-last, last + 1) * spacing)
+        errors = {
+            pad: onp.abs(propagate(pad_factor=pad) - reference).max()
+            / onp.abs(reference).max()
+            for pad in (1, 4, 16, 64)
+        }
+        self.assertGreater(errors[1], 0.5)  # the beam has spread past one width
+        self.assertGreater(errors[4], 10 * errors[16])
+        self.assertLess(errors[16], 1e-3)
+        self.assertLess(errors[64], 1e-10)  # the same wavevectors as the reference
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestEdgeCases(ApproxComparisonTestCase):
+    def test_single_layer_stack_is_homogeneous_propagation(self):
+        """A stack that is only the terminating layer: the monitor is already in it."""
+        num_points, pitch = 256, 0.05
+        x = (onp.arange(num_points) - (num_points - 1) / 2) * pitch
+        values = onp.exp(-(x**2))[None] + 0j
+        single = mpa.AngularSpectrum(
+            mpa.Stack([mpa.Layer(N_OXIDE)]), [1 / WAVELENGTH], pitch, num_points
+        )
+        double = _uniform_propagator(num_points=num_points, pad_factor=4)
+        fields = _up_going(double, values)
+        self.assertClose(
+            onp.asarray(single.propagate(fields, 3.0)[mp.Ez]),
+            onp.asarray(double.propagate(fields, 3.0)[mp.Ez]),
+            epsilon=1e-12,
+        )
+
+    def test_gain_is_rejected(self):
+        """An index with gain, usually exp(+i omega t) written as n - i kappa."""
+        for index in (1.5 - 0.1j, lambda frequency: 1.5 - 0.1j):
+            with self.assertRaisesRegex(ValueError, "exp\\(-i omega t\\)"):
+                mpa.AngularSpectrum(
+                    mpa.Stack([mpa.Layer(index, 0.5), mpa.Layer(N_AIR)]),
+                    [1 / WAVELENGTH],
+                    0.05,
+                    64,
+                )
+
+    def test_lossy_layer_conserves_energy_less_absorption(self):
+        """A lossy film reflects and transmits less than everything."""
+        for index in (0.2 + 3.0j, N_HIGH + 0.05j):
+            for polarization in (asm.S_POLARIZATION, asm.P_POLARIZATION):
+                k0 = onp.array([2 * onp.pi / WAVELENGTH])
+                kt = jnp.array([N_OXIDE * k0[0] * math.sin(math.radians(20))])
+                indices = [N_OXIDE, index, N_AIR]
+                wavevectors = [_wavevector(n, k0, kt) for n in indices]
+                admittances = [
+                    _admittance(n, kz, k0, polarization)
+                    for n, kz in zip(indices, wavevectors)
+                ]
+                transmission, reflection = asm._stack_transmission(
+                    admittances, wavevectors, [0.0, 0.1]
+                )
+                y_in, y_out = admittances[0][0, 0], admittances[-1][0, 0]
+                total = abs(complex(reflection[0, 0])) ** 2 + abs(
+                    complex(transmission[0, 0])
+                ) ** 2 * float(onp.real(complex(y_out)) / onp.real(complex(y_in)))
+                self.assertLess(total, 1.0)
+                self.assertGreater(total, 0.0)
+
+    def test_propagate_under_jit(self):
+        propagator = _uniform_propagator(num_points=128, pad_factor=4)
+        x = (onp.arange(128) - 63.5) * 0.05
+        fields = _up_going(propagator, onp.exp(-(x**2))[None] + 0j)
+
+        def peak(scale):
+            scaled = mpa.TangentialFields(
+                E={k: scale * v for k, v in fields.E.items()},
+                H={k: scale * v for k, v in fields.H.items()},
+                normal=fields.normal,
+            )
+            return jnp.max(jnp.abs(propagator.propagate(scaled, 2.0)[mp.Ez]))
+
+        self.assertAlmostEqual(float(jax.jit(peak)(1.0)), float(peak(1.0)), places=12)
+
+    def test_from_medium_needs_an_isotropic_nonmagnetic_medium(self):
+        self.assertAlmostEqual(
+            complex(mpa.Layer.from_medium(mp.Medium(index=1.5)).indices([1.0])[0]),
+            1.5,
+        )
+        for medium in (
+            mp.Medium(epsilon_diag=mp.Vector3(2, 3, 2)),
+            mp.Medium(epsilon=2, mu=2),
+        ):
+            with self.assertRaisesRegex(ValueError, "isotropic, non-magnetic"):
+                mpa.Layer.from_medium(medium).indices([1.0])
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestYNormalPlaneIn3D(ApproxComparisonTestCase):
+    """A y-normal plane in 3D, whose (u, v) axes are (z, x), not Meep's (x, z).
+
+    The same simulation is run twice, the second with the coordinates cyclically
+    permuted (x, y, z) -> (y, z, x), which is a symmetry of the Yee grid and maps
+    the y-normal plane onto a z-normal one with the same (u, v) axes. A
+    non-square plane and a beam tilted along one axis make any mix-up of the two
+    axes visible.
+    """
+
+    @staticmethod
+    def _run(permuted):
+        def vec(x, y, z):
+            return mp.Vector3(z, x, y) if permuted else mp.Vector3(x, y, z)
+
+        def comp(c):
+            return {mp.Ex: mp.Ey, mp.Ey: mp.Ez, mp.Ez: mp.Ex}[c] if permuted else c
+
+        simulation = mp.Simulation(
+            cell_size=vec(3.0, 3.0, 2.5),
+            resolution=10,
+            boundary_layers=[mp.PML(0.5)],
+            default_material=mp.Medium(index=N_OXIDE),
+            sources=[
+                mp.Source(
+                    mp.GaussianSource(1 / WAVELENGTH, fwidth=0.2),
+                    comp(mp.Ex),
+                    center=vec(0, -0.6, 0),
+                    size=vec(1.0, 0, 0.6),
+                    amp_func=lambda p: onp.exp(1j * 2.0 * (p.x if permuted else p.z)),
+                )
+            ],
+        )
+        plane = mp.Volume(center=vec(0, 0.4, 0), size=vec(1.6, 0, 1.0))
+        components = [comp(c) for c in (mp.Ex, mp.Ez)] + [
+            {mp.Ex: mp.Hx, mp.Ey: mp.Hy, mp.Ez: mp.Hz}[comp(c)] for c in (mp.Ex, mp.Ez)
+        ]
+        monitor = simulation.add_dft_fields(components, [1 / WAVELENGTH], where=plane)
+        simulation.run(until=20)
+        propagator = mpa.AngularSpectrum.from_monitor(
+            simulation,
+            monitor,
+            mpa.Stack([mpa.Layer(N_OXIDE, 0.3), mpa.Layer(N_AIR)]),
+            plane,
+        )
+        fields = propagator.fields_from_monitor(simulation, monitor)
+        mode = mpa.gaussian_mode(0.5, tilt_deg=15.0, tilt_azimuth_deg=0.0)
+        # the adjoint path must see the same arrays as the monitor path
+        propagator.objective_arguments(simulation, plane)
+        raw = [
+            onp.asarray([simulation.get_dft_array(monitor, c, 0)])
+            for c in propagator._objective_components
+        ]
+        taken = propagator.take(raw)
+        return propagator, fields, taken, mode
+
+    def test_matches_the_permuted_z_normal_plane(self):
+        y_normal, y_fields, y_taken, mode = self._run(permuted=False)
+        z_normal, z_fields, _, _ = self._run(permuted=True)
+        self.assertEqual(y_normal.normal, mp.Y)
+        self.assertEqual(z_normal.normal, mp.Z)
+        self.assertEqual(y_normal.num_points, z_normal.num_points)
+        for component in y_fields.E:
+            self.assertClose(
+                onp.asarray(y_fields.E[component]),
+                onp.asarray(y_taken.E[component]),
+                epsilon=0,
+            )
+        self.assertClose(
+            onp.asarray(y_normal.power(y_fields, 0.5)),
+            onp.asarray(z_normal.power(z_fields, 0.5)),
+            epsilon=1e-6,
+        )
+        self.assertClose(
+            onp.asarray(y_normal.overlap(y_fields, mode, 0.5)),
+            onp.asarray(z_normal.overlap(z_fields, mode, 0.5)),
+            epsilon=1e-6,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
