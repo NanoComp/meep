@@ -1350,7 +1350,9 @@ class Simulation:
           the coordinate system used in Meep (for example, to put the origin at the
           corner).  Passing `geometry_center=c` is equivalent to adding the `c` vector to
           the coordinates of every other object in the simulation, i.e. `c` becomes the
-          new origin that other objects are defined with respect to.
+          new origin that other objects are defined with respect to. `c` is rounded to the
+          nearest pixel (a multiple of `1/resolution`) so that the grid is not shifted
+          relative to the Yee lattice.
 
         + **`sources` [ list of `Source` class ]** — Specifies the current sources to be
           present in the simulation. Defaults to none (empty list).
@@ -1788,6 +1790,14 @@ class Simulation:
         else:
             raise ValueError(f"Unsupported dimentionality: {dims}")
 
+        # the grid origin is rounded to a whole pixel (see grid_volume::set_origin),
+        # so round geometry_center the same way to keep it consistent with the grid
+        self.geometry_center = Vector3(
+            *(
+                round(c * self.resolution) / self.resolution
+                for c in self.geometry_center
+            )
+        )
         gv.center_origin()
         gv.shift_origin(
             py_v3_to_vec(self.dimensions, self.geometry_center, self.is_cylindrical)
