@@ -15,6 +15,7 @@ from autograd import numpy as npa
 
 import meep as mp
 import meep.adjoint as mpa
+from meep.adjoint import source_gradient
 
 RES = 20
 FCEN = 1.0
@@ -357,6 +358,109 @@ class TestSourceGradient(unittest.TestCase):
                 )
 
 
+class TestAmpDataProfile(unittest.TestCase):
+    """`amplitude` and `amp_data` for a source whose amplitudes vary in space.
+
+    Meep applies `amplitude * interpolated amp_data` at each point, so the
+    `amplitude` gradient has to weight each point by the profile, and the
+    `amp_data` gradient has to carry the amplitude.
+    """
+
+    N = 5
+
+    def _make(self, data, amplitude, names):
+        return mp.Source(
+            mp.GaussianSource(FCEN, fwidth=0.2),
+            component=mp.Ez,
+            center=SRC_C,
+            size=mp.Vector3(0, 1.5),
+            amplitude=amplitude,
+            amp_data=np.asarray(data, dtype=np.complex128).reshape(1, self.N, 1),
+            differentiable=names,
+            name="sheet",
+        )
+
+    def _evaluate(self, data, amplitude):
+        _, opt = _problem(self._make(data, amplitude, ["amplitude"]))
+        return np.asarray(opt([RHO], need_gradient=False)[0]).item()
+
+    def test_amplitude_and_amp_data_match_finite_differences(self):
+        rng = np.random.default_rng(7)
+        data = rng.standard_normal(self.N) + 1j * rng.standard_normal(self.N)
+        amplitude = 0.8 + 0.3j
+        # both at once, which also checks that they can be requested together
+        _, opt = _problem(self._make(data, amplitude, ["amp_data", "amplitude"]))
+        _, grad = opt([RHO])
+
+        reference = _complex_fd(
+            lambda a: self._evaluate(data, a), lambda d: amplitude + d
+        )
+        adjoint = complex(np.ravel(grad["sheet"]["amplitude"])[0])
+        self.assertLess(abs(adjoint - reference) / abs(reference), 1e-5)
+
+        j = self.N // 2
+
+        def perturb(delta):
+            out = data.copy()
+            out[j] += delta
+            return out
+
+        reference = _complex_fd(lambda d: self._evaluate(d, amplitude), perturb)
+        adjoint = complex(np.ravel(grad["sheet"]["amp_data"])[j])
+        self.assertLess(abs(adjoint - reference) / abs(reference), 1e-5)
+
+
+class TestPMLCheck(unittest.TestCase):
+    """The PML check follows each layer's direction and side and the cell's
+    placement; none of these run a simulation."""
+
+    def _monitor(self, **kwargs):
+        center, size = kwargs.pop("center"), kwargs.pop("size", mp.Vector3())
+        sim = mp.Simulation(
+            resolution=10,
+            sources=[
+                mp.Source(
+                    mp.GaussianSource(FCEN, fwidth=0.2),
+                    mp.Ez,
+                    center=center,
+                    size=size,
+                    differentiable=["amplitude"],
+                )
+            ],
+            **kwargs,
+        )
+        sim.init_sim()
+        return source_gradient.SourceGradientMonitor(
+            sim, sim.sources[0], np.array([FCEN])
+        )
+
+    def test_source_across_a_direction_without_pml(self):
+        self._monitor(
+            cell_size=mp.Vector3(4, 6),
+            boundary_layers=[mp.PML(1.0, direction=mp.Y)],
+            k_point=mp.Vector3(),
+            center=mp.Vector3(0, -1),
+            size=mp.Vector3(4, 0),
+        )
+
+    def test_offset_cell(self):
+        self._monitor(
+            cell_size=mp.Vector3(6, 6),
+            geometry_center=mp.Vector3(5, 0),
+            boundary_layers=[mp.PML(1.0)],
+            center=mp.Vector3(5, 0),
+        )
+
+    def test_one_sided_pml(self):
+        kwargs = dict(
+            cell_size=mp.Vector3(6, 6),
+            boundary_layers=[mp.PML(1.0, direction=mp.X, side=mp.High)],
+        )
+        self._monitor(center=mp.Vector3(-2.7, 0), **kwargs)  # no PML on the low side
+        with self.assertRaisesRegex(ValueError, "PML along x"):
+            self._monitor(center=mp.Vector3(2.7, 0), **kwargs)
+
+
 class TestGaussianBeamParameters(unittest.TestCase):
     """Derivatives with respect to a Gaussian beam's own parameters.
 
@@ -415,6 +519,15 @@ class TestGaussianBeamParameters(unittest.TestCase):
         value, grad = opt([RHO])
         objective = float(np.asarray(value).item())
         adjoint = float(np.real(grad["beam"]["beam_E0"][2]))
+        self.assertLess(abs(adjoint - 2 * objective) / (2 * objective), 1e-5)
+
+    def test_amplitude_is_exact(self):
+        # Every component the beam places scales with `amplitude`, so as for
+        # beam_E0 the gradient at amplitude 1 is exactly 2J.
+        opt = self._problem(["amplitude"])
+        value, grad = opt([RHO])
+        objective = float(np.asarray(value).item())
+        adjoint = complex(np.ravel(grad["beam"]["amplitude"])[0])
         self.assertLess(abs(adjoint - 2 * objective) / (2 * objective), 1e-5)
 
     def test_waist_and_focus(self):

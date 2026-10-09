@@ -449,10 +449,38 @@ class OptimizationProblem:
 
         grads = {}
         plain = [n for n in other_names if n != "amp_data"]
+        if plain and source_gradient.is_gaussian_beam(src):
+            # A beam places several components, each `amplitude` times the beam
+            # field it is built from, so every component contributes.
+            center = monitors[0].volume.center
+            per_component = {}
+            for monitor in monitors:
+                positions = monitor.positions(self.sim)
+                profile = source_gradient.beam_profile(
+                    self.sim, src, monitor.component, positions, center
+                )
+                per_component[monitor.component] = source_gradient.contract(
+                    src, plain, monitor.gather(self.sim, scale), profile
+                )
+            if "amplitude" in plain:
+                grads["amplitude"] = sum(
+                    part["amplitude"] for part in per_component.values()
+                )
+            if "currents" in plain:
+                grads["currents"] = {
+                    mp.component_name(c): part["currents"]
+                    for c, part in per_component.items()
+                }
+            plain = []
         if plain:
             currents = monitors[0].gather(self.sim, scale)
-            everything = source_gradient.contract(src, currents)
-            grads.update({name: everything[name] for name in plain})
+            # the currents are `amplitude` times this profile at each point
+            profile = (
+                source_gradient.amp_data_profile(src, monitors[0].positions(self.sim))
+                if getattr(src, "amp_data", None) is not None
+                else None
+            )
+            grads.update(source_gradient.contract(src, plain, currents, profile))
         if "amp_data" in other_names:
             # the transpose of the trilinear interpolation amp_file_func does
             currents = monitors[0].gather(self.sim, scale)
