@@ -19,7 +19,7 @@
 
 * Improvements to CI on GitHub ([#3254], [#3309], [#3314], [#3322]).
 
-* Improvements and new materials for materials library ([#3252], [#3257]).
+* Code cleanup and new materials for materials library ([#3252], [#3257]).
 
 * Various minor code cleanup and additional documentation ([#3253], [#3255], [#3269], [#3270], [#3289], [#3303], [#3305], [#3316], [#3319], [#3323], [#3324]).
 
