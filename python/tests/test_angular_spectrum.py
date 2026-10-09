@@ -1125,5 +1125,199 @@ class TestYNormalPlaneIn3D(ApproxComparisonTestCase):
         )
 
 
+class TestInjection(ApproxComparisonTestCase):
+    """Launching a mode into a simulation through the stack.
+
+    The time reverse of the measurement path: `incident_fields` carries a mode
+    back down to the monitor plane and `equivalent_sources` turns it into
+    currents Meep can apply.
+    """
+
+    FCEN = 1 / 1.55
+    RESOLUTION = 20
+    WAIST = 2.0
+    DISTANCE = 8.0
+    CELL = mp.Vector3(16, 14)
+    LINE = mp.Vector3(10, 0)
+    PML = 2.0
+
+    def _stack(self):
+        # one semi-infinite layer, so the check isolates the injection physics
+        return mpa.Stack([mpa.Layer(index=1.0, thickness=0.0), mpa.Layer(index=1.0)])
+
+    def _propagator(self, y=0.0, sign=1):
+        simulation = mp.Simulation(
+            cell_size=self.CELL,
+            resolution=self.RESOLUTION,
+            boundary_layers=[mp.PML(self.PML)],
+            force_complex_fields=True,
+        )
+        simulation.init_sim()
+        volume = simulation._fit_volume_to_simulation(
+            mp.Volume(center=mp.Vector3(0, y), size=self.LINE)
+        )
+        propagator = mpa.AngularSpectrum.from_volume(
+            simulation, volume, self._stack(), [self.FCEN], sign=sign, pad_factor=4
+        )
+        return propagator, volume
+
+    def test_incident_fields_are_purely_ingoing(self):
+        # `incident_fields` inverts `decompose` for a spectrum with no outgoing
+        # part, so feeding the result back through `decompose` must recover
+        # that: all of the power heading toward the structure, none away.
+        propagator, _ = self._propagator()
+        fields = propagator.incident_fields(
+            mpa.gaussian_mode(waist=self.WAIST), distance=self.DISTANCE
+        )
+        report = propagator.report(fields)
+        self.assertGreater(float(onp.ravel(report["downgoing_fraction"])[0]), 0.999)
+
+    def test_equivalent_sources_radiate_one_way(self):
+        # Both sheets of the equivalent-current pair are needed, with the right
+        # relative sign. With one sheet, or with the sign of either flipped, the
+        # beam appears in the other half-space instead -- at full strength, not
+        # as a small error.
+        propagator, _ = self._propagator()
+        fields = propagator.incident_fields(
+            mpa.gaussian_mode(waist=self.WAIST), distance=self.DISTANCE
+        )
+        sources = propagator.equivalent_sources(
+            fields,
+            mp.GaussianSource(self.FCEN, fwidth=0.1 * self.FCEN),
+            center=mp.Vector3(0, 0),
+            size=self.LINE,
+        )
+        self.assertTrue(sources)
+
+        simulation = mp.Simulation(
+            cell_size=self.CELL,
+            resolution=self.RESOLUTION,
+            boundary_layers=[mp.PML(self.PML)],
+            sources=sources,
+            force_complex_fields=True,
+        )
+        # sign=+1 means the outgoing direction is +y, so the mode arrives from
+        # +y and the beam should end up at negative y.
+        intended = mp.Volume(center=mp.Vector3(0, -3.0), size=self.LINE)
+        leaked = mp.Volume(center=mp.Vector3(0, 3.0), size=self.LINE)
+        toward = simulation.add_dft_fields(
+            [mp.Ez, mp.Hx], [self.FCEN], where=intended, yee_grid=False
+        )
+        away = simulation.add_dft_fields(
+            [mp.Ez, mp.Hx], [self.FCEN], where=leaked, yee_grid=False
+        )
+        simulation.run(until_after_sources=mp.stop_when_dft_decayed(1e-9))
+
+        strong = onp.max(
+            onp.abs(onp.asarray(simulation.get_dft_array(toward, mp.Ez, 0)))
+        )
+        weak = onp.max(onp.abs(onp.asarray(simulation.get_dft_array(away, mp.Ez, 0))))
+        self.assertLess(weak / strong, 0.02)
+
+        # and the beam that arrives is still travelling the way it was sent
+        downward = mpa.AngularSpectrum.from_monitor(
+            simulation, toward, self._stack(), intended, sign=-1, pad_factor=4
+        )
+        measured = downward.fields_from_monitor(simulation, toward)
+        report = downward.report(measured)
+        self.assertLess(float(onp.ravel(report["downgoing_fraction"])[0]), 0.01)
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestInjectionOrientations(ApproxComparisonTestCase):
+    """Injection on planes other than the y-normal line `TestInjection` uses.
+
+    In 2D an x-normal line carries s polarization on its second tangential
+    axis, and in 3D `amp_data` wants Meep's (x, y, z) layout, which differs from
+    the plane's (u, v) axes for every normal except z.
+    """
+
+    FCEN = 1 / 1.55
+
+    def _stack(self):
+        return mpa.Stack([mpa.Layer(index=1.0)])
+
+    def test_x_normal_line_radiates_one_way(self):
+        cell, line = mp.Vector3(14, 16), mp.Vector3(0, 10)
+        simulation = mp.Simulation(
+            cell_size=cell,
+            resolution=20,
+            boundary_layers=[mp.PML(2.0)],
+            force_complex_fields=True,
+        )
+        simulation.init_sim()
+        volume = simulation._fit_volume_to_simulation(
+            mp.Volume(center=mp.Vector3(), size=line)
+        )
+        propagator = mpa.AngularSpectrum.from_volume(
+            simulation, volume, self._stack(), [self.FCEN], pad_factor=4
+        )
+        self.assertEqual(propagator.normal, mp.X)
+        fields = propagator.incident_fields(mpa.gaussian_mode(waist=2.0), distance=8.0)
+        self.assertIn(mp.Ez, fields.E)
+        report = propagator.report(fields)
+        self.assertGreater(float(onp.ravel(report["downgoing_fraction"])[0]), 0.999)
+
+        sources = propagator.equivalent_sources(
+            fields,
+            mp.GaussianSource(self.FCEN, fwidth=0.1 * self.FCEN),
+            center=mp.Vector3(),
+            size=line,
+        )
+        simulation = mp.Simulation(
+            cell_size=cell,
+            resolution=20,
+            boundary_layers=[mp.PML(2.0)],
+            sources=sources,
+            force_complex_fields=True,
+        )
+        # sign=+1: outgoing is +x, so the mode arrives from +x and travels to -x
+        intended = mp.Volume(center=mp.Vector3(-3.0, 0), size=line)
+        leaked = mp.Volume(center=mp.Vector3(3.0, 0), size=line)
+        toward = simulation.add_dft_fields(
+            [mp.Ez, mp.Hy], [self.FCEN], where=intended, yee_grid=False
+        )
+        away = simulation.add_dft_fields(
+            [mp.Ez, mp.Hy], [self.FCEN], where=leaked, yee_grid=False
+        )
+        simulation.run(until_after_sources=mp.stop_when_dft_decayed(1e-9))
+        strong = onp.abs(simulation.get_dft_array(toward, mp.Ez, 0)).max()
+        weak = onp.abs(simulation.get_dft_array(away, mp.Ez, 0)).max()
+        self.assertLess(weak / strong, 0.02)
+        # and the beam is centered, i.e. laid out along y, not squeezed into x
+        profile = onp.abs(simulation.get_dft_array(toward, mp.Ez, 0))
+        coordinates = onp.asarray(simulation.get_array_metadata(vol=intended)[1])
+        centroid = onp.sum(coordinates * profile**2) / onp.sum(profile**2)
+        self.assertLess(abs(centroid), 0.1)
+
+    def test_amp_data_layout_in_three_dimensions(self):
+        simulation = mp.Simulation(cell_size=mp.Vector3(3, 3, 3), resolution=8)
+        simulation.init_sim()
+        sizes = {
+            mp.X: mp.Vector3(0, 1.6, 1.0),
+            mp.Y: mp.Vector3(1.6, 0, 1.0),
+            mp.Z: mp.Vector3(1.6, 1.0, 0),
+        }
+        for normal, size in sizes.items():
+            volume = simulation._fit_volume_to_simulation(
+                mp.Volume(center=mp.Vector3(), size=size)
+            )
+            propagator = mpa.AngularSpectrum.from_volume(
+                simulation, volume, self._stack(), [self.FCEN]
+            )
+            meep_shape = onp.shape(
+                simulation.get_array(vol=volume, component=mp.Dielectric)
+            )
+            values = onp.arange(onp.prod(meep_shape)).reshape(meep_shape) + 0j
+            plane = propagator._to_plane_axes(values[None], mp.Ex)[0]
+            layout = propagator._to_meep_layout(plane)
+            normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[normal]
+            self.assertEqual(layout.shape[normal_axis], 1, f"normal {normal}")
+            self.assertTrue(
+                onp.array_equal(layout.squeeze(axis=normal_axis), values),
+                f"normal {normal}",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

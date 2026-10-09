@@ -37,7 +37,7 @@ must lie in a homogeneous region. Cylindrical coordinates are not supported.
 
 import math
 import warnings
-from typing import Callable, Dict, NamedTuple, Optional, Sequence, Tuple, Union
+from typing import Callable, Dict, List, NamedTuple, Optional, Sequence, Tuple, Union
 
 import jax
 import jax.numpy as jnp
@@ -1163,6 +1163,62 @@ class AngularSpectrum:
             )
         return values
 
+    @classmethod
+    def from_volume(
+        cls,
+        simulation: mp.Simulation,
+        volume: mp.Volume,
+        stack: Stack,
+        frequencies,
+        sign: int = 1,
+        **kwargs,
+    ):
+        """Builds a propagator for a plane, without needing a monitor there.
+
+        `from_monitor` cannot be used on the injection path: a DFT monitor
+        requires the field components to be allocated, which does not happen
+        until sources are added, and the sources are what this is being built to
+        produce. This takes the frequencies directly instead.
+
+        Args:
+            simulation: supplies the grid; it need not have been run.
+            volume: the source plane.
+            stack: the layers between that plane and the mode.
+            frequencies: the frequencies to propagate.
+            sign: +1 if the outgoing direction is along +normal.
+            **kwargs: forwarded to the constructor, e.g. `pad_factor`.
+        """
+        normal, pitch, num_points = cls._plane_geometry(simulation, volume)
+        return cls(
+            stack,
+            onp.asarray(frequencies),
+            pitch,
+            num_points,
+            normal=normal,
+            sign=sign,
+            **kwargs,
+        )
+
+    def _to_meep_layout(self, values) -> onp.ndarray:
+        """The inverse of `_to_plane_axes`, laid out as `amp_data` expects.
+
+        `amp_data` is indexed (x, y, z) over the source volume, with length one
+        along any direction in which the volume has zero size, here the normal.
+        """
+        values = onp.asarray(values, dtype=onp.complex128)
+        if self.transverse_dimensions == 2 and self.normal == mp.Y:
+            values = values.T
+        normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]
+        tangential = [
+            axis
+            for axis in range(self.transverse_dimensions + 1)
+            if axis != normal_axis
+        ]
+        shape = [1, 1, 1]
+        for axis, n in zip(tangential, values.shape):
+            shape[axis] = n
+        return values.reshape(shape)
+
     def fields_from_monitor(
         self, simulation: mp.Simulation, monitor
     ) -> TangentialFields:
@@ -1223,6 +1279,166 @@ class AngularSpectrum:
         """`report`, reading from a monitor and returning NumPy arrays."""
         fields = self.fields_from_monitor(simulation, monitor)
         return {key: onp.asarray(value) for key, value in self.report(fields).items()}
+
+    def incident_fields(self, mode: Mode, distance: float) -> TangentialFields:
+        """Tangential fields at the monitor plane for a mode arriving from afar.
+
+        The time reverse of `spectrum`. A `Mode` is specified where it is
+        physically meaningful -- at the fiber facet, say, on the far side of the
+        stack -- and this carries it back down through the layers to the monitor
+        plane, where Meep can inject it. The scalar transfer function of a
+        stratified medium is the same in both directions, so the same product of
+        transmission and propagation phases applies.
+
+        The result is purely in-going: its up-going content is zero by
+        construction, so injecting it launches a beam toward the structure and
+        not away from it.
+
+        Args:
+            mode: the target field, e.g. from `gaussian_mode`.
+            distance: how far the mode's plane is from the monitor, the same
+                convention `spectrum` uses.
+
+        Returns:
+            A `TangentialFields` on the monitor's own sample grid.
+        """
+        remaining = distance - self.stack_thickness
+        concrete = _as_concrete(remaining)
+        if concrete is not None and concrete < 0:
+            raise ValueError(
+                f"distance={distance} does not clear the stack, which is "
+                f"{_as_concrete(self.stack_thickness)} thick."
+            )
+
+        k0 = 2 * onp.pi * jnp.asarray(self.frequencies)[:, None]
+        amplitudes = mode.spectrum(self, self._kt, k0, self._indices[-1])
+
+        # Carry each polarization across the stack to the monitor plane.
+        down = {}
+        for polarization in (S_POLARIZATION, P_POLARIZATION):
+            transmission, _ = self._transmission(polarization)
+            to_interface = jnp.exp(1j * self._wavevectors[0] * self._thicknesses[0])
+            beyond = jnp.exp(1j * self._wavevectors[-1] * remaining)
+            down[polarization] = (
+                amplitudes[..., polarization] * to_interface * transmission * beyond
+            )
+
+        # Invert `decompose` for a spectrum with no up-going part. Setting
+        # up = (E - cross)/2 to zero gives E = cross = down, and the admittance
+        # relations then fix the magnetic components.
+        admittance_s, admittance_p = self._admittances[0]
+        outgoing = self.sign
+        electric_s = down[S_POLARIZATION]
+        electric_p = down[P_POLARIZATION]
+
+        azimuth = self._azimuth()
+        if azimuth is None:
+            # the inverse of the 2D branch of `decompose`, for either s axis
+            if self._s_axis_2d == 0:
+                electric_u, electric_v = electric_s, electric_p
+                magnetic_v = -outgoing * admittance_s * electric_s
+                magnetic_u = outgoing * admittance_p * electric_p
+            else:
+                electric_u, electric_v = electric_p, electric_s
+                magnetic_u = outgoing * admittance_s * electric_s
+                magnetic_v = -outgoing * admittance_p * electric_p
+        else:
+            # cross_s = outgoing * H_p / Y_s and cross_p = -outgoing * H_s / Y_p
+            magnetic_p = outgoing * admittance_s * electric_s
+            magnetic_s = -outgoing * admittance_p * electric_p
+            cosine, sine = azimuth
+            # the rotation into (s, p) is a reflection, hence its own inverse
+            electric_u = -electric_s * sine + electric_p * cosine
+            electric_v = electric_s * cosine + electric_p * sine
+            magnetic_u = -magnetic_s * sine + magnetic_p * cosine
+            magnetic_v = magnetic_s * cosine + magnetic_p * sine
+
+        (e_u, e_v), (h_u, h_v) = _PLANE_AXES[self.normal]
+        return TangentialFields(
+            E={
+                e_u: self._inverse_transform(electric_u),
+                e_v: self._inverse_transform(electric_v),
+            },
+            H={
+                # `_tangential_spectra` pairs E_u with H_v, so undo that here
+                h_v: self._inverse_transform(magnetic_v),
+                h_u: self._inverse_transform(magnetic_u),
+            },
+            normal=self.normal,
+            sign=self.sign,
+        )
+
+    def equivalent_sources(
+        self,
+        fields: TangentialFields,
+        time_src,
+        center,
+        size,
+        frequency: Optional[float] = None,
+        amplitude: complex = 1.0,
+        differentiable: bool = True,
+    ) -> List[mp.Source]:
+        """Equivalent surface currents that launch `fields` into the simulation.
+
+        A thin wrapper over `mp.get_equiv_sources`, which already applies the
+        equivalence principle -- an electric sheet `K = n_hat x H` and a
+        magnetic sheet `N = -n_hat x E` -- and emits ordinary sources carrying
+        `amp_data`. Both sheets are needed: one alone radiates half the field in
+        each direction instead of all of it in one.
+
+        Since `amp_data` is differentiable, the sources it returns backpropagate
+        to whatever produced `fields`, which for the angular spectrum means the
+        mode's waist, tilt and offset.
+
+        Args:
+            fields: tangential fields on the plane, e.g. from `incident_fields`.
+            time_src: the time profile, e.g. `mp.GaussianSource`.
+            center, size: the source plane, normally the same as the monitor.
+            frequency: which frequency of `fields` to inject. Defaults to the
+                only one when the propagator carries a single frequency.
+            amplitude: an overall scale.
+            differentiable: flag the sources for the adjoint solver.
+
+        Returns:
+            A list of `mp.Source`, one per non-zero current component.
+        """
+        frequencies = onp.asarray(self.frequencies)
+        if frequency is None:
+            if frequencies.size != 1:
+                raise ValueError(
+                    f"The propagator carries {frequencies.size} frequencies, so "
+                    "`frequency` has to say which one to inject; a single Meep "
+                    "source has one time profile and cannot carry independent "
+                    "amplitudes at several."
+                )
+            index = 0
+        else:
+            index = int(onp.argmin(onp.abs(frequencies - frequency)))
+
+        def slice_at(store, component):
+            value = store.get(component)
+            if value is None:
+                return onp.zeros(self.num_points)
+            return onp.asarray(value)[index] * amplitude
+
+        # get_equiv_sources wants all six components, in order, laid out for
+        # amp_data's trilinear interpolation over the source volume.
+        field = [
+            self._to_meep_layout(slice_at(fields.E, c)) for c in (mp.Ex, mp.Ey, mp.Ez)
+        ] + [self._to_meep_layout(slice_at(fields.H, c)) for c in (mp.Hx, mp.Hy, mp.Hz)]
+
+        normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]
+        n_hat = onp.zeros(3)
+        # `sign` is the outgoing direction, so the beam travels along its
+        # negation and that is the normal the equivalence principle wants.
+        n_hat[normal_axis] = -self.sign
+
+        sources = mp.get_equiv_sources(field, n_hat, time_src, center, size)
+        if differentiable:
+            for source in sources:
+                source.differentiable = ("amp_data",)
+                source.name = f"asm_{mp.component_name(source.component)}"
+        return sources
 
     def objective_arguments(self, simulation, volume, **kwargs):
         """The `FourierFields` an objective function needs, for the adjoint path.
