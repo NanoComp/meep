@@ -64,9 +64,7 @@ class ObjectiveQuantity(abc.ABC):
 
     def _adj_src_scale(self, include_resolution=True):
         """Calculates the scale for the adjoint sources."""
-        T = self.sim.meep_time()
         dt = self.sim.fields.dt
-        src = self._create_time_profile()
 
         if include_resolution:
             num_dims = self.sim._infer_dimensions(self.sim.k_point)
@@ -74,59 +72,21 @@ class ObjectiveQuantity(abc.ABC):
         else:
             dV = 1
 
-        iomega = (1.0 - np.exp(-1j * (2 * np.pi * self._frequencies) * dt)) * (
-            1.0 / dt
-        )  # scaled frequency factor with discrete time derivative fix
-
-        # an ugly way to calcuate the scaled dtft of the forward source
-        y = np.array(
-            [src.swigobj.current(t, dt) for t in np.arange(0, T, dt)]
-        )  # time domain signal
-        fwd_dtft = (
-            np.matmul(
-                np.exp(
-                    1j
-                    * 2
-                    * np.pi
-                    * self._frequencies[:, np.newaxis]
-                    * np.arange(y.size)
-                    * dt
-                ),
-                y,
-            )
-            * dt
-            / np.sqrt(2 * np.pi)
-        )
-
-        # Interestingly, the real parts of the DTFT and Fourier transform match,
-        # but the imaginary parts are very different...
-        # fwd_dtft = src.fourier_transform(src.frequency)
-        #
-        # Note: for some reason, there seems to be an additional phase factor at
-        # the center frequency that needs to be applied to *all* frequencies...
-        src_center_dtft = (
-            np.matmul(
-                np.exp(
-                    1j
-                    * 2
-                    * np.pi
-                    * np.array([src.frequency])[:, np.newaxis]
-                    * np.arange(y.size)
-                    * dt
-                ),
-                y,
-            )
-            * dt
-            / np.sqrt(2 * np.pi)
-        )
-        adj_src_phase = np.exp(1j * np.angle(src_center_dtft)) * self.fwidth_scale
+        # Discrete derivative using the staggered field timestamps.
+        iomega = 2j * np.sin(np.pi * self._frequencies * dt) / dt
+        scale = dV * iomega
 
         if self._frequencies.size == 1:
-            # Single-frequency simulations. Requires a time profile.
-            scale = dV * iomega / fwd_dtft / adj_src_phase  # final scale factor
-        else:
-            # Multi-frequency simulations.
-            scale = dV * iomega / adj_src_phase
+            # Normalize the Gaussian waveform used by the adjoint source.
+            src = self._create_time_profile()
+            t = np.arange(0, self.sim.meep_time(), dt)
+            y = np.array([src.swigobj.current(ti, dt) for ti in t])
+            source_dtft = (
+                (np.exp(2j * np.pi * self._frequencies[:, np.newaxis] * t) @ y)
+                * dt
+                / np.sqrt(2 * np.pi)
+            )
+            scale = scale / source_dtft
 
         # Cmpensate for the fact that real fields take the real part of the
         # current, which halves the Fourier amplitude at the positive frequency
@@ -146,7 +106,6 @@ class ObjectiveQuantity(abc.ABC):
         frequencies (e.g. MSE) in which case we should check that all the
         frequencies fit in the specified bandwidth.
         """
-        self.fwidth_scale = np.exp(-2j * np.pi * adj_cutoff / fwidth_frac)
         return mp.GaussianSource(
             np.mean(self._frequencies),
             fwidth=fwidth_frac * np.mean(self._frequencies),
