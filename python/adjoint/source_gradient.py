@@ -105,35 +105,35 @@ class SourceGradientMonitor:
 
         Inside a PML the adjoint field is damped, so the gradient would come
         back finite, smooth, and wrong.  That is worth an error rather than a
-        surprise.
+        surprise.  Each boundary layer is checked only along its own direction
+        and side, against the cell as placed by `geometry_center`.
         """
-        if not sim.boundary_layers:
-            return
-        thickness = max(
-            (getattr(bl, "thickness", 0.0) for bl in sim.boundary_layers), default=0.0
-        )
-        if thickness <= 0:
-            return
-
-        half_cell = np.array([sim.cell_size.x, sim.cell_size.y, sim.cell_size.z]) / 2
-        center = np.array(
-            [self.volume.center.x, self.volume.center.y, self.volume.center.z]
-        )
-        half_size = (
-            np.array([self.volume.size.x, self.volume.size.y, self.volume.size.z]) / 2
-        )
-
-        for i, dim in enumerate("xyz"):
-            if half_cell[i] == 0:
-                continue  # not a simulated direction
-            overshoot = (np.abs(center[i]) + half_size[i]) - (half_cell[i] - thickness)
-            if overshoot > 0:
-                raise ValueError(
-                    f"Differentiable source extends {overshoot:.4g} into the PML "
-                    f"along {dim}. The adjoint field is absorbed there, so the "
-                    "gradient would be wrong without reporting an error. Move "
-                    "the source away from the boundary."
-                )
+        cell = [sim.cell_size.x, sim.cell_size.y, sim.cell_size.z]
+        origin = [sim.geometry_center.x, sim.geometry_center.y, sim.geometry_center.z]
+        center = [self.volume.center.x, self.volume.center.y, self.volume.center.z]
+        half = [self.volume.size.x / 2, self.volume.size.y / 2, self.volume.size.z / 2]
+        for layer in sim.boundary_layers:
+            thickness = getattr(layer, "thickness", 0.0) or 0.0
+            if thickness <= 0:
+                continue
+            axes = (0, 1, 2) if layer.direction == mp.ALL else (layer.direction,)
+            for axis in axes:
+                if axis > 2 or cell[axis] == 0:
+                    continue  # not a Cartesian direction that is simulated
+                low = origin[axis] - cell[axis] / 2 + thickness
+                high = origin[axis] + cell[axis] / 2 - thickness
+                overshoot = 0.0
+                if layer.side in (mp.ALL, mp.Low):
+                    overshoot = max(overshoot, low - (center[axis] - half[axis]))
+                if layer.side in (mp.ALL, mp.High):
+                    overshoot = max(overshoot, (center[axis] + half[axis]) - high)
+                if overshoot > 1e-12 * max(1.0, abs(cell[axis])):
+                    raise ValueError(
+                        f"Differentiable source extends {overshoot:.4g} into the "
+                        f"PML along {'xyz'[axis]}. The adjoint field is absorbed "
+                        "there, so the gradient would be wrong without reporting "
+                        "an error. Move the source away from the boundary."
+                    )
 
     def register(self, sim: mp.Simulation) -> None:
         """Install the DFT monitor. Called once per adjoint run."""
@@ -416,6 +416,17 @@ def _beam_at(sim, source, positions, overrides=None, center=None):
     return out
 
 
+def beam_profile(sim, source, component, positions, center=None) -> np.ndarray:
+    """The current a Gaussian beam places on `component` at each position, per
+    unit `amplitude`: the beam field it is built from, with its sign."""
+    field_index = {c: i for i, c in enumerate(_E_COMPONENTS + _H_COMPONENTS)}
+    for placed, sign, evaluated in beam_component_map(normal_index(source)):
+        if placed == component:
+            fields = _beam_at(sim, source, positions, center=center)
+            return sign * fields[:, field_index[evaluated]]
+    raise ValueError(f"A Gaussian beam places no {mp.component_name(component)}.")
+
+
 def _perturbations(name, value, step):
     """The plus and minus variations of one beam parameter.
 
@@ -523,27 +534,15 @@ def _map_coordinates(r: np.ndarray, n: int):
     return i1, i2, np.abs(d)
 
 
-def amp_data_gradient(
-    sim: mp.Simulation,
-    source,
-    positions: np.ndarray,
-    cotangent: np.ndarray,
-) -> np.ndarray:
-    """Contract a per-point cotangent onto a source's `amp_data` array.
+def _amp_data_weights(source, positions: np.ndarray):
+    """The trilinear interpolation `amp_file_func` applies to `amp_data`.
 
-    `Source(amp_data=...)` reaches the grid through `amp_file_func`, which
-    trilinearly interpolates the user's array at each grid point. This is the
-    transpose of that interpolation: each point's cotangent is scattered back
-    onto the (at most) eight array entries that fed it, with the same weights.
-
-    It is a plain scatter rather than anything new in C++, because the hard
-    part -- the cotangent with respect to the amplitude Meep actually applied
-    at each grid point, together with where that point is -- is already done by
-    `volume_source_gradient`.
+    Returns the data's shape and, for each of the eight corners, the flat index
+    into the data and the weight of that corner at each position, so that the
+    forward profile and its transpose use exactly the same weights.
     """
     data = np.asarray(source.amp_data)
-    shape = tuple(data.shape) + (1,) * (3 - data.ndim)
-    nx, ny, nz = shape
+    nx, ny, nz = tuple(data.shape) + (1,) * (3 - data.ndim)
 
     positions = np.asarray(positions, dtype=float)
     relative = positions - np.array(
@@ -560,44 +559,81 @@ def amp_data_gradient(
     ix1, ix2, wx = _map_coordinates(r[:, 0], nx)
     iy1, iy2, wy = _map_coordinates(r[:, 1], ny)
     iz1, iz2, wz = _map_coordinates(r[:, 2], nz)
-
-    grad = np.zeros(nx * ny * nz, dtype=np.complex128)
-    values = np.asarray(cotangent).ravel()
-    for ix, fx in ((ix1, 1.0 - wx), (ix2, wx)):
-        for iy, fy in ((iy1, 1.0 - wy), (iy2, wy)):
-            for iz, fz in ((iz1, 1.0 - wz), (iz2, wz)):
-                flat = (ix * ny + iy) * nz + iz
-                np.add.at(grad, flat, values * fx * fy * fz)
-    return grad.reshape(data.shape)
+    corners = [
+        ((ix * ny + iy) * nz + iz, fx * fy * fz)
+        for ix, fx in ((ix1, 1.0 - wx), (ix2, wx))
+        for iy, fy in ((iy1, 1.0 - wy), (iy2, wy))
+        for iz, fz in ((iz1, 1.0 - wz), (iz2, wz))
+    ]
+    return data.shape, corners
 
 
-def contract(source, currents_grad: np.ndarray, source_amplitudes=None) -> dict:
-    """Contract the currents cotangent onto the source's declared parameters.
+def amp_data_profile(source, positions: np.ndarray) -> np.ndarray:
+    """The `amp_data` value Meep interpolates onto each position."""
+    _, corners = _amp_data_weights(source, positions)
+    data = np.asarray(source.amp_data, dtype=np.complex128).ravel()
+    return sum(data[flat] * weight for flat, weight in corners)
 
-    Every requested parameter is a linear function of the currents, so no
-    finite difference over Meep's source construction is involved here.  The
-    nonlinear built-in parameters (`beam_w0` and friends) are rejected at
-    construction time; see `meep.source._validate_differentiable`.
+
+def amp_data_gradient(
+    sim: mp.Simulation,
+    source,
+    positions: np.ndarray,
+    cotangent: np.ndarray,
+) -> np.ndarray:
+    """Contract a per-point cotangent onto a source's `amp_data` array.
+
+    `Source(amp_data=...)` reaches the grid through `amp_file_func`, which
+    trilinearly interpolates the user's array at each grid point, and the result
+    is scaled by `source.amplitude`.  This is the transpose of that map: each
+    point's cotangent is scattered back onto the (at most) eight array entries
+    that fed it, with the same weights, times the amplitude.
+
+    It is a plain scatter rather than anything new in C++, because the hard
+    part -- the cotangent with respect to the amplitude Meep actually applied
+    at each grid point, together with where that point is -- is already done by
+    `volume_source_gradient`.
+    """
+    shape, corners = _amp_data_weights(source, positions)
+    grad = np.zeros(int(np.prod(shape)), dtype=np.complex128)
+    values = np.asarray(cotangent).ravel() * complex(source.amplitude)
+    for flat, weight in corners:
+        np.add.at(grad, flat, values * weight)
+    return grad.reshape(shape)
+
+
+def contract(
+    source, names, currents_grad: np.ndarray, profile: Optional[np.ndarray] = None
+) -> dict:
+    """Contract the currents cotangent onto the parameters in `names`.
+
+    Both are linear functions of the currents, so no finite difference over
+    Meep's source construction is involved.  The other parameters (`amp_data`
+    and the Gaussian-beam ones) are handled by their own functions.
+
+    Args:
+        names: a subset of ("currents", "amplitude").
+        currents_grad: (nfreq, num points) cotangent of the applied currents.
+        profile: the per-point amplitude profile the currents are `amplitude`
+            times, e.g. the interpolated `amp_data`. Uniform when omitted.
     """
     out = {}
-    for name in source.differentiable:
+    for name in names:
         if name == "currents":
             out[name] = currents_grad
         elif name == "amplitude":
-            # `amplitude` scales every point identically, so its derivative is
-            # the sum of the currents cotangent against the unit profile. Exact,
-            # with no finite difference.
-            if source_amplitudes is None:
-                profile = np.ones(currents_grad.shape[1:])
-            else:
-                profile = np.asarray(source_amplitudes) / source.amplitude
+            # The currents are `amplitude * profile`, a holomorphic function of
+            # the amplitude, so in the convention JAX and autograd use the chain
+            # rule is a plain (unconjugated) contraction with the profile.
+            weights = (
+                np.ones(currents_grad.shape[1:])
+                if profile is None
+                else np.asarray(profile).reshape(currents_grad.shape[1:])
+            )
             out[name] = np.sum(
-                currents_grad * np.conj(profile)[np.newaxis, ...],
+                currents_grad * weights[np.newaxis, ...],
                 axis=tuple(range(1, currents_grad.ndim)),
             )
-        else:  # pragma: no cover - blocked by _validate_differentiable
-            raise NotImplementedError(
-                f"'{name}' is not implemented in this version of the source "
-                "adjoint; see meep.source._validate_differentiable."
-            )
+        else:
+            raise NotImplementedError(f"contract() does not handle '{name}'.")
     return out

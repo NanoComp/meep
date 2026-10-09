@@ -165,7 +165,10 @@ class Source:
           source should be differentiated with respect to by the adjoint solver
           (see [Adjoint Solver](Python_Tutorials/Adjoint_Solver.md)). Every source
           accepts `'currents'`, the per-point complex current amplitudes, and
-          `'amplitude'`; individual source classes may accept more. The names given
+          `'amplitude'`; a source with `amp_data` also accepts `'amp_data'`, and a
+          Gaussian beam its `'beam_x0'`, `'beam_kdir'`, `'beam_w0'` and `'beam_E0'`.
+          For a Gaussian beam, which places several components, the `'currents'`
+          gradient is a dict keyed by component name. The names given
           here are exactly the keys of the corresponding gradient, so they cannot
           drift apart. `'center'` and `'size'` are rejected: they move the grid
           points the source occupies rather than the amplitudes applied to them,
