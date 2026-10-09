@@ -25,6 +25,7 @@ different split, not what the gradient assembly contributes; see the comment on
 """
 
 import unittest
+from unittest import mock
 
 import numpy as np
 from autograd import numpy as npa
@@ -142,13 +143,14 @@ class TestAdjointSourcePlacement(unittest.TestCase):
 
     `fourier_sourcedata` returns one entry per *local* chunk intersecting the
     monitor and `IndexedSource` is inherently per-chunk, so under MPI every rank
-    but one places nothing for a point monitor. A bare `assert adjoint_sources`
-    therefore made a point objective fail outright on more than one process.
+    but one places nothing for a point monitor. The check that some source was
+    placed is therefore taken over all ranks: an empty *local* list is
+    legitimate, an empty list on every rank is not.
 
     This is a unit test rather than a simulation because the condition cannot be
     reproduced serially: forcing many chunks does not help, since one rank still
-    owns all of them. The contract is what matters -- an empty *local* list is
-    legitimate, while a globally zero cotangent is not.
+    owns all of them. The other ranks are stood in for by patching the sum over
+    ranks.
     """
 
     class _Monitor:
@@ -159,9 +161,14 @@ class TestAdjointSourcePlacement(unittest.TestCase):
             return list(self._sources)
 
     def test_empty_local_placement_is_allowed(self):
-        monitor = self._Monitor([])
-        out = mpa.utils.create_adjoint_sources([monitor], [np.ones(3)])
+        # another rank placed one source
+        with mock.patch.object(mpa.utils.mp, "sum_to_all", lambda n: n + 1):
+            out = mpa.utils.create_adjoint_sources([self._Monitor([])], [np.ones(3)])
         self.assertEqual(out, [])
+
+    def test_empty_placement_on_every_rank_raises(self):
+        with self.assertRaises(AssertionError):
+            mpa.utils.create_adjoint_sources([self._Monitor([])], [np.ones(3)])
 
     def test_placements_from_several_monitors_are_concatenated(self):
         a, b = self._Monitor(["a"]), self._Monitor([])
