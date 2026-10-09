@@ -715,6 +715,46 @@ class TestSimulation(unittest.TestCase):
 
         self.assertAlmostEqual(result[0], -0.0599602798684155)
 
+    def test_geometry_center_rounded_to_pixel(self):
+        # a geometry_center that is not a whole number of pixels used to give the grid an
+        # odd origin (in half-pixel units), which put sources and monitors half a pixel
+        # away from the fields and materials and made results depend on the chunking
+        resolution = 8
+
+        def get_ez(geometry_center):
+            sim = mp.Simulation(
+                resolution=resolution,
+                cell_size=mp.Vector3(4, 4),
+                geometry_center=geometry_center,
+                geometry=[
+                    mp.Block(
+                        center=mp.Vector3(0.59, 0.21),
+                        size=mp.Vector3(0.8, 1.3),
+                        material=mp.Medium(epsilon=6),
+                    )
+                ],
+                sources=[
+                    mp.Source(
+                        mp.GaussianSource(1.0, fwidth=0.5),
+                        component=mp.Ez,
+                        center=mp.Vector3(0.0234375, 0.0078125),
+                    )
+                ],
+                eps_averaging=False,
+            )
+            sim.run(until=5)
+            io = sim.fields.gv.little_corner()
+            self.assertEqual((io.x() % 2, io.y() % 2), (0, 0))
+            return (
+                sim.get_field_point(mp.Ez, mp.Vector3(1.3, -0.4)),
+                sim.geometry_center,
+            )
+
+        ez, geometry_center = get_ez(mp.Vector3(0.0625, 0.3))
+        ez_rounded, _ = get_ez(mp.Vector3(0, 0.25))
+        self.assertTrue(geometry_center.close(mp.Vector3(0, 0.25)))
+        self.assertEqual(ez, ez_rounded)
+
     def test_timing_data(self):
         resolution = 20
         cell_size = mp.Vector3(10, 10)
