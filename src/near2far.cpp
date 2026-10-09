@@ -363,6 +363,7 @@ void dft_near2far::farfield_lowlevel(std::complex<double> *EH, const vec &x, dou
     component c0 = component(f->vc); /* equivalent source component */
 
     vec rshift(f->shift * (0.5 * f->fc->gv.inva));
+    // split EH sum into real/imag parts since OpenMP reduction can't handle std::complex
     std::vector<double> EHr(6 * Nfreq, 0.0), EHi(6 * Nfreq, 0.0);
     double *EHr_p = EHr.data(), *EHi_p = EHi.data();
     PLOOP_OVER_IVECS_C(
