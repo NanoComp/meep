@@ -208,12 +208,15 @@ class TestTranspose(unittest.TestCase):
         dft = np.stack(
             [np.asarray(sim.get_dft_array(mon, mp.Ez, i)).ravel() for i in range(nf)]
         )
+        # `grad` is global, but `fourier_sourcedata` returns only this process's
+        # chunks, so the left-hand side is summed over processes.
         lhs = 0j
         for sd in srcdata:
             amp = np.array(sd.amp_arr).reshape(-1, nf)
             self.assertEqual(amp.shape[0], npts)  # single aligned chunk
             for i in range(nf):
                 lhs += np.sum(dft[i] * amp[:, i])
+        lhs = mp.sum_to_all(complex(lhs))
 
         self.assertAlmostEqual(abs(lhs - rhs) / abs(lhs), 0.0, places=12)
 
