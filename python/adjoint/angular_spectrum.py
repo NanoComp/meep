@@ -1199,6 +1199,26 @@ class AngularSpectrum:
             **kwargs,
         )
 
+    def _to_meep_layout(self, values) -> onp.ndarray:
+        """The inverse of `_to_plane_axes`, laid out as `amp_data` expects.
+
+        `amp_data` is indexed (x, y, z) over the source volume, with length one
+        along any direction in which the volume has zero size, here the normal.
+        """
+        values = onp.asarray(values, dtype=onp.complex128)
+        if self.transverse_dimensions == 2 and self.normal == mp.Y:
+            values = values.T
+        normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]
+        tangential = [
+            axis
+            for axis in range(self.transverse_dimensions + 1)
+            if axis != normal_axis
+        ]
+        shape = [1, 1, 1]
+        for axis, n in zip(tangential, values.shape):
+            shape[axis] = n
+        return values.reshape(shape)
+
     def fields_from_monitor(
         self, simulation: mp.Simulation, monitor
     ) -> TangentialFields:
@@ -1313,11 +1333,15 @@ class AngularSpectrum:
 
         azimuth = self._azimuth()
         if azimuth is None:
-            # cross_s = -outgoing * H_p / Y_s and cross_p = outgoing * H_s / Y_p
-            magnetic_p = -outgoing * admittance_s * electric_s
-            magnetic_s = outgoing * admittance_p * electric_p
-            electric_u, electric_v = electric_s, electric_p
-            magnetic_u, magnetic_v = magnetic_s, magnetic_p
+            # the inverse of the 2D branch of `decompose`, for either s axis
+            if self._s_axis_2d == 0:
+                electric_u, electric_v = electric_s, electric_p
+                magnetic_v = -outgoing * admittance_s * electric_s
+                magnetic_u = outgoing * admittance_p * electric_p
+            else:
+                electric_u, electric_v = electric_p, electric_s
+                magnetic_u = outgoing * admittance_s * electric_s
+                magnetic_v = -outgoing * admittance_p * electric_p
         else:
             # cross_s = outgoing * H_p / Y_s and cross_p = -outgoing * H_s / Y_p
             magnetic_p = outgoing * admittance_s * electric_s
@@ -1397,16 +1421,11 @@ class AngularSpectrum:
                 return onp.zeros(self.num_points)
             return onp.asarray(value)[index] * amplitude
 
-        # get_equiv_sources wants all six components, in order, shaped for
-        # amp_data's trilinear interpolation.
-        def shaped(values):
-            values = onp.asarray(values, dtype=onp.complex128)
-            spatial = tuple(values.shape) if values.ndim else (1,)
-            return values.reshape(spatial + (1,) * (3 - len(spatial)))
-
-        field = [shaped(slice_at(fields.E, c)) for c in (mp.Ex, mp.Ey, mp.Ez)] + [
-            shaped(slice_at(fields.H, c)) for c in (mp.Hx, mp.Hy, mp.Hz)
-        ]
+        # get_equiv_sources wants all six components, in order, laid out for
+        # amp_data's trilinear interpolation over the source volume.
+        field = [
+            self._to_meep_layout(slice_at(fields.E, c)) for c in (mp.Ex, mp.Ey, mp.Ez)
+        ] + [self._to_meep_layout(slice_at(fields.H, c)) for c in (mp.Hx, mp.Hy, mp.Hz)]
 
         normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]
         n_hat = onp.zeros(3)
