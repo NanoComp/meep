@@ -14,7 +14,8 @@
 
 * Bug fix in subpixel smoothing of `MaterialGrid` in 3D ([#3263]).
 
-* Improvements to array-slicing routines ([#3320]).
+* Bug fixes to array-slicing routines and new `ArrayMetadata` and `SliceDimension` classes
+  for array-slice metadata ([#3320]).
 
 * Improvements to CI on GitHub ([#3254], [#3309], [#3314], [#3322])
 
