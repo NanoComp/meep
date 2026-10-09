@@ -395,13 +395,14 @@ class WrapperTest(ApproxComparisonTestCase):
                 x, weight, bias
             )
             # Parameters that bypass Meep are differentiated directly, so they
-            # agree to whatever precision the monitor values carry -- exactly in
-            # a double-precision build, and to about seven digits in a
-            # single-precision one, since the reference re-runs the simulation.
+            # agree to whatever precision the monitor values carry: to roundoff
+            # in a double-precision build (the reference re-runs the simulation,
+            # which is not bitwise reproducible, e.g. with threads), and to about
+            # seven digits in a single-precision one.
             self.assertClose(
                 onp.asarray([d_weight[f], d_bias[f]]),
                 onp.asarray([reference[1], reference[2]]),
-                epsilon=1e-6 if mp.is_single_precision() else 1e-13,
+                epsilon=1e-6 if mp.is_single_precision() else 1e-10,
                 msg=f"row {f} non-Meep parameters",
             )
             # The design row agrees to the accuracy of the reference route, not
