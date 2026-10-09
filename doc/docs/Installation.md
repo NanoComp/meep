@@ -116,6 +116,56 @@ This will show something like `1.11.0-1-g415bc8eb` where the first three digits 
 
 To install the PyMeep Conda package on a [non-networked system](https://docs.anaconda.com/anaconda/user-guide/tasks/install-packages/#installing-packages-on-a-non-networked-air-gapped-computer), using the bz2 tarball of the [official release](https://anaconda.org/conda-forge/pymeep/files) will *not* work without the dependencies. A possible workaround is [Conda-Pack](https://github.com/conda/conda-pack).
 
+PyPI Packages
+-------------
+
+Binary wheels are published to PyPI as [meep](https://pypi.org/project/meep/), so Meep can be installed into an existing Python environment without Conda:
+
+```bash
+pip install meep
+```
+
+Wheels are available on CPython 3.10 and later for Linux (x86-64 and aarch64) and for Apple silicon macOS (14 and later). They bundle their own copies of MPB, Harminv, libctlgeom, HDF5, FFTW, GSL and LAPACK, and pull in `mpi4py` and `mpich` from PyPI, so nothing else has to be installed first.
+
+There is no Intel macOS wheel: the vendored Homebrew bottles fix how old a macOS the wheel may claim, and the oldest Intel runner still available would put that floor at macOS 15 — past the point where the machines wanting it are still supported. Intel Macs are served by the [Conda package](#conda-packages) or a [build from source](Build_From_Source.md).
+
+The wheels do **not** include the Scheme interface, which must be [built from source](Build_From_Source.md). This matches the Conda packages.
+
+### Parallel (MPI) simulations
+
+The wheels are compiled with MPI. In a single process Meep behaves the same way a build without MPI does, so `python foo.py` needs nothing special:
+
+```bash
+pip install meep
+mpiexec -np 4 python -m mpi4py foo.py
+```
+
+The `-m mpi4py` is worth keeping: it makes an unhandled exception in one rank call `MPI_Abort` instead of leaving the other ranks deadlocked. See [Parallel Meep](Parallel_Meep.md).
+
+The bundled HDF5 is built with MPI-IO, so `output_hdf5` and the field/DFT dumps are written collectively rather than one rank at a time.
+
+The extensions target the [MPICH ABI](https://www.mpich.org/abi/), which MPICH itself and the implementations built on it — MVAPICH, Intel MPI, HPE Cray MPICH — all provide. `libmpi` is deliberately *not* bundled: it has to be the same one your launcher uses. The `mpich` wheel provides one, and importing `meep` imports `mpi4py`, which is what loads it into the process.
+
+On a cluster, replace the `mpich` wheel with the site MPI: `pip uninstall mpich` and reinstall `mpi4py` built against it (`pip install --no-binary mpi4py mpi4py`). Any MPI implementing the MPICH ABI can take its place.
+
+Open MPI does **not** implement the MPICH ABI, so these wheels must not be launched with it. How the mismatch surfaces varies — a loader error, a crash, or, worst of all, ranks in separate `MPI_COMM_WORLD`s that each run the whole simulation. On such a system, build against your own MPI instead of installing the wheel:
+
+```bash
+pip install --no-binary meep meep
+```
+
+The source build uses the `mpicc` on your `PATH`, or the `CC`/`CXX` you set.
+
+That is also the recommended route on clusters generally, where a fabric-tuned or GPU-aware site MPI will outperform a generic wheel.
+
+The optional adjoint-solver dependencies are not installed by default:
+
+```bash
+pip install "meep[adjoint]"
+```
+
+Installing the source distribution (`pip install --no-binary meep meep`) runs the ordinary Autotools build and therefore needs the full set of prerequisites described under [Building from Source](#building-from-source), plus SWIG and an MPI compiler wrapper.
+
 Installation on Linux
 -------------------------
 
