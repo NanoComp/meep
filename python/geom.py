@@ -1033,6 +1033,35 @@ class Transition:
         self.pumping_rate = pumping_rate
 
 
+# Parameters a geometric object can be differentiated with respect to.
+# Unlike a source, where `center` and `size` move which grid points are driven
+# and so fall outside the formulation, epsilon is a function of position and
+# moving an object is exactly what a derivative with respect to position means.
+_DIFFERENTIABLE_GEOMETRY = ("center", "size")
+
+
+def _validate_differentiable_geometry(differentiable):
+    """Check and normalize a geometric object's `differentiable` argument."""
+    if differentiable is None:
+        return ()
+    if isinstance(differentiable, str):
+        raise ValueError(
+            "`differentiable` takes a list of parameter names, not a bare "
+            f"string; use ['{differentiable}'] instead."
+        )
+    names = list(differentiable)
+    for name in names:
+        if name not in _DIFFERENTIABLE_GEOMETRY:
+            raise ValueError(
+                f"'{name}' is not a differentiable parameter of a geometric "
+                f"object. Valid choices are: "
+                f"{', '.join(_DIFFERENTIABLE_GEOMETRY)}."
+            )
+    if len(set(names)) != len(names):
+        raise ValueError(f"`differentiable` contains duplicate names: {names}")
+    return tuple(names)
+
+
 class GeometricObject:
     """
     This class, and its descendants, are used to specify the solid geometric objects that
@@ -1088,7 +1117,13 @@ class GeometricObject:
     """
 
     def __init__(
-        self, material=Medium(), center=Vector3(), epsilon_func=None, label=None
+        self,
+        material=Medium(),
+        center=Vector3(),
+        epsilon_func=None,
+        label=None,
+        differentiable=None,
+        name=None,
     ):
         """
         Construct a `GeometricObject`.
@@ -1119,6 +1154,8 @@ class GeometricObject:
 
         self.label = label
         self.material = material
+        self.name = name
+        self.differentiable = _validate_differentiable_geometry(differentiable)
         self.center = Vector3(*center)
 
     def __contains__(self, point):
