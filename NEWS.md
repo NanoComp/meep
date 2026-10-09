@@ -1,5 +1,28 @@
 # Meep Release Notes
 
+## Meep 1.35.0
+
+10/9/2026
+
+* Added `plot1D` and `plot3D` visualization routines ([#3271], [#3310]).
+
+* Multi-threading optimization for near-to-far field transformation ([#3251]).
+
+* Added `dt` option for `fourier_transform` member function of `GaussianSource` ([#3273]).
+
+* Bug fix in adjoint gradient of adjoint solver for parallel simulations ([#3274]).
+
+* Bug fix in subpixel smoothing of `MaterialGrid` in 3D ([#3263]).
+
+* Bug fixes to array-slicing routines and new `ArrayMetadata` and `SliceDimension` classes
+  for array-slice metadata ([#3320]).
+
+* Improvements to CI on GitHub ([#3254], [#3309], [#3314], [#3322]).
+
+* Code cleanup and new materials for materials library ([#3252], [#3257]).
+
+* Various minor code cleanup and additional documentation ([#3253], [#3255], [#3269], [#3270], [#3289], [#3303], [#3305], [#3316], [#3319], [#3323], [#3324]).
+
 ## Meep 1.34.0
 
 7/9/2026
