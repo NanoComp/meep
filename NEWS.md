@@ -6,7 +6,7 @@
 
 * Added `plot1D` and `plot3D` visualization routines ([#3271], [#3310]).
 
-* Performance optimization for near-to-far field transformation ([#3251]).
+* Multi-threading optimization for near-to-far field transformation ([#3251]).
 
 * Added `dt` option for `fourier_transform` member function of `GaussianSource` ([#3273]).
 
