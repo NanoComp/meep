@@ -21,7 +21,7 @@
 
 * Improvements and new materials for materials library ([#3252], [#3257]).
 
-* Various minor improvements and additional documentation ([#3253], [#3255], [#3269], [#3270], [#3289], [#3303], [#3305], [#3316], [#3319], [#3323], [#3324]).
+* Various minor code cleanup and additional documentation ([#3253], [#3255], [#3269], [#3270], [#3289], [#3303], [#3305], [#3316], [#3319], [#3323], [#3324]).
 
 ## Meep 1.34.0
 
