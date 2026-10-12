@@ -537,9 +537,9 @@ grad["reflector"]["center"]   # (3,), or (nfreq, 3) for several frequencies
 grad["reflector"]["size"]
 ```
 
-This is the same pattern as the design weights and the Gaussian beam
-parameters: finite-difference a cheap analytic map and contract it against the
-adjoint field, at no cost in extra timestepping. Subpixel smoothing makes the
+As for the design weights, the derivative of the smoothed permittivity is
+contracted against the forward and adjoint fields, at no cost in extra
+timestepping. Subpixel smoothing makes the
 permittivity depend on the geometry only through each pixel's filling fraction
 and the interface normal, so
 

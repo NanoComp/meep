@@ -64,7 +64,7 @@ def _problem(block, res=RES, component=mp.Hz, eps_averaging=True):
                 mp.GaussianSource(FCEN, fwidth=0.2), component=component, center=SRC_C
             )
         ],
-        geometry=[block],
+        geometry=list(block) if isinstance(block, (list, tuple)) else [block],
         eps_averaging=eps_averaging,
         force_complex_fields=True,
     )
@@ -147,8 +147,8 @@ class TestGuards(unittest.TestCase):
             opt([RHO])
 
     def test_warns_when_a_face_lies_on_a_pixel_edge(self):
-        # Pixel centres are at integer multiples of dx, so edges are at
-        # half-integers. A face there is straddled by nothing.
+        # Ex is smoothed over voxels whose y edges lie at half-integer
+        # multiples of dx, so a face there is straddled by none of them.
         half = 0.5 / RES
         block = mp.Block(
             center=mp.Vector3(0, half),
@@ -162,7 +162,7 @@ class TestGuards(unittest.TestCase):
             warnings.simplefilter("always")
             opt([RHO])
         self.assertTrue(
-            any("pixel edge" in str(w.message) for w in caught),
+            any("voxel edge" in str(w.message) for w in caught),
             "expected a warning about a face on a pixel edge",
         )
 
@@ -170,17 +170,55 @@ class TestGuards(unittest.TestCase):
 class TestShapeDerivative(unittest.TestCase):
     SIZE = mp.Vector3(1.0, 0.8)
 
-    def _value(self, center, size, res=RES, index=2.5):
-        opt = _problem(_block(center, size, index, res=res), res=res)
+    def _value(self, center, size, res=RES, index=2.5, component=mp.Hz):
+        opt = _problem(
+            _block(center, size, index, res=res), res=res, component=component
+        )
         return float(np.asarray(opt([RHO], need_gradient=False)[0]).item())
 
-    def _adjoint(self, names, res=RES, index=2.5):
+    def _adjoint(self, names, res=RES, index=2.5, component=mp.Hz):
         opt = _problem(
             _block(mp.Vector3(), self.SIZE, index, differentiable=names, res=res),
             res=res,
+            component=component,
         )
         _, grad = opt([RHO])
         return grad["scatterer"]
+
+    def test_both_axes_and_both_polarizations(self):
+        # Hz drives the in-plane Ex and Ey, Ez the out-of-plane one; they see
+        # different voxels and different smoothed tensor entries.
+        unit = (mp.Vector3(x=FD_STEP), mp.Vector3(y=FD_STEP))
+        for component in (mp.Hz, mp.Ez):
+            grad = self._adjoint(["center", "size"], component=component)
+            center = np.real(np.atleast_1d(grad["center"]))
+            size = np.real(np.atleast_1d(grad["size"]))
+            scale = np.linalg.norm([center[1], size[0], size[1]])
+            # The source and monitor sit symmetrically about x = 0, so by
+            # reciprocity the objective is even in the block's x position and
+            # its derivative there is exactly zero.
+            with self.subTest(component=mp.component_name(component), name="center x"):
+                self.assertLess(abs(center[0]), 1e-3 * scale)
+            for name, axis in (("center", 1), ("size", 0), ("size", 1)):
+                with self.subTest(
+                    component=mp.component_name(component), name=name, axis=axis
+                ):
+                    d = unit[axis]
+                    if name == "center":
+                        plus, minus = (d, self.SIZE), (mp.Vector3() - d, self.SIZE)
+                    else:
+                        plus = (mp.Vector3(), self.SIZE + d)
+                        minus = (mp.Vector3(), self.SIZE - d)
+                    reference = (
+                        self._value(*plus, component=component)
+                        - self._value(*minus, component=component)
+                    ) / (2 * FD_STEP)
+                    adjoint = (center if name == "center" else size)[axis]
+                    self.assertLess(
+                        abs(adjoint - reference) / abs(reference),
+                        2e-2,
+                        f"adjoint {adjoint} vs finite difference {reference}",
+                    )
 
     def test_center_gradient(self):
         for label, res, index in (
@@ -258,6 +296,139 @@ class TestShapeDerivative(unittest.TestCase):
         opt = _problem(_block(mp.Vector3(), self.SIZE))
         _, gradient = opt([RHO])
         self.assertNotIsInstance(gradient, dict)
+
+
+class TestSeveralObjects(unittest.TestCase):
+    """Two flagged objects, each with its own gradient."""
+
+    def _blocks(self, shift_a=mp.Vector3(), shift_b=mp.Vector3(), flagged=True):
+        q = quarter_pixel(RES)
+        flags = ["center"] if flagged else None
+        return [
+            mp.Block(
+                center=mp.Vector3(-0.6, q) + shift_a,
+                size=mp.Vector3(0.5 + 2 * q, 0.6),
+                material=mp.Medium(index=2.5),
+                differentiable=flags,
+                name="a",
+            ),
+            mp.Block(
+                center=mp.Vector3(0.7 + q, 0.3 + q) + shift_b,
+                size=mp.Vector3(0.4, 0.5),
+                material=mp.Medium(index=2.0),
+                differentiable=flags,
+                name="b",
+            ),
+        ]
+
+    def _value(self, **shifts):
+        opt = _problem(self._blocks(flagged=False, **shifts))
+        return float(np.asarray(opt([RHO], need_gradient=False)[0]).item())
+
+    def test_each_object_gets_its_own_gradient(self):
+        _, grad = _problem(self._blocks())([RHO])
+        self.assertLessEqual({"a", "b"}, set(grad))
+        checks = (
+            ("a", 1, dict(shift_a=mp.Vector3(y=FD_STEP))),
+            ("b", 0, dict(shift_b=mp.Vector3(x=FD_STEP))),
+        )
+        for name, axis, plus in checks:
+            with self.subTest(object=name, axis=axis):
+                minus = {k: mp.Vector3() - v for k, v in plus.items()}
+                reference = (self._value(**plus) - self._value(**minus)) / (2 * FD_STEP)
+                adjoint = float(np.real(np.atleast_1d(grad[name]["center"])[axis]))
+                self.assertLess(abs(adjoint - reference) / abs(reference), 2e-2)
+
+
+class TestThreeDimensions(unittest.TestCase):
+    """A block in a small 3D cell."""
+
+    RES3 = 12
+
+    def _problem(self, dz, differentiable=None):
+        q = quarter_pixel(self.RES3)
+        block = mp.Block(
+            center=mp.Vector3(0, q, q + dz),
+            size=mp.Vector3(0.8 + 2 * q, 0.6, 0.5),
+            material=mp.Medium(index=2.5),
+            differentiable=differentiable,
+            name="block",
+        )
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(4, 3, 3),
+            resolution=self.RES3,
+            boundary_layers=[mp.PML(0.6)],
+            sources=[
+                mp.Source(
+                    mp.GaussianSource(FCEN, fwidth=0.2),
+                    component=mp.Ex,
+                    center=mp.Vector3(-1.0, 0.1, 0.1),
+                )
+            ],
+            geometry=[block],
+            force_complex_fields=True,
+        )
+        grid = mp.MaterialGrid(mp.Vector3(4, 4, 1), mp.air, mp.Medium(index=1.5))
+        region = mpa.DesignRegion(
+            grid,
+            volume=mp.Volume(
+                center=mp.Vector3(0, -1.0, 0), size=mp.Vector3(0.3, 0.3, 0.3)
+            ),
+        )
+        sim.geometry = list(sim.geometry) + [
+            mp.Block(center=region.center, size=region.size, material=grid)
+        ]
+        monitor = mpa.FourierFields(
+            sim, mp.Volume(center=mp.Vector3(1.0, 0.2, -0.1)), mp.Ex
+        )
+        return mpa.OptimizationProblem(
+            simulation=sim,
+            objective_functions=[lambda f: npa.sum(npa.abs(f) ** 2)],
+            objective_arguments=[monitor],
+            design_regions=[region],
+            frequencies=[FCEN],
+            minimum_run_time=RUN,
+            maximum_run_time=RUN,
+        )
+
+    def test_center_gradient_along_z(self):
+        _, grad = self._problem(0.0, ["center"])([0.5 * np.ones(16)])
+        adjoint = float(np.real(np.atleast_1d(grad["block"]["center"])[2]))
+
+        def value(dz):
+            opt = self._problem(dz)
+            return float(
+                np.asarray(opt([0.5 * np.ones(16)], need_gradient=False)[0]).item()
+            )
+
+        reference = (value(FD_STEP) - value(-FD_STEP)) / (2 * FD_STEP)
+        self.assertLess(abs(adjoint - reference) / abs(reference), 2e-2)
+
+
+class TestEdgeWarningPerComponent(unittest.TestCase):
+    """Voxel edges depend on the component; only components with field count."""
+
+    def _warnings(self, component):
+        # x faces at integer multiples of dx: a voxel edge for Ex (along its
+        # own direction) but a voxel centre for Ey and Ez
+        block = mp.Block(
+            center=mp.Vector3(0, quarter_pixel(RES)),
+            size=mp.Vector3(1.0, 0.8),
+            material=mp.Medium(index=2.5),
+            differentiable=["center"],
+            name="s",
+        )
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            _problem(block, component=component)([RHO])
+        return [str(w.message) for w in caught if "voxel edge" in str(w.message)]
+
+    def test_in_plane_field_warns(self):
+        messages = self._warnings(mp.Hz)  # drives Ex and Ey
+        self.assertTrue(any(" ex" in m for m in messages), messages)
+
+    def test_out_of_plane_field_does_not(self):
+        self.assertEqual(self._warnings(mp.Ez), [])  # drives Ez only
 
 
 if __name__ == "__main__":

@@ -890,8 +890,7 @@ void _get_geometry_gradient(PyObject *grad, double scalegrad,
                    meep::dft_fields *fields_a_0, meep::dft_fields *fields_a_1, meep::dft_fields *fields_a_2,
                    meep::dft_fields *fields_f_0, meep::dft_fields *fields_f_1, meep::dft_fields *fields_f_2,
                    meep::grid_volume *grid_volume, PyObject *frequencies,
-                   meep_geom::geom_epsilon *geps, int object_index, PyObject *params,
-                   double fd_step) {
+                   meep_geom::geom_epsilon *geps, int object_index, PyObject *params) {
 
     PyArrayObject *pao_grad = (PyArrayObject *)grad;
     if (!PyArray_Check(pao_grad)) meep::abort("grad parameter must be numpy array.");
@@ -922,7 +921,7 @@ void _get_geometry_gradient(PyObject *grad, double scalegrad,
 
     meep_geom::geometry_addgradient(grad_c, nparams, nf, adjoint_fields, forward_fields,
                                     frequencies_c, scalegrad, *grid_volume, geps,
-                                    object_index, params_c, fd_step);
+                                    object_index, params_c);
 }
 %}
 
