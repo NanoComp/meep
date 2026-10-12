@@ -1319,5 +1319,132 @@ class TestInjectionOrientations(ApproxComparisonTestCase):
             )
 
 
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestInjectionThroughAStack(ApproxComparisonTestCase):
+    """`incident_fields` across an index change and for a tilted mode.
+
+    The mode is specified in air above a glass layer, the usual fiber setup. The
+    injected beam must carry the mode's power times the (reciprocal) power
+    transmission into the glass, travel the way the fiber would emit it, and be
+    the exact time reverse of what `overlap` projects onto.
+    """
+
+    TILT = 8.0
+
+    def setUp(self):
+        self.propagator = mpa.AngularSpectrum(
+            mpa.Stack([mpa.Layer(N_OXIDE, 1.0), mpa.Layer(N_AIR)]),
+            [1 / WAVELENGTH],
+            0.05,
+            1024,
+            normal=mp.Y,
+            pad_factor=4,
+        )
+        self.mode = mpa.gaussian_mode(waist=3.0, tilt_deg=self.TILT)
+        self.fields = self.propagator.incident_fields(self.mode, distance=5.0)
+        _, down = self.propagator.decompose(self.fields)
+        self.down = onp.asarray(down[asm.S_POLARIZATION])[0]
+
+    def test_power_is_the_transmitted_mode_power(self):
+        p = self.propagator
+        k0 = onp.array([2 * onp.pi / WAVELENGTH])
+        a = onp.squeeze(
+            onp.asarray(self.mode.spectrum(p, -p.kt, k0[:, None], p._indices[-1]))[
+                ..., asm.S_POLARIZATION
+            ]
+        )
+        y_glass = onp.asarray(p._admittances[0][asm.S_POLARIZATION])[0]
+        y_air = onp.asarray(p._admittances[-1][asm.S_POLARIZATION])[0]
+        propagating = onp.abs(onp.imag(onp.asarray(p._wavevectors[-1])[0])) < 1e-6
+        transmitted = 1 - onp.abs((y_air - y_glass) / (y_air + y_glass)) ** 2
+        got = onp.sum(
+            onp.real(y_glass)[propagating] * onp.abs(self.down[propagating]) ** 2
+        )
+        want = onp.sum((transmitted * onp.real(y_air) * onp.abs(a) ** 2)[propagating])
+        self.assertAlmostEqual(got / want, 1.0, places=8)
+
+    def test_tilted_mode_is_launched_the_way_the_fiber_emits(self):
+        # overlap with gaussian_mode(tilt) collects light travelling up at +kt,
+        # so the same fiber emits light travelling down at -kt
+        kt = onp.asarray(self.propagator.kt)[:, 0]
+        self.assertLess(kt[onp.argmax(onp.abs(self.down))], 0)
+
+    def test_time_reverse_projects_fully_onto_the_mode(self):
+        # Exactly, without an interface: through one, the angle-dependent
+        # reflection reshapes the returning beam and the purity drops below one.
+        propagator = mpa.AngularSpectrum(
+            mpa.Stack([mpa.Layer(N_OXIDE, 1.0), mpa.Layer(N_OXIDE)]),
+            [1 / WAVELENGTH],
+            0.05,
+            1024,
+            normal=mp.Y,
+            pad_factor=4,
+        )
+        fields = propagator.incident_fields(self.mode, distance=5.0)
+        reversed_fields = mpa.TangentialFields(
+            E={c: jnp.conj(v) for c, v in fields.E.items()},
+            H={c: -jnp.conj(v) for c, v in fields.H.items()},
+            normal=fields.normal,
+        )
+        purity = float(propagator.overlap(reversed_fields, self.mode, 5.0)[0])
+        self.assertAlmostEqual(purity, 1.0, places=6)
+
+
+@unittest.skipIf(jax is None, "jax is not installed")
+class TestEquivalentCurrents(ApproxComparisonTestCase):
+    """`equivalent_currents` is what `equivalent_sources` places, in JAX."""
+
+    def _propagator(self):
+        simulation = mp.Simulation(
+            cell_size=mp.Vector3(10, 8), resolution=10, boundary_layers=[mp.PML(1.0)]
+        )
+        volume = mp.Volume(center=mp.Vector3(0, -1), size=mp.Vector3(6, 0))
+        propagator = mpa.AngularSpectrum.from_volume(
+            simulation,
+            simulation._fit_volume_to_simulation(volume),
+            mpa.Stack([mpa.Layer(N_OXIDE, 1.0), mpa.Layer(N_AIR)]),
+            [1 / WAVELENGTH],
+            pad_factor=4,
+        )
+        return propagator, volume
+
+    def test_matches_the_placed_sources(self):
+        propagator, volume = self._propagator()
+        fields = propagator.incident_fields(
+            mpa.gaussian_mode(waist=2.0, tilt_deg=8.0), distance=5.0
+        )
+        currents = propagator.equivalent_currents(fields)
+        sources = propagator.equivalent_sources(
+            fields,
+            mp.GaussianSource(1 / WAVELENGTH, fwidth=0.1),
+            center=volume.center,
+            size=volume.size,
+        )
+        # in 2D with an out-of-plane E field, K drives Ez and N drives Hx
+        self.assertEqual(sorted(s.component for s in sources), sorted([mp.Ez, mp.Hx]))
+        for source in sources:
+            self.assertTrue(
+                onp.array_equal(
+                    onp.asarray(source.amp_data),
+                    onp.asarray(currents[source.component]),
+                )
+            )
+
+    def test_differentiable_in_the_mode(self):
+        propagator, _ = self._propagator()
+
+        def power(waist):
+            fields = propagator.incident_fields(
+                mpa.gaussian_mode(waist=waist, tilt_deg=8.0), distance=5.0
+            )
+            currents = propagator.equivalent_currents(fields)
+            return jnp.sum(jnp.abs(currents[mp.Ez]) ** 2)
+
+        gradient = float(jax.grad(power)(2.0))
+        step = 1e-5
+        reference = float((power(2.0 + step) - power(2.0 - step)) / (2 * step))
+        self.assertAlmostEqual(gradient / reference, 1.0, places=5)
+
+
 if __name__ == "__main__":
     unittest.main()

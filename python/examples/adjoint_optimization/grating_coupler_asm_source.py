@@ -227,22 +227,9 @@ def run_optimize(args):
             waist=fiber["waist"], tilt_deg=fiber["tilt"], offset=fiber["offset"]
         )
         fields = propagator.incident_fields(mode, distance=distance)
-        # get_equiv_sources puts n x H on the electric components and -n x E on
-        # the magnetic ones, so the two are swapped relative to each other.
-        swap = {
-            mp.Ex: mp.Hx,
-            mp.Ey: mp.Hy,
-            mp.Ez: mp.Hz,
-            mp.Hx: mp.Ex,
-            mp.Hy: mp.Ey,
-            mp.Hz: mp.Ez,
-        }
-        out = []
-        for s in sources:
-            paired = swap[s.component]
-            store = fields.H if mp.is_electric(s.component) else fields.E
-            out.append(jnp.ravel(store[paired][0]))
-        return out
+        # the same currents `equivalent_sources` placed, computed in JAX
+        sheet = propagator.equivalent_currents(fields)
+        return [jnp.ravel(sheet[s.component]) for s in sources]
 
     def loss(params):
         values = wrapper(
