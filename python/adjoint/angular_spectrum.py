@@ -353,9 +353,11 @@ class Mode(NamedTuple):
     Attributes:
         spectrum: called as `spectrum(propagator, kt, k0, index)` and returning
             a (num frequencies, num kt, 2) array of tangential electric field
-            amplitudes in the s and p directions. Carrying both is what lets a
-            linearly polarized beam be represented in 3D, where its s and p
-            content varies with azimuth.
+            amplitudes in the s and p directions of the propagator's own
+            wavevectors (`propagator._azimuth()`), with the envelope evaluated at
+            `kt`. Carrying both is what lets a linearly polarized beam be
+            represented in 3D, where its s and p content varies with azimuth.
+            `incident_fields` evaluates it at `-kt` to time-reverse it.
     """
 
     spectrum: Callable
@@ -1181,14 +1183,23 @@ class AngularSpectrum:
         produce. This takes the frequencies directly instead.
 
         Args:
-            simulation: supplies the grid; it need not have been run.
+            simulation: supplies the grid. It need not have been initialized;
+                if it has not, it is initialized to read the grid and then reset.
             volume: the source plane.
             stack: the layers between that plane and the mode.
             frequencies: the frequencies to propagate.
             sign: +1 if the outgoing direction is along +normal.
             **kwargs: forwarded to the constructor, e.g. `pad_factor`.
         """
-        normal, pitch, num_points = cls._plane_geometry(simulation, volume)
+        if simulation.fields is None:
+            # The plane's samples come from the grid, which needs initialized
+            # fields; drop them again so that the sources this builds are added
+            # normally when the simulation runs.
+            simulation.init_sim()
+            normal, pitch, num_points = cls._plane_geometry(simulation, volume)
+            simulation.reset_meep()
+        else:
+            normal, pitch, num_points = cls._plane_geometry(simulation, volume)
         return cls(
             stack,
             onp.asarray(frequencies),
@@ -1199,13 +1210,46 @@ class AngularSpectrum:
             **kwargs,
         )
 
-    def _to_meep_layout(self, values) -> onp.ndarray:
+    def equivalent_currents(
+        self, fields: TangentialFields, frequency_index: int = 0, amplitude=1.0
+    ) -> Dict[int, jnp.ndarray]:
+        """The equivalent surface currents that launch `fields`, as `amp_data`.
+
+        The electric sheet `K = n_hat x H` and magnetic sheet `N = -n_hat x E`,
+        keyed by the Meep component each drives and laid out as `amp_data`
+        expects. These are the arrays `equivalent_sources` places, computed in
+        JAX, so that a loss can pass them to `MeepJaxWrapper` and differentiate
+        through them.
+        """
+
+        def at(store, component):
+            value = store.get(component)
+            if value is None:
+                return self._to_meep_layout(jnp.zeros(self.num_points))
+            return self._to_meep_layout(jnp.asarray(value)[frequency_index] * amplitude)
+
+        ex, ey, ez = (at(fields.E, c) for c in (mp.Ex, mp.Ey, mp.Ez))
+        hx, hy, hz = (at(fields.H, c) for c in (mp.Hx, mp.Hy, mp.Hz))
+        # `sign` is the outgoing direction, so the beam travels along its
+        # negation and that is the normal the equivalence principle wants.
+        n = [0.0, 0.0, 0.0]
+        n[{mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]] = -float(self.sign)
+        return {
+            mp.Ex: n[1] * hz - n[2] * hy,
+            mp.Ey: n[2] * hx - n[0] * hz,
+            mp.Ez: n[0] * hy - n[1] * hx,
+            mp.Hx: n[2] * ey - n[1] * ez,
+            mp.Hy: n[0] * ez - n[2] * ex,
+            mp.Hz: n[1] * ex - n[0] * ey,
+        }
+
+    def _to_meep_layout(self, values) -> jnp.ndarray:
         """The inverse of `_to_plane_axes`, laid out as `amp_data` expects.
 
         `amp_data` is indexed (x, y, z) over the source volume, with length one
         along any direction in which the volume has zero size, here the normal.
         """
-        values = onp.asarray(values, dtype=onp.complex128)
+        values = jnp.asarray(values, dtype=jnp.complex128)
         if self.transverse_dimensions == 2 and self.normal == mp.Y:
             values = values.T
         normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]
@@ -1286,9 +1330,12 @@ class AngularSpectrum:
         The time reverse of `spectrum`. A `Mode` is specified where it is
         physically meaningful -- at the fiber facet, say, on the far side of the
         stack -- and this carries it back down through the layers to the monitor
-        plane, where Meep can inject it. The scalar transfer function of a
-        stratified medium is the same in both directions, so the same product of
-        transmission and propagation phases applies.
+        plane, where Meep can inject it. The same `Mode` describes the same fiber
+        in both directions: the beam injected here is the time reverse of the one
+        `overlap` projects onto, i.e. its spectrum is `conj(a(-kt))`, which for
+        `gaussian_mode` is the same beam with the tilt negated. It is carried
+        across the stack from the far side, whose tangential-field transmission
+        follows from reciprocity as `t * Y_far / Y_monitor`.
 
         The result is purely in-going: its up-going content is zero by
         construction, so injecting it launches a beam toward the structure and
@@ -1311,12 +1358,20 @@ class AngularSpectrum:
             )
 
         k0 = 2 * onp.pi * jnp.asarray(self.frequencies)[:, None]
-        amplitudes = mode.spectrum(self, self._kt, k0, self._indices[-1])
+        # time reversal: the arriving beam is conj(a(-kt)) of the outgoing one
+        amplitudes = jnp.conj(mode.spectrum(self, -self._kt, k0, self._indices[-1]))
 
-        # Carry each polarization across the stack to the monitor plane.
+        # Carry each polarization across the stack to the monitor plane. The
+        # stack is crossed from the far side, so reciprocity turns the
+        # monitor-to-far transmission t into t * Y_far / Y_monitor.
         down = {}
         for polarization in (S_POLARIZATION, P_POLARIZATION):
             transmission, _ = self._transmission(polarization)
+            transmission = (
+                transmission
+                * self._admittances[-1][polarization]
+                / self._admittances[0][polarization]
+            )
             to_interface = jnp.exp(1j * self._wavevectors[0] * self._thicknesses[0])
             beyond = jnp.exp(1j * self._wavevectors[-1] * remaining)
             down[polarization] = (
@@ -1380,11 +1435,11 @@ class AngularSpectrum:
     ) -> List[mp.Source]:
         """Equivalent surface currents that launch `fields` into the simulation.
 
-        A thin wrapper over `mp.get_equiv_sources`, which already applies the
-        equivalence principle -- an electric sheet `K = n_hat x H` and a
-        magnetic sheet `N = -n_hat x E` -- and emits ordinary sources carrying
-        `amp_data`. Both sheets are needed: one alone radiates half the field in
-        each direction instead of all of it in one.
+        Applies the equivalence principle -- an electric sheet `K = n_hat x H`
+        and a magnetic sheet `N = -n_hat x E`, as `equivalent_currents` computes
+        them -- and emits ordinary sources carrying them as `amp_data`. Both
+        sheets are needed: one alone radiates half the field in each direction
+        instead of all of it in one.
 
         Since `amp_data` is differentiable, the sources it returns backpropagate
         to whatever produced `fields`, which for the angular spectrum means the
@@ -1415,25 +1470,18 @@ class AngularSpectrum:
         else:
             index = int(onp.argmin(onp.abs(frequencies - frequency)))
 
-        def slice_at(store, component):
-            value = store.get(component)
-            if value is None:
-                return onp.zeros(self.num_points)
-            return onp.asarray(value)[index] * amplitude
-
-        # get_equiv_sources wants all six components, in order, laid out for
-        # amp_data's trilinear interpolation over the source volume.
-        field = [
-            self._to_meep_layout(slice_at(fields.E, c)) for c in (mp.Ex, mp.Ey, mp.Ez)
-        ] + [self._to_meep_layout(slice_at(fields.H, c)) for c in (mp.Hx, mp.Hy, mp.Hz)]
-
-        normal_axis = {mp.X: 0, mp.Y: 1, mp.Z: 2}[self.normal]
-        n_hat = onp.zeros(3)
-        # `sign` is the outgoing direction, so the beam travels along its
-        # negation and that is the normal the equivalence principle wants.
-        n_hat[normal_axis] = -self.sign
-
-        sources = mp.get_equiv_sources(field, n_hat, time_src, center, size)
+        currents = self.equivalent_currents(fields, index, amplitude)
+        sources = [
+            mp.Source(
+                time_src,
+                component,
+                center=center,
+                size=size,
+                amp_data=onp.asarray(values, dtype=onp.complex128),
+            )
+            for component, values in currents.items()
+            if onp.any(onp.asarray(values))
+        ]
         if differentiable:
             for source in sources:
                 source.differentiable = ("amp_data",)
