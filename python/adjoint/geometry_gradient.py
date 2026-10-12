@@ -1,23 +1,19 @@
 """Adjoint gradients with respect to a geometric object's centre and size.
 
-The design gradient finite-differences `eff_chi1inv_row` -- the subpixel
-smoothed inverse permittivity over a voxel -- with respect to a design weight.
-That function is a function of the *geometry*, so perturbing an object's centre
-or size instead gives the shape derivative from the same machinery, at no cost
-in additional timestepping. It is the same pattern as the design weights and as
-the Gaussian beam parameters: finite-difference a cheap analytic map, contract
-against the adjoint field.
+Moving an object changes the permittivity only in the pixels its boundary
+crosses, and there only through subpixel smoothing. For each such pixel
 
-Two things differ from the design gradient.
+    d(chi1inv)/d(parameter) = d(chi1inv)/d(fill) * d(fill)/d(parameter)
 
-A design weight is local, so it can be perturbed inside the point loop. A centre
-or a size is global, so the perturbation hoists out: move the geometry once,
-visit every point, restore. Twelve passes for six parameters, not twelve
-perturbations per point.
+where `fill` is the fraction of the pixel inside the object. The first factor
+comes from Meep's own smoothed tensor (`eff_chi1inv_matrix`, varied in `fill`
+with the interface normal held fixed), so it is whatever Meep actually
+assembles. The second is analytic for an axis-aligned block, whose overlap with
+a pixel factorizes into one interval overlap per axis. The result is contracted
+against the forward and adjoint fields recorded over the object's boundary, so
+the gradient costs no timestepping beyond the forward and adjoint runs.
 
-And the step has units. `utils.FD_DEFAULT` is a dimensionless perturbation of a
-weight; here it is a length, and the scale that makes sense is a fraction of a
-pixel. `DEFAULT_STEP_PIXELS` sets it relative to the grid rather than absolutely.
+Only `mp.Block` is supported, and only axis-aligned.
 
 Accuracy: a shape derivative is one order worse than the fields
 ------------------------------------------------------------------
@@ -53,21 +49,11 @@ O(Delta) and is a statement about the discretization.
 """
 
 import warnings
-from typing import List, Optional
+from typing import List
 
 import numpy as np
 
 import meep as mp
-
-# Perturbation for the geometric finite difference, as a fraction of a pixel.
-# An absolute step is the wrong idea: subpixel smoothing varies over a pixel, so
-# the step has to be defined against the grid.
-#
-# Measured on a block whose faces sit mid-voxel, against a finite difference of
-# the objective: 0.2 px is 10% out, 0.05 px is 6.5%, 0.02 px is 3.4%, 0.005 px
-# is 1.3% and 0.001 px is 0.7%, still improving. The error is truncation, not
-# roundoff, over that whole range, so the step wants to be small.
-DEFAULT_STEP_PIXELS = 0.002
 
 # How far past an object the gradient monitor reaches, in pixels. The support of
 # d(epsilon)/d(parameter) is the shell of voxels the boundary sweeps through, so
@@ -121,53 +107,63 @@ def _check_supported(obj) -> None:
             )
 
 
-def check_faces_off_voxel_edges(sim: mp.Simulation, obj) -> None:
+def check_faces_off_voxel_edges(sim: mp.Simulation, obj, forward_fields=None) -> None:
     """Warn when a face sits exactly on a voxel edge, where no derivative exists.
 
     A voxel's filling fraction is piecewise linear in the position of the
     boundary crossing it, with a kink each time the boundary reaches a voxel
     edge. The smoothed permittivity -- and so the objective -- is therefore C0
     but not C1 in an object's position, and *on* an edge the left and right
-    derivatives differ.
+    derivatives differ; the gradient returned there is one of the two.
 
-    A central difference straddles that kink and returns a weighted mixture of
-    the two, with weights that depend on the step. Measured on such a face, the
-    reported gradient swept monotonically from -0.19 to +0.12 as the step went
-    from 0.2 px to 0.001 px, passing through the true value without settling.
-    Moving the same face half a pixel made the sweep converge to 0.7%.
+    Each field component is smoothed over its own voxel, centred on that
+    component's Yee point, so the edges differ between components: along a
+    component's own direction its voxel edges lie at integer multiples of the
+    pixel size, and along the other directions at half-integers. Components that
+    carry no field (e.g. Ex and Ey for an out-of-plane Ez source in 2D) are
+    skipped when `forward_fields` is given.
 
     This is easy to hit by accident, because round sizes at round resolutions
     land on edges: a 0.8-wide block at resolution 20 has faces exactly 8 pixels
     from its centre.
     """
+    from . import utils
+
     dx = 1.0 / sim.resolution
+    components = utils._compute_components(sim)
+    if forward_fields is not None:
+        components = [
+            c
+            for c, monitor in zip(components, forward_fields)
+            if np.any(np.asarray(sim.get_dft_array(monitor, c, 0)))
+        ]
     size = (obj.size.x, obj.size.y, obj.size.z)
     center = (obj.center.x, obj.center.y, obj.center.z)
+    directions = (mp.X, mp.Y, mp.Z)
     for axis, letter in enumerate("xyz"):
         if size[axis] == 0:
             continue
         for face in (center[axis] - size[axis] / 2, center[axis] + size[axis] / 2):
-            # Pixel centres sit at integer multiples of dx, so pixel *edges*
-            # are at half-integers. A face at a pixel centre is straddled by
-            # that pixel and smooths normally; a face at a pixel edge is
-            # straddled by nothing, every neighbouring pixel is full or empty,
-            # and the derivative there is one-sided.
-            offset = abs((face / dx) - round(face / dx))
-            if abs(offset - 0.5) < 1e-6:
-                warnings.warn(
-                    f"The {letter} face of "
-                    f"{getattr(obj, 'name', None) or 'this object'} at "
-                    f"{face:.6g} lies on a pixel edge, where the smoothed "
-                    "permittivity has a kink and the derivative with respect "
-                    "to position is one-sided. The reported gradient will "
-                    "depend on the finite-difference step rather than "
-                    f"converging. Shift it by about {dx / 2:.6g} along "
-                    + letter
-                    + " so the face lands on a pixel centre, or change the "
-                    "resolution.",
-                    RuntimeWarning,
-                    stacklevel=3,
-                )
+            for component in components:
+                # voxel edges at integers along the component's own direction,
+                # half-integers otherwise
+                along = mp.component_direction(component) == directions[axis]
+                offset = (face / dx) - (0.0 if along else 0.5)
+                if abs(offset - round(offset)) < 1e-6:
+                    warnings.warn(
+                        f"The {letter} face of "
+                        f"{getattr(obj, 'name', None) or 'this object'} at "
+                        f"{face:.6g} lies on a voxel edge of "
+                        f"{mp.component_name(mp.Ex + (component - mp.Dx))}, where "
+                        "the smoothed "
+                        "permittivity has a kink and the derivative with respect "
+                        "to position is one-sided. Shift the face by a fraction "
+                        "of a pixel along " + letter + " to get a two-sided "
+                        "derivative.",
+                        RuntimeWarning,
+                        stacklevel=3,
+                    )
+                    break
 
 
 def check_smoothing(sim: mp.Simulation) -> None:
@@ -252,12 +248,11 @@ def gradient(
     forward_fields: List[mp.DftFields],
     adjoint_fields: List[mp.DftFields],
     frequencies,
-    step: Optional[float] = None,
 ) -> dict:
     """dJ/d(parameter) for one object, keyed by the names it declared."""
     _check_supported(obj)
     check_smoothing(sim)
-    check_faces_off_voxel_edges(sim, obj)
+    check_faces_off_voxel_edges(sim, obj, forward_fields)
 
     names = [n for n in obj.differentiable]
     indices = []
@@ -267,9 +262,6 @@ def gradient(
 
     frequencies = np.asarray(frequencies, dtype=np.float64)
     out = np.zeros((frequencies.size, indices.size), dtype=np.float64)
-
-    if step is None:
-        step = DEFAULT_STEP_PIXELS / sim.resolution
 
     mp._get_geometry_gradient(
         out,
@@ -285,7 +277,6 @@ def gradient(
         sim.geps,
         object_index,
         indices,
-        step,
     )
 
     grads = {}

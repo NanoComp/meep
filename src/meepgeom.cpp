@@ -3052,9 +3052,8 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                           std::vector<meep::dft_fields *> fields_a,
                           std::vector<meep::dft_fields *> fields_f, double *frequencies,
                           double scalegrad, meep::grid_volume &gv, geom_epsilon *geps,
-                          int object_index, int *params, double du) {
+                          int object_index, int *params) {
   (void)frequencies;
-  (void)du;
   if (object_index < 0 || object_index >= geps->geometry.num_items)
     meep::abort("geometry_addgradient: object index %d out of range (%d objects)", object_index,
                 geps->geometry.num_items);
