@@ -366,6 +366,24 @@ class TestMaterialGridDispersion(unittest.TestCase):
             "shared-pole amplitudes should add",
         )
 
+    def test_repeated_pole_in_a_plain_medium_adds(self):
+        # The same accumulation applies to an ordinary medium that lists one
+        # pole twice: both entries match the single registered susceptibility,
+        # and two identical Lorentzians superpose into one of the summed
+        # strength. Before, only the first entry counted.
+        def pole(sigma):
+            return mp.LorentzianSusceptibility(frequency=1.2, gamma=0.2, sigma=sigma)
+
+        self.assertTransmittanceEqual(
+            dispersion_transmittance(
+                mp.Medium(epsilon=1.0, E_susceptibilities=[pole(0.4), pole(1.0)])
+            ),
+            dispersion_transmittance(
+                mp.Medium(epsilon=1.0, E_susceptibilities=[pole(1.4)])
+            ),
+            "a repeated pole should count twice",
+        )
+
 
 class TestMaterialGridUnsupportedMedia(unittest.TestCase):
     """Properties a `MaterialGrid` cannot interpolate must be refused.
