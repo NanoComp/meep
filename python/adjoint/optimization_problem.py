@@ -311,6 +311,7 @@ class OptimizationProblem:
             self.differentiable_objects,
             self.frequencies,
             self.decimation_factor,
+            self.pade_samples,
         )
 
     @staticmethod
@@ -396,7 +397,11 @@ class OptimizationProblem:
             )
         else:
             self._run_with_stopping(
-                [self.forward_monitors, self.forward_design_region_monitors],
+                [
+                    self.forward_monitors,
+                    self.forward_design_region_monitors,
+                    self.forward_geometry_monitors,
+                ],
                 confirmation=(
                     self._forward_confirmation
                     if self.pade_tolerance is not None

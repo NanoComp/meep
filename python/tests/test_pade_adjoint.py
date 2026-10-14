@@ -8,7 +8,14 @@ import meep.adjoint as mpa
 
 
 class TestPadeAdjoint(unittest.TestCase):
-    def _problem(self, weights, pade_samples, run_time, objective_functions=None):
+    def _problem(
+        self,
+        weights,
+        pade_samples,
+        run_time,
+        objective_functions=None,
+        differentiable=False,
+    ):
         fcen = 0.5
         grid = mp.MaterialGrid(
             mp.Vector3(1, 1, len(weights)),
@@ -21,29 +28,40 @@ class TestPadeAdjoint(unittest.TestCase):
             grid,
             volume=mp.Volume(center=mp.Vector3(), size=mp.Vector3(z=1)),
         )
+        geometry = [
+            mp.Block(
+                center=region.center,
+                size=region.size,
+                material=grid,
+            )
+        ]
+        source = dict(component=mp.Ex, center=mp.Vector3(z=-1.5))
+        monitor_z = 1.2
+        if differentiable:
+            # a shape and a source gradient, which read their own monitors;
+            # the quarter pixel keeps the slab's faces off pixel edges
+            geometry.append(
+                mp.Block(
+                    center=mp.Vector3(z=0.8 + 0.25 / 20),
+                    size=mp.Vector3(mp.inf, mp.inf, 0.3),
+                    material=mp.Medium(epsilon=4),
+                    differentiable=["center"],
+                    name="slab",
+                )
+            )
+            source.update(differentiable=["amplitude"], name="drive")
+            monitor_z = 1.6
         sim = mp.Simulation(
             cell_size=mp.Vector3(z=6),
             dimensions=1,
             resolution=20,
             boundary_layers=[mp.PML(1)],
-            geometry=[
-                mp.Block(
-                    center=region.center,
-                    size=region.size,
-                    material=grid,
-                )
-            ],
-            sources=[
-                mp.Source(
-                    mp.GaussianSource(fcen, fwidth=0.3),
-                    component=mp.Ex,
-                    center=mp.Vector3(z=-1.5),
-                )
-            ],
+            geometry=geometry,
+            sources=[mp.Source(mp.GaussianSource(fcen, fwidth=0.3), **source)],
         )
         field = mpa.FourierFields(
             sim,
-            mp.Volume(center=mp.Vector3(z=1.2), size=mp.Vector3(z=0.1)),
+            mp.Volume(center=mp.Vector3(z=monitor_z), size=mp.Vector3(z=0.1)),
             mp.Ex,
         )
         if objective_functions is None:
@@ -68,9 +86,14 @@ class TestPadeAdjoint(unittest.TestCase):
         run_time,
         objective_functions=None,
         need_gradient=True,
+        differentiable=False,
     ):
         problem = self._problem(
-            weights, pade_samples, run_time, objective_functions=objective_functions
+            weights,
+            pade_samples,
+            run_time,
+            objective_functions=objective_functions,
+            differentiable=differentiable,
         )
         value, gradient = problem([np.asarray(weights)], need_gradient=need_gradient)
         return value, gradient, problem
@@ -119,6 +142,31 @@ class TestPadeAdjoint(unittest.TestCase):
             1.0,
             delta=0.03 if mp.is_single_precision() else 0.01,
         )
+
+    def test_shape_and_source_gradients_match_long_run(self):
+        """Shape and source gradients read corrected fields too."""
+        weights = np.array([0.35, 0.55, 0.7])
+        _, short, _ = self._run(weights, 12, 1, differentiable=True)
+        _, long, _ = self._run(weights, 0, 220, differentiable=True)
+        _, truncated, _ = self._run(weights, 0, 1, differentiable=True)
+
+        tolerance = 0.02 if mp.is_single_precision() else 0.01
+        for name, parameter in (("slab", "center"), ("drive", "amplitude")):
+            with self.subTest(gradient=name):
+                reference = np.atleast_1d(long[name][parameter])
+                np.testing.assert_allclose(
+                    np.atleast_1d(short[name][parameter]),
+                    reference,
+                    rtol=tolerance,
+                    atol=tolerance * np.max(np.abs(reference)),
+                )
+                # the run is short enough that this comparison means something
+                self.assertGreater(
+                    np.max(
+                        np.abs(np.atleast_1d(truncated[name][parameter]) - reference)
+                    ),
+                    10 * tolerance * np.max(np.abs(reference)),
+                )
 
     def test_streamed_multi_objective_matches_long_run(self):
         """Streamed Padé gradients match the legacy retained-monitor result."""

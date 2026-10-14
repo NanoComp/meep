@@ -22,10 +22,6 @@
 
 namespace meep_geom {
 
-double _adjdbg_sum[2] = {0, 0};
-long _adjdbg_n[2] = {0, 0};
-
-
 #define master_printf meep::master_printf
 
 /***************************************************************/
@@ -3441,6 +3437,9 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
           if (!fwd_chunk) continue;
           meep::component forward_c = fwd_chunk->c;
           meep::grid_volume gv_fwd = gv.subvolume(fwd_chunk->is, fwd_chunk->ie, forward_c);
+          // Padé-corrected when the monitors extrapolate, as the objective is
+          const std::complex<meep::realnum> *adj_values = adj_chunk->dft_values();
+          const std::complex<meep::realnum> *fwd_values = fwd_chunk->dft_values();
 
           int dir_idx;
           switch (meep::component_direction(forward_c)) {
@@ -3458,7 +3457,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
           LOOP_OVER_IVECS(gv_adj, loop_is, loop_ie, idx_adj) {
             IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
-            std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
+            std::complex<meep::realnum> adj = adj_values[nf * idx_adj + f_i];
             if (adj == meep::realnum(0)) continue;
 
             /* The smoothed tensor is diagonal in Cartesian axes only where the
@@ -3479,7 +3478,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
               /* `idx_adj` is an offset into gv_adj, so it cannot be used to
                  index the forward chunk.  Look the value up by location, which
                  bounds-checks it as the two lookups below already did. */
-              node_fwd[0] = forward_dft_value(fwd_chunk, fwd_chunk->dft, gv_fwd, gv, ip, nf, f_i);
+              node_fwd[0] = forward_dft_value(fwd_chunk, fwd_values, gv_fwd, gv, ip, nf, f_i);
             }
             else {
               num_nodes = 2;
@@ -3493,9 +3492,9 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                 ptrdiff_t i1 = gv_fwd.index(forward_c, pl[nd]);
                 ptrdiff_t i2 = gv_fwd.index(forward_c, pr[nd]);
                 std::complex<meep::realnum> f1 =
-                    ((i1 >= fwd_chunk->N) || (i1 < 0)) ? 0 : fwd_chunk->dft[nf * i1 + f_i];
+                    ((i1 >= fwd_chunk->N) || (i1 < 0)) ? 0 : fwd_values[nf * i1 + f_i];
                 std::complex<meep::realnum> f2 =
-                    ((i2 >= fwd_chunk->N) || (i2 < 0)) ? 0 : fwd_chunk->dft[nf * i2 + f_i];
+                    ((i2 >= fwd_chunk->N) || (i2 < 0)) ? 0 : fwd_values[nf * i2 + f_i];
                 node_fwd[nd] = std::complex<meep::realnum>(0.5, 0) * (f1 + f2);
                 node_pos[nd] = gv[(pl[nd] + pr[nd]) / 2];
               }
@@ -3742,11 +3741,6 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
             then we need to make sure we correctly account
             for that here */
             if (!md->trivial) adj *= cond_cmp(adjoint_c, p, frequencies[f_i], geps);
-            if (getenv("MEEP_ADJDBG")) {
-              extern double _adjdbg_sum[2]; extern long _adjdbg_n[2];
-              int b = adj_chunk->sn ? 1 : 0;
-              _adjdbg_sum[b] += std::abs(adj); _adjdbg_n[b]++;
-            }
 
             /**************************************/
             /*            Main Routine            */
@@ -3822,12 +3816,6 @@ void material_grids_addgradient(double *v, size_t ng, size_t nf,
   /* ------------------------------------------------------------ */
   // Broadcast results
   /* ------------------------------------------------------------ */
-  if (getenv("MEEP_ADJDBG")) {
-    extern double _adjdbg_sum[2]; extern long _adjdbg_n[2];
-    master_printf("ADJDBG sn0 n=%ld sum|adj|=%.8e | sn1 n=%ld sum|adj|=%.8e\n",
-                  _adjdbg_n[0], _adjdbg_sum[0], _adjdbg_n[1], _adjdbg_sum[1]);
-    _adjdbg_sum[0] = _adjdbg_sum[1] = 0; _adjdbg_n[0] = _adjdbg_n[1] = 0;
-  }
   meep::sum_to_all(v_local, v, ng * nf);
 
   /* ------------------------------------------------------------ */

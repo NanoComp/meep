@@ -574,11 +574,20 @@ static PyObject *_dft_pade_error_from_chunks(const std::vector<meep::dft_chunk *
     samples = meep::min_to_all(enabled ? samples : std::numeric_limits<int>::max());
     invalid_fits = meep::sum_to_all(invalid_fits);
     generation = meep::max_to_all(generation);
+    // one reduction for all four sums rather than four per frequency
+    std::vector<double> local(4 * nfreq), global(4 * nfreq);
     for (size_t i = 0; i < nfreq; ++i) {
-        correction2[i] = meep::sum_to_all(correction2[i]);
-        estimate2[i] = meep::sum_to_all(estimate2[i]);
-        drift2[i] = meep::sum_to_all(drift2[i]);
-        magnitude2[i] = meep::sum_to_all(magnitude2[i]);
+        local[i] = correction2[i];
+        local[nfreq + i] = estimate2[i];
+        local[2 * nfreq + i] = drift2[i];
+        local[3 * nfreq + i] = magnitude2[i];
+    }
+    meep::sum_to_all(local.data(), global.data(), int(4 * nfreq));
+    for (size_t i = 0; i < nfreq; ++i) {
+        correction2[i] = global[i];
+        estimate2[i] = global[nfreq + i];
+        drift2[i] = global[2 * nfreq + i];
+        magnitude2[i] = global[3 * nfreq + i];
         const double denom = magnitude2[i] > 0 ? magnitude2[i]
                                                : std::numeric_limits<double>::min();
         relative_correction[i] = std::sqrt(correction2[i] / denom);

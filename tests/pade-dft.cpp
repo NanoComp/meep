@@ -25,8 +25,8 @@ static void require_close(std::complex<double> actual, std::complex<double> expe
                           double relative_tolerance, const char *message) {
   const double scale = std::max(1.0, std::abs(expected));
   if (!(std::abs(actual - expected) <= relative_tolerance * scale))
-    meep::abort("Padé DFT test failed: %s (actual %.16g%+.16gi, expected %.16g%+.16gi)",
-                message, actual.real(), actual.imag(), expected.real(), expected.imag());
+    meep::abort("Padé DFT test failed: %s (actual %.16g%+.16gi, expected %.16g%+.16gi)", message,
+                actual.real(), actual.imag(), expected.real(), expected.imag());
 }
 
 static size_t local_chunk_count(dft_chunk *chunks) {
@@ -51,8 +51,8 @@ static void append_sample(dft_chunk *chunks, double value, double time) {
     cur->update_dft(time);
 }
 
-static double modal_sample(const std::vector<double> &amplitudes,
-                           const std::vector<double> &ratios, size_t n) {
+static double modal_sample(const std::vector<double> &amplitudes, const std::vector<double> &ratios,
+                           size_t n) {
   double value = 0.0;
   for (size_t i = 0; i < amplitudes.size(); ++i)
     value += amplitudes[i] * std::pow(ratios[i], double(n));
@@ -60,8 +60,8 @@ static double modal_sample(const std::vector<double> &amplitudes,
 }
 
 static std::complex<double> modal_sum(const std::vector<double> &amplitudes,
-                                      const std::vector<double> &ratios,
-                                      std::complex<double> z, size_t count) {
+                                      const std::vector<double> &ratios, std::complex<double> z,
+                                      size_t count) {
   std::complex<double> sum = 0.0;
   for (size_t i = 0; i < amplitudes.size(); ++i) {
     const std::complex<double> rz = ratios[i] * z;
@@ -166,21 +166,23 @@ static void test_diagnostic_checkpoint_isolation() {
     const dft_pade_error first = cur->get_pade_error();
     require(std::isinf(first.drift[0]), "first diagnostic unexpectedly had a drift baseline");
 
-    append_sample(cur, 2.0 * std::pow(0.8, double(history_size)),
-                  0.5 + history_size * f.dt);
+    append_sample(cur, 2.0 * std::pow(0.8, double(history_size)), 0.5 + history_size * f.dt);
     const std::complex<double> intervening(cur->dft_values()[0]);
     append_sample(cur, 0.25 * std::pow(0.8, double(history_size + 1)),
                   0.5 + (history_size + 1) * f.dt);
     const std::complex<double> current(cur->dft_values()[0]);
-    const double expected = std::abs(current - checkpoint) /
-                            std::max(std::abs(current), std::abs(checkpoint));
-    const double adjacent = std::abs(current - intervening) /
-                            std::max(std::abs(current), std::abs(intervening));
+    const double expected =
+        std::abs(current - checkpoint) / std::max(std::abs(current), std::abs(checkpoint));
+    const double adjacent =
+        std::abs(current - intervening) / std::max(std::abs(current), std::abs(intervening));
     const dft_pade_error second = cur->get_pade_error();
     require(std::abs(second.drift[0] - expected) <= 1e-10 * std::max(1.0, expected),
             "ordinary corrected-value reads advanced the diagnostic baseline");
-    require(std::abs(expected - adjacent) > 1e-8,
-            "diagnostic isolation fixture did not distinguish adjacent generations");
+    // the appended samples move the corrected value by ~1e-8, below
+    // single-precision resolution, so only double precision can tell
+    if (sizeof(realnum) == sizeof(double))
+      require(std::abs(expected - adjacent) > 1e-8,
+              "diagnostic isolation fixture did not distinguish adjacent generations");
     require(cur->get_pade_error().drift[0] == second.drift[0],
             "repeated diagnostics changed the same-generation baseline");
     break;
@@ -198,10 +200,10 @@ static void test_lifecycle_and_bounded_storage() {
   f.add_point_source(Ex, gaussian_src_time(frequency, 0.4), vec(0.0), 1.0);
 
   component components[] = {Ex};
-  dft_fields enabled_a = f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false,
-                                          history_size);
-  dft_fields enabled_b = f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false,
-                                          history_size);
+  dft_fields enabled_a =
+      f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false, history_size);
+  dft_fields enabled_b =
+      f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false, history_size);
   dft_fields disabled = f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false, 0);
 
   for (size_t step = 0; step < 3 * history_size; ++step)
@@ -232,10 +234,10 @@ static void test_lifecycle_and_bounded_storage() {
               "scaling materialized a corrected prediction");
   }
 
-  dft_fields enabled_c = f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false,
-                                          history_size);
-  dft_fields enabled_d = f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false,
-                                          history_size);
+  dft_fields enabled_c =
+      f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false, history_size);
+  dft_fields enabled_d =
+      f.add_dft_fields(components, 1, f.v, &frequency, 1, true, 1, false, history_size);
   for (size_t step = 0; step < history_size; ++step)
     f.step();
   if (enabled_c.chunks && enabled_d.chunks) {
@@ -262,10 +264,12 @@ static void test_exported_overloads_link() {
   typedef dft_chunk *(fields::*new_add_dft)(component, const volume &, const double *, size_t, bool,
                                             std::complex<double>, dft_chunk *, bool,
                                             std::complex<double>, bool, int, int, bool, size_t);
-  typedef dft_flux (fields::*old_flux)(const volume_list *, const double *, size_t, bool, bool, int);
+  typedef dft_flux (fields::*old_flux)(const volume_list *, const double *, size_t, bool, bool,
+                                       int);
   typedef dft_flux (fields::*new_flux)(const volume_list *, const double *, size_t, bool, bool, int,
                                        size_t);
-  typedef dft_flux (fields::*old_mode)(direction, const volume &, const double *, size_t, bool, int);
+  typedef dft_flux (fields::*old_mode)(direction, const volume &, const double *, size_t, bool,
+                                       int);
   typedef dft_flux (fields::*new_mode)(direction, const volume &, const double *, size_t, bool, int,
                                        size_t);
   typedef dft_fields (fields::*old_fields)(component *, int, const volume, const double *, size_t,
@@ -273,7 +277,8 @@ static void test_exported_overloads_link() {
   typedef dft_fields (fields::*new_fields)(component *, int, const volume, const double *, size_t,
                                            bool, int, bool, size_t);
   typedef dft_energy (fields::*old_energy)(const volume_list *, const double *, size_t, int);
-  typedef dft_energy (fields::*new_energy)(const volume_list *, const double *, size_t, int, size_t);
+  typedef dft_energy (fields::*new_energy)(const volume_list *, const double *, size_t, int,
+                                           size_t);
   typedef dft_force (fields::*old_force)(const volume_list *, const double *, size_t, int);
   typedef dft_force (fields::*new_force)(const volume_list *, const double *, size_t, int, size_t);
   typedef dft_near2far (fields::*old_n2f)(const volume_list *, const double *, size_t, int, int);
@@ -308,7 +313,10 @@ int main(int argc, char **argv) {
   // Magnetic monitors are sampled half a Yee timestep before electric ones.
   test_analytic_tail(Hy, {0.9}, {0.68}, 8, 12, 0.13, 1.5 - 0.5 / 20.0, 1);
   test_rejected_tail(1.0 - 1.0e-10, "near-pole fit did not fail closed to the raw DFT");
-  test_rejected_tail(1.0 - 1.0e-7, "unstable amplified tail did not fail closed to the raw DFT");
+  // Amplifying a history of 8 samples past the 1e6 limit takes a decay within
+  // ~1e-7 of one, which single-precision storage cannot resolve.
+  if (sizeof(realnum) == sizeof(double))
+    test_rejected_tail(1.0 - 1.0e-7, "unstable amplified tail did not fail closed to the raw DFT");
   test_diagnostic_checkpoint_isolation();
   test_lifecycle_and_bounded_storage();
   return 0;

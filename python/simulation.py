@@ -6105,13 +6105,42 @@ def stop_when_dft_pade_converged(
     confirmation=None,
     monitor_only=False,
 ):
-    """Stop after two separated, valid Padé convergence checks.
+    """
+    Return a `condition` function, suitable for passing to `Simulation.run` as the
+    `until_after_sources` parameter, that stops once the Padé-extrapolated DFTs of
+    `monitors` have converged.
 
-    This condition is intended for finite-duration-source adjoint runs. ``monitors``
-    may be nested and must contain chunk-backed DFT monitor objects. The existing raw
-    DFT-decay criterion remains active as a fallback. ``confirmation``, when provided,
-    is called at field-level convergence candidates and must return the objective values
-    and derivatives that should also be stable.
+    Each monitor must have been created with `pade_samples` (at least four). Every
+    `ceil(pade_samples/2)` new DFT samples, after a full history has been collected
+    since the sources turned off, the condition compares two estimates of the
+    extrapolated DFT -- one fitted to the whole retained history and one to its most
+    recent half -- and the extrapolated DFT against its value at the previous check.
+    It stops once both relative differences are at most `tol`, at two consecutive
+    checks, with no rejected fits. The differences are combined across monitors,
+    frequencies and processes weighted by field magnitude, so a component that is
+    zero by symmetry cannot veto convergence.
+
+    The ordinary `stop_when_dft_decayed(raw_decay_tol)` criterion remains active as a
+    fallback. Sources must have finite duration.
+
+    Args:
+        monitors: a DFT monitor (from `add_dft_fields`, `add_flux`, `add_mode_monitor`,
+          `add_force`, `add_energy` or `add_near2far`), or a possibly nested list of them.
+        tol: relative convergence tolerance.
+        pade_samples: the `pade_samples` the monitors were created with.
+        raw_decay_tol: tolerance of the fallback raw DFT-decay criterion (default: 1e-11).
+        minimum_run_time: minimum simulation time before stopping (default: 0).
+        maximum_run_time: maximum simulation time before stopping (default: None).
+        confirmation: optional callable, evaluated whenever the monitors pass, returning
+          derived quantities (e.g. objective values and their derivatives) that must also
+          agree to within `tol` between two passing checks before the run stops.
+        monitor_only: records that only the monitors, not any derived quantity, were
+          checked (default: False).
+
+    The returned function has a `finalize(sim)` method, to call after the run, which
+    returns a dict of diagnostics: `exit_reason` (`"pade_converged"`,
+    `"raw_decay_fallback"` or `"maximum_time"`), the simulated time and timesteps, and
+    the convergence measures at the final check.
     """
     pade_samples = _validate_pade_samples(pade_samples)
     if pade_samples == 0:

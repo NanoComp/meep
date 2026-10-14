@@ -120,79 +120,111 @@ bool solve_pade_system(std::vector<pade_complex> &A, std::vector<pade_complex> &
   return true;
 }
 
-// Evaluate the infinite Padé sum and remove the samples which have already
-// been accumulated by the ordinary DFT.  If the nominal near-diagonal fit is
-// rank deficient, progressively lower denominator orders are tried.  This is
-// essential for exact low-mode signals, whose Hankel systems are intentionally
-// low rank.
-bool pade_future_tail(const std::vector<pade_complex> &a, double omega, double t0,
-                      double sample_period, pade_complex &tail) {
-  tail = 0.0;
-  const size_t L = a.size();
-  if (L < 2 || !(sample_period > 0.0) || !std::isfinite(sample_period) || !std::isfinite(t0))
-    return false;
-
-  double signal_scale = 0.0;
-  for (size_t i = 0; i < L; ++i) {
-    if (!finite_complex(a[i])) return false;
-    signal_scale = std::max(signal_scale, std::abs(a[i]));
+// The Padé approximants of one point's history, for evaluating its future tail
+// at any number of frequencies.  The Hankel system depends only on the history,
+// so each denominator order is solved at most once per point and only the
+// evaluation is repeated per frequency.
+class pade_fitter {
+public:
+  explicit pade_fitter(const std::vector<pade_complex> &a)
+      : a(a), fits(a.size() / 2 + 1), attempted(a.size() / 2 + 1, false), signal_scale(0.0),
+        history_scale(0.0), finite(true) {
+    for (size_t i = 0; i < a.size(); ++i) {
+      if (!finite_complex(a[i])) finite = false;
+      signal_scale = std::max(signal_scale, std::abs(a[i]));
+      history_scale += std::abs(a[i]);
+    }
   }
-  // A zero history has an exactly zero future tail.  Treating it as a valid
-  // fit avoids spurious singular-fit failures after a field has fully decayed.
-  if (signal_scale <= std::numeric_limits<double>::min()) return true;
 
-  const pade_complex z = std::polar(1.0, omega * sample_period);
-  for (size_t q = L / 2; q != 0; --q) {
-    const size_t p = L - q - 1;
-    std::vector<pade_complex> A(q * q), rhs(q);
-    for (size_t row = 0; row < q; ++row) {
-      const size_t k = p + 1 + row;
-      rhs[row] = -a[k];
-      for (size_t j = 1; j <= q; ++j)
-        A[row * q + (j - 1)] = a[k - j];
-    }
-    if (!solve_pade_system(A, rhs, q)) continue;
+  // Evaluate the infinite Padé sum and remove the samples which have already
+  // been accumulated by the ordinary DFT.  If the nominal near-diagonal fit is
+  // rank deficient, or is rejected at this frequency, progressively lower
+  // denominator orders are tried.  This is essential for exact low-mode
+  // signals, whose Hankel systems are intentionally low rank.
+  bool tail(double omega, double t0, double sample_period, pade_complex &result) {
+    result = 0.0;
+    const size_t L = a.size();
+    if (L < 2 || !(sample_period > 0.0) || !std::isfinite(sample_period) || !std::isfinite(t0) ||
+        !finite)
+      return false;
+    // A zero history has an exactly zero future tail.  Treating it as a valid
+    // fit avoids spurious singular-fit failures after a field has fully decayed.
+    if (signal_scale <= std::numeric_limits<double>::min()) return true;
 
-    std::vector<pade_complex> Q(q + 1, 0.0);
-    Q[0] = 1.0;
-    for (size_t j = 1; j <= q; ++j)
-      Q[j] = rhs[j - 1];
-    std::vector<pade_complex> P(p + 1, 0.0);
-    for (size_t k = 0; k <= p; ++k)
-      for (size_t j = 0; j <= std::min(k, q); ++j)
-        P[k] += Q[j] * a[k - j];
-
-    pade_complex numerator = P[p];
-    for (size_t k = p; k-- > 0;)
-      numerator = numerator * z + P[k];
-    pade_complex denominator = Q[q];
-    double denominator_scale = std::abs(Q[q]);
-    for (size_t k = q; k-- > 0;) {
-      denominator = denominator * z + Q[k];
-      denominator_scale += std::abs(Q[k]);
-    }
-    const double denominator_threshold =
-        std::max(128.0 * std::numeric_limits<double>::epsilon(), pade_min_relative_denominator) *
-        denominator_scale;
-    if (!(std::abs(denominator) > denominator_threshold) || !finite_complex(denominator)) continue;
-
+    const pade_complex z = std::polar(1.0, omega * sample_period);
     pade_complex partial = a[L - 1];
     for (size_t k = L - 1; k-- > 0;)
       partial = partial * z + a[k];
-    const pade_complex candidate =
-        std::polar(1.0, omega * t0) * (numerator / denominator - partial);
-    double history_scale = 0.0;
-    for (size_t k = 0; k < L; ++k)
-      history_scale += std::abs(a[k]);
-    const double tail_amplification = std::abs(candidate) / history_scale;
-    if (!std::isfinite(history_scale) || !finite_complex(candidate) ||
-        !(tail_amplification <= pade_max_tail_amplification))
-      continue;
-    tail = candidate;
-    return true;
+
+    for (size_t q = L / 2; q != 0; --q) {
+      const fit *f = solve(q);
+      if (!f) continue;
+      const size_t p = L - q - 1;
+      pade_complex numerator = f->P[p];
+      for (size_t k = p; k-- > 0;)
+        numerator = numerator * z + f->P[k];
+      pade_complex denominator = f->Q[q];
+      double denominator_scale = std::abs(f->Q[q]);
+      for (size_t k = q; k-- > 0;) {
+        denominator = denominator * z + f->Q[k];
+        denominator_scale += std::abs(f->Q[k]);
+      }
+      const double denominator_threshold =
+          std::max(128.0 * std::numeric_limits<double>::epsilon(), pade_min_relative_denominator) *
+          denominator_scale;
+      if (!(std::abs(denominator) > denominator_threshold) || !finite_complex(denominator))
+        continue;
+
+      const pade_complex candidate =
+          std::polar(1.0, omega * t0) * (numerator / denominator - partial);
+      const double tail_amplification = std::abs(candidate) / history_scale;
+      if (!std::isfinite(history_scale) || !finite_complex(candidate) ||
+          !(tail_amplification <= pade_max_tail_amplification))
+        continue;
+      result = candidate;
+      return true;
+    }
+    return false;
   }
-  return false;
-}
+
+private:
+  struct fit {
+    std::vector<pade_complex> P, Q;
+  };
+
+  // the order-q approximant, or NULL if its Hankel system is singular
+  const fit *solve(size_t q) {
+    if (!attempted[q]) {
+      attempted[q] = true;
+      const size_t L = a.size(), p = L - q - 1;
+      std::vector<pade_complex> A(q * q), rhs(q);
+      for (size_t row = 0; row < q; ++row) {
+        const size_t k = p + 1 + row;
+        rhs[row] = -a[k];
+        for (size_t j = 1; j <= q; ++j)
+          A[row * q + (j - 1)] = a[k - j];
+      }
+      if (solve_pade_system(A, rhs, q)) {
+        fit &f = fits[q];
+        f.Q.assign(q + 1, 0.0);
+        f.Q[0] = 1.0;
+        for (size_t j = 1; j <= q; ++j)
+          f.Q[j] = rhs[j - 1];
+        f.P.assign(p + 1, 0.0);
+        for (size_t k = 0; k <= p; ++k)
+          for (size_t j = 0; j <= std::min(k, q); ++j)
+            f.P[k] += f.Q[j] * a[k - j];
+      }
+    }
+    return fits[q].Q.empty() ? NULL : &fits[q];
+  }
+
+  const std::vector<pade_complex> &a;
+  std::vector<fit> fits;
+  std::vector<bool> attempted;
+  double signal_scale, history_scale;
+  bool finite;
+};
 
 double relative_norm(double numerator2, double denominator2) {
   if (numerator2 == 0.0) return 0.0;
@@ -562,6 +594,8 @@ void dft_chunk::prepare_dft_values() const {
   info.relative_correction.assign(Nomega, 0.0);
   info.relative_estimate.assign(Nomega, std::numeric_limits<double>::infinity());
   info.drift.assign(Nomega, std::numeric_limits<double>::infinity());
+  // no drift until get_pade_error has a previous snapshot to compare against
+  info.drift2.assign(Nomega, std::numeric_limits<double>::infinity());
   if (!info.ready) {
     pade_error_cache = info;
     pade_cached_generation = pade_generation;
@@ -582,13 +616,12 @@ void dft_chunk::prepare_dft_values() const {
       full[j] = pade_complex(pade_history[point * pade_samples + ring_index]);
     }
     std::copy(full.end() - half_count, full.end(), half.begin());
+    pade_fitter full_fit(full), half_fit(half);
 
     for (size_t i = 0; i < Nomega; ++i) {
       pade_complex full_tail, half_tail;
-      const bool full_valid =
-          pade_future_tail(full, omega[i], full_t0, pade_sample_period, full_tail);
-      const bool half_valid =
-          pade_future_tail(half, omega[i], half_t0, pade_sample_period, half_tail);
+      const bool full_valid = full_fit.tail(omega[i], full_t0, pade_sample_period, full_tail);
+      const bool half_valid = half_fit.tail(omega[i], half_t0, pade_sample_period, half_tail);
       const size_t idx = point * Nomega + i;
       if (!full_valid) {
         ++info.invalid_fits;
@@ -2153,6 +2186,8 @@ void dft_fields::fourier_sourcegradient(const volume &where, component c, fields
   std::vector<std::complex<double> > local(Nfreq * reduced_grid_size, std::complex<double>(0, 0));
 
   for (dft_chunk *fdc = chunks; fdc; fdc = fdc->next_in_dft) {
+    // Padé-corrected when the monitor extrapolates
+    const std::complex<realnum> *dft_vals = fdc->dft_values();
     assert(Nfreq == fdc->omega.size());
     vec rshift(fdc->shift * (0.5 * fdc->fc->gv.inva));
 
@@ -2191,7 +2226,7 @@ void dft_fields::fourier_sourcegradient(const volume &where, component c, fields
       w /= fdc->S.multiplicity(ix0);
 
       for (size_t i = 0; i < Nfreq; ++i) {
-        std::complex<realnum> EH = fdc->dft[Nfreq * idx_dft + i];
+        std::complex<realnum> EH = dft_vals[Nfreq * idx_dft + i];
         local[reduced_grid_size * i + idx_1d] +=
             w * std::complex<double>(double(EH.real()), double(EH.imag()));
       }
@@ -2248,6 +2283,8 @@ void dft_fields::volume_source_gradient(const volume &where, component c, fields
   std::vector<std::complex<double> > local(Nfreq * reduced_grid_size, std::complex<double>(0, 0));
 
   for (dft_chunk *fdc = chunks; fdc; fdc = fdc->next_in_dft) {
+    // Padé-corrected when the monitor extrapolates
+    const std::complex<realnum> *dft_vals = fdc->dft_values();
     component cc = component(fdc->c);
     direction cd = component_direction(cc);
     grid_volume gv_sub = f.gv.subvolume(fdc->is, fdc->ie, cc);
@@ -2290,7 +2327,7 @@ void dft_fields::volume_source_gradient(const volume &where, component c, fields
         w /= fdc->fc->s->chi1inv[cc - Bx + Hx][cd][idx];
 
       for (size_t i = 0; i < Nfreq; ++i) {
-        std::complex<realnum> EH = fdc->dft[Nfreq * idx + i];
+        std::complex<realnum> EH = dft_vals[Nfreq * idx + i];
         local[reduced_grid_size * i + idx_1d] +=
             w * std::complex<double>(double(EH.real()), double(EH.imag()));
       }

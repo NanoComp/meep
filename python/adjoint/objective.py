@@ -117,6 +117,17 @@ class ObjectiveQuantity(abc.ABC):
                 "evaluation of an objective quantity."
             )
 
+    def _adj_src_duration(self, src):
+        """How much of the synthesized source `_adj_src_scale` and `_adj_src_phase` transform.
+
+        A shortened Padé run must not change the adjoint-source normalization, so
+        with Padé it is the pulse's whole support; without, the historical
+        interval of the elapsed run is kept.
+        """
+        if self._pade_samples:
+            return src.start_time + 2 * src.width * src.cutoff
+        return self.sim.meep_time()
+
     def _adj_src_phase(self, src=None, y=None, dt=None):
         """The unit-modulus phase `_adj_src_scale` divides out of an adjoint source.
 
@@ -130,7 +141,7 @@ class ObjectiveQuantity(abc.ABC):
         if src is None:
             src = self._create_time_profile()
         if y is None:
-            T = self.sim.meep_time()
+            T = self._adj_src_duration(src)
             y = np.array([src.swigobj.current(t, dt) for t in np.arange(0, T, dt)])
 
         src_center_dtft = (
@@ -154,13 +165,7 @@ class ObjectiveQuantity(abc.ABC):
         """Calculates the scale for the adjoint sources."""
         dt = self.sim.fields.dt
         src = self._create_time_profile()
-        # A shortened Padé run must not change adjoint-source normalization.
-        # Preserve the historical integration interval when Padé is disabled.
-        T = (
-            src.start_time + 2 * src.width * src.cutoff
-            if self._pade_samples
-            else self.sim.meep_time()
-        )
+        T = self._adj_src_duration(src)
 
         if include_resolution:
             num_dims = self.sim._infer_dimensions(self.sim.k_point)

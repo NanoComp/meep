@@ -378,9 +378,15 @@ class MeepJaxWrapper:
             self.simulation,
             self.differentiable_sources,
             self.frequencies,
+            pade_samples=self.pade_samples,
         )
         self.simulation.init_sim()
-        self._run_simulation(adj_design_region_monitors, "adjoint_monitor_only")
+        # the source gradients read their own monitors, so the run has to wait
+        # for those as well as the design region's
+        self._run_simulation(
+            adj_design_region_monitors + list(self.adj_source_monitors),
+            "adjoint_monitor_only",
+        )
 
         return adj_design_region_monitors
 
