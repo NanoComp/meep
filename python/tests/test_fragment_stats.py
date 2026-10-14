@@ -237,9 +237,7 @@ class TestFragmentStats(unittest.TestCase):
         # 8 bounded history entries and two possible 5-frequency diagnostic
         # caches, independently of the eventual simulation duration.
         self.assertEqual(raw.num_dft_pixels, 4000)
-        self.assertEqual(
-            pade.num_dft_pixels, raw.num_dft_pixels * (8 + 3 * 5) // 5
-        )
+        self.assertEqual(pade.num_dft_pixels, raw.num_dft_pixels * (8 + 3 * 5) // 5)
 
     def _test_2d(self, sym, pml=[]):
         # A 30 x 30 cell, with a 10 x 10 block in the middle

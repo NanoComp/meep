@@ -58,8 +58,7 @@ struct dft_data {
   std::vector<meep::volume> vols;
 
   dft_data(int freqs, int components, std::vector<meep::volume> volumes);
-  dft_data(int freqs, int components, std::vector<meep::volume> volumes,
-           size_t pade_samples);
+  dft_data(int freqs, int components, std::vector<meep::volume> volumes, size_t pade_samples);
 };
 
 struct fragment_stats {
