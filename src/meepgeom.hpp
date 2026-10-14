@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <array>
+#include <mutex>
+#include <unordered_map>
 #include <vector>
 
 #include "material_data.hpp"
@@ -241,6 +244,27 @@ public:
 
   virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
   virtual void eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v);
+
+  /* What eff_sigma_row needs to know about a pixel: whether it straddles an
+     interface between two non-variable materials and, if so, the filling
+     fraction and the two materials.  None of it depends on the pole, so it is
+     computed once per pixel and reused for every susceptibility, instead of
+     repeating the adaptive overlap integral per pole.  Only pixels that
+     straddle an interface are kept, so the cache stays the size of the
+     boundary rather than of the cell.  Cleared around each
+     add_susceptibilities() call. */
+#ifndef SWIG
+  struct sigma_pixel {
+    bool smooth;
+    double fill;
+    material_type front, behind;
+  };
+  struct volume_key_hash {
+    size_t operator()(const std::array<double, 6> &k) const;
+  };
+  std::unordered_map<std::array<double, 6>, sigma_pixel, volume_key_hash> sigma_pixel_cache;
+  std::mutex sigma_pixel_mutex; // the sigma loops run under OpenMP
+#endif
   void material_sigma_row(meep::component c, double sigrow[3], material_type mat);
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);

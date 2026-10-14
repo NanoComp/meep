@@ -1782,26 +1782,46 @@ void geom_epsilon::eff_sigma_row(meep::component c, double sigrow[3], const meep
       pole.bias.x != 0 || pole.bias.y != 0 || pole.bias.z != 0)
     return sigma_row(c, sigrow, v.center());
 
-  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind))
-    return sigma_row(c, sigrow, v.center());
-
-  if (material_type_equal(mat, mat_behind) || is_variable(mat) || is_variable(mat_behind)) {
-    material_gc(mat);
-    return sigma_row(c, sigrow, v.center());
+  const meep::vec lo = v.get_min_corner(), hi = v.get_max_corner();
+  const std::array<double, 6> key = {lo.x(), lo.y(), lo.z(), hi.x(), hi.y(), hi.z()};
+  sigma_pixel px;
+  bool cached;
+  {
+    std::lock_guard<std::mutex> lock(sigma_pixel_mutex);
+    auto it = sigma_pixel_cache.find(key);
+    cached = it != sigma_pixel_cache.end();
+    if (cached) px = it->second;
+  }
+  if (!cached) {
+    if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind))
+      return sigma_row(c, sigrow, v.center());
+    if (material_type_equal(mat, mat_behind) || is_variable(mat) || is_variable(mat_behind)) {
+      material_gc(mat);
+      return sigma_row(c, sigrow, v.center());
+    }
+    geom_box pixel = gv2box(v);
+    pixel.low = vector3_minus(pixel.low, shiftby);
+    pixel.high = vector3_minus(pixel.high, shiftby);
+    px.smooth = true;
+    px.fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+    px.front = mat;
+    px.behind = mat_behind;
+    std::lock_guard<std::mutex> lock(sigma_pixel_mutex);
+    sigma_pixel_cache.emplace(key, px);
   }
 
-  geom_box pixel = gv2box(v);
-  pixel.low = vector3_minus(pixel.low, shiftby);
-  pixel.high = vector3_minus(pixel.high, shiftby);
-  double fill = box_overlap_with_object(pixel, *o, tol, maxeval);
-
   double front[3], behind[3];
-  material_sigma_row(c, front, mat);
-  material_sigma_row(c, behind, mat_behind);
+  material_sigma_row(c, front, px.front);
+  material_sigma_row(c, behind, px.behind);
   for (int i = 0; i < 3; ++i)
-    sigrow[i] = fill * front[i] + (1 - fill) * behind[i];
+    sigrow[i] = px.fill * front[i] + (1 - px.fill) * behind[i];
+}
 
-  material_gc(mat);
+size_t geom_epsilon::volume_key_hash::operator()(const std::array<double, 6> &k) const {
+  size_t h = 0;
+  for (double x : k)
+    h = h * 1000003 ^ std::hash<double>()(x);
+  return h;
 }
 
 void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::vec &r) {
@@ -1968,6 +1988,7 @@ void geom_epsilon::add_susceptibilities(meep::structure *s) {
 
 void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s) {
   pol *pols = 0;
+  sigma_pixel_cache.clear();
   // construct a list of the unique susceptibilities in the geometry:
   for (int i = 0; i < geometry.num_items; ++i)
     pols = add_material_pols(pols, geometry.items[i].material, ft);
@@ -2027,6 +2048,8 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
       s->add_susceptibility(*this, ft, *sus);
       delete sus;
     }
+    // keep cached pixels only for the poles of this call (and this structure)
+    if (!p->next) sigma_pixel_cache.clear();
   }
   current_pol = NULL;
 
