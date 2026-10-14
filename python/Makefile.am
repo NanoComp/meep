@@ -35,6 +35,7 @@ ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_adjoint_utils.py          \
     $(TEST_DIR)/test_adjoint_cyl.py            \
     $(TEST_DIR)/test_adjoint_symmetry.py       \
+    $(TEST_DIR)/test_adjoint_mode_symmetry.py  \
     $(TEST_DIR)/test_adjoint_protocol.py       \
     $(TEST_DIR)/test_angular_spectrum.py       \
     $(TEST_DIR)/test_geometry_gradient.py      \
@@ -51,7 +52,6 @@ TESTS =                                        \
     $(TEST_DIR)/test_adjoint_chunks.py         \
     $(TEST_DIR)/test_adjoint_symmetric_grids.py \
     $(TEST_DIR)/test_adjoint_protocol.py       \
-    $(TEST_DIR)/test_adjoint_mode_symmetry.py \
     $(TEST_DIR)/test_antenna_radiation.py      \
     $(TEST_DIR)/test_array_metadata.py         \
     $(TEST_DIR)/test_bend_flux.py              \
