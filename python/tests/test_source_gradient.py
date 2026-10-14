@@ -26,6 +26,13 @@ CELL = mp.Vector3(6, 4)
 RHO = 0.5 * np.ones(64)
 FD_STEP = 1e-4
 
+# Relative tolerances for comparisons against a finite difference. In single
+# precision the finite difference itself carries ~0.1-3% roundoff (a 1e-4 step
+# on an objective of order one, at float resolution), so only gross errors can
+# be resolved there.
+FD_TOL = 5e-2 if mp.is_single_precision() else 1e-5
+FD_TOL_BEAM = 1e-1 if mp.is_single_precision() else 1e-3
+
 
 def _design_region(sim):
     """An inert design region; OptimizationProblem requires one."""
@@ -309,7 +316,7 @@ class TestSourceGradient(unittest.TestCase):
                 adjoint, reference = self._amplitude_case(**kwargs)
                 self.assertLess(
                     abs(adjoint - reference) / abs(reference),
-                    1e-5,
+                    FD_TOL,
                     f"{label}: adjoint {adjoint} vs finite difference {reference}",
                 )
 
@@ -353,7 +360,7 @@ class TestSourceGradient(unittest.TestCase):
                 reference = _complex_fd(evaluate, perturb)
                 self.assertLess(
                     abs(adjoint[j] - reference) / abs(reference),
-                    1e-5,
+                    FD_TOL,
                     f"entry {j}: adjoint {adjoint[j]} vs {reference}",
                 )
 
@@ -396,7 +403,7 @@ class TestAmpDataProfile(unittest.TestCase):
             lambda a: self._evaluate(data, a), lambda d: amplitude + d
         )
         adjoint = complex(np.ravel(grad["sheet"]["amplitude"])[0])
-        self.assertLess(abs(adjoint - reference) / abs(reference), 1e-5)
+        self.assertLess(abs(adjoint - reference) / abs(reference), FD_TOL)
 
         j = self.N // 2
 
@@ -407,7 +414,7 @@ class TestAmpDataProfile(unittest.TestCase):
 
         reference = _complex_fd(lambda d: self._evaluate(d, amplitude), perturb)
         adjoint = complex(np.ravel(grad["sheet"]["amp_data"])[j])
-        self.assertLess(abs(adjoint - reference) / abs(reference), 1e-5)
+        self.assertLess(abs(adjoint - reference) / abs(reference), FD_TOL)
 
 
 class TestPMLCheck(unittest.TestCase):
@@ -552,7 +559,7 @@ class TestGaussianBeamParameters(unittest.TestCase):
                 )
                 self.assertLess(
                     abs(adjoint - reference) / max(abs(reference), 1e-12),
-                    1e-3,
+                    FD_TOL_BEAM,
                     f"{name}[{index}]: adjoint {adjoint} vs {reference}",
                 )
 
@@ -578,7 +585,8 @@ class TestGaussianBeamParameters(unittest.TestCase):
             self._value(beam_kdir=base + step) - self._value(beam_kdir=base - step)
         ) / (2 * FD_STEP)
         self.assertLess(
-            abs(float(np.dot(adjoint, tangent)) - reference) / abs(reference), 1e-3
+            abs(float(np.dot(adjoint, tangent)) - reference) / abs(reference),
+            FD_TOL_BEAM,
         )
 
 
@@ -654,7 +662,7 @@ class TestJaxRoundTrip(unittest.TestCase):
                 )
                 self.assertLess(
                     abs(adjoint[j] - reference) / abs(reference),
-                    1e-5,
+                    FD_TOL,
                     f"point {j}: jax.grad {adjoint[j]} vs {reference}",
                 )
 
