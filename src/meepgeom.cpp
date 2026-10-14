@@ -3121,7 +3121,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
             IVEC_LOOP_ILOC(gv_adj, ip);
             IVEC_LOOP_LOC(gv_adj, p);
             std::complex<meep::realnum> adj = adj_chunk->dft[nf * idx_adj + f_i];
-            if (adj == 0.0) continue;
+            if (adj == meep::realnum(0)) continue;
 
             /* The smoothed tensor is diagonal in Cartesian axes only where the
                interface normal lies along an axis, which for a block is true on
@@ -3165,7 +3165,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
 
             for (int node = 0; node < num_nodes; node++) {
               fwd = node_fwd[node];
-              if (fwd == 0.0) continue;
+              if (fwd == meep::realnum(0)) continue;
               const meep::vec p_node = node_pos[node];
 
               meep::volume voxel(p_node);
