@@ -101,6 +101,12 @@ class PadeMonitorApiTest(unittest.TestCase):
         self.assertTrue(status.ready)
         self.assertEqual(status.relative_estimate.shape, (3,))
         self.assertTrue(np.all(np.isfinite(values)))
+        # nothing to compare the first corrected snapshot against yet
+        self.assertTrue(np.all(np.isinf(status.drift)))
+        sim.run(until=1)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            self.assertTrue(np.all(np.isfinite(monitor.get_pade_error().drift)))
 
     def test_loading_dft_snapshot_clears_pade_history(self):
         monitor = self.sim.add_dft_fields(
@@ -115,6 +121,10 @@ class PadeMonitorApiTest(unittest.TestCase):
         self.assertEqual(status.samples, 0)
         self.assertFalse(status.ready)
 
+    @unittest.skipIf(
+        mp.count_processors() > 1,
+        "meep::abort ends every process under MPI rather than raising",
+    )
     def test_full_checkpoint_rejects_pade_monitor(self):
         self.sim.add_dft_fields(
             [mp.Ez], self.frequency, where=self.volume, pade_samples=4
@@ -159,6 +169,54 @@ class PadeMonitorApiTest(unittest.TestCase):
         raw_error = abs(short_raw - long_reference)
         corrected_error = abs(short_corrected - long_reference)
         self.assertLess(corrected_error, 0.05 * raw_error)
+
+    def test_high_q_cavity(self):
+        # A Fabry-Perot cavity between quarter-wave mirrors, with Q of order 1e3:
+        # its transmission takes thousands of periods to ring out of the raw DFT,
+        # and the fitted tail recovers it from a few.
+        thick_hi, thick_lo = 0.25 / np.sqrt(12), 0.25
+        geometry, z = [], 0.25
+        for _ in range(3):
+            for side in (1, -1):
+                geometry.append(
+                    mp.Block(
+                        center=mp.Vector3(z=side * (z + thick_hi / 2)),
+                        size=mp.Vector3(mp.inf, mp.inf, thick_hi),
+                        material=mp.Medium(epsilon=12),
+                    )
+                )
+            z += thick_hi + thick_lo
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(z=2 * z + 4),
+            dimensions=1,
+            resolution=30,
+            boundary_layers=[mp.PML(1)],
+            geometry=geometry,
+            sources=[
+                mp.Source(
+                    mp.GaussianSource(1.0, fwidth=0.4),
+                    component=mp.Ex,
+                    center=mp.Vector3(z=-z - 0.5),
+                )
+            ],
+        )
+        region = mp.FluxRegion(center=mp.Vector3(z=z + 0.5))
+        raw = sim.add_flux(1.0, 0.3, 51, region)
+        pade = sim.add_flux(1.0, 0.3, 51, region, pade_samples=20)
+
+        sim.run(until=150)
+        short_raw = np.array(mp.get_fluxes(raw))
+        short_corrected = np.array(mp.get_fluxes(pade))
+        self.assertEqual(pade.get_pade_error().invalid_fits, 0)
+        sim.run(until=7850)
+        reference = np.array(mp.get_fluxes(raw))
+
+        scale = np.max(np.abs(reference))
+        self.assertGreater(np.max(np.abs(short_raw - reference)) / scale, 0.1)
+        self.assertLess(
+            np.max(np.abs(short_corrected - reference)) / scale,
+            1e-3 if mp.is_single_precision() else 1e-4,
+        )
 
 
 class PadeStoppingTest(unittest.TestCase):
