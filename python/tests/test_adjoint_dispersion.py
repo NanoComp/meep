@@ -92,6 +92,11 @@ def _problem(medium2, res, damping=0.0):
     )
 
 
+@unittest.skipIf(
+    mp.is_single_precision(),
+    "the finite-difference reference is limited by single-precision roundoff to "
+    "~0.1-1%, above the O((f dt)^2) discrepancy these tests resolve",
+)
 class TestDispersiveGradient(unittest.TestCase):
     def assertGradientMatchesFD(self, medium2, res=20, damping=0.0):
         rho = U0 * np.ones(NG * NG)
