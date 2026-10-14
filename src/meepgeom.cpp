@@ -1635,6 +1635,41 @@ bool geom_epsilon::has_conductivity(meep::component c) {
 
 static meep::vec geometry_edge; // geometry_lattice.size / 2
 // TODO
+/* The conductivity of a pixel that straddles an interface, a fraction `fill`
+   of it in `front`.
+
+   Meep's D-conductivity enters as D (-i omega + sigma) = curl H with
+   E = chi1inv D, and chi1inv is Kottke-averaged, so matching a layered
+   interface gives a different average for each field orientation:
+
+     parallel to it:  eps = <eps (1 + i sigma/omega)> and chi1inv = 1/<eps>, so
+                      sigma_t = <eps sigma> / <eps>, exactly at every omega;
+     normal to it:    1/eps = <1 / (eps (1 + i sigma/omega))> and
+                      chi1inv = <1/eps>, so to first order in sigma
+                      sigma_n = <sigma/eps> / <1/eps>.
+
+   As in Kottke's average, the two are combined by the component's projection
+   onto the normal, n_d^2.  eps is the instantaneous permittivity (mu for a
+   magnetic conductivity) along the component's direction. */
+static double averaged_conductivity(meep::component c, double fill, material_type front,
+                                    material_type behind, const vector3 &normal) {
+  const int d =
+      (meep::component_direction(c) == meep::X || meep::component_direction(c) == meep::R)   ? 0
+      : (meep::component_direction(c) == meep::Y || meep::component_direction(c) == meep::P) ? 1
+                                                                                             : 2;
+  auto along = [&](material_type m) {
+    const vector3 &diag =
+        (meep::is_magnetic(c) || meep::is_B(c)) ? m->medium.mu_diag : m->medium.epsilon_diag;
+    return d == 0 ? diag.x : d == 1 ? diag.y : diag.z;
+  };
+  const double s1 = get_cnd(c, &front->medium), s2 = get_cnd(c, &behind->medium);
+  const double e1 = along(front), e2 = along(behind);
+  const double sigma_t = (fill * e1 * s1 + (1 - fill) * e2 * s2) / (fill * e1 + (1 - fill) * e2);
+  const double sigma_n = (fill * s1 / e1 + (1 - fill) * s2 / e2) / (fill / e1 + (1 - fill) / e2);
+  const double n_d = d == 0 ? normal.x : d == 1 ? normal.y : normal.z;
+  return n_d * n_d * sigma_n + (1 - n_d * n_d) * sigma_t;
+}
+
 double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   material_type material;
   get_material_pt(material, r);
@@ -1648,9 +1683,13 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
     default: cond_val = 0;
   }
   material_gc(material);
+  return cond_val + absorber_conductivity(r);
+}
 
-  // if the user specified scalar absorbing layers, add their conductivities
-  // to cond_val (isotropically, for both magnetic and electric conductivity).
+/* The conductivity of any scalar absorbing layers at r, added isotropically to
+   both the electric and the magnetic conductivity. */
+double geom_epsilon::absorber_conductivity(const meep::vec &r) {
+  double cond_val = 0;
   LOOP_OVER_DIRECTIONS(r.dim, d) {
     double x = r.in_direction(d);
     double edge = geometry_edge.in_direction(d) - cond[d][meep::High].L;
@@ -1680,6 +1719,18 @@ double geom_epsilon::conductivity(meep::component c, const meep::vec &r) {
   }
 
   return cond_val;
+}
+
+/* conductivity() averaged over the pixel v (see averaged_conductivity), so that
+   a conductive object's permittivity is continuous in its position rather than
+   switching on a whole pixel at a time.  The absorber profile is a smooth
+   function of position and is sampled at the centre. */
+double geom_epsilon::eff_conductivity(meep::component c, const meep::volume &v) {
+  if (maxeval == 0) return conductivity(c, v.center());
+  sigma_pixel px;
+  if (!interface_pixel(v, px)) return conductivity(c, v.center());
+  return averaged_conductivity(c, px.fill, px.front, px.behind, px.normal) +
+         absorber_conductivity(v.center());
 }
 
 /* like susceptibility_equal in ctl-io.cpp, but ignores sigma and id
@@ -1782,39 +1833,53 @@ void geom_epsilon::eff_sigma_row(meep::component c, double sigrow[3], const meep
       pole.bias.x != 0 || pole.bias.y != 0 || pole.bias.z != 0)
     return sigma_row(c, sigrow, v.center());
 
-  const meep::vec lo = v.get_min_corner(), hi = v.get_max_corner();
-  const std::array<double, 6> key = {lo.x(), lo.y(), lo.z(), hi.x(), hi.y(), hi.z()};
   sigma_pixel px;
-  bool cached;
-  {
-    std::lock_guard<std::mutex> lock(sigma_pixel_mutex);
-    auto it = sigma_pixel_cache.find(key);
-    cached = it != sigma_pixel_cache.end();
-    if (cached) px = it->second;
-  }
-  if (!cached) {
-    if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind))
-      return sigma_row(c, sigrow, v.center());
-    if (material_type_equal(mat, mat_behind) || is_variable(mat) || is_variable(mat_behind)) {
-      material_gc(mat);
-      return sigma_row(c, sigrow, v.center());
-    }
-    geom_box pixel = gv2box(v);
-    pixel.low = vector3_minus(pixel.low, shiftby);
-    pixel.high = vector3_minus(pixel.high, shiftby);
-    px.smooth = true;
-    px.fill = box_overlap_with_object(pixel, *o, tol, maxeval);
-    px.front = mat;
-    px.behind = mat_behind;
-    std::lock_guard<std::mutex> lock(sigma_pixel_mutex);
-    sigma_pixel_cache.emplace(key, px);
-  }
+  if (!interface_pixel(v, px)) return sigma_row(c, sigrow, v.center());
 
   double front[3], behind[3];
   material_sigma_row(c, front, px.front);
   material_sigma_row(c, behind, px.behind);
   for (int i = 0; i < 3; ++i)
     sigrow[i] = px.fill * front[i] + (1 - px.fill) * behind[i];
+}
+
+/* Whether the pixel v straddles an interface between two non-variable
+   materials, and if so its filling fraction and the two materials (see
+   sigma_pixel_cache in meepgeom.hpp). */
+bool geom_epsilon::interface_pixel(const meep::volume &v, sigma_pixel &px) {
+  const meep::vec lo = v.get_min_corner(), hi = v.get_max_corner();
+  const std::array<double, 6> key = {lo.x(), lo.y(), lo.z(), hi.x(), hi.y(), hi.z()};
+  {
+    std::lock_guard<std::mutex> lock(sigma_pixel_mutex);
+    auto it = sigma_pixel_cache.find(key);
+    if (it != sigma_pixel_cache.end()) {
+      px = it->second;
+      return true;
+    }
+  }
+  const geometric_object *o;
+  material_type mat, mat_behind;
+  vector3 p, shiftby;
+  if (!get_front_object(v, geometry_tree, p, &o, shiftby, mat, mat_behind)) return false;
+  if (material_type_equal(mat, mat_behind) || is_variable(mat) || is_variable(mat_behind)) {
+    material_gc(mat);
+    return false;
+  }
+  px.normal = unit_vector3(normal_to_fixed_object(vector3_minus(p, shiftby), *o));
+  if (px.normal.x == 0 && px.normal.y == 0 && px.normal.z == 0) {
+    material_gc(mat);
+    return false; // no normal here; point sample, as eff_chi1inv_matrix does
+  }
+  geom_box pixel = gv2box(v);
+  pixel.low = vector3_minus(pixel.low, shiftby);
+  pixel.high = vector3_minus(pixel.high, shiftby);
+  px.smooth = true;
+  px.fill = box_overlap_with_object(pixel, *o, tol, maxeval);
+  px.front = mat;
+  px.behind = mat_behind;
+  std::lock_guard<std::mutex> lock(sigma_pixel_mutex);
+  sigma_pixel_cache.emplace(key, px);
+  return true;
 }
 
 size_t geom_epsilon::volume_key_hash::operator()(const std::array<double, 6> &k) const {
@@ -1988,7 +2053,6 @@ void geom_epsilon::add_susceptibilities(meep::structure *s) {
 
 void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s) {
   pol *pols = 0;
-  sigma_pixel_cache.clear();
   // construct a list of the unique susceptibilities in the geometry:
   for (int i = 0; i < geometry.num_items; ++i)
     pols = add_material_pols(pols, geometry.items[i].material, ft);
@@ -2048,8 +2112,6 @@ void geom_epsilon::add_susceptibilities(meep::field_type ft, meep::structure *s)
       s->add_susceptibility(*this, ft, *sus);
       delete sus;
     }
-    // keep cached pixels only for the poles of this call (and this structure)
-    if (!p->next) sigma_pixel_cache.clear();
   }
   current_pol = NULL;
 
@@ -2205,9 +2267,12 @@ void set_materials_from_geom_epsilon(meep::structure *s, geom_epsilon *geps,
       }
     }
   }
+  // drop pixels cached by an earlier structure (or gradient) for this geometry
+  geps->sigma_pixel_cache.clear();
   s->set_materials(*geps, use_anisotropic_averaging, tol, maxeval);
   s->remove_susceptibilities();
   geps->add_susceptibilities(s);
+  geps->sigma_pixel_cache.clear(); // only needed while the structure is built
 
   if (meep::verbosity > 0) master_printf("-----------\n");
 }
@@ -2833,13 +2898,16 @@ static bool eff_chi1inv_row_disp_fill(meep::component c, std::complex<double> ch
     }
   }
 
-  vector3 zero = {0.0, 0.0, 0.0};
-  for (int i = 0; i < 9; i++) {
-    double cond = 0;
-    for (int sd = 0; sd < 2; sd++)
-      if (side[sd].m)
-        cond += side[sd].w * vec_to_value(side[sd].m->medium.D_conductivity_diag, zero, i);
-    tensor[i] *= conductivity_factor(cond, freq, geps->dt);
+  /* The conductivity the forward run uses at this pixel (eff_conductivity), as a
+     function of fill; it scales each row of the permittivity. */
+  geom_epsilon::sigma_pixel px;
+  const bool have_normal = front && behind && geps->interface_pixel(v, px);
+  for (int d = 0; d < 3; d++) {
+    const meep::component cd = meep::direction_component(meep::Dx, meep::direction(d));
+    const double cond = have_normal ? averaged_conductivity(cd, fill, front, behind, px.normal)
+                                    : (front ? get_cnd(cd, &front->medium) : 0.0);
+    for (int j = 0; j < 3; j++)
+      tensor[3 * d + j] *= conductivity_factor(cond, freq, geps->dt);
   }
 
   invert_tensor(tensor_inv, tensor);
@@ -3322,6 +3390,18 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
      against the pixel. */
   const double dfill = 1e-6;
 
+  bool any_cond = false;
+  FOR_D_COMPONENTS(c) if (geps->has_conductivity(c)) any_cond = true;
+  // the pixel a component at p is averaged over (gv.dV, as set_conductivity uses)
+  auto pixel_at = [&gv](const meep::vec &p) {
+    meep::volume v(p);
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      v.set_direction_min(d, p.in_direction(d) - 0.5 * gv.inva);
+      v.set_direction_max(d, p.in_direction(d) + 0.5 * gv.inva);
+    }
+    return v;
+  };
+
   for (size_t f_i = 0; f_i < nf; f_i++) {
     for (int ci_adjoint = 0; ci_adjoint < 3; ci_adjoint++) {
       int num_chunks = adjoint_chunks[ci_adjoint].size();
@@ -3410,11 +3490,7 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
               if (fwd == meep::realnum(0)) continue;
               const meep::vec p_node = node_pos[node];
 
-              meep::volume voxel(p_node);
-              LOOP_OVER_DIRECTIONS(gv.dim, d) {
-                voxel.set_direction_min(d, p_node.in_direction(d) - 0.5 * gv.inva);
-                voxel.set_direction_max(d, p_node.in_direction(d) + 0.5 * gv.inva);
-              }
+              const meep::volume voxel = pixel_at(p_node);
 
               /* Skip pixels that do not straddle the boundary: d(fill)/d(param)
                  is zero there, so they contribute nothing. */
@@ -3517,8 +3593,20 @@ void geometry_addgradient(double *v, size_t nparams, size_t nf,
                 dchi_dfill = (hi_r[dir_idx] - lo_r[dir_idx]) / actual_dfill;
               }
 
+              /* With a D-conductivity the stored D is the full displacement
+                 divided by conductivity_factor (D (-i omega + sigma) = curl H),
+                 so restore it on both fields, with the conductivity the forward
+                 run stored at each one's own pixel -- as cond_cmp does in
+                 material_grids_addgradient. */
+              std::complex<double> cond_pair = 1.0;
+              if (any_cond) {
+                cond_pair = conductivity_factor(geps->eff_conductivity(adjoint_c, pixel_at(p)),
+                                                frequencies[f_i], geps->dt) *
+                            conductivity_factor(geps->eff_conductivity(forward_c, voxel),
+                                                frequencies[f_i], geps->dt);
+              }
               const std::complex<double> pair =
-                  std::complex<double>(double(adj.real()), double(adj.imag())) *
+                  cond_pair * std::complex<double>(double(adj.real()), double(adj.imag())) *
                   std::complex<double>(double(fwd.real()), double(fwd.imag()));
               const double cyl_scale = (gv.dim == meep::Dcyl) ? 2 * p_node.r() : 1;
 

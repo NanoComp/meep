@@ -244,26 +244,31 @@ public:
 
   virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
   virtual void eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v);
+  virtual double eff_conductivity(meep::component c, const meep::volume &v);
+  double absorber_conductivity(const meep::vec &r);
 
-  /* What eff_sigma_row needs to know about a pixel: whether it straddles an
-     interface between two non-variable materials and, if so, the filling
-     fraction and the two materials.  None of it depends on the pole, so it is
-     computed once per pixel and reused for every susceptibility, instead of
-     repeating the adaptive overlap integral per pole.  Only pixels that
-     straddle an interface are kept, so the cache stays the size of the
-     boundary rather than of the cell.  Cleared around each
-     add_susceptibilities() call. */
+  /* What eff_sigma_row and eff_conductivity need to know about a pixel:
+     whether it straddles an interface between two non-variable materials and,
+     if so, the filling fraction and the two materials.  None of it depends on
+     the pole or the component's conductivity, so it is computed once per pixel
+     and reused, instead of repeating the adaptive overlap integral.  Only
+     pixels that straddle an interface are kept, so the cache stays the size of
+     the boundary rather than of the cell.  It depends only on the geometry,
+     which is fixed for a geom_epsilon; set_materials_from_geom_epsilon clears
+     it once the structure is built. */
 #ifndef SWIG
   struct sigma_pixel {
     bool smooth;
     double fill;
     material_type front, behind;
+    vector3 normal; // unit normal to the interface, as in eff_chi1inv_matrix
   };
   struct volume_key_hash {
     size_t operator()(const std::array<double, 6> &k) const;
   };
   std::unordered_map<std::array<double, 6>, sigma_pixel, volume_key_hash> sigma_pixel_cache;
   std::mutex sigma_pixel_mutex; // the sigma loops run under OpenMP
+  bool interface_pixel(const meep::volume &v, sigma_pixel &px);
 #endif
   void material_sigma_row(meep::component c, double sigrow[3], material_type mat);
   void add_susceptibilities(meep::structure *s);

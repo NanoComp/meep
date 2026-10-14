@@ -297,42 +297,53 @@ class TestShapeDerivative(unittest.TestCase):
         # dispersive branch was routed, `geometry_addgradient` contracted only
         # the real non-dispersive tensor, so a Drude block's poles contributed
         # nothing and the gradient was of a structure that was not simulated.
-        drude = mp.Medium(
-            epsilon=1.0,
-            E_susceptibilities=[
-                mp.DrudeSusceptibility(frequency=1.0, gamma=0.2, sigma=0.6)
-            ],
-        )
+        # A conductivity also scales the stored D fields themselves, which the
+        # gradient has to undo.
+        media = {
+            "drude": mp.Medium(
+                epsilon=1.0,
+                E_susceptibilities=[
+                    mp.DrudeSusceptibility(frequency=1.0, gamma=0.2, sigma=0.6)
+                ],
+            ),
+            "conductive": mp.Medium(epsilon=2.5, D_conductivity=0.5),
+        }
         size = mp.Vector3(1.0, 0.3)
         offset = quarter_pixel(RES)
 
-        def block(center, differentiable=None):
-            return mp.Block(
-                center=mp.Vector3(center.x, center.y + offset),
-                size=mp.Vector3(size.x + 2 * offset, size.y),
-                material=drude,
-                differentiable=differentiable,
-                name="scatterer",
-            )
+        for name, medium in media.items():
 
-        opt = _problem(block(mp.Vector3(), differentiable=["center"]))
-        _, grad = opt([RHO])
-        adjoint = float(np.real(np.atleast_1d(grad["scatterer"]["center"])[1]))
+            def block(center, differentiable=None):
+                return mp.Block(
+                    center=mp.Vector3(center.x, center.y + offset),
+                    size=mp.Vector3(size.x + 2 * offset, size.y),
+                    material=medium,
+                    differentiable=differentiable,
+                    name="scatterer",
+                )
 
-        def value(dy):
-            return float(
-                np.asarray(
-                    _problem(block(mp.Vector3(0, dy)))([RHO], need_gradient=False)[0]
-                ).real.item()
-            )
+            def value(dy):
+                return float(
+                    np.asarray(
+                        _problem(block(mp.Vector3(0, dy)))([RHO], need_gradient=False)[
+                            0
+                        ]
+                    ).real.item()
+                )
 
-        reference = (value(FD_STEP) - value(-FD_STEP)) / (2 * FD_STEP)
-        self.assertGreater(abs(reference), 1e-6, "objective must respond to the move")
-        self.assertLess(
-            abs(adjoint - reference) / abs(reference),
-            2e-2,
-            f"adjoint {adjoint} vs finite difference {reference}",
-        )
+            with self.subTest(medium=name):
+                opt = _problem(block(mp.Vector3(), differentiable=["center"]))
+                _, grad = opt([RHO])
+                adjoint = float(np.real(np.atleast_1d(grad["scatterer"]["center"])[1]))
+                reference = (value(FD_STEP) - value(-FD_STEP)) / (2 * FD_STEP)
+                self.assertGreater(
+                    abs(reference), 1e-6, "objective must respond to the move"
+                )
+                self.assertLess(
+                    abs(adjoint - reference) / abs(reference),
+                    2e-2,
+                    f"adjoint {adjoint} vs finite difference {reference}",
+                )
 
     def test_no_flagged_object_leaves_the_return_shape_alone(self):
         opt = _problem(_block(mp.Vector3(), self.SIZE))

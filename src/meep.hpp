@@ -562,6 +562,12 @@ public:
     sigma_row(c, sigrow, v.center());
   }
 
+  // conductivity() averaged over the pixel v, as eff_sigma_row is to sigma_row;
+  // the default samples the centre
+  virtual double eff_conductivity(component c, const volume &v) {
+    return conductivity(c, v.center());
+  }
+
   // Nonlinear susceptibilities
   virtual bool has_chi3(component c) {
     (void)c;
