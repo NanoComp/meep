@@ -21,6 +21,11 @@ endif
 # after libpympb/python lets those directories start sooner with make -j
 SUBDIRS += tests
 
+# Note: some subdirectories (e.g. python/tests, python/examples) list whole
+# directories in EXTRA_DIST, so any untracked files in them (scratch output,
+# plots, data from running examples in place) end up in the tarball.  Run
+# "make dist" from a clean checkout (e.g. a fresh "git clone" or "git worktree"),
+# or check first with "git clean -nx python/tests python/examples".
 EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh
 
 pkgconfigdir = $(libdir)/pkgconfig

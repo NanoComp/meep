@@ -273,6 +273,12 @@ check-adjoint:
 clean-local:
 	rm -rf meep __init__.py.bak
 
+# the tests and examples directories are copied wholesale by EXTRA_DIST, so
+# exclude Python bytecode caches, Jupyter checkpoints, and test-driver output.
+dist-hook:
+	find $(distdir) -type d \( -name __pycache__ -o -name .ipynb_checkpoints \) -prune -exec rm -rf {} +
+	find $(distdir) -type f \( -name '*.py[co]' -o -name '*.log' -o -name '*.trs' \) -exec rm -f {} +
+
 distclean-local:
 	rm -f *.h5
 	rm -f *.mp4
