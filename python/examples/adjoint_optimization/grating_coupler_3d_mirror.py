@@ -58,13 +58,14 @@ Performance, all measured:
     condition on omega_p*dt, measured to break between 1.264 and 1.580, so
     holding that fixed makes dt nearly independent of resolution and the cost
     scales as res^3 rather than res^4.
-  * Pade extrapolation of the DFT tail: 14% fewer timesteps at equal accuracy.
 
 What is verified, and what the optimizer is for.  Injecting into homogeneous
-oxide and measuring the flux plane by plane, 99.4% of the launched power
-reaches the silicon surface, arriving as a 6.3 um rms beam centred +0.49 um
-downstream -- consistent with an 8 degree tilt over the propagation distance.
-So the fiber, the analytic stack and the equivalent-current injection all work.
+oxide, the beam reaches the silicon surface centred 0.56 um toward the
+waveguide (-x) at resolutions 8, 10 and 12 alike, against 0.65 um for the
+refracted ray of an 8 degree tilt (the stack transmits each angle differently,
+which plausibly shifts the centroid).  That is the direction the grating
+period assumes, so the fiber, the analytic stack and the equivalent-current
+injection agree.
 
 The seed device does not: a uniform grating scatters into the full 6 um width
 of the aperture and a 0.5 um waveguide collects almost none of it, which is
@@ -154,8 +155,6 @@ WP_DT_MAX = 0.95  # headroom below the measured Drude stability limit
 # run to move only the three scalars.
 MIRROR_PHASE = -1
 USE_SYMMETRY = True
-PADE_SAMPLES = 12
-PADE_TOL = 1e-2
 LOG_FLOOR = 1e-30  # keeps log finite if a monitor reads exactly zero
 
 
@@ -321,17 +320,18 @@ def project(latent: jnp.ndarray, beta: float, resolution: float) -> jnp.ndarray:
 
 def length_penalties(latent, beta, resolution):
     """ANT's 60 nm feature and 70 nm gap, as two scalar constraints <= 0."""
-    from ssp_topopt import length_constraint
+    from ssp_topopt import constraint_solid, constraint_void
 
     projected, filtered = project(latent, beta, resolution)
     dres = design_resolution(resolution)
+    # both against the one filter `project` applies, whose radius is MIN_FEATURE
     return (
-        length_constraint("solid", filtered, projected, dres, MIN_FEATURE),
-        length_constraint("void", filtered, projected, dres, MIN_GAP),
+        constraint_solid(filtered, projected, dres, MIN_FEATURE),
+        constraint_void(filtered, projected, dres, MIN_GAP, conic_radius=MIN_FEATURE),
     )
 
 
-def seed_grating(nx: int, ny: int, margin: float = 0.3) -> np.ndarray:
+def seed_grating(nx: int, ny: int, margin: float = 0.1) -> np.ndarray:
     """A uniform grating at the phase-matched period, as a starting point.
 
     period = lambda / (n_eff - n_clad sin(theta)), with n_eff ~ 2.7 for a
@@ -362,8 +362,12 @@ def seed_grating(nx: int, ny: int, margin: float = 0.3) -> np.ndarray:
     # bit-identical design.  But 0.02 of clearance failed the same way for a
     # subtler reason: MMA's steps here are about 0.019 per iteration, so one
     # step put every density back on the bound and the design never moved
-    # again, leaving the run to optimize only the three scalars.  A grey seed
-    # costs nothing, because SSP drives the projection binary as beta rises.
+    # again, leaving the run to optimize only the three scalars.  Nor can it be
+    # too wide: the length-scale constraints read a feature's interior as too
+    # thin wherever the filtered density there is short of the erosion
+    # thresholds, 0.75 for solid and 0.174 for void at these lengths.  At 0.3
+    # every line of this seed violated both (by 1e5 and 6e5); at 0.1 it is
+    # feasible, at -1.0, and still five MMA steps clear of the bounds.
     line = margin + (1 - 2 * margin) * line
     return np.repeat(line[:, None], ny, axis=1)  # ny is already the half
 
@@ -944,8 +948,6 @@ class Coupler:
             decay_by=self.args.decay_by,
             minimum_run_time=self.args.min_run_time,
             maximum_run_time=self.args.max_run_time,
-            pade_samples=PADE_SAMPLES if self.args.pade else 0,
-            pade_tolerance=PADE_TOL if self.args.pade else None,
         )
 
         t0 = time.time()
@@ -1303,12 +1305,6 @@ def main():
     p.add_argument("--min-run-time", type=float, default=50.0)
     p.add_argument("--max-run-time", type=float, default=800.0)
     p.add_argument(
-        "--no-pade",
-        dest="pade",
-        action="store_false",
-        help="use the decay criterion instead of Pade extrapolation",
-    )
-    p.add_argument(
         "--outdir", default=None, help="run folder; defaults to run_<timestamp>"
     )
     p.add_argument(
@@ -1326,8 +1322,12 @@ def main():
         "design off its bounds but stalls the three scalars and ended 19x "
         "worse (2.7e-4 against 5.1e-3), so it is off unless asked for.",
     )
-    p.add_argument("--trust-evals", type=int, default=3,
-                   help="evaluations before the trust region is re-centred")
+    p.add_argument(
+        "--trust-evals",
+        type=int,
+        default=3,
+        help="evaluations before the trust region is re-centred",
+    )
     p.add_argument("--history", default="history.npz")
     args = p.parse_args()
 
