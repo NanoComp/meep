@@ -2970,7 +2970,7 @@ class Simulation:
         if not isinstance(cond, list):
             cond = [cond]
         else:
-            cond = list(cond) # make a copy of the list in case it gets mutated
+            cond = list(cond)  # make a copy of the list in case it gets mutated
 
         self.progress = False
         for i in range(len(cond)):
