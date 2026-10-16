@@ -105,6 +105,7 @@ tests/integrate
 tests/known_results
 tests/near2far
 tests/one_dimensional
+tests/pade-dft
 tests/physical
 tests/pml
 tests/pw-source-ll

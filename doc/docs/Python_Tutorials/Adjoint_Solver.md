@@ -1382,6 +1382,18 @@ if __name__ == "__main__":
     )
 ```
 
+For problems with sharp resonances, whose fields ring down slowly, the forward
+and adjoint runs can be shortened by Padé extrapolation of the DFT monitors.
+Pass `pade_samples` (e.g. 20) to `OptimizationProblem` to extrapolate the
+objective, design-region and shape/source-gradient monitors, and `pade_tolerance`
+(e.g. `1e-4`) to stop each run once the extrapolated fields have converged (see
+`stop_when_dft_pade_converged`); `decay_by` remains a fallback. Automatic stopping
+requires finite-duration sources, and LDOS objectives are not supported. Run
+diagnostics are recorded in `opt.pade_diagnostics`, and reaching
+`maximum_run_time` raises rather than returning an unconverged gradient.
+`MeepJaxWrapper` accepts the same options, but there the test is on the monitors
+only, since it cannot see the outer JAX objective.
+
 
 Derivatives with Respect to Shape Parameters
 --------------------------------------------
