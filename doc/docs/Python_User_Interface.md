@@ -6215,7 +6215,8 @@ Construct a `Prism`.
   `center` is the coordinates of the
   [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and
   bottom) of the resulting 3d prism so that the coordinates of the `vertices` are
-  shifted accordingly.
+  shifted accordingly. If `height` is `mp.inf`, only the components of `center`
+  perpendicular to `axis` are used.
 
 + **`sidewall_angle` [`number`]** — The sidewall angle of the prism in units of
   radians. Default is 0.
