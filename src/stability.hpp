@@ -34,12 +34,15 @@ struct lorentzian_pole {
   bool no_omega_0_denominator; // true for a Drude term
 };
 
-/* Spectral radius of one timestep of a uniform, isotropic medium on a
-   Cartesian grid with ndim axes, at the largest Yee spatial frequency
-   (k*dx = pi on every axis).  Requires eps_inf > 0 and mu_inf > 0. */
-double dispersive_spectral_radius(double eps_inf, double mu_inf,
-                                  const std::vector<lorentzian_pole> &poles, double dt, double dx,
-                                  int ndim);
+/* Whether a timestep can grow in a uniform, isotropic medium on a Cartesian
+   grid with ndim axes.  Requires eps_inf > 0, mu_inf > 0, and sigma >= 0 and
+   gamma >= 0 for every pole. */
+bool dispersive_unstable(double eps_inf, double mu_inf, const std::vector<lorentzian_pole> &poles,
+                         double dt, double dx, int ndim);
+
+// The dt at which dispersive_unstable starts to hold, with the same requirements.
+double dispersive_max_dt(double eps_inf, double mu_inf, const std::vector<lorentzian_pole> &poles,
+                         double dx, int ndim);
 
 } // namespace meep
 
@@ -47,10 +50,12 @@ namespace meep_geom {
 
 enum stability_status { STABILITY_UNCHECKED, STABILITY_STABLE, STABILITY_UNSTABLE };
 
-/* Verdict of the bulk von Neumann estimate for this medium on this grid, or
-   STABILITY_UNCHECKED if the estimate does not model it (or it has no
-   susceptibilities). */
-stability_status medium_stability(const medium_struct *mm, const meep::grid_volume &gv, double dt);
+/* Verdict of the bulk von Neumann analysis for this medium on this grid, or
+   STABILITY_UNCHECKED if the analysis does not model it (or it has no
+   susceptibilities).  If checked, *max_courant (when given) is set to the
+   Courant number at which it becomes unstable on this grid. */
+stability_status medium_stability(const medium_struct *mm, const meep::grid_volume &gv, double dt,
+                                  double *max_courant = NULL);
 
 /* Warn if medium_stability is STABILITY_UNSTABLE, skipping media already in
    `checked`. */

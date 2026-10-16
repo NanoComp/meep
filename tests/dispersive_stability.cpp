@@ -18,6 +18,7 @@
 /* Checks on the setup-time stability diagnostic for dispersive media. */
 
 #include <cmath>
+#include <complex>
 #include <cstdio>
 #include <vector>
 
@@ -26,8 +27,6 @@
 
 using namespace meep;
 using meep_geom::medium_stability;
-
-static const double margin = 1e-4; // as in medium_stability
 
 static int failures = 0;
 
@@ -38,22 +37,91 @@ static void check(bool ok, const char *what) {
 
 static bool unstable(double eps, double mu, const std::vector<lorentzian_pole> &poles, double dt,
                      double dx, int ndim) {
-  return dispersive_spectral_radius(eps, mu, poles, dt, dx, ndim) > 1 + margin;
+  return dispersive_unstable(eps, mu, poles, dt, dx, ndim);
 }
 
-/* For lossless poles the analysis reduces to the Courant condition with the
-   discrete permittivity at the Nyquist frequency, z = -1:
-       ndim (dt/dx)^2 <= mu * [eps - sum_j c_j/(2 + a_j)]
-   Return the dx at which that holds with equality. */
-static double lossless_critical_dx(double eps, double mu, const std::vector<lorentzian_pole> &poles,
-                                   double dt, int ndim) {
-  double eps_nyquist = eps;
-  for (size_t j = 0; j < poles.size(); ++j) {
-    const double w2dt2 = pow(2 * pi * poles[j].omega_0 * dt, 2);
-    const double a = 2 - (poles[j].no_omega_0_denominator ? 0 : w2dt2);
-    eps_nyquist -= w2dt2 * poles[j].sigma / (2 + a);
+/* An independent check on the closed form in stability.cpp: the full
+   amplification matrix of one timestep on [E, H, P_j, P_j_prev], for a plane
+   wave at k*dx = pi on every axis, built from the coefficients of update_P. */
+
+// Row-major n x n complex matrix.
+typedef std::vector<std::complex<double> > cmatrix;
+
+// Matrix infinity norm (max row sum, operator norm).
+static double matrix_norm(const cmatrix &A, int n) {
+  double best = 0;
+  for (int i = 0; i < n; ++i) {
+    double s = 0;
+    for (int j = 0; j < n; ++j)
+      s += std::abs(A[i * n + j]);
+    if (s > best) best = s;
   }
-  return dt * sqrt(ndim / (mu * eps_nyquist));
+  return best;
+}
+
+static void matrix_square(cmatrix &A, int n) {
+  cmatrix B(n * n, std::complex<double>(0, 0));
+  for (int i = 0; i < n; ++i)
+    for (int k = 0; k < n; ++k)
+      for (int j = 0; j < n; ++j)
+        B[i * n + j] += A[i * n + k] * A[k * n + j];
+  A.swap(B);
+}
+
+/* Spectral radius via Gelfand's formula, |A^m|^(1/m) with m = 2^30, by
+   repeated squaring with renormalization.  It needs no eigensolver, copes
+   with defective eigenvalues, and never falls below rho, since
+   rho(A)^m <= |A^m| for an operator norm. */
+static double spectral_radius(cmatrix A, int n) {
+  const int nsquare = 30;
+  double log_rho = 0;
+  for (int j = 1; j <= nsquare; ++j) {
+    matrix_square(A, n);
+    const double nrm = matrix_norm(A, n);
+    if (nrm != nrm) return infinity; // NaN: report as unstable, never as safe
+    if (!(nrm > 0)) return 0;
+    for (int i = 0; i < n * n; ++i)
+      A[i] /= nrm;
+    log_rho += log(nrm) / ldexp(1.0, j);
+  }
+  return exp(log_rho);
+}
+
+static double matrix_spectral_radius(double eps_inf, double mu_inf,
+                                     const std::vector<lorentzian_pole> &poles, double dt,
+                                     double dx, int ndim) {
+  const int N = int(poles.size()), n = 2 + 2 * N;
+  const double q = 2 * sqrt(double(ndim)) * dt / dx;
+
+  cmatrix M(n * n, std::complex<double>(0, 0));
+  double csum = 0;
+  for (int j = 0; j < N; ++j) { // as in lorentzian_susceptibility::update_P
+    const double w = 2 * pi * poles[j].omega_0, g = 2 * pi * poles[j].gamma;
+    const double w2dt2 = (w * dt) * (w * dt);
+    const double gamma1inv = 1 / (1 + g * dt / 2), gamma1 = 1 - g * dt / 2;
+    const double a = gamma1inv * (2 - (poles[j].no_omega_0_denominator ? 0 : w2dt2));
+    const double b = -gamma1inv * gamma1;
+    const double c = gamma1inv * w2dt2 * poles[j].sigma;
+    csum += c;
+    M[0 * n + (2 + 2 * j)] = (1 - a) / eps_inf;
+    M[0 * n + (3 + 2 * j)] = -b / eps_inf;
+    M[(2 + 2 * j) * n + 0] = c;
+    M[(2 + 2 * j) * n + (2 + 2 * j)] = a;
+    M[(2 + 2 * j) * n + (3 + 2 * j)] = b;
+    M[(3 + 2 * j) * n + (2 + 2 * j)] = 1;
+  }
+  // E sees the H just updated from it, hence the q^2/(eps*mu) term.
+  M[0 * n + 0] = (eps_inf - csum - q * q / mu_inf) / eps_inf;
+  M[0 * n + 1] = std::complex<double>(0, -q) / eps_inf;
+  M[1 * n + 0] = std::complex<double>(0, -q) / mu_inf;
+  M[1 * n + 1] = 1;
+  return spectral_radius(M, n);
+}
+
+// Undamped modes sit on the unit circle, where the estimate overshoots slightly.
+static bool matrix_unstable(double eps, double mu, const std::vector<lorentzian_pole> &poles,
+                            double dt, double dx, int ndim) {
+  return matrix_spectral_radius(eps, mu, poles, dt, dx, ndim) > 1 + 1e-4;
 }
 
 static double seed_resolution, seed_sigma;
@@ -132,23 +200,40 @@ int main(int argc, char **argv) {
             energy_growth(coarse, 8, E_stuff, lorentz, nyquist_seed) > 1e4,
         "a stable pole still makes the coarse FDTD run blow up");
 
-  /* Lossless poles have a closed-form limit; evaluating only the largest Yee
-     wavevector has to land exactly on it. */
-  const std::vector<lorentzian_pole> two_poles = {{2.0, 0.0, 60.0, false}, {1.0, 0.0, 5.0, true}};
-  for (int ndim = 1; ndim <= 3; ndim += 2) {
-    const double dt = courant / coarse;
-    const double dx = lossless_critical_dx(1.5, 1, two_poles, dt, ndim);
-    char what[64];
-    snprintf(what, sizeof(what), "lossless poles bracket the Nyquist limit in %dD", ndim);
-    check(!unstable(1.5, 1, two_poles, dt, 1.001 * dx, ndim) &&
-              unstable(1.5, 1, two_poles, dt, 0.999 * dx, ndim),
-          what);
-  }
+  /* The full amplification matrix has to agree with the closed form on both
+     sides of its threshold, with or without damping, and also where a pole
+     above 1/(pi dt) is what sets the limit. */
+  const lorentzian_pole drude = {1.0, 0.0, 50.0, true};
+  const lorentzian_pole lossy = {2.0, 0.2, 60.0, false};
+  struct {
+    const char *name;
+    double eps, mu;
+    std::vector<lorentzian_pole> poles;
+  } media[] = {
+      {"lossless Lorentzian", 1, 1, {lorentz}},
+      {"lossy Lorentzian", 1, 1, {lossy}},
+      {"undamped Drude", 1, 1, {drude}},
+      {"damped Drude", 1, 1, {{1.0, 0.5, 50.0, true}}},
+      {"Lorentzian + Drude", 1.5, 1, {lorentz, {1.0, 0.0, 5.0, true}}},
+      {"lossy Lorentzian, eps = 2, mu = 1/2", 2, 0.5, {lossy}},
+      {"weak pole above 1/(pi dt)", 1, 1, {{12.0, 0.1, 0.01, false}}},
+  };
+  for (const auto &m : media)
+    for (int ndim = 1; ndim <= 3; ++ndim) {
+      const double dx = 1 / coarse, dt = dispersive_max_dt(m.eps, m.mu, m.poles, dx, ndim);
+      char what[96];
+      snprintf(what, sizeof(what), "matrix brackets the limit: %s, %dD", m.name, ndim);
+      check(!matrix_unstable(m.eps, m.mu, m.poles, 0.999 * dt, dx, ndim) &&
+                matrix_unstable(m.eps, m.mu, m.poles, 1.001 * dt, dx, ndim),
+            what);
+    }
+  check(dispersive_max_dt(1, 1, {lorentz}, 1 / coarse, 3) ==
+            dispersive_max_dt(1, 1, {lossy}, 1 / coarse, 3),
+        "damping does not move the limit");
 
   /* A Drude metal with omega_p dt ~ 1 sits close to its limit in 3D: stable at
-     resolution 24, unstable at 20.  Its undamped |z| = 1 mode is where the
-     estimator is least accurate, so it must not be mistaken for growth. */
-  const lorentzian_pole drude = {1.0, 0.0, 50.0, true};
+     resolution 24, unstable at 20.  Its undamped z = 1 mode sits on the unit
+     circle, and must not be mistaken for growth. */
   check(!unstable(1, 1, {drude}, courant / 24, 1.0 / 24, 3), "undamped Drude is stable at res 24");
   check(unstable(1, 1, {drude}, courant / 20, 1.0 / 20, 3), "undamped Drude is unstable at res 20");
 
@@ -157,7 +242,6 @@ int main(int argc, char **argv) {
 
   /* Every wavevector in the cell, not just the Nyquist one, has to stay bounded
      just past the predicted threshold resolution, and blow up just short of it. */
-  const lorentzian_pole lossy = {2.0, 0.2, 60.0, false};
   for (const lorentzian_pole &p : {lossy, drude}) {
     double lo = 10, hi = 1000;
     for (int i = 0; i < 50; ++i) {
@@ -180,6 +264,13 @@ int main(int argc, char **argv) {
         "coarse magnetic medium is unstable");
   check(medium_stability(&em, gf, courant / fine) == meep_geom::STABILITY_STABLE,
         "refined medium is stable");
+  double max_courant;
+  medium_stability(&em, gc, dtc, &max_courant);
+  check(
+      max_courant < courant &&
+          medium_stability(&em, gc, 0.999 * max_courant / coarse) == meep_geom::STABILITY_STABLE &&
+          medium_stability(&em, gc, 1.001 * max_courant / coarse) == meep_geom::STABILITY_UNSTABLE,
+      "the reported Courant number is the limit");
   check(medium_stability(&em, volcyl(1.0, 1.0, coarse), dtc) == meep_geom::STABILITY_UNCHECKED,
         "cylindrical grids are not checked");
 

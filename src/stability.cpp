@@ -16,7 +16,6 @@
  */
 
 #include <cmath>
-#include <complex>
 #include <vector>
 
 #include "meep.hpp"
@@ -31,95 +30,51 @@ namespace meep {
    each pole on its own is not enough.  This analyses the coupled step, for a
    uniform bulk medium only; it says nothing about interfaces, PML or sources.
 
-   For a single plane wave, one timestep is a small matrix acting on E, H
-   and the current and previous value of each polarization, built from the
-   same coefficients as update_P.  The step is stable for that wave if no
-   eigenvalue of the matrix has modulus above 1.
-
-   The wavevector enters the matrix through a single number, which is largest
-   at k*dx = pi on every axis.  For the media medium_is_modelled accepts, an
-   eigenvalue can only leave the unit circle as that number grows, never come
-   back in, so the largest wavevector decides whether any wavevector is
-   unstable, and it is the only one evaluated.  The growth rate itself can
-   peak at a smaller wavevector, so it is not reported. */
+   For passive poles an eigenvalue of the plane-wave step can only leave the
+   unit circle through z = -1, and only as k grows, so it suffices to check
+   z = -1 at k*dx = pi on every axis.  There the damping drops out of each
+   pole's recurrence (1+g) z^2 - (2 - w) z + (1-g), where g = gamma dt/2 and
+   w = (omega_0 dt)^2 (w is dropped from the z term for Drude), and the step
+   is stable iff every Lorentzian with sigma > 0 has w < 4 and
+       ndim (dt/dx)^2 < mu * eps_N,  eps_N = eps - sum_j sigma_j w_j / (4 - w_j),
+   the Courant condition with the permittivity the update sees at z = -1.
+   tests/dispersive_stability.cpp checks this against the full amplification
+   matrix. */
 
 namespace {
 
-// Row-major n x n complex matrix.
-typedef std::vector<std::complex<double> > cmatrix;
-
-// Matrix infinity norm (max row sum, operator norm).
-double matrix_norm(const cmatrix &A, int n) {
-  double best = 0;
-  for (int i = 0; i < n; ++i) {
-    double s = 0;
-    for (int j = 0; j < n; ++j)
-      s += std::abs(A[i * n + j]);
-    if (s > best) best = s;
+/* eps_N above, or -infinity if a Lorentzian's own recurrence already has a
+   root at z = -1 or beyond. */
+double nyquist_epsilon(double eps_inf, const std::vector<lorentzian_pole> &poles, double dt) {
+  double eps = eps_inf;
+  for (size_t j = 0; j < poles.size(); ++j) {
+    if (poles[j].sigma == 0) continue;
+    const double w2dt2 = pow(2 * pi * poles[j].omega_0 * dt, 2);
+    const double denom = 4 - (poles[j].no_omega_0_denominator ? 0 : w2dt2);
+    if (!(denom > 0)) return -infinity;
+    eps -= poles[j].sigma * w2dt2 / denom;
   }
-  return best;
-}
-
-void matrix_square(cmatrix &A, int n) {
-  cmatrix B(n * n, std::complex<double>(0, 0));
-  for (int i = 0; i < n; ++i)
-    for (int k = 0; k < n; ++k)
-      for (int j = 0; j < n; ++j)
-        B[i * n + j] += A[i * n + k] * A[k * n + j];
-  A.swap(B);
-}
-
-/* Spectral radius via Gelfand's formula, |A^m|^(1/m) with m = 2^30, by
-   repeated squaring with renormalization.  It needs no eigensolver, copes
-   with defective eigenvalues, and never falls below rho, since
-   rho(A)^m <= |A^m| for an operator norm.  The overshoot is a few times
-   1e-6 at worst, for the undamped DC mode of a Drude term. */
-double spectral_radius(cmatrix A, int n) {
-  const int nsquare = 30;
-  double log_rho = 0;
-  for (int j = 1; j <= nsquare; ++j) {
-    matrix_square(A, n);
-    const double nrm = matrix_norm(A, n);
-    if (nrm != nrm) return infinity; // NaN: report as unstable, never as safe
-    if (!(nrm > 0)) return 0;
-    for (int i = 0; i < n * n; ++i)
-      A[i] /= nrm;
-    log_rho += log(nrm) / ldexp(1.0, j);
-  }
-  return exp(log_rho);
+  return eps;
 }
 
 } // namespace
 
-double dispersive_spectral_radius(double eps_inf, double mu_inf,
-                                  const std::vector<lorentzian_pole> &poles, double dt, double dx,
-                                  int ndim) {
-  const int N = int(poles.size()), n = 2 + 2 * N;
-  const double q = 2 * sqrt(double(ndim)) * dt / dx;
+bool dispersive_unstable(double eps_inf, double mu_inf, const std::vector<lorentzian_pole> &poles,
+                         double dt, double dx, int ndim) {
+  const double S = dt / dx;
+  return !(ndim * S * S < mu_inf * nyquist_epsilon(eps_inf, poles, dt));
+}
 
-  cmatrix M(n * n, std::complex<double>(0, 0));
-  double csum = 0;
-  for (int j = 0; j < N; ++j) { // as in lorentzian_susceptibility::update_P
-    const double w = 2 * pi * poles[j].omega_0, g = 2 * pi * poles[j].gamma;
-    const double w2dt2 = (w * dt) * (w * dt);
-    const double gamma1inv = 1 / (1 + g * dt / 2), gamma1 = 1 - g * dt / 2;
-    const double a = gamma1inv * (2 - (poles[j].no_omega_0_denominator ? 0 : w2dt2));
-    const double b = -gamma1inv * gamma1;
-    const double c = gamma1inv * w2dt2 * poles[j].sigma;
-    csum += c;
-    M[0 * n + (2 + 2 * j)] = (1 - a) / eps_inf;
-    M[0 * n + (3 + 2 * j)] = -b / eps_inf;
-    M[(2 + 2 * j) * n + 0] = c;
-    M[(2 + 2 * j) * n + (2 + 2 * j)] = a;
-    M[(2 + 2 * j) * n + (3 + 2 * j)] = b;
-    M[(3 + 2 * j) * n + (2 + 2 * j)] = 1;
+double dispersive_max_dt(double eps_inf, double mu_inf, const std::vector<lorentzian_pole> &poles,
+                         double dx, int ndim) {
+  /* Stable below it and unstable above, since eps_N only falls as dt grows.
+     The poles lower eps_N, so the non-dispersive limit bounds it. */
+  double lo = 0, hi = dx * sqrt(mu_inf * eps_inf / ndim);
+  for (int i = 0; i < 60; ++i) {
+    const double mid = (lo + hi) / 2;
+    (dispersive_unstable(eps_inf, mu_inf, poles, mid, dx, ndim) ? hi : lo) = mid;
   }
-  // E sees the H just updated from it, hence the q^2/(eps*mu) term.
-  M[0 * n + 0] = (eps_inf - csum - q * q / mu_inf) / eps_inf;
-  M[0 * n + 1] = std::complex<double>(0, -q) / eps_inf;
-  M[1 * n + 0] = std::complex<double>(0, -q) / mu_inf;
-  M[1 * n + 1] = 1;
-  return spectral_radius(M, n);
+  return hi;
 }
 
 } // namespace meep
@@ -163,11 +118,9 @@ static bool medium_is_modelled(const medium_struct *mm, const meep::grid_volume 
          is_zero(mm->H_chi2_diag) && is_zero(mm->H_chi3_diag);
 }
 
-stability_status medium_stability(const medium_struct *mm, const meep::grid_volume &gv, double dt) {
+stability_status medium_stability(const medium_struct *mm, const meep::grid_volume &gv, double dt,
+                                  double *max_courant) {
   if (!medium_is_modelled(mm, gv)) return STABILITY_UNCHECKED;
-
-  // Well above the estimator's error, and still e^10 of growth in 1e5 steps.
-  const double margin = 1e-4;
 
   // A magnetic medium runs the same recursion with eps and mu swapped.
   const bool electric = !mm->E_susceptibilities.empty();
@@ -176,13 +129,15 @@ stability_status medium_stability(const medium_struct *mm, const meep::grid_volu
   for (size_t i = 0; i < suscs.size(); ++i) {
     const meep::lorentzian_pole p = {suscs[i].frequency, suscs[i].gamma, suscs[i].sigma_diag.x,
                                      suscs[i].drude};
-    if (p.sigma != 0) poles.push_back(p);
+    poles.push_back(p);
   }
   const double eps_inf = electric ? mm->epsilon_diag.x : mm->mu_diag.x;
   const double mu_inf = electric ? mm->mu_diag.x : mm->epsilon_diag.x;
-  const double rho = meep::dispersive_spectral_radius(eps_inf, mu_inf, poles, dt, 1.0 / gv.a,
-                                                      meep::number_of_directions(gv.dim));
-  return rho > 1 + margin ? STABILITY_UNSTABLE : STABILITY_STABLE;
+  const double dx = 1.0 / gv.a;
+  const int ndim = meep::number_of_directions(gv.dim);
+  if (max_courant) *max_courant = meep::dispersive_max_dt(eps_inf, mu_inf, poles, dx, ndim) / dx;
+  return meep::dispersive_unstable(eps_inf, mu_inf, poles, dt, dx, ndim) ? STABILITY_UNSTABLE
+                                                                         : STABILITY_STABLE;
 }
 
 void check_medium_stability_once(const medium_struct *mm, const meep::grid_volume &gv, double dt,
@@ -192,10 +147,13 @@ void check_medium_stability_once(const medium_struct *mm, const meep::grid_volum
     if (checked[i] == mm || medium_struct_equal(checked[i], mm)) return;
   checked.push_back(mm);
 
-  switch (medium_stability(mm, gv, dt)) {
+  double max_courant;
+  switch (medium_stability(mm, gv, dt, &max_courant)) {
     case STABILITY_UNSTABLE:
       meep::master_printf_stderr("warning: dispersive material may be unstable for the current "
-                                 "timestep; reduce Courant or increase resolution\n");
+                                 "timestep; it needs Courant < %g at this resolution, or a "
+                                 "finer resolution\n",
+                                 max_courant);
       break;
     case STABILITY_UNCHECKED:
       if (meep::verbosity > 1)
