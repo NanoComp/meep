@@ -119,10 +119,10 @@ To install the PyMeep Conda package on a [non-networked system](https://docs.ana
 PyPI Packages
 -------------
 
-Binary wheels are published to PyPI as [meep](https://pypi.org/project/meep/), so Meep can be installed into an existing Python environment without Conda:
+Binary wheels are published to PyPI as [pymeep](https://pypi.org/project/pymeep/) (the import name is still `meep`), so Meep can be installed into an existing Python environment without Conda:
 
 ```bash
-pip install meep
+pip install pymeep
 ```
 
 Wheels are available on CPython 3.10 and later for Linux (x86-64 and aarch64) and for Apple silicon macOS (14 and later). They bundle their own copies of MPB, Harminv, libctlgeom, HDF5, FFTW, GSL and LAPACK, and pull in `mpi4py` and `mpich` from PyPI, so nothing else has to be installed first.
@@ -136,7 +136,7 @@ The wheels do **not** include the Scheme interface, which must be [built from so
 The wheels are compiled with MPI. In a single process Meep behaves the same way a build without MPI does, so `python foo.py` needs nothing special:
 
 ```bash
-pip install meep
+pip install pymeep
 mpiexec -np 4 python -m mpi4py foo.py
 ```
 
@@ -151,7 +151,7 @@ On a cluster, replace the `mpich` wheel with the site MPI: `pip uninstall mpich`
 Open MPI does **not** implement the MPICH ABI, so these wheels must not be launched with it. How the mismatch surfaces varies — a loader error, a crash, or, worst of all, ranks in separate `MPI_COMM_WORLD`s that each run the whole simulation. On such a system, build against your own MPI instead of installing the wheel:
 
 ```bash
-pip install --no-binary meep meep
+pip install --no-binary pymeep pymeep
 ```
 
 The source build uses the `mpicc` on your `PATH`, or the `CC`/`CXX` you set.
@@ -161,10 +161,10 @@ That is also the recommended route on clusters generally, where a fabric-tuned o
 The optional adjoint-solver dependencies are not installed by default:
 
 ```bash
-pip install "meep[adjoint]"
+pip install "pymeep[adjoint]"
 ```
 
-Installing the source distribution (`pip install --no-binary meep meep`) runs the ordinary Autotools build and therefore needs the full set of prerequisites described under [Building from Source](#building-from-source), plus SWIG and an MPI compiler wrapper.
+Installing the source distribution (`pip install --no-binary pymeep pymeep`) runs the ordinary Autotools build and therefore needs the full set of prerequisites described under [Building from Source](#building-from-source), plus SWIG and an MPI compiler wrapper.
 
 Installation on Linux
 -------------------------

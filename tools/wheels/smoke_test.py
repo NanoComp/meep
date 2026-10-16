@@ -97,7 +97,7 @@ package = Path(mp.__file__).parent
 # Other distributions vendor an HDF5 of their own into site-packages, h5py
 # above all, so look only where this wheel's copy can be.
 lib_dirs = [package / ".dylibs"] + [
-    d for d in package.parent.glob("*.libs") if d.name.startswith("meep")
+    d for d in package.parent.glob("*.libs") if d.name.startswith("pymeep")
 ]
 vendored = [lib for d in lib_dirs for lib in sorted(d.glob("libhdf5*"))]
 assert vendored, f"no vendored libhdf5 found in {[str(d) for d in lib_dirs]}"

@@ -1,7 +1,7 @@
 # PEP 517 packaging for binary wheels; autotools remains the canonical build.
 #
-# The distribution and the import name are both `meep`. The Conda package is
-# named `pymeep`.
+# The distribution is named `pymeep`, matching the Conda package; the import
+# name is `meep`.
 #
 # The extensions are compiled with MPI; in a single process Meep behaves the
 # same way a build without MPI does.
@@ -13,7 +13,7 @@ requires = ["setuptools>=77", "wheel", "numpy>=2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "meep"
+name = "pymeep"
 dynamic = ["version"]
 description = "Free finite-difference time-domain (FDTD) software for electromagnetic simulations"
 readme = "README.md"
