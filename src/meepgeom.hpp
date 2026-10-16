@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <array>
+#include <mutex>
+#include <unordered_map>
 #include <vector>
 
 #include "material_data.hpp"
@@ -233,12 +236,41 @@ public:
      or fill < 0 if the pixel does not straddle an interface (so the shape
      derivative is zero there and the pixel can be skipped). */
   bool interface_fill(const meep::volume &v, double tol, int maxeval, double &fill,
-                      const geometric_object **which = NULL, vector3 *shift = NULL);
+                      const geometric_object **which = NULL, vector3 *shift = NULL,
+                      material_type *front_mat = NULL, material_type *behind_mat = NULL);
 
   void fallback_chi1inv_row(meep::component c, double chi1inv_row[3], const meep::volume &v,
                             double tol, int maxeval);
 
   virtual void sigma_row(meep::component c, double sigrow[3], const meep::vec &r);
+  virtual void eff_sigma_row(meep::component c, double sigrow[3], const meep::volume &v);
+  virtual double eff_conductivity(meep::component c, const meep::volume &v);
+  double absorber_conductivity(const meep::vec &r);
+
+  /* What eff_sigma_row and eff_conductivity need to know about a pixel:
+     whether it straddles an interface between two non-variable materials and,
+     if so, the filling fraction and the two materials.  None of it depends on
+     the pole or the component's conductivity, so it is computed once per pixel
+     and reused, instead of repeating the adaptive overlap integral.  Only
+     pixels that straddle an interface are kept, so the cache stays the size of
+     the boundary rather than of the cell.  It depends only on the geometry,
+     which is fixed for a geom_epsilon; set_materials_from_geom_epsilon clears
+     it once the structure is built. */
+#ifndef SWIG
+  struct sigma_pixel {
+    bool smooth;
+    double fill;
+    material_type front, behind;
+    vector3 normal; // unit normal to the interface, as in eff_chi1inv_matrix
+  };
+  struct volume_key_hash {
+    size_t operator()(const std::array<double, 6> &k) const;
+  };
+  std::unordered_map<std::array<double, 6>, sigma_pixel, volume_key_hash> sigma_pixel_cache;
+  std::mutex sigma_pixel_mutex; // the sigma loops run under OpenMP
+  bool interface_pixel(const meep::volume &v, sigma_pixel &px);
+#endif
+  void material_sigma_row(meep::component c, double sigrow[3], material_type mat);
   void add_susceptibilities(meep::structure *s);
   void add_susceptibilities(meep::field_type ft, meep::structure *s);
 
