@@ -258,6 +258,38 @@ class TestSimulation(unittest.TestCase):
 
         self.assertTrue(done[0])
 
+    def test_run_until_list(self):
+        # The run stops as soon as any condition in the list is true.
+        sim = self.init_simple_simulation()
+        sim.run(until=[5, 10])
+        self.assertAlmostEqual(sim.meep_time(), 5, delta=0.1)
+
+        # The list can be reused for another run.
+        sim = self.init_simple_simulation()
+        until = [5]
+        sim.run(until=until)
+        sim.run(until=until)
+        self.assertAlmostEqual(sim.meep_time(), 10, delta=0.1)
+
+    def test_run_until_after_sources_list(self):
+        sim = self.init_simple_simulation()
+        sim.init_sim()
+        ts = sim.fields.last_source_time()
+        sim.run(
+            until_after_sources=[
+                lambda sim: sim.meep_time() >= ts + 5,
+                lambda sim: sim.meep_time() >= ts + 20,
+            ]
+        )
+        self.assertAlmostEqual(sim.meep_time(), ts + 5, delta=0.1)
+
+        # A function followed by a number (issue #3132).
+        sim = self.init_simple_simulation()
+        sim.init_sim()
+        ts = sim.fields.last_source_time()
+        sim.run(until_after_sources=[lambda sim: False, 5])
+        self.assertAlmostEqual(sim.meep_time(), ts + 5, delta=0.1)
+
     def test_with_prefix(self):
         sim = self.init_simple_simulation()
         sim.use_output_directory(self.temp_dir)

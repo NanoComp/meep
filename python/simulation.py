@@ -2969,6 +2969,8 @@ class Simulation:
 
         if not isinstance(cond, list):
             cond = [cond]
+        else:
+            cond = list(cond)  # make a copy of the list in case it gets mutated
 
         self.progress = False
         for i in range(len(cond)):
@@ -2976,7 +2978,7 @@ class Simulation:
                 stop_time = cond[i]
                 t0 = self.round_time()
 
-                def stop_cond(sim):
+                def stop_cond(sim, t0=t0, stop_time=stop_time):
                     return sim.round_time() >= t0 + stop_time
 
                 cond[i] = stop_cond
@@ -3038,8 +3040,8 @@ class Simulation:
                 new_conds.append((ts - self.round_time()) + cond[i])
             else:
 
-                def f(sim):
-                    return cond[i](sim) and sim.round_time() >= ts
+                def f(sim, c=cond[i]):
+                    return c(sim) and sim.round_time() >= ts
 
                 new_conds.append(f)
 
