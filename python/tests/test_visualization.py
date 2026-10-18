@@ -590,13 +590,6 @@ class TestVisualization(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "positive integer or None"):
                     mp.visualization._epsilon_levels(eps_data, 1, nlevels)
 
-    """
-    Travis does not play well with Mayavi
-    def test_3D_mayavi(self):
-        sim = setup_sim(4)
-        sim.plot3D()
-    """
-
 
 if __name__ == "__main__":
     unittest.main()
