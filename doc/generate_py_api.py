@@ -169,13 +169,25 @@ class FunctionItem(Item):
             else:
                 return f"{p.name}={p.default!r}"
 
-        parts = [_param_str_no_annotation(p) for p in parameters]
+        parts = []
+        has_var_positional = any(
+            p.kind == inspect.Parameter.VAR_POSITIONAL for p in parameters
+        )
+        for p in parameters:
+            # Without *args, keyword-only parameters are introduced by a bare `*`.
+            if (
+                p.kind == inspect.Parameter.KEYWORD_ONLY
+                and not has_var_positional
+                and "*" not in parts
+            ):
+                parts.append("*")
+            parts.append(_param_str_no_annotation(p))
         param_str = "({})".format(", ".join(parts))
 
         # Wrap and indent the parameters if the line is too long
         if len(param_str) > 50:
             params = []
-            for idx, param in enumerate(parts):
+            for idx, part in enumerate(parts):
                 params.append("(" + part if idx == 0 else " " * indent + part)
             param_str = ",\n".join(params)
             param_str += ")"
@@ -224,6 +236,10 @@ class FunctionItem(Item):
 
         # Handle keyword-only arguments (between *args and **kwargs)
         if func.args.kwonlyargs:
+            # Without *args, keyword-only parameters are introduced by a bare `*`;
+            # omitting it would document them as if they could be passed positionally.
+            if func.args.vararg is None:
+                transformed.append("*")
             kw_defaults = func.args.kw_defaults
             for arg, default in zip(func.args.kwonlyargs, kw_defaults):
                 name = parse_name(arg)
