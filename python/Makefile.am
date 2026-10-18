@@ -138,7 +138,7 @@ TEST_DATA_FILES =                                           \
 
 # only the *.py examples are distributed: the notebooks (*.ipynb) and
 # media/ are omitted to keep the tarball small
-EXAMPLE =                                                             \
+EXAMPLES =                                                            \
     $(EXAMPLE_DIR)/3rd-harm-1d.py                                     \
     $(EXAMPLE_DIR)/absorbed_power_density.py                          \
     $(EXAMPLE_DIR)/absorber-1d.py                                     \
@@ -400,12 +400,6 @@ check-adjoint:
 
 clean-local:
 	rm -rf meep __init__.py.bak
-
-# the tests and examples directories are copied wholesale by EXTRA_DIST, so
-# exclude Python bytecode caches, Jupyter checkpoints, and test-driver output.
-dist-hook:
-	find $(distdir) -type d \( -name __pycache__ -o -name .ipynb_checkpoints \) -prune -exec rm -rf {} +
-	find $(distdir) -type f \( -name '*.py[co]' -o -name '*.log' -o -name '*.trs' \) -exec rm -f {} +
 
 distclean-local:
 	rm -f *.h5
