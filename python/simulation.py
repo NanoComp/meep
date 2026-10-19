@@ -5407,6 +5407,7 @@ class Simulation:
         backend: str = "native",
         html_name: Optional[str] = None,
         nlevels: Optional[int] = None,
+        eps_parameters: Optional[dict] = None,
         **kwargs,
     ):
         """
@@ -5436,6 +5437,12 @@ class Simulation:
         * `nlevels`: maximum number of material isosurfaces. If None, at most 10
             evenly distributed material levels are rendered. Fewer are used when
             the structure has fewer distinct non-background levels.
+        * `eps_parameters`: a `dict` of optional parameters that override the
+            default parameters for the geometry.
+            - `frequency=None`: for materials with a [frequency-dependent
+              permittivity](Materials.md#material-dispersion) $\\varepsilon(f)$, specifies the
+              frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+              plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
         **kwargs for the `"native"` backend: Camera settings.**
 
@@ -5473,6 +5480,7 @@ class Simulation:
             backend=backend,
             html_name=html_name,
             nlevels=nlevels,
+            eps_parameters=eps_parameters,
             **kwargs,
         )
 
