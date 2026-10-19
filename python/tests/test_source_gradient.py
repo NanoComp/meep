@@ -46,13 +46,13 @@ def _design_region(sim):
     return dr
 
 
-def _problem(source, fcen=FCEN, res=RES, comp=mp.Ez):
+def _problem(source, fcen=FCEN, res=RES, comp=mp.Ez, complex_fields=True):
     sim = mp.Simulation(
         cell_size=CELL,
         resolution=res,
         boundary_layers=[mp.PML(1.0)],
         sources=[source],
-        force_complex_fields=True,
+        force_complex_fields=complex_fields,
     )
     dr = _design_region(sim)
     mon = mpa.FourierFields(sim, mp.Volume(center=MON_C, size=mp.Vector3(0, 0)), comp)
@@ -281,7 +281,9 @@ class TestSourceGradient(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "PML"):
             opt([RHO])
 
-    def _amplitude_case(self, fcen=FCEN, res=RES, amp=1.0, comp=mp.Ez):
+    def _amplitude_case(
+        self, fcen=FCEN, res=RES, amp=1.0, comp=mp.Ez, complex_fields=True
+    ):
         def make(a):
             return mp.Source(
                 mp.GaussianSource(fcen, fwidth=0.2 * fcen),
@@ -292,12 +294,12 @@ class TestSourceGradient(unittest.TestCase):
                 name="drive",
             )
 
-        _, opt = _problem(make(amp), fcen, res, comp)
+        _, opt = _problem(make(amp), fcen, res, comp, complex_fields)
         _, grad = opt([RHO])
         adjoint = np.ravel(grad["drive"]["amplitude"])[0]
 
         def evaluate(a):
-            _, o = _problem(make(a), fcen, res, comp)
+            _, o = _problem(make(a), fcen, res, comp, complex_fields)
             return np.asarray(o([RHO], need_gradient=False)[0]).item()
 
         reference = _complex_fd(evaluate, lambda d: amp + d)
@@ -311,6 +313,13 @@ class TestSourceGradient(unittest.TestCase):
             ("higher frequency", dict(fcen=1.3)),
             ("complex amplitude", dict(amp=0.7 - 0.4j)),
             ("magnetic source", dict(comp=mp.Hz)),
+            # real fields halve both the adjoint and the forward response at
+            # +omega; only the first is undone by the adjoint source's scale
+            ("real fields", dict(complex_fields=False)),
+            (
+                "real fields, complex amplitude",
+                dict(amp=0.7 - 0.4j, complex_fields=False),
+            ),
         ]:
             with self.subTest(label):
                 adjoint, reference = self._amplitude_case(**kwargs)

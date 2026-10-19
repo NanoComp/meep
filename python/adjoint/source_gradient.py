@@ -347,8 +347,11 @@ def source_grad_scale(
     scale = np.asarray(adj_src_phase) * fwd_dtft * sim.resolution**num_delta / iomega
 
     if sim.using_real_fields():
-        # real fields keep only Re[J], halving the amplitude at +omega
-        scale *= 2
+        # Real fields keep only Re[J], halving the amplitude at +omega.  The
+        # adjoint source already doubles itself for that (`_adj_src_scale`), so
+        # the adjoint field here is the true one; what is halved is the forward
+        # field's response to this amplitude, and hence the derivative.
+        scale *= 0.5
     return scale
 
 
