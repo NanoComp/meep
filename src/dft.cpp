@@ -1512,6 +1512,26 @@ std::vector<size_t> fields::dft_monitor_size(dft_fields fdft, const volume &wher
   return reduced_dims_vec;
 }
 
+/* What an adjoint source at a site has to be divided by to undo the
+   replication of a reduced symmetric domain.  Each pass of the symmetry
+   loop deposits a point of the monitor at its stored image, so a stored site
+   receives the shares of all of its images the reduced domain does not store
+   separately: multiplicity(site) of them, less those it does store.  Usually
+   that is all but itself; but a component half a pixel off a mirror plane is
+   stored on *both* sides of it (Hz or Ey at y = +-1/2 under Mirror(Y)), each
+   side is visited by one pass only, and dividing by the full multiplicity
+   left that row of the source at half strength. */
+static int symmetry_divisor(const fields &f, const symmetry &S, ivec stored) {
+  std::vector<ivec> owned;
+  for (int sn = 0; sn < S.multiplicity(); ++sn) {
+    const ivec image = S.transform(stored, sn);
+    if (f.gv.owns(image) && std::find(owned.begin(), owned.end(), image) == owned.end())
+      owned.push_back(image);
+  }
+  const int multiplicity = S.multiplicity(stored);
+  return owned.empty() ? multiplicity : std::max(1, multiplicity / int(owned.size()));
+}
+
 std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &where, component c,
                                                               fields &f,
                                                               const std::complex<double> *dJ) {
@@ -1532,6 +1552,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
       reduced_dims[0] * reduced_dims[1] * reduced_dims[2]; // total number of points in the monitor
 
   std::vector<struct sourcedata> temp;
+  const fields &fields_ref = f; // `f` is reused for the chunk below
 
   for (dft_chunk *f = chunks; f; f = f->next_in_dft) {
     assert(Nfreq == f->omega.size());
@@ -1591,7 +1612,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
           if (is_B(c) && f->fc->s->chi1inv[c - Bx + Hx][cd])
             EH0 /= f->fc->s->chi1inv[c - Bx + Hx][cd][idx];
 
-          EH0 /= f->S.multiplicity(ix0);
+          EH0 /= symmetry_divisor(fields_ref, f->S, ix0);
           temp_struct.amp_arr.push_back(EH0);
         }
       }
@@ -1622,7 +1643,7 @@ std::vector<struct sourcedata> dft_fields::fourier_sourcedata(const volume &wher
             if (f->avg1) isite += unit_ivec(f->fc->gv.dim, avg_d[0]) * ((j & 1) ? 1 : -1);
             if (f->avg2) isite += unit_ivec(f->fc->gv.dim, avg_d[1]) * ((j & 2) ? 1 : -1);
             ivec isiteS(f->S.transform(isite, f->sn) + f->shift);
-            EH0 /= f->S.multiplicity(isiteS);
+            EH0 /= symmetry_divisor(fields_ref, f->S, isiteS);
             temp_struct.amp_arr.push_back(EH0);
           }
         }
