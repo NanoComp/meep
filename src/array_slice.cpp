@@ -272,11 +272,11 @@ static void get_array_slice_chunkloop(fields_chunk *fc, int ichnk, component cgr
   ivec isS = S.transform(is, sn) + shift;
   ivec ieS = S.transform(ie, sn) + shift;
 
-  // figure out what yucky_directions (in LOOP_OVER_IVECS)
+  // figure out what nested-loop directions (in LOOP_OVER_IVECS)
   // correspond to what directions in the transformed vectors (in output).
   ivec permute(zero_ivec(fc->gv.dim));
   for (int i = 0; i < 3; ++i)
-    permute.set_direction(fc->gv.yucky_direction(i), i);
+    permute.set_direction(fc->gv.nested_loop_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
   LOOP_OVER_DIRECTIONS(permute.dim, d) { permute.set_direction(d, abs(permute.in_direction(d))); }
 

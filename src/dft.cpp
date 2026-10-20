@@ -959,7 +959,7 @@ complex<double> dft_chunk::process_dft_component(int rank, direction *ds, ivec m
 
   ivec permute(zero_ivec(fc->gv.dim));
   for (int i = 0; i < 3; ++i)
-    permute.set_direction(fc->gv.yucky_direction(i), i);
+    permute.set_direction(fc->gv.nested_loop_direction(i), i);
   permute = S.transform_unshifted(permute, sn);
   LOOP_OVER_DIRECTIONS(permute.dim, d) { permute.set_direction(d, abs(permute.in_direction(d))); }
 

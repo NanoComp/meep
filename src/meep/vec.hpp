@@ -149,18 +149,19 @@ component first_field_component(field_type ft);
        d < (dim == meep::Dcyl ? meep::NO_DIRECTION : meep::R); d = meep::direction(d + 1))
 
 #define LOOP_OVER_IVECS(gv, is, ie, idx)                                                           \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
-                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
-                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
-                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
-                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
-                 loop_d3 = (gv).yucky_direction(2),                                                \
+  for (ptrdiff_t loop_is1 = (is).nested_loop_val(0), loop_is2 = (is).nested_loop_val(1),           \
+                 loop_is3 = (is).nested_loop_val(2),                                               \
+                 loop_n1 = ((ie).nested_loop_val(0) - loop_is1) / 2 + 1,                           \
+                 loop_n2 = ((ie).nested_loop_val(1) - loop_is2) / 2 + 1,                           \
+                 loop_n3 = ((ie).nested_loop_val(2) - loop_is3) / 2 + 1,                           \
+                 loop_d1 = (gv).nested_loop_direction(0), loop_d2 = (gv).nested_loop_direction(1), \
+                 loop_d3 = (gv).nested_loop_direction(2),                                          \
                  loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
                  loop_s2 = (gv).stride((meep::direction)loop_d2),                                  \
                  loop_s3 = (gv).stride((meep::direction)loop_d3),                                  \
-                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
-                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
-                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                 idx0 = (is - (gv).little_corner()).nested_loop_val(0) / 2 * loop_s1 +             \
+                        (is - (gv).little_corner()).nested_loop_val(1) / 2 * loop_s2 +             \
+                        (is - (gv).little_corner()).nested_loop_val(2) / 2 * loop_s3,              \
                  loop_i1 = 0;                                                                      \
        loop_i1 < loop_n1; loop_i1++)                                                               \
     for (ptrdiff_t loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                      \
@@ -199,18 +200,19 @@ component first_field_component(field_type ft);
 // the most generic use case where the user
 // can specify a custom clause
 #define PLOOP_OVER_IVECS_C(gv, is, ie, idx, clause)                                                \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
-                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
-                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
-                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
-                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
-                 loop_d3 = (gv).yucky_direction(2),                                                \
+  for (ptrdiff_t loop_is1 = (is).nested_loop_val(0), loop_is2 = (is).nested_loop_val(1),           \
+                 loop_is3 = (is).nested_loop_val(2),                                               \
+                 loop_n1 = ((ie).nested_loop_val(0) - loop_is1) / 2 + 1,                           \
+                 loop_n2 = ((ie).nested_loop_val(1) - loop_is2) / 2 + 1,                           \
+                 loop_n3 = ((ie).nested_loop_val(2) - loop_is3) / 2 + 1,                           \
+                 loop_d1 = (gv).nested_loop_direction(0), loop_d2 = (gv).nested_loop_direction(1), \
+                 loop_d3 = (gv).nested_loop_direction(2),                                          \
                  loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
                  loop_s2 = (gv).stride((meep::direction)loop_d2),                                  \
                  loop_s3 = (gv).stride((meep::direction)loop_d3),                                  \
-                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
-                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
-                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                 idx0 = (is - (gv).little_corner()).nested_loop_val(0) / 2 * loop_s1 +             \
+                        (is - (gv).little_corner()).nested_loop_val(1) / 2 * loop_s2 +             \
+                        (is - (gv).little_corner()).nested_loop_val(2) / 2 * loop_s3,              \
                  dummy_first = 0;                                                                  \
        dummy_first < 1; dummy_first++)                                                             \
   _Pragma(                                                                                         \
@@ -247,7 +249,7 @@ component first_field_component(field_type ft);
          loop_ibound++)                                                                            \
   PLOOP_OVER_IVECS(gv, loop_notowned_is, loop_notowned_ie, idx)
 
-#define LOOPS_ARE_STRIDE1(gv) ((gv).stride((gv).yucky_direction(2)) == 1)
+#define LOOPS_ARE_STRIDE1(gv) ((gv).stride((gv).nested_loop_direction(2)) == 1)
 
 // The following work identically to the LOOP_* macros above,
 // but assume that the inner loop is stride-1: LOOPS_ARE_STRIDE1(gv) *must*
@@ -273,16 +275,17 @@ component first_field_component(field_type ft);
 
 // loop over indices idx from is to ie (inclusive) in gv
 #define S1LOOP_OVER_IVECS(gv, is, ie, idx)                                                         \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
-                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
-                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
-                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
-                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
+  for (ptrdiff_t loop_is1 = (is).nested_loop_val(0), loop_is2 = (is).nested_loop_val(1),           \
+                 loop_is3 = (is).nested_loop_val(2),                                               \
+                 loop_n1 = ((ie).nested_loop_val(0) - loop_is1) / 2 + 1,                           \
+                 loop_n2 = ((ie).nested_loop_val(1) - loop_is2) / 2 + 1,                           \
+                 loop_n3 = ((ie).nested_loop_val(2) - loop_is3) / 2 + 1,                           \
+                 loop_d1 = (gv).nested_loop_direction(0), loop_d2 = (gv).nested_loop_direction(1), \
                  loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
                  loop_s2 = (gv).stride((meep::direction)loop_d2), loop_s3 = 1,                     \
-                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
-                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
-                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                 idx0 = (is - (gv).little_corner()).nested_loop_val(0) / 2 * loop_s1 +             \
+                        (is - (gv).little_corner()).nested_loop_val(1) / 2 * loop_s2 +             \
+                        (is - (gv).little_corner()).nested_loop_val(2) / 2 * loop_s3,              \
                  loop_i1 = 0;                                                                      \
        loop_i1 < loop_n1; loop_i1++)                                                               \
     for (int loop_i2 = 0; loop_i2 < loop_n2; loop_i2++)                                            \
@@ -312,16 +315,17 @@ component first_field_component(field_type ft);
    We can use simd vectorization in addition to the usual par for optimization */
 // loop over indices idx from is to ie (inclusive) in gv
 #define PS1LOOP_OVER_IVECS(gv, is, ie, idx)                                                        \
-  for (ptrdiff_t loop_is1 = (is).yucky_val(0), loop_is2 = (is).yucky_val(1),                       \
-                 loop_is3 = (is).yucky_val(2), loop_n1 = ((ie).yucky_val(0) - loop_is1) / 2 + 1,   \
-                 loop_n2 = ((ie).yucky_val(1) - loop_is2) / 2 + 1,                                 \
-                 loop_n3 = ((ie).yucky_val(2) - loop_is3) / 2 + 1,                                 \
-                 loop_d1 = (gv).yucky_direction(0), loop_d2 = (gv).yucky_direction(1),             \
+  for (ptrdiff_t loop_is1 = (is).nested_loop_val(0), loop_is2 = (is).nested_loop_val(1),           \
+                 loop_is3 = (is).nested_loop_val(2),                                               \
+                 loop_n1 = ((ie).nested_loop_val(0) - loop_is1) / 2 + 1,                           \
+                 loop_n2 = ((ie).nested_loop_val(1) - loop_is2) / 2 + 1,                           \
+                 loop_n3 = ((ie).nested_loop_val(2) - loop_is3) / 2 + 1,                           \
+                 loop_d1 = (gv).nested_loop_direction(0), loop_d2 = (gv).nested_loop_direction(1), \
                  loop_s1 = (gv).stride((meep::direction)loop_d1),                                  \
                  loop_s2 = (gv).stride((meep::direction)loop_d2), loop_s3 = 1,                     \
-                 idx0 = (is - (gv).little_corner()).yucky_val(0) / 2 * loop_s1 +                   \
-                        (is - (gv).little_corner()).yucky_val(1) / 2 * loop_s2 +                   \
-                        (is - (gv).little_corner()).yucky_val(2) / 2 * loop_s3,                    \
+                 idx0 = (is - (gv).little_corner()).nested_loop_val(0) / 2 * loop_s1 +             \
+                        (is - (gv).little_corner()).nested_loop_val(1) / 2 * loop_s2 +             \
+                        (is - (gv).little_corner()).nested_loop_val(2) / 2 * loop_s3,              \
                  dummy_first = 0;                                                                  \
        dummy_first < 1; dummy_first++)                                                             \
   _Pragma("omp parallel for collapse(2)") for (ptrdiff_t loop_i1 = 0; loop_i1 < loop_n1;           \
@@ -787,9 +791,10 @@ public:
   friend ivec iveccyl(int xx, int yy);
   ~ivec(){};
 
-  // Only an idiot (or a macro) would use a yucky function.  Don't be an
-  // idiot.
-  int yucky_val(int) const;
+  // Component along the direction traversed by nesting level n (0 = outermost,
+  // 2 = innermost) of the LOOP_OVER_IVECS macros; 0 if that direction is not
+  // present in this dimensionality.  Intended for use by the loop macros.
+  int nested_loop_val(int) const;
 
   ivec operator+(const ivec &a) const {
     ivec result = a;
@@ -1022,10 +1027,14 @@ public:
   void print() const;
   ptrdiff_t stride(direction d) const { return the_stride[d]; };
   int num_direction(direction d) const { return num[((int)d) % 3]; };
-  // Only an idiot (or a macro) would use a yucky function.  Don't be an
-  // idiot.
-  int yucky_num(int) const;
-  direction yucky_direction(int) const;
+  // The LOOP_OVER_IVECS macros traverse the grid with three nested loops, ordered
+  // so that the innermost loop (n = 2) runs along the stride-1 direction.
+  // nested_loop_direction(n) is the direction traversed by nesting level n
+  // (0 = outermost); nested_loop_num(n) is num_direction() along it,
+  // or 1 if that direction is not present in this dimensionality.  Intended for
+  // use by the loop macros.
+  int nested_loop_num(int) const;
+  direction nested_loop_direction(int) const;
   void set_num_direction(direction d, int value);
   int nr() const { return num_direction(R); }
   int nx() const { return num_direction(X); }
