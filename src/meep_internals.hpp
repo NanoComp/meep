@@ -216,9 +216,9 @@ void reduce_array_dimensions(volume where, int full_rank, size_t dims[3], direct
    LOOP, wheras KDEF defines the k index and goes inside the LOOP. */
 #define KSTRIDE_DEF(dsig, k, is, gv)                                                               \
   const int k##0 = is.in_direction(dsig) - gv.little_corner().in_direction(dsig);                  \
-  const int s##k##1 = gv.yucky_direction(0) == dsig ? 2 : 0;                                       \
-  const int s##k##2 = gv.yucky_direction(1) == dsig ? 2 : 0;                                       \
-  const int s##k##3 = gv.yucky_direction(2) == dsig ? 2 : 0
+  const int s##k##1 = gv.nested_loop_direction(0) == dsig ? 2 : 0;                                 \
+  const int s##k##2 = gv.nested_loop_direction(1) == dsig ? 2 : 0;                                 \
+  const int s##k##3 = gv.nested_loop_direction(2) == dsig ? 2 : 0
 #define KDEF(k, dsig)                                                                              \
   const int k = ((k##0 + s##k##1 * loop_i1) + s##k##2 * loop_i2) + s##k##3 * loop_i3
 #define DEF_k KDEF(k, dsig)

@@ -259,7 +259,7 @@ direction volume::normal_direction() const {
 /* Used for n=0,1,2 nested loops in macros.  We should arrange
    the ordering so that this gives most efficient traversal of
    a field array, where n=2 is the innermost loop. */
-static direction yucky_dir(ndim dim, int n) {
+static direction nested_loop_dir(ndim dim, int n) {
   if (dim == Dcyl) switch (n) {
       case 0: return P;
       case 1: return R;
@@ -270,17 +270,17 @@ static direction yucky_dir(ndim dim, int n) {
   return (direction)n;
 }
 
-int ivec::yucky_val(int n) const {
-  if (has_direction(dim, yucky_dir(dim, n))) return in_direction(yucky_dir(dim, n));
+int ivec::nested_loop_val(int n) const {
+  if (has_direction(dim, nested_loop_dir(dim, n))) return in_direction(nested_loop_dir(dim, n));
   return 0;
 }
 
-int grid_volume::yucky_num(int n) const {
-  if (has_direction(dim, yucky_dir(dim, n))) return num_direction(yucky_dir(dim, n));
+int grid_volume::nested_loop_num(int n) const {
+  if (has_direction(dim, nested_loop_dir(dim, n))) return num_direction(nested_loop_dir(dim, n));
   return 1;
 }
 
-direction grid_volume::yucky_direction(int n) const { return yucky_dir(dim, n); }
+direction grid_volume::nested_loop_direction(int n) const { return nested_loop_dir(dim, n); }
 
 volume grid_volume::surroundings() const {
   return volume(operator[](little_corner()), operator[](big_corner()));
