@@ -3132,6 +3132,7 @@ def plot3D(save_to_image=False,
            backend='native',
            html_name=None,
            nlevels=None,
+           eps_parameters=None,
            **kwargs):
 ```
 
@@ -3163,6 +3164,12 @@ Two backends are available:
 * `nlevels`: maximum number of material isosurfaces. If `None`, at most 10
     evenly distributed material levels are rendered. Fewer are used when the
     structure has fewer distinct non-background levels.
+* `eps_parameters`: a `dict` of optional parameters that override the
+    default parameters for the geometry.
+    - `frequency=None`: for materials with a [frequency-dependent
+      permittivity](Materials.md#material-dispersion) $\varepsilon(f)$, specifies the
+      frequency $f$ (in Meep units) of the real part of the permittivity to use in the
+      plot. Defaults to the `frequency` parameter of the [Source](#source) object.
 
 **kwargs for the `"native"` backend: Camera settings.**
 

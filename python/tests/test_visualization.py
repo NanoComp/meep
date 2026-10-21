@@ -568,6 +568,48 @@ class TestVisualization(unittest.TestCase):
                 # a 2D cell would render as a flattened, misleading scene
                 setup_sim(0).plot3D(backend="html")
 
+    @unittest.skipIf(
+        importlib.util.find_spec("plotly") is None
+        or importlib.util.find_spec("skimage") is None,
+        "plot3D's html backend requires plotly and scikit-image",
+    )
+    def test_plot3D_eps_frequency(self):
+        # A dispersive block, ε(f) = 2 + 1/(1 - f²), inside a dispersive
+        # background, ε(f) = 1.5 + 0.5/(1 - f²).
+        def lorentzian_medium(epsilon, sigma):
+            return mp.Medium(
+                epsilon=epsilon,
+                E_susceptibilities=[
+                    mp.LorentzianSusceptibility(frequency=1, gamma=0, sigma=sigma)
+                ],
+            )
+
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(4, 4, 4),
+            resolution=8,
+            geometry=[mp.Block(mp.Vector3(1, 1, 1), material=lorentzian_medium(2, 1))],
+            default_material=lorentzian_medium(1.5, 0.5),
+            sources=[
+                mp.Source(
+                    mp.ContinuousSource(frequency=0.5),
+                    component=mp.Ez,
+                    center=mp.Vector3(),
+                )
+            ],
+        )
+
+        def materials(eps_parameters):
+            fig = sim.plot3D(backend="html", show=False, eps_parameters=eps_parameters)
+            return [t.name for t in fig.data if t.name.startswith("ε")]
+
+        # The frequency defaults to that of the source. The background is
+        # evaluated at the same frequency, so it is not drawn as a solid.
+        self.assertEqual(materials(None), ["ε = 3.33"])
+        self.assertEqual(materials({"frequency": 0.5}), ["ε = 3.33"])
+        self.assertEqual(materials({"frequency": 0.25}), ["ε = 3.07"])
+        # zero frequency is the instantaneous ε
+        self.assertEqual(materials({"frequency": 0}), ["ε = 2"])
+
     def test_plot3D_nlevels(self):
         eps_data = np.arange(1, 13, dtype=float)
 
