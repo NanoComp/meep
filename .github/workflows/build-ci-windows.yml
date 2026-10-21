@@ -30,6 +30,12 @@ on:
 env:
   # Pinned so a libctl release cannot change the build underneath us.
   LIBCTL_VERSION: 4.7.1
+  # Temporary: mingw-w64-ucrt-x86_64-hdf5-2.2.0-4 (2026-10-20) broke the
+  # binary mingw-w64-ucrt-x86_64-python-h5py package ("import h5py" fails with
+  # "DLL load failed while importing defs: The specified procedure could not
+  # be found").  Roll both back to the last known-good pair until MSYS2 ships
+  # a matching h5py; set to empty to drop the pin.
+  MSYS2_PINS: hdf5-2.2.0-2 python-h5py-3.16.0-2
 
 jobs:
   build:
@@ -86,6 +92,15 @@ jobs:
     # tests needing them live in ADJOINT_TESTS, which "make check" does not run.
     - name: Install remaining Python test dependencies
       run: python -m pip install --break-system-packages autograd parameterized
+
+    # Nothing after this step runs pacman -Syu, so the downgrade sticks, and
+    # Meep below is then built against the same hdf5 that h5py loads.
+    - name: Pin MSYS2 packages
+      if: env.MSYS2_PINS != ''
+      run: |
+        pacman -U --noconfirm $(for p in ${MSYS2_PINS}; do
+          echo "https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-${p}-any.pkg.tar.zst"
+        done)
 
     - name: Define common environment variables
       run: |
