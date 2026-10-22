@@ -125,6 +125,114 @@ class TestSourceTime(unittest.TestCase):
             self.assertEqual(src.fourier_transform(f), src.swigobj.fourier_transform(f))
 
 
+class TestSourceChunkBoundary(unittest.TestCase):
+    @staticmethod
+    def _get_source(
+        cell_size,
+        geometry_center,
+        source_center,
+        source_size,
+        chunk_layout,
+        run_until=None,
+    ):
+        sim = mp.Simulation(
+            cell_size=cell_size,
+            geometry_center=geometry_center,
+            resolution=8,
+            chunk_layout=chunk_layout,
+            sources=[
+                mp.Source(
+                    mp.ContinuousSource(1.0),
+                    component=mp.Ez,
+                    center=source_center,
+                    size=source_size,
+                )
+            ],
+        )
+        try:
+            sim.init_sim()
+            source = sim.get_source(mp.Ez)
+            energy = None
+            if run_until is not None:
+                sim.run(until=run_until)
+                energy = sim.field_energy_in_box(
+                    mp.Volume(center=geometry_center, size=cell_size)
+                )
+            return source, energy
+        finally:
+            sim.reset_meep()
+
+    def test_zero_thickness_source_at_chunk_boundary(self):
+        cell_size = mp.Vector3(2.5, 2.25, 2.75)
+        geometry_center = mp.Vector3(0.0625, -0.0625, 0.0625)
+        one_chunk = mp.BinaryPartition(data=0)
+        split_at_source = mp.BinaryPartition(data=[(mp.Z, 0.0), 0, 1])
+
+        # The off-boundary case is a control that the split alone does not
+        # change deposition. The boundary case exercises interpolation onto
+        # both Ez planes adjacent to the split.
+        for source_z in (0.25, 0.0):
+            with self.subTest(source_z=source_z):
+                source_center = mp.Vector3(0.0625, -0.0625, source_z)
+                source_size = mp.Vector3(1.5, 1.25, 0)
+                expected_source, expected_energy = self._get_source(
+                    cell_size,
+                    geometry_center,
+                    source_center,
+                    source_size,
+                    one_chunk,
+                    run_until=0.25 if source_z == 0 else None,
+                )
+                actual_source, actual_energy = self._get_source(
+                    cell_size,
+                    geometry_center,
+                    source_center,
+                    source_size,
+                    split_at_source,
+                    run_until=0.25 if source_z == 0 else None,
+                )
+
+                self.assertTrue(np.any(expected_source != 0))
+                np.testing.assert_array_equal(actual_source != 0, expected_source != 0)
+                np.testing.assert_array_equal(actual_source, expected_source)
+                if expected_energy is not None:
+                    # Source introspection can include non-owned storage that
+                    # never injects into the evolved fields.
+                    rtol = 1e-5 if mp.is_single_precision() else 1e-12
+                    np.testing.assert_allclose(
+                        actual_energy, expected_energy, rtol=rtol, atol=0
+                    )
+
+    def test_point_source_at_chunk_boundary_2d(self):
+        args = (
+            mp.Vector3(2.5, 2.25),
+            mp.Vector3(0.0625, -0.0625),
+            mp.Vector3(0.0625, -0.0625),
+            mp.Vector3(),
+        )
+        expected, _ = self._get_source(*args, mp.BinaryPartition(data=0))
+        actual, _ = self._get_source(
+            *args, mp.BinaryPartition(data=[(mp.X, 0.0), 0, 1])
+        )
+
+        self.assertTrue(np.any(expected != 0))
+        np.testing.assert_array_equal(actual != 0, expected != 0)
+        np.testing.assert_array_equal(actual, expected)
+
+    def test_point_source_on_owned_chunk_boundary_2d(self):
+        # This centered-grid control guards the historical failure mode where
+        # both chunks deposited the same already-owned source sample.
+        args = (mp.Vector3(2, 2), mp.Vector3(), mp.Vector3(), mp.Vector3())
+        expected, _ = self._get_source(*args, mp.BinaryPartition(data=0))
+        actual, _ = self._get_source(
+            *args, mp.BinaryPartition(data=[(mp.X, 0.0), 0, 1])
+        )
+
+        self.assertTrue(np.any(expected != 0))
+        np.testing.assert_array_equal(actual != 0, expected != 0)
+        np.testing.assert_array_equal(actual, expected)
+
+
 class TestSourceTypemaps(unittest.TestCase):
     def setUp(self):
         def dummy_eps(v):
