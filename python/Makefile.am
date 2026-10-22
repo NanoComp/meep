@@ -40,6 +40,8 @@ ADJOINT_TESTS =                                \
     $(TEST_DIR)/test_geometry_gradient.py      \
     $(TEST_DIR)/test_source_gradient.py        \
     $(TEST_DIR)/test_adjoint_dispersion.py     \
+    $(TEST_DIR)/test_pade_adjoint.py           \
+    $(TEST_DIR)/test_pade_api.py               \
     $(TEST_DIR)/test_adjoint_jax.py
 
 TESTS =                                        \
