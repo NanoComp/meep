@@ -43,10 +43,11 @@ class TestHoleyWvgBands(unittest.TestCase):
             (0.19335527231544278, 4.6649450258959025e-4),
         ]
 
+        places = 6 if mp.is_single_precision() else 7
         self.assertTrue(any(all_freqs))
-        for (r, i), f in zip(expected, all_freqs[17:21][0]):
-            self.assertAlmostEqual(r, f.real)
-            self.assertAlmostEqual(i, f.imag)
+        for (r, i), f in zip(expected, [modes[0] for modes in all_freqs[17:21]]):
+            self.assertAlmostEqual(r, f.real, places=places)
+            self.assertAlmostEqual(i, f.imag, places=places)
 
     def test_fields_at_kx(self):
         self.sim.k_point = mp.Vector3(3.5)
