@@ -13,7 +13,14 @@
 # adjoint source by the multiplicity of the voxel *centre* rather than of the
 # Yee site it was written to. Those differ exactly on a symmetry plane, where a
 # point is its own image and so has multiplicity 1 while the centre half a pixel
-# away has 2, leaving the source short there. The last two tests cover it.
+# away has 2, leaving the source short there. The on- and crossing-plane tests
+# cover it.
+#
+# The converse case was wrong too. A component half a pixel off the plane -- Hz
+# or Ey under Mirror(Y) -- is stored on *both* sides of it, each side visited by
+# one pass of the symmetry loop, yet each was still divided by the full
+# multiplicity, so the row next to the plane got half its source: half the
+# gradient for a point objective there. The TE tests cover that.
 
 import unittest
 
@@ -41,7 +48,13 @@ def symmetric_weights(seed=0):
     return np.concatenate([half[:, ::-1], half], axis=1)
 
 
-def problem(weights, use_symmetry, monitor_center, monitor_size):
+# The field each polarization is driven and measured in, and its eigenvalue
+# under Mirror(Y): Ez sits on the plane's Yee rows, Hz half a pixel off them.
+POLARIZATIONS = {"TM": (mp.Ez, +1), "TE": (mp.Hz, -1)}
+
+
+def problem(weights, use_symmetry, monitor_center, monitor_size, polarization="TM"):
+    component, phase = POLARIZATIONS[polarization]
     grid = mp.MaterialGrid(
         mp.Vector3(N, N),
         OXIDE,
@@ -59,12 +72,13 @@ def problem(weights, use_symmetry, monitor_center, monitor_size):
         boundary_layers=[mp.PML(DPML)],
         default_material=OXIDE,
         geometry=[mp.Block(center=region.center, size=region.size, material=grid)],
-        # Ez is even about y = 0, so this is the symmetry the structure has.
-        symmetries=[mp.Mirror(mp.Y, phase=+1)] if use_symmetry else [],
+        # Ez and Hz are both even about y = 0; the phase is that of Hz, a
+        # pseudovector, under the mirror.
+        symmetries=[mp.Mirror(mp.Y, phase=phase)] if use_symmetry else [],
         sources=[
             mp.Source(
                 mp.GaussianSource(FCEN, fwidth=0.2),
-                mp.Ez,
+                component,
                 center=mp.Vector3(-2.0, 0),
                 size=mp.Vector3(0, 3.0),
             )
@@ -72,7 +86,7 @@ def problem(weights, use_symmetry, monitor_center, monitor_size):
         force_complex_fields=True,
     )
     monitor = mpa.FourierFields(
-        sim, mp.Volume(center=monitor_center, size=monitor_size), mp.Ez
+        sim, mp.Volume(center=monitor_center, size=monitor_size), component
     )
     return mpa.OptimizationProblem(
         simulation=sim,
@@ -83,8 +97,8 @@ def problem(weights, use_symmetry, monitor_center, monitor_size):
     )
 
 
-def objective(weights, use_symmetry, center, size):
-    result = problem(weights, use_symmetry, center, size)(
+def objective(weights, use_symmetry, center, size, polarization="TM"):
+    result = problem(weights, use_symmetry, center, size, polarization)(
         [weights.ravel()], need_gradient=False
     )
     if isinstance(result, tuple):
@@ -92,21 +106,23 @@ def objective(weights, use_symmetry, center, size):
     return float(np.real(np.squeeze(np.asarray(result, dtype=complex))))
 
 
-def gradient(weights, use_symmetry, center, size):
-    value, grad = problem(weights, use_symmetry, center, size)([weights.ravel()])
+def gradient(weights, use_symmetry, center, size, polarization="TM"):
+    value, grad = problem(weights, use_symmetry, center, size, polarization)(
+        [weights.ravel()]
+    )
     return (
         float(np.real(np.squeeze(np.asarray(value, dtype=complex)))),
         np.asarray(grad).reshape(N, N),
     )
 
 
-def finite_difference(weights, use_symmetry, center, size, ix, iy):
+def finite_difference(weights, use_symmetry, center, size, ix, iy, polarization="TM"):
     plus, minus = weights.copy(), weights.copy()
     plus[ix, iy] += FD_STEP
     minus[ix, iy] -= FD_STEP
     return (
-        objective(plus, use_symmetry, center, size)
-        - objective(minus, use_symmetry, center, size)
+        objective(plus, use_symmetry, center, size, polarization)
+        - objective(minus, use_symmetry, center, size, polarization)
     ) / (2 * FD_STEP)
 
 
@@ -200,6 +216,20 @@ class TestAdjointMirrorSymmetry(unittest.TestCase):
         _, g = gradient(w, True, *CROSSING)
         fd = finite_difference(w, True, *CROSSING, ix, iy)
         self.assertAlmostEqual(g[ix, iy] / fd, 1.0, places=2)
+
+    def test_te_gradient_matches_finite_difference(self):
+        """Hz, half a pixel off the plane, for an objective on it and across it.
+
+        On the plane this was exactly half; across it, short by the one row of
+        the monitor next to the plane.
+        """
+        w = self.weights
+        ix, iy = 8, 15
+        for name, place in (("on plane", ON_PLANE), ("crossing", CROSSING)):
+            with self.subTest(monitor=name):
+                _, g = gradient(w, True, *place, polarization="TE")
+                fd = finite_difference(w, True, *place, ix, iy, polarization="TE")
+                self.assertAlmostEqual(g[ix, iy] / fd, 1.0, places=2)
 
 
 if __name__ == "__main__":
