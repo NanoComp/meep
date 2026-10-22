@@ -881,17 +881,19 @@ void structure_chunk::set_conductivity(component c, material_function &C) {
   if (!conductivity[c_C][c_d]) meep::abort("Memory allocation error.\n");
   bool trivial = true;
   realnum *cnd = conductivity[c_C][c_d];
+  // averaged over the same one-pixel volume as chi1inv and the susceptibilities
+  const double smoothing_diameter = 1.0;
   if (multby) {
     LOOP_OVER_VOL(gv, c_C, i) {
-      IVEC_LOOP_LOC(gv, here);
-      cnd[i] = C.conductivity(c, here) * multby[i];
+      IVEC_LOOP_ILOC(gv, here);
+      cnd[i] = C.eff_conductivity(c, gv.dV(here, smoothing_diameter)) * multby[i];
       trivial = trivial && (cnd[i] == 0.0);
     }
   }
   else {
     LOOP_OVER_VOL(gv, c_C, i) {
-      IVEC_LOOP_LOC(gv, here);
-      cnd[i] = C.conductivity(c, here);
+      IVEC_LOOP_ILOC(gv, here);
+      cnd[i] = C.eff_conductivity(c, gv.dV(here, smoothing_diameter));
       trivial = trivial && (cnd[i] == 0.0);
     }
   }
