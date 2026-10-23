@@ -21,6 +21,12 @@ endif
 # after libpympb/python lets those directories start sooner with make -j
 SUBDIRS += tests
 
+# Note: python/Makefile.am lists the tests, test data, and examples individually
+# in EXTRA_DIST, so new files there must be added to those lists to be included
+# in the tarball.  scheme/examples (and m4) are still distributed as whole
+# directories, so any untracked files in them end up in the tarball: run
+# "make dist" from a clean checkout (e.g. a fresh "git clone" or "git worktree"),
+# or check first with "git clean -nx scheme/examples".
 EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh
 
 pkgconfigdir = $(libdir)/pkgconfig
