@@ -7,18 +7,20 @@
 #include <meep.hpp>
 
 using namespace meep;
-typedef std::complex<double> cd;
-typedef std::array<cd, 6> field_values;
+using ComplexDouble = std::complex<double>;
+using field_values = std::array<ComplexDouble, 6>;
 
-static field_values field_at(const gaussianbeam &beam, const vec &p, cd initial = cd(0.0)) {
+static field_values field_at(const gaussianbeam &beam, const vec &p,
+                             ComplexDouble initial = ComplexDouble(0.0)) {
   field_values result;
   result.fill(initial);
   beam.get_fields(result.data(), p);
   return result;
 }
 
-static void check_component(cd actual, cd expected, const char *law, int component, int rotation,
-                            double waist, int material, int polarization) {
+static void check_component(ComplexDouble actual, ComplexDouble expected, const char *law,
+                            int component, int rotation, double waist, int material,
+                            int polarization) {
   const double error = std::abs(actual - expected);
   const double scale = std::max(1.0, std::max(std::abs(actual), std::abs(expected)));
   if (!std::isfinite(error) || error > 1e-6 * scale)
@@ -33,10 +35,10 @@ int main(int argc, char **argv) {
   const double h = 1e-5;
   const direction axes[3] = {X, Y, Z};
   const double waists[2] = {0.8, 2.0};
-  const cd polarizations[4][2] = {{cd(1.0), cd(0.0)},
-                                  {cd(0.0, 1.0), cd(0.0)},
-                                  {cd(1.0, 0.4), cd(0.2, 1.0)},
-                                  {cd(1.0), cd(0.0, 1.0)}};
+  const ComplexDouble polarizations[4][2] = {{ComplexDouble(1.0), ComplexDouble(0.0)},
+                                             {ComplexDouble(0.0, 1.0), ComplexDouble(0.0)},
+                                             {ComplexDouble(1.0, 0.4), ComplexDouble(0.2, 1.0)},
+                                             {ComplexDouble(1.0), ComplexDouble(0.0, 1.0)}};
 
   for (int rotation = 0; rotation < 2; ++rotation) {
     // The rotated basis is orthonormal and right-handed, with ez x ex = ey.
@@ -52,14 +54,14 @@ int main(int argc, char **argv) {
         for (int polarization = 0; polarization < 4; ++polarization) {
           const double eps = material ? 2.25 : 1.0;
           const double mu = material ? 1.3 : 1.0;
-          cd E0[3];
+          ComplexDouble E0[3];
           for (int j = 0; j < 3; ++j)
             E0[j] = polarizations[polarization][0] * ex.in_direction(axes[j]) +
                     polarizations[polarization][1] * ey.in_direction(axes[j]);
 
           gaussianbeam beam(x0, ez, waists[wi], freq, eps, mu, E0);
           const field_values center = field_at(beam, p);
-          cd derivative[3][6];
+          ComplexDouble derivative[3][6];
           for (int axis = 0; axis < 3; ++axis) {
             vec delta(0.0, 0.0, 0.0);
             delta.set_direction(axes[axis], h);
@@ -71,9 +73,10 @@ int main(int argc, char **argv) {
 
           for (int j = 0; j < 3; ++j) {
             const int a = (j + 1) % 3, b = (j + 2) % 3;
-            const cd from_E = (derivative[a][b] - derivative[b][a]) / cd(0.0, 2 * pi * freq * mu);
-            const cd from_H =
-                -(derivative[a][b + 3] - derivative[b][a + 3]) / cd(0.0, 2 * pi * freq * eps);
+            const ComplexDouble from_E =
+                (derivative[a][b] - derivative[b][a]) / ComplexDouble(0.0, 2 * pi * freq * mu);
+            const ComplexDouble from_H = -(derivative[a][b + 3] - derivative[b][a + 3]) /
+                                         ComplexDouble(0.0, 2 * pi * freq * eps);
             check_component(center[j + 3], from_E, "Faraday", j, rotation, waists[wi], material,
                             polarization);
             check_component(center[j], from_H, "Ampere", j, rotation, waists[wi], material,
@@ -81,7 +84,7 @@ int main(int argc, char **argv) {
           }
 
           // get_fields must overwrite its output, independent of previous contents.
-          const field_values reused = field_at(beam, p, cd(7.0, 3.0));
+          const field_values reused = field_at(beam, p, ComplexDouble(7.0, 3.0));
           for (int j = 0; j < 6; ++j)
             check_component(reused[j], center[j], "output reuse", j, rotation, waists[wi], material,
                             polarization);
