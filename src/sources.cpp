@@ -706,7 +706,7 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
     complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
     complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
     complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
-    complex<double> gb_Hx = EH[1];
+    complex<double> gb_Hx = gb_Ey;
     complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
     complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
 
@@ -731,7 +731,7 @@ void gaussianbeam::get_fields(std::complex<double> *EH, const vec &x) const {
     complex<double> gb_Ex = g + fmgbRsq * xhatdotxrel * xhatdotxrel + i2fk * zc;
     complex<double> gb_Ey = fmgbRsq * xhatdotxrel * yhatdotxrel;
     complex<double> gb_Ez = fmgbRsq * xhatdotxrel * zc - i2fk * xhatdotxrel;
-    complex<double> gb_Hx = EH[1];
+    complex<double> gb_Hx = gb_Ey;
     complex<double> gb_Hy = g + fmgbRsq * yhatdotxrel * yhatdotxrel + i2fk * zc;
     complex<double> gb_Hz = fmgbRsq * yhatdotxrel * zc - i2fk * yhatdotxrel;
 
