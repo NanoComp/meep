@@ -109,6 +109,10 @@ bool h5file::dataset_exists(const char *name) {
 #endif
 }
 
+#if defined(HAVE_MPI) && defined(HAVE_HDF5) && defined(HAVE_H5PSET_FAPL_MPIO)
+MPI_Comm group_comm(); // mympi.cpp: the current group's communicator
+#endif
+
 // lazy file creation & locking
 void *h5file::get_id() {
   if (HID(id) < 0) {
@@ -118,7 +122,7 @@ void *h5file::get_id() {
     hid_t access_props = H5Pcreate(H5P_FILE_ACCESS);
 #ifdef HAVE_MPI
 #ifdef HAVE_H5PSET_FAPL_MPIO
-    if (parallel) H5Pset_fapl_mpio(access_props, MPI_COMM_WORLD, MPI_INFO_NULL);
+    if (parallel) H5Pset_fapl_mpio(access_props, group_comm(), MPI_INFO_NULL);
 #else
     if (parallel) begin_critical_section(h5io_critical_section_tag);
 #endif
