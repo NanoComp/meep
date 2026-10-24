@@ -157,23 +157,6 @@ void *lorentzian_susceptibility::copy_internal_data(void *data) const {
   return (void *)dnew;
 }
 
-#if 0
-/* Return true if the discretized Lorentzian ODE is intrinsically unstable,
-   i.e. if it corresponds to a filter with a pole z outside the unit circle.
-   Note that the pole satisfies the quadratic equation:
-            (z + 1/z - 2)/dt^2 + g*(z - 1/z)/(2*dt) + w^2 = 0
-   where w = 2*pi*omega_0 and g = 2*pi*gamma.   It is just a little
-   algebra from this to get the condition for a root with |z| > 1.
-
-   FIXME: this test seems to be too conservative (issue #12) */
-static bool lorentzian_unstable(realnum omega_0, realnum gamma, realnum dt) {
-  realnum w = 2 * pi * omega_0, g = 2 * pi * gamma;
-  realnum g2 = g * dt / 2, w2 = (w * dt) * (w * dt);
-  realnum b = (1 - w2 / 2) / (1 + g2), c = (1 - g2) / (1 + g2);
-  return b * b > c && 2 * b * b - c + 2 * fabs(b) * sqrt(b * b - c) > 1;
-}
-#endif
-
 #define SWAP(t, a, b)                                                                              \
   {                                                                                                \
     t SWAP_temp = a;                                                                               \
@@ -195,7 +178,7 @@ void lorentzian_susceptibility::update_P(realnum *W[NUM_FIELD_COMPONENTS][2],
   const realnum omega0dtsqr_denom = no_omega_0_denominator ? 0 : omega0dtsqr;
   (void)W_prev; // unused;
 
-  // TODO: add back lorentzian_unstable(omega_0, gamma, dt) if we can improve the stability test
+  // Stability is checked once at setup instead of here; see stability.cpp.
 
   FOR_COMPONENTS(c) DOCMP2 {
     if (d->P[c][cmp]) {
