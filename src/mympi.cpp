@@ -853,6 +853,12 @@ void end_divide_parallel(void) {
 #endif
 }
 
+#ifdef HAVE_MPI
+// The communicator of the current process group (MPI_COMM_WORLD unless
+// divide_parallel_processes was called), for parallel HDF5 in h5file.cpp.
+MPI_Comm group_comm() { return mycomm; }
+#endif
+
 int my_global_rank() {
 #ifdef HAVE_MPI
   int rank;
