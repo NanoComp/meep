@@ -208,9 +208,12 @@ public:
                                double tol, int maxeval);
 
   // Thread-safe for standard C++ geometry (no Python callbacks).
-  // Only unsafe when MATERIAL_USER materials are present.
-  virtual bool is_thread_safe() const { return !has_user_materials; }
+  // Unsafe when MATERIAL_USER materials are present, or when a geometric
+  // object has a MATERIAL_FILE material (evaluating it replaces the global
+  // default_material via set_default_material).
+  virtual bool is_thread_safe() const { return !has_user_materials && !has_object_file_materials; }
   bool has_user_materials;
+  bool has_object_file_materials;
 
   void eff_chi1inv_matrix(meep::component c, symm_matrix *chi1inv_matrix, const meep::volume &v,
                           double tol, int maxeval, bool &fallback);
