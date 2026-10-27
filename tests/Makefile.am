@@ -18,9 +18,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
 
 check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux gaussianbeam harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml ring-ll cyl-ellipsoid-ll array-slice-ll
 
-array_metadata_SOURCES = array-metadata.cpp
-array_metadata_LDADD   = $(MEEPLIBS)
-
 aniso_disp_SOURCES = aniso_disp.cpp
 aniso_disp_LDADD = $(MEEPLIBS)
 
