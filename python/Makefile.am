@@ -93,7 +93,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_user_defined_material.py  \
     $(TEST_DIR)/test_verbosity_mgr.py          \
     $(TEST_DIR)/test_visualization.py          \
-    $(MPBPYTESTS)
+    $(MPBPYTEST)
 
 # data files read by the tests
 TEST_DATA_FILES =                                           \
