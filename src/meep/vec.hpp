@@ -195,7 +195,9 @@ component first_field_component(field_type ft);
    without having to change any other code anywhere else. We can then proceed to do
    a collapse over all three main loops. */
 
-#define CHUNK_OPENMP _Pragma("omp parallel for")
+#define OMP_STRINGIFY(x) OMP_STRINGIFY2(x)
+#define OMP_STRINGIFY2(x) #x
+#define CHUNK_OPENMP_REDUCTION_OR(var) _Pragma(OMP_STRINGIFY(omp parallel for reduction(||:var)))
 
 // the most generic use case where the user
 // can specify a custom clause
