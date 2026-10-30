@@ -65,6 +65,10 @@ default_eps_parameters = {
     "pec_color": "darkred",
 }
 
+default_eps_parameters_3D = {
+    "frequency": None,
+}
+
 default_colorbar_parameters = {
     "label": None,
     "orientation": "vertical",
@@ -1524,10 +1528,20 @@ def plot3D(
     backend: str = "native",
     html_name: Optional[str] = None,
     nlevels: Optional[int] = None,
+    eps_parameters: Optional[dict] = None,
     **kwargs,
 ):
     if backend == "native" and html_name is not None:
         backend = "html"
+
+    if eps_parameters is None:
+        eps_parameters = copy.copy(default_eps_parameters_3D)
+    else:
+        eps_parameters = dict(default_eps_parameters_3D, **eps_parameters)
+
+    # Determine a frequency to plot all epsilon
+    if eps_parameters["frequency"] is None:
+        eps_parameters["frequency"] = get_default_frequency(sim)
 
     if backend == "html":
         if save_to_image:
@@ -1535,7 +1549,13 @@ def plot3D(
                 "save_to_image is only supported by the 'native' (vispy) backend. "
                 "Use html_name=... to write the interactive viewer to a file."
             )
-        return _plot3D_plotly(sim, html_name=html_name, nlevels=nlevels, **kwargs)
+        return _plot3D_plotly(
+            sim,
+            html_name=html_name,
+            nlevels=nlevels,
+            frequency=eps_parameters["frequency"],
+            **kwargs,
+        )
 
     if backend != "native":
         raise ValueError(
@@ -1575,11 +1595,14 @@ def plot3D(
     ztics = np.linspace(zmin, zmax, Nz)
 
     # Get eps for geometry
-    eps_data = np.round(np.real(sim.get_epsilon_grid(xtics, ytics, ztics)), 2)
+    eps_data = np.round(
+        np.real(sim.get_epsilon_grid(xtics, ytics, ztics, eps_parameters["frequency"])),
+        2,
+    )
 
     # Remove the background material and bound the number of surfaces for
     # continuously varying (for example, grayscale MaterialGrid) structures.
-    background = np.round(np.abs(np.asarray(sim.default_material.epsilon_diag)), 2)[0]
+    background = _background_epsilon(sim, eps_parameters["frequency"])
     unique = _epsilon_levels(eps_data, background, nlevels)
 
     mesh_midpoint = (sim_size[0] / 2, sim_size[1] / 2, sim_size[2] / 2)
@@ -1884,11 +1907,33 @@ def _epsilon_levels(
     return levels[indices].tolist()
 
 
+def _background_epsilon(sim, frequency: float) -> Optional[float]:
+    """
+    Returns the permittivity of the background material at `frequency`, rounded
+    and made positive as for the samples of `get_epsilon_grid`, or None for
+    materials without a scalar permittivity (a MaterialGrid, say).
+    """
+    material = sim.default_material
+    epsilon_diag = getattr(material, "epsilon_diag", None)
+    if epsilon_diag is None:
+        return None
+    eps = epsilon_diag.x
+    if frequency != 0:
+        try:
+            # the trace, as computed by get_epsilon_grid
+            eps = np.real(np.trace(material.epsilon(frequency))) / 3
+        except ValueError:
+            # frequency is outside the material's valid_freq_range
+            pass
+    return round(abs(eps), 2)
+
+
 def _epsilon_isosurfaces(
     sim,
     grid_resolution: float,
     max_grid_points: int,
     nlevels: Optional[int] = None,
+    frequency: float = 0,
 ):
     """
     Extracts one isosurface per distinct permittivity in the cell, excluding the
@@ -1921,12 +1966,11 @@ def _epsilon_isosurfaces(
             counts,
         )
     ]
-    eps_data = np.round(np.real(sim.get_epsilon_grid(*tics)), 2)
+    eps_data = np.round(np.real(sim.get_epsilon_grid(*tics, frequency)), 2)
 
     # the background is drawn as empty space rather than as a solid. Materials
     # without a scalar permittivity (a MaterialGrid, say) have no value to skip.
-    epsilon_diag = getattr(sim.default_material, "epsilon_diag", None)
-    background = None if epsilon_diag is None else round(abs(epsilon_diag.x), 2)
+    background = _background_epsilon(sim, frequency)
     unique = _epsilon_levels(eps_data, background, nlevels)
 
     # spacing between adjacent samples, so marching cubes emits physical lengths
@@ -1952,6 +1996,7 @@ def _plot3D_plotly(
     grid_resolution: Optional[float] = None,
     max_grid_points: int = 96**3,
     nlevels: Optional[int] = None,
+    frequency: float = 0,
     opacity: float = 0.85,
     azimuth: float = 45,
     elevation: float = 10,
@@ -1987,6 +2032,7 @@ def _plot3D_plotly(
         sim.resolution if grid_resolution is None else grid_resolution,
         max_grid_points,
         nlevels,
+        frequency,
     )
     for i, (eps, vertices, faces) in enumerate(isosurfaces):
         # Darker shades for the higher-index materials, as in the native backend,
