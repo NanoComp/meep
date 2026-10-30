@@ -15,6 +15,14 @@
 %  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 */
 
+/* vasprintf() (used by meep::abort below) is a GNU extension.  On some
+   platforms, notably mingw-w64, it is only declared when _GNU_SOURCE is
+   defined *before* any system header is included, so define it here rather
+   than further down alongside the <fenv.h> include. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 #include <cstdlib>
 #include <stdarg.h>
 #include <string.h>
@@ -37,9 +45,6 @@
 #endif
 
 #if defined(DEBUG) && defined(HAVE_FEENABLEEXCEPT)
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
 #include <fenv.h>
 #if !HAVE_DECL_FEENABLEEXCEPT
 extern "C" int feenableexcept(int EXCEPTS);

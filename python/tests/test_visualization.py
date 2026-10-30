@@ -504,12 +504,133 @@ class TestVisualization(unittest.TestCase):
         )  # Check gif output
         Animate_xz.to_jshtml(10)  # Check jshtml output
 
-    """
-    Travis does not play well with Mayavi
-    def test_3D_mayavi(self):
-        sim = setup_sim(4)
-        sim.plot3D()
-    """
+    @unittest.skipIf(
+        importlib.util.find_spec("plotly") is None
+        or importlib.util.find_spec("skimage") is None,
+        "plot3D's html backend requires plotly and scikit-image",
+    )
+    def test_plot3D_html(self):
+        # The html backend renders offscreen, so unlike the native (vispy)
+        # backend it can be exercised without a display.
+        sim = setup_sim(8)
+        fig = sim.plot3D(backend="html", show=False, nlevels=1)
+
+        # One trace per material isosurface, plus the sources, the monitors,
+        # the PML, and the cell.
+        self.assertEqual(
+            {trace.name for trace in fig.data},
+            {"ε = 12", "sources", "monitors", "PML", "cell"},
+        )
+
+        # Boxes of the same class share a legend entry so they toggle together.
+        self.assertEqual(sum(trace.showlegend for trace in fig.data), 5)
+
+        # Every vertex must lie inside the cell.
+        xmin, xmax, ymin, ymax, zmin, zmax = mp.visualization.box_vertices(
+            sim.geometry_center, sim.cell_size, sim.is_cylindrical
+        )
+        for trace in fig.data:
+            for coords, lo, hi in (
+                (trace.x, xmin, xmax),
+                (trace.y, ymin, ymax),
+                (trace.z, zmin, zmax),
+            ):
+                # wireframe traces separate their segments with None
+                finite = [c for c in coords if c is not None]
+                self.assertGreaterEqual(min(finite), lo)
+                self.assertLessEqual(max(finite), hi)
+
+        # The sampling grid is scaled down to respect max_grid_points.
+        def vertex_count(**kwargs):
+            data = sim.plot3D(backend="html", show=False, **kwargs).data
+            return sum(len(t.x) for t in data if t.type == "mesh3d")
+
+        self.assertLess(vertex_count(max_grid_points=16**3), vertex_count())
+
+        if mp.am_master():
+            html_name = os.path.join(self.temp_dir, "test_plot3D.html")
+            sim.plot3D(html_name=html_name)
+            with open(html_name) as f:
+                html = f.read()
+            # a self-contained document: plotly.js is inlined rather than
+            # pulled from the network by a <script src=...> tag
+            self.assertIn("Plotly.newPlot", html)
+            self.assertNotIn("<script src=", html)
+
+        def test_plot3D_bad_arguments(self):
+            sim = setup_sim(8)
+            with self.assertRaises(ValueError):
+                sim.plot3D(backend="not-a-backend")
+            with self.assertRaises(ValueError):
+                # save_to_image is native-only
+                sim.plot3D(backend="html", save_to_image=True)
+            with self.assertRaises(ValueError):
+                # a 2D cell would render as a flattened, misleading scene
+                setup_sim(0).plot3D(backend="html")
+
+    @unittest.skipIf(
+        importlib.util.find_spec("plotly") is None
+        or importlib.util.find_spec("skimage") is None,
+        "plot3D's html backend requires plotly and scikit-image",
+    )
+    def test_plot3D_eps_frequency(self):
+        # A dispersive block, ε(f) = 2 + 1/(1 - f²), inside a dispersive
+        # background, ε(f) = 1.5 + 0.5/(1 - f²).
+        def lorentzian_medium(epsilon, sigma):
+            return mp.Medium(
+                epsilon=epsilon,
+                E_susceptibilities=[
+                    mp.LorentzianSusceptibility(frequency=1, gamma=0, sigma=sigma)
+                ],
+            )
+
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(4, 4, 4),
+            resolution=8,
+            geometry=[mp.Block(mp.Vector3(1, 1, 1), material=lorentzian_medium(2, 1))],
+            default_material=lorentzian_medium(1.5, 0.5),
+            sources=[
+                mp.Source(
+                    mp.ContinuousSource(frequency=0.5),
+                    component=mp.Ez,
+                    center=mp.Vector3(),
+                )
+            ],
+        )
+
+        def materials(eps_parameters):
+            fig = sim.plot3D(backend="html", show=False, eps_parameters=eps_parameters)
+            return [t.name for t in fig.data if t.name.startswith("ε")]
+
+        # The frequency defaults to that of the source. The background is
+        # evaluated at the same frequency, so it is not drawn as a solid.
+        self.assertEqual(materials(None), ["ε = 3.33"])
+        self.assertEqual(materials({"frequency": 0.5}), ["ε = 3.33"])
+        self.assertEqual(materials({"frequency": 0.25}), ["ε = 3.07"])
+        # zero frequency is the instantaneous ε
+        self.assertEqual(materials({"frequency": 0}), ["ε = 2"])
+
+    def test_plot3D_nlevels(self):
+        eps_data = np.arange(1, 13, dtype=float)
+
+        default_levels = mp.visualization._epsilon_levels(eps_data, 1, None)
+        self.assertEqual(len(default_levels), 10)
+        self.assertEqual(default_levels[0], 2)
+        self.assertEqual(default_levels[-1], 12)
+
+        self.assertEqual(
+            mp.visualization._epsilon_levels(eps_data, 1, 20),
+            list(range(2, 13)),
+        )
+        self.assertEqual(
+            mp.visualization._epsilon_levels(eps_data, 1, 3),
+            [2, 7, 12],
+        )
+
+        for nlevels in (0, -1, 2.5, True):
+            with self.subTest(nlevels=nlevels):
+                with self.assertRaisesRegex(ValueError, "positive integer or None"):
+                    mp.visualization._epsilon_levels(eps_data, 1, nlevels)
 
 
 if __name__ == "__main__":

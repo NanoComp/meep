@@ -9,6 +9,7 @@ import unittest
 
 import numpy as np
 from scipy.ndimage import gaussian_filter
+from utils import ApproxComparisonTestCase
 
 
 def compute_transmittance(matgrid_symmetry=False):
@@ -248,7 +249,7 @@ def compute_resonant_mode_3d(use_matgrid=True):
     return freq
 
 
-class TestMaterialGrid(unittest.TestCase):
+class TestMaterialGrid(ApproxComparisonTestCase):
     def test_subpixel_smoothing(self):
         # "exact" frequency computed using MaterialGrid at resolution = 300
         freq_ref = 0.29826813873225283
@@ -279,7 +280,7 @@ class TestMaterialGrid(unittest.TestCase):
     def test_symmetry(self):
         tran_nosym = compute_transmittance(False)
         tran_sym = compute_transmittance(True)
-        self.assertAlmostEqual(tran_nosym, tran_sym, places=5)
+        self.assertClose(tran_nosym, tran_sym, epsilon=1e-6)
 
 
 if __name__ == "__main__":

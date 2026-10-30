@@ -127,6 +127,109 @@ class TestDFTFields(ApproxComparisonTestCase):
         actual_dft = sim.get_dft_array(decimated_field, mp.Ez, 0)
         self.assertClose(expected_dft, actual_dft, epsilon=1e-3)
 
+    def test_get_array_slice_dimensions_yee_grid(self):
+        """The component argument must predict the shape of Yee-grid DFT data."""
+        sim = self.init()
+        sim.init_sim()
+        # TM components only: the source is Ez, so TE fields are never allocated.
+        comps = [mp.Ez, mp.Hx, mp.Hy]
+        # These two lines are placed so that some components' Yee sublattices
+        # hold one fewer point than the centered grid; a generic placement
+        # would make every shape coincide and the test would prove nothing.
+        regions = {
+            "normal y": (mp.Vector3(0, 0.37), mp.Vector3(2, 0)),
+            "normal x": (mp.Vector3(-1.1, 0), mp.Vector3(0, 2)),
+            "box": (mp.Vector3(0.23, -0.11), mp.Vector3(3, 2)),
+        }
+        monitors = {}
+        for name, (center, size) in regions.items():
+            monitors[name] = (
+                sim.add_dft_fields(comps, self.fcen, 0, 1, center=center, size=size),
+                sim.add_dft_fields(
+                    comps, self.fcen, 0, 1, center=center, size=size, yee_grid=True
+                ),
+                # near2far monitors always store their fields on the Yee grid
+                sim.add_near2far(
+                    self.fcen, 0, 1, mp.Near2FarRegion(center=center, size=size)
+                )
+                if name != "box"
+                else None,
+            )
+        sim.run(until=5)
+
+        for name, (center, size) in regions.items():
+            centered, yee, n2f = monitors[name]
+            default = sim.get_array_slice_dimensions(center=center, size=size)
+            per_comp = {}
+            for c in comps:
+                with self.subTest(region=name, component=c):
+                    dims = sim.get_array_slice_dimensions(c, center=center, size=size)
+                    per_comp[c] = dims.dim_sizes
+                    self.assertEqual(
+                        dims.dim_sizes, np.shape(sim.get_dft_array(yee, c, 0))
+                    )
+                    self.assertEqual(
+                        default.dim_sizes, np.shape(sim.get_dft_array(centered, c, 0))
+                    )
+                    if n2f is not None:
+                        n2f_shape = np.shape(sim.get_dft_array(n2f, c, 0))
+                        if n2f_shape:  # () means the component is not stored
+                            self.assertEqual(dims.dim_sizes, n2f_shape)
+            if name != "box":
+                self.assertTrue(
+                    any(d != default.dim_sizes for d in per_comp.values()),
+                    f"region {name!r} no longer distinguishes the Yee grid",
+                )
+
+    def test_get_dft_array_bad_num_freqs(self):
+        # An out-of-range index used to reach meep::abort inside the chunk loop,
+        # which under MPI only fires on the ranks owning a matching chunk.
+        sim = self.init()
+        sim.init_sim()
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 3)
+        sim.run(until_after_sources=10)
+
+        sim.get_dft_array(dft_fields, mp.Ez, 2)  # in range, no raise
+        for bad in (-1, 3, None, 1.5):
+            with self.assertRaises(ValueError):
+                sim.get_dft_array(dft_fields, mp.Ez, bad)
+
+    def test_get_dft_array_bad_args(self):
+        sim = self.init()
+        sim.init_sim()
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 3)
+        sim.run(until_after_sources=10)
+
+        with self.assertRaises(ValueError):
+            sim.get_dft_array(dft_fields, component=-3, num_freq=0)
+        with self.assertRaises(ValueError):
+            sim.get_dft_array(dft_obj=None, component=mp.Ez, num_freq=0)
+
+    def test_get_dft_array_before_run(self):
+        # DftObj.swigobj is created lazily; get_dft_array used to report
+        # "Invalid type of dft object: None" rather than initializing it.
+        sim = self.init()
+        sim.init_sim()
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1)
+        arr = sim.get_dft_array(dft_fields, mp.Ez, 0)
+        self.assertEqual(np.count_nonzero(arr), 0)
+
+    def test_get_dft_array_energy(self):
+        # add_energy monitors used to fall through to "Invalid type of dft
+        # object" because no C++ get_dft_array overload existed for them.
+        sim = self.init()
+        sim.init_sim()
+        # add_energy needs a region with a well-defined normal direction
+        where = mp.Volume(center=mp.Vector3(), size=mp.Vector3(0.5 * self.sxy, 0))
+        dft_energy = sim.add_energy(self.fcen, 0, 1, mp.EnergyRegion(volume=where))
+        dft_fields = sim.add_dft_fields([mp.Ez], self.fcen, 0, 1, where=where)
+        sim.run(until_after_sources=50)
+
+        energy_ez = sim.get_dft_array(dft_energy, mp.Ez, 0)
+        fields_ez = sim.get_dft_array(dft_fields, mp.Ez, 0)
+        self.assertEqual(energy_ez.shape, fields_ez.shape)
+        self.assertGreater(np.count_nonzero(energy_ez), 0)
+
 
 if __name__ == "__main__":
     unittest.main()

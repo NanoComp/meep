@@ -100,6 +100,10 @@ def _uniaxial(freq_range, o_poles, e_poles, epsilon=None, epsilon_diag=None):
 
 
 # ------------------------------------------------------------------
+## WARNING: unstable; field divergence may occur
+## (the third term has a negative strength, which gives gain, Im(eps) < 0, at wavelengths above about 1.06 μm,
+##  just outside the fitted range; fields can grow even with sources inside the range, see #3334)
+
 # crystalline silicon (c-Si) from A. Deinega et al., J. Optical Society of America A, Vol. 28, No. 5, pp. 770-77 (2011)
 # based on experimental data for intrinsic silicon at T=300K from M.A. Green and M. Keevers, Progress in Photovoltaics, Vol. 3, pp. 189-92 (1995)
 # wavelength range: 0.4 - 1.0 μm

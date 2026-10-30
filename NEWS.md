@@ -1,5 +1,28 @@
 # Meep Release Notes
 
+## Meep 1.35.0
+
+10/9/2026
+
+* Added `plot1D` and `plot3D` visualization routines ([#3271], [#3310]).
+
+* Multi-threading optimization for near-to-far field transformation ([#3251]).
+
+* Added `dt` option for `fourier_transform` member function of `GaussianSource` ([#3273]).
+
+* Bug fix in adjoint gradient of adjoint solver for parallel simulations ([#3274]).
+
+* Bug fix in subpixel smoothing of `MaterialGrid` in 3D ([#3263]).
+
+* Bug fixes to array-slicing routines and new `ArrayMetadata` and `SliceDimension` classes
+  for array-slice metadata ([#3320]).
+
+* Improvements to CI on GitHub ([#3254], [#3309], [#3314], [#3322]).
+
+* Code cleanup and new materials for materials library ([#3252], [#3257]).
+
+* Various minor code cleanup and additional documentation ([#3253], [#3255], [#3269], [#3270], [#3289], [#3303], [#3305], [#3316], [#3319], [#3323], [#3324]).
+
 ## Meep 1.34.0
 
 7/9/2026
@@ -1364,3 +1387,27 @@ Meep 1.0.1
 [#3240]: https://github.com/NanoComp/meep/issues/3240
 [#3245]: https://github.com/NanoComp/meep/issues/3245
 [#3246]: https://github.com/NanoComp/meep/issues/3246
+[#3251]: https://github.com/NanoComp/meep/issues/3251
+[#3252]: https://github.com/NanoComp/meep/issues/3252
+[#3253]: https://github.com/NanoComp/meep/issues/3253
+[#3254]: https://github.com/NanoComp/meep/issues/3254
+[#3255]: https://github.com/NanoComp/meep/issues/3255
+[#3257]: https://github.com/NanoComp/meep/issues/3257
+[#3263]: https://github.com/NanoComp/meep/issues/3263
+[#3269]: https://github.com/NanoComp/meep/issues/3269
+[#3270]: https://github.com/NanoComp/meep/issues/3270
+[#3271]: https://github.com/NanoComp/meep/issues/3271
+[#3273]: https://github.com/NanoComp/meep/issues/3273
+[#3274]: https://github.com/NanoComp/meep/issues/3274
+[#3289]: https://github.com/NanoComp/meep/issues/3289
+[#3303]: https://github.com/NanoComp/meep/issues/3303
+[#3305]: https://github.com/NanoComp/meep/issues/3305
+[#3309]: https://github.com/NanoComp/meep/issues/3309
+[#3310]: https://github.com/NanoComp/meep/issues/3310
+[#3314]: https://github.com/NanoComp/meep/issues/3314
+[#3316]: https://github.com/NanoComp/meep/issues/3316
+[#3319]: https://github.com/NanoComp/meep/issues/3319
+[#3320]: https://github.com/NanoComp/meep/issues/3320
+[#3322]: https://github.com/NanoComp/meep/issues/3322
+[#3323]: https://github.com/NanoComp/meep/issues/3323
+[#3324]: https://github.com/NanoComp/meep/issues/3324

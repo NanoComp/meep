@@ -99,9 +99,6 @@ jobs:
     - name: Install Python dependencies
       run: pip install -r python/requirements.txt
 
-    - name: Install nlopt
-      run: pip install nlopt
-
     - name: Run autoreconf
       run: |
         autoreconf --verbose --install --symlink --force

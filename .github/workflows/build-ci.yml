@@ -148,9 +148,6 @@ jobs:
     - name: Install Python dependencies
       run: pip install -r python/requirements.txt
 
-    - name: Install nlopt
-      run: pip install nlopt
-
     - name: Install mpi4py
       if: ${{ matrix.enable-mpi && steps.cache.outputs.cache-hit != true }}
       run: pip install mpi4py

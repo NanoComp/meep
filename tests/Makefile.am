@@ -1,5 +1,5 @@
 SRC = aniso_disp.cpp bench.cpp bragg_transmission.cpp			\
-convergence_cyl_waveguide.cpp cylindrical.cpp dump_load.cpp flux.cpp    \
+convergence_cyl_waveguide.cpp cylindrical.cpp dump_load.cpp flux.cpp gaussianbeam.cpp    \
 harmonics.cpp integrate.cpp known_results.cpp near2far.cpp              \
 one_dimensional.cpp physical.cpp stress_tensor.cpp symmetry.cpp 	\
 three_d.cpp two_dimensional.cpp 2D_convergence.cpp h5test.cpp pml.cpp
@@ -16,10 +16,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src -DDATADIR=\"$(srcdir)/\"
 
 .SUFFIXES = .dac .done
 
-check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml pw-source-ll ring-ll cyl-ellipsoid-ll absorber-1d-ll array-slice-ll user-defined-material dft-fields bend-flux-ll array-metadata
-
-array_metadata_SOURCES = array-metadata.cpp
-array_metadata_LDADD   = $(MEEPLIBS)
+check_PROGRAMS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux gaussianbeam harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml ring-ll cyl-ellipsoid-ll array-slice-ll
 
 aniso_disp_SOURCES = aniso_disp.cpp
 aniso_disp_LDADD = $(MEEPLIBS)
@@ -41,6 +38,9 @@ dump_load_LDADD = $(MEEPLIBS)
 
 flux_SOURCES = flux.cpp
 flux_LDADD = $(MEEPLIBS)
+
+gaussianbeam_SOURCES = gaussianbeam.cpp
+gaussianbeam_LDADD = $(MEEPLIBS)
 
 harmonics_SOURCES = harmonics.cpp
 harmonics_LDADD = $(MEEPLIBS)
@@ -81,14 +81,8 @@ h5test_LDADD = $(MEEPLIBS)
 pml_SOURCES = pml.cpp
 pml_LDADD = $(MEEPLIBS)
 
-absorber_1d_ll_SOURCES = absorber-1d-ll.cpp
-absorber_1d_ll_LDADD   = $(MEEPLIBS)
-
 cyl_ellipsoid_ll_SOURCES = cyl-ellipsoid-ll.cpp
 cyl_ellipsoid_ll_LDADD   = $(MEEPLIBS)
-
-pw_source_ll_SOURCES = pw-source-ll.cpp
-pw_source_ll_LDADD   = $(MEEPLIBS)
 
 ring_ll_SOURCES = ring-ll.cpp
 ring_ll_LDADD   = $(MEEPLIBS)
@@ -96,18 +90,9 @@ ring_ll_LDADD   = $(MEEPLIBS)
 array_slice_ll_SOURCES = array-slice-ll.cpp
 array_slice_ll_LDADD   = $(MEEPLIBS)
 
-dft_fields_SOURCES = dft-fields.cpp
-dft_fields_LDADD   = $(MEEPLIBS)
-
-bend_flux_ll_SOURCES = bend-flux-ll.cpp
-bend_flux_ll_LDADD   = $(MEEPLIBS)
-
-user_defined_material_SOURCES = user-defined-material.cpp
-user_defined_material_LDADD   = $(MEEPLIBS)
-
 dist_noinst_DATA = cyl-ellipsoid-eps-ref.h5 array-slice-ll-ref.h5
 
-TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
+TESTS = aniso_disp bench bragg_transmission convergence_cyl_waveguide cylindrical dump_load flux gaussianbeam harmonics integrate known_results near2far one_dimensional physical stress_tensor symmetry three_d two_dimensional 2D_convergence h5test pml
 
 if WITH_MPI
   LOG_COMPILER = $(RUNCODE)

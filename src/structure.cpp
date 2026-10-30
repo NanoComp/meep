@@ -981,18 +981,19 @@ void structure::remove_susceptibilities() {
 
 // for debugging, display the chunk layout
 void structure::print_layout(void) const {
-  direction d0 = gv.yucky_direction(0);
-  direction d1 = gv.yucky_direction(1);
-  direction d2 = gv.yucky_direction(2);
+  direction d0 = gv.nested_loop_direction(0);
+  direction d1 = gv.nested_loop_direction(1);
+  direction d2 = gv.nested_loop_direction(2);
   for (int i = 0; i < num_chunks; ++i) {
     master_printf("chunk[%d] on process %d, resolution %g (%s,%s,%s):"
                   " (%d,%d,%d) - (%d,%d,%d)\n",
                   i, chunks[i]->n_proc(), chunks[i]->a, direction_name(d0), direction_name(d1),
-                  direction_name(d2), chunks[i]->gv.little_corner().yucky_val(0),
-                  chunks[i]->gv.little_corner().yucky_val(1),
-                  chunks[i]->gv.little_corner().yucky_val(2),
-                  chunks[i]->gv.big_corner().yucky_val(0), chunks[i]->gv.big_corner().yucky_val(1),
-                  chunks[i]->gv.big_corner().yucky_val(2));
+                  direction_name(d2), chunks[i]->gv.little_corner().nested_loop_val(0),
+                  chunks[i]->gv.little_corner().nested_loop_val(1),
+                  chunks[i]->gv.little_corner().nested_loop_val(2),
+                  chunks[i]->gv.big_corner().nested_loop_val(0),
+                  chunks[i]->gv.big_corner().nested_loop_val(1),
+                  chunks[i]->gv.big_corner().nested_loop_val(2));
   }
 }
 

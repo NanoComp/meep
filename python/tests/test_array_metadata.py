@@ -1,4 +1,5 @@
 import unittest
+import warnings
 
 import meep as mp
 import numpy as np
@@ -122,7 +123,9 @@ class TestArrayMetadata(ApproxComparisonTestCase):
         (X, Y, Z, W) = sim.get_array_metadata(dft_cell=dft_obj)
         Eps = sim.get_array(vol=nonpml_vol, component=mp.Dielectric)
         EpsE2 = np.real(Eps * np.conj(Ez) * Ez)
-        xm, ym = np.meshgrid(X, Y)
+        # W is indexed (x, y), so the meshgrid must use "ij" indexing; the
+        # default "xy" would transpose it relative to W.
+        xm, ym = np.meshgrid(X, Y, indexing="ij")
         vec_func_sum = np.sum(W * (xm**2 + 2 * ym**2))
         pulse_modal_volume = np.sum(W * EpsE2) / np.max(EpsE2) * vec_func_sum
 
@@ -132,6 +135,97 @@ class TestArrayMetadata(ApproxComparisonTestCase):
             1.0,
             epsilon=tol,
         )
+
+    def test_metadata_types_and_shapes(self):
+        """x/y/z must be NumPy arrays, and w must match get_array's shape."""
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(6, 4),
+            resolution=10,
+            sources=[
+                mp.Source(mp.GaussianSource(0.15, fwidth=0.1), mp.Ez, mp.Vector3())
+            ],
+        )
+        sim.init_sim()
+
+        # a non-square region, so a transposed `w` cannot go unnoticed
+        vols = [
+            mp.Volume(center=mp.Vector3(), size=mp.Vector3(3, 2)),  # 2d
+            mp.Volume(center=mp.Vector3(), size=mp.Vector3(3, 0)),  # zero-thickness
+            mp.Volume(center=mp.Vector3(), size=mp.Vector3(0, 0)),  # single point
+        ]
+        for vol in vols:
+            x, y, z, w = sim.get_array_metadata(vol=vol)
+            for tics in (x, y, z):
+                self.assertIsInstance(tics, np.ndarray)
+                self.assertEqual(tics.dtype, np.float64)
+            self.assertEqual(w.shape, sim.get_array(mp.Ez, vol=vol).shape)
+
+    def test_metadata_named_tuple(self):
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(6, 4),
+            resolution=10,
+            sources=[
+                mp.Source(mp.GaussianSource(0.15, fwidth=0.1), mp.Ez, mp.Vector3())
+            ],
+        )
+        sim.init_sim()
+        box = mp.Volume(center=mp.Vector3(), size=mp.Vector3(3, 2))
+
+        meta = sim.get_array_metadata(vol=box)
+
+        # still unpacks positionally, and the names refer to the same objects
+        x, y, z, w = meta
+        self.assertIs(x, meta.x)
+        self.assertIs(y, meta.y)
+        self.assertIs(z, meta.z)
+        self.assertIs(w, meta.w)
+
+        # `points` is computed on access and shaped like `w`
+        self.assertEqual(meta.points.shape, meta.w.shape)
+        self.assertIsInstance(meta.points[0, 0], mp.Vector3)
+        self.assertEqual(meta.points[0, 0], mp.Vector3(meta.x[0], meta.y[0], 0))
+
+        # a weighted integral over the region reads naturally
+        total = np.sum(meta.w)
+        self.assertAlmostEqual(total, 3 * 2, places=6)
+
+    def test_metadata_return_pw_deprecated(self):
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(6, 4),
+            resolution=10,
+            sources=[
+                mp.Source(mp.GaussianSource(0.15, fwidth=0.1), mp.Ez, mp.Vector3())
+            ],
+        )
+        sim.init_sim()
+        box = mp.Volume(center=mp.Vector3(), size=mp.Vector3(3, 2))
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            p, w = sim.get_array_metadata(vol=box, return_pw=True)
+        self.assertTrue(
+            any(issubclass(c.category, DeprecationWarning) for c in caught),
+            "return_pw should emit a DeprecationWarning",
+        )
+
+        meta = sim.get_array_metadata(vol=box)
+        self.assertEqual(p.shape, w.shape)
+        self.assertEqual(p.shape, meta.points.shape)
+        np.testing.assert_array_equal(w, meta.w)
+
+    def test_metadata_cylindrical_raises(self):
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(4, 0, 4),
+            dimensions=mp.CYLINDRICAL,
+            resolution=10,
+            sources=[
+                mp.Source(mp.GaussianSource(0.15, fwidth=0.1), mp.Er, mp.Vector3(1))
+            ],
+        )
+        sim.init_sim()
+        # C++ calls meep::abort() here; Python should raise instead.
+        with self.assertRaises(ValueError):
+            sim.get_array_metadata()
 
 
 if __name__ == "__main__":

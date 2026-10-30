@@ -82,22 +82,19 @@ python/mpb.py
 
 # test programs
 tests/2D_convergence
-tests/absorber-1d-ll
 tests/aniso_disp
 tests/aniso_disp.log
 tests/aniso_disp.trs
-tests/array-metadata
 tests/array-slice-ll
 tests/bench
 tests/bench.log
-tests/bend-flux-ll
 tests/bragg_transmission
 tests/convergence_cyl_waveguide
 tests/cyl-ellipsoid-ll
 tests/cylindrical
-tests/dft-fields
 tests/dump_load
 tests/flux
+tests/gaussianbeam
 tests/gdsII-3d
 tests/h5test
 tests/harmonics
@@ -107,13 +104,11 @@ tests/near2far
 tests/one_dimensional
 tests/physical
 tests/pml
-tests/pw-source-ll
 tests/ring-ll
 tests/stress_tensor
 tests/symmetry
 tests/three_d
 tests/two_dimensional
-tests/user-defined-material
 tests/wvg-taper
 tests/*.trs
 tests/*.log

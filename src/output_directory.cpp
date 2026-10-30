@@ -25,6 +25,18 @@
 #include <unistd.h>
 #include <ftw.h>
 
+#ifdef _WIN32
+#include <direct.h>
+/* Windows has a one-argument mkdir() (permissions come from the ACL) and its
+   remove() only unlinks files, whereas POSIX remove() also removes empty
+   directories. */
+#define MEEP_MKDIR(d) _mkdir(d)
+#define MEEP_RMDIR(d) _rmdir(d)
+#else
+#define MEEP_MKDIR(d) mkdir((d), 00777)
+#define MEEP_RMDIR(d) rmdir(d)
+#endif
+
 #include "meep.hpp"
 
 using namespace std;
@@ -68,7 +80,7 @@ static bool is_ok_dir(const char *dirname) {
     if (direxists)
       closedir(dir);
     else
-      mkdir(dirname, 00777);
+      MEEP_MKDIR(dirname);
   }
   direxists = broadcast(0, direxists);
   return !direxists;
@@ -156,13 +168,17 @@ got_tmpdir:
 }
 
 void trash_output_directory(const char *dirname) {
-  if (am_master()) mkdir(dirname, 00777);
+  if (am_master()) MEEP_MKDIR(dirname);
 }
 
 static int rmpath(const char *path, const struct stat *s, int t, struct FTW *ftw) {
   (void)s;
-  (void)t;
   (void)ftw; // unused
+  // POSIX remove() unlinks files and removes empty directories, but on Windows
+  // it only unlinks files and fails with EACCES on a directory, so dispatch on
+  // the entry type explicitly.  (We pass FTW_DEPTH, so directories arrive as
+  // FTW_DP, after their contents.)
+  if (t == FTW_D || t == FTW_DP || t == FTW_DNR) return MEEP_RMDIR(path);
   return remove(path);
 }
 
