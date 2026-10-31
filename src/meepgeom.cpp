@@ -565,6 +565,18 @@ static void interp_tensors(vector3 diag_in_1, vector3 offdiag_in_1, vector3 diag
   offdiag_out->y = offdiag_in_1.y + u * (offdiag_in_2.y - offdiag_in_1.y);
   offdiag_out->z = offdiag_in_1.z + u * (offdiag_in_2.z - offdiag_in_1.z);
 }
+/* Position-dependent materials (MATERIAL_FILE and MATERIAL_GRID) are evaluated
+   into a per-thread scratch copy rather than into the shared material itself, so
+   that get_material_pt and sigma_row can be called concurrently from OpenMP loops
+   (e.g. in structure_chunk::set_chi1inv).  The copy is shallow: it shares (but
+   never frees) the epsilon_data and weights arrays of md.  The returned material
+   is only valid until the next call on the same thread. */
+static material_type material_scratch(const material_data *md) {
+  static thread_local material_data scratch;
+  scratch = *md;
+  return &scratch;
+}
+
 // return material of the point p from the material grid
 void epsilon_material_grid(material_data *md, double u) {
   // NOTE: assume p lies on normalized grid within (0,1)
@@ -631,8 +643,6 @@ void epsilon_material_grid(material_data *md, double u) {
 
 // return material of the point p from the file (assumed already read)
 void epsilon_file_material(material_data *md, vector3 p) {
-  set_default_material(md);
-
   if (md->which_subclass != material_data::MATERIAL_FILE)
     meep::abort("epsilon-input-file only works with a type=file default-material");
 
@@ -866,13 +876,16 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
       // interpolate and project onto material grid
       u = tanh_projection(matgrid_val(p, tp, oi, md) + this->u_p, md->beta, md->eta);
       // interpolate material from material grid point
-      epsilon_material_grid(md, u);
+      material = material_scratch(md);
+      epsilon_material_grid(material, u);
 
       return;
     // material read from file: interpolate to get properties at r
     case material_data::MATERIAL_FILE:
-      if (md->epsilon_data)
-        epsilon_file_material(md, p);
+      if (md->epsilon_data) {
+        material = material_scratch(md);
+        epsilon_file_material(material, p);
+      }
       else
         material = (material_type)default_material;
       return;
@@ -1678,6 +1691,7 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     tp = geom_tree_search(p, restricted_tree, &oi);
     // interpolate and project onto material grid
     u = tanh_projection(matgrid_val(p, tp, oi, mat) + this->u_p, mat->beta, mat->eta);
+    mat = material_scratch(mat);
     epsilon_material_grid(mat, u); // interpolate material from material grid point
     mat->medium.check_offdiag_im_zero_or_abort();
   }
