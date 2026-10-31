@@ -27,7 +27,7 @@ SUBDIRS += tests
 # directories, so any untracked files in them end up in the tarball: run
 # "make dist" from a clean checkout (e.g. a fresh "git clone" or "git worktree"),
 # or check first with "git clean -nx scheme/examples".
-EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh
+EXTRA_DIST = NEWS.md LICENSE COPYRIGHT m4 meep-pkgconfig.in version.sh pyproject.toml setup.py MANIFEST.in tools/wheels
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = meep.pc
