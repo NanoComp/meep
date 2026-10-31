@@ -577,15 +577,15 @@ static material_type material_scratch(const material_data *md) {
   return &scratch;
 }
 
-// interpolate the material grid md at u, storing the result in out
-static void epsilon_material_grid(const material_data *md, double u, material_data *out) {
+// return material of the point p from the material grid
+void epsilon_material_grid(material_data *md, double u) {
   // NOTE: assume p lies on normalized grid within (0,1)
 
   if (!(md->weights)) meep::abort("material params were not initialized!");
 
-  medium_struct *mm = &(out->medium);
-  const medium_struct *m1 = &(md->medium_1);
-  const medium_struct *m2 = &(md->medium_2);
+  medium_struct *mm = &(md->medium);
+  medium_struct *m1 = &(md->medium_1);
+  medium_struct *m2 = &(md->medium_2);
 
   // Linearly interpolate dc epsilon values
   cinterp_tensors(m1->epsilon_diag, m1->epsilon_offdiag, m2->epsilon_diag, m2->epsilon_offdiag,
@@ -630,7 +630,7 @@ static void epsilon_material_grid(const material_data *md, double u, material_da
     // TODO: dampen the lorentzians to improve stability
     // mm->D_conductivity_diag.x = mm->D_conductivity_diag.y = mm->D_conductivity_diag.z = u*(1-u) *
     // omega_mean;
-    out->trivial = false;
+    md->trivial = false;
   }
   double fake_damping = u * (1 - u) * (md->damping);
   mm->D_conductivity_diag.x += fake_damping;
@@ -638,21 +638,16 @@ static void epsilon_material_grid(const material_data *md, double u, material_da
   mm->D_conductivity_diag.z += fake_damping;
 
   // set the trivial flag
-  if (md->damping != 0) out->trivial = false;
+  if (md->damping != 0) md->trivial = false;
 }
 
-// return material of the point p from the material grid
-void epsilon_material_grid(material_data *md, double u) { epsilon_material_grid(md, u, md); }
-
-// interpolate the file material md at the point p (assumed already read), storing the result in out
-static void epsilon_file_material(material_data *md, vector3 p, material_data *out) {
-  set_default_material(md);
-
+// return material of the point p from the file (assumed already read)
+void epsilon_file_material(material_data *md, vector3 p) {
   if (md->which_subclass != material_data::MATERIAL_FILE)
     meep::abort("epsilon-input-file only works with a type=file default-material");
 
   if (!(md->epsilon_data)) return;
-  medium_struct *mm = &(out->medium);
+  medium_struct *mm = &(md->medium);
   double rx =
       geometry_lattice.size.x == 0 ? 0 : 0.5 + (p.x - geometry_center.x) / geometry_lattice.size.x;
   double ry =
@@ -665,9 +660,6 @@ static void epsilon_file_material(material_data *md, vector3 p, material_data *o
   mm->epsilon_offdiag.x.re = mm->epsilon_offdiag.y.re = mm->epsilon_offdiag.z.re = 0;
 }
 
-// return material of the point p from the file (assumed already read)
-void epsilon_file_material(material_data *md, vector3 p) { epsilon_file_material(md, p, md); }
-
 /***********************************************************************/
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
@@ -678,7 +670,6 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   geometry.items = new geometric_object[length];
   has_user_materials = default_material && ((material_type)default_material)->which_subclass ==
                                                material_data::MATERIAL_USER;
-  has_object_file_materials = false;
   for (int i = 0; i < length; i++) {
     geometric_object_copy(&g.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();
@@ -687,9 +678,6 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
     if (static_cast<material_data *>(g.items[i].material)->which_subclass ==
         material_data::MATERIAL_USER)
       has_user_materials = true;
-    if (static_cast<material_data *>(g.items[i].material)->which_subclass ==
-        material_data::MATERIAL_FILE)
-      has_object_file_materials = true;
   }
 
   extra_materials = mlist;
@@ -741,7 +729,6 @@ geom_epsilon::geom_epsilon(const geom_epsilon &geps1) {
   geometry.num_items = length;
   geometry.items = new geometric_object[length];
   has_user_materials = geps1.has_user_materials;
-  has_object_file_materials = geps1.has_object_file_materials;
   for (int i = 0; i < length; i++) {
     geometric_object_copy(&geps1.geometry.items[i], &geometry.items[i]);
     geometry.items[i].material = new material_data();
@@ -890,14 +877,14 @@ void geom_epsilon::get_material_pt(material_type &material, const meep::vec &r) 
       u = tanh_projection(matgrid_val(p, tp, oi, md) + this->u_p, md->beta, md->eta);
       // interpolate material from material grid point
       material = material_scratch(md);
-      epsilon_material_grid(md, u, material);
+      epsilon_material_grid(material, u);
 
       return;
     // material read from file: interpolate to get properties at r
     case material_data::MATERIAL_FILE:
       if (md->epsilon_data) {
         material = material_scratch(md);
-        epsilon_file_material(md, p, material);
+        epsilon_file_material(material, p);
       }
       else
         material = (material_type)default_material;
@@ -1704,9 +1691,8 @@ void geom_epsilon::sigma_row(meep::component c, double sigrow[3], const meep::ve
     tp = geom_tree_search(p, restricted_tree, &oi);
     // interpolate and project onto material grid
     u = tanh_projection(matgrid_val(p, tp, oi, mat) + this->u_p, mat->beta, mat->eta);
-    material_type matgrid = mat;
-    mat = material_scratch(matgrid);
-    epsilon_material_grid(matgrid, u, mat); // interpolate material from material grid point
+    mat = material_scratch(mat);
+    epsilon_material_grid(mat, u); // interpolate material from material grid point
     mat->medium.check_offdiag_im_zero_or_abort();
   }
 
