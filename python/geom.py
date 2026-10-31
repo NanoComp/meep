@@ -588,6 +588,42 @@ class Medium:
 
 _material_grid_counter = itertools.count()
 
+_MATGRID_UNSUPPORTED = (
+    ("mu_diag", (1, 1, 1)),
+    ("mu_offdiag", (0, 0, 0)),
+    ("E_chi2_diag", (0, 0, 0)),
+    ("E_chi3_diag", (0, 0, 0)),
+    ("H_chi2_diag", (0, 0, 0)),
+    ("H_chi3_diag", (0, 0, 0)),
+    ("D_conductivity_offdiag", (0, 0, 0)),
+    ("B_conductivity_diag", (0, 0, 0)),
+    ("B_conductivity_offdiag", (0, 0, 0)),
+)
+
+
+def _check_matgrid_medium(medium, name):
+    """Refuse constituent properties a `MaterialGrid` cannot interpolate.
+
+    `epsilon_material_grid` mixes the permittivity, the electric
+    susceptibilities and the diagonal `D_conductivity`. Anything else a
+    constituent carries is never written to the mixed medium, so it is dropped
+    -- and a dropped property is indistinguishable from a correct simulation of
+    a different structure. Refuse rather than interpolate half a medium.
+    """
+    unsupported = [
+        attr
+        for attr, default in _MATGRID_UNSUPPORTED
+        if (lambda v: (v.x, v.y, v.z))(getattr(medium, attr)) != default
+    ]
+    if getattr(medium, "H_susceptibilities", None):
+        unsupported.append("H_susceptibilities")
+    if unsupported:
+        raise ValueError(
+            f"MaterialGrid cannot interpolate {', '.join(sorted(unsupported))}, "
+            f"set on {name}. It mixes only epsilon, E_susceptibilities and "
+            "D_conductivity_diag; anything else would be silently ignored."
+        )
+
 
 class MaterialGrid:
     """
@@ -679,6 +715,8 @@ class MaterialGrid:
         self.grid_id = next(_material_grid_counter)
         self.medium1 = medium1
         self.medium2 = medium2
+        _check_matgrid_medium(medium1, "medium1")
+        _check_matgrid_medium(medium2, "medium2")
 
         def isclose(a, b, rel_tol=1e-09, abs_tol=0.0):
             return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
