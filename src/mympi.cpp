@@ -175,19 +175,21 @@ static void _set_zero_subnormals(bool iszero) {
 #endif
 }
 void set_zero_subnormals(bool iszero) {
-  int n = omp_get_num_threads();
+  // The flags are per thread, so they must be set by every thread of the
+  // OpenMP team.  (Threads created later inherit them from the master thread.)
 #ifdef _OPENMP
-#pragma omp parallel for schedule(static, 1)
+#pragma omp parallel
 #endif
-  for (int i = 0; i < n; ++i)
-    _set_zero_subnormals(iszero); // This has to be done in every thread for OpenMP.
+  _set_zero_subnormals(iszero);
 }
 
 void setup() {
-  set_zero_subnormals(true);
 #ifdef _OPENMP
+  // set the number of threads first, so that set_zero_subnormals does not
+  // create a team with one thread per core
   if (getenv("OMP_NUM_THREADS") == NULL) omp_set_num_threads(1);
 #endif
+  set_zero_subnormals(true);
 }
 
 initialize::initialize(int &argc, char **&argv) {
