@@ -1,5 +1,23 @@
 # Meep Release Notes
 
+## Meep 1.35.1
+
+11/6/2026
+
+* Added support for list of termination criteria to `until` and `until_after_sources` arguments of `run` function ([#3336]).
+
+* Bug fix in `gaussianbeam::get_fields` ([#3353]).
+
+* Added `eps_parameters` dictionary with `frequency` key for dispersive materials to `plot3D` ([#3342]).
+
+* Bug fix in `fields::phase_material` involving multithreading ([#3351]).
+
+* Added PyPI wheels for package `pymeep` ([#3312]).
+
+* Bug fix in `epsilon_input_file` and `epsilon_material_grid` involving multithreading ([#3358]).
+
+* Various minor code cleanup and additional documentation ([#3329], [#3335], [#3340], [#3341], [#3344], [#3359])
+
 ## Meep 1.35.0
 
 10/9/2026
