@@ -238,7 +238,8 @@ Python. `Vector3` is a `meep` class.
   `kz_2d="real/imag"`, saves an additional factor of two by storing some field
   components as purely real and some as purely imaginary in a "real" field, but
   this option requires some care to use. See [2d Cell with Out-of-Plane
-  Wavevector](2d_Cell_Special_kz.md).
+  Wavevector](2d_Cell_Special_kz.md). Since it uses real fields, it cannot be
+  combined with `force_complex_fields=True`.
 
 + **`ensure_periodicity` [ `boolean` ]** — If `True` (the default) *and* if the
   boundary conditions are periodic (`k_point` is not `False`), then the geometric

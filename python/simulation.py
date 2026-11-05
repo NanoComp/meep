@@ -1447,7 +1447,8 @@ class Simulation:
           `kz_2d="real/imag"`, saves an additional factor of two by storing some field
           components as purely real and some as purely imaginary in a "real" field, but
           this option requires some care to use. See [2d Cell with Out-of-Plane
-          Wavevector](2d_Cell_Special_kz.md).
+          Wavevector](2d_Cell_Special_kz.md). Since it uses real fields, it cannot be
+          combined with `force_complex_fields=True`.
 
         + **`ensure_periodicity` [ `boolean` ]** — If `True` (the default) *and* if the
           boundary conditions are periodic (`k_point` is not `False`), then the geometric
@@ -1639,6 +1640,11 @@ class Simulation:
                 self.special_kz = True
                 self.force_complex_fields = True
             elif kz_2d == "real/imag":
+                if force_complex_fields:
+                    raise ValueError(
+                        'kz_2d="real/imag" uses real fields and cannot be combined '
+                        'with force_complex_fields=True: use kz_2d="complex" instead'
+                    )
                 self.special_kz = True
                 self.force_complex_fields = False
             elif kz_2d == "3d":

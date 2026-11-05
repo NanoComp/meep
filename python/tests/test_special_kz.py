@@ -189,6 +189,47 @@ class TestSpecialKz(unittest.TestCase):
         self.assertAlmostEqual(ratio_ez.real, phase_diff.real, places=10)
         self.assertAlmostEqual(ratio_ez.imag, phase_diff.imag, places=10)
 
+    def test_real_imag_force_complex_fields(self):
+        cell_size = mp.Vector3(1, 1)
+        k_point = mp.Vector3(0.3, 0, 0.5)
+
+        # The real/imag trick uses real fields, so complex fields cannot be forced
+        with self.assertRaises(ValueError):
+            mp.Simulation(
+                cell_size=cell_size,
+                resolution=10,
+                k_point=k_point,
+                kz_2d="real/imag",
+                force_complex_fields=True,
+            )
+
+        sim = mp.Simulation(
+            cell_size=cell_size, resolution=10, k_point=k_point, kz_2d="real/imag"
+        )
+        self.assertTrue(sim.special_kz)
+        self.assertFalse(sim.force_complex_fields)
+
+        for kz_2d in ("complex", "3d"):
+            sim = mp.Simulation(
+                cell_size=cell_size,
+                resolution=10,
+                k_point=k_point,
+                kz_2d=kz_2d,
+                force_complex_fields=True,
+            )
+            self.assertTrue(sim.force_complex_fields)
+
+        # With kz = 0 the real/imag trick is not used
+        sim = mp.Simulation(
+            cell_size=cell_size,
+            resolution=10,
+            k_point=mp.Vector3(0.3),
+            kz_2d="real/imag",
+            force_complex_fields=True,
+        )
+        self.assertFalse(sim.special_kz)
+        self.assertTrue(sim.force_complex_fields)
+
 
 if __name__ == "__main__":
     unittest.main()
