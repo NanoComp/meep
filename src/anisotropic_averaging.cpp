@@ -229,6 +229,7 @@ void structure_chunk::set_chi1inv(component c, material_function &medium,
 breakout:
   npixels += loop_npixels;
   double last_output_time = wall_time();
+  size_t last_output_ipixel = 0;
 
   FOR_FT_COMPONENTS(ft, c2) if (gv.has_field(c2)) {
     direction d = component_direction(c2);
@@ -299,11 +300,15 @@ breakout:
 
       if (verbosity > 0 && (ipixel + 1) % 1000 == 0 &&
           wall_time() > last_output_time + MEEP_MIN_OUTPUT_TIME) {
+        // estimate the remaining time from the rate since the last message
+        double now = wall_time();
         master_printf("%s is %g%% done, %g s remaining\n",
                       use_anisotropic_averaging ? "subpixel-averaging" : "grid initialization",
                       ipixel * 100.0 / npixels,
-                      (npixels - ipixel) * (wall_time() - last_output_time) / ipixel);
-        last_output_time = wall_time();
+                      (npixels - ipixel) * (now - last_output_time) /
+                          (ipixel - last_output_ipixel));
+        last_output_time = now;
+        last_output_ipixel = ipixel;
       }
       ++ipixel;
     }
