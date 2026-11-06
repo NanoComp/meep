@@ -1,5 +1,29 @@
 # Meep Release Notes
 
+## Meep 1.35.1
+
+11/6/2026
+
+* Added support for list of termination criteria to `until` and `until_after_sources` arguments of `run` function ([#3336]).
+
+* Added `eps_parameters` dictionary with `frequency` key for dispersive materials to `plot3D` ([#3342]).
+
+* Added PyPI wheels for package `pymeep` ([#3312]).
+
+* Bug fix in `gaussianbeam::get_fields` ([#3353]).
+
+* Bug fix in `fields::phase_material` involving multithreading ([#3351]).
+
+* Bug fix in `epsilon_input_file` and `epsilon_material_grid` involving multithreading ([#3358]).
+
+* Bug fix to remaining-time estimates for subpixel averaging ([#3364]).
+
+* Bug fix for subnormal-flushing with multi-threading ([#3361]).
+
+* More error-checking for `kz_2d` argument ([#3363)]).
+
+* Various minor code cleanup and additional documentation ([#3329], [#3335], [#3340], [#3341], [#3344], [#3359])
+
 ## Meep 1.35.0
 
 10/9/2026
@@ -1404,6 +1428,7 @@ Meep 1.0.1
 [#3305]: https://github.com/NanoComp/meep/issues/3305
 [#3309]: https://github.com/NanoComp/meep/issues/3309
 [#3310]: https://github.com/NanoComp/meep/issues/3310
+[#3312]: https://github.com/NanoComp/meep/issues/3312
 [#3314]: https://github.com/NanoComp/meep/issues/3314
 [#3316]: https://github.com/NanoComp/meep/issues/3316
 [#3319]: https://github.com/NanoComp/meep/issues/3319
@@ -1411,3 +1436,16 @@ Meep 1.0.1
 [#3322]: https://github.com/NanoComp/meep/issues/3322
 [#3323]: https://github.com/NanoComp/meep/issues/3323
 [#3324]: https://github.com/NanoComp/meep/issues/3324
+[#3329]: https://github.com/NanoComp/meep/issues/3329
+[#3335]: https://github.com/NanoComp/meep/issues/3335
+[#3336]: https://github.com/NanoComp/meep/issues/3336
+[#3340]: https://github.com/NanoComp/meep/issues/3340
+[#3341]: https://github.com/NanoComp/meep/issues/3341
+[#3342]: https://github.com/NanoComp/meep/issues/3342
+[#3344]: https://github.com/NanoComp/meep/issues/3344
+[#3351]: https://github.com/NanoComp/meep/issues/3351
+[#3353]: https://github.com/NanoComp/meep/issues/3353
+[#3358]: https://github.com/NanoComp/meep/issues/3358
+[#3359]: https://github.com/NanoComp/meep/issues/3359
+[#3361]: https://github.com/NanoComp/meep/issues/3361
+[#3364]: https://github.com/NanoComp/meep/issues/3364
