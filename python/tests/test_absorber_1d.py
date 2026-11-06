@@ -81,9 +81,7 @@ class TestAbsorber(ApproxComparisonTestCase):
         The fields are stepped until (after t=50) the field at the source has
         decayed to 1e-6 of its maximum. The field at t=50 and the final time
         are then compared with reference values, which makes this a sensitive
-        regression test of the absorber. (The final field is not checked since
-        it is near zero and thus dominated by roundoff error, particularly in
-        single precision.)
+        regression test of the absorber.
         """
         pt = mp.Vector3()
         sim = mp.Simulation(
