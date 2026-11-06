@@ -145,7 +145,7 @@ int main(int argc, char **argv) {
     // imaginary part of the frequency is therefore dominated by roundoff error
     // and is only checked in double precision.
     if (sizeof(realnum) == sizeof(double))
-      ok = ok && fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.20; 
+      ok = ok && fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.20;
   }
   end_divide_parallel();
   return !and_to_all(ok);
