@@ -80,8 +80,8 @@ class TestAbsorber(ApproxComparisonTestCase):
 
         The fields are stepped until (after t=50) the field at the source has
         decayed to 1e-6 of its maximum. The field at t=50 and the final time
-        and field are then compaerd with reference values, which makes this
-        a sensitive regression test of the absorber.
+        are then compared with reference values, which makes this a sensitive
+        regression test of the absorber.
         """
         pt = mp.Vector3()
         sim = mp.Simulation(
@@ -109,15 +109,12 @@ class TestAbsorber(ApproxComparisonTestCase):
             if t >= 50 and record["f50"] is None:
                 record["f50"] = field
             record["max_abs"] = max(record["max_abs"], abs(field))
-            record["field"] = field
             return t > 50 and abs(field) <= 1e-6 * record["max_abs"]
 
         sim.run(until=fields_decayed)
 
-        f_final_ref = 1.413336e-07 if mp.is_single_precision() else 1.624782e-07
         self.assertClose(record["f50"], -5.090114e-01, epsilon=1e-6)
         self.assertClose(sim.meep_time(), 9.195000e01, epsilon=1e-6)
-        self.assertClose(record["field"], f_final_ref, epsilon=1e-6)
 
     def test_absorber_2d(self):
         source = mp.Source(

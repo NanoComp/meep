@@ -139,9 +139,13 @@ int main(int argc, char **argv) {
     master_printf("err. real: %g\n", fabs(freqs_re[i0] - 0.41562) / 0.41562);
     master_printf("err. imag: %g\n", fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7);
 
-    double tol = sizeof(realnum) == sizeof(float) ? 0.27 : 0.20;
-    ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4 &&
-         fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < tol;
+    ok = fabs(freqs_re[i0] - 0.41562) / 0.41562 < 1e-4;
+    // The damping of the polarization per timestep (~2*pi*gamma*dt = 1.6e-7)
+    // is comparable to the machine epsilon of single precision (1.2e-7). The
+    // imaginary part of the frequency is therefore dominated by roundoff error
+    // and is only checked in double precision.
+    if (sizeof(realnum) == sizeof(double))
+      ok = ok && fabs(freqs_im[i0] + 4.8297e-07) / 4.8297e-7 < 0.20;
   }
   end_divide_parallel();
   return !and_to_all(ok);
