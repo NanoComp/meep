@@ -20,7 +20,10 @@ from .connectivity import *
 
 from .unfilter_design import *
 
+# JAX is an optional dependency; everything that needs it lives in `wrapper`.
+# Importing it also registers JAX as a way to differentiate objective functions,
+# so objective functions written with `jax.numpy` need no special treatment.
 try:
-    from .wrapper import MeepJaxWrapper
+    from .wrapper import MeepJaxWrapper, value_and_jacobian
 except ModuleNotFoundError as _:
     pass
