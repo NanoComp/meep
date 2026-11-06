@@ -141,7 +141,9 @@ Python. `Vector3` is a `meep` class.
   the coordinate system used in Meep (for example, to put the origin at the
   corner).  Passing `geometry_center=c` is equivalent to adding the `c` vector to
   the coordinates of every other object in the simulation, i.e. `c` becomes the
-  new origin that other objects are defined with respect to.
+  new origin that other objects are defined with respect to. `c` is rounded to the
+  nearest pixel (a multiple of `1/resolution`) so that the grid is not shifted
+  relative to the Yee lattice.
 
 + **`sources` [ list of `Source` class ]** — Specifies the current sources to be
   present in the simulation. Defaults to none (empty list).
