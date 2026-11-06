@@ -25,5 +25,13 @@ from .unfilter_design import *
 # so objective functions written with `jax.numpy` need no special treatment.
 try:
     from .wrapper import MeepJaxWrapper, value_and_jacobian
+    from .angular_spectrum import (
+        AngularSpectrum,
+        Layer,
+        Mode,
+        Stack,
+        TangentialFields,
+        gaussian_mode,
+    )
 except ModuleNotFoundError as _:
     pass
