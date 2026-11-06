@@ -2661,8 +2661,7 @@ get_material_gradient(const meep::vec &r,              // current point
                       geom_epsilon *geps,              // material
                       meep::grid_volume &gv,           // simulation grid volume
                       double du,                       // step size
-                      const std::vector<double *> &us, // matgrid weights, one per
-                                                       // copy of this design grid
+                      const std::vector<double *> &us, // matgrids, one per design grid
                       int idx                          // matgrid index
 ) {
   /*Compute the Aᵤx product from the -λᵀAᵤx calculation.
