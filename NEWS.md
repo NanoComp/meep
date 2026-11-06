@@ -20,13 +20,13 @@
 
 ## Meep 1.35.0
 
-10/9/2026
+11/6/2026
 
 * Added `plot1D` and `plot3D` visualization routines ([#3271], [#3310]).
 
-* Multi-threading optimization for near-to-far field transformation ([#3251]).
-
 * Added `dt` option for `fourier_transform` member function of `GaussianSource` ([#3273]).
+
+* Multi-threading optimization for near-to-far field transformation ([#3251]).
 
 * Bug fix in adjoint gradient of adjoint solver for parallel simulations ([#3274]).
 
@@ -34,6 +34,12 @@
 
 * Bug fixes to array-slicing routines and new `ArrayMetadata` and `SliceDimension` classes
   for array-slice metadata ([#3320]).
+
+* Bug fix to remaining-time estimates for subpixel averaging ([#3364]).
+
+* Bug fix for subnormal-flushing with multi-threading ([#3361]).
+
+* More error-checking for `kz_2d` argument ([#3363)]).
 
 * Improvements to CI on GitHub ([#3254], [#3309], [#3314], [#3322]).
 
@@ -1429,3 +1435,5 @@ Meep 1.0.1
 [#3322]: https://github.com/NanoComp/meep/issues/3322
 [#3323]: https://github.com/NanoComp/meep/issues/3323
 [#3324]: https://github.com/NanoComp/meep/issues/3324
+[#3361]: https://github.com/NanoComp/meep/issues/3361
+[#3364]: https://github.com/NanoComp/meep/issues/3364
