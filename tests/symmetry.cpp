@@ -1104,7 +1104,7 @@ int main(int argc, char **argv) {
   if (!exact_metal_rot4z_nonlinear(rods_2d))
     meep::abort("error in exact_metal_rot4z nonlinear rods_2d\n");
 
-  // I'm not sure why the polariton tests require increased tolerances...?
+    // I'm not sure why the polariton tests require increased tolerances...?
 #if MEEP_SINGLE
   /* In single precision, the roundoff error in the polariton fields is
      ~1e-6 of the peak field (~1). The fractional error can therefore
