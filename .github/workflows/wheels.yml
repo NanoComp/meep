@@ -35,7 +35,7 @@ jobs:
           # floor, excluding exactly the older Intel machines that would want
           # the wheel. Those users have the Conda package.
           - name: macOS arm64
-            os: macos-14
+            os: macos-15
             archs: arm64
     steps:
       - uses: actions/checkout@v7
