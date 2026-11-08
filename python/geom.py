@@ -1326,12 +1326,17 @@ class Prism(GeometricObject):
           `center` is the coordinates of the
           [centroid](https://en.wikipedia.org/wiki/Centroid) of all the vertices (top and
           bottom) of the resulting 3d prism so that the coordinates of the `vertices` are
-          shifted accordingly.
+          shifted accordingly. If `height` is `mp.inf`, only the components of `center`
+          perpendicular to `axis` are used.
 
         + **`sidewall_angle` [`number`]** — The sidewall angle of the prism in units of
           radians. Default is 0.
         """
 
+        axis = Vector3(*axis)
+        if axis.norm() > 0:
+            # libctl normalizes the axis, so the center must use the unit axis too
+            axis = axis.unit()
         centroid = sum(vertices, Vector3(0)) * (
             1.0 / len(vertices)
         )  # centroid of floor polygon
@@ -1342,6 +1347,11 @@ class Prism(GeometricObject):
             center = Vector3(*center)
             # translate vertices to center prism at requested center
             shift = center - original_center
+            if height >= mp.inf:
+                # an infinite prism has no center along its axis: only shift the vertices
+                # within their plane, or they move by -inf/2 and lose all precision
+                shift -= axis * shift.dot(axis)
+                center = original_center + shift
             vertices = list(map(lambda v: v + shift, vertices))
         else:
             center = original_center

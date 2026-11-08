@@ -226,6 +226,62 @@ class TestPrism(unittest.TestCase):
         self.assertLess(abs((d3_b - d3_ref) / d3_ref), abs((d3_a - d3_ref) / d3_ref))
         self.assertLess(abs((d3_b - d3_ref) / d3_ref), 0.02)
 
+    def test_infinite_height_center(self):
+        """`center` of a prism with infinite height only moves it in the plane (#2144)."""
+        vertices = [
+            mp.Vector3(-1, 0.25),
+            mp.Vector3(1, 0.75),
+            mp.Vector3(1, -0.75),
+            mp.Vector3(-1, -0.25),
+        ]  # centroid at the origin
+        center = mp.Vector3(0.3123, 0.5371, 7)
+        material = mp.Medium(epsilon=12)
+        prism = mp.Prism(vertices, height=mp.inf, center=center, material=material)
+        ref_prism = mp.Prism(
+            [v + mp.Vector3(center.x, center.y) for v in vertices],
+            height=mp.inf,
+            material=material,
+        )
+
+        # the bottom of the prism stays in the plane of the vertices
+        self.assertEqual(prism.vertices[0].z, 0)
+        self.assertNotIn(mp.Vector3(center.x, center.y, -0.5), prism)
+        self.assertIn(mp.Vector3(center.x, center.y, 0.5), prism)
+
+        def get_eps(p):
+            sim = mp.Simulation(cell_size=mp.Vector3(4, 3), geometry=[p], resolution=20)
+            sim.init_sim()
+            return sim.get_epsilon()
+
+        np.testing.assert_allclose(get_eps(prism), get_eps(ref_prism), atol=1e-10)
+
+    def test_non_unit_axis(self):
+        """The length of `axis` does not change the prism."""
+        vertices = [
+            mp.Vector3(-0.5, -0.5),
+            mp.Vector3(0.5, -0.5),
+            mp.Vector3(0.5, 0.5),
+            mp.Vector3(-0.5, 0.5),
+        ]
+        prism = mp.Prism(
+            vertices, height=1, axis=mp.Vector3(0, 0, 2), material=mp.Medium(epsilon=4)
+        )
+        self.assertTrue(prism.center.close(mp.Vector3(0, 0, 0.5)))
+
+        sim = mp.Simulation(
+            cell_size=mp.Vector3(3, 3, 4),
+            geometry=[prism],
+            resolution=10,
+            eps_averaging=False,
+        )
+        sim.init_sim()
+        # the prism spans 0 < z < 1
+        eps = [
+            sim.get_epsilon_point(mp.Vector3(0, 0, z)).real
+            for z in (-0.25, 0.25, 0.75, 1.25)
+        ]
+        self.assertEqual(eps, [1, 4, 4, 1])
+
 
 if __name__ == "__main__":
     unittest.main()
