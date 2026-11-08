@@ -111,10 +111,10 @@ PKG_CONFIG_PATH = "$HOME/meep-deps/lib/pkgconfig:/opt/homebrew/lib/pkgconfig:/us
 
 # The floor is set by the vendored Homebrew bottles: delocate refuses a dylib
 # whose LC_BUILD_VERSION is newer than the wheel's tag. It therefore tracks the
-# runner image in .github/workflows/wheels.yml (macos-14) and must move with
+# runner image in .github/workflows/wheels.yml (macos-15) and must move with
 # it; lowering it would mean building the whole stack, libgfortran included,
 # from source.
 [[tool.cibuildwheel.overrides]]
 select = "*-macosx_arm64"
 inherit.environment = "append"
-environment.MACOSX_DEPLOYMENT_TARGET = "14.0"
+environment.MACOSX_DEPLOYMENT_TARGET = "15.0"

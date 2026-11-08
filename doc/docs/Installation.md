@@ -125,7 +125,7 @@ Binary wheels are published to PyPI as [pymeep](https://pypi.org/project/pymeep/
 pip install pymeep
 ```
 
-Wheels are available on CPython 3.10 and later for Linux (x86-64 and aarch64) and for Apple silicon macOS (14 and later). They bundle their own copies of MPB, Harminv, libctlgeom, HDF5, FFTW, GSL and LAPACK, and pull in `mpi4py` and `mpich` from PyPI, so nothing else has to be installed first.
+Wheels are available on CPython 3.10 and later for Linux (x86-64 and aarch64) and for Apple silicon macOS (15 and later). They bundle their own copies of MPB, Harminv, libctlgeom, HDF5, FFTW, GSL and LAPACK, and pull in `mpi4py` and `mpich` from PyPI, so nothing else has to be installed first.
 
 There is no Intel macOS wheel: the vendored Homebrew bottles fix how old a macOS the wheel may claim, and the oldest Intel runner still available would put that floor at macOS 15 — past the point where the machines wanting it are still supported. Intel Macs are served by the [Conda package](#conda-packages) or a [build from source](Build_From_Source.md).
 
