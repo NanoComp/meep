@@ -15,6 +15,8 @@
 */
 
 #include <algorithm>
+#include <set>
+#include <string>
 #include <vector>
 #include "meepgeom.hpp"
 #include "meep_internals.hpp"
@@ -661,6 +663,116 @@ void epsilon_file_material(material_data *md, vector3 p) {
 }
 
 /***********************************************************************/
+/* Warn about materials whose ε, μ, σ tensors are unphysical.          */
+/***********************************************************************/
+
+/* Builds the symmetric 3x3 matrix with the given diagonal and
+   off-diagonal (xy, xz, yz) entries. */
+static symm_matrix make_symm_matrix(const vector3 &diag, double xy, double xz, double yz) {
+  symm_matrix V;
+  V.m00 = diag.x;
+  V.m11 = diag.y;
+  V.m22 = diag.z;
+  V.m01 = xy;
+  V.m02 = xz;
+  V.m12 = yz;
+  return V;
+}
+
+/* Returns whether V is positive-semidefinite, up to roundoff: V + delta*I must be
+   positive-definite for delta = 1e-6 * max |V_ij|.  (So that, e.g., a zero tensor or a
+   uniaxial tensor such as sigma_diag = (s,0,0) with s > 0 is not flagged.) */
+static bool sym_matrix_positive_semidefinite(symm_matrix V) {
+  const double entries[6] = {V.m00, V.m11, V.m22, V.m01, V.m02, V.m12};
+  double scale = 0;
+  for (int i = 0; i < 6; ++i)
+    scale = std::max(scale, fabs(entries[i]));
+  if (scale == 0) return true;
+  const double delta = 1e-6 * scale;
+  V.m00 += delta;
+  V.m11 += delta;
+  V.m22 += delta;
+  return sym_matrix_positive_definite(&V);
+}
+
+/* Whether any entry of v is infinite, where infinity is represented
+   by 1e20 (mp.inf) in Python. */
+static bool has_infinite_entry(const vector3 &v) {
+  return fabs(v.x) >= 1e20 || fabs(v.y) >= 1e20 || fabs(v.z) >= 1e20;
+}
+
+static const char *gain_warning =
+    "the medium has gain (is not passive), which may cause the simulation to diverge.";
+
+/* Prints a warning that the tensor V (named by what) is not positive-(semi)definite,
+   unless an identical warning was already printed. */
+static void warn_material_tensor(const char *what, const symm_matrix &V, bool semidefinite,
+                                 const char *consequence, std::set<std::string> &warned) {
+  char msg[512];
+  snprintf(msg, sizeof(msg),
+           "Warning: material %s tensor with diagonal (%g,%g,%g) and off-diagonal "
+           "(%g,%g,%g) is not positive-%sdefinite; %s\n",
+           what, V.m00, V.m11, V.m22, V.m01, V.m02, V.m12, semidefinite ? "semi" : "", consequence);
+  if (warned.insert(msg).second) meep::master_printf_stderr("%s", msg);
+}
+
+static void check_susceptibility_tensors(const char *what, const susceptibility_list &slist,
+                                         std::set<std::string> &warned) {
+  for (const susceptibility &ss : slist) {
+    // the sigma of a multilevel atom is a coupling strength; gain comes from
+    // the level populations instead
+    if (!ss.transitions.empty()) continue;
+    symm_matrix S =
+        make_symm_matrix(ss.sigma_diag, ss.sigma_offdiag.x, ss.sigma_offdiag.y, ss.sigma_offdiag.z);
+    if (!sym_matrix_positive_semidefinite(S))
+      warn_material_tensor(what, S, true, gain_warning, warned);
+  }
+}
+
+/* Checks the ε and μ tensors of m for positive-definiteness, and the
+   σ tensors (conductivities and susceptibilities) for positive-semidefiniteness.
+   Only the real parts of the off-diagonal ε and μ entries are used, since
+   check_offdiag_im_zero_or_abort requires the imaginary parts to be zero. */
+static void check_medium_tensors(const medium_struct &m, std::set<std::string> &warned) {
+  const char *unstable = "this is unphysical and may cause the simulation to diverge.";
+
+  // skip ε = -∞ (perfect electric conductor) and μ = -∞ (perfect magnetic conductor)
+  if (!has_infinite_entry(m.epsilon_diag)) {
+    symm_matrix eps = make_symm_matrix(m.epsilon_diag, m.epsilon_offdiag.x.re,
+                                       m.epsilon_offdiag.y.re, m.epsilon_offdiag.z.re);
+    if (!sym_matrix_positive_definite(&eps))
+      warn_material_tensor("epsilon", eps, false, unstable, warned);
+  }
+  if (!has_infinite_entry(m.mu_diag)) {
+    symm_matrix mu =
+        make_symm_matrix(m.mu_diag, m.mu_offdiag.x.re, m.mu_offdiag.y.re, m.mu_offdiag.z.re);
+    if (!sym_matrix_positive_definite(&mu)) warn_material_tensor("mu", mu, false, unstable, warned);
+  }
+
+  symm_matrix sigma_D = make_symm_matrix(m.D_conductivity_diag, 0, 0, 0);
+  if (!sym_matrix_positive_semidefinite(sigma_D))
+    warn_material_tensor("D_conductivity", sigma_D, true, gain_warning, warned);
+  symm_matrix sigma_B = make_symm_matrix(m.B_conductivity_diag, 0, 0, 0);
+  if (!sym_matrix_positive_semidefinite(sigma_B))
+    warn_material_tensor("B_conductivity", sigma_B, true, gain_warning, warned);
+
+  check_susceptibility_tensors("E_susceptibility sigma", m.E_susceptibilities, warned);
+  check_susceptibility_tensors("H_susceptibility sigma", m.H_susceptibilities, warned);
+}
+
+static void check_material_tensors(material_type md, std::set<std::string> &warned) {
+  if (!md) return;
+  switch (md->which_subclass) {
+    case material_data::MEDIUM: check_medium_tensors(md->medium, warned); break;
+    case material_data::MATERIAL_GRID:
+      check_medium_tensors(md->medium_1, warned);
+      check_medium_tensors(md->medium_2, warned);
+      break;
+    default: break; // position-dependent (user function or file) or perfect metal
+  }
+}
+
+/***********************************************************************/
 
 geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
                            const meep::volume &v) {
@@ -684,6 +796,14 @@ geom_epsilon::geom_epsilon(geometric_object_list g, material_type_list mlist,
   current_pol = NULL;
 
   FOR_DIRECTIONS(d) FOR_SIDES(b) { cond[d][b].prof = NULL; }
+
+  // warn (once per distinct tensor) about unphysical ε, μ, or σ
+  std::set<std::string> warned;
+  check_material_tensors((material_type)default_material, warned);
+  for (int i = 0; i < geometry.num_items; ++i)
+    check_material_tensors((material_type)geometry.items[i].material, warned);
+  for (int i = 0; i < extra_materials.num_items; ++i)
+    check_material_tensors(extra_materials.items[i], warned);
 
   if (meep::am_master()) {
     int num_print = meep::verbosity > 2
