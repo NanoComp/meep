@@ -62,12 +62,14 @@ class TestMaterialPositiveDefinite(unittest.TestCase):
             epsilon_diag=mp.Vector3(2, 2, 2), epsilon_offdiag=mp.Vector3(3, 0, 0)
         )
         stderr = self.init_sim_stderr(geometry=[self.block(bad, 0)])
-        self.assertIn("material epsilon tensor", stderr)
-        self.assertIn("is not positive-definite", stderr)
+        if mp.am_master():
+            self.assertIn("material epsilon tensor", stderr)
+            self.assertIn("is not positive-definite", stderr)
 
     def test_mu_default_material(self):
         stderr = self.init_sim_stderr(default_material=mp.Medium(mu=-2))
-        self.assertIn("material mu tensor", stderr)
+        if mp.am_master():
+            self.assertIn("material mu tensor", stderr)
 
     def test_susceptibility_sigma(self):
         # every 2x2 principal minor of sigma is positive but det(sigma) < 0
@@ -79,19 +81,22 @@ class TestMaterialPositiveDefinite(unittest.TestCase):
         )
         bad = mp.Medium(epsilon=2, E_susceptibilities=[sus])
         stderr = self.init_sim_stderr(extra_materials=[bad])
-        self.assertIn("material E_susceptibility sigma tensor", stderr)
-        self.assertIn("is not positive-semidefinite", stderr)
+        if mp.am_master():
+            self.assertIn("material E_susceptibility sigma tensor", stderr)
+            self.assertIn("is not positive-semidefinite", stderr)
 
     def test_conductivity(self):
         bad = mp.Medium(epsilon=2, D_conductivity=-0.1)
         stderr = self.init_sim_stderr(geometry=[self.block(bad, 0)])
-        self.assertIn("material D_conductivity tensor", stderr)
+        if mp.am_master():
+            self.assertIn("material D_conductivity tensor", stderr)
 
     def test_warn_once(self):
         bad = mp.Medium(epsilon=-2)
         geometry = [self.block(bad, -0.6), self.block(bad, 0.6)]
         stderr = self.init_sim_stderr(geometry=geometry, extra_materials=[bad])
-        self.assertEqual(stderr.count("material epsilon tensor"), 1)
+        if mp.am_master():
+            self.assertEqual(stderr.count("material epsilon tensor"), 1)
 
 
 if __name__ == "__main__":
