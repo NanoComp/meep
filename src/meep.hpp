@@ -1580,8 +1580,6 @@ private:
 
   // initialize.cpp
   void initialize_field(component, std::complex<double> f(const vec &));
-  void initialize_with_nth_te(int n, double kz);
-  void initialize_with_nth_tm(int n, double kz);
   // dft.cpp
   void update_dfts(double timeE, double timeH, int current_step);
   double dft_norm2(grid_volume fgv) const;

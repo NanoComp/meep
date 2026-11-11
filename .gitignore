@@ -87,6 +87,7 @@ tests/aniso_disp.log
 tests/aniso_disp.trs
 tests/array-slice-ll
 tests/bench
+tests/bessel
 tests/bench.log
 tests/bragg_transmission
 tests/convergence_cyl_waveguide

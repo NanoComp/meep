@@ -127,6 +127,9 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
                 component_name(c0));
   if (c1 != NO_COMPONENT) master_printf("   (and %s SOURCE)\n", component_name(c1));
 
+  // the error decreases as 1/a; the 2d Ex+Hz case has relerr ~ 1.65/a
+  const double tol = (dim == D2 ? 0.07 : 0.05) * 30 / a;
+
   // HACK: to speed up tests, we assume c0 and c1 have these symmetries
   symmetry S = dim == D3 ? (evenz ? mirror(Z, gv) - mirror(X, gv) : mirror(X, gv) - mirror(Z, gv))
                          : (evenz ? -mirror(X, gv) : mirror(X, gv)); // 2d
@@ -170,7 +173,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
       master_printf("  GREEN: %s -> %s, resolution %g: relerr = %g\n", component_name(c0),
                     component_name(c), a, relerr);
 
-      if (relerr > 0.05 * 30 / a) {
+      if (relerr > tol) {
         for (int i = 0; i < N; ++i)
           master_printf("%g, %g,%g, %g,%g\n", xmax / 4 + dx * i, real(F[i]), imag(F[i]),
                         real(F0[i]), imag(F0[i]));
@@ -235,7 +238,7 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
       master_printf("  NEAR2FAR: %s -> %s, resolution %g: relerr = %g\n", component_name(c0),
                     component_name(c), a, relerr);
 
-      if (relerr > 0.05 * 30 / a) {
+      if (relerr > tol) {
         for (int i = 0; i < N; ++i)
           master_printf("%g, %g,%g, %g,%g\n", xmax + dx * i, real(F[i]), imag(F[i]), real(F0[i]),
                         imag(F0[i]));
@@ -256,10 +259,8 @@ int main(int argc, char **argv) {
 
   // NOTE: see hack above -- we require sources to be odd in Z and even in X or vice-versa
   if (!check_2d_3d(D3, 4, a3d, Ez, Hx, false)) return 1;
-#if defined(HAVE_JN) || defined(HAVE_LIBGSL) // required for Hankel functions in 2d near2far
   if (!check_2d_3d(D2, 8, a2d, Ez, Hx, false)) return 1;
   if (!check_2d_3d(D2, 8, a2d, Ex, Hz, true)) return 1;
-#endif
 
   return 0;
 }

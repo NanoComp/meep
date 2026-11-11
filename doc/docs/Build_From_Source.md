@@ -316,7 +316,6 @@ sudo apt-get -y install     \
     liblapack-dev           \
     libgmp-dev              \
     swig                    \
-    libgsl-dev              \
     autoconf                \
     pkg-config              \
     libpng16-dev            \
@@ -435,7 +434,6 @@ sudo yum -y install    \
     openblas-devel     \
     fftw3-devel        \
     libpng-devel       \
-    gsl-devel          \
     gmp-devel          \
     pcre-devel         \
     libtool-ltdl-devel \

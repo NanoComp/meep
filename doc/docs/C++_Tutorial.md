@@ -221,5 +221,5 @@ Naturally, replace `g++` with the name of your C++ compiler if you are not using
 (3) Compile with g++, this time invoking each library separately:
 
 ```sh
-g++ -malign-double foo.cpp -o foo -lmeep -lhdf5 -lz -lgsl -lharminv -llapack -lcblas -latlas -lfftw3 -lm
+g++ -malign-double foo.cpp -o foo -lmeep -lhdf5 -lz -lharminv -llapack -lcblas -latlas -lfftw3 -lm
 ```

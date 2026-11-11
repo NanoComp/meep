@@ -226,13 +226,6 @@ if test "x$have_mpb" = "xyes"; then
 fi
 
 ##############################################################################
-# GNU Scientific Library
-
-AC_CHECK_LIB([gslcblas],[cblas_dgemm])
-AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
-	     [AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
-
-##############################################################################
 # Check for HDF5 library
 AC_ARG_WITH(hdf5, [AS_HELP_STRING([--without-hdf5],[do not allow HDF5 output])], ok=$withval, ok=yes)
 if test "$ok" = "yes"; then
@@ -535,7 +528,11 @@ fi
 ##############################################################################
 # Miscellaneous function and header checks
 AC_CHECK_HEADERS([sys/time.h immintrin.h])
-AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
+AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
+
+# POSIX/BSD Bessel functions, for 2d near-to-far transforms and
+# Bessel-function field initialization in cylindrical coordinates
+AC_CHECK_FUNCS([jn yn], [], [AC_MSG_ERROR([the jn and yn Bessel functions from libm are required])])
 
 ##############################################################################
 # check for restrict keyword in C++

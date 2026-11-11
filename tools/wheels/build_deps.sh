@@ -58,7 +58,6 @@ install_system_deps_linux() {
       autoconf automake libtool pkgconfig swig ccache \
       gcc-gfortran \
       fftw-devel \
-      gsl-devel \
       openblas-devel \
       lapack-devel \
       libpng-devel \
@@ -73,7 +72,6 @@ install_system_deps_linux() {
       autoconf automake libtool pkg-config swig ccache \
       gfortran \
       libfftw3-dev \
-      libgsl-dev \
       liblapack-dev \
       libpng-dev \
       zlib1g-dev \
@@ -91,7 +89,7 @@ install_system_deps_macos() {
   fi
   log "installing system libraries (brew)"
   # `gcc` is what provides gfortran on macOS.
-  brew install autoconf automake libtool pkg-config swig ccache gcc fftw gsl libpng
+  brew install autoconf automake libtool pkg-config swig ccache gcc fftw libpng
 }
 
 # fetch_and_build <repo> <version> [configure args...]

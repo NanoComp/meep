@@ -20,7 +20,7 @@ jobs:
     - name: Install pre-compiled dependencies
       # The Linux job's apt list, spelled for Homebrew.  autoconf/automake/
       # libtool/swig are pinned so a runner image change cannot alter it.
-      run: brew install autoconf automake libtool swig fftw gsl hdf5 guile libpng
+      run: brew install autoconf automake libtool swig fftw hdf5 guile libpng
 
     - name: Define common environment variables
       # After the install above, so that brew --prefix hdf5 resolves.

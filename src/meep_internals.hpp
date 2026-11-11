@@ -196,6 +196,11 @@ void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, do
              const vec &x0, component c0, std::complex<double> f0);
 void greencyl(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
               const vec &x0, component c0, std::complex<double> f0, double m, double tol);
+std::complex<double> hankel(int n, double x);
+
+// Bessel-function zeros from initialize.cpp
+double Jroot(int m, int n);
+double Jmax(int m, int n);
 
 // functions in array_slice.cpp:
 
