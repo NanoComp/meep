@@ -681,7 +681,11 @@ static symm_matrix make_symm_matrix(const vector3 &diag, double xy, double xz, d
 
 /* Returns whether V is positive-semidefinite, up to roundoff: V + delta*I must be
    positive-definite for delta = 1e-6 * max |V_ij|.  (So that, e.g., a zero tensor or a
-   uniaxial tensor such as sigma_diag = (s,0,0) with s > 0 is not flagged.) */
+   uniaxial tensor such as sigma_diag = (s,0,0) with s > 0 is not flagged.)   Since this is
+   only a warning, it is fine to be a bit conservative about printing the warning for matrices
+   that are close to semidefinite (within `1e-6`).  Note also that the semi-definite check
+   is applied to things like conductivities and polarizabilities that are allowed to be zero, whereas
+   the static epsilon and mu tensors are required below to be strictly positive definite. */
 static bool sym_matrix_positive_semidefinite(symm_matrix V) {
   const double entries[6] = {V.m00, V.m11, V.m22, V.m01, V.m02, V.m12};
   double scale = 0;
