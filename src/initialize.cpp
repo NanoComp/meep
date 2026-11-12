@@ -32,7 +32,14 @@ namespace meep {
 
 #define J BesselJ
 double J(int m, double kr) {
+#ifdef HAVE_JN
   return jn(m, kr); // POSIX/BSD jn function
+#else
+  (void)m;
+  (void)kr;
+  meep::abort("not compiled with the jn function, required for Bessel functions");
+  return 0;
+#endif
 }
 static double Jprime(int m, double kr) {
   if (m)

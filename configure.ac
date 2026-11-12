@@ -528,11 +528,7 @@ fi
 ##############################################################################
 # Miscellaneous function and header checks
 AC_CHECK_HEADERS([sys/time.h immintrin.h])
-AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy])
-
-# POSIX/BSD Bessel functions, for 2d near-to-far transforms and
-# Bessel-function field initialization in cylindrical coordinates
-AC_CHECK_FUNCS([jn yn], [], [AC_MSG_ERROR([the jn and yn Bessel functions from libm are required])])
+AC_CHECK_FUNCS([BSDgettimeofday gettimeofday cblas_ddot cblas_daxpy jn])
 
 ##############################################################################
 # check for restrict keyword in C++

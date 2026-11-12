@@ -187,7 +187,16 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
 }
 
 // hankel function J + iY, using the POSIX/BSD jn and yn functions
-std::complex<double> hankel(int n, double x) { return std::complex<double>(jn(n, x), yn(n, x)); }
+std::complex<double> hankel(int n, double x) {
+#ifdef HAVE_JN
+  return std::complex<double>(jn(n, x), yn(n, x));
+#else
+  (void)n;
+  (void)x;
+  meep::abort("not compiled with the jn and yn functions, required for 2d near2far");
+  return 0;
+#endif
+}
 
 /* like green3d, but 2d Green's functions */
 void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,
