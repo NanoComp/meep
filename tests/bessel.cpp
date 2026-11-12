@@ -110,7 +110,9 @@ static double one(const vec &) { return 1.0; }
 bool test_initialize(int num_chunks) {
   const double R = 1.0, a = 40.0, tol = 1e-2;
   grid_volume gv = volcyl(R, 0.5, a);
-  structure s(gv, one, no_pml(), identity(), num_chunks);
+  // qualified to avoid ambiguity with C++20's std::identity, since
+  // meep_internals.hpp has "using namespace std"
+  structure s(gv, one, no_pml(), meep::identity(), num_chunks);
   bool ok = true;
   for (int m = 0; m < 3; ++m) {
     for (int np = 1; np <= 2; ++np) {
