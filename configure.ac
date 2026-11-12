@@ -226,13 +226,6 @@ if test "x$have_mpb" = "xyes"; then
 fi
 
 ##############################################################################
-# GNU Scientific Library
-
-AC_CHECK_LIB([gslcblas],[cblas_dgemm])
-AC_CHECK_LIB([gsl],[gsl_sf_bessel_Jn], [],
-	     [AC_MSG_WARN([Missing GNU GSL library...Bessel-function field initialization will not be supported.])])
-
-##############################################################################
 # Check for HDF5 library
 AC_ARG_WITH(hdf5, [AS_HELP_STRING([--without-hdf5],[do not allow HDF5 output])], ok=$withval, ok=yes)
 if test "$ok" = "yes"; then

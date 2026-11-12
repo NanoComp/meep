@@ -68,7 +68,6 @@ jobs:
           mingw-w64-ucrt-x86_64-gcc-fortran
           mingw-w64-ucrt-x86_64-pkgconf
           mingw-w64-ucrt-x86_64-hdf5
-          mingw-w64-ucrt-x86_64-gsl
           mingw-w64-ucrt-x86_64-fftw
           mingw-w64-ucrt-x86_64-openblas
           mingw-w64-ucrt-x86_64-swig

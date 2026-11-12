@@ -186,23 +186,17 @@ void green3d(std::complex<double> *EH, const vec &x, double freq, double eps, do
     meep::abort("unrecognized source type");
 }
 
-// hankel function J + iY
-#if defined(HAVE_JN)
-static std::complex<double> hankel(int n, double x) {
+// hankel function J + iY, using the POSIX/BSD jn and yn functions
+std::complex<double> hankel(int n, double x) {
+#ifdef HAVE_JN
   return std::complex<double>(jn(n, x), yn(n, x));
-}
-#elif defined(HAVE_LIBGSL)
-#include <gsl/gsl_sf_bessel.h>
-static std::complex<double> hankel(int n, double x) {
-  return std::complex<double>(gsl_sf_bessel_Jn(n, x), gsl_sf_bessel_Yn(n, x));
-}
-#else  /* !HAVE_LIBGSL */
-static std::complex<double> hankel(int n, double x) {
+#else
   (void)n;
-  (void)x; // unused
-  meep::abort("GNU GSL library is required for Hankel functions");
+  (void)x;
+  meep::abort("not compiled with the jn and yn functions, required for 2d near2far");
+  return 0;
+#endif
 }
-#endif /* !HAVE_LIBGSL */
 
 /* like green3d, but 2d Green's functions */
 void green2d(std::complex<double> *EH, const vec &x, double freq, double eps, double mu,

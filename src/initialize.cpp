@@ -26,22 +26,18 @@
 
 // Cylindrical coordinates:
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_sf_bessel.h>
-#endif
-
 using namespace std;
 
 namespace meep {
 
 #define J BesselJ
 double J(int m, double kr) {
-#if defined(HAVE_JN)
+#ifdef HAVE_JN
   return jn(m, kr); // POSIX/BSD jn function
-#elif defined(HAVE_LIBGSL)
-  return gsl_sf_bessel_Jn(m, kr);
 #else
-  meep::abort("not compiled with GSL, required for Bessel functions");
+  (void)m;
+  (void)kr;
+  meep::abort("not compiled with the jn function, required for Bessel functions");
   return 0;
 #endif
 }
@@ -51,27 +47,44 @@ static double Jprime(int m, double kr) {
   else
     return -J(1, kr);
 }
-static double Jroot(int m, int n) {
-#ifdef HAVE_LIBGSL
-  return gsl_sf_bessel_zero_Jnu(m, n + 1);
-#else
-  (void)m;
-  (void)n;
-  meep::abort("not compiled with GSL, required for Bessel functions");
-  return 0;
-#endif
+// the n-th (starting from n = 0) positive zero of J_m, for m >= 0
+double Jroot(int m, int n) {
+  if (m < 0 || n < 0) meep::abort("Jroot requires m >= 0 and n >= 0");
+  // All zeros of J_m are > m, and consecutive zeros are separated by more
+  // than 3, so stepping by 1 from x = m brackets each zero in turn.
+  double xlow = m, xhigh = m;
+  bool poslow = J(m, xlow) > 0, poshigh = poslow;
+  for (int count = -1; count < n;) {
+    xlow = xhigh;
+    poslow = poshigh;
+    xhigh += 1;
+    poshigh = J(m, xhigh) > 0;
+    if (poslow != poshigh) ++count;
+  }
+  // bisect until the bracket can no longer be subdivided
+  for (double xtry = 0.5 * (xlow + xhigh); xtry > xlow && xtry < xhigh;
+       xtry = 0.5 * (xlow + xhigh)) {
+    if ((J(m, xtry) > 0) == poslow)
+      xlow = xtry;
+    else
+      xhigh = xtry;
+  }
+  return xlow;
 }
-static double Jmax(int m, int n) {
+// the zero of J_m' between the (n-1)-th and n-th zeros of J_m (or between 0 and
+// the 0-th zero, if n == 0)
+double Jmax(int m, int n) {
   double rlow, rhigh = Jroot(m, n), rtry;
   if (n == 0)
     rlow = 0;
   else
     rlow = Jroot(m, n - 1);
-  double jplow = Jprime(m, rlow), jptry;
+  // compare against the sign of J_m' at rhigh, since J_m'(0) = 0 for m > 1
+  double jphigh = Jprime(m, rhigh), jptry;
   do {
     rtry = rlow + (rhigh - rlow) * 0.5;
     jptry = Jprime(m, rtry);
-    if (jplow * jptry < 0)
+    if (jphigh * jptry > 0)
       rhigh = rtry;
     else
       rlow = rtry;
@@ -88,35 +101,27 @@ static complex<double> JP(const vec &pt) {
   return polar(Jprime(m_for_J, ktrans * pt.r()), kax * pt.r());
 }
 
+// note: ktrans must use the radius of the whole cell (user_volume), not that of
+// an individual chunk, since the cell may be split into chunks along r
 void fields::initialize_with_nth_te(int np0) {
   require_component(Hz);
-  for (int i = 0; i < num_chunks; i++)
-    chunks[i]->initialize_with_nth_te(np0, real(k[Z]));
-}
-
-void fields_chunk::initialize_with_nth_te(int np0, double kz) {
   const int im = int(m);
   const int n = (im == 0) ? np0 - 0 : np0 - 1;
   const double rmax = Jmax(im, n);
-  ktrans = rmax * a / gv.nr();
-  kax = kz * 2 * pi / a;
+  ktrans = rmax * a / user_volume.nr();
+  kax = real(k[Z]) * 2 * pi / a;
   m_for_J = im;
   initialize_field(Hz, JJ);
 }
 
-void fields::initialize_with_nth_tm(int np0) {
+void fields::initialize_with_nth_tm(int np1) {
   require_component(Ez);
   require_component(Hp);
-  for (int i = 0; i < num_chunks; i++)
-    chunks[i]->initialize_with_nth_tm(np0, real(k[Z]));
-}
-
-void fields_chunk::initialize_with_nth_tm(int np1, double kz) {
   const int im = int(m);
   const int n = np1 - 1;
   const double rroot = Jroot(im, n);
-  ktrans = rroot * a / gv.nr();
-  kax = kz * 2 * pi / a;
+  ktrans = rroot * a / user_volume.nr();
+  kax = real(k[Z]) * 2 * pi / a;
   m_for_J = im;
   initialize_field(Ez, JJ);
   initialize_field(Hp, JP);

@@ -133,7 +133,6 @@ if $installdeps && $ubuntu; then
         liblapack-dev           \
         libgmp-dev              \
         swig                    \
-        libgsl-dev              \
         autoconf                \
         pkg-config              \
         $libpng                 \
@@ -194,7 +193,6 @@ if $installdeps && $centos; then
         openblas-devel     \
         fftw3-devel        \
         libpng-devel       \
-        gsl-devel          \
         gmp-devel          \
         pcre-devel         \
         libtool-ltdl-devel \
