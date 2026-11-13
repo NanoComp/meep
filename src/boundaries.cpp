@@ -407,11 +407,21 @@ void fields::connect_the_chunks() {
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
   finished_working();
 
+  /* A border element of chunk i is only communicated with its owner chunk j when chunk i or chunk
+     j is local, so for a non-local chunk i only the local chunks need to be searched for the owner.
+     Searching every chunk made each process's cost grow as num_chunks^(4/3). */
+  std::vector<int> all_chunks(num_chunks), local_chunks;
+  for (int j = 0; j < num_chunks; j++) {
+    all_chunks[j] = j;
+    if (chunks[j]->is_mine()) local_chunks.push_back(j);
+  }
+
   comm_sizes.clear();
   const size_t num_reals_per_voxel = is_real ? 1 : 2;
   for (int i = 0; i < num_chunks; i++) {
     // First count the border elements...
     const grid_volume vi = chunks[i]->gv;
+    const std::vector<int> &owner_candidates = chunks[i]->is_mine() ? all_chunks : local_chunks;
     FOR_COMPONENTS(corig) {
       if (have_component(corig)) LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
           IVEC_LOOP_ILOC(vi, here);
@@ -419,7 +429,7 @@ void fields::connect_the_chunks() {
           // We're looking at a border element...
           complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here))
-            for (int j = 0; j < num_chunks; j++) {
+            for (const int j : owner_candidates) {
               const std::pair<int, int> pair_j_to_i{j, i};
               if ((chunks[i]->is_mine() || chunks[j]->is_mine()) && chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
@@ -479,6 +489,7 @@ void fields::connect_the_chunks() {
   // Next start setting up the connections...
   for (int i = 0; i < num_chunks; i++) {
     const grid_volume &vi = chunks[i]->gv;
+    const std::vector<int> &owner_candidates = chunks[i]->is_mine() ? all_chunks : local_chunks;
 
     FOR_COMPONENTS(corig) {
       if (have_component(corig)) LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
@@ -487,7 +498,7 @@ void fields::connect_the_chunks() {
           // We're looking at a border element...
           std::complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here)) {
-            for (int j = 0; j < num_chunks; j++) {
+            for (const int j : owner_candidates) {
               const std::pair<int, int> pair_j_to_i{j, i};
               const bool i_is_mine = chunks[i]->is_mine();
               const bool j_is_mine = chunks[j]->is_mine();
