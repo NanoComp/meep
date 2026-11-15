@@ -577,9 +577,10 @@ See also [Field Functions](Field_Functions.md), and [Synchronizing the Magnetic 
 The output functions described above write the data for the fields and materials for the entire cell to an HDF5 file. This is useful for post-processing large datasets which may not fit into memory as you can later read in the HDF5 file to obtain field/material data as a NumPy array. However, in some cases it is convenient to bypass the disk altogether to obtain the data *directly* in the form of a NumPy array without writing/reading HDF5 files. Additionally, you may want the field/material data on just a subregion (or slice) of the entire volume. This functionality is provided by the `get_array` method which takes as input a subregion of the cell and the field/material component. The method returns a NumPy array containing values of the field/material at the current simulation time.
 
 @@ Simulation.get_array @@
+@@ Simulation.get_array_slice_dimensions @@
 @@ Simulation.get_dft_array @@
 
-Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), internally the DFT fields are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d. Additionally, `get_array` interpolates all fields to the center of the Yee cell. In summary, the output of `get_array` and `get_dft_array` is always centered on the Yee cell.
+Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), `get_array` linearly interpolates them all to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdot\Delta$ in 3d. The DFT fields returned by `get_dft_array` are interpolated to the same centered grid, except for monitors that store each component at its own Yee-lattice positions: `add_dft_fields(..., yee_grid=True)`, `add_mode_monitor(..., yee_grid=True)`, `add_near2far`, and `add_force` with the force direction normal to the region. For those, the array shape can differ by one between components; [`get_array_slice_dimensions`](#Simulation.get_array_slice_dimensions) gives the shape on either grid.
 
 #### Array Metadata
 
