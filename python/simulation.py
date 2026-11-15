@@ -4089,13 +4089,20 @@ class Simulation:
         + **`cmplx` [ `boolean` ]** — If `True`, return complex-valued data otherwise return
           real-valued data (default).
 
-        + **`arr` [ `numpy.ndarray` ]** — Optional parameter to pass a pre-allocated NumPy array of the correct size and
-          type (either `numpy.float32` or `numpy.float64` depending on the [floating-point precision
-          of the fields and materials](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays))
-          which will be overwritten with the field/material data instead of allocating a
-          new array.  Normally, this will be the array returned from a previous call to
-          `get_array` for a similar slice, allowing one to re-use `arr` (e.g., when
-          fetching the same slice repeatedly at different times).
+        + **`arr` [ `numpy.ndarray` ]** — Optional pre-allocated NumPy array which is
+          overwritten with the field/material data instead of allocating a new array,
+          e.g. to re-use one buffer when fetching the same slice repeatedly at different
+          times. It must match the slice exactly, otherwise a `ValueError` is raised:
+            - **shape:** obtain it beforehand, without fetching any data, from
+              [`get_array_slice_dimensions`](#Simulation.get_array_slice_dimensions)
+              with the same region (leave its `component` argument at the default; see
+              its documentation for an example);
+            - **dtype:** `numpy.complex64`/`numpy.complex128` for a complex slice and
+              `numpy.float32`/`numpy.float64` otherwise, according to the
+              [floating-point precision of the fields and materials](Build_From_Source.md#floating-point-precision-of-the-fields-and-materials-arrays)
+              (`meep.is_single_precision()`). Pass `cmplx` explicitly when using `arr`,
+              since its default depends on whether the fields are complex;
+            - **layout:** C-contiguous and writeable.
 
         + **`frequency` [ `number` ]** — The frequency at which the average eigenvalue of the
           $\\varepsilon$ and $\\mu$ tensors are evaluated. Defaults to 0 which is the
@@ -4127,11 +4134,9 @@ class Simulation:
         boundaries. The key point is that if you pass the same value for the `size`
         parameter, or use the default, the slicing routines always give you the same-size
         array for all components. You should *not* try to predict the exact size of these
-        arrays; rather, you should simply rely on Meep's output.
-
-        If `arr` is supplied, its dtype, shape, and memory layout must match the slice
-        exactly; otherwise a `ValueError` is raised. (The data are written into `arr`
-        in place by the C++ library, which cannot itself detect a mismatch.)
+        arrays yourself; rather, rely on Meep: use the shape of the returned array, or call
+        [`get_array_slice_dimensions`](#Simulation.get_array_slice_dimensions) with the
+        same region to obtain it in advance.
 
         This routine is *collective*: it performs an MPI all-reduce internally and must
         therefore be called by every process. Calling it from only one process (e.g.,
@@ -4392,68 +4397,74 @@ class Simulation:
         size: Optional[Vector3Type] = None,
     ) -> SliceDimensions:
         """
-        Computes the dimensions of the array slice over the given region without
-        fetching the field data: by default, the shape of the array that
-        [`get_array`](#array-slices) or `get_dft_array` would return.
-
-        + **`component` [ `component` constant ]** — The grid on which the data
-          lives. Defaults to `mp.Centered`, the centered grid at the middle of each
-          Yee cell. **Leave this at its default unless you actually have data on the
-          Yee grid.** For Yee-grid data, pass the field component (e.g. `mp.Ey`) you
-          will fetch with `get_dft_array`: each component lives on its own Yee
-          sublattice, so the shapes can differ by one between components. Passing a
-          field component for centered data gives the *wrong* shape.
-
-          Data on the Yee grid come only from `get_dft_array` applied to a monitor
-          created by one of:
-            - `add_dft_fields(..., yee_grid=True)`
-            - `add_mode_monitor(..., yee_grid=True)`
-            - `add_near2far` (always)
-            - `add_force` with the force `direction` normal to the region (including
-              the default `mp.AUTOMATIC`); a tangential force uses the centered grid.
-
-          Everything else is on the centered grid: every `get_array` result, and the
-          DFT fields of `add_dft_fields` and `add_mode_monitor` without `yee_grid=True`,
-          `add_flux`, `add_energy`, and tangential `add_force` monitors.
-
-        + **`vol` [ `Volume` ]**, **`center`, `size` [ `Vector3` ]** — The region,
-          specified either as a `Volume` or as a `center`/`size` pair. If none are
-          given, the entire cell is used.
-
-        Returns a `SliceDimensions` named tuple containing the dimensions (`dim_sizes`),
-        a `Vector3` object corresponding to the minimum corner of the volume
-        (`min_corner`), and `Vector3` object corresponding to the maximum corner
-        (`max_corner`). Being a named tuple, it still unpacks as
-        `dim_sizes, min_corner, max_corner = ...`.
-
-        `dim_sizes` is a tuple equal to the `shape` of the corresponding array, so empty
-        dimensions are collapsed away rather than reported as length 2, and the tuple is
-        as long as the slice has non-singleton dimensions:
+        Returns the shape of the array that [`get_array`](#array-slices) would return
+        for the given region, without fetching any field data. Its main use is sizing a
+        pre-allocated buffer to pass as the `arr` argument of `get_array`, so that a slice
+        fetched repeatedly (e.g. at every timestep) re-uses one array from the first call:
 
         ```python
-        # centered grid: get_array, or a monitor from add_dft_fields(...)
         dims, _, _ = sim.get_array_slice_dimensions(vol=box)
-        assert dims == sim.get_array(mp.Ez, vol=box).shape
+        arr = np.empty(dims, dtype=np.float32 if mp.is_single_precision() else np.float64)
 
-        # Yee grid: only for a monitor from add_dft_fields(..., yee_grid=True)
-        mon = sim.add_dft_fields([mp.Ey], fcen, 0, 1, where=box, yee_grid=True)
-        ...
-        dims, _, _ = sim.get_array_slice_dimensions(mp.Ey, vol=box)
-        assert dims == sim.get_dft_array(mon, mp.Ey, 0).shape
+        def grab(sim):
+            sim.get_array(mp.Ez, vol=box, cmplx=False, arr=arr)  # filled in place
+
+        sim.run(mp.at_every(1, grab), until=100)
         ```
 
-        On the centered grid, `dim_sizes` does not depend on `get_array`'s `snap`
-        argument. `min_corner` and `max_corner` are the extreme grid points on the
-        chosen grid; in a collapsed (zero-thickness) direction they are the two grid
-        points the data were interpolated from, which bracket the plane rather than lie
-        on it. (The coordinates and weights from `get_array_metadata` describe the
-        centered grid only, so they do not apply to Yee-grid data.)
+        The shape is the same for every component and does not depend on `get_array`'s
+        `snap` argument. (`arr` must also have the right dtype; see `get_array`.)
 
-        DFT monitors created the itnernal `persist=True` optoin of `add_dft_fields`
+        + **`vol` [ `Volume` ]**, **`center`, `size` [ `Vector3` ]** — The region,
+          specified either as a `Volume` or as a `center`/`size` pair, exactly as passed
+          to `get_array`. If none are given, the entire cell is used.
+
+        + **`component` [ `component` constant ]** — The grid on which the data lives.
+          Defaults to `mp.Centered`, the centered grid at the middle of each Yee cell,
+          which is where `get_array` places all of its data. **Leave this at its default
+          unless you actually have data on the Yee grid** (see below); in particular, do
+          *not* pass the component you are about to fetch with `get_array`, which can
+          give the wrong shape.
+
+        **Yee-grid data.** These come only from `get_dft_array` applied to a monitor
+        created by one of:
+
+        - `add_dft_fields(..., yee_grid=True)`
+        - `add_mode_monitor(..., yee_grid=True)`
+        - `add_near2far` (always)
+        - `add_force` with the force `direction` normal to the region (including the
+          default `mp.AUTOMATIC`); a tangential force uses the centered grid.
+
+        For those, pass the field component (e.g. `mp.Ez`) that you will fetch: each
+        component lives on its own Yee sublattice, so the shapes can differ by one between
+        components. All other DFT monitors (`add_dft_fields` and `add_mode_monitor` without
+        `yee_grid=True`, `add_flux`, `add_energy`, and tangential `add_force`) are on the
+        centered grid like `get_array`.
+
+        ```python
+        mon = sim.add_near2far(fcen, 0, 1, mp.Near2FarRegion(volume=line))
+        ...
+        dims, _, _ = sim.get_array_slice_dimensions(mp.Ez, vol=line)
+        assert dims == sim.get_dft_array(mon, mp.Ez, 0).shape
+        ```
+
+        Returns a `SliceDimensions` named tuple `(dim_sizes, min_corner, max_corner)`:
+
+        + `dim_sizes` is a tuple equal to the `shape` of the corresponding array. Empty
+          (zero-thickness) dimensions of the region are collapsed away, so the tuple has
+          one entry per non-singleton dimension; it is `()` for a single point.
+        + `min_corner` and `max_corner` are `Vector3`s holding the extreme grid points on
+          the chosen grid. In a collapsed direction they are the two grid points the data
+          were interpolated from, which bracket the plane rather than lie on it. (For the
+          coordinates of every grid point of a centered-grid slice, and integration
+          weights, use `get_array_metadata`, which does not apply to Yee-grid data.)
+
+        DFT monitors created with the internal `persist=True` option of `add_dft_fields`
         (used by the adjoint solver) are padded by one grid cell on every side, so their
         arrays are larger than `dim_sizes`.
 
-        This routine is *collective* and must be called by every process.
+        This routine is *collective*: like `get_array`, it must be called by every
+        process.
         """
         if self.fields is None:
             raise RuntimeError(
