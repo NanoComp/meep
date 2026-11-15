@@ -4316,7 +4316,7 @@ must therefore be called by every process. Calling it from only one process
 </div>
 
 
-Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), internally the DFT fields are all linearly interpolated to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdotΔ$ in 3d. Additionally, `get_array` interpolates all fields to the center of the Yee cell. In summary, the output of `get_array` and `get_dft_array` is always centered on the Yee cell.
+Note that although the various field components are stored at different places in the [Yee lattice](Yee_Lattice.md), `get_array` linearly interpolates them all to the same grid: to the points at the *centers* of the Yee cells, i.e. $(i+0.5,j+0.5,k+0.5)\cdot\Delta$ in 3d. The DFT fields returned by `get_dft_array` are interpolated to the same centered grid, except for monitors that store each component at its own Yee-lattice positions: `add_dft_fields(..., yee_grid=True)`, `add_mode_monitor(..., yee_grid=True)`, `add_near2far`, and `add_force` with the force direction normal to the region. For those, the array shape can differ by one between components; [`get_array_slice_dimensions`](#Simulation.get_array_slice_dimensions) gives the shape on either grid.
 
 #### Array Metadata
 
