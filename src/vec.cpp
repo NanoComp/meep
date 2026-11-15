@@ -45,7 +45,12 @@ void grid_volume::set_origin(direction d, int o) {
   origin = operator[](io); // adjust origin to match io
 }
 
-void grid_volume::set_origin(const vec &o) { set_origin(round_vec(o)); }
+void grid_volume::set_origin(const vec &o) {
+  // round to a whole pixel: the Yee lattice assumes io is even (see icenter)
+  ivec io2(dim);
+  LOOP_OVER_DIRECTIONS(dim, d) { io2.set_direction(d, 2 * my_round(o.in_direction(d) * a)); }
+  set_origin(io2);
+}
 
 const char *dimension_name(ndim dim) {
   switch (dim) {
