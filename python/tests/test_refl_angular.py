@@ -47,9 +47,9 @@ class TestReflectanceAngular(ApproxComparisonTestCase):
         theta_rad = math.radians(theta_deg)
 
         if use_bfast:
-            bfast_scaled_k = (self.n1 * np.sin(theta_rad), 0, 0)
+            bfast_scaled_k = (self.n1 * math.sin(theta_rad), 0, 0)
 
-            Courant = (1 - bfast_scaled_k[0]) / 3**0.5
+            Courant = ((1 - math.sin(theta_rad)) / 3**0.5) * (1 / self.n1**2)
 
             k = mp.Vector3()
         else:
