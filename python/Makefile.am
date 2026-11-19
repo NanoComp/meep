@@ -70,6 +70,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_ldos.py                   \
     $(MDPYTEST)                                \
     $(TEST_DIR)/test_material_grid.py          \
+    $(TEST_DIR)/test_material_positive_definite.py \
     $(TEST_DIR)/test_materials_library.py      \
     $(TEST_DIR)/test_medium_evaluations.py     \
     $(TEST_DIR)/test_mesh.py                   \
