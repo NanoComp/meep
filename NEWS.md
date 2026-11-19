@@ -4,7 +4,7 @@
 
 11/19/2026
 
-* Removed GNU Scientific Library (GSL) as a dependency ([#3368]).
+* Removed GNU Scientific Library (GSL) as an optional dependency ([#3368]).
 
 * Added a warning for materials with non--positive-definite permittivity, permeability, and conductivity ([#3367]).
 
