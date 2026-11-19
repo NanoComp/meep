@@ -1,5 +1,15 @@
 # Meep Release Notes
 
+## Meep 1.36.0
+
+11/19/2026
+
+* Removed GNU Scientific Library (GSL) as an optional dependency ([#3368]).
+
+* Added a warning for materials with non--positive-definite permittivity, permeability, and conductivity ([#3367]).
+
+* Additional documentation ([#3371]).
+
 ## Meep 1.35.1
 
 11/6/2026
