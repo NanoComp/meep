@@ -56,6 +56,7 @@ default_field_parameters = {
 default_eps_parameters = {
     "interpolation": "spline36",
     "cmap": "binary",
+    "cmap_negative": "YlOrBr",
     "alpha": 1.0,
     "contour": False,
     "contour_linewidth": 1,
@@ -574,6 +575,56 @@ def _get_colormap(cmap: Union[str, Colormap]) -> Colormap:
         return mpl.cm.get_cmap(cmap)  # matplotlib < 3.5
 
 
+def _eps_norm_and_cmap(
+    cmap: Union[str, Colormap],
+    cmap_negative: Union[str, Colormap],
+    vmin: float,
+    vmax: float,
+) -> Tuple[Any, Colormap]:
+    """Return a (norm, colormap) pair for plotting the permittivity eps.
+
+    eps >= 1 is drawn with `cmap`, running from its low end (white for the
+    default 'binary') at eps = 1 to its high end at vmax. eps < 1, e.g. the
+    negative Re(eps) of a metal in the optical regime, is a qualitiatively
+    different regime and is drawn with the separate colormap `cmap_negative`,
+    running from its low end just below eps = 1 to its high end at vmin.
+    Vacuum (eps = 1) is thus the only permittivity drawn in the low-end color
+    of `cmap`. The two sides of eps = 1 are scaled independently so that
+    neither is washed out by the other.
+    """
+    import matplotlib as mpl
+
+    pos = _get_colormap(cmap)
+    if vmin >= 1:  # if all eps == 1, use an arbitrary upper limit
+        return mpl.colors.Normalize(vmin=1, vmax=vmax if vmax > 1 else 2), copy.copy(
+            pos
+        )
+
+    n = 256
+    neg = _get_colormap(cmap_negative)
+    neg_colors = neg(np.linspace(1, 0, n))  # high end at vmin -> low end near 1
+    name = f"{pos.name}_{neg.name}"
+
+    if vmax > 1:
+        # TwoSlopeNorm maps vmin -> 0, 1 -> 0.5 (exactly) and vmax -> 1. A
+        # value of exactly 0.5 indexes the first color of the upper half, i.e.
+        # the low end of `cmap`, where any eps < 1 falls in the lower half.
+        combined = mpl.colors.ListedColormap(
+            np.vstack((neg_colors, pos(np.linspace(0, 1, n)))), name=name
+        )
+        return mpl.colors.TwoSlopeNorm(vcenter=1, vmin=vmin, vmax=vmax), combined
+
+    # vmax <= 1: eps = 1 lies just above the range of the norm and is therefore
+    # drawn in the "over" color, set to the low end of `cmap`. The margin must
+    # exceed the roundoff error of the normalization (a single ulp below 1 is
+    # not enough) and is otherwise negligible.
+    negative_only = mpl.colors.ListedColormap(neg_colors, name=name).with_extremes(
+        over=pos(0.0)
+    )
+    vmax_norm = 1.0 - 1e-12 * (1.0 - vmin)
+    return mpl.colors.Normalize(vmin=vmin, vmax=vmax_norm), negative_only
+
+
 def _add_colorbar(
     ax: Axes,
     cmap: Union[str, Colormap],
@@ -581,6 +632,7 @@ def _add_colorbar(
     vmax: float,
     default_label: Optional[str] = None,
     colorbar_parameters: Optional[dict] = None,
+    norm: Optional[Any] = None,
 ) -> None:
     """Add a colorbar to the parent Figure of 'ax' by creating an additional Axes."""
     import matplotlib as mpl
@@ -597,7 +649,7 @@ def _add_colorbar(
 
     # Create a map between field/eps values and colors in the colormap.
     sm = mpl.cm.ScalarMappable(
-        norm=mpl.colors.Normalize(vmin, vmax),
+        norm=norm if norm is not None else mpl.colors.Normalize(vmin, vmax),
         cmap=_get_colormap(cmap),
     )
 
@@ -703,7 +755,22 @@ def plot_eps(
         eps_data = np.ma.masked_where(
             ~np.isfinite(eps_data) | (eps_data <= -mp.inf), eps_data
         )
-        cmap = copy.copy(_get_colormap(eps_parameters["cmap"]))
+        finite_eps = eps_data.compressed()
+        vmin = np.amin(finite_eps) if finite_eps.size else 1.0
+        vmax = np.amax(finite_eps) if finite_eps.size else 1.0
+
+        # Draw eps >= 1 with `cmap` and eps < 1 (e.g. the negative Re(eps) of
+        # dispersive metals) with `cmap_negative`, such that vacuum (eps = 1)
+        # is the only permittivity drawn in the low-end color of `cmap` (white
+        # for the default 'binary'). A user-specified norm/vmin/vmax takes
+        # precedence, in which case `cmap` alone is used.
+        if not any(k in eps_parameters for k in ("norm", "vmin", "vmax")):
+            norm, cmap = _eps_norm_and_cmap(
+                eps_parameters["cmap"], eps_parameters["cmap_negative"], vmin, vmax
+            )
+            eps_parameters["norm"] = norm
+        else:
+            cmap = copy.copy(_get_colormap(eps_parameters["cmap"]))
         cmap.set_bad(color=eps_parameters["pec_color"])
         eps_parameters["cmap"] = cmap
 
@@ -721,14 +788,14 @@ def plot_eps(
             ax.imshow(eps_data, extent=extent, **filter_dict(eps_parameters, ax.imshow))
 
         if eps_parameters["colorbar"]:
-            finite_eps = eps_data.compressed()
             _add_colorbar(
                 ax=ax,
                 cmap=eps_parameters["cmap"],
-                vmin=np.amin(finite_eps) if finite_eps.size else 0.0,
-                vmax=np.amax(finite_eps) if finite_eps.size else 1.0,
+                vmin=eps_parameters.get("vmin", vmin),
+                vmax=eps_parameters.get("vmax", vmax),
                 default_label=r"$\epsilon_r$",
                 colorbar_parameters=colorbar_parameters,
+                norm=eps_parameters.get("norm"),
             )
 
         if label_geometry:
