@@ -5321,6 +5321,10 @@ class Simulation:
         * `eps_parameters`: a `dict` of optional plotting parameters that override the
           default parameters for the geometry.
             - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
+            - `interpolation_stage='rgba'`: whether the interpolation is applied to the colors
+              (`'rgba'`) or to the permittivity values before they are mapped to colors (`'data'`).
+              Interpolating the permittivity overshoots at sharp interfaces and produces spurious
+              values (e.g., below 1 next to vacuum) that are drawn in the wrong colors.
             - `cmap='binary'`: the color map of the geometry for permittivities $\\varepsilon \\geq 1$.
               Vacuum ($\\varepsilon = 1$) is drawn in the low-end color of `cmap` (white for `'binary'`).
             - `cmap_negative='YlOrBr'`: the color map for permittivities $\\varepsilon < 1$, such as

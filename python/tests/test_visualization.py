@@ -442,11 +442,13 @@ class TestVisualization(unittest.TestCase):
             if dielectric in geometry:
                 # The dielectric is the high end of 'binary' (black).
                 np.testing.assert_allclose(rgb(12.0), [0, 0, 0], atol=1e-2)
-                # Every color for eps > 1 is a gray; every color for eps < 1
-                # is not.
+                # Every color for eps > 1 is a gray (R = G = B).
                 for eps in np.linspace(1.5, 12, 8):
                     c = rgb(eps)
                     self.assertTrue(np.allclose(c, c[0]))
+
+            # Every color for eps < 1 is not a gray: the spread of its RGB
+            # channels, which is zero for any gray, is nonzero.
             for eps in np.linspace(eps_ag, 0.5, 8):
                 c = rgb(eps)
                 self.assertGreater(np.ptp(c), 0.05)

@@ -55,6 +55,7 @@ default_field_parameters = {
 
 default_eps_parameters = {
     "interpolation": "spline36",
+    "interpolation_stage": "rgba",
     "cmap": "binary",
     "cmap_negative": "YlOrBr",
     "alpha": 1.0,
