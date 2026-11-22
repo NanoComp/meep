@@ -14,6 +14,7 @@ https://meep.readthedocs.io/en/latest/Python_Tutorials/Adjoint_Solver/#shape-opt
 """
 
 import copy
+from functools import lru_cache
 from typing import Callable, List, Tuple
 
 from autograd.extend import primitive, defvjp
@@ -250,6 +251,16 @@ def obj_func(epigraph_and_layer_thickness_um: np.ndarray, grad: np.ndarray) -> f
     return epigraph
 
 
+@lru_cache(maxsize=1)
+def field_objective(
+    opt: mpa.OptimizationProblem, layer_thickness_um: Tuple[float, ...]
+) -> np.ndarray:
+    """Reuse the last forward solve when NLopt next requests its gradient."""
+    design_weights = levelset_and_smoothing(np.asarray(layer_thickness_um))
+    values, _ = opt([design_weights], need_gradient=False)
+    return values
+
+
 def epigraph_constraint(
     result: float, epigraph_and_layer_thickness_um: np.ndarray, gradient: np.ndarray
 ) -> None:
@@ -264,22 +275,20 @@ def epigraph_constraint(
     """
     epigraph = epigraph_and_layer_thickness_um[0]
     layer_thickness_um = epigraph_and_layer_thickness_um[1:]
-    design_weights = levelset_and_smoothing(layer_thickness_um)
-
-    obj_val, grad = opt([design_weights])
-
-    # Backpropagate the gradients through the levelset construction function.
-    grad_backpropagate = np.zeros((NUM_LAYERS, num_wavelengths))
-    defvjp(levelset_and_smoothing, levelset_and_smoothing_vjp)
-    for k in range(num_wavelengths):
-        grad_backpropagate[:, k] = tensor_jacobian_product(levelset_and_smoothing, 0)(
-            layer_thickness_um, grad[:, k]
-        )
-
-    # TODO (oskooi): determine why factor of 0.5 is necessary for correctness.
-    grad_backpropagate = 0.5 * grad_backpropagate
+    obj_val = field_objective(opt, tuple(layer_thickness_um))
 
     if gradient.size > 0:
+        _, grad = opt(need_value=False)
+        # Backpropagate the gradients through the levelset construction function.
+        grad_backpropagate = np.zeros((NUM_LAYERS, num_wavelengths))
+        defvjp(levelset_and_smoothing, levelset_and_smoothing_vjp)
+        for k in range(num_wavelengths):
+            grad_backpropagate[:, k] = tensor_jacobian_product(
+                levelset_and_smoothing, 0
+            )(layer_thickness_um, grad[:, k])
+
+        # TODO (oskooi): determine why factor of 0.5 is necessary for correctness.
+        grad_backpropagate = 0.5 * grad_backpropagate
         gradient[:, 0] = -1  # gradient w.r.t. epigraph variable
         gradient[:, 1:] = grad_backpropagate.T
 
@@ -343,8 +352,7 @@ if __name__ == "__main__":
         # Execute a single forward run before the start of the optimization and
         # set the initial epigraph variable to slightly larger than the
         # largest value of the objective function over the wavelengths.
-        design_weights = levelset_and_smoothing(layer_thickness_um)
-        epigraph, _ = opt([design_weights], need_gradient=False)
+        epigraph = field_objective(opt, tuple(layer_thickness_um))
         fraction_max_epigraph = 0.2
         epigraph_initial = (1 + fraction_max_epigraph) * np.amax(epigraph)
         epigraph_and_layer_thickness_um_upper_bound[0] = epigraph_initial
@@ -354,6 +362,8 @@ if __name__ == "__main__":
         )
 
         solver = nlopt.opt(nlopt.LD_CCSAQ, NUM_LAYERS + 1)
+        if (nlopt.version_major(), nlopt.version_minor()) >= (2, 11):
+            solver.set_param("inner_gradients", 0)
         solver.set_lower_bounds(epigraph_and_layer_thickness_um_lower_bound)
         solver.set_upper_bounds(epigraph_and_layer_thickness_um_upper_bound)
         solver.set_min_objective(obj_func)
