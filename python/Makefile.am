@@ -317,7 +317,8 @@ if MEEP_SWIG_PYTHON_THREADS
 SWIG_MEEP_FLAGS = -threads
 endif # MEEP_SWIG_PYTHON_THREADS
 
-meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES)
+# config.h is a prerequisite because meep.i reads it via %import (e.g. HAVE_MPB)
+meep-python.cxx: $(MEEP_SWIG_SRC) $(HPPFILES) $(top_builddir)/config.h
 	$(SWIG) -Wextra $(SWIG_MEEP_FLAGS) $(AM_CPPFLAGS) -outdir $(builddir) -c++ -nofastunpack -python -o $@ $(srcdir)/meep.i
 
 if WITH_MPB
