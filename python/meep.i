@@ -785,7 +785,10 @@ meep::volume_list *make_volume_list(const meep::volume &v, int c,
 // Typemap suite for vector3
 
 %typecheck (SWIG_TYPECHECK_POINTER) vector3 {
-    $1 = PyObject_IsInstance($input, py_vector3_object());
+    // PyObject_IsInstance returns -1, with an exception set, on error.
+    int is_vector3 = PyObject_IsInstance($input, py_vector3_object());
+    if (is_vector3 < 0) PyErr_Clear();
+    $1 = is_vector3 == 1;
 }
 
 %typemap(in) vector3 {
@@ -1518,6 +1521,17 @@ void _get_gradient(PyObject *grad, double scalegrad,
     $result = PyArray_SimpleNew(1, &vec_len, NPY_INT);
     memcpy(PyArray_DATA((PyArrayObject*) $result), &$1[0], vec_len * sizeof(int));
 }
+
+// SWIG warnings filtered for the declarations below:
+// 325: Nested struct not currently supported (ignored).
+// 451: Setting a const char * variable may leak memory.
+// 509: Overloaded method shadowed by another one that Python can't tell apart.
+%warnfilter(509) meep::structure::structure;
+%warnfilter(509) meep::fields::get_eigenmode_coefficients;
+%warnfilter(451) meep::structure::outdir;
+%warnfilter(451) meep::fields_chunk::outdir;
+%warnfilter(325) meep::h5file::extending_s;
+%warnfilter(509) _get_eigenmode;
 
 %include "vec.i"
 %include "meep.hpp"
