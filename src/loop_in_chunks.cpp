@@ -257,39 +257,100 @@ static inline int iabs(int i) { return (i < 0 ? -i : i); }
 void compute_boundary_weights(grid_volume gv, const volume &where, ivec &is, ivec &ie,
                               bool snap_empty_dimensions, vec &s0, vec &e0, vec &s1, vec &e1) {
   LOOP_OVER_DIRECTIONS(gv.dim, d) {
-    double w0, w1;
-    w0 = 1. - where.in_direction_min(d) * gv.a + 0.5 * is.in_direction(d);
-    w1 = 1. + where.in_direction_max(d) * gv.a - 0.5 * ie.in_direction(d);
+      // w0 = (i+1) - a (from above)
+      double w0 = 1. - where.in_direction_min(d) * gv.a + 0.5 * is.in_direction(d);
+      // w1 = b - (i+3) (from above)
+      double w1 = 1. + where.in_direction_max(d) * gv.a - 0.5 * ie.in_direction(d);
+
+      // only needed for d==R cases
+      double idx_i = is.in_direction(d);
+      double idx_in = ie.in_direction(d);
+
+    // Case 1 (a and b separated by at least 2 grid points)
     if (ie.in_direction(d) >= is.in_direction(d) + 3 * 2) {
-      s0.set_direction(d, w0 * w0 / 2);
-      s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2);
-      e0.set_direction(d, w1 * w1 / 2);
-      e1.set_direction(d, 1 - (1 - w1) * (1 - w1) / 2);
-    }
-    else if (ie.in_direction(d) == is.in_direction(d) + 2 * 2) {
-      s0.set_direction(d, w0 * w0 / 2);
-      s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2 - (1 - w1) * (1 - w1) / 2);
-      e0.set_direction(d, w1 * w1 / 2);
-      e1.set_direction(d, s1.in_direction(d));
-    }
-    else if (where.in_direction_min(d) == where.in_direction_max(d)) {
-      if (snap_empty_dimensions) {
-        if (w0 > w1)
-          ie.set_direction(d, is.in_direction(d));
+      // cylindrical coordinates in R direction require extra care
+      if (d == R) {
+        // include dV in the weight to prevent division by zero
+        if (is.in_direction(R) == 0)
+          s0.set_direction(d, -w0 * w0 * w0 / 3 + w0 * w0 / 2);
         else
-          is.set_direction(d, ie.in_direction(d));
-        w0 = w1 = 1.0;
+          s0.set_direction(d, (-w0 * w0 * w0 / 3 + (idx_i+2) * w0 * w0 / 2) / idx_i );
+        
+        s1.set_direction(d, (w0 * w0 * w0 / 3 - (idx_i+4) * w0 * w0 / 2 + (idx_i+2) * w0 + (idx_i+1)/2 + 1.0 / 6.0) / (idx_i+2));
+        e0.set_direction(d, (w1 * w1 * w1 / 3 + (idx_in-2) * w1 * w1 / 2) / (idx_in));
+        e1.set_direction(d, (-w1 * w1 * w1 / 3 - (idx_in-4) * w1 * w1 / 2 + (idx_in-2) * w1 + (idx_in-2)/2 - 1/6) / (idx_in-2));    
+      } else {
+        s0.set_direction(d, w0 * w0 / 2);
+        s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2);
+        e0.set_direction(d, w1 * w1 / 2);
+        e1.set_direction(d, 1 - (1 - w1) * (1 - w1) / 2);
       }
-      s0.set_direction(d, w0);
-      s1.set_direction(d, w1);
-      e0.set_direction(d, w1);
-      e1.set_direction(d, w0);
+
     }
+    // Case 2 (one grid point between a and b)
+    else if (ie.in_direction(d) == is.in_direction(d) + 2 * 2) {
+      // cylindrical coordinates in R direction require extra care
+      if (d == R) {
+        // include dV in the weight to prevent division by zero
+        if (is.in_direction(R) == 0)
+          s0.set_direction(d, -w0 * w0 * w0 / 3 + w0 * w0 / 2);
+        else
+          s0.set_direction(d, -(w0 * w0 * w0 / 3 + (idx_i+2) * w0 * w0 / 2) / idx_i );
+        
+        s1.set_direction(d, (w0 * w0 * w0 / 3 - (idx_i+4) * w0 * w0 / 2 + (idx_i+2) * w0 
+          - w1 * w1 * w1 / 3 - (idx_i) * w1 * w1 / 2 + (idx_i+2) * w1) / (idx_i+2));
+        e0.set_direction(d, (w1 * w1 * w1 / 3 + (idx_i+2) * w1 * w1 / 2) / (idx_i+2));
+        e1.set_direction(d, s1.in_direction(d));
+      } else {
+        s0.set_direction(d, w0 * w0 / 2);
+        s1.set_direction(d, 1 - (1 - w0) * (1 - w0) / 2 - (1 - w1) * (1 - w1) / 2);
+        e0.set_direction(d, w1 * w1 / 2);
+        e1.set_direction(d, s1.in_direction(d));
+      }
+    }
+    // Case 4 (as (3), but a = b: interpolation, not integration)
+    // to make the logic easier, we check for 4 before 3...
+    else if (where.in_direction_min(d) == where.in_direction_max(d)) {
+      // cylindrical coordinates should be the same as cartesian, with the
+      // exception at r=0 (due to our convention when defining dv1).
+        if (snap_empty_dimensions) {
+          if (w0 > w1)
+            ie.set_direction(d, is.in_direction(d));
+          else
+            is.set_direction(d, ie.in_direction(d));
+          w0 = w1 = 1.0;
+        }
+        // include dV in the weight to prevent division by zero
+        if ((d == R) && (is.in_direction(R) == 0))
+          s0.set_direction(d, w0);
+        else
+          s0.set_direction(d, w0);
+        s1.set_direction(d, w1);
+        e0.set_direction(d, w1);
+        e1.set_direction(d, w0);
+      }
+    // Case 3 (no grid points between a and b)
     else if (ie.in_direction(d) == is.in_direction(d) + 1 * 2) {
-      s0.set_direction(d, w0 * w0 / 2 - (1 - w1) * (1 - w1) / 2);
-      e0.set_direction(d, w1 * w1 / 2 - (1 - w0) * (1 - w0) / 2);
-      s1.set_direction(d, e0.in_direction(d));
-      e1.set_direction(d, s0.in_direction(d));
+      // cylindrical coordinates in R direction require extra care
+      if (d == R) {
+        // include dV in the weight to prevent division by zero
+        if (is.in_direction(R) == 0)
+          s0.set_direction(d, -w0 * w0 * w0 / 3 + w0 * w0 / 2 - w1 * w1 * w1 / 3 + w1 *w1 /2 - 1/6);
+        else
+          s0.set_direction(d, (-w0 * w0 * w0 / 3 + (idx_i+2) * w0 * w0 / 2 
+          - w1 * w1 * w1 / 3 - (idx_i-2) * w1 * w1 / 2 + idx_i * w1 - idx_i/2 - 1/6) / idx_i );
+        
+        e0.set_direction(d, (w0 * w0 * w0 / 3 - (idx_i+4) * w0 * w0 / 2 + (idx_i+2) * w0
+         + w1 * w1 * w1 /3 + (idx_i) * w1 * w1 / 2 - (idx_i+2) / 2 + 1/6) / (idx_i+2));
+        s1.set_direction(d, e0.in_direction(d));
+        e1.set_direction(d, s0.in_direction(d)); 
+
+      } else {      
+        s0.set_direction(d, w0 * w0 / 2 - (1 - w1) * (1 - w1) / 2);
+        e0.set_direction(d, w1 * w1 / 2 - (1 - w0) * (1 - w0) / 2);
+        s1.set_direction(d, e0.in_direction(d));
+        e1.set_direction(d, s0.in_direction(d));
+      }
     }
     else
       meep::abort("bug: impossible(?) looping boundaries");
@@ -352,8 +413,18 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
   vec yee_c(gv.yee_shift(Centered) - gv.yee_shift(cgrid));
   ivec iyee_c(gv.iyee_shift(Centered) - gv.iyee_shift(cgrid));
   volume wherec(where + yee_c);
+  
+  /* Integrating zero crossings in cylindrical coordinates is really hairy...
+  let's just punt for now...*/
+  if ((gv.dim == Dcyl) && (wherec.get_min_corner().in_direction(R) < 0))
+    meep::abort("Monitors and sources must not extend below r=0.");
+
   ivec is(vec2diel_floor(wherec.get_min_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
   ivec ie(vec2diel_ceil(wherec.get_max_corner(), gv.a, zero_ivec(gv.dim)) - iyee_c);
+
+  //In cylindrical coordinates, we don't need the extra pad point beyond r=0
+  if ((gv.dim == Dcyl) && (is.in_direction(R) < 0))
+    is.set_direction(R,is.in_direction(R) + 2); // add a yee voxel width
 
   vec s0(gv.dim), e0(gv.dim), s1(gv.dim), e1(gv.dim);
   compute_boundary_weights(gv, where, is, ie, snap_empty_dimensions, s0, e0, s1, e1);
@@ -509,7 +580,12 @@ void fields::loop_in_chunks(field_chunkloop chunkloop, void *chunkloop_data, con
           }
           if (gv.dim == Dcyl) {
             dV1 = dV0 * 2 * pi * gv.inva;
-            dV0 *= 2 * pi * fabs((S.transform(chunks[i]->gv[isc], sn) + shift).in_direction(R));
+            // we include the dV term in the computation of the s0 weight when
+            // r=0 so that we don't have to worry about dividing by zero. 
+            if (is.in_direction(R) == 0)
+              dV0 = 1;
+            else
+              dV0 *= 2 * pi * fabs((S.transform(chunks[i]->gv[isc], sn) + shift).in_direction(R));
           }
 
           chunkloop(chunks[i], i, cS, isc, iec, s0c, s1c, e0c, e1c, dV0, dV1, shifti, ph, S, sn,
