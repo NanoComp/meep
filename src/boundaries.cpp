@@ -369,6 +369,21 @@ static connect_phase connect_phase_from_phase(std::complex<double> thephase) {
                                          : CONNECT_PHASE;
 }
 
+namespace {
+// An axis-aligned box of grid points, lo <= hi in every direction.
+struct ivec_box {
+  ivec lo, hi;
+};
+
+bool boxes_intersect(const ivec_box &a, const ivec_box &b) {
+  LOOP_OVER_DIRECTIONS(a.lo.dim, d) {
+    if (a.hi.in_direction(d) < b.lo.in_direction(d) || b.hi.in_direction(d) < a.lo.in_direction(d))
+      return false;
+  }
+  return true;
+}
+} // namespace
+
 void fields::connect_the_chunks() {
   /* For some of the chunks, H==B, and we definitely don't need to
      send B between two such chunks.   We'll still send B when
@@ -407,19 +422,95 @@ void fields::connect_the_chunks() {
   FOR_E_AND_H(c) { needs_W_notowned[c] = or_to_all(needs_W_notowned[c]); }
   finished_working();
 
+  /* A border element of chunk i is only communicated with its owner chunk j when chunk i or chunk
+     j is local, so for a non-local chunk i only the local chunks need to be searched for the owner.
+     Moreover, chunk j can only own a border element of chunk i if j's grid volume overlaps one of
+     the boxes that locate_component_point can map i's border to (border_images below). For each
+     chunk i we therefore search only the chunks j that pass both tests, in ascending order, and we
+     skip the border of chunk i altogether if there are none -- which is the case for most
+     non-local chunks. Scanning the border of every chunk and searching every chunk for each
+     border element made each process's cost grow as num_chunks^(4/3). */
+
+  // The number of lattice vectors ilattice_vector(d) that locate_point_in_user_volume adds to a
+  // point whose coordinate in the periodic direction d is x (negative if it subtracts them).
+  auto num_lattice_shifts = [this](direction d, int x) {
+    const int lo = user_volume.little_corner().in_direction(d);
+    const int period = ilattice_vector(d).in_direction(d);
+    int k = 0;
+    if (x <= lo)
+      while (x + k * period <= lo)
+        k++;
+    else
+      while (x + (k - 1) * period > lo)
+        k--;
+    return k;
+  };
+
+  // Boxes that contain every point to which locate_component_point can map a border (not-owned)
+  // point of the grid volume vi.
+  auto border_images = [this, &num_lattice_shifts](const grid_volume &vi) {
+    // the not-owned points of every component lie in [little_corner, big_corner + 1]
+    std::vector<ivec_box> boxes(1, ivec_box{vi.little_corner(), vi.big_corner() + 1});
+    // locate_point_in_user_volume translates a point by a number of lattice vectors in each
+    // periodic direction d that depends only on its coordinate in d, and does not increase
+    // with it, so the box is translated by every number between those for its two corners
+    LOOP_OVER_DIRECTIONS(gv.dim, d) {
+      if (boundaries[High][d] != Periodic) continue;
+      std::vector<ivec_box> translated;
+      for (const ivec_box &b : boxes)
+        for (int k = num_lattice_shifts(d, b.hi.in_direction(d));
+             k <= num_lattice_shifts(d, b.lo.in_direction(d)); k++)
+          translated.push_back(
+              ivec_box{b.lo + ilattice_vector(d) * k, b.hi + ilattice_vector(d) * k});
+      boxes.swap(translated);
+    }
+    // ... and then by one of the symmetry transforms, each of which maps a box onto the box
+    // spanned by the images of its corners
+    std::vector<ivec_box> images;
+    for (const ivec_box &b : boxes)
+      for (int sn = 0; sn < S.multiplicity(); sn++) {
+        const ivec lo = S.transform(b.lo, sn), hi = S.transform(b.hi, sn);
+        images.push_back(ivec_box{min(lo, hi), max(lo, hi)});
+      }
+    return images;
+  };
+
+  std::vector<std::vector<int> > owner_candidates(num_chunks);
+  {
+    std::vector<int> local_chunks;
+    for (int j = 0; j < num_chunks; j++)
+      if (chunks[j]->is_mine()) local_chunks.push_back(j);
+    for (int i = 0; i < num_chunks; i++) {
+      const bool i_is_mine = chunks[i]->is_mine();
+      if (!i_is_mine && local_chunks.empty()) continue;
+      const std::vector<ivec_box> images = border_images(chunks[i]->gv);
+      for (int jj = 0; jj < (i_is_mine ? num_chunks : int(local_chunks.size())); jj++) {
+        const int j = i_is_mine ? jj : local_chunks[jj];
+        // chunks[j]->gv.owns(p) implies that p is in [little_corner, big_corner]
+        const ivec_box owned{chunks[j]->gv.little_corner(), chunks[j]->gv.big_corner()};
+        for (const ivec_box &image : images)
+          if (boxes_intersect(image, owned)) {
+            owner_candidates[i].push_back(j);
+            break;
+          }
+      }
+    }
+  }
+
   comm_sizes.clear();
   const size_t num_reals_per_voxel = is_real ? 1 : 2;
   for (int i = 0; i < num_chunks; i++) {
     // First count the border elements...
     const grid_volume vi = chunks[i]->gv;
     FOR_COMPONENTS(corig) {
-      if (have_component(corig)) LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+      if (have_component(corig) && !owner_candidates[i].empty())
+        LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
           IVEC_LOOP_ILOC(vi, here);
           component c = corig;
           // We're looking at a border element...
           complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here))
-            for (int j = 0; j < num_chunks; j++) {
+            for (const int j : owner_candidates[i]) {
               const std::pair<int, int> pair_j_to_i{j, i};
               if ((chunks[i]->is_mine() || chunks[j]->is_mine()) && chunks[j]->gv.owns(here) &&
                   !(is_B(corig) && is_B(c) && B_redundant[5 * i + corig - Bx] &&
@@ -481,13 +572,14 @@ void fields::connect_the_chunks() {
     const grid_volume &vi = chunks[i]->gv;
 
     FOR_COMPONENTS(corig) {
-      if (have_component(corig)) LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
+      if (have_component(corig) && !owner_candidates[i].empty())
+        LOOP_OVER_VOL_NOTOWNED(vi, corig, n) {
           IVEC_LOOP_ILOC(vi, here);
           component c = corig;
           // We're looking at a border element...
           std::complex<double> thephase;
           if (locate_component_point(&c, &here, &thephase) && !on_metal_boundary(here)) {
-            for (int j = 0; j < num_chunks; j++) {
+            for (const int j : owner_candidates[i]) {
               const std::pair<int, int> pair_j_to_i{j, i};
               const bool i_is_mine = chunks[i]->is_mine();
               const bool j_is_mine = chunks[j]->is_mine();
