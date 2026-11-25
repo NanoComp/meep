@@ -76,26 +76,26 @@
 // Append Python's shortest round-trip representation of x (as in repr(float)).
 // Returns false, with a Python exception set, on failure.
 static bool meep_append_double_repr(std::string &s, double x) {
-  char *p = PyOS_double_to_string(x, 'r', 0, Py_DTSF_ADD_DOT_0, NULL);
-  if (!p) return false;
-  s += p;
-  PyMem_Free(p);
-  return true;
+    char *p = PyOS_double_to_string(x, 'r', 0, Py_DTSF_ADD_DOT_0, NULL);
+    if (!p) return false;
+    s += p;
+    PyMem_Free(p);
+    return true;
 }
 
 // Same format as meep::vec::str(), but without rounding to six decimal places.
 static bool meep_append_vec_repr(std::string &s, const meep::vec &v) {
-  static const meep::direction cyl_dirs[] = {meep::R, meep::Z};
-  static const meep::direction dirs[] = {meep::X, meep::Y, meep::Z};
-  const meep::direction *ds = v.dim == meep::Dcyl ? cyl_dirs : dirs;
-  const int n = v.dim == meep::Dcyl ? 2 : 3;
-  s += '{';
-  for (int i = 0; i < n; ++i) {
-      if (i > 0) s += ',';
-      if (!meep_append_double_repr(s, v.in_direction(ds[i]))) return false;
-  }
-  s += '}';
-  return true;
+    static const meep::direction cyl_dirs[] = {meep::R, meep::Z};
+    static const meep::direction dirs[] = {meep::X, meep::Y, meep::Z};
+    const meep::direction *ds = v.dim == meep::Dcyl ? cyl_dirs : dirs;
+    const int n = v.dim == meep::Dcyl ? 2 : 3;
+    s += '{';
+    for (int i = 0; i < n; ++i) {
+        if (i > 0) s += ',';
+        if (!meep_append_double_repr(s, v.in_direction(ds[i]))) return false;
+    }
+    s += '}';
+    return true;
 }
 %}
 
