@@ -18,8 +18,11 @@
  */
 
 
-// 322:  Redundant declarations are ok. The wrappers are created correctly.
-// 503:  We don't need to create class-specific wrappers for friend functions
+// SWIG warnings filtered for the declarations in meep/vec.hpp:
+// 322: Redundant redeclaration.  This is ok: the wrappers are created correctly.
+// 503: Can't wrap a friend function unless renamed.  We don't need class-specific
+//      wrappers for friend functions; the namespace-level declarations are wrapped.
+// 509: Overloaded method shadowed by another one that Python can't tell apart.
 %warnfilter(322,509) meep::component_direction;
 %warnfilter(322,509) meep::direction_component;
 %warnfilter(322,503) meep::zero_vec;
@@ -45,20 +48,12 @@
 %warnfilter(509) meep::ivec::ivec;
 %warnfilter(509) meep::symmetry::transform;
 %warnfilter(509) meep::symmetry::phase_shift;
-%warnfilter(509) meep::structure::structure;
-%warnfilter(509) meep::fields::get_eigenmode_coefficients;
-%warnfilter(451) meep::structure::outdir;
-%warnfilter(451) meep::fields_chunk::outdir;
-%warnfilter(325) meep::h5file::extending_s;
-%warnfilter(509) _get_eigenmode;
 
 // Renaming python builtins
 %rename(meep_type) meep::type;
 %rename(vec_abs) meep::abs;
 %rename(vec_max) meep::max;
 %rename(vec_min) meep::min;
-%rename(vec_str) meep::vec::str;
-%rename(ivec_str) meep::ivec::str;
 %rename(print_grid_volume) meep::grid_volume::print;
 %rename(symmetry_reduce) meep::symmetry::reduce;
 
@@ -77,11 +72,49 @@
 %ignore meep::grid_volume::str;
 
 
+%{
+// Append Python's shortest round-trip representation of x (as in repr(float)).
+// Returns false, with a Python exception set, on failure.
+static bool meep_append_double_repr(std::string &s, double x) {
+    char *p = PyOS_double_to_string(x, 'r', 0, Py_DTSF_ADD_DOT_0, NULL);
+    if (!p) return false;
+    s += p;
+    PyMem_Free(p);
+    return true;
+}
+
+// Same format as meep::vec::str(), but without rounding to six decimal places.
+static bool meep_append_vec_repr(std::string &s, const meep::vec &v) {
+    static const meep::direction cyl_dirs[] = {meep::R, meep::Z};
+    static const meep::direction dirs[] = {meep::X, meep::Y, meep::Z};
+    const meep::direction *ds = v.dim == meep::Dcyl ? cyl_dirs : dirs;
+    const int n = v.dim == meep::Dcyl ? 2 : 3;
+    s += '{';
+    for (int i = 0; i < n; ++i) {
+        if (i > 0) s += ',';
+        if (!meep_append_double_repr(s, v.in_direction(ds[i]))) return false;
+    }
+    s += '}';
+    return true;
+}
+%}
+
+// The __repr__ methods keep the GIL even when SWIG threads are enabled: the str()
+// methods format into static buffers, and the helpers above call the Python C API.
+%nothread meep::vec::__repr__;
+%nothread meep::ivec::__repr__;
+%nothread meep::volume::__repr__;
+%nothread meep::grid_volume::__repr__;
+
 // Include the C++ class declarations
 %include "meep/vec.hpp"
 
 %extend meep::vec {
-    const char *__repr__() { return $self->str(); }
+   PyObject *__repr__() {
+       std::string s;
+       if (!meep_append_vec_repr(s, *$self)) return NULL;
+       return PyUnicode_FromString(s.c_str());
+   }
 }
 
 %extend meep::ivec {
@@ -89,7 +122,13 @@
 }
 
 %extend meep::volume {
-    const char *__repr__() { return $self->str(); }
+    PyObject *__repr__() {
+        std::string s = "min_corner:";
+        if (!meep_append_vec_repr(s, $self->get_min_corner())) return NULL;
+        s += ", max_corner:";
+        if (!meep_append_vec_repr(s, $self->get_max_corner())) return NULL;
+        return PyUnicode_FromString(s.c_str());
+  }
 }
 
 %extend meep::grid_volume {
