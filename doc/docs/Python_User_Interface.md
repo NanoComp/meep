@@ -3049,7 +3049,16 @@ to be called on all processes, but only generates a plot on the master process.
 * `eps_parameters`: a `dict` of optional plotting parameters that override the
   default parameters for the geometry.
     - `interpolation='spline36'`: interpolation algorithm used to upsample the pixels.
-    - `cmap='binary'`: the color map of the geometry
+    - `interpolation_stage='rgba'`: whether the interpolation is applied to the colors
+      (`'rgba'`) or to the permittivity values before they are mapped to colors (`'data'`).
+      Interpolating the permittivity overshoots at sharp interfaces and produces spurious
+      values (e.g., below 1 next to vacuum) that are drawn in the wrong colors.
+    - `cmap='binary'`: the color map of the geometry for permittivities $\varepsilon \geq 1$.
+      Vacuum ($\varepsilon = 1$) is drawn in the low-end color of `cmap` (white for `'binary'`).
+    - `cmap_negative='YlOrBr'`: the color map for permittivities $\varepsilon < 1$, such as
+      the negative real part of the permittivity of a metal at optical frequencies. Its
+      low end is used just below $\varepsilon = 1$ and its high end at the smallest permittivity.
+      Ignored if `norm`, `vmin`, or `vmax` is specified.
     - `alpha=1.0`: transparency of geometry
     - `contour=False`: if `True`, plot a contour of the geometry rather than its image
     - `contour_linewidth=1`: line width of the contour lines if `contour=True`

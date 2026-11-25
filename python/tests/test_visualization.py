@@ -399,6 +399,67 @@ class TestVisualization(unittest.TestCase):
                 )
             )
 
+    def test_plot2D_dispersive(self):
+        # A dispersive metal (Ag) has a negative Re(eps) at optical frequencies.
+        # eps >= 1 is drawn with the grayscale `cmap` ('binary') and eps < 1
+        # with the separate `cmap_negative` ('YlOrBr'). Vacuum (eps = 1) is
+        # the only permittivity drawn in white.
+        from meep.materials import Ag
+
+        frequency = 1 / 0.555  # wavelength of 555 nm (length unit: um)
+        eps_ag = np.real(Ag.epsilon(frequency)[0, 0])
+        self.assertLess(eps_ag, 0)
+
+        white = np.array([1.0, 1.0, 1.0])
+        ylorbr = matplotlib.colormaps["YlOrBr"]
+        dielectric = mp.Block(
+            size=mp.Vector3(2, 2),
+            center=mp.Vector3(-1.5),
+            material=mp.Medium(epsilon=12),
+        )
+        metal = mp.Block(size=mp.Vector3(2, 2), center=mp.Vector3(1.5), material=Ag)
+
+        # With and without a material with eps > 1.
+        for geometry in ([dielectric, metal], [metal]):
+            sim = mp.Simulation(
+                cell_size=mp.Vector3(6, 6), resolution=10, geometry=geometry
+            )
+            fig, ax = plt.subplots()
+            sim.plot2D(ax=ax, eps_parameters={"frequency": frequency, "colorbar": True})
+            if not mp.am_master():
+                continue
+
+            im = ax.get_images()[0]
+            rgb = lambda eps: np.array(im.to_rgba(eps)[:3])
+
+            # Vacuum is white, but eps just below 1 is the (non-white) low end
+            # of 'YlOrBr' and the metal is the high end of 'YlOrBr'.
+            np.testing.assert_array_equal(rgb(1.0), white)
+            np.testing.assert_allclose(rgb(1 - 1e-6), ylorbr(0.0)[:3])
+            self.assertFalse(np.allclose(rgb(1 - 1e-6), white, atol=1e-2))
+            np.testing.assert_allclose(rgb(eps_ag), ylorbr(1.0)[:3], atol=1e-2)
+
+            if dielectric in geometry:
+                # The dielectric is the high end of 'binary' (black).
+                np.testing.assert_allclose(rgb(12.0), [0, 0, 0], atol=1e-2)
+                # Every color for eps > 1 is a gray (R = G = B).
+                for eps in np.linspace(1.5, 12, 8):
+                    c = rgb(eps)
+                    self.assertTrue(np.allclose(c, c[0]))
+
+            # Every color for eps < 1 is not a gray: the spread of its RGB
+            # channels, which is zero for any gray, is nonzero.
+            for eps in np.linspace(eps_ag, 0.5, 8):
+                c = rgb(eps)
+                self.assertGreater(np.ptp(c), 0.05)
+
+            # The vacuum pixels are white and no metal pixel is.
+            eps_data = im.get_array()
+            pixels = im.to_rgba(eps_data)[..., :3]
+            is_white = np.all(pixels == 1, axis=-1)
+            self.assertTrue(np.all(is_white[eps_data == 1]))
+            self.assertFalse(np.any(is_white[eps_data < 1]))
+
     @unittest.skipIf(
         importlib.util.find_spec("contourpy") is None, "contourpy is not installed"
     )
