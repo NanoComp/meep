@@ -3946,9 +3946,15 @@ class Simulation:
 
         return self.fields.modal_volume_in_box(box)
 
-    def solve_cw(self, tol=1e-8, maxiters=10000, L=2):
+    # Roundoff error limits the attainable accuracy of solve_cw: in single precision,
+    # tolerances much below this cause the iterative solver to stagnate or diverge.
+    _SINGLE_PRECISION_CW_TOL = 1e-5
+
+    def solve_cw(self, tol=None, maxiters=10000, L=2):
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before using solve_cw")
+        if tol is None:
+            tol = self._SINGLE_PRECISION_CW_TOL if mp.is_single_precision() else 1e-8
         self._evaluate_dft_objects()
         return self.fields.solve_cw(tol, maxiters, L)
 
@@ -3958,16 +3964,25 @@ class Simulation:
         if self.fields is None:
             raise RuntimeError("Fields must be initialized before using solve_cw")
         if cwtol is None:
-            cwtol = (
-                tol * 1e-3
-            )  # solve CW problems much more accurately than eigenvalue tolerance
+            # solve CW problems much more accurately than eigenvalue tolerance,
+            # but not beyond the accuracy attainable in single precision
+            cwtol = tol * 1e-3
+            if mp.is_single_precision():
+                cwtol = max(cwtol, self._SINGLE_PRECISION_CW_TOL)
         self._evaluate_dft_objects()
         eigfreq = np.array(0, dtype=np.complex128)
         if guessfreq is None:
-            self.fields.solve_cw(cwtol, cwmaxiters, L, eigfreq, tol, maxiters)
+            converged = self.fields.solve_cw(
+                cwtol, cwmaxiters, L, eigfreq, tol, maxiters
+            )
         else:
-            self.fields.solve_cw(
+            converged = self.fields.solve_cw(
                 cwtol, cwmaxiters, guessfreq, L, eigfreq, tol, maxiters
+            )
+        if not converged:
+            warnings.warn(
+                f"solve_eigfreq did not converge to tol={tol}; returning the last estimate",
+                RuntimeWarning,
             )
         return eigfreq.item()
 

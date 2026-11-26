@@ -18,6 +18,10 @@
 #include <math.h>
 #include <string.h>
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 #include "meep/mympi.hpp"
 #include "bicgstab.hpp"
 
@@ -73,40 +77,80 @@ using namespace std;
 
 namespace meep {
 
-static double dot(size_t n, const realnum *x, const realnum *y) {
+/* The BLAS-1 operations below dominate the cost of solve_cw unless they are
+   vectorized and threaded.  For the reductions, we do not use an OpenMP
+   "reduction" clause, because the order in which it combines the per-thread
+   partial sums varies from run to run, which makes the results (and, in single
+   precision, even the iteration counts) non-reproducible.  Instead, blocked_sum
+   returns sum_{i<n} term(i), summing fixed-size blocks in parallel (with a fixed
+   number of independent accumulators, which allows SIMD vectorization) and then
+   adding the block sums in order, so the result is bitwise identical regardless
+   of the number of threads.  Terms are accumulated in double precision even
+   when realnum is float. */
+template <typename F> static double blocked_sum(size_t n, F term) {
+  constexpr size_t B = 8192, W = 32; // block size and number of accumulators
+  const size_t nb = (n + B - 1) / B;
+  std::vector<double> partial(nb);
+#pragma omp parallel for schedule(static)
+  for (size_t k = 0; k < nb; ++k) {
+    const size_t lo = k * B, hi = std::min(n, lo + B);
+    double acc[W] = {0};
+    size_t i = lo;
+    for (; i + W <= hi; i += W) {
+#pragma omp simd
+      for (size_t j = 0; j < W; ++j)
+        acc[j] += term(i + j);
+    }
+    double s = 0;
+    for (; i < hi; ++i)
+      s += term(i);
+    for (size_t j = 0; j < W; ++j)
+      s += acc[j];
+    partial[k] = s;
+  }
   double sum = 0;
-  for (size_t i = 0; i < n; ++i)
-    sum += x[i] * y[i];
-  return sum_to_all(sum);
+  for (size_t k = 0; k < nb; ++k)
+    sum += partial[k];
+  return sum;
+}
+
+static double dot(size_t n, const realnum *x, const realnum *y) {
+  return sum_to_all(blocked_sum(n, [=](size_t i) { return double(x[i]) * double(y[i]); }));
 }
 
 static double norm2(size_t n, const realnum *x) {
-  // note: we don't just do sqrt(dot(n, x, x)) in order to avoid overflow
-  size_t i;
-  double xmax = 0, scale;
-  long double sum = 0;
-  for (i = 0; i < n; ++i) {
-    double xabs = fabs(x[i]);
-    if (xabs > xmax) xmax = xabs;
-  }
+  const double sum = dot(n, x, x);
+  if (!std::isinf(sum)) return sqrt(sum); // (NaN propagates)
+
+  // overflow in sum of squares: fall back to the slower but robust scaled computation
+  double xmax = 0;
+#pragma omp parallel for reduction(max : xmax) // (max is exact, hence order-independent)
+  for (size_t i = 0; i < n; ++i)
+    xmax = std::max(xmax, fabs(double(x[i])));
   xmax = max_to_all(xmax);
   if (xmax == 0) return 0;
-  scale = 1.0 / xmax;
-  for (i = 0; i < n; ++i) {
-    double xs = scale * x[i];
-    sum += xs * xs;
-  }
-  return xmax * sqrt(sum_to_all(sum));
+  const double scale = 1.0 / xmax;
+  return xmax * sqrt(sum_to_all(blocked_sum(n, [=](size_t i) {
+           const double xs = scale * x[i];
+           return xs * xs;
+         })));
 }
 
+// x += a*y
 static void xpay(size_t n, realnum *x, double a, const realnum *y) {
+#pragma omp parallel for simd
   for (size_t m = 0; m < n; ++m)
     x[m] += a * y[m];
 }
 
-#define MEEP_MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
+// y = x - b*y
+static void xmby(size_t n, const realnum *x, double b, realnum *y) {
+#pragma omp parallel for simd
+  for (size_t m = 0; m < n; ++m)
+    y[m] = x[m] - b * y[m];
+}
 
-typedef realnum *prealnum; // grr, ISO C++ forbids new (double*)[...]
+#define MEEP_MIN_OUTPUT_TIME 4.0 // output no more often than this many seconds
 
 /* BiCGSTAB(L) algorithm for the n-by-n problem Ax = b */
 ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void *Adata,
@@ -114,8 +158,8 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
                     const bool quiet) {
   if (!work) return (2 * L + 3) * n; // required workspace
 
-  prealnum *r = new prealnum[L + 1];
-  prealnum *u = new prealnum[L + 1];
+  // (std::vector rather than new[] so that nothing leaks if A throws, e.g. via meep::abort)
+  std::vector<realnum *> r(L + 1), u(L + 1);
   for (int i = 0; i <= L; ++i) {
     r[i] = work + i * n;
     u[i] = work + (L + 1 + i) * n;
@@ -127,26 +171,37 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
   int iter = 0;
   double last_output_wall_time = wall_time();
 
-  double *gamma = new double[L + 1];
-  double *gamma_p = new double[L + 1];
-  double *gamma_pp = new double[L + 1];
-
-  double *tau = new double[L * L];
-  double *sigma = new double[L + 1];
+  std::vector<double> gamma(L + 1), gamma_p(L + 1), gamma_pp(L + 1), tau(L * L), sigma(L + 1);
 
   int ierr = 0; // error code to return, if any
   const double breaktol = 1e-30;
 
-  /**** FIXME: check for breakdown conditions(?) during iteration  ****/
+  /* In finite precision (especially single precision), the residual eventually stops
+     decreasing; if tol is below that floor, BiCGSTAB(L) does not merely stagnate but
+     diverges exponentially, eventually overflowing to Inf/NaN.  So we keep a copy of the
+     iterate xbest with the smallest (recursively updated) residual, stop if the residual
+     grows by more than divtol relative to that, and return xbest on any failure.  The
+     residual of a converging BiCGSTAB(L) can temporarily spike far above its running minimum
+     (by up to ~4e4 in solve_cw tests), so divtol must be large; diverging iterations grow
+     exponentially, so a large divtol costs only a modst number of extra iterations. */
+  const double divtol = 1e8;
+  realnum *xbest = work + (2 * L + 3) * n;
+  double best_resid = HUGE_VAL;
+  bool have_best = false;
 
   // rtilde = r[0] = b - Ax
   realnum *rtilde = work + (2 * L + 2) * n;
   A(x, r[0], Adata);
-  for (size_t m = 0; m < n; ++m)
-    rtilde[m] = r[0][m] = b[m] - r[0][m];
+  {
+    realnum *r0 = r[0];
+#pragma omp parallel for simd
+    for (size_t m = 0; m < n; ++m)
+      rtilde[m] = r0[m] = b[m] - r0[m];
+  }
 
   { /* Sleipjen normalizes rtilde in his code; it seems to help slightly */
-    double s = 1.0 / norm2(n, rtilde);
+    const double s = 1.0 / norm2(n, rtilde);
+#pragma omp parallel for simd
     for (size_t m = 0; m < n; ++m)
       rtilde[m] *= s;
   }
@@ -156,7 +211,23 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
   double rho = 1.0, alpha = 0, omega = 1;
 
   double resid;
-  while ((resid = norm2(n, r[0])) > tol * bnrm) {
+  while (true) {
+    resid = norm2(n, r[0]);
+    if (!std::isfinite(resid) || resid > divtol * best_resid) {
+      ierr = 2; // diverged
+      break;
+    }
+    if (resid < best_resid) {
+      best_resid = resid;
+      have_best = true;
+      memcpy(xbest, x, sizeof(realnum) * n);
+    }
+    if (resid <= tol * bnrm) break; // converged
+    if (iter == *iters) {
+      ierr = 1; // maximum number of iterations reached
+      break;
+    }
+
     ++iter;
     if (!quiet && wall_time() > last_output_wall_time + MEEP_MIN_OUTPUT_TIME) {
       master_printf("residual[%d] = %g\n", iter, resid / bnrm);
@@ -166,15 +237,14 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
     rho = -omega * rho;
     for (int j = 0; j < L; ++j) {
       if (fabs(rho) < breaktol) {
-        ierr = -1;
+        ierr = -1; // breakdown
         goto finish;
       }
       double rho1 = dot(n, r[j], rtilde);
       double beta = alpha * rho1 / rho;
       rho = rho1;
       for (int i = 0; i <= j; ++i)
-        for (size_t m = 0; m < n; ++m)
-          u[i][m] = r[i][m] - beta * u[i][m];
+        xmby(n, r[i], beta, u[i]); // u[i] = r[i] - beta * u[i]
       A(u[j], u[j + 1], Adata);
       alpha = rho / dot(n, u[j + 1], rtilde);
       for (int i = 0; i <= j; ++i)
@@ -205,31 +275,44 @@ ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void
         gamma_pp[j] += tau[(i - 1) * L + (j - 1)] * gamma[i + 1];
     }
 
-    xpay(n, x, gamma[1], r[0]);
-    xpay(n, r[0], -gamma_p[L], r[L]);
-    xpay(n, u[0], -gamma[L], u[L]);
-    for (int j = 1; j < L; ++j) { /* TODO: use blas DGEMV (for L > 2) */
-      xpay(n, x, gamma_pp[j], r[j]);
-      xpay(n, r[0], -gamma_p[j], r[j]);
-      xpay(n, u[0], -gamma[j], u[j]);
-    }
-
-    if (iter == *iters) {
-      ierr = 1;
-      break;
+    /* Update x, r[0], and u[0] in a single pass over memory (rather than 3L separate
+       xpay passes, since these memory-bound loops are limited by bandwidth):
+          x    += gamma[1] r[0] + sum_{j=1}^{L-1} gamma_pp[j] r[j]
+          r[0] -= sum_{j=1}^{L} gamma_p[j] r[j]
+          u[0] -= sum_{j=1}^{L} gamma[j] u[j]
+       where the x update uses r[0] from before its update. */
+    {
+      realnum *const *rp = r.data();
+      realnum *const *up = u.data();
+      const double *g = gamma.data(), *gp = gamma_p.data(), *gpp = gamma_pp.data();
+#pragma omp parallel for
+      for (size_t m = 0; m < n; ++m) {
+        const double r0 = rp[0][m];
+        double xm = x[m] + g[1] * r0;
+        double rm = r0 - gp[L] * rp[L][m];
+        double um = up[0][m] - g[L] * up[L][m];
+        for (int j = 1; j < L; ++j) {
+          const double rj = rp[j][m];
+          xm += gpp[j] * rj;
+          rm -= gp[j] * rj;
+          um -= g[j] * up[j][m];
+        }
+        x[m] = xm;
+        rp[0][m] = rm;
+        up[0][m] = um;
+      }
     }
   }
 
-  if (!quiet) master_printf("final residual = %g\n", norm2(n, r[0]) / bnrm);
-
 finish:
-  delete[] sigma;
-  delete[] tau;
-  delete[] gamma_pp;
-  delete[] gamma_p;
-  delete[] gamma;
-  delete[] u;
-  delete[] r;
+  if (ierr != 0 && have_best) { // on failure, return the best iterate found
+    memcpy(x, xbest, sizeof(realnum) * n);
+    resid = best_resid;
+  }
+  if (!quiet) {
+    if (ierr == 2) master_printf("residual diverged: returning best iterate\n");
+    master_printf("final residual = %g\n", resid / bnrm);
+  }
 
   *iters = iter;
   return ierr;

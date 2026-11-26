@@ -18,63 +18,89 @@
 #include "meep_internals.hpp"
 #include "bicgstab.hpp"
 
+#include <vector>
+
 using namespace std;
 
 namespace meep {
 
+/* The unknowns of the frequency-domain linear system are D and B, but in PML regions
+   the U, W, E/H, C (conductivity), and bfast auxiliary fields are also unknowns (in
+   principle, we might be able to compute these extra fields in frequency domain via
+   scaling by the appropriate s factors, rather than storing them).
+   for_each_cw_unknown calls fn(gv, c, re, im) for the real and imaginary arrays of
+   each unknown field on this process, in a fixed order; the system size, fields_to_array,
+   and array_to_fields all use this one traversal so that they are guaranteed to agree. */
+template <typename F> static void for_each_cw_unknown(const fields &f, F fn) {
+  for (int i = 0; i < f.num_chunks; i++) {
+    fields_chunk *fc = f.chunks[i];
+    if (!fc->is_mine()) continue;
+    FOR_COMPONENTS(c) {
+      if (!is_D(c) && !is_B(c)) continue;
+      const component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
+      auto visit = [&](realnum *const fld[2]) {
+        if (fld[0] && fld[1]) fn(fc->gv, c, fld[0], fld[1]);
+      };
+      visit(fc->f[c]);
+      visit(fc->f_u[c]);
+      visit(fc->f_cond[c]);
+      visit(fc->f_bfast[c]);
+      visit(fc->f_w[c2]);
+      if (fc->f_w[c2][0]) visit(fc->f[c2]);
+    }
+  }
+}
+
+// number of complex unknowns on this process
+static size_t cw_system_size(const fields &f) {
+  size_t n = 0;
+  for_each_cw_unknown(
+      f, [&](const grid_volume &gv, component c, realnum *, realnum *) { n += gv.nowned(c); });
+  return n;
+}
+
+/* Calls body(idx, offset) for each point owned by gv for component c (in parallel), where
+   idx is the index of the point in the field arrays and offset is its index in the
+   (contiguous) sequence of owned points. Uses the stride-1 loop when possible so that the
+   inner loop is contiguous and can be vectorized. */
+#define CW_LOOP_OFFSET ((loop_i1 * loop_n2 + loop_i2) * loop_n3 + loop_i3)
+template <typename F> static void loop_over_owned(const grid_volume &gv, component c, F body) {
+  if (LOOPS_ARE_STRIDE1(gv)) {
+    PS1LOOP_OVER_VOL_OWNED(gv, c, idx) { body(idx, CW_LOOP_OFFSET); }
+  }
+  else {
+    PLOOP_OVER_VOL_OWNED(gv, c, idx) { body(idx, CW_LOOP_OFFSET); }
+  }
+}
+#undef CW_LOOP_OFFSET
+
 static void fields_to_array(const fields &f, complex<realnum> *x) {
   size_t ix = 0;
-  for (int i = 0; i < f.num_chunks; i++)
-    if (f.chunks[i]->is_mine()) FOR_COMPONENTS(c) {
-        if (is_D(c) || is_B(c)) {
-          realnum *fr, *fi;
-#define COPY_FROM_FIELD(fld)                                                                       \
-  if ((fr = f.chunks[i]->fld[0]) && (fi = f.chunks[i]->fld[1]))                                    \
-    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx)                                                   \
-  x[ix++] = complex<double>(fr[idx], fi[idx]);
-          COPY_FROM_FIELD(f[c]);
-          COPY_FROM_FIELD(f_u[c]);
-          COPY_FROM_FIELD(f_cond[c]);
-          COPY_FROM_FIELD(f_bfast[c]);
-          component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
-          COPY_FROM_FIELD(f_w[c2]);
-          if (f.chunks[i]->f_w[c2][0]) COPY_FROM_FIELD(f[c2]);
-#undef COPY_FROM_FIELD
-        }
-      }
+  for_each_cw_unknown(
+      f, [&](const grid_volume &gv, component c, const realnum *fr, const realnum *fi) {
+        complex<realnum> *xc = x + ix;
+        loop_over_owned(
+            gv, c, [=](ptrdiff_t idx, ptrdiff_t k) { xc[k] = complex<realnum>(fr[idx], fi[idx]); });
+        ix += gv.nowned(c);
+      });
 }
 
 static void array_to_fields(const complex<realnum> *x, fields &f) {
   size_t ix = 0;
-  for (int i = 0; i < f.num_chunks; i++)
-    if (f.chunks[i]->is_mine()) FOR_COMPONENTS(c) {
-        if (is_D(c) || is_B(c)) {
-          realnum *fr, *fi;
-#define COPY_TO_FIELD(fld)                                                                         \
-  if ((fr = f.chunks[i]->fld[0]) && (fi = f.chunks[i]->fld[1]))                                    \
-    LOOP_OVER_VOL_OWNED(f.chunks[i]->gv, c, idx) {                                                 \
-      fr[idx] = real(x[ix]);                                                                       \
-      fi[idx] = imag(x[ix++]);                                                                     \
-    }
-          COPY_TO_FIELD(f[c]);
-          COPY_TO_FIELD(f_u[c]);
-          COPY_TO_FIELD(f_cond[c]);
-          COPY_TO_FIELD(f_bfast[c]);
-          component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
-          COPY_TO_FIELD(f_w[c2]);
-          if (f.chunks[i]->f_w[c2][0]) COPY_TO_FIELD(f[c2]);
-#undef COPY_TO_FIELD
-        }
-      }
+  for_each_cw_unknown(f, [&](const grid_volume &gv, component c, realnum *fr, realnum *fi) {
+    const complex<realnum> *xc = x + ix;
+    loop_over_owned(gv, c, [=](ptrdiff_t idx, ptrdiff_t k) {
+      fr[idx] = real(xc[k]);
+      fi[idx] = imag(xc[k]);
+    });
+    ix += gv.nowned(c);
+  });
 
   f.step_boundaries(D_stuff);
   f.update_eh(E_stuff, true);
   f.step_boundaries(E_stuff);
 
-  /* done in f.step before updating D:
-  f.step_boundaries(B_stuff);
-  f.update_eh(H_stuff);
-  f.step_boundaries(H_stuff); */
+  // H is computed from B by f.step() before updating D, or at the end of solve_cw
 }
 
 typedef struct {
@@ -83,18 +109,21 @@ typedef struct {
   complex<double> iomega;
 } fieldop_data;
 
+// y = A x, where A = (step - 1)/dt + i*omega, applied to complex vectors of length n.
 static void fieldop(const realnum *xr, realnum *yr, void *data_) {
-  const complex<realnum> *x = reinterpret_cast<const complex<realnum> *>(xr);
-  complex<realnum> *y = reinterpret_cast<complex<realnum> *>(yr);
   fieldop_data *data = (fieldop_data *)data_;
-  array_to_fields(x, *data->f);
+  array_to_fields(reinterpret_cast<const complex<realnum> *>(xr), *data->f);
   data->f->step();
-  fields_to_array(*data->f, y);
-  size_t n = data->n;
-  realnum dt_inv = 1.0 / data->f->dt;
-  complex<realnum> iomega = complex<realnum>(real(data->iomega), imag(data->iomega));
-  for (size_t i = 0; i < n; ++i)
-    y[i] = (y[i] - x[i]) * dt_inv + iomega * x[i];
+  fields_to_array(*data->f, reinterpret_cast<complex<realnum> *>(yr));
+  const size_t n = data->n;
+  const double dt_inv = 1.0 / data->f->dt;
+  const double wr = real(data->iomega), wi = imag(data->iomega);
+#pragma omp parallel for simd
+  for (size_t i = 0; i < n; ++i) {
+    const double a = xr[2 * i], b = xr[2 * i + 1];
+    yr[2 * i] = (yr[2 * i] - a) * dt_inv + (wr * a - wi * b);
+    yr[2 * i + 1] = (yr[2 * i + 1] - b) * dt_inv + (wr * b + wi * a);
+  }
 }
 
 // Rayleigh-quotient estimate <x,Ax>/<x,x> for eigenfrequency given approximate eigenvector x
@@ -138,42 +167,57 @@ static complex<double> estimate_eigfreq(complex<realnum> *b, complex<realnum> *x
    If the optional argument eigfreq is non-NULL, then the solver is used for a
    shift-and-invert power iteration to find the closest eigenfrequency and
    eigenvector to frequency: the solver is iterated up to eigiters times,
-   or until the estimated eigenfreq stops changing by <= eigtol (relative). */
+   or until the estimated eigenfreq stops changing by <= eigtol (relative).
+   In this case, the return value is true only if the eigenfrequency
+   converged (failures of individual solves are reported but tolerated,
+   since shift-and-invert iteration tolerates inexact solves.) */
+namespace {
+/* While solve_cw is running, the fields are in a special "solve_cw" state (sources and
+   DFT updates are disabled in step(), and step() increments t).  This guard restores the
+   time step and normal time-domain operation when solve_cw exits, including when it exits
+   via an exception (e.g. meep::abort, which raises a RuntimeError in Python), so that the
+   fields are not left with sources and DFTs silently disabled. */
+class solve_cw_guard {
+public:
+  solve_cw_guard(fields &f, complex<double> omega) : f(f), tsave(f.t), active(true) {
+    f.set_solve_cw_omega(omega);
+  }
+  ~solve_cw_guard() { restore(); }
+  void restore() {
+    if (active) {
+      f.t = tsave;
+      f.unset_solve_cw_omega();
+      active = false;
+    }
+  }
+  fields &f;
+  const int tsave; // time step at which solve_cw was called
+private:
+  bool active;
+};
+} // namespace
+
 bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L,
                       complex<double> *eigfreq, double eigtol, int eigiters) {
   if (is_real) meep::abort("solve_cw is incompatible with use_real_fields()");
   if (L < 1) meep::abort("solve_cw called with L = %d < 1", L);
-  int tsave = t; // save time (gets incremented by iterations)
-  int iters;
 
-  set_solve_cw_omega(2 * pi * frequency);
+  solve_cw_guard guard(*this, 2 * pi * frequency);
 
   step(); // step once to make sure everything is allocated
+  /* restore the time, which step() incremented, so that the source amplitudes below are
+     those of the time at which solve_cw was called, and the solution therefore corresponds
+     to the fields at that time */
+  t = guard.tsave;
 
-  size_t N = 0; // size of linear system (on this processor, at least)
-  for (int i = 0; i < num_chunks; i++)
-    if (chunks[i]->is_mine()) {
-      FOR_COMPONENTS(c) {
-        if (chunks[i]->f[c][0] && (is_D(c) || is_B(c))) {
-          component c2 = field_type_component(is_D(c) ? E_stuff : H_stuff, c);
-          /* unknowns are just D and B in non-PML regions, but in PML
-             regions the E, U, W, and C fields are also unknowns (in
-             principle, we might be able to compute these extra fields
-             in frequency domain via scalinb by the appropriate s
-             factors, rather than storing them, but I had some
-             problems getting that working) */
-          N += 2 * chunks[i]->gv.nowned(c) *
-               (1 + (chunks[i]->f_u[c][0] != NULL) + (chunks[i]->f_w[c2][0] != NULL) * 2 +
-                (chunks[i]->f_cond[c][0] != NULL) + (chunks[i]->f_bfast[c][0] != NULL));
-        }
-      }
-    }
+  // size of linear system (on this processor, at least), in real numbers
+  const size_t N = 2 * cw_system_size(*this);
 
-  iters = maxiters;
-  size_t nwork = (size_t)bicgstabL(L, N, 0, 0, 0, 0, tol, &iters, 0, true);
-  realnum *work = new realnum[nwork + 2 * N];
-  complex<realnum> *x = reinterpret_cast<complex<realnum> *>(work + nwork);
-  complex<realnum> *b = reinterpret_cast<complex<realnum> *>(work + nwork + N);
+  int iters = maxiters;
+  const size_t nwork = (size_t)bicgstabL(L, N, 0, 0, 0, 0, tol, &iters, 0, true);
+  std::vector<realnum> work(nwork + 2 * N);
+  complex<realnum> *x = reinterpret_cast<complex<realnum> *>(work.data() + nwork);
+  complex<realnum> *b = reinterpret_cast<complex<realnum> *>(work.data() + nwork + N);
 
   fields_to_array(*this, x); // initial guess = initial fields
 
@@ -206,49 +250,73 @@ bool fields::solve_cw(double tol, int maxiters, complex<double> frequency, int L
   data.f = this;
   data.n = N / 2;
   data.iomega = ((1.0 - exp(complex<double>(0., -1.) * (2 * pi * frequency) * dt)) * (1.0 / dt));
-  iters = maxiters;
 
-  int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
-                            reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
+  // solve A x = b, starting from the current x; returns error code from bicgstabL;
+  auto solve = [&]() {
+    iters = maxiters;
+    return (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
+                          reinterpret_cast<realnum *>(b), tol, &iters, work.data(), verbosity == 0);
+  };
 
-  if (verbosity > 0) {
+  auto report_failure = [&](int ierr) {
+    if (ierr && verbosity > 0)
+      master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!%s\n", ierr,
+                    ierr == 2 ? " (residual diverged: tol may be below the floating-point "
+                                "precision floor; using the best solution found)"
+                              : "");
+  };
+
+  int ierr = solve();
+  bool success = !ierr;
+
+  if (verbosity > 0)
     master_printf("Finished solve_cw after %d CG iters (~ %d timesteps).\n", iters, iters * 2 * L);
-    if (ierr) master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
-  }
+  report_failure(ierr);
 
   // do additional shift-and-invert iterations to find eigenfrequency
   if (eigfreq) {
+    /* The first solve only provides the starting vector for the shift-and-invert iteration,
+       so its accuracy is not critical, and we continue even if it failed. */
     *eigfreq = estimate_eigfreq(b, x, data.n, &data);
     if (verbosity > 0) {
       master_printf("Initial eigen-frequency estimate = %g%+gi\n", real(*eigfreq), imag(*eigfreq));
     }
+    bool converged = false;
     for (int eigiter = 0; eigiter < eigiters; ++eigiter) {
-      iters = maxiters;
-      int ierr = (int)bicgstabL(L, N, reinterpret_cast<realnum *>(x), fieldop, &data,
-                                reinterpret_cast<realnum *>(b), tol, &iters, work, verbosity == 0);
+      ierr = solve();
+      // (if the solve failed, x is its best iterate, so this estimate is still meaningful)
       complex<double> newfreq = estimate_eigfreq(b, x, data.n, &data);
       complex<double> dfreq = newfreq - *eigfreq;
-      if (verbosity > 0) {
+      if (verbosity > 0)
         master_printf("Eigensolver step %d: %d CG iters, freq = %g%+gi (change = %g%+gi).\n",
                       eigiter + 1, iters, real(newfreq), imag(newfreq), real(dfreq), imag(dfreq));
-        if (ierr) master_printf(" -- CONVERGENCE FAILURE (%d) in solve_cw!\n", ierr);
-      }
+      report_failure(ierr);
       *eigfreq = newfreq;
-      if (abs(dfreq) <= eigtol * abs(newfreq)) break; // converged
+      /* If the solve failed, we continue anyway: shift-and-invert iteration tolerates inexact
+         solves, and x is the best iterate found.  Failures are reported above, and the
+         eigenfrequency convergence test below still determines success. */
+      if (abs(dfreq) <= eigtol * abs(newfreq)) {
+        converged = true;
+        break;
+      }
     }
+    if (!converged && verbosity > 0)
+      master_printf(" --- eigensolver did not converge within %d iterations\n", eigiters);
+    success = converged;
     memcpy(x, b, N * sizeof(realnum));
   }
 
-  array_to_fields(x, *this);
-  step(); // ensure H/B are updated and synced with E/D
+  array_to_fields(x, *this); // sets D, B, auxiliary fields, and E
 
-  delete[] work;
-  t = tsave;
+  // compute H from B, as step() would do before updating D (without advancing the time)
+  step_boundaries(B_stuff);
+  update_eh(H_stuff, true);
+  step_boundaries(H_stuff);
 
-  unset_solve_cw_omega();
+  guard.restore(); // re-enable DFT updates, which are skipped while doing_solve_cw
   update_dfts();
 
-  return !ierr;
+  return success;
 }
 
 /* as solve_cw, but infers frequency from sources */

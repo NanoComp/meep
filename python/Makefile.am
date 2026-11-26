@@ -86,6 +86,7 @@ TESTS =                                        \
     $(TEST_DIR)/test_ring.py                   \
     $(TEST_DIR)/test_ring_cyl.py               \
     $(TEST_DIR)/test_simulation.py             \
+    $(TEST_DIR)/test_solve_cw.py               \
     $(TEST_DIR)/test_special_kz.py             \
     $(TEST_DIR)/test_source.py                 \
     $(TEST_DIR)/test_stop_when_flux_decayed.py \
