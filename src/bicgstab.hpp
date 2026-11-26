@@ -41,8 +41,10 @@ typedef void (*bicgstab_op)(const realnum *x, realnum *y, void *data);
    NULL for the work pointer, and the return value nwork is the required size of the workspace. Then
    allocate work = new realnum[nwork], and call it again.
 
-   For non-NULL nwork, returns 0 on success, 1 if the maximum number of iterations was reached, and
-   -1 if a breakdown in convergence was detected. */
+   For non-NULL nwork, returns 0 on success, 1 if the maximum number of iterations was reached,
+   -1 if a breakdown in convergence was detected, and 2 if the residual diverged (typically because
+   tol is below the floor set by floating-point roundoff.)  On failure, x is the iterate with the
+   smallest residual found. */
 ptrdiff_t bicgstabL(const int L, const size_t n, realnum *x, bicgstab_op A, void *Adata,
                     const realnum *b, const double tol,
                     int *iters,    // input *iters = max iters, output = actual iters

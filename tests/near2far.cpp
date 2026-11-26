@@ -25,7 +25,6 @@
 #include "config.h"
 using namespace meep;
 using std::complex;
-using std::polar;
 
 double two(const vec &) { return 2.0; }
 
@@ -52,11 +51,10 @@ int check_cyl(double sr, double sz, double a) {
   double dr = sr / N;
   complex<double> F[N], F0[N], EH[6];
   double diff = 0.0, dot0 = 0.0;
-  complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
   for (int i = 0; i < N; ++i) {
     double rr = dr * i;
     vec x = veccyl(rr, 0.5 * sz);
-    F[i] = f.get_field(c, x) * phase;
+    F[i] = f.get_field(c, x);
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
     F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r(); // Ey = Ep for \phi = 0 (rz = xz) plane
     double d = abs(F0[i] - F[i]);
@@ -92,7 +90,7 @@ int check_cyl(double sr, double sz, double a) {
     vec x = veccyl(rr, 10.0 / w);
     n2f.farfield_lowlevel(EH_, x);
     sum_to_all(EH_, EH, 6);
-    F[i] = EH[EHcomp[c]] * phase;
+    F[i] = EH[EHcomp[c]];
     greencyl(EH, x, w, 2.0, 1.0, x0, c0, 1.0, m, 1e-6);
     F0[i] = EH[EHcomp[c]] * 2.0 * pi * x0.r();
     double d = abs(F0[i] - F[i]);
@@ -149,12 +147,11 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
       double dx = 0.75 * (xmax / 4) / N;
       complex<double> F[N], F0[N], EH[6];
       double diff = 0.0, dot0 = 0.0, dot = 0.0;
-      complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
       vec x0 = zero_vec(dim);
       for (int i = 0; i < N; ++i) {
         double s = xmax / 4 + dx * i;
         vec x = dim == D2 ? vec(s, 0.5 * s) : vec(s, 0.5 * s, 0.3 * s);
-        F[i] = f.get_field(c, x) * phase;
+        F[i] = f.get_field(c, x);
         (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c0, 1.0);
         F0[i] = EH[EHcomp[c]];
         if (c1 != NO_COMPONENT) {
@@ -214,14 +211,13 @@ int check_2d_3d(ndim dim, const double xmax, double a, component c0, component c
       double dx = 0.75 * (xmax / 4) / N;
       complex<double> F[N], F0[N], EH_[6], EH[6];
       double diff = 0.0, dot = 0.0;
-      complex<double> phase = polar(1.0, (4 * w * f.dt) * pi);
       vec x0 = zero_vec(dim);
       for (int i = 0; i < N; ++i) {
         double s = xmax + dx * i;
         vec x = dim == D2 ? vec(s, 0.5 * s) : vec(s, 0.5 * s, 0.3 * s);
         n2f.farfield_lowlevel(EH_, x);
         sum_to_all(EH_, EH, 6);
-        F[i] = EH[EHcomp[c]] * phase;
+        F[i] = EH[EHcomp[c]];
         (dim == D2 ? green2d : green3d)(EH, x, w, 2.0, 1.0, x0, c0, 1.0);
         F0[i] = EH[EHcomp[c]];
         if (c1 != NO_COMPONENT) {
