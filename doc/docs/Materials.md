@@ -70,11 +70,22 @@ where $\lambda$ is the vacuum wavelength, each term containing two coefficients 
 Numerical Stability
 -------------------
 
-In some cases, you may need to reduce the `Courant` parameter $S$ of the simulation, which relates the size of the time step to the spatial discretization: $c\Delta t = S\Delta x$. By default, $S = 0.5$  but in general you must have $S < n_\textrm{min}/\sqrt{\text{\# dimensions}}$, where $n_\textrm{min}$ is the minimum refractive index (usually 1), so if your refractive indices are ever <1 you may need a smaller $S$.
+In some cases, you may need to reduce the `Courant` parameter $S$ of the simulation, which relates the size of the time step to the spatial discretization: $c\Delta t = S\Delta x$. By default, $S = 0.5$. For non-dispersive materials you must have $S < n_\textrm{min}/\sqrt{d}$, where $d$ is the number of dimensions and $n_\textrm{min}$ is the minimum refractive index (usually 1), so if your refractive indices are ever <1 you may need a smaller $S$.
 
-If a Lorentzian resonance at ω$_n$ is specified at too high a frequency relative to the time discretization $\Delta t$, the simulation becomes unstable. Essentially, the problem is that $\mathbf{P}_n$ oscillates too fast compared with the time discretization for the discretization to work properly. If this happens, there are three workarounds: (1) increase the resolution which increases the resolution in both space and time, (2) decrease the Courant factor which decreases $\Delta t$ compared to $\Delta x$, or (3) use a different model function for your dielectric response.
+For dispersive materials, the refractive index at the frequencies you simulate does not determine stability. What matters is the permittivity the time stepping sees at the highest frequency the grid can represent, $f = 1/(\pi\Delta t)$. For each Lorentzian or Drude term with frequency $f_n$ and strength $\sigma_n$ (in Meep units, $\Delta t = S/\text{resolution}$), let $w_n = (2\pi f_n \Delta t)^2$. A passive material ($\sigma_n \ge 0$, $\gamma_n \ge 0$) is stable when
 
-Roughly speaking, the $\mathbf{P}_n$ equation becomes unstable for $\omega_n \Delta t / 2 > 1$. Note that, in Meep frequency units, you specify $f_n = \omega_n/2\pi$, so this quantity should be less than $1/\pi \Delta t$.
+1. every Lorentzian term has $f_n < 1/(\pi\Delta t)$, i.e. $w_n < 4$; otherwise $\mathbf{P}_n$ oscillates too fast for the time discretization; and
+2. $d\,S^2 < \varepsilon_N$, where
+
+$$\varepsilon_N = \varepsilon_\infty - \sum_{\text{Lorentzian}} \frac{\sigma_n w_n}{4 - w_n} - \sum_{\text{Drude}} \frac{\sigma_n w_n}{4}$$
+
+is the lossless permittivity at $f = 1/(\pi\Delta t)$. The damping $\gamma_n$ does not enter. (With a non-dispersive $\mu \ne 1$, the condition is $d\,S^2 < \mu\,\varepsilon_N$.)
+
+These conditions are exact for a homogeneous medium and sufficient for any arrangement of such materials when subpixel averaging is off; a small inclusion can remain stable even if it fails them. Meep prints a warning at setup when a material fails them, together with the largest stable Courant number at the current resolution.
+
+In practice, Lorentzian terms far above the frequencies of interest, such as the ultraviolet terms of many glass and metal fits, lower $\varepsilon_N$ as the time step grows. Many library materials therefore need a higher resolution or a smaller $S$ than the non-dispersive rule suggests: in 3D at the default $S = 0.5$, BK7 needs a resolution of about 47 pixels/μm and Ag about 67. The workarounds are to (1) increase the resolution, which refines both space and time, (2) decrease $S$, or (3) remove terms far outside the band of interest or use a different model function for your dielectric response (see the note at the end of the [Materials Library](#materials-library)).
+
+A material model with $\varepsilon_\infty < 0$, or with gain at some frequency ($\text{Im}\,\varepsilon < 0$, possible when some $\sigma_n < 0$), diverges at any time step. Such entries in the materials library are marked "WARNING: unstable".
 
 Finally, overlapping dispersive materials with perfectly matched layer (PML) absorbing boundaries may produce instabilities. A workaround is to replace the PML with an absorber.
 
